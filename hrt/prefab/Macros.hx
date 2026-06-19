@@ -320,12 +320,14 @@ class Macros {
 
 		var prefabIcon = macro hrt.ui.HuiRes.ui.icons.question_mark;
 		var superExpr = macro {};
-		if (typeName != "Prefab") {
-			superExpr = macro var _super = super.getEditorProps();
-			prefabIcon = macro _super.icon;
-		}
 		var prefabName = macro $v{prefabNameSimple};
 		var prefabHideInAddMenu = macro false;
+		var prefabCategory = macro "Misc";
+		if (typeName != "Prefab") {
+			superExpr = macro var _super = super.getEditorProps();
+			prefabCategory = macro _super.category;
+			prefabIcon = macro _super.icon;
+		}
 
 		for (meta in metadatas) {
 			if (meta.name == ":prefabIcon") {
@@ -343,6 +345,12 @@ class Macros {
 			if (meta.name == ":prefabHideInAddMenu") {
 				prefabHideInAddMenu = macro true;
 			}
+			if (meta.name == ":prefabCategory") {
+				if (meta.params.length != 1) {
+					Context.error(":prefabName need one String argument", meta.pos);
+				}
+				prefabCategory = meta.params[0];
+			}
 		}
 
 		var getEditorProps : Function = {
@@ -353,6 +361,7 @@ class Macros {
 					icon: $e{prefabIcon},
 					name: $e{prefabName},
 					hideInAddMenu: $e{prefabHideInAddMenu},
+					category: $e{prefabCategory},
 				}:hrt.prefab.editor.Props);
 			}
 		};

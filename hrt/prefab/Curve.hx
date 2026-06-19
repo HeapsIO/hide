@@ -46,6 +46,7 @@ class CurveKey {
 
 typedef CurveKeys = Array<CurveKey>;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.curve)
 class Curve extends Prefab {
 
 	@:s public var keyMode : CurveKeyMode = Linear;

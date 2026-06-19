@@ -13,7 +13,7 @@ typedef Connection = {
 	from : TexNode,
 	outputId : Int,
 };
-
+@:prefabHideInAddMenu
 class TexGraph extends hrt.prefab.Prefab {
 	public static var CURRENT_NODE_ID = 0;
 

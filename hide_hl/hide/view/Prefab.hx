@@ -153,7 +153,7 @@ class Prefab extends HuiView<{path: String}> {
 
 			var entries: Array<hrt.ui.HuiMenu.MenuItem> = [];
 
-			entries.push({label: "Add Child Prefab", menu: createPrefabMenu((cl) -> getView().undo.run(actionCreatePrefab(prefab, prefab.children.length, cl), true))});
+			entries.push({label: "Add Child Prefab", menu: createPrefabMenu(prefab)});
 
 			entries.push({ label : "Enable", checked: prefab.enabled, click: () -> { setEnable(cast sceneEditor.tree.getSelectedItems(), !prefab.enabled); }});
 			entries.push({ label : "Editor Only", checked: prefab.editorOnly, click: () -> { setEditorOnly(cast sceneEditor.tree.getSelectedItems(), !prefab.editorOnly); }});
@@ -1247,9 +1247,12 @@ class Prefab extends HuiView<{path: String}> {
 	function actionCreatePrefab(parent: hrt.prefab.Prefab, index: Int, cl: Class<hrt.prefab.Prefab>) : hrt.tools.Undo.Action {
 		var newPrefab = Type.createInstance(cl, []);
 		newPrefab.name = Type.getClassName(cl).split(".").pop();
+		return actionAddSelectPrefab(parent, index, newPrefab);
+	}
 
-		var reparent = actionReparentPrefab(newPrefab, parent, index);
-		var select = actionMakeSelection([newPrefab]);
+	function actionAddSelectPrefab(parent: hrt.prefab.Prefab, index: Int, prefab: hrt.prefab.Prefab) : hrt.tools.Undo.Action {
+		var reparent = actionReparentPrefab(prefab, parent, index);
+		var select = actionMakeSelection([prefab]);
 
 		return (isUndo) -> {
 			reparent(isUndo);
@@ -1371,49 +1374,187 @@ class Prefab extends HuiView<{path: String}> {
 			sceneEditor.tree.rebuild(prefab);
 	}
 
-	function createPrefabMenu(click: (cl: Class<hrt.prefab.Prefab>) -> Void) : Array<hrt.ui.HuiMenu.MenuItem> {
+	static var globalShaders : Array<Class<hxsl.Shader>> = [
+		hrt.shader.DissolveBurn,
+		hrt.shader.Bloom,
+		hrt.shader.UVDebug,
+		hrt.shader.GradientMap,
+		hrt.shader.HeightGradient,
+		hrt.shader.ParticleFade,
+		hrt.shader.ParticleColorLife,
+		hrt.shader.ParticleColorRandom,
+		hrt.shader.MaskColorAlpha,
+		hrt.shader.Spinner,
+		hrt.shader.SDF,
+		hrt.shader.FireShader,
+		hrt.shader.MeshWave,
+		hrt.shader.TextureRotate,
+		hrt.shader.GradientMapLife,
+		hrt.shader.TextureMult,
+		hrt.shader.EmissiveMult,
+		hrt.shader.GradientFlat,
+	];
+
+
+	function getShaders(parentElt: hrt.prefab.Prefab) : Array<hrt.ui.HuiMenu.MenuItem> {
+		function isClassShader(path: String) {
+			return Type.resolveClass(path) != null || StringTools.endsWith(path, ".hx") || StringTools.endsWith(path, ".shgraph");
+		}
+
+		function getPackagePath(path: String) {
+			var fullPath = null;
+			for (shaderPath in @:privateAccess Ide.inst.shaderLoader.shaderPath) {
+				fullPath = Ide.inst.projectDir + "/" + shaderPath + "/" + path;
+				if (sys.FileSystem.exists(fullPath))
+					break;
+			}
+
+			if (!sys.FileSystem.exists(fullPath))
+				return null;
+
+			return fullPath;
+		}
+
+		// var shModel = hrt.prefab.Prefab.getPrefabInfoByName("shader");
+		// var graphModel = hrt.prefab.Prefab.getPrefabInfoByName("shgraph");
+		// var custom = {
+		// 	label : "Custom...",
+		// 	click : function() {
+		// 		ide.chooseFile(shModel.inf.fileSource.concat(graphModel.inf.fileSource).concat(["shgraph"]), function(path) {
+		// 			var cl = isClassShader(path) ? shModel.prefabClass : graphModel.prefabClass;
+		// 			var p = Type.createInstance(cl, [parentElt]);
+		// 			p.source = path;
+		// 			autoName(p);
+		// 			if(onMake != null)
+		// 				onMake(p);
+		// 			addElements([p]);
+		// 		});
+		// 	},
+		// 	icon : shModel.inf.icon,
+		// };
+
+		function classShaderItem(path) : hrt.ui.HuiMenu.MenuItem {
+			var name = path;
+			if(StringTools.endsWith(name, ".hx")) {
+				name = new haxe.io.Path(path).file;
+			}
+			else {
+				name = name.split(".").pop();
+			}
+			return {
+				label: name,
+				click: () -> {
+					var shader = new hrt.prefab.Shader(null, null);
+					shader.name = name;
+					shader.source = path;
+					getView().undo.run(actionAddSelectPrefab(parentElt, parentElt.children.length, shader), true);
+				}
+			}
+		}
+
+		// function graphShaderItem(path) : hide.comp.ContextMenu.MenuItem {
+		// 	var name = new haxe.io.Path(path).file;
+		// 	return getNewTypeMenuItem("shgraph", parentElt, onMake, name, name, path);
+		// }
+
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [];
+
+		var ide = hide.Ide.inst;
+
+		var shaders : Array<String> = ide.currentConfig.get("fx.shaders", []);
+		for (sh in globalShaders) {
+			var name = Type.getClassName(sh);
+			if (!shaders.contains(name)) {
+				shaders.push(name);
+			}
+		}
+
+		for(path in shaders) {
+			var strippedSlash = StringTools.endsWith(path, "/") ? path.substr(0, -1) : path;
+			var fullPath = ide.getPath(strippedSlash);
+			if( isClassShader(path) ) {
+				menu.push(classShaderItem(path));
+			} /*else if (StringTools.endsWith(path, ".shgraph") ) {
+				menu.push(graphShaderItem(path));
+			}*/ else if( sys.FileSystem.exists(fullPath) && sys.FileSystem.isDirectory(fullPath) ) {
+				for( c in sys.FileSystem.readDirectory(fullPath) ) {
+					var relPath = ide.makeRelative(fullPath + "/" + c);
+					if( isClassShader(relPath) ) {
+						menu.push(classShaderItem(relPath));
+					} /*else if( StringTools.endsWith(relPath, ".shgraph")) {
+						menu.push(graphShaderItem(relPath));
+					}*/
+				}
+			} else if (getPackagePath(path) != null) {
+				function addShadersInFolder(path : String) {
+					var files = sys.FileSystem.readDirectory(path);
+
+					for (f in files) {
+						var filePath = path + "/" + f;
+						if (sys.FileSystem.isDirectory(filePath))
+							addShadersInFolder(filePath);
+						else if (isClassShader(filePath)){
+							menu.push(classShaderItem(filePath));
+						}
+					}
+				}
+
+				addShadersInFolder(getPackagePath(path));
+			}
+		}
+
+
+		menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
+		//menu.unshift(custom);
+
+		return menu;
+	}
+
+	function createPrefabMenu(parent: hrt.prefab.Prefab) : Array<hrt.ui.HuiMenu.MenuItem> {
+		var callback = (cl) -> getView().undo.run(actionCreatePrefab(parent, parent.children.length, cl), true);
+
 		var lines: Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 		var submenus : Map<String, Array<hrt.ui.HuiMenu.MenuItem>> = [];
 
+		var parentClass = Type.getClass(parent);
 		for (prefab in hrt.prefab.Prefab.registry) {
+
 			if (prefab.editorProps.hideInAddMenu)
 				continue;
-			var category = getPrefabCategoryLabel(prefab.prefabClass);
+			if (!parent.editorAllowChild(prefab.prefabClass))
+				continue;
+			if (!Type.createEmptyInstance(prefab.prefabClass).editorAllowParent(parentClass))
+				continue;
+			var category = prefab.editorProps.category;
 			var label = prefab.editorProps.name;
 			var submenu = hrt.tools.MapUtils.getOrPut(submenus, category, []);
-			submenu.push({label: label, click: click.bind(prefab.prefabClass), icon: prefab.editorProps.icon});
+			submenu.push({label: label, click: callback.bind(prefab.prefabClass), icon: prefab.editorProps.icon});
 		}
 
 		for (category => submenu in submenus) {
 			submenu.sort((a,b) -> Reflect.compare(a.label, b.label));
+		}
+
+		{
+			var shaderSubmenu = hrt.tools.MapUtils.getOrPut(submenus, "Shader", []);
+
+			var shaders = getShaders(parent);
+			if (shaders.length > 0) {
+				shaderSubmenu.push({isSeparator: true});
+				for (s in shaders) {
+					shaderSubmenu.push(s);
+				}
+			}
+		}
+
+		for (category => submenu in submenus) {
 			lines.push({label: category, menu: submenu});
 		}
 
 		lines.sort((a,b) -> Reflect.compare(a.label, b.label));
 
 		return lines;
-	}
-
-	function getPrefabCategoryLabel(cl: Class<hrt.prefab.Prefab>) : String {
-		static var categories : Array<{label: String, cl: Array<Class<hrt.prefab.Prefab>>}> = [
-			{label: "3D", cl: [hrt.prefab.Object3D]},
-			{label: "2D", cl: [hrt.prefab.Object2D]},
-			{label: "RFX", cl: [hrt.prefab.rfx.RendererFX]},
-			{label: "Spawn", cl: [hrt.prefab.fx.gpuemitter.SpawnShader]},
-			{label: "Simulation", cl: [hrt.prefab.fx.gpuemitter.SimulationShader]},
-		];
-
-		var currentClass = cl;
-		while (currentClass != null) {
-			for (category in categories) {
-				if (category.cl.contains(currentClass))
-					return category.label;
-			}
-
-			currentClass = cast Type.getSuperClass(currentClass);
-		}
-		return "Unknown";
 	}
 
 

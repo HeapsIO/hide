@@ -15,6 +15,7 @@ typedef SurfaceProps = {
 
 @:access(hrt.prefab.terrain.TerrainMesh)
 @:access(hrt.prefab.terrain.Tile)
+@:prefabIcon(HuiRes.ui.icons.prefab.terrain)
 class Terrain extends Object3D {
 
 	public var terrain : TerrainMesh;

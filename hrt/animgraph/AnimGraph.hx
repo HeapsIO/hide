@@ -25,6 +25,7 @@ typedef EditorProviderContext = {
 
 
 @:access(hrt.animgraph.AnimGraphInstance)
+@:prefabHideInAddMenu
 class AnimGraph extends hrt.prefab.Prefab {
 
 	@:s var animFolder : String; // The folder to use as a base for the animation selection/loading

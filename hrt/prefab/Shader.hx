@@ -8,6 +8,8 @@ import hide.prefab.HideProps;
 #end
 
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.shader)
+@:prefabCategory("Shader")
+@:prefabHideInAddMenu
 class Shader extends Prefab {
 
 	static final PASS_SELECT = "$PASS_SELECT";

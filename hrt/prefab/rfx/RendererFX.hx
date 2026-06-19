@@ -2,6 +2,7 @@ package hrt.prefab.rfx;
 
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.renderer_fx)
 @:prefabName("Renderer FX")
+@:prefabCategory("RFX")
 class RendererFX extends Prefab implements h3d.impl.RendererFX {
 
 	@:s var enableInEditor = true;

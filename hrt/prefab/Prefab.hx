@@ -679,6 +679,21 @@ class Prefab {
 		return null;
 	}
 
+	/**
+		Return true if an instance of this class prefab can be created as a child of the cl class prefab
+	**/
+	public function editorAllowParent(cl: Class<Prefab>) : Bool {
+		return true;
+	}
+
+	/**
+		Return true if an instance of cl can be created as a child of this prefab
+	**/
+	public function editorAllowChild(cl: Class<Prefab>) : Bool {
+		return true;
+	}
+
+
 	#if editor
 	/**
 		Allows to customize how the prefab object is displayed / handled within Hide

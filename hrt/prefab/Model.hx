@@ -320,6 +320,14 @@ class Model extends Object3D {
 	}
 	#end
 
+	override function editorAllowChild(cl) {
+		return Prefab.isOfType(cl,Object3D) ||
+				Prefab.isOfType(cl,Material) ||
+				Prefab.isOfType(cl,MaterialSelector) ||
+				Prefab.isOfType(cl,Shader) ||
+				Prefab.isOfType(cl, hrt.prefab.fx.AnimEvent);
+	}
+
 	static var _ = Prefab.register("model", Model);
 
 }

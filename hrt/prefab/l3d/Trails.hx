@@ -748,6 +748,7 @@ class TrailObj extends h3d.scene.Mesh {
 	}
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.trails)
 class Trails extends Object3D {
 
 	@:s public var startWidth : Float = 1.0;

@@ -131,6 +131,10 @@ class AnimEvent extends hrt.prefab.fx.Event {
 	}
 	#end
 
+	override function editorAllowChild(cl) {
+		return false;
+	}
+
 	public override function getDuration() : Float {
 		return duration > 0.0 ? duration : (animTemplate != null ? animTemplate.getDuration() : 0.0);
 	}

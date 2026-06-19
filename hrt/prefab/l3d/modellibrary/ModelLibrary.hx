@@ -26,6 +26,9 @@ class ModelLibraryCache {
 }
 
 @:access(h3d.prim.HMDModel)
+@:prefabIcon(HuiRes.ui.icons.prefab.model_library)
+@:prefabName("Model Library")
+@:prefabCategory("3D")
 class ModelLibrary extends Prefab {
 
 	@:s var bakedMaterials : haxe.DynamicAccess<BakedMaterialData>;

@@ -14,6 +14,9 @@ class IdeData {
 	var databaseDiff : String;
 	var originDataBase : cdb.Database;
 	var dbWatcher : hide.tools.FileWatcher.FileWatchEvent;
+	public var shaderLoader : hide.tools.ShaderLoader;
+
+
 
 	var pakFile : hxd.fmt.pak.FileSystem;
 
@@ -92,6 +95,8 @@ class IdeData {
 				error(""+e);
 			}
 		}
+
+		shaderLoader = new hide.tools.ShaderLoader();
 	}
 
 	public function error( e : Dynamic ) {

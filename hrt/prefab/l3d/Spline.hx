@@ -94,6 +94,7 @@ class SplinePoint {
 
 @:allow(hrt.prefab.l3d.SplineMesh)
 @:allow(hrt.prefab.l3d.SplineMeshSpawner)
+@:prefabIcon(HuiRes.ui.icons.prefab.spline)
 class Spline extends hrt.prefab.Object3D {
 	static var OLD_CLASS_POINT = "splinePoint";
 

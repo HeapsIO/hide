@@ -1,5 +1,6 @@
 package hrt.prefab.l2d;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.blur)
 class Blur extends Prefab {
 
 	@:s public var radius : Float = 1.;

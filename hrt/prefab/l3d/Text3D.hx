@@ -155,6 +155,8 @@ class Text3DMesh extends h3d.scene.Mesh {
 	}
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.text_3d)
+@:prefabName("Text 3D")
 class Text3D extends Object3D {
 
 	@:s var color : Int = 0xFFFFFF;

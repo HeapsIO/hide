@@ -1,5 +1,7 @@
 package hrt.prefab.vlm;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.volumetric_lightmap)
+@:prefabName("Volumetric Lightmap")
 class VolumetricLightmap extends Object3D {
 
 	@:s var voxelsize_x : Float = 1.0;

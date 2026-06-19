@@ -10,6 +10,7 @@ class BlendSpacePoint {
 	@:s public var keepSync: Bool = true; // If true, the anim will be kept in sync with all the other anims in the graph marked as keepSync
 }
 
+@:prefabHideInAddMenu
 class BlendSpace2D extends hrt.prefab.Prefab {
 	@:s var points : Array<BlendSpacePoint> = [];
 	@:s var animFolder : String = null; // The folder to use as a base for the animation selection/loading

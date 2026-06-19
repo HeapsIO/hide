@@ -15,6 +15,7 @@ typedef SelectedPass = {
 	all : Bool
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.material_selector)
 class MaterialSelector extends hrt.prefab.Prefab {
 	public static var CONFIG_KEY = "materialSelector";
 

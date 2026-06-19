@@ -23,7 +23,6 @@ class Ide extends hide.tools.IdeData {
 	public var isWindows(get, never) : Bool;
 	public var isFocused(get, never) : Bool;
 
-	public var shaderLoader : hide.tools.ShaderLoader;
 	public var isCDB = false;
 	public var isDebugger = false;
 
@@ -797,7 +796,6 @@ class Ide extends hide.tools.IdeData {
 	function loadProject() {
 		var dir = ideConfig.currentProject;
 		setProgress();
-		shaderLoader = new hide.tools.ShaderLoader();
 		hxsl.Cache.clear();
 
 		var localDir = sys.FileSystem.exists(resourceDir) ? resourceDir : projectDir;

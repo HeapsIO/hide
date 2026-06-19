@@ -461,6 +461,7 @@ class SwarmObject extends h3d.scene.Object {
 
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.swarm)
 class Swarm extends Object3D {
 	@:s public var relativeToRoot : Bool = false;
 	@:s public var numObjects : Int = 3;

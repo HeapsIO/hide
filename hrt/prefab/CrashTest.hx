@@ -4,7 +4,9 @@ package hrt.prefab;
 	Editor debug only prefab that allow to test various crash situations in the editor
 	Should never be loaded in a game
 **/
+@:prefabName("Crash Test")
 @:prefabIcon(HuiRes.ui.icons.prefab.crash_test)
+@:prefabHideInAddMenu
 class CrashTest extends hrt.prefab.Object3D {
 	@:s public var crashOnLoad: Bool = false;
 	@:s public var crashOnInspector: Bool = false;

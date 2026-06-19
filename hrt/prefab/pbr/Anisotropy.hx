@@ -8,6 +8,7 @@ enum abstract AnisotropyMode(String) {
 	var Frequency;
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.anisotropy)
 class Anisotropy extends Prefab {
 
 	@:s public var mode : AnisotropyMode = Flat;

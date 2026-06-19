@@ -74,6 +74,8 @@ class ShaderTargetObj extends h3d.scene.Object {
 	}
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.shader_target)
+@:prefabName("Shader Target")
 class ShaderTarget extends Object3D {
 	@:s public var tag : String;
 	@:s public var priority : Int = 1;

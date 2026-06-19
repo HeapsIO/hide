@@ -2,6 +2,8 @@ package hrt.prefab.l3d;
 
 // NOTE(ces) : Not Tested
 
+@:prefabIcon(HuiRes.ui.icons.prefab.anim_speed_control)
+@:prefabName("Anim Speed Control")
 class AnimSpeedControl extends hrt.prefab.Prefab {
 
 	@:s var speed : Float = 1.;

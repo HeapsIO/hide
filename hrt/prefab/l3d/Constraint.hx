@@ -1,5 +1,7 @@
 package hrt.prefab.l3d;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.constraint)
+@:prefabCategory("3D")
 class Constraint extends Prefab {
 
 	@:s public var object(default,null) : String;

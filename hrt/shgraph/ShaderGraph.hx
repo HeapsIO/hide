@@ -403,6 +403,7 @@ class ShaderGraphCacheEntry {
 }
 
 @:privateAccess(hrt.shgraph.Graph)
+@:prefabHideInAddMenu
 class ShaderGraph extends hrt.prefab.Prefab {
 
 	var graphs : Array<Graph> = [];

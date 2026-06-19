@@ -1047,6 +1047,10 @@ class Material extends Prefab {
 	}
 	#end
 
+	override function editorAllowChild(cl) {
+		return !Prefab.isOfType(cl, Material);
+	}
+
 	public function addOverrideProperty2(pname : String, isMatSetupProp : Bool) {
 		// Remove previous value of this props name in overrides
 		var idx = 0;

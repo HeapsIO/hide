@@ -4,6 +4,8 @@ class RenderPropsObject extends h3d.scene.Object {
 
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.render_props)
+@:prefabName("Render Props")
 class RenderProps extends Object3D {
 
 	@:s var isDefault = false;
@@ -195,6 +197,12 @@ class RenderProps extends Object3D {
 	}
 
 	#end
+
+	override function editorAllowChild(cl: Class<Prefab>) {
+		return Prefab.isOfType(cl,hrt.prefab.rfx.RendererFX)
+			|| Prefab.isOfType(cl,Light)
+			|| Prefab.isOfType(cl,hrt.prefab.l3d.Environment);
+	}
 
 	static var _ = Prefab.register("renderProps", RenderProps);
 }

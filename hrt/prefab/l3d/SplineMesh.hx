@@ -37,6 +37,8 @@ class SplineMeshObject extends h3d.scene.Mesh {
 	}
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.spline_mesh)
+@:prefabName("Spline Mesh")
 class SplineMesh extends hrt.prefab.Object3D {
 
 	static var SPLINE_FMT = hxd.BufferFormat.make([{ name : "position", type : DVec3 }, { name : "normal", type : DVec3 }, { name : "tangent", type : DVec3 }, { name : "uv", type : DVec2 }]);

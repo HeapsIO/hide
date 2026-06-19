@@ -1,5 +1,7 @@
 package hrt.prefab.fx.gpuemitter;
 
+@:prefabCategory("Spawn")
+@:prefabHideInAddMenu
 class SpawnShader extends hrt.prefab.Shader {
 
 	override function applyShader(obj : h3d.scene.Object, mat : h3d.mat.Material, sh : hxsl.Shader) {
@@ -10,6 +12,10 @@ class SpawnShader extends hrt.prefab.Shader {
 		if ( prevSh != null )
 			gpuEmitter.spawnPass.removeShader(prevSh);
 		gpuEmitter.spawnPass.addShader(sh);
+	}
+
+	override function editorAllowParent(cl: Class<Prefab>) {
+		return Prefab.isOfType(cl, GPUEmitter);
 	}
 
 	#if editor

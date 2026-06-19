@@ -97,6 +97,8 @@ typedef InstanceData = {
 	var mesh : h3d.scene.Mesh;
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.spline_mesh_spawner)
+@:prefabName("Spline Mesh Spawner")
 class SplineMeshSpawner extends hrt.prefab.Object3D {
 
 	var spline(get, default) : Spline = null;

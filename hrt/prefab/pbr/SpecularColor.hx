@@ -11,6 +11,9 @@ enum abstract SpecularColorMode(String) {
 	var Texture;
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.specular_color)
+@:prefabName("Specular Color")
+@:prefabCategory("Shader")
 class SpecularColor extends Prefab {
 
 	// Amount of dielectric specular reflection. Specifies facing (along normal) reflectivity in the most common 0 - 8% range.
