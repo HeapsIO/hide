@@ -87,6 +87,8 @@ class Macros {
 					onAnyChange = null;
 				}
 
+
+
 				var args : BuildExprArgs = {
 					markup: markup,
 					outputExprs: [],
@@ -95,6 +97,11 @@ class Macros {
 					globalElements: [],
 					onAnyChange: onAnyChange,
 					index: 0,
+				}
+
+				if (onAnyChange != null) {
+					args.outputExprs.push(macro var __any_change = $onAnyChange);
+					args.onAnyChange = macro __any_change;
 				}
 
 
