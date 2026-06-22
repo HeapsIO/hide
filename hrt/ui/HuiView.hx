@@ -71,7 +71,7 @@ class HuiView<T> extends HuiElement {
 			errorMessage.addButton("Clear Error", () -> {currentException = null;});
 		}
 		if (currentExceptionTime == 1) {
-			errorMessage.childElements[1].remove();
+			errorMessage.buttons.childElements[1].remove();
 			errorMessage.addButton("Ignore Errors", () -> {suppressErrors = true; addSuppressErrorWarning();});
 		}
 		errorMessage.setError("Unhandled view exception", e);

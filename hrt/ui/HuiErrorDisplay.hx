@@ -10,7 +10,7 @@ class HuiErrorDisplay extends HuiPopup {
 			<hui-text id="error-title"/>
 			<hui-text id="error-exception"/>
 			<hui-virtual-list id="stack-trace"/>
-			<hui-element id="buttons">
+			<hui-element public id="buttons">
 				<hui-button id="copy-button"><hui-text("Copy Error")/></hui-button>
 			</hui-element>
 		</hui-error-display>
