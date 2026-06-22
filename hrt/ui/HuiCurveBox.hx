@@ -26,6 +26,7 @@ class HuiKeyPopup extends HuiPopup {
 		function onChange() {
 			k.time = Std.parseFloat(timeInput.text);
 			k.value = Std.parseFloat(valueInput.text);
+			k.mode = modeSelect.value;
 			@:privateAccess editor.fixKey(editor.value.keys.indexOf(k));
 		}
 
@@ -35,6 +36,7 @@ class HuiKeyPopup extends HuiPopup {
 			{ label: "Linear", value: 2},
 			{ label: "Constant", value: 3}
 		];
+		modeSelect.value = k.mode;
 
 		timeInput.text = '${k.time}';
 		valueInput.text = '${k.value}';
@@ -123,6 +125,8 @@ class HuiCurveEditor extends HuiPopup {
 	public static var GRID_ORIGIN_WIDTH = 2;
 	public static var CURVE_COLOR = 0x05f505;
 	public static var CURVE_WIDTH = 1;
+	public static var TAN_COLOR = 0x757575;
+	public static var TAN_WIDTH = 1;
 	public static var CURVE_PRECISION = 500;
 	public static var MIN_ZOOM = 0.1;
 	public static var MAX_ZOOM = 2;
@@ -145,7 +149,7 @@ class HuiCurveEditor extends HuiPopup {
 	var gridGraphics : h2d.Graphics;
 	var gridLabels = [];
 	var curveGraphics : h2d.Graphics;
-	var keysBitmaps = [];
+	var keysBitmaps : Array<{ bmp: HuiIcon, prevHandleBmp: HuiIcon, nextHandleBmp: HuiIcon, g : h2d.Graphics }> = [];
 	var draggedKey = -1;
 
 	inline function sx(px : Float) { return px * calculatedWidth * zoom.x + pan.x; }
@@ -330,13 +334,71 @@ class HuiCurveEditor extends HuiPopup {
 		selectionBounds.setWidth(0);
 
 		if (value.keys.length != keysBitmaps.length) {
-			for (k in keysBitmaps)
-				k.remove();
+			for (k in keysBitmaps) {
+				k.bmp.remove();
+				k.prevHandleBmp?.remove();
+				k.nextHandleBmp?.remove();
+			}
 			keysBitmaps = [];
 			for (idx => k in value.keys) {
 				var bmp = new HuiIcon("diamond", this);
 				bmp.alpha = 0.5;
-				keysBitmaps.push(bmp);
+
+				var g = new h2d.Graphics(this);
+				g.lineStyle(1, 333333, 1);
+
+				var prevHandleBmp = null;
+				if (k.nextHandle != null) {
+					prevHandleBmp = new HuiIcon("diamond", this);
+					prevHandleBmp.alpha = 0.5;
+
+					prevHandleBmp.onPush = (e) -> {
+						if (e.keyCode == hxd.Key.MOUSE_LEFT) {
+							onDrag = (e) -> {
+								var x = px(e.relX);
+								var y = py(e.relY);
+								value.keys[idx].prevHandle.dt = x - value.keys[idx].time;
+								value.keys[idx].prevHandle.dv = y - value.keys[idx].value;
+								fixKey(idx);
+							}
+						}
+					}
+
+					prevHandleBmp.onRelease = (e) -> {
+						if (onDragFinished != null)
+							onDragFinished(e);
+						onDrag = null;
+						onDragFinished = null;
+					}
+				}
+
+				var nextHandleBmp = null;
+				if (k.prevHandle != null) {
+					nextHandleBmp = new HuiIcon("diamond", this);
+					nextHandleBmp.alpha = 0.5;
+
+					nextHandleBmp.onPush = (e) -> {
+						if (e.keyCode == hxd.Key.MOUSE_LEFT) {
+							onDrag = (e) -> {
+								var x = px(e.relX);
+								var y = py(e.relY);
+								value.keys[idx].nextHandle.dt = x - value.keys[idx].time;
+								value.keys[idx].nextHandle.dv = y - value.keys[idx].value;
+								fixKey(idx);
+							}
+						}
+					}
+
+					nextHandleBmp.onRelease = (e) -> {
+						if (onDragFinished != null)
+							onDragFinished(e);
+						onDrag = null;
+						onDragFinished = null;
+					}
+				}
+
+				keysBitmaps.push({ bmp: bmp, prevHandleBmp: prevHandleBmp, nextHandleBmp: nextHandleBmp, g: g });
+
 				bmp.onPush = (e) -> {
 					if (e.keyCode == hxd.Key.MOUSE_LEFT) {
 						onDrag = (e) -> {
@@ -376,7 +438,21 @@ class HuiCurveEditor extends HuiPopup {
 		var iconSize = 20;
 		var b = new h2d.col.Bounds();
 		for (idx => k in value.keys) {
-			keysBitmaps[idx].setPosition(sx(k.time) - (iconSize / 2), sy(k.value) - (iconSize / 2));
+			var bitmap = keysBitmaps[idx];
+			bitmap.bmp.setPosition(sx(k.time) - (iconSize / 2), sy(k.value) - (iconSize / 2));
+			bitmap.g.clear();
+			bitmap.g.lineStyle(TAN_WIDTH, TAN_COLOR, 1);
+			if (bitmap.prevHandleBmp != null) {
+				bitmap.prevHandleBmp.setPosition(sx(k.time + k.prevHandle.dt) - (iconSize / 2), sy(k.value + k.prevHandle.dv) - (iconSize / 2));
+				bitmap.g.moveTo(sx(k.time), sy(k.value));
+				bitmap.g.lineTo(bitmap.prevHandleBmp.x + (iconSize / 2), bitmap.prevHandleBmp.y + (iconSize / 2));
+			}
+			if (bitmap.nextHandleBmp != null) {
+				bitmap.nextHandleBmp.setPosition(sx(k.time + k.nextHandle.dt) - (iconSize / 2), sy(k.value + k.nextHandle.dv) - (iconSize / 2));
+				bitmap.g.moveTo(sx(k.time), sy(k.value));
+				bitmap.g.lineTo(bitmap.nextHandleBmp.x + (iconSize / 2), bitmap.nextHandleBmp.y + (iconSize / 2));
+			}
+
 			b.addPoint(new h2d.col.Point(sx(k.time), sy(k.value)));
 		}
 
@@ -411,14 +487,20 @@ class HuiCurveEditor extends HuiPopup {
 
 	function select(keys : Array<Int>) {
 		if (selection != null)
-			for (s in selection)
-				keysBitmaps[s].alpha = 0.5;
+			for (s in selection) {
+				keysBitmaps[s].bmp.alpha = 0.5;
+				keysBitmaps[s].prevHandleBmp?.alpha = 0.5;
+				keysBitmaps[s].nextHandleBmp?.alpha = 0.5;
+			}
 
 		selection = keys;
 
 		if (selection != null)
-			for (s in selection)
-				keysBitmaps[s].alpha = 1;
+			for (s in selection) {
+				keysBitmaps[s].bmp.alpha = 1;
+				keysBitmaps[s].prevHandleBmp?.alpha = 1;
+				keysBitmaps[s].nextHandleBmp?.alpha = 1;
+			}
 	}
 
 	function delete(keys : Array<Int>) {
