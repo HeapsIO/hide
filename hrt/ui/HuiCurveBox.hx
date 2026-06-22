@@ -28,6 +28,8 @@ class HuiKeyPopup extends HuiPopup {
 			k.value = Std.parseFloat(valueInput.text);
 			k.mode = modeSelect.value;
 			@:privateAccess editor.fixKey(editor.value.keys.indexOf(k));
+			@:privateAccess editor.removeBitmapKeys();
+			@:privateAccess editor.refresh();
 		}
 
 		modeSelect.items = [
@@ -37,6 +39,7 @@ class HuiKeyPopup extends HuiPopup {
 			{ label: "Constant", value: 3}
 		];
 		modeSelect.value = k.mode;
+		modeSelect.onValueChanged = onChange;
 
 		timeInput.text = '${k.time}';
 		valueInput.text = '${k.value}';
@@ -334,12 +337,7 @@ class HuiCurveEditor extends HuiPopup {
 		selectionBounds.setWidth(0);
 
 		if (value.keys.length != keysBitmaps.length) {
-			for (k in keysBitmaps) {
-				k.bmp.remove();
-				k.prevHandleBmp?.remove();
-				k.nextHandleBmp?.remove();
-			}
-			keysBitmaps = [];
+			removeBitmapKeys();
 			for (idx => k in value.keys) {
 				var bmp = new HuiIcon("diamond", this);
 				bmp.alpha = 0.5;
@@ -479,6 +477,16 @@ class HuiCurveEditor extends HuiPopup {
 			selectionBounds.setWidth(Std.int(b.width));
 			selectionBounds.setHeight(Std.int(b.height));
 		}
+	}
+
+	function removeBitmapKeys() {
+		for (k in keysBitmaps) {
+			k.bmp.remove();
+			k.prevHandleBmp?.remove();
+			k.nextHandleBmp?.remove();
+			k.g.remove();
+		}
+		keysBitmaps = [];
 	}
 
 	function focus() {
