@@ -359,6 +359,15 @@ class HuiCurveEditor extends HuiPopup {
 								var y = py(e.relY);
 								value.keys[idx].prevHandle.dt = x - value.keys[idx].time;
 								value.keys[idx].prevHandle.dv = y - value.keys[idx].value;
+
+								if (k.mode == Aligned) {
+									var len = hxd.Math.distance(value.keys[idx].prevHandle.dt, value.keys[idx].prevHandle.dv);
+									var otherLen = hxd.Math.distance(value.keys[idx].nextHandle.dt, value.keys[idx].nextHandle.dv);
+
+									value.keys[idx].nextHandle.dt = (value.keys[idx].prevHandle.dt / len) * -otherLen;
+									value.keys[idx].nextHandle.dv = (value.keys[idx].prevHandle.dv / len) * -otherLen;
+								}
+
 								fixKey(idx);
 							}
 						}
@@ -384,6 +393,15 @@ class HuiCurveEditor extends HuiPopup {
 								var y = py(e.relY);
 								value.keys[idx].nextHandle.dt = x - value.keys[idx].time;
 								value.keys[idx].nextHandle.dv = y - value.keys[idx].value;
+
+								if (k.mode == Aligned) {
+									var len = hxd.Math.distance(value.keys[idx].nextHandle.dt, value.keys[idx].nextHandle.dv);
+									var otherLen = hxd.Math.distance(value.keys[idx].prevHandle.dt, value.keys[idx].prevHandle.dv);
+
+									value.keys[idx].prevHandle.dt = (value.keys[idx].nextHandle.dt / len) * -otherLen;
+									value.keys[idx].prevHandle.dv = (value.keys[idx].nextHandle.dv / len) * -otherLen;
+								}
+								
 								fixKey(idx);
 							}
 						}
