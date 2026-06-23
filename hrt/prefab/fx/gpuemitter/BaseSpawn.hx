@@ -33,6 +33,7 @@ class BaseSpawn extends ComputeUtils {
 		var emitNormal : Vec3;
 		var particleColor : Vec4;
 		function __init__() {
+			setLayout(64,1,1);
 			emitNormal = vec3(0.0, 0.0, 1.0);
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
 			life = mix(minLifeTime, maxLifeTime, (global.time + particleRandom) % 1.0);
