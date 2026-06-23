@@ -25,6 +25,10 @@ class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
 	}
 
 	override function loadFont(name: String) : h2d.Font {
+		return loadFontStatic(name);
+	}
+
+	public static function loadFontStatic(name: String) : h2d.Font {
 		var paths = fontPairs.get(name);
 		if (paths != null) {
 			var index = hrt.ui.HuiBase.highDpi ? 1 : 0;
