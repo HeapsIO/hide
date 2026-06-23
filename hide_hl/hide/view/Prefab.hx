@@ -484,9 +484,12 @@ class Prefab extends HuiView<{path: String}> {
 		}});
 	}
 
+	var delayedReload: haxe.Timer;
+
 	function onFileChange(fileEntry: hrt.tools.FileManager.FileEntry) {
 		if (fileEntry.getPath() == state.path) {
-			onExternalChange();
+			delayedReload?.stop();
+			delayedReload = haxe.Timer.delay(onExternalChange, 100);
 		}
 	}
 
@@ -559,32 +562,49 @@ class Prefab extends HuiView<{path: String}> {
 		hrt.tools.FileManager.inst.unwatchFileChange(onFileChange);
 	}
 
-	public function setPrefab(newPrefab: hrt.prefab.Prefab) {
-		if (prefab != null) {
-			removePrefabInstance(prefab);
-			prefab.shared.root2d.remove();
-			prefab.shared.root3d.remove();
-			interactives.clear();
-			prefab = null;
+	public function setPrefab(newPrefab: hrt.prefab.Prefab, recordUndo: Bool) {
+
+		var action = actionSetPrefab(newPrefab);
+
+		if (recordUndo) {
+			undo.run(action, true);
+			undo.markClean();
+		} else {
+			undo.reset();
+			action(false);
 		}
-		if (!newPrefab.shared.isInstance) {
-			throw "prefab must be an instance prefab to be editable";
+	}
+
+	public function actionSetPrefab(newPrefab: hrt.prefab.Prefab) : hrt.tools.Undo.Action {
+		var oldPrefab = prefab;
+		var clearSelection = actionMakeSelection([]);
+		return (isUndo) -> {
+			var prefab = isUndo ? oldPrefab : newPrefab;
+
+			if (this.prefab != null) {
+				removePrefabInstance(this.prefab);
+				this.prefab.shared.root2d.remove();
+				this.prefab.shared.root3d.remove();
+				this.interactives.clear();
+				this.prefab = null;
+			}
+
+
+			this.prefab = prefab;
+
+			tryMake(prefab);
+
+			sceneEditor.resetCamera();
+			sceneEditor.updateDebugOverlayVisibility();
+
+			clearSelection(isUndo);
 		}
-
-		prefab = newPrefab;
-
-		tryMake(prefab);
-		// makeRenderProps();
-
-		sceneEditor.resetCamera();
-
-		sceneEditor.updateDebugOverlayVisibility();
 	}
 
 	/**
 		Try to make the given prefab. If the prefab is already instantiated, tries do cleanup it first.
-		It should be an error to call this on a prefab that is not the root without also rebuilding this prefab sibiling,
-		as it will change the ordering of the heaps objects in the scene (which can cause subtle differences, espetially with 2d scenes where the order really matters).
+		It should be an error to call this on a prefab that is not the root without also rebuilding this prefab sibling,
+		as it will change the ordering of the heaps objects in the scene (which can cause subtle differences, especially with 2d scenes where the order really matters).
 		For that you should call tryMakeChildren(prefab.parent) instead.
 	**/
 	public function tryMake(prefab: hrt.prefab.Prefab) {
@@ -704,15 +724,20 @@ class Prefab extends HuiView<{path: String}> {
 	function load(path : String) {
 		try {
 			var prefabData = hxd.res.Loader.currentInstance.load(path).toPrefab().loadBypassCache().clone();
-			setPrefab(prefabData);
+			setPrefab(prefabData, prefab != null);
 		} catch(e) {
 			sceneEditor.setCriticalError('Couldn\'t load $path', e);
 		}
 	}
 
 	var waitingExternal = false;
+	var ignoreReload = true;
 	function onExternalChange() {
-		if (waitingExternal)
+		delayedReload.stop();
+		delayedReload = null;
+		var wasIgnored = ignoreReload;
+		ignoreReload = false;
+		if (waitingExternal || wasIgnored)
 			return;
 
 		if (hasUnsavedChanges) {
@@ -1018,6 +1043,7 @@ class Prefab extends HuiView<{path: String}> {
 			var data = prefab.serialize();
 			var realPath = hide.Ide.inst.getPath(path);
 			var text = hide.Ide.inst.toJSON(data);
+			ignoreReload = true;
 			sys.io.File.saveContent(realPath, text);
 
 			hide.App.defer(() -> saveBackup(text, path));

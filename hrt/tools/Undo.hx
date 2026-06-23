@@ -8,7 +8,13 @@ class Undo {
 	var lastSaveUndo: Any = null;
 
 	public function new() {
+		reset();
+	}
 
+	public function reset() {
+		stack = [];
+		currentAction = -1;
+		lastSaveUndo = null;
 	}
 
 	public function record(action: Action, hasDataChanges: Bool) {
