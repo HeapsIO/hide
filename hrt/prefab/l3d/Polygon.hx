@@ -318,6 +318,100 @@ class Polygon extends Object3D {
 		return Std.downcast(mesh.primitive, h3d.prim.Polygon);
 	}
 
+	override public function edit2(ctx: EditContext2) {
+		super.edit2(ctx);
+
+		var viewModel = {
+			kind: shape.getName(),
+			subdivision: 0,
+			segments: 16,
+			segmentsH : 16,
+			rings: 4,
+			innerRadius: 0.0,
+			angle: 360.0,
+			axis: 2, // default to Z axis
+		};
+
+		switch(shape) {
+			case Quad(subdivision):
+				viewModel.subdivision = subdivision;
+			case Disc(seg, angle, inner, rings):
+				viewModel.segments = seg;
+				viewModel.angle = angle;
+				viewModel.innerRadius = inner;
+			case Custom:
+			case Sphere(segw, segh):
+				viewModel.segments = segw;
+				viewModel.segmentsH = segh;
+			case Capsule(segw, segh, axis):
+				viewModel.segments = segw;
+				viewModel.segmentsH = segh;
+				viewModel.axis = axis ?? 0;
+			case Box:
+		}
+
+		function onChange(isTemp) {
+			switch( viewModel.kind ) {
+				case "Quad":
+					shape = Quad(viewModel.subdivision);
+				case "Disc":
+					shape = Disc(viewModel.segments, viewModel.angle, viewModel.innerRadius, viewModel.rings);
+				case "Sphere":
+					shape = Sphere(viewModel.segments, viewModel.segmentsH);
+				case "Capsule":
+					shape = Capsule(viewModel.segments, viewModel.segmentsH, cast viewModel.axis);
+				case "Box":
+					shape = Box;
+				case "Custom":
+					shape = Custom;
+				default:
+					throw "???";
+			}
+		}
+
+		function changeShape(isTemp: Bool) {
+			var prevShape = shape;
+			onChange(isTemp);
+			if (prevShape.getIndex() == shape.getIndex())
+				return;
+			if (shape == Custom) {
+				if (prevShape.match(Quad(_))) {
+					points = [
+						new Point(-scaleX/2, -scaleY/2),
+						new Point(-scaleX/2, scaleY/2),
+						new Point(scaleX/2, scaleY/2),
+						new Point(scaleX/2, -scaleY/2)
+					];
+					scaleX = 1.0; scaleY = 1.0;
+				} else {
+					points = [];
+				}
+			} else {
+				points = null;
+			}
+			ctx.rebuildInspector();
+		}
+
+		ctx.build(
+			<category("Shape")>
+				<select(["Quad", "Disc", "Sphere", "Capsule", "Box", "Custom"]) field={kind} onValueChange={changeShape}/>
+
+				<range(0, 100) int field={segments}/>
+				<range(0, 100) int field={segmentsH} if (viewModel.kind != "Quad" && viewModel.kind != "Disc")/>
+
+				<block if(viewModel.kind == "Disc")>
+					<range(0, 100) field={rings}/>
+					<range(0.0, 1.0) field={innerRadius}/>
+					<range(0.0, 360.0) field={angle}/>
+				</block>
+
+				<block if(viewModel.kind == "Capsule")>
+					<select([{value: 0, label: "X"},{value: 1, label: "Y"} , {value: 2, label: "Z"}]) field={axis}/>
+				</block>
+			</category>
+		, viewModel, onChange);
+	}
+
 	#if editor
 	function clearCustomPolygonCache() {
 		if(cachedPrim != null) {
