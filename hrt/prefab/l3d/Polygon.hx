@@ -503,6 +503,7 @@ class Polygon extends Object3D {
 		updateProps = function() {
 			quadProps.hide();
 			discProps.hide();
+			sphereProps.hide();
 			editorProps.hide();
 			capsuleProps.hide();
 			switch(viewModel.kind){
