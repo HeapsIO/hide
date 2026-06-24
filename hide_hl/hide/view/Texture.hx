@@ -60,7 +60,22 @@ private class TextureViewerShader extends hxsl.Shader {
 
 class Texture extends HuiView<{path: String}> {
 	static var SRC = <texture>
-		
+		<hui-split-container id="container" direction={hrt.ui.HuiSplitContainer.Direction.Horizontal} anchor-to={hrt.ui.HuiSplitContainer.AnchorTo.End} save-display-key="texutre-panel-split">
+			<hui-element id="viewer"></hui-element>
+			<hui-element id="details">
+				<hui-category("Compression")>
+					<hui-element class="horizontal"><hui-text("Compressed texture weight") class="label"/><hui-text("1 MB") class="value"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Uncompressed texture weight") class="label"/><hui-text("10 MB") class="value"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Format") class="label"/><hui-select class="value"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Alpha") class="label"/><hui-select class="value"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Mip Maps") class="label"/><hui-select class="value"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Size") class="label"/><hui-select class="value"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Filter") class="label"/><hui-select class="value"/></hui-element>
+					<hui-button><hui-text("Reset Preview")/></hui-button>
+					<hui-button><hui-text("Reset Compression")/></hui-button>
+				</hui-category>
+			</hui-element>
+		</hui-split-container>
 	</texture>
 
 	static var _ = HuiView.register("texture", Texture);
@@ -68,27 +83,57 @@ class Texture extends HuiView<{path: String}> {
 	static var TRANSPARENT_TEX_PATH = 'ui/transparent_tiles_dark.png';
 	
 	public var bmp : h2d.Bitmap;
-	// public var camCtrl : h2d.CameraController;
 	var shader : TextureViewerShader;
+	var zoom : Float = 1;
+	var pan : h2d.col.Point = new h2d.col.Point(0, 0);
+	var onDrag : (e : hxd.Event) -> Void;
 
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
 		initComponent();
 
-		this.backgroundType = "hui";
+		viewer.backgroundType = "hui";
 		var tex = HuiRes.loader.load(TRANSPARENT_TEX_PATH).toImage().toTexture();
 		tex.wrap = Repeat;
-		this.huiBg.setTexture(tex);
-		this.huiBg.imageMode = CssParser.BackgroundImageMode.Repeat;
-		var tex = HuiRes.loader.load(TRANSPARENT_TEX_PATH).toImage().toTexture();
-
-		shader = new TextureViewerShader();
+		viewer.huiBg.setTexture(tex);
+		viewer.huiBg.imageMode = CssParser.BackgroundImageMode.Repeat;
 
 		load(state.path);
-
-		// camCtrl = new h2d.CameraController(this);
-
 		buildToolbar();
+
+		viewer.onAfterReflow = () -> {
+			refresh();
+		}
+
+		viewer.onWheel = (e : hxd.Event) -> {
+			var amount = e.wheelDelta * -0.1;
+			zoom += amount;
+			refresh();
+		}
+
+		viewer.onPush = (e : hxd.Event) -> {
+			if (onDrag != null)
+				return;
+
+			var originDrag = new h2d.col.Point(e.relX, e.relY);
+			var originPan = pan.clone();
+			onDrag = (e) -> {
+				var dx = e.relX - originDrag.x;
+				pan.x = originPan.x + dx;
+				var dy = e.relY - originDrag.y;
+				pan.y = originPan.y + dy;
+				refresh();
+			}
+		}
+
+		viewer.onMove = (e : hxd.Event) -> {
+			if (onDrag != null)
+				onDrag(e);
+		}
+
+		viewer.onRelease = (e : hxd.Event) -> {
+			onDrag = null;
+		}
 	}
 
 	override function getViewName():String {
@@ -208,9 +253,16 @@ class Texture extends HuiView<{path: String}> {
 		return widgets;
 	}
 
+	function refresh() {
+		this.bmp.scaleX = this.bmp.scaleY = zoom;
+		this.bmp.x = pan.x;
+		this.bmp.y = pan.y;
+	}
+
 	function load(path : String) {
 		if (bmp == null) {
-			bmp = new h2d.Bitmap(null, this);
+			bmp = new h2d.Bitmap(null, viewer);
+			shader = new TextureViewerShader();
 			bmp.addShader(shader);
 			for (idx in 0...4)
 				setChannelVisible(idx, true);
