@@ -163,6 +163,8 @@ class TrailObj extends h3d.scene.Mesh {
 			alloc.disposeIndexes(ibuf);
 			ibuf = null;
 		}
+		points = null;
+		trails = null;
 	}
 
 	public function init() {
@@ -237,6 +239,12 @@ class TrailObj extends h3d.scene.Mesh {
 	function disposePoint(p : TrailPoint) {
 		p.next = pool;
 		pool = p;
+	}
+
+	override function onAdd() {
+		super.onAdd();
+		if( points == null )
+			init();
 	}
 
 	override function onRemove() {
@@ -390,8 +398,6 @@ class TrailObj extends h3d.scene.Mesh {
 
 		ignoreCollide = true;
 		ignoreBounds = true;
-
-		init();
 	}
 
 	var lastUpdateDuration = 0.0;
@@ -518,6 +524,9 @@ class TrailObj extends h3d.scene.Mesh {
 	}
 
 	public function update(dt: Float) {
+		if( points == null )
+			init();  // FXEditor can update before onAdd
+
 		cooldown -= dt;
 
 		// Recompute some values of those were based on previous s3d positions
