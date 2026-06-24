@@ -1,6 +1,6 @@
 package hide.kit;
 
-#if domkit
+#if (domkit && cdb)
 
 import hide.comp.cdb.DataFiles;
 

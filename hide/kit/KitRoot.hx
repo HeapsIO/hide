@@ -137,9 +137,11 @@ class KitRoot #if !macro extends Element #end {
 	}
 
 	public function postEditStep() {
+		#if cdb
 		if (prefab != null) {
 			new CDB(this, "cdb");
 		}
+		#end
 	}
 
 	#end
