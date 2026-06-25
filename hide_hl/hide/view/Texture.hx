@@ -67,10 +67,10 @@ class Texture extends HuiView<{path: String}> {
 					<hui-element class="horizontal"><hui-text("Compressed texture weight") class="label"/><hui-text("1 MB") class="value" id="weight-compressed-el"/></hui-element>
 					<hui-element class="horizontal"><hui-text("Uncompressed texture weight") class="label"/><hui-text("10 MB") class="value" id="weight-uncompressed-el"/></hui-element>
 					<hui-element class="horizontal"><hui-text("Format") class="label"/><hui-select class="value" id="format-sel"/></hui-element>
-					<hui-element class="horizontal"><hui-text("Alpha") class="label"/><hui-select class="value"/></hui-element>
-					<hui-element class="horizontal"><hui-text("Mip Maps") class="label"/><hui-select class="value"/></hui-element>
-					<hui-element class="horizontal"><hui-text("Size") class="label"/><hui-select class="value"/></hui-element>
-					<hui-element class="horizontal"><hui-text("Filter") class="label"/><hui-select class="value"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Alpha") class="label"/><hui-checkbox id="use-alpha-cb"/><hui-input-box class="value" id="alpha-input"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Mip Maps") class="label"/><hui-checkbox id="mips"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Size") class="label"/><hui-input-box id="size" class="value"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Filter") class="label"/><hui-select id="filter-sel" class="value"/></hui-element>
 					<hui-button class="full" id="reset-soft-btn"><hui-text("Reset Preview")/></hui-button>
 					<hui-button class="full" id="reset-full-btn"><hui-text("Reset Compression")/></hui-button>
 				</hui-category>
@@ -82,6 +82,9 @@ class Texture extends HuiView<{path: String}> {
 
 	static var TRANSPARENT_TEX_PATH = 'ui/transparent_tiles_dark.png';
 	static var MIN_ZOOM = 0.01;
+	static var DEFAULT_FILTER = "Box";
+	static var FILTERS = ["Point", "Box"];
+	static var FITLER_PARAMS = ["POINT", "FANT"];
 	
 	public var bmp : h2d.Bitmap;
 	var shader : TextureViewerShader;
@@ -287,6 +290,88 @@ class Texture extends HuiView<{path: String}> {
 		formatSel.value = convertRuleEmpty ? null : texConvRule.cmd.params.format;		
 	}
 
+	function createPreviewTexture(format: Element, useAlpha: Element, alpha: Element, mips: Element, size: Element, filter: Element) {
+		var dirPos = state.path.lastIndexOf("/");
+		var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
+		var tmpPath = StringTools.replace(Sys.getEnv("TEMP"), "\\","/") + "/tempTexture.dds";
+
+		if (format.val().toString() != "none") {
+			var comp = new hxd.fs.Convert.CompressIMG("png,tga,jpg,jpeg,dds,envd,envs","dds");
+			comp.srcPath = Ide.inst.getPath(state.path);
+			comp.dstPath = Ide.inst.getPath(tmpPath);
+			comp.originalFilename = name;
+			comp.params = getConvertRule();
+
+			try {
+				comp.convert();
+			}
+			catch(e) onError();
+		}
+		else {
+			tmpPath = state.path;
+		}
+
+		replaceImage(Ide.inst.getPath(tmpPath));
+	}
+
+	public function replaceImage(path : String) {
+		var bytes = sys.io.File.getBytes(path);
+		var res = hxd.res.Any.fromBytes(path, bytes);
+		var t = res.toTexture();
+
+		if (bmp != null) {
+			if (!bmp.tile.isDisposed())
+				bmp.tile.dispose();
+
+			bmp.remove();
+			bmp = null;
+		}
+
+		// if( !t.flags.has(Cube) ) {
+		// 	bmp.tile = h2d.Tile.fromTexture(t);
+		// 	// drawSlider();
+		// 	// bmp.addShader(shader);
+		// 	if( t.layerCount > 1 ) {
+		// 		shader.isArray = true;
+		// 		shader.textureArray = cast(t, h3d.mat.TextureArray);
+		// 		tools.addRange("Layer", function(f) shader.layer = f, 0, 0, t.layerCount-1, 1);
+		// 	} else
+		// 	shader.compressedTex = t;
+		// } else {
+		// 	var r = new h3d.scene.fwd.Renderer();
+		// 	var ls = new h3d.scene.fwd.LightSystem();
+		// 	ls.ambientLight.set(1,1,1);
+		// 	scene.s3d.lightSystem = ls;
+		// 	scene.s3d.renderer = r;
+		// 	var sp = new h3d.prim.Sphere(1,64,64);
+		// 	sp.addNormals();
+		// 	sp.addUVs();
+		// 	shader.textureCube = t;
+		// 	shader.isCube = true;
+		// 	var sp = new h3d.scene.Mesh(sp, scene.s3d);
+		// 	sp.material.texture = t;
+		// 	sp.material.mainPass.addShader(shader);
+		// 	sp.material.shadows = false;
+		// }
+
+		// tools.element.find(".hide-range").remove();
+
+		// if( t.flags.has(MipMapped) ) {
+		// 	t.mipMap = Linear;
+		// 	tools.addRange("MipMap", function(f) shader.mipLod = f, 0, 0, t.mipLevels - 1, "mipmap");
+		// }
+
+		// if( hxd.Pixels.isFloatFormat(t.format) ) {
+		// 	tools.addRange("Exposure", function(f) shader.exposure = f, 0, -10, 10);
+		// }
+
+		// var compTexMemSize = element.find(".comp-tex-weight");
+		// compTexMemSize.text('Compressed texture weight : ${@:privateAccess floatToStringPrecision(t.mem.memSize(t) / (1024 * 1024)) } MB');
+
+		// applyShaderConfiguration();
+		// onResize();
+	}
+
 	function load(path : String) {
 		if (bmp == null) {
 			bmp = new h2d.Bitmap(null, viewer);
@@ -319,6 +404,37 @@ class Texture extends HuiView<{path: String}> {
 	function floatToStringPrecision(number:Float, ?precision=2) {
 		number *= Math.pow(10, precision);
 		return Math.round(number) / Math.pow(10, precision);
+	}
+
+	function filterToParam(f : String) {
+		return FITLER_PARAMS[FILTERS.indexOf(f)];
+	}
+
+	function paramToFilter(p : String) {
+		return FILTERS[FITLER_PARAMS.indexOf(p)];
+	}
+
+	function getConvertRule() {
+		if (formatSel.value == null)
+			return { convert : "none", priority: 10000000 };
+
+		var	convertRule = { convert : "dds", format : formatSel.value, mips : mips.value, priority: 10000000 };
+		if (Std.parseInt(size.text) != getTextureMaxSize()) {
+			Reflect.setField(convertRule, "size", Std.parseInt(size.text));
+			Reflect.setField(convertRule, "filter", filterToParam(filterSel.value));
+		}
+		if (useAlphaCb.value)
+			Reflect.setField(convertRule, "alpha", Std.parseInt(alphaInput.text));
+		return convertRule;
+	}
+
+	function getTextureMaxSize(): Int {
+		var path = Ide.inst.getPath(state.path);
+		var bytes = sys.io.File.getBytes(path);
+		var res = hxd.res.Any.fromBytes(path, bytes);
+		var t = res.toTexture();
+
+		return t.width;
 	}
 
 	function onError() {
