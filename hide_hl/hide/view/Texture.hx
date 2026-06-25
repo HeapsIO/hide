@@ -64,15 +64,15 @@ class Texture extends HuiView<{path: String}> {
 			<hui-element id="viewer"></hui-element>
 			<hui-element id="details">
 				<hui-category("Compression")>
-					<hui-element class="horizontal"><hui-text("Compressed texture weight") class="label"/><hui-text("1 MB") class="value"/></hui-element>
-					<hui-element class="horizontal"><hui-text("Uncompressed texture weight") class="label"/><hui-text("10 MB") class="value"/></hui-element>
-					<hui-element class="horizontal"><hui-text("Format") class="label"/><hui-select class="value"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Compressed texture weight") class="label"/><hui-text("1 MB") class="value" id="weight-compressed-el"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Uncompressed texture weight") class="label"/><hui-text("10 MB") class="value" id="weight-uncompressed-el"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Format") class="label"/><hui-select class="value" id="format-sel"/></hui-element>
 					<hui-element class="horizontal"><hui-text("Alpha") class="label"/><hui-select class="value"/></hui-element>
 					<hui-element class="horizontal"><hui-text("Mip Maps") class="label"/><hui-select class="value"/></hui-element>
 					<hui-element class="horizontal"><hui-text("Size") class="label"/><hui-select class="value"/></hui-element>
 					<hui-element class="horizontal"><hui-text("Filter") class="label"/><hui-select class="value"/></hui-element>
-					<hui-button><hui-text("Reset Preview")/></hui-button>
-					<hui-button><hui-text("Reset Compression")/></hui-button>
+					<hui-button class="full" id="reset-soft-btn"><hui-text("Reset Preview")/></hui-button>
+					<hui-button class="full" id="reset-full-btn"><hui-text("Reset Compression")/></hui-button>
 				</hui-category>
 			</hui-element>
 		</hui-split-container>
@@ -81,6 +81,7 @@ class Texture extends HuiView<{path: String}> {
 	static var _ = HuiView.register("texture", Texture);
 
 	static var TRANSPARENT_TEX_PATH = 'ui/transparent_tiles_dark.png';
+	static var MIN_ZOOM = 0.01;
 	
 	public var bmp : h2d.Bitmap;
 	var shader : TextureViewerShader;
@@ -100,6 +101,12 @@ class Texture extends HuiView<{path: String}> {
 
 		load(state.path);
 		buildToolbar();
+		
+		var items = [ for (k in @:privateAccess hxd.fs.Convert.CompressIMG.TEXCONV_FMT.keys()) { label: k, value: k } ];
+		items.insert(0, { label: "None", value : null });
+		formatSel.items = [ for (k in @:privateAccess hxd.fs.Convert.CompressIMG.TEXCONV_FMT.keys()) { label: k, value: k } ];
+		
+		refreshInspector();
 
 		viewer.onAfterReflow = () -> {
 			refresh();
@@ -107,7 +114,7 @@ class Texture extends HuiView<{path: String}> {
 
 		viewer.onWheel = (e : hxd.Event) -> {
 			var amount = e.wheelDelta * -0.1;
-			zoom += amount;
+			zoom = hxd.Math.max(zoom + amount, MIN_ZOOM);
 			refresh();
 		}
 
@@ -259,6 +266,27 @@ class Texture extends HuiView<{path: String}> {
 		this.bmp.y = pan.y;
 	}
 
+	function refreshInspector() {
+		var relPath = Ide.inst.getRelPath(state.path);
+
+		// We want to clear file system because we don't want to load texture from older texture's convert rules
+		var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		@:privateAccess fs.convert.configs.clear();
+		@:privateAccess fs.convert.loadConfig(relPath);
+
+		var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, relPath, Ide.inst.getPath(relPath));
+		try { fs.convert.run(localEntry); }
+		catch (e) onError();
+
+		@:privateAccess var texConvRule = fs.convert.getConvertRule(relPath);
+		var convertRuleEmpty = texConvRule == null || texConvRule.cmd == null || texConvRule.cmd.params == null;
+
+		weightUncompressedEl.text = '${@:privateAccess floatToStringPrecision(shader.uncompressedTex.mem.memSize(shader.uncompressedTex) / (1024 * 1024)) } MB';
+		weightCompressedEl.text = '${getTextureMemSize(shader.compressedTex)} MB';
+
+		formatSel.value = convertRuleEmpty ? null : texConvRule.cmd.params.format;		
+	}
+
 	function load(path : String) {
 		if (bmp == null) {
 			bmp = new h2d.Bitmap(null, viewer);
@@ -282,6 +310,19 @@ class Texture extends HuiView<{path: String}> {
 	function setChannelVisible(channelIdx : Int, visible : Bool) {
 		shader.channels &= ~(1 << channelIdx);
 		if (visible) shader.channels |= 1 << channelIdx;
+	}
+
+	function getTextureMemSize(tex: h3d.mat.Texture) {
+		return @:privateAccess floatToStringPrecision(tex.mem.memSize(tex) / (1024 * 1024));
+	}
+
+	function floatToStringPrecision(number:Float, ?precision=2) {
+		number *= Math.pow(10, precision);
+		return Math.round(number) / Math.pow(10, precision);
+	}
+
+	function onError() {
+		Ide.showError('Can\'t load texture with this compression parameters, original texture is loaded instead!');
 	}
 }
 #end

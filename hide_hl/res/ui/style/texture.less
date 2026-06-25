@@ -2,13 +2,15 @@ texture {
 	#container {
 		fill-width: true;
 		fill-height: true;
+		auto-size: 1;
 
 		#details {
 			hui-category {
 				valign: top;
+				auto-size: 1;
 
 				.horizontal {
-					fill-width: true;
+					fill-width: false;
 					margin: 2px;
 				}
 
@@ -19,10 +21,32 @@ texture {
 				.label { 
 					margin-right: 5px;
 					color: darken(@text-color, 20%);
+					valign: middle;
 				}
 
 				.value {
-					
+					auto-size: 1;
+					fill-width: false;
+				}
+
+				.full {
+					fill-width: true;
+					padding: 6;
+					margin: 5 5 0 5;
+				}
+
+				#reset-full-btn {
+					background-type: hui;
+					> hui-background {
+						background: @color-red;
+						background-alpha: 0.2;
+					}
+
+					&:hover {
+						> hui-background {
+							background-alpha: 1;
+						}
+					}
 				}
 			}
 		}
