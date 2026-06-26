@@ -161,10 +161,10 @@ class HuiScene extends HuiElement {
 
 		display.width = innerWidth;
 		display.height = innerHeight;
-		s2d.scaleMode = Custom(innerWidth, innerHeight, 1, 1);
+		s2d.scaleMode = Custom(innerWidth, innerHeight, scale, scale);
 		var pos = this.getAbsPos().getPosition();
-		@:privateAccess s2d.offsetX = pos.x;
-		@:privateAccess s2d.offsetY = pos.y;
+		@:privateAccess s2d.offsetX = pos.x * scale;
+		@:privateAccess s2d.offsetY = pos.y  * scale;
 
 		var scenePosition = {
 			offsetX : pos.x,
