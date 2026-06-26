@@ -57,6 +57,7 @@ class PbrMaterial extends AnyPropsEditor<h3d.mat.PbrMaterial> {
 				<slider field={emissive} min={0}/>
 				<slider field={parallax} min={0}/>
 				<slider int field={parallaxSteps} min={0}/>
+				<checkbox field={invertBasis}/>
 				<checkbox field={shadows}/>
 				<select([
 					{value: "None", label:"None"},
