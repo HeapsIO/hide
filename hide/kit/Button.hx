@@ -85,8 +85,13 @@ class Button extends Element {
 
 		syncHightlight();
 		#elseif hui
-		button = new hrt.ui.HuiButton();
+		var button =new hrt.ui.HuiButton();
+		this.button = button;
 		new hrt.ui.HuiText(label, button);
+		button.onClick = (e) -> {
+			if (e.button == 0)
+				onClick();
+		}
 		#end
 		setupPropLine(null, button);
 	}

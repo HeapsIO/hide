@@ -44,6 +44,7 @@ class Prefab extends HuiView<{path: String}> {
 	public var config(default, null) : hide.Config;
 	public var hidden : Map<hrt.prefab.Prefab, Bool> = new Map();
 
+	var currentEditContext: EditContext;
 	var prefabLookup : Map<h3d.scene.Object, hrt.prefab.Object3D> = new Map();
 	var gizmo : hrt.tools.Gizmo = null;
 	var rethrowMakeErrors: Bool = false;
@@ -471,6 +472,13 @@ class Prefab extends HuiView<{path: String}> {
 		if (crashSyncOneFrame) {
 			crashSyncOneFrame = false;
 			throw "test crash sync one frame";
+		}
+
+		if (currentEditContext != null) {
+			@:privateAccess currentEditContext.foregroundEditorTool?.update(ctx.elapsedTime);
+			for (tool in currentEditContext.otherEditorTools) {
+				@:privateAccess tool.update(ctx.elapsedTime);
+			}
 		}
 	}
 
@@ -1103,8 +1111,15 @@ class Prefab extends HuiView<{path: String}> {
 	function refreshInspector() {
 		var prefabs = [for (prefab => _ in selectedPrefabs) prefab];
 
+
+		if (currentEditContext != null ) {
+			@:privateAccess currentEditContext.cleanup();
+			currentEditContext = null;
+		}
+
 		sceneEditor.inspectorPanel.removeChildElements();
 		sceneEditor.inspectorRoot = null;
+
 
 		if (prefabs.length == 0)
 			return;
@@ -1127,19 +1142,21 @@ class Prefab extends HuiView<{path: String}> {
 				break;
 		}
 
-		var editContext = new EditContext(this, null);
-		sceneEditor.inspectorRoot = new hide.kit.KitRoot(null, null, editPrefab, editContext);
+
+
+		currentEditContext = new EditContext(this, null);
+		sceneEditor.inspectorRoot = new hide.kit.KitRoot(null, null, editPrefab, currentEditContext);
 		sceneEditor.inspectorRoot.doTry = inspectorDoTry.bind(editPrefab);
 		@:privateAccess sceneEditor.inspectorRoot.isMultiEdit = isMultiEdit;
 
-		@:privateAccess editContext.saveKey = Type.getClassName(commonClass);
-		editContext.root = sceneEditor.inspectorRoot;
+		@:privateAccess currentEditContext.saveKey = Type.getClassName(commonClass);
+		currentEditContext.root = sceneEditor.inspectorRoot;
 
 		static final inspectorErrorMsg = "Couldn't create the inspector";
 
 		var inspectorError : PrefabError = null; // If building the inspector results in an error
 		try {
-			editPrefab.edit2(editContext);
+			editPrefab.edit2(currentEditContext);
 			sceneEditor.inspectorRoot.postEditStep();
 		} catch(e) {
 			inspectorError = {title: inspectorErrorMsg, exception: e};
@@ -1147,7 +1164,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		if (isMultiEdit && inspectorError == null) {
 			for (i => prefab in prefabs) {
-				var childEditContext = new EditContext(this, editContext);
+				var childEditContext = new EditContext(this, currentEditContext);
 				@:privateAccess childEditContext.saveKey = Type.getClassName(commonClass);
 				var childRoot = new hide.kit.KitRoot(null, null, prefab, childEditContext);
 				sceneEditor.inspectorRoot.doTry = inspectorDoTry.bind(prefab);

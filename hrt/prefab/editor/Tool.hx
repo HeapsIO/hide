@@ -11,9 +11,17 @@ class Tool {
 	var enabled: Bool;
 	var interactive: h2d.Interactive;
 
-	var s3d: h3d.scene.Scene;
-	var s2d: h2d.Scene;
+	var s3d(get, never): h3d.scene.Scene;
+	var s2d(get, never): h2d.Scene;
 	var ctx: EditContext2;
+
+	function get_s3d() {
+		return ctx.s3d;
+	}
+
+	function get_s2d() {
+		return ctx.s2d;
+	}
 
 	var debugText: h2d.Text;
 
@@ -93,6 +101,8 @@ class Tool {
 		if (!mouseSupport || !enabled)
 			return;
 		interactive = new h2d.Interactive(10000, 10000, ctx.s2d);
+		interactive.x = -5000;
+		interactive.y = -5000;
 		interactive.propagateEvents = true;
 		interactive.cancelEvents = false;
 		postInitInteractive();
