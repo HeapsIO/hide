@@ -52,7 +52,7 @@ class FileEntry {
 	public var vcsStatus: VCSStatus = None;
 	public var ignored: Bool = false;
 
-	var registeredWatcher : hide.tools.FileWatcher.FileWatchEvent = null;
+	var nativeWatcher = null;
 
 	public function new(name: String, parent: FileEntry, kind: FileKind) {
 		this.name = name;
@@ -78,10 +78,8 @@ class FileEntry {
 		}
 		disposed = true;
 		children = null;
-		if (registeredWatcher != null) {
-			hide.Ide.inst.fileWatcher.unregister(this.getPath(), registeredWatcher.fun);
-			registeredWatcher = null;
-		}
+		nativeWatcher.close();
+		nativeWatcher = null;
 		FileManager.inst.fileIndex.remove(this.getRelPath());
 	}
 
@@ -132,11 +130,27 @@ class FileEntry {
 	}
 
 	function watch() {
-		if (registeredWatcher != null)
-			throw "already watching";
+		if (kind == Dir) {
+			nativeWatcher = js.node.Fs.watch(getPath(), onWatcherEvent);
+		}
+	}
 
-		var rel = this.getRelPath();
-		registeredWatcher = hide.Ide.inst.fileWatcher.register(rel, FileManager.inst.fileChangeInternal.bind(this), true);
+	function onWatcherEvent(type, path) {
+		if (path == ".tmp")
+			return;
+
+		var base = getRelPath();
+		var filePath : String = base.length > 0 ? base + "/" + path : path;
+
+		var child = FileManager.inst.getFileEntry(filePath);
+		trace(filePath);
+		if (child != null) {
+			trace("reload child");
+			FileManager.inst.fileChangeInternal(child);
+		} else {
+			trace("reload parent");
+			FileManager.inst.fileChangeInternal(this);
+		}
 	}
 
 	public inline function getRelPath() {
@@ -208,6 +222,8 @@ class FileManager {
 
 
 	var fileEntryRefreshDelay : Delayer<FileEntry>;
+
+	var watcher : js.node.fs.FSWatcher;
 
 	var retries = 0;
 	static final maxRetries = 5;
