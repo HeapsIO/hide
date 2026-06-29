@@ -266,6 +266,8 @@ class TrailObj extends h3d.scene.Mesh {
 	}
 
 	public function reset() {
+		if( points == null )
+			return;
 		for (i in 0...numTrails) {
 			var t = trails[i];
 			var p = t.firstPoint;
