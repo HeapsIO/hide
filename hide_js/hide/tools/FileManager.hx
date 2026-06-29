@@ -143,12 +143,9 @@ class FileEntry {
 		var filePath : String = base.length > 0 ? base + "/" + path : path;
 
 		var child = FileManager.inst.getFileEntry(filePath);
-		trace(filePath);
 		if (child != null) {
-			trace("reload child");
 			FileManager.inst.fileChangeInternal(child);
 		} else {
-			trace("reload parent");
 			FileManager.inst.fileChangeInternal(this);
 		}
 	}
