@@ -98,6 +98,7 @@ class HuiScene extends HuiElement {
 
 		#if editor_hl
 		sceneInfos = new HuiSceneInfos(this, this);
+		showSceneInfos = showSceneInfos;
 		#end
 
 		// new h3d.scene.Box(0x000000, s3d);
@@ -132,12 +133,6 @@ class HuiScene extends HuiElement {
 			var scene = getScene();
 			var scale = getScene().viewportScaleX;
 
-			s3d.scenePosition = s3d.scenePosition ?? {offsetX: 0, offsetY: 0, width: 0, height: 0};
-			s3d.scenePosition.offsetX = 0;//display.absX;
-			s3d.scenePosition.offsetY = 0;//display.absY;
-			s3d.scenePosition.width = Std.int(display.width);
-			s3d.scenePosition.height = Std.int(display.height);
-
 			sceneEvents.checkEvents();
 
 			s3d.setElapsedTime(hxd.Timer.dt);
@@ -167,8 +162,8 @@ class HuiScene extends HuiElement {
 		@:privateAccess s2d.offsetY = pos.y  * scale;
 
 		var scenePosition = {
-			offsetX : pos.x,
-			offsetY : pos.y,
+			offsetX : pos.x * scale,
+			offsetY : pos.y * scale,
 			width : Std.int(innerWidth),
 			height : Std.int(innerHeight)
 		};
@@ -235,47 +230,50 @@ class Interactive2 extends h2d.Interactive {
 	public var huiScene: HuiScene;
 	var capturing = false;
 	override function handleEvent( e : hxd.Event ) {
+		handleEvent2(e, true);
+	}
+
+	function handleEvent2(e: hxd.Event, fixPos: Bool) {
 		super.handleEvent(e);
 
 		if (!e.propagate)
 			return;
+		var scale = huiScene.getScene().viewportScaleX;
 
+		var newEvent = e;
 
-		if (e.kind == EPush) {
+		if (fixPos) {
+			var clone = new hxd.Event(e.kind, e.relX, e.relY);
+
+			// replace global events in screenSpace
+			clone.relX += huiScene.absX * scale;
+			clone.relY += huiScene.absY * scale;
+
+			clone.relZ = e.relZ;
+			clone.propagate = e.propagate;
+			clone.cancel = e.cancel;
+			clone.button = e.button;
+			clone.touchId = e.touchId;
+			clone.keyCode = e.keyCode;
+			clone.charCode = e.charCode;
+			clone.wheelDelta = e.wheelDelta;
+			newEvent = clone;
+		}
+
+		if (newEvent.kind == EPush) {
 			capturing = true;
 			@:privateAccess getScene().events.startCapture((e) -> {
-					var scale = huiScene.getScene().viewportScaleX;
-					var oldX = e.relX;
-					var oldY = e.relY;
-
-					e.relX -= huiScene.absX * scale;
-					e.relY -= huiScene.absY * scale;
-					e.relX /= scale;
-					e.relY /= scale;
-
-					handleEvent(e);
-
-					e.relX = scale;
-					e.relY = scale;
+					handleEvent2(e, false);
 				}, () -> {
 				capturing = false;
 			});
-		} else if (capturing && (e.kind == ERelease || e.kind == EReleaseOutside)) {
+		} else if (capturing && (newEvent.kind == ERelease || newEvent.kind == EReleaseOutside)) {
 			@:privateAccess getScene().events.stopCapture();
 		}
 
-		var clone = new hxd.Event(e.kind, e.relX, e.relY);
+		@:privateAccess huiScene.sceneEvents.onEvent(newEvent);
 
-		clone.relZ = e.relZ;
-		clone.propagate = e.propagate;
-		clone.cancel = e.cancel;
-		clone.button = e.button;
-		clone.touchId = e.touchId;
-		clone.keyCode = e.keyCode;
-		clone.charCode = e.charCode;
-		clone.wheelDelta = e.wheelDelta;
-
-		@:privateAccess huiScene.sceneEvents.onEvent(clone);
+		// stop propagaion for original event
 		e.propagate = false;
 	}
 }

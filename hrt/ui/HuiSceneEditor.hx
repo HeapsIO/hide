@@ -519,6 +519,12 @@ class HuiSceneEditor extends HuiElement {
 
 
 	function onSceneEvents(e: hxd.Event) : Void {
+		var oldX = e.relX;
+		var oldY = e.relY;
+
+		e.relX -= @:privateAccess scene.s3d.scenePosition?.offsetX;
+		e.relY -= @:privateAccess scene.s3d.scenePosition?.offsetY;
+
 		switch (e.kind) {
 			case EMove:
 				onSceneMove(e);
@@ -526,6 +532,9 @@ class HuiSceneEditor extends HuiElement {
 				onScenePush(e);
 			default:
 		}
+
+		e.relX = oldX;
+		e.relY = oldY;
 	}
 
 	public dynamic function onScenePush(e: hxd.Event) {}

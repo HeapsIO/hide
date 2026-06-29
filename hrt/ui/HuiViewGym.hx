@@ -345,9 +345,21 @@ class GymWidgets extends HuiElement {
 			scene.s3d.lightSystem = h3d.mat.MaterialSetup.current.createLightSystem();
 
 			var cameraController = new h3d.scene.CameraController.OrbitCameraController(scene.s3d);
-			var box = new h3d.scene.Box(0xFFFFFFFF, scene.s3d);
-			var text = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+			var sphere = new h3d.scene.Sphere(0xFFFFFFFF, scene.s3d);
+
+			var flow = new h2d.Flow(scene.s2d);
+			flow.x = 8;
+			flow.y = 8;
+			flow.buildBackground(h2d.Tile.fromColor(0x777777));
+			var text = new h2d.Text(hxd.res.DefaultFont.get(), flow);
 			text.text = "hello world";
+			flow.enableInteractive = true;
+			flow.interactive.onClick = (e) -> hide.Ide.showInfo("Clicked hello world");
+			flow.interactive.cursor = Button;
+
+			var int = new h3d.scene.Interactive(new h3d.col.Sphere(), sphere);
+			int.onClick = (e) -> hide.Ide.showInfo("Clicked box");
+			int.cursor = Button;
 		}
 	}
 }
