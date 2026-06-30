@@ -275,7 +275,6 @@ class IdeData {
 		switch(Sys.systemName()) {
 			case "Windows": {
 				var cmd = "explorer.exe /select," + '"' + StringTools.replace(path, "/", "\\") + '"';
-				trace("OpenInExplorer: " + cmd);
 				Sys.command(cmd);
 			};
 			case "Mac":	Sys.command("open " + haxe.io.Path.directory(path));
