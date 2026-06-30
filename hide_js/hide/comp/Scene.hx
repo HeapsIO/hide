@@ -551,7 +551,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 				if (sys.FileSystem.exists(ide.getPath(e.entry.path))) {
 					var lib = e.toModel().toHmd();
 					hmdCache.set(key, lib);
-					editor.onResourceChanged(lib);
+					editor?.onResourceChanged(lib);
 				}
 			});
 			cleanup.push(function() {
