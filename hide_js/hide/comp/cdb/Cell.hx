@@ -1905,7 +1905,7 @@ class Cell {
 
 			var selected = typeDropdown.val() == 0 ? null : customType.cases[typeDropdown.val()];
 			if (selected != null) {
-				ctValue.push(typeDropdown.val());
+				ctValue.push(Std.int(typeDropdown.val()));
 				for (idx in 0...selected.args.length) {
 					switch (selected.args[idx].type) {
 						case TId, TString, TRef(_):
