@@ -469,6 +469,9 @@ class Table extends Component {
 			var p = Std.downcast(table, SubTable);
 			if( p == null ) break;
 			var line = p.cell.line;
+			// polymorph variant unfold: contribute its object frame so scoped ids resolve correctly
+			if( p.polyVal != null )
+				scope.unshift({ s : line.table.getRealSheet().getSub(p.cell.column), obj : p.polyVal.obj });
 			scope.unshift({ s : line.table.getRealSheet(), obj : line.obj });
 			table = table.parent;
 		}

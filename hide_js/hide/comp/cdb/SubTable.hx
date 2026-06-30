@@ -5,23 +5,30 @@ class SubTable extends Table {
 	var insertedTR : Element;
 	var slider : Element;
 	public var cell : Cell;
+	// null for simple variants and the empty-poly picker, so getRealSheet() stays stable across edits
+	public var polyVal(default,null) : { col : cdb.Data.Column, obj : Dynamic };
 
 	public function new(editor, cell:Cell) {
 		this.editor = editor;
 		this.cell = cell;
 		parent = cell.table;
 
+		var pe = cell.getPolyEdit();
+		if( pe != null && pe.col.type.match(TList | TProperties | TPolymorph) )
+			polyVal = pe;
+
 		var sheet = makeSubSheet();
 		var line = cell.line;
 		if( line.subTable != null ) throw "assert";
 		line.subTable = this;
 
-		var mode : Table.DisplayMode = switch( cell.column.type ) {
+		var etype = polyVal != null ? polyVal.col.type : cell.column.type;
+		var mode : Table.DisplayMode = switch( etype ) {
 			case TProperties, TPolymorph: Properties;
 			default: Table;
 		};
 
-		insertedTR = new Element("<tr>").addClass((cell.column.type == TProperties || cell.column.type == TPolymorph) ? "props" : "list");
+		insertedTR = new Element("<tr>").addClass((etype == TProperties || etype == TPolymorph) ? "props" : "list");
 		var group;
 		if( editor.displayMode == AllProperties && cell.table.parent == null ) {
 			group = new Element("<td>").attr("colspan","2").appendTo(insertedTR);
@@ -63,8 +70,15 @@ class SubTable extends Table {
 		this.nestedIndex = parent.nestedIndex + 1;
 	}
 
+	function getTarget() : { parent : cdb.Sheet, col : cdb.Data.Column, obj : Dynamic } {
+		if( polyVal != null )
+			return { parent : cell.table.sheet.getSub(cell.column), col : polyVal.col, obj : polyVal.obj };
+		return { parent : cell.table.sheet, col : cell.column, obj : cell.line.obj };
+	}
+
 	override function getRealSheet() {
-		return cell.table.sheet.getSub(cell.column);
+		var t = getTarget();
+		return t.parent.getSub(t.col);
 	}
 
 	override function refresh() {
@@ -74,8 +88,9 @@ class SubTable extends Table {
 	}
 
 	function checkIntegrity() {
-		var v = Reflect.field(cell.line.obj, cell.column.name);
-		switch(cell.column.type) {
+		var t = getTarget();
+		var v = Reflect.field(t.obj, t.col.name);
+		switch(t.col.type) {
 			case TList:
 				if (v != sheet.lines) {
 					hide.Ide.inst.error("Editor integrity compromised, please refresh the editor and contact someone in the tool team");
@@ -93,24 +108,24 @@ class SubTable extends Table {
 	}
 
 	function makeSubSheet() {
-		var sheet = cell.table.sheet;
-		var c = cell.column;
+		var t = getTarget();
+		var c = t.col;
 		var index = cell.line.index;
-		var key = sheet.getPath() + "@" + c.name + ":" + index;
-		var psheet = sheet.getSub(c);
-		var value : Dynamic = Reflect.field(cell.line.obj, cell.column.name);
-		var lines = switch( cell.column.type ) {
+		var key = cell.table.sheet.getPath() + "@" + cell.column.name + ":" + index;
+		var psheet = t.parent.getSub(c);
+		var value : Dynamic = Reflect.field(t.obj, c.name);
+		var lines = switch( c.type ) {
 		case TList:
 			if( value == null ) {
 				value = [];
-				Reflect.setField(cell.line.obj, cell.column.name, value);
+				Reflect.setField(t.obj, c.name, value);
 				// do not save for now
 			}
 			value;
 		case TProperties, TPolymorph:
 			if( value == null ) {
 				value = {};
-				Reflect.setField(cell.line.obj, cell.column.name, value);
+				Reflect.setField(t.obj, c.name, value);
 				// do not save for now
 			}
 			var lines = [for( f in psheet.columns ) value];
@@ -125,7 +140,7 @@ class SubTable extends Table {
 			name : psheet.name, // same
 			lines : lines, // ref
 			separators : [], // none
-		},key, { sheet : sheet, column : cell.table.sheet.columns.indexOf(c), line : index });
+		},key, { sheet : t.parent, column : t.parent.columns.indexOf(c), line : index });
 	}
 
 	public function show( ?immediate ) {

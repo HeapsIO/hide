@@ -586,6 +586,13 @@
   width: 15px !important;
   border: solid 1px white;
 }
+.cdb .cdb-sheet .t_properties .cell-root > .color,
+.cdb .cdb-sheet .t_polymorph .cell-root > .color {
+  display: inline-block;
+  height: 15px;
+  width: 15px;
+  border: solid 1px white;
+}
 .cdb.cdb-obj-editor:not(.cdb-large .cdb.cdb-obj-editor) {
   margin-top: 10px;
 }

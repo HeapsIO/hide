@@ -1532,7 +1532,7 @@ class Editor extends Component {
 			id = getCursorId(sheet);
 		var cell = cursor.getCell();
 		if (cell != null) {
-			switch (cell.column.type) {
+			switch (cell.editColumn.type) {
 				case TRef(sname):
 					sheet = base.getSheet(sname);
 				default:
@@ -1582,7 +1582,7 @@ class Editor extends Component {
 
 	function gotoReference( c : Cell ) {
 		if( c == null || c.value == null ) return;
-		switch( c.column.type ) {
+		switch( c.editColumn.type ) {
 		case TRef(s):
 			var sd = base.getSheet(s);
 			if( sd == null ) return;
