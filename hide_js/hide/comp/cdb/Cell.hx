@@ -209,8 +209,18 @@ class Cell {
 			var pe = getPolyEdit();
 			function setVariant( pc : cdb.Data.Column ) {
 				var obj = {};
-				if( pc != null )
-					Reflect.setField(obj, pc.name, editor.base.getDefault(pc, true, ps));
+				if( pc != null ) {
+					var newVal = editor.base.getDefault(pc, true, ps);
+					var oldPe = getPolyEdit();
+					if( oldPe != null ) {
+						var conv = editor.base.getConvFunction(oldPe.col.type, pc.type);
+						if( conv != null ) {
+							var oldVal = Reflect.field(oldPe.obj, oldPe.col.name);
+							newVal = conv.f != null ? conv.f(oldVal) : oldVal;
+						}
+					}
+					Reflect.setField(obj, pc.name, newVal);
+				}
 				editor.beginChanges();
 				editor.changeObject(line, column, column.opt && pc == null ? null : obj);
 				editor.endChanges();
@@ -223,9 +233,7 @@ class Cell {
 			}];
 			if( menu == null ) menu = [];
 			if( menu.length > 0 ) menu.push({ label : "", isSeparator : true });
-			menu.push({ label : "Variant", menu : variants });
-			if( pe != null )
-				menu.push({ label : "Clear", click : () -> setVariant(null) });
+			menu.push({ label : "Type", menu : variants });
 		}
 		if( menu != null ) {
 			focus();
