@@ -110,7 +110,6 @@ class Texture extends HuiView<{path: String}> {
 
 		// Create params from current texture conversion rule
 		var texConvRule = getConvertRule();
-		var convertRuleEmpty = texConvRule == null || texConvRule.cmd == null || texConvRule.cmd.params == null;
 		params = convertRuleToParams(texConvRule);
 
 		viewer.backgroundType = "hui";
@@ -125,7 +124,15 @@ class Texture extends HuiView<{path: String}> {
 
 		viewer.onWheel = (e : hxd.Event) -> {
 			var amount = e.wheelDelta * -0.1;
-			zoom = hxd.Math.max(zoom + amount, MIN_ZOOM);
+			var newZoom = hxd.Math.max(zoom + amount, MIN_ZOOM);
+
+			var absX = (e.relX - pan.x) / zoom;
+			var absY = (e.relY - pan.y) / zoom;
+
+			pan.x = e.relX - absX * newZoom;
+			pan.y = e.relY - absY * newZoom;
+			zoom = newZoom;
+
 			refresh();
 		}
 
