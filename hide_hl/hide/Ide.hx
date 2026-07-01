@@ -32,6 +32,8 @@ class Ide extends hide.tools.IdeData {
 
 		loadLocalStorage();
 
+		new hrt.tools.FileManager();
+
 		isSVNAvailable = Sys.command("svn",["--version"]) == 0 &&
 			Sys.command("where.exe", ["TortoiseProc.exe"]) == 0 &&
 			Sys.command("svn", ["info", getPath(projectDir)]) == 0;
@@ -109,6 +111,8 @@ class Ide extends hide.tools.IdeData {
 			saveLocalStorageToDisk();
 			localStorageSaveQueued = false;
 		}
+
+		hrt.tools.FileManager.inst.dispose();
 	}
 
 	function loadLocalStorage() {
@@ -133,11 +137,7 @@ class Ide extends hide.tools.IdeData {
 	override function setProject(dir:String) {
 		super.setProject(dir);
 
-		if (@:bypassAccessor hrt.tools.FileManager.inst == null) {
-			var inst = hrt.tools.FileManager.inst;
-		} else {
-			@:privateAccess hrt.tools.FileManager.inst.init();
-		}
+		hrt.tools.FileManager.inst.init();
 
 		trace("set project " + dir);
 		hxd.res.Loader.currentInstance?.dispose();
@@ -155,7 +155,7 @@ class Ide extends hide.tools.IdeData {
 		// 	trace('No plugin found for project (searched $pluginPath )');
 		// }
 
-		@:privateAccess app.ui.mainLayout.rebuild();
+		@:privateAccess app?.ui.mainLayout.rebuild();
 
 		hxd.Window.getInstance().title = "HideHL - " + new haxe.io.Path(dir).file;
 

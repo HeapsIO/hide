@@ -1,19 +1,19 @@
 package hrt.tools;
 
-// enum abstract GenToManagerCommand(String) {
-// 	var success;
-// }
+enum abstract GenToManagerCommand(String) {
+	var success;
+}
 
-// enum abstract ManagerToGenCommand(String) {
-// 	var queue;
-// 	var prio;
-// 	var clear;
-// }
+enum abstract ManagerToGenCommand(String) {
+	var queue;
+	var prio;
+	var clear;
+}
 
-// typedef GenToManagerSuccessMessage = {
-// 	var originalPath : String;
-// 	var thumbnailPath : String;
-// }
+typedef GenToManagerSuccessMessage = {
+	var originalPath : String;
+	var thumbnailPath : String;
+}
 
 #if hui
 
@@ -80,7 +80,7 @@ class FileEntry {
 		}
 		this.ignored = computeIgnore();
 
-		trace("added " + getRelPath());
+		//trace("added " + getRelPath());
 		watch();
 
 		if (FileManager.inst.fileIndex.get(this.getRelPath()) != null) {
@@ -114,13 +114,13 @@ class FileEntry {
 
 	}
 
-	// public function getIcon(onReady: MiniatureReadyCallback) {
-	// 	if (iconPath != null && iconPath != "loading")
-	// 		onReady(iconPath);
-	// 	else {
-	// 		@:privateAccess FileManager.inst.renderMiniature(this, onReady);
-	// 	}
-	// }
+	public function getIcon(onReady: MiniatureReadyCallback) {
+		if (iconPath != null && iconPath != "loading")
+			onReady(iconPath);
+		else {
+			@:privateAccess FileManager.inst.renderMiniature(this, onReady);
+		}
+	}
 
 	function refreshChildren() {
 		if (kind != Dir)
@@ -282,35 +282,28 @@ class FileManager {
 	public var fileRoot: FileEntry;
 	var fileIndex : Map<String, FileEntry> = [];
 
-	public static final thumbnailGeneratorPort = 9669;
+	public static final thumbnailGeneratorPort = 96691;
 	public static final thumbnailGeneratorUrl = "localhost";
 
-	public static var inst(get, default) : FileManager;
+	public static var inst(default, null) : FileManager;
 	public var onFileChangeHandlers: Array<FileChangeCallback> = [];
 	public var onVCSStatusUpdateHandlers: Array<() -> Void> = [];
+	public var thumbnailRendererProcess : sys.io.Process;
+
+	var generatorSocket : hxd.net.Socket = null;
+	var serverSocket : hxd.net.Socket = null;
+	var onReadyCallbacks : Map<String, Array<MiniatureReadyCallback>> = [];
+	var pendingMessages : Array<String> = [];
+	var retries = 0;
+	static final maxRetries = 5;
+
 
 	var ignorePatterns: Array<EReg> = [];
 
 	var fileEntryRefreshDelay : Delayer<FileEntry>;
 
-
-	static function get_inst() {
-		if (inst == null) {
-			inst = new FileManager();
-			inst.init();
-		}
-		return inst;
-	}
-
-	function new() {
-
-	}
-
-	public static function onBeforeReload() {
-		if (inst != null) {
-			//inst.cleanupGenerator();
-			//inst.cleanupServer();
-		}
+	public function new() {
+		inst = this;
 	}
 
 	public function watchFileChange(callback: FileChangeCallback) {
@@ -513,7 +506,7 @@ class FileManager {
 		return roots;
 	}
 
-	function init() {
+	public function init() {
 		var exclPatterns : Array<String> = hide.Ide.inst.currentConfig.get("filetree.excludes", []);
 		ignorePatterns = [];
 		ignorePatterns.push(~/\.tmp/i);
@@ -522,6 +515,7 @@ class FileManager {
 			ignorePatterns.push(new EReg(pat, "i"));
 
 		initFileSystem();
+		initThumbnailRenderer();
 	}
 
 	function initFileSystem() {
@@ -534,6 +528,139 @@ class FileManager {
 		fileRoot = new FileEntry(rootPath.file, null, Dir, rootPath.dir);
 
 		queueRefreshSVN();
+	}
+
+	public function dispose() {
+		disposeThumbnailRenderer();
+	}
+
+	function initThumbnailRenderer() {
+		if (thumbnailRendererProcess != null) {
+			disposeThumbnailRenderer();
+		}
+
+		try {
+			serverSocket = new hxd.net.Socket();
+			serverSocket.onError = (msg) -> {
+				trace("FileManager socket error : " + msg);
+				disposeThumbnailRenderer();
+			}
+
+			serverSocket.bind(thumbnailGeneratorUrl, thumbnailGeneratorPort, (remoteSocket) -> {
+				if (generatorSocket != null) {
+					generatorSocket.close();
+				}
+				generatorSocket = remoteSocket;
+				generatorSocket.onError = (msg) -> {
+					trace("Generator socket error : " + msg);
+					generatorSocket?.close();
+					generatorSocket = null;
+				}
+
+				var handler = new hide.ThumbnailGeneratorApp.MessageHandler(generatorSocket, processThumbnailGeneratorMessage);
+
+				trace("Thumbnail generator connected");
+
+				// resend command that weren't completed
+				for (path => _ in onReadyCallbacks) {
+					sendGenerateCommand(path);
+				}
+			});
+
+			thumbnailRendererProcess = new sys.io.Process("hl", [Sys.programPath(), "--thumbnail", hide.Ide.inst.projectDir], false);
+		} catch(e) {
+			trace("Couldn't launch thumbnail renderer process : " + e);
+		}
+	}
+
+	function processThumbnailGeneratorMessage(message: String) {
+		try {
+			var message = haxe.Json.parse(message);
+			switch(message.type) {
+				case success:
+					var message : GenToManagerSuccessMessage = message.data;
+					var cbs = onReadyCallbacks.get(message.originalPath);
+					if (cbs == null) {
+						return;
+						//throw "Generated a thumbnail for a file not registered";
+					}
+					var file = getFileEntry(message.originalPath);
+					file.iconPath = message.thumbnailPath;
+					for (cb in cbs) {
+						cb(message.thumbnailPath);
+					}
+					onReadyCallbacks.remove(message.originalPath);
+				default:
+					throw "Unknown message type " + message.type;
+			}
+		} catch(e) {
+			trace("Thumb Generator invalid message : " + e + "\n" + message);
+		}
+	}
+
+	function sendGenerateCommand(path: String) {
+		var message = {
+			type: ManagerToGenCommand.queue,
+			path: path,
+		};
+		var cmd = haxe.Json.stringify(message) + "\n";
+		pendingMessages.push(cmd);
+		queueProcessPendingMessages();
+	}
+
+	var pendingMessageQueued = false;
+	function queueProcessPendingMessages() {
+		if (!pendingMessageQueued) {
+			haxe.Timer.delay(processPendingMessages, 10);
+			pendingMessageQueued = true;
+		}
+	}
+	function processPendingMessages() {
+		if (generatorSocket == null) {
+			return;
+		}
+		pendingMessageQueued = false;
+		var len = hxd.Math.imin(300, pendingMessages.length);
+		for (i in 0 ... len) {
+			generatorSocket.out.writeString(pendingMessages[i]);
+		}
+		pendingMessages.splice(0, len);
+		if (pendingMessages.length > 0) {
+			queueProcessPendingMessages();
+		}
+	}
+
+	function renderMiniature(file: FileEntry, onReady: MiniatureReadyCallback) {
+		if (retries >= maxRetries) {
+			onReady(null);
+			return;
+		}
+		var path = file.getPath();
+		var ext = path.split(".").pop().toLowerCase();
+		switch(ext) {
+			case "prefab" | "fbx" | "l3d" | "fx" | "shgraph" | "jpg" | "jpeg" | "png" | "dds":
+				file.iconPath = "loading";
+				var callbacks = onReadyCallbacks.get(path);
+				if (callbacks == null) {
+					onReadyCallbacks.set(path, [onReady]);
+					sendGenerateCommand(path);
+				} else {
+					callbacks.push(onReady);
+				}
+			default:
+				onReady(null);
+		}
+	}
+
+	function disposeThumbnailRenderer() {
+		generatorSocket?.close();
+		generatorSocket = null;
+
+		serverSocket?.close();
+		serverSocket = null;
+
+		thumbnailRendererProcess?.close();
+		thumbnailRendererProcess = null;
 	}
 
 	function fileChangeInternal(entry: FileEntry) {

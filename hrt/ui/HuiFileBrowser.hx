@@ -153,6 +153,9 @@ class HuiFileBrowser extends HuiElement {
 		delete.enabled = file != rootFile;
 		items.push(delete);
 
+		items.push({label: "Trigger thumbnail", click: () -> @:privateAccess FileManager.inst.renderMiniature(file, (p) -> trace("Miniature renderer : " + p))});
+
+
 		uiBase.contextMenu(items);
 	}
 

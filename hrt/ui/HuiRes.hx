@@ -11,7 +11,7 @@ import haxe.macro.ExprTools;
 **/
 #if hui
 #if !macro
-@:build(hxd.res.FileTree.build("hide_hl/res"))
+@:build(hxd.res.FileTree.build("hide_hl/res", "hui"))
 #end
 class HuiRes {
 	static var RES = "hide_hl/res";

@@ -16,6 +16,11 @@ class IdeData {
 	var dbWatcher : hide.tools.FileWatcher.FileWatchEvent;
 	public var shaderLoader : hide.tools.ShaderLoader;
 
+	/**
+		Indicates that this ide shouldn't try
+		to save configs (used by the thumbnail generator app)
+	**/
+	public var readOnlyConfig = false;
 
 
 	var pakFile : hxd.fmt.pak.FileSystem;
@@ -79,7 +84,8 @@ class IdeData {
 			ideConfig.recentProjects.remove(dir);
 			ideConfig.recentProjects.unshift(dir);
 			if( ideConfig.recentProjects.length > 10 ) ideConfig.recentProjects.pop();
-			config.global.save();
+			if (!readOnlyConfig)
+				config.global.save();
 		}
 		config = Config.loadForProject(projectDir, resourceDir, getAppDataPath());
 		databaseFile = config.project.get("cdb.databaseFile") ?? "data.cdb";
@@ -293,6 +299,8 @@ class IdeData {
 	}
 
 	public function saveDatabase( ?forcePrefabs ) {
+		if (readOnlyConfig)
+			return;
 		#if js
 		if (Ide.inst.thumbnailMode == true)
 			throw "Thumbnail generator can't save the cdb database";

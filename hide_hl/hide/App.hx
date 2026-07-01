@@ -26,8 +26,6 @@ class App extends hxd.App {
 			@:privateAccess hide.Ide.inst.setProject(hide.Ide.inst.ideConfig.recentProjects[0]);
 		}
 
-
-
 		var winSize = ide.getLocalStorage("windowSize") ?? {w: 800, h: 600};
 		// hxd.Window.getInstance().resize(winSize.w, winSize.h);
 
@@ -135,6 +133,8 @@ class App extends hxd.App {
 	}
 
 	static function main() {
+		if (hide.ThumbnailGeneratorApp.tryStart())
+			return;
 		DEBUG = #if hl hl.Api.hasDebugger() #else false #end;
 
 		hxd.Res.initLocal();
