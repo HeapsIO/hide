@@ -91,6 +91,7 @@ class Texture extends HuiView<{path: String}> {
 	var shader : TextureViewerShader;
 	var propsFilePath : String = "";
 	var zoom : Float = 1;
+	var flipped : Bool = false;
 	var pan : h2d.col.Point = new h2d.col.Point(0, 0);
 	var onDrag : (e : hxd.Event) -> Void;
 
@@ -325,6 +326,16 @@ class Texture extends HuiView<{path: String}> {
 		}
 		widgets.push(aChannelBtn);
 
+		var flipBtn = new HuiToggle();
+		flipBtn.toggled = false;
+		new HuiIcon("vertical_arrows", flipBtn);
+		flipBtn.onClick = (_) -> {
+			flipBtn.toggled = !flipBtn.toggled;
+			flipped = !flipped;
+			refresh();
+		}
+		widgets.push(flipBtn);
+
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
 
@@ -379,6 +390,10 @@ class Texture extends HuiView<{path: String}> {
 		this.bmp.scaleX = this.bmp.scaleY = zoom;
 		this.bmp.x = pan.x;
 		this.bmp.y = pan.y;
+		if (flipped) {
+			this.bmp.scaleY *= -1;
+			this.bmp.y += this.bmp.getSize().height;
+		}
 	}
 
 	function refreshInspector() {
