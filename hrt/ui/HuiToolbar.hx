@@ -6,7 +6,7 @@ class HuiToolbar extends HuiElement {
 	static var SRC = <hui-toolbar>
 	</hui-toolbar>
 
-	var widgets : Array<HuiElement>;
+	var widgets : Array<HuiElement> = [];
 
 	public function new(?parent: h2d.Object) {
 		super(parent);
@@ -16,6 +16,16 @@ class HuiToolbar extends HuiElement {
 
 	public function addWidget(widget : HuiElement) {
 		this.addChild(widget);
+		widgets.push(widget);
+	}
+
+	public function getWidget(id: String) {
+		if (widgets == null) return null;
+		for (w in widgets) {
+			if (w.dom.id.toString() == id)
+				return w;
+		}
+		return null;
 	}
 }
 

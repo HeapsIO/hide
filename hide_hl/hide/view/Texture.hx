@@ -347,6 +347,35 @@ class Texture extends HuiView<{path: String}> {
 		}
 		widgets.push(flipBtn);
 
+		var resetZoomBtn = new HuiButton();
+		resetZoomBtn.dom.addClass("group-start");
+		new HuiIcon("scale1_1", resetZoomBtn);
+		resetZoomBtn.onClick = (_) -> {
+			zoom = 1;
+			refresh();
+		}
+		widgets.push(resetZoomBtn);
+
+		var zoomInputBox = new HuiInputBox();
+		zoomInputBox.dom.setId("zoom-input-box");
+		zoomInputBox.text = '${zoom * 100}%';
+		zoomInputBox.onChange = (isTempChange) -> {
+			if (isTempChange)
+				return;
+			zoom = Std.parseFloat(zoomInputBox.text) / 100;
+			refresh();
+		}
+		zoomInputBox.dom.addClass("group");
+		widgets.push(zoomInputBox);
+
+		var fitBtn = new HuiButton();
+		fitBtn.dom.addClass("group-end");
+		new HuiIcon("fullscreen", fitBtn);
+		fitBtn.onClick = (_) -> {
+			fit();
+		}
+		widgets.push(fitBtn);
+
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
 
@@ -405,6 +434,9 @@ class Texture extends HuiView<{path: String}> {
 			this.bmp.scaleY *= -1;
 			this.bmp.y += this.bmp.getSize().height;
 		}
+
+		var zoomWidget = Std.downcast(toolbar.getWidget("zoom-input-box"), HuiInputBox);
+		zoomWidget?.text = '${hxd.Math.round(zoom * 100)}%';
 	}
 
 	function refreshInspector() {
