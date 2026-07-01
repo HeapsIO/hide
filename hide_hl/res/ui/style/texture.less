@@ -12,27 +12,31 @@ texture {
 				.horizontal {
 					fill-width: false;
 					margin: 2px;
+					spacing: 5px;
 				}
 
 				.vertical {
 					margin: 2px;
 				}
 
-				.label { 
-					margin-right: 5px;
+				.label {
 					color: darken(@text-color, 20%);
 					valign: middle;
 				}
 
 				.value {
 					auto-size: 1;
-					fill-width: false;
+					fill-width: true;
 				}
 
 				.full {
 					fill-width: true;
 					padding: 6;
 					margin: 5 5 0 5;
+				}
+
+				hui-text {
+					valign: middle;
 				}
 
 				#reset-full-btn {

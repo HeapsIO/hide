@@ -67,9 +67,9 @@ class Texture extends HuiView<{path: String}> {
 					<hui-element class="horizontal"><hui-text("Compressed texture weight") class="label"/><hui-text("1 MB") class="value" id="weight-compressed-el"/></hui-element>
 					<hui-element class="horizontal"><hui-text("Uncompressed texture weight") class="label"/><hui-text("10 MB") class="value" id="weight-uncompressed-el"/></hui-element>
 					<hui-element class="horizontal"><hui-text("Format") class="label"/><hui-select class="value" id="format-sel"/></hui-element>
-					<hui-element class="horizontal"><hui-text("Alpha") class="label"/><hui-checkbox id="use-alpha-cb"/><hui-input-box class="value" id="alpha-input"/></hui-element>
-					<hui-element class="horizontal"><hui-text("Mip Maps") class="label"/><hui-checkbox id="mips"/></hui-element>
-					<hui-element class="horizontal"><hui-text("Size") class="label"/><hui-input-box id="size" class="value"/></hui-element>
+					<hui-element class="horizontal" id="alpha-line"><hui-text("Alpha") class="label"/><hui-checkbox id="use-alpha"/><hui-input-box class="value" id="alpha-input"/></hui-element>
+					<hui-element class="horizontal" id="mips-line"><hui-text("Mip Maps") class="label"/><hui-checkbox id="mips"/></hui-element>
+					<hui-element class="horizontal"><hui-text("Size") class="label"/><hui-input-box id="size" class="value"/><hui-text("/ 512 px") id="max-size-el"/></hui-element>
 					<hui-element class="horizontal"><hui-text("Filter") class="label"/><hui-select id="filter-sel" class="value"/></hui-element>
 					<hui-button class="full" id="reset-soft-btn"><hui-text("Reset Preview")/></hui-button>
 					<hui-button class="full" id="reset-full-btn"><hui-text("Reset Compression")/></hui-button>
@@ -82,12 +82,14 @@ class Texture extends HuiView<{path: String}> {
 
 	static var TRANSPARENT_TEX_PATH = 'ui/transparent_tiles_dark.png';
 	static var MIN_ZOOM = 0.01;
-	static var DEFAULT_FILTER = "Box";
+	static var DEFAULT_FILTER = "POINT";
 	static var FILTERS = ["Point", "Box"];
 	static var FITLER_PARAMS = ["POINT", "FANT"];
-	
+
 	public var bmp : h2d.Bitmap;
+	var params : Dynamic = null;
 	var shader : TextureViewerShader;
+	var propsFilePath : String = "";
 	var zoom : Float = 1;
 	var pan : h2d.col.Point = new h2d.col.Point(0, 0);
 	var onDrag : (e : hxd.Event) -> Void;
@@ -96,20 +98,24 @@ class Texture extends HuiView<{path: String}> {
 		super(_state, parent);
 		initComponent();
 
+		registerCommand(HuiCommands.save, View, () -> { save();});
+
+		var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		var dirPos = state.path.lastIndexOf("/");
+		var dirPath = dirPos < 0 ? state.path : state.path.substr(0, dirPos + 1);
+		var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
+		propsFilePath = dirPath + "props.json";
+
+		// Create params from current texture conversion rule
+		var texConvRule = getConvertRule();
+		var convertRuleEmpty = texConvRule == null || texConvRule.cmd == null || texConvRule.cmd.params == null;
+		params = convertRuleToParams(texConvRule);
+
 		viewer.backgroundType = "hui";
 		var tex = HuiRes.loader.load(TRANSPARENT_TEX_PATH).toImage().toTexture();
 		tex.wrap = Repeat;
 		viewer.huiBg.setTexture(tex);
 		viewer.huiBg.imageMode = CssParser.BackgroundImageMode.Repeat;
-
-		load(state.path);
-		buildToolbar();
-		
-		var items = [ for (k in @:privateAccess hxd.fs.Convert.CompressIMG.TEXCONV_FMT.keys()) { label: k, value: k } ];
-		items.insert(0, { label: "None", value : null });
-		formatSel.items = [ for (k in @:privateAccess hxd.fs.Convert.CompressIMG.TEXCONV_FMT.keys()) { label: k, value: k } ];
-		
-		refreshInspector();
 
 		viewer.onAfterReflow = () -> {
 			refresh();
@@ -144,6 +150,68 @@ class Texture extends HuiView<{path: String}> {
 		viewer.onRelease = (e : hxd.Event) -> {
 			onDrag = null;
 		}
+
+		load(state.path);
+
+		buildToolbar();
+
+		var items = [ for (k in @:privateAccess hxd.fs.Convert.CompressIMG.TEXCONV_FMT.keys()) { label: k, value: k } ];
+		items.sort((a, b) -> Reflect.compare(a.label, b.label));
+		items.insert(0, { label: "None", value : null });
+		formatSel.items = items;
+
+		filterSel.items = [for (idx in 0...FILTERS.length) {  label: FILTERS[idx], value: FITLER_PARAMS[idx] }];
+
+		resetSoftBtn.onClick = (_) -> {
+			var oldParams = params;
+			var newParams = convertRuleToParams(texConvRule);
+			undo.record((undo) -> {
+				params = undo ? oldParams : newParams;
+			}, true);
+			params = newParams;
+			refreshTexture();
+			refreshInspector();
+		}
+
+		resetFullBtn.onClick = (_) -> {
+			if (sys.FileSystem.exists(propsFilePath)) {
+				var rulesObj = haxe.Json.parse(sys.io.File.getContent(propsFilePath));
+
+				var fsConvertObj = Reflect.getProperty(rulesObj, "fs.convert");
+				var path = Ide.inst.getRelPath(state.path);
+				if (fsConvertObj != null && Reflect.getProperty(fsConvertObj, path) != null) {
+					// if(!Ide..confirm('Do you really want to remove ${state.path} from ${propsFilePath} ?'))
+					// 	return;
+
+					Reflect.deleteField(fsConvertObj, path);
+
+					if (Reflect.fields(fsConvertObj).length == 0)
+						Reflect.deleteField(rulesObj, "fs.convert");
+
+					if (Reflect.fields(rulesObj).length == 0) {
+						sys.FileSystem.deleteFile(propsFilePath);
+						params = convertRuleToParams(getConvertRule());
+						refreshInspector();
+						refreshTexture();
+						return;
+					}
+				}
+
+				var bytes = new haxe.io.BytesOutput();
+				var data = hide.Ide.inst.toJSON(rulesObj);
+				bytes.writeString(data);
+				hxd.File.saveBytes(propsFilePath, bytes.getBytes());
+			}
+		}
+
+		formatSel.onValueChanged = filterSel.onValueChanged = mips.onValueChanged = useAlpha.onValueChanged = onValueChanged;
+		alphaInput.onChange = size.onChange = (isTempChange) -> {
+			if (isTempChange)
+				return;
+			onValueChanged();
+		}
+
+		refreshInspector();
 	}
 
 	override function getViewName():String {
@@ -177,7 +245,7 @@ class Texture extends HuiView<{path: String}> {
 		helpBtn.onClick = (_) -> {
 			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiHelpPopup(this.registeredCommands), { object: Element(helpBtn), directionX: StartInside, directionY: EndOutside });
 		};
-		
+
 		var compressedBtn = new HuiToggle();
 		compressedBtn.dom.addClass("group-start");
 		compressedBtn.toggled = true;
@@ -186,12 +254,12 @@ class Texture extends HuiView<{path: String}> {
 
 		var uncompressedBtn = new HuiToggle();
 		uncompressedBtn.dom.addClass("group");
-		new HuiIcon("raw", uncompressedBtn);	
+		new HuiIcon("raw", uncompressedBtn);
 		widgets.push(uncompressedBtn);
 
 		var compareBtn = new HuiToggle();
 		compareBtn.dom.addClass("group-end");
-		new HuiIcon("compare", compareBtn);	
+		new HuiIcon("compare", compareBtn);
 		widgets.push(compareBtn);
 
 		compressedBtn.onClick = (_) -> {
@@ -263,6 +331,50 @@ class Texture extends HuiView<{path: String}> {
 		return widgets;
 	}
 
+	function save() {
+		if (!hasUnsavedChanges)
+			return;
+
+		undo.markClean();
+		hasUnsavedChanges = false;
+
+		var bytes = new haxe.io.BytesOutput();
+		var convertRule = paramsToConvertRule(params);
+		var path = Ide.inst.getRelPath(state.path);
+		if (sys.FileSystem.exists(propsFilePath)) {
+			var propsJson = haxe.Json.parse(sys.io.File.getContent(propsFilePath));
+
+			if (Reflect.hasField(propsJson, "fs.convert")) {
+				var fsConvertObj = Reflect.getProperty(propsJson, "fs.convert");
+				Reflect.setField(fsConvertObj, path, convertRule);
+			}
+			else {
+				var fsConvertObj = {} ;
+				Reflect.setField(fsConvertObj, path, convertRule);
+				Reflect.setProperty(propsJson, "fs.convert", fsConvertObj);
+			}
+
+			var data = hide.Ide.inst.toJSON(propsJson);
+			bytes.writeString(data);
+			hxd.File.saveBytes(propsFilePath, bytes.getBytes());
+		} else {
+			var fsConvertObj = { };
+			var pathObj = { };
+
+			Reflect.setProperty(pathObj, path, convertRule);
+			Reflect.setProperty(fsConvertObj, "fs.convert", pathObj);
+			var data = hide.Ide.inst.toJSON(fsConvertObj);
+			bytes.writeString(data);
+			hxd.File.saveBytes(propsFilePath, bytes.getBytes());
+		}
+
+		var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		@:privateAccess fs.convert.configs.clear();
+		@:privateAccess fs.convert.loadConfig(state.path);
+		var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, state.path, Ide.inst.getPath(state.path));
+		fs.convert.run(localEntry);
+	}
+
 	function refresh() {
 		this.bmp.scaleX = this.bmp.scaleY = zoom;
 		this.bmp.x = pan.x;
@@ -270,37 +382,34 @@ class Texture extends HuiView<{path: String}> {
 	}
 
 	function refreshInspector() {
-		var relPath = Ide.inst.getRelPath(state.path);
-
-		// We want to clear file system because we don't want to load texture from older texture's convert rules
-		var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
-		@:privateAccess fs.convert.configs.clear();
-		@:privateAccess fs.convert.loadConfig(relPath);
-
-		var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, relPath, Ide.inst.getPath(relPath));
-		try { fs.convert.run(localEntry); }
-		catch (e) onError();
-
-		@:privateAccess var texConvRule = fs.convert.getConvertRule(relPath);
-		var convertRuleEmpty = texConvRule == null || texConvRule.cmd == null || texConvRule.cmd.params == null;
-
 		weightUncompressedEl.text = '${@:privateAccess floatToStringPrecision(shader.uncompressedTex.mem.memSize(shader.uncompressedTex) / (1024 * 1024)) } MB';
 		weightCompressedEl.text = '${getTextureMemSize(shader.compressedTex)} MB';
 
-		formatSel.value = convertRuleEmpty ? null : texConvRule.cmd.params.format;		
+		formatSel.value = params.format;
+		filterSel.value = params.filter;
+		mips.value = params.mips;
+		alphaLine.visible = formatSel.value == "BC1";
+		mipsLine.visible = formatSel.value != null;
+		useAlpha.value = params.alpha;
+		alphaInput.disabled = !params.alpha;
+		alphaInput.text = '${params.alphaThreshold}';
+
+		var texMaxSize = getTextureMaxSize();
+		size.text = '${params.size}';
+		maxSizeEl.text = '/ ${texMaxSize} px';
 	}
 
-	function createPreviewTexture(format: Element, useAlpha: Element, alpha: Element, mips: Element, size: Element, filter: Element) {
+	public function refreshTexture() {
 		var dirPos = state.path.lastIndexOf("/");
 		var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
 		var tmpPath = StringTools.replace(Sys.getEnv("TEMP"), "\\","/") + "/tempTexture.dds";
 
-		if (format.val().toString() != "none") {
+		if (formatSel.value != null) {
 			var comp = new hxd.fs.Convert.CompressIMG("png,tga,jpg,jpeg,dds,envd,envs","dds");
 			comp.srcPath = Ide.inst.getPath(state.path);
 			comp.dstPath = Ide.inst.getPath(tmpPath);
 			comp.originalFilename = name;
-			comp.params = getConvertRule();
+			comp.params = paramsToConvertRule(params);
 
 			try {
 				comp.convert();
@@ -311,48 +420,27 @@ class Texture extends HuiView<{path: String}> {
 			tmpPath = state.path;
 		}
 
-		replaceImage(Ide.inst.getPath(tmpPath));
-	}
-
-	public function replaceImage(path : String) {
-		var bytes = sys.io.File.getBytes(path);
-		var res = hxd.res.Any.fromBytes(path, bytes);
+		var bytes = sys.io.File.getBytes(tmpPath);
+		var res = hxd.res.Any.fromBytes(tmpPath, bytes);
 		var t = res.toTexture();
 
 		if (bmp != null) {
 			if (!bmp.tile.isDisposed())
 				bmp.tile.dispose();
-
-			bmp.remove();
-			bmp = null;
 		}
 
-		// if( !t.flags.has(Cube) ) {
-		// 	bmp.tile = h2d.Tile.fromTexture(t);
-		// 	// drawSlider();
-		// 	// bmp.addShader(shader);
-		// 	if( t.layerCount > 1 ) {
-		// 		shader.isArray = true;
-		// 		shader.textureArray = cast(t, h3d.mat.TextureArray);
-		// 		tools.addRange("Layer", function(f) shader.layer = f, 0, 0, t.layerCount-1, 1);
-		// 	} else
-		// 	shader.compressedTex = t;
-		// } else {
-		// 	var r = new h3d.scene.fwd.Renderer();
-		// 	var ls = new h3d.scene.fwd.LightSystem();
-		// 	ls.ambientLight.set(1,1,1);
-		// 	scene.s3d.lightSystem = ls;
-		// 	scene.s3d.renderer = r;
-		// 	var sp = new h3d.prim.Sphere(1,64,64);
-		// 	sp.addNormals();
-		// 	sp.addUVs();
-		// 	shader.textureCube = t;
-		// 	shader.isCube = true;
-		// 	var sp = new h3d.scene.Mesh(sp, scene.s3d);
-		// 	sp.material.texture = t;
-		// 	sp.material.mainPass.addShader(shader);
-		// 	sp.material.shadows = false;
+		bmp.tile = h2d.Tile.fromTexture(t);
+		// drawSlider();
+		// bmp.addShader(shader);
+		// if (t.layerCount > 1) {
+		// 	shader.isArray = true;
+		// 	shader.textureArray = cast(t, h3d.mat.TextureArray);
+		// 	tools.addRange("Layer", function(f) shader.layer = f, 0, 0, t.layerCount-1, 1);
 		// }
+		// else
+			shader.compressedTex = t;
+
+		// TODO: display cube texture
 
 		// tools.element.find(".hide-range").remove();
 
@@ -372,6 +460,29 @@ class Texture extends HuiView<{path: String}> {
 		// onResize();
 	}
 
+	function onValueChanged() {
+		var oldParams = params;
+		var newParams = {
+			format: formatSel.value,
+			filter: filterSel.value,
+			mips: mips.value,
+			alpha: useAlpha.value,
+			alphaThreshold: Std.parseInt(alphaInput.text),
+			size: Std.parseInt(size.text)
+		};
+
+		undo.record((undo) -> {
+			params = undo ? oldParams : newParams;
+			refreshTexture();
+			refreshInspector();
+		}, true);
+
+		params = newParams;
+
+		refreshTexture();
+		refreshInspector();
+	}
+
 	function load(path : String) {
 		if (bmp == null) {
 			bmp = new h2d.Bitmap(null, viewer);
@@ -384,7 +495,7 @@ class Texture extends HuiView<{path: String}> {
 
 		var compressedTex = hxd.res.Loader.currentInstance.load(Ide.inst.getRelPath(path)).toImage().toTexture();
 		bmp.tile = h2d.Tile.fromTexture(compressedTex);
-		
+
 		var bytes = sys.io.File.getBytes(path);
 		var uncompressedTex = hxd.res.Any.fromBytes(path, bytes).toImage().toTexture();
 
@@ -415,17 +526,42 @@ class Texture extends HuiView<{path: String}> {
 	}
 
 	function getConvertRule() {
-		if (formatSel.value == null)
+		// Load current texture convert rule
+		// (We want to clear file system because we don't want to load texture from older texture's convert rules)
+		var relPath = Ide.inst.getRelPath(state.path);
+		var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		@:privateAccess fs.convert.configs.clear();
+		@:privateAccess fs.convert.loadConfig(state.path);
+		var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, state.path, Ide.inst.getPath(state.path));
+		try { fs.convert.run(localEntry); }
+		catch (e) onError();
+		return @:privateAccess fs.convert.getConvertRule(relPath);
+	}
+
+	function paramsToConvertRule(params: Dynamic) {
+		if (params.format == null)
 			return { convert : "none", priority: 10000000 };
 
-		var	convertRule = { convert : "dds", format : formatSel.value, mips : mips.value, priority: 10000000 };
-		if (Std.parseInt(size.text) != getTextureMaxSize()) {
-			Reflect.setField(convertRule, "size", Std.parseInt(size.text));
-			Reflect.setField(convertRule, "filter", filterToParam(filterSel.value));
+		var	convertRule = { convert : "dds", format : params.format, mips : params.mips, priority: 10000000 };
+		if (params.size != getTextureMaxSize()) {
+			Reflect.setField(convertRule, "size", params.size);
+			Reflect.setField(convertRule, "filter", params.filter);
 		}
-		if (useAlphaCb.value)
-			Reflect.setField(convertRule, "alpha", Std.parseInt(alphaInput.text));
+		if (params.alpha)
+			Reflect.setField(convertRule, "alpha", params.alphaThreshold);
 		return convertRule;
+	}
+
+	function convertRuleToParams(rule : hxd.fs.FileConverter.ConvertRule) {
+		var convertRuleEmpty = rule == null || rule.cmd == null || rule.cmd.params == null;
+		return params = {
+			format: convertRuleEmpty ? null : rule.cmd.params.format,
+			filter: (convertRuleEmpty || rule.cmd.params.filter == null) ? DEFAULT_FILTER : rule.cmd.params.filter,
+			mips: (!convertRuleEmpty && rule.cmd.params?.mips),
+			alpha: (!convertRuleEmpty && rule.cmd.params?.alpha),
+			alphaThreshold: (!convertRuleEmpty && rule.cmd.params?.alpha != null) ? rule.cmd.params?.alpha : 128,
+			size: (convertRuleEmpty || rule.cmd.params?.size == null) ? getTextureMaxSize() : rule.cmd.params.size
+		}
 	}
 
 	function getTextureMaxSize(): Int {

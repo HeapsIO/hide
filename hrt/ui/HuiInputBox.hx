@@ -9,6 +9,7 @@ class HuiInputBox extends HuiElement {
 		</hui-input-box>
 
 	public var text(get, set) : String;
+	public var disabled : Bool = false;
 	var canceled = false;
 
 	function get_text() : String {
