@@ -80,6 +80,8 @@ class Texture extends HuiView<{path: String}> {
 
 	static var _ = HuiView.register("texture", Texture);
 
+	static public var fitCmd = new hrt.ui.HuiCommands.HuiCommand("Fit", {key: hxd.Key.F});
+
 	static var TRANSPARENT_TEX_PATH = 'ui/transparent_tiles_dark.png';
 	static var MIN_ZOOM = 0.01;
 	static var DEFAULT_FILTER = "POINT";
@@ -100,11 +102,10 @@ class Texture extends HuiView<{path: String}> {
 		initComponent();
 
 		registerCommand(HuiCommands.save, View, () -> { save();});
+		registerCommand(fitCmd, View, () -> { fit();});
 
-		var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
 		var dirPos = state.path.lastIndexOf("/");
 		var dirPath = dirPos < 0 ? state.path : state.path.substr(0, dirPos + 1);
-		var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
 		propsFilePath = dirPath + "props.json";
 
 		// Create params from current texture conversion rule
@@ -213,6 +214,9 @@ class Texture extends HuiView<{path: String}> {
 		}
 
 		refreshInspector();
+
+		// Center the texture after the first flow refresh
+		haxe.Timer.delay(fit, 0);
 	}
 
 	override function getViewName():String {
@@ -516,6 +520,14 @@ class Texture extends HuiView<{path: String}> {
 
 		shader.compressedTex = compressedTex;
 		shader.uncompressedTex = uncompressedTex;
+	}
+
+	function fit() {
+		this.zoom = viewer.calculatedHeight / this.bmp.tile.height;
+		refresh();
+		this.pan.x = (viewer.calculatedWidth / 2) - (this.bmp.getSize().width / 2);
+		this.pan.y = (viewer.calculatedHeight / 2) - (this.bmp.getSize().height / 2);
+		refresh();
 	}
 
 	function setChannelVisible(channelIdx : Int, visible : Bool) {
