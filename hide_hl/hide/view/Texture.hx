@@ -61,7 +61,10 @@ private class TextureViewerShader extends hxsl.Shader {
 class Texture extends HuiView<{path: String}> {
 	static var SRC = <texture>
 		<hui-split-container id="container" direction={hrt.ui.HuiSplitContainer.Direction.Horizontal} anchor-to={hrt.ui.HuiSplitContainer.AnchorTo.End} save-display-key="texutre-panel-split">
-			<hui-element id="viewer"></hui-element>
+			<hui-element id="viewer">
+				<hui-text("Compressed") id="compressed-label"/>
+				<hui-text("Uncompressed") id="uncompressed-label"/>
+			</hui-element>
 			<hui-element id="details">
 				<hui-category("Compression")>
 					<hui-element class="horizontal"><hui-text("Compressed texture weight") class="label"/><hui-text("1 MB") class="value" id="weight-compressed-el"/></hui-element>
@@ -82,6 +85,9 @@ class Texture extends HuiView<{path: String}> {
 
 	static public var fitCmd = new hrt.ui.HuiCommands.HuiCommand("Fit", {key: hxd.Key.F});
 
+	static var COMPARE_SLIDER_COLOR = 0xFFFFFFFF;
+	static var COMPARE_SLIDER_WIDTH = 2;
+
 	static var TRANSPARENT_TEX_PATH = 'ui/transparent_tiles_dark.png';
 	static var MIN_ZOOM = 0.01;
 	static var DEFAULT_FILTER = "POINT";
@@ -90,6 +96,7 @@ class Texture extends HuiView<{path: String}> {
 
 	public var bmp : h2d.Bitmap;
 	var params : Dynamic = null;
+	var sliderBmp : h2d.Graphics;
 	var shader : TextureViewerShader;
 	var propsFilePath : String = "";
 	var zoom : Float = 1;
@@ -118,6 +125,9 @@ class Texture extends HuiView<{path: String}> {
 		viewer.huiBg.setTexture(tex);
 		viewer.huiBg.imageMode = CssParser.BackgroundImageMode.Repeat;
 
+		compressedLabel.visible = uncompressedLabel.visible = false;
+
+
 		viewer.onAfterReflow = () -> {
 			refresh();
 		}
@@ -137,17 +147,26 @@ class Texture extends HuiView<{path: String}> {
 		}
 
 		viewer.onPush = (e : hxd.Event) -> {
-			if (onDrag != null)
+			if (e.button == 2 || onDrag != null)
 				return;
 
-			var originDrag = new h2d.col.Point(e.relX, e.relY);
-			var originPan = pan.clone();
-			onDrag = (e) -> {
-				var dx = e.relX - originDrag.x;
-				pan.x = originPan.x + dx;
-				var dy = e.relY - originDrag.y;
-				pan.y = originPan.y + dy;
-				refresh();
+			if (e.button == 1 && sliderBmp.visible) {
+				onDrag = (e) -> {
+					var newFactor = ((e.relX - pan.x) / zoom) / bmp.tile.width;
+					shader.comparisonFactor = hxd.Math.clamp(newFactor);
+					refresh();
+				}
+			}
+			else if (e.button == 0) {
+				var originDrag = new h2d.col.Point(e.relX, e.relY);
+				var originPan = pan.clone();
+				onDrag = (e) -> {
+					var dx = e.relX - originDrag.x;
+					pan.x = originPan.x + dx;
+					var dy = e.relY - originDrag.y;
+					pan.y = originPan.y + dy;
+					refresh();
+				}
 			}
 		}
 
@@ -280,6 +299,7 @@ class Texture extends HuiView<{path: String}> {
 			uncompressedBtn.toggled = false;
 			compareBtn.toggled = false;
 			shader.comparisonFactor = 1;
+			sliderBmp.visible = uncompressedLabel.visible = compressedLabel.visible = false;
 		}
 
 		uncompressedBtn.onClick = (_) -> {
@@ -288,6 +308,7 @@ class Texture extends HuiView<{path: String}> {
 			compressedBtn.toggled = false;
 			compareBtn.toggled = false;
 			shader.comparisonFactor = 0;
+			sliderBmp.visible = uncompressedLabel.visible = compressedLabel.visible = false;
 		}
 
 		compareBtn.onClick = (_) -> {
@@ -295,6 +316,7 @@ class Texture extends HuiView<{path: String}> {
 			compareBtn.toggled = !compareBtn.toggled;
 			uncompressedBtn.toggled = false;
 			compressedBtn.toggled = false;
+			sliderBmp.visible = uncompressedLabel.visible = compressedLabel.visible = true;
 		}
 
 		var rChannelBtn = new HuiToggle();
@@ -443,6 +465,13 @@ class Texture extends HuiView<{path: String}> {
 
 		var zoomWidget = Std.downcast(toolbar.getWidget("zoom-input-box"), HuiInputBox);
 		zoomWidget?.text = '${hxd.Math.round(zoom * 100)}%';
+
+		sliderBmp.clear();
+		sliderBmp.lineStyle(COMPARE_SLIDER_WIDTH, COMPARE_SLIDER_COLOR, 1);
+
+		var x = shader.comparisonFactor * bmp.tile.width;
+		sliderBmp.moveTo(x, 0);
+		sliderBmp.lineTo(x, bmp.tile.height);
 	}
 
 	function refreshInspector() {
@@ -463,7 +492,7 @@ class Texture extends HuiView<{path: String}> {
 		maxSizeEl.text = '/ ${texMaxSize} px';
 	}
 
-	public function refreshTexture() {
+	function refreshTexture() {
 		var dirPos = state.path.lastIndexOf("/");
 		var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
 		var tmpPath = StringTools.replace(Sys.getEnv("TEMP"), "\\","/") + "/tempTexture.dds";
@@ -555,6 +584,8 @@ class Texture extends HuiView<{path: String}> {
 			for (idx in 0...4)
 				setChannelVisible(idx, true);
 			shader.comparisonFactor = 1;
+			sliderBmp = new h2d.Graphics(bmp);
+			sliderBmp.visible = false;
 		}
 
 		var compressedTex = hxd.res.Loader.currentInstance.load(Ide.inst.getRelPath(path)).toImage().toTexture();
