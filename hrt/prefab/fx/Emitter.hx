@@ -615,6 +615,13 @@ class EmitterObject extends h3d.scene.Object {
 		#end
 	}
 
+	function makeShaderInstance(prefab: hrt.prefab.Shader) {
+		var shader = prefab.makeShader();
+		if( shader == null )
+			return;
+		prefab.updateInstance();
+	}
+
 	function getParentFX() : hrt.prefab.fx.FX.FXAnimation {
 		var p = parent;
 		while (p != null) {
@@ -722,7 +729,7 @@ class EmitterObject extends h3d.scene.Object {
 				}
 				if (this.emitterPrefab == p) {
 					if( !checkEnabled(shader) ) continue;
-					shader.makeShader();
+					makeShaderInstance(shader);
 					hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch);
 				}
 
