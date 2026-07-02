@@ -356,8 +356,17 @@ class Texture extends HuiView<{path: String}> {
 		}
 		widgets.push(resetZoomBtn);
 
+		var fitBtn = new HuiButton();
+		fitBtn.dom.addClass("group");
+		new HuiIcon("fullscreen", fitBtn);
+		fitBtn.onClick = (_) -> {
+			fit();
+		}
+		widgets.push(fitBtn);
+
 		var zoomInputBox = new HuiInputBox();
 		zoomInputBox.dom.setId("zoom-input-box");
+		zoomInputBox.dom.addClass("group-end");
 		zoomInputBox.text = '${zoom * 100}%';
 		zoomInputBox.onChange = (isTempChange) -> {
 			if (isTempChange)
@@ -367,14 +376,6 @@ class Texture extends HuiView<{path: String}> {
 		}
 		zoomInputBox.dom.addClass("group");
 		widgets.push(zoomInputBox);
-
-		var fitBtn = new HuiButton();
-		fitBtn.dom.addClass("group-end");
-		new HuiIcon("fullscreen", fitBtn);
-		fitBtn.onClick = (_) -> {
-			fit();
-		}
-		widgets.push(fitBtn);
 
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
@@ -392,6 +393,9 @@ class Texture extends HuiView<{path: String}> {
 		var bytes = new haxe.io.BytesOutput();
 		var convertRule = paramsToConvertRule(params);
 		var path = Ide.inst.getRelPath(state.path);
+		var dirPos = state.path.lastIndexOf("/");
+		var dirPath = dirPos < 0 ? state.path : state.path.substr(0, dirPos + 1);
+		var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
 		if (sys.FileSystem.exists(propsFilePath)) {
 			var propsJson = haxe.Json.parse(sys.io.File.getContent(propsFilePath));
 
@@ -400,7 +404,7 @@ class Texture extends HuiView<{path: String}> {
 				Reflect.setField(fsConvertObj, path, convertRule);
 			}
 			else {
-				var fsConvertObj = {} ;
+				var fsConvertObj = {};
 				Reflect.setField(fsConvertObj, path, convertRule);
 				Reflect.setProperty(propsJson, "fs.convert", fsConvertObj);
 			}
@@ -421,9 +425,11 @@ class Texture extends HuiView<{path: String}> {
 
 		var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
 		@:privateAccess fs.convert.configs.clear();
-		@:privateAccess fs.convert.loadConfig(state.path);
-		var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, state.path, Ide.inst.getPath(state.path));
+		@:privateAccess fs.fileCache.remove(path);
+		@:privateAccess fs.convert.loadConfig(path);
+		var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, path, state.path);
 		fs.convert.run(localEntry);
+		hxd.res.Loader.currentInstance.cleanCache();
 	}
 
 	function refresh() {
