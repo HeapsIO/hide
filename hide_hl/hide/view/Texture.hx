@@ -399,6 +399,22 @@ class Texture extends HuiView<{path: String}> {
 		zoomInputBox.dom.addClass("group");
 		widgets.push(zoomInputBox);
 
+		var mipSel = new HuiSelect();
+		mipSel.dom.setId("mip-sel");
+		if (shader.compressedTex.mipLevels > 0) {
+			var h = shader.compressedTex.height;
+			var w = shader.compressedTex.width;
+			mipSel.items = [ for (idx in 0...shader.compressedTex.mipLevels) { label: 'Mip $idx - ${w / (hxd.Math.pow(2, idx))}x${h / (hxd.Math.pow(2, idx))}', value: idx}];
+			mipSel.value = 0;
+		}
+		else {
+			mipSel.visible = false;
+		}
+		mipSel.onValueChanged = () -> {
+			shader.mipLod = mipSel.value;
+		}
+		widgets.push(mipSel);
+
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
 
@@ -486,6 +502,14 @@ class Texture extends HuiView<{path: String}> {
 		useAlpha.value = params.alpha;
 		alphaInput.disabled = !params.alpha;
 		alphaInput.text = '${params.alphaThreshold}';
+
+		var h = shader.compressedTex.height;
+		var w = shader.compressedTex.width;
+		var mipSel = Std.downcast(toolbar.getWidget("mip-sel"), HuiSelect);
+		if (mipSel != null) {
+			mipSel.items = [ for (idx in 0...shader.compressedTex.mipLevels) { label: 'Mip $idx - ${w / (hxd.Math.pow(2, idx))}x${h / (hxd.Math.pow(2, idx))}', value: idx}];
+			mipSel.value = 0;
+		}
 
 		var texMaxSize = getTextureMaxSize();
 		size.text = '${params.size}';
