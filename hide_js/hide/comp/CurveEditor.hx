@@ -1863,6 +1863,7 @@ class EventMoving {
 			}
 			eventRefresh[i]();
 		}
+		@:privateAccess editor.fxEditor.forceTick = true;
 	}
 
 	public function end(event: js.html.PointerEvent) {

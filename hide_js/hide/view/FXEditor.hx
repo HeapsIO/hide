@@ -1775,6 +1775,7 @@ class FXEditor extends hide.view.FileView {
 
 			if(!paused || hasJumped || forceTick) {
 				var localDt = (hasJumped || (paused && forceTick)) ? 0 : scene.speed * dt;
+				hasJumped = hasJumped || forceTick;
 				var nextTime = currentTime + localDt;
 				if (nextTime > fx.duration && fx.duration > 0) {
 					nextTime = 0;
