@@ -55,7 +55,21 @@ private class TextureViewerShader extends hxsl.Shader {
 		}
 
 	}
+}
 
+class HuiHistogramRange extends HuiElement {
+	static var SRC = <hui-histogram-range>
+		<hui-input-box id="input-range-start" class="group-start"/>
+		<hui-element id="range" class="group"/>
+		<hui-input-box id="input-range-end" class="group"/>
+		<hui-button class="group"><hui-icon("back_arrow")/></hui-button>
+		<hui-button class="group-end"><hui-icon("histogram")/></hui-button>
+	</hui-histogram-range>
+
+	public function new(?parent) {
+		super(parent);
+		initComponent();
+	}
 }
 
 class Texture extends HuiView<{path: String}> {
@@ -414,6 +428,9 @@ class Texture extends HuiView<{path: String}> {
 			shader.mipLod = mipSel.value;
 		}
 		widgets.push(mipSel);
+		
+		var histogram = new HuiHistogramRange();
+		widgets.push(histogram);
 
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
