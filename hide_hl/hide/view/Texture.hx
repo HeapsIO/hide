@@ -14,10 +14,15 @@ private class TextureViewerShader extends hxsl.Shader {
 		@param var mipLod : Float;
 		@param var exposure : Float;
 		@param var comparisonFactor : Float;
+		@param var useGammaCorrection = false;
+		@param var rangeMin = 0.;
+		@param var rangeMax = 1.;
 
 		@const var channels : Int;
 		@const var isCube : Bool;
 		@const var isArray : Bool;
+
+		@:import h3d.shader.ColorSpaces;
 
 		var pixelColor : Vec4;
 		var calculatedUV : Vec2;
@@ -52,6 +57,13 @@ private class TextureViewerShader extends hxsl.Shader {
 				if( channels & 4 == 0 ) pixelColor.b = 0;
 				if( channels & 8 == 0 ) pixelColor.a = 1;
 			}
+
+			pixelColor.rgb = srgb2linear(pixelColor.rgb);
+			pixelColor.rgb = vec3(invLerp(pixelColor.r, rangeMin, rangeMax),
+				invLerp(pixelColor.g, rangeMin, rangeMax),
+				invLerp(pixelColor.b, rangeMin, rangeMax));
+			if (useGammaCorrection)
+				pixelColor.rgb = linear2srgb(pixelColor.rgb);
 		}
 
 	}
@@ -60,15 +72,35 @@ private class TextureViewerShader extends hxsl.Shader {
 class HuiHistogramRange extends HuiElement {
 	static var SRC = <hui-histogram-range>
 		<hui-input-box id="input-range-start" class="group-start"/>
-		<hui-element id="range" class="group"/>
+		<hui-element id="range" class="group">
+		</hui-element>
 		<hui-input-box id="input-range-end" class="group"/>
 		<hui-button class="group"><hui-icon("back_arrow")/></hui-button>
-		<hui-button class="group-end"><hui-icon("histogram")/></hui-button>
+		<hui-button class="group"><hui-icon("histogram")/></hui-button>
+		<hui-toggle class="group-end" id="linear-tog"><hui-icon("gamma")/></hui-toggle>
 	</hui-histogram-range>
 
-	public function new(?parent) {
+	public function new(view: Texture, ?parent) {
 		super(parent);
 		initComponent();
+
+		function onChange(isTempChange) {
+			if (isTempChange)
+				return;
+
+			@:privateAccess view.shader.rangeMin = Std.parseFloat(inputRangeStart.text);
+			@:privateAccess view.shader.rangeMax = Std.parseFloat(inputRangeEnd.text);
+		}
+
+		inputRangeStart.text = "0";
+		inputRangeEnd.text = "1";
+		inputRangeStart.onChange = inputRangeEnd.onChange = onChange;
+
+		linearTog.toggled = true;
+		linearTog.onClick = (_) -> {
+			linearTog.toggled = !linearTog.toggled;
+			@:privateAccess view.shader.useGammaCorrection = !linearTog.toggled;
+		}
 	}
 }
 
@@ -418,7 +450,7 @@ class Texture extends HuiView<{path: String}> {
 		if (shader.compressedTex.mipLevels > 0) {
 			var h = shader.compressedTex.height;
 			var w = shader.compressedTex.width;
-			mipSel.items = [ for (idx in 0...shader.compressedTex.mipLevels) { label: 'Mip $idx - ${w / (hxd.Math.pow(2, idx))}x${h / (hxd.Math.pow(2, idx))}', value: idx}];
+			mipSel.items = [ for (idx in 0...shader.compressedTex.mipLevels) { label: 'Mip $idx - ${hxd.Math.imax(w >> idx, 1)}x${hxd.Math.imax(h >> idx, 1)}', value: idx}];
 			mipSel.value = 0;
 		}
 		else {
@@ -428,8 +460,8 @@ class Texture extends HuiView<{path: String}> {
 			shader.mipLod = mipSel.value;
 		}
 		widgets.push(mipSel);
-		
-		var histogram = new HuiHistogramRange();
+
+		var histogram = new HuiHistogramRange(this);
 		widgets.push(histogram);
 
 		new HuiIcon("question_mark", helpBtn);
@@ -524,7 +556,7 @@ class Texture extends HuiView<{path: String}> {
 		var w = shader.compressedTex.width;
 		var mipSel = Std.downcast(toolbar.getWidget("mip-sel"), HuiSelect);
 		if (mipSel != null) {
-			mipSel.items = [ for (idx in 0...shader.compressedTex.mipLevels) { label: 'Mip $idx - ${w / (hxd.Math.pow(2, idx))}x${h / (hxd.Math.pow(2, idx))}', value: idx}];
+			mipSel.items = [ for (idx in 0...shader.compressedTex.mipLevels) { label: 'Mip $idx - ${hxd.Math.imax(w >> idx, 1)}x${hxd.Math.imax(h >> idx, 1)}', value: idx}];
 			mipSel.value = 0;
 		}
 

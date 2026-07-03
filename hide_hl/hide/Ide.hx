@@ -224,7 +224,7 @@ class Ide extends hide.tools.IdeData {
 					new hide.view.Prefab({path: filePath});
 				case "fbx":
 					new hide.view.Model({path: filePath});
-				case "png", "jpg", "envd", "envs":
+				case "png", "jpg", "envd", "envs", "hdr":
 					new hide.view.Texture({path: filePath});
 				case _:
 					hide.tools.IdeData.openExternalFile(filePath);

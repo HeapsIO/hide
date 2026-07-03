@@ -41,7 +41,7 @@ class HuiSelect extends HuiElement {
 				}
 			}
 
-			valueIdx = Std.int(hxd.Math.clamp(valueIdx + (e.wheelDelta > 0 ? 1 : -1), 0, items.length));
+			valueIdx = Std.int(hxd.Math.clamp(valueIdx + (e.wheelDelta > 0 ? 1 : -1), 0, items.length - 1));
 			if (value != items[valueIdx]) {
 				this.set_value(items[valueIdx].value);
 				onValueChanged();
