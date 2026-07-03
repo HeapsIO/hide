@@ -37,6 +37,13 @@ class HuiView<T> extends HuiElement {
 		registerCommand(HuiCommands.redo, FocusedView, () -> undo.redo());
 	}
 
+	function saveState() {
+		// var container = findParent(HuiTabViewContainer);
+		// if (container == null)
+		// 	return;
+		// container.saveViewState();
+	}
+
 	function setException(e: haxe.Exception) {
 		if (suppressErrors)
 			e = null;

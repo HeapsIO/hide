@@ -32,6 +32,13 @@ class GymWidgets extends HuiElement {
 
 	static var SRC =
 		<gym-widgets>
+
+			<hui-text("hui-virtual-grid")/>
+			<hui-element class="example">
+				<hui-virtual-grid id="virtual-grid"/>
+			</hui-element>
+
+
 			<hui-text("hui-gradient-box")/>
 			<hui-element class="example">
 				<hui-gradient-box/>
@@ -162,6 +169,7 @@ class GymWidgets extends HuiElement {
 		setupTree();
 		setupCommands();
 		setupScene();
+		setupVirtualGrid();
 	}
 
 	function testMenu() :  Array<HuiMenu.MenuItem> {
@@ -337,6 +345,28 @@ class GymWidgets extends HuiElement {
 				}
 			}
 		};
+	}
+
+	function setupVirtualGrid() {
+		var virtualGrid : HuiVirtualGrid<hxd.res.Image> = cast virtualGrid;
+		var list = [];
+		for (res in HuiRes.loader.dir("ui/icons")) {
+			if (res.entry.isDirectory)
+				continue;
+			if (res.entry.extension != "png")
+				continue;
+			list.push(res.toImage());
+		}
+
+		virtualGrid.generateItem = (img: hxd.res.Image) -> {
+			var e = new hrt.ui.HuiElement();
+			e.setWidth(16);
+			e.setHeight(16);
+			e.backgroundType = "hui";
+			e.huiBg.imageTile = img.toTile();
+			return e;
+		};
+		virtualGrid.setItems(list);
 	}
 
 	function setupScene() {

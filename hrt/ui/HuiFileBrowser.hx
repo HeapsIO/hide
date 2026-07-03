@@ -6,12 +6,29 @@ import hrt.tools.FileManager;
 
 typedef File = FileEntry;
 
+enum abstract BrowserMode(String) {
+	var FileTree;
+	var Gallery;
+	var Horizontal;
+	var Vertical;
+}
+
 class HuiFileBrowser extends HuiElement {
 	var rootFile: File;
 
 	var tree: HuiTree<File>;
+	var splitter: HuiSplitContainer;
+	var gallery: HuiVirtualGrid<File>;
 	var rootPath: String;
 	var needRefresh: Bool = false;
+
+	@:p public var mode(default, set): BrowserMode = FileTree;
+
+	function set_mode(v: BrowserMode) {
+		mode = v;
+		refreshLayout();
+		return mode;
+	}
 
 	var fileManager = FileManager.inst;
 
@@ -38,7 +55,7 @@ class HuiFileBrowser extends HuiElement {
 		registerCommand(HuiCommands.copy, View, copySelection);
 		registerCommand(HuiCommands.paste, View, pasteSelection);
 
-		tree = new HuiTree<File>(this);
+		tree = new HuiTree<File>();
 		tree.getItemChildren = getItemChild;
 		tree.getItemName = getItemName;
 		tree.getItemIcon = getItemIcon;
@@ -79,12 +96,39 @@ class HuiFileBrowser extends HuiElement {
 			}
 		};
 
-
 		tree.onItemContextMenu = itemContextMenu;
+
+		// gallery setup
+		gallery = new HuiVirtualGrid<File>();
+
+		// Splitter setup
+		splitter = new HuiSplitContainer();
+
+
+		refreshLayout();
 
 		markRefresh();
 
 		fileManager.watchFileChange(onFileChange);
+	}
+
+	function refreshLayout() {
+		removeChildElements();
+		switch(mode) {
+			case FileTree:
+				addChild(tree);
+			case Gallery:
+				addChild(gallery);
+			case Horizontal | Vertical:
+				addChild(splitter);
+				splitter.addChild(tree);
+				splitter.addChild(gallery);
+				if (mode == Horizontal)
+					@:privateAccess splitter.direction = Horizontal;
+				else
+					@:privateAccess splitter.direction = Vertical;
+		}
+		markRefresh();
 	}
 
 	function actionMoveFilesAbs(operations: Array<{from: String, to: String}>) : hrt.tools.Undo.Action {
@@ -470,7 +514,7 @@ class HuiFileBrowser extends HuiElement {
 		if (child.kind != Dir)
 			return null;
 
-		return child.children.filter((f) -> !f.ignored);
+		return child.children.filter((f) -> !f.ignored && (mode == FileTree || f.kind == Dir) );
 	}
 
 	public dynamic function onOpen(file: File) {
