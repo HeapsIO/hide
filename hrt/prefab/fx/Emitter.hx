@@ -1537,6 +1537,10 @@ class EmitterObject extends h3d.scene.Object {
 			updateMeshBatch();  // Make sure mesh batch is reset even when no tick is called()
 			#if !editor
 			curTime = localTime;
+			#else
+			if (localTime < 0) {
+				curTime = localTime;
+			}
 			#end
 		}
 		else if (!seek) {
