@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="174"
+   height="174"
+   version="1.1"
+   xml:space="preserve"
+   style="clip-rule:evenodd;fill-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs1" />
+    <g
+   id="FX"
+   transform="translate(250,204)">
+        
+        <g
+   transform="translate(-250,-204)"
+   id="g1">
+            <path
+   d="M 99.726,103.274 72.697,76.244 84.091,64.85 l 27.073,26.986 27.289,-27.289 11.394,11.394 -27.227,27.315 27.53,27.441 -12,11 L 111.183,114.73 84,142 73,130 Z M 11,141 V 21 H 149 L 115.897,54.103 H 42 V 86 h 22 v 22 H 43 v 33 z"
+   style="fill:#fefffe;stroke:#fefffe;stroke-width:1px"
+   id="path1" />
+        </g>
+    </g>
+</svg>

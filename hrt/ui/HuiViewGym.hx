@@ -16,6 +16,7 @@ class HuiViewGym extends HuiView<{}> {
 				<gym-layouts display-name="Layouts"/>
 				<gym-search display-name="Search"/>
 				<gym-hui-background display-name="HuiBackground"/>
+				<gym-hui-sdf display-name="HuiSdf"/>
 				<gym-hui-drag-and-drop display-name="DragAndDrop"/>
 			</hui-tab-container>
 		</hui-view-gym>
@@ -575,7 +576,22 @@ class GymHuiBackground extends HuiElement {
 			<hui-element class="example-6"/>
 
 			<hui-button class="btn-1"/>
+
+			<hui-element class="example-sdf-1"/>
+			<hui-element class="example-sdf-2"/>
+			<hui-element class="example-sdf-3"/>
+			<hui-element class="example-sdf-4"/>
 		</gym-hui-background>
+}
+
+class GymHuiSdf extends HuiElement {
+	static var SRC =
+		<gym-hui-sdf>
+			<hui-element class="example-sdf-1"/>
+			<hui-element class="example-sdf-2"/>
+			<hui-element class="example-sdf-3"/>
+			<hui-element class="example-sdf-4"/>
+		</gym-hui-sdf>
 }
 
 class GymHuiDragAndDrop extends HuiElement {

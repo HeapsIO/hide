@@ -31,6 +31,9 @@ class BackgroundShader extends hxsl.Shader {
 		@param var imgOffset : Vec2;
 		@param var imgShadow : Vec4;
 		@param var imgShadowOffset : Vec2;
+		@const @param var imgIsSdf : Bool = false;
+		@param var imgSdfPixelRange: Float = 8.0; // default value for icons, see hide_hl/icons/Makefile for more infos
+
 		@const var useImgShadow: Bool;
 
 		@const @param var useGradient : Bool;
@@ -163,14 +166,25 @@ class BackgroundShader extends hxsl.Shader {
 					tuv = pos / imgSize + 0.5;
 				else // Stretch
 					tuv = relPos * 0.5 + 0.5;
-				var c = imgTex.get(imgBounds.xy + tOffset + tuv * tsize) * imgColor;
 
-				if (useImgShadow) {
-					var c = imgTex.get(imgBounds.xy + tOffset + tuv * tsize - imgShadowOffset / imgTex.size()) * imgColor;
-					fillColor = blendMode(fillColor, imgShadow, c.a * imgShadow.a, imgBlendMode);
+				if (!imgIsSdf) {
+					var c = imgTex.get(imgBounds.xy + tOffset + tuv * tsize) * imgColor;
+
+					if (useImgShadow) {
+						var c = imgTex.get(imgBounds.xy + tOffset + tuv * tsize - imgShadowOffset / imgTex.size()) * imgColor;
+						fillColor = blendMode(fillColor, imgShadow, c.a * imgShadow.a, imgBlendMode);
+					}
+
+					fillColor = blendMode(fillColor, c, imgAlpha * c.a, imgBlendMode);
+				} else {
+					var pixelRange = size / imgTex.size() * imgSdfPixelRange;
+					var msd = imgTex.get(imgBounds.xy + tOffset + tuv * tsize).rgb;
+					var sd = max(min(msd.r, msd.g), min(max(msd.r, msd.g), msd.b));
+					var pxDist = pixelRange.length() * (sd - 0.5);
+					var opacity = clamp(pxDist + 0.5, 0.0, 1.0);
+
+					fillColor = blendMode(fillColor, imgColor, opacity, imgBlendMode);
 				}
-
-				fillColor = blendMode(fillColor, c, imgAlpha * c.a, imgBlendMode);
 			}
 
 			if(useGradient) {
@@ -454,7 +468,9 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 	function set_image(v) {
 		if(v != null) {
 			try {
-				setTexture(hrt.ui.HuiRes.loader.load(v.path).toTexture());
+				var res = hrt.ui.HuiRes.loader.load(v.path);
+				setTexture(res.toTexture());
+				imageIsSdf = res is hrt.ui.Sdf;
 				imageMode = v.mode;
 				shader.imgBounds.set(0,0,1,1);
 			} catch(e: Dynamic) { }
@@ -524,6 +540,12 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 	function set_imageBlend(v) { shader.imgBlendMode = cast v; return v; }
 	@:p(bgImageMode) public var imageMode(never, set) : Null<CssParser.BackgroundImageMode>;
 	function set_imageMode(v) { shader.imgScaleMode = cast v; return v; }
+
+	@:p public var imageIsSdf(never, set) : Bool;
+	function set_imageIsSdf(v) {shader.imgIsSdf = v; return v;};
+
+	@:p public var imageSdfRange(never, set) : Float;
+	function set_imageSdfRange(v) {return shader.imgSdfPixelRange = v;};
 
 	@:p(color) public var imageShadow(never, set) : Int;
 	function set_imageShadow(v) {shader.useImgShadow = true; shader.imgShadow.setColor(v); return v;};
