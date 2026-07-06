@@ -1,3 +1,28 @@
 hui-histogram-range {
+	#range {
+		layout: stack;
+		min-height: 26;
+		min-width: 250;
+	}
 
+	#gauge {
+		min-height: 26;
+		min-width: 26;
+		background-type: hui;
+		> hui-background {
+			background: @color-blue;
+		}
+	}
+
+	.handle {
+		valign: middle;
+	}
+
+	#handle-range-start {
+		margin-left: -8;
+	}
+
+	#handle-range-end {
+		margin-right: -8;
+	}
 }

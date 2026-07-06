@@ -73,6 +73,9 @@ class HuiHistogramRange extends HuiElement {
 	static var SRC = <hui-histogram-range>
 		<hui-input-box id="input-range-start" class="group-start"/>
 		<hui-element id="range" class="group">
+			<hui-element id="gauge"></hui-element>
+			<hui-icon("diamond") class="handle" id="handle-range-start"/>
+			<hui-icon("diamond") class="handle" id="handle-range-end"/>
 		</hui-element>
 		<hui-input-box id="input-range-end" class="group"/>
 		<hui-button class="group"><hui-icon("back_arrow")/></hui-button>
@@ -80,20 +83,44 @@ class HuiHistogramRange extends HuiElement {
 		<hui-toggle class="group-end" id="linear-tog"><hui-icon("gamma")/></hui-toggle>
 	</hui-histogram-range>
 
+	var curMin = 0.;
+	var curMax = 1.;
 	public function new(view: Texture, ?parent) {
 		super(parent);
 		initComponent();
+
+		function refresh() {
+			var min = @:privateAccess view.shader.rangeMin;
+			var max = @:privateAccess view.shader.rangeMax;
+
+			var remappedMin = (min - curMin) * 1 / (curMax - curMin);
+			var remappedMax = (max - curMin) * 1 / (curMax - curMin);
+
+			handleRangeStart.setPosition(-8 + (remappedMin * range.calculatedWidth), handleRangeStart.y);
+			handleRangeEnd.setPosition(-8 + (remappedMax * range.calculatedWidth), handleRangeEnd.y);
+			gauge.x = handleRangeStart.x + handleRangeStart.getSize().width / 2;
+			gauge.setWidth(Std.int(handleRangeEnd.x - handleRangeStart.x));
+			inputRangeStart.text = '${hxd.Math.round(min * 100) / 100}';
+			inputRangeEnd.text = '${hxd.Math.round(max * 100) / 100}';
+		}
 
 		function onChange(isTempChange) {
 			if (isTempChange)
 				return;
 
-			@:privateAccess view.shader.rangeMin = Std.parseFloat(inputRangeStart.text);
-			@:privateAccess view.shader.rangeMax = Std.parseFloat(inputRangeEnd.text);
+			var newRangeMin = Std.parseFloat(inputRangeStart.text);
+			var newRangeMax = Std.parseFloat(inputRangeEnd.text);
+
+			@:privateAccess view.shader.rangeMin = newRangeMin;
+			@:privateAccess view.shader.rangeMax = newRangeMax;
+
+			curMin = newRangeMin;
+			curMax = newRangeMax;
+			refresh();
 		}
 
-		inputRangeStart.text = "0";
-		inputRangeEnd.text = "1";
+		inputRangeStart.text = '${@:privateAccess view.shader.rangeMin}';
+		inputRangeEnd.text = '${@:privateAccess view.shader.rangeMax}';
 		inputRangeStart.onChange = inputRangeEnd.onChange = onChange;
 
 		linearTog.toggled = true;
@@ -101,6 +128,42 @@ class HuiHistogramRange extends HuiElement {
 			linearTog.toggled = !linearTog.toggled;
 			@:privateAccess view.shader.useGammaCorrection = !linearTog.toggled;
 		}
+
+		handleRangeStart.onPush = (e) -> {
+			if (e.button != 0)
+				return;
+
+			handleRangeStart.interactive.startCapture((e) -> {
+				if (e.kind == ERelease || e.kind == EReleaseOutside) {
+					handleRangeStart.interactive.stopCapture();
+					return;
+				}
+
+				@:privateAccess view.shader.rangeMin = hxd.Math.clamp(((getScene().mouseX - range.absX) / range.calculatedWidth) * (curMax - curMin), curMin, @:privateAccess view.shader.rangeMax);
+				refresh();
+			});
+
+			e.propagate = false;
+		}
+
+		handleRangeEnd.onPush = (e) -> {
+			if (e.button != 0)
+				return;
+
+			handleRangeEnd.interactive.startCapture((e) -> {
+				if (e.kind == ERelease || e.kind == EReleaseOutside) {
+					handleRangeEnd.interactive.stopCapture();
+					return;
+				}
+
+				@:privateAccess view.shader.rangeMax = hxd.Math.clamp(((getScene().mouseX - range.absX) / range.calculatedWidth) * (curMax - curMin), @:privateAccess view.shader.rangeMin, curMax);
+				refresh();
+			});
+
+			e.propagate = false;
+		}
+
+		range.onAfterReflow = refresh;
 	}
 }
 
