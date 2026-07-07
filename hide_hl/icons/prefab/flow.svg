@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="32"
+   height="32"
+   viewBox="0 0 32 32"
+   version="1.1"
+   id="svg1"
+   xml:space="preserve"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+     id="defs1" /><g
+     style="fill:#ffffff"
+     id="g1"
+     transform="matrix(0.025,0,0,0.025,0,24)"><path
+       id="rect1"
+       style="stroke-width:120;stroke-linejoin:round;paint-order:stroke fill markers"
+       d="M 80,-880 V 240 H 240 V -880 Z m 960,0 V 240 h 160 V -880 Z M 320,-720 V 80 h 160 v -800 z m 480,0 V 80 h 160 v -800 z" /></g></svg>

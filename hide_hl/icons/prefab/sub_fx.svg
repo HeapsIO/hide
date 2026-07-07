@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="32"
+   height="32"
+   viewBox="0 0 32 32"
+   version="1.1"
+   id="svg1"
+   xml:space="preserve"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+     id="defs1" /><path
+     id="rect512"
+     style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+     d="m 8,2 5.121094,4.5527344 C 10.857338,8.0814481 5,12.73894 5,20 c 0,4.869267 3.4542281,7.359617 7.003906,8.632812 -0.02651,-2.776085 0.01492,-5.555592 -0.0039,-8.332031 -0.198836,-2.202362 1.679141,-4.31176 3.904297,-4.298828 0.300338,-3.03e-4 0.600051,2.33e-4 0.900391,0 1.578291,-1.344379 3.131692,-2.351007 3.822265,-2.777344 L 23.75,16 c 0.750145,1.06e-4 1.499856,-8e-5 2.25,0 V 2 Z m 8,16 c -1.108,0 -2,0.892 -2,2 v 10 c 0,1.108 0.892,2 2,2 h 14 c 1.108,0 2,-0.892 2,-2 V 20 c 0,-1.108 -0.892,-2 -2,-2 z m 2,2 h 2 2 v 2 h -2 -2 v 2 h 2 2 v 2 h -2 -2 v 2 2 h -2 v -2 -2 -2 -2 a 2,2 0 0 1 2,-2 z m 5,0 h 1 1.166016 L 27,23.056641 28.833984,20 H 30 31 L 28.166016,25 31,30 H 30 28.833984 L 27,26.943359 25.166016,30 H 24 23 l 2.833984,-5 z" /></svg>

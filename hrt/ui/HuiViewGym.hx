@@ -351,7 +351,7 @@ class GymWidgets extends HuiElement {
 	function setupVirtualGrid() {
 		var virtualGrid : HuiVirtualGrid<hxd.res.Image> = cast virtualGrid;
 		var list = [];
-		for (res in HuiRes.loader.dir("ui/icons")) {
+		for (res in HuiRes.loader.dir("ui/icons/prefab")) {
 			if (res.entry.isDirectory)
 				continue;
 			if (res.entry.extension != "png")
@@ -359,12 +359,17 @@ class GymWidgets extends HuiElement {
 			list.push(res.toImage());
 		}
 
+		virtualGrid.itemBaseWidth = 32;
+		virtualGrid.itemBaseHeight = 32;
+
 		virtualGrid.generateItem = (img: hxd.res.Image) -> {
 			var e = new hrt.ui.HuiElement();
 			e.setWidth(16);
 			e.setHeight(16);
 			e.backgroundType = "hui";
 			e.huiBg.imageTile = img.toTile();
+			e.huiBg.imageIsSdf = true;
+			e.huiBg.imageMode = Fit;
 			return e;
 		};
 		virtualGrid.setItems(list);

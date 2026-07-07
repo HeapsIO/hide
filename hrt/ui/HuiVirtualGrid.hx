@@ -19,8 +19,8 @@ class HuiVirtualGrid<T> extends HuiElement {
 	/**
 		Items in the grid must have a fixed width and height
 	**/
-	@:p var itemBaseWidth(default, set): Float = 64;
-	@:p var itemBaseHeight(default, set): Float = 64;
+	@:p public var itemBaseWidth(default, set): Float = 64;
+	@:p public var itemBaseHeight(default, set): Float = 64;
 
 	function set_itemBaseWidth(v: Float) {needRefresh = true; updateItemsPerRow(); return itemBaseWidth = v;}
 	function set_itemBaseHeight(v: Float) {needRefresh = true; return itemBaseHeight = v;}
