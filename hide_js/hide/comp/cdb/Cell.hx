@@ -133,6 +133,8 @@ class Cell {
 	}
 
 	function showMenu() {
+		if( inEdit )
+			return false;
 		var menu : Array<hide.comp.ContextMenu.MenuItem> = null;
 		switch( editColumn.type ) {
 		case TId:
