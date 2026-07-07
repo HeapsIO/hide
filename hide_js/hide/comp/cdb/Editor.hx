@@ -1050,10 +1050,16 @@ class Editor extends Component {
 			tables : [for( i in 1...tables.length ) {
 				function makeParent(t:Table) : UndoSheet {
 					var tp = t.parent;
+					var sub = Std.downcast(t, SubTable);
+					var column = -1;
+					if( sub != null )
+						column = sub.cell.columnIndex;
+					else if( tp != null )
+						column = tp.columns.indexOf(tp.sheet.columns[t.sheet.parent.column]);
 					return { sheet : t.sheet.name, parent : tp == null ? null : {
 						sheet : makeParent(tp),
 						line : t.sheet.parent.line,
-						column : tp.columns.indexOf(tp.sheet.columns[t.sheet.parent.column]),
+						column : column,
 					} };
 				}
 				makeParent(tables[i]);
