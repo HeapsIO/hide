@@ -401,14 +401,14 @@ class Object3D extends Prefab {
 		return int;
 	}
 
-#if editor
+	#if (editor || editor_hl)
 	override function setSelected(b:Bool):Bool {
 		if (local3d == null)
 			return true;
 
 		var materials = local3d.getMaterials();
 
-		if( !b ) {
+		if (!b) {
 			for( m in materials ) {
 				//m.mainPass.stencil = null;
 				m.removePass(m.getPass("highlight"));
@@ -417,6 +417,15 @@ class Object3D extends Prefab {
 			return true;
 		}
 
+		#if editor_hl
+		for( m in materials ) {
+			var p = m.allocPass("highlight");
+			p.culling = None;
+			p.depthWrite = false;
+			p.depthTest = Always;
+		}
+		return true;
+		#else
 		var shader = new h3d.shader.FixedColor(0xffffff);
 		var shader2 = new h3d.shader.FixedColor(0xff8000);
 		for( m in materials ) {
@@ -434,8 +443,11 @@ class Object3D extends Prefab {
 			p.addShader(shader2);
 		}
 		return true;
+		#end
 	}
+	#end
 
+	#if editor
 	public function addEditorUI() {
 		if (local3d != null) {
 			var objs = local3d.findAll((o) -> Std.downcast(o, h3d.scene.Object));

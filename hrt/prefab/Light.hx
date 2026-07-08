@@ -293,8 +293,11 @@ class Light extends Object3D {
 			light.color.setColor(color | 0xFF000000);
 		}
 
-		#if editor
+		#if (editor ||editor_hl)
+		refreshDebug();
+		#end
 
+		#if editor
 		if (icon != null) {
 			icon.color = h3d.Vector4.fromColor(color);
 
@@ -312,8 +315,6 @@ class Light extends Object3D {
 					icon.texture = ide.getTexture(ide.getHideResPath("icons/RectangleLight.png"));
 			}
 		}
-
-		refreshDebug();
 
 		// no "Mixed" in editor
 		if( light != null && light.shadows.mode == Mixed ) light.shadows.mode = Dynamic;
@@ -378,8 +379,8 @@ class Light extends Object3D {
 					<block if (kind == Rectangle)>
 						<range(0, 5) field={width}/>
 						<range(0, 5) field={height}/>
-						<range(1, 90) field={horizontalAngle}/>
-						<range(1, 90) field={verticalAngle}/>
+						<range(0, 90) field={horizontalAngle}/>
+						<range(0, 90) field={verticalAngle}/>
 						<range(1, 90) field={fallOff}/>
 						<range(1, 20) field={range}/>
 					</block>
@@ -448,8 +449,7 @@ class Light extends Object3D {
 		}
 	}
 
-	#if editor
-
+	#if (editor || editor_hl)
 	function refreshDebug() {
 		if ( local3d == null )
 			return;
@@ -608,15 +608,29 @@ class Light extends Object3D {
 
 			function drawRec(g : h3d.scene.Graphics) {
 				g.lineStyle(1, this.color);
-				var p1 = new h3d.col.Point(0,-width / 2,-height / 2);
-				var p2 = new h3d.col.Point(0, width / 2, -height / 2);
-				var p3 = new h3d.col.Point(0,-width / 2,height / 2);
-				var p4 = new h3d.col.Point(0, width / 2, height / 2);
+				var left = new h3d.col.Point(0, -width / 2, 0);
+				var right = new h3d.col.Point(0, width / 2, 0);
+				var top = new h3d.col.Point(0, 0, -height / 2);
+				var bot = new h3d.col.Point(0, 0, height / 2);
 
-				var p5 = p1 + new h3d.col.Point(range,-hxd.Math.sin(hxd.Math.degToRad(horizontalAngle) / 2) * range,-hxd.Math.sin(hxd.Math.degToRad(verticalAngle) / 2) * range);
-				var p6 =  p2 + new h3d.col.Point(range,hxd.Math.sin(hxd.Math.degToRad(horizontalAngle) / 2) * range,-hxd.Math.sin(hxd.Math.degToRad(verticalAngle) / 2) * range);
-				var p7 =  p3 + new h3d.col.Point(range,-hxd.Math.sin(hxd.Math.degToRad(horizontalAngle) / 2) * range,hxd.Math.sin(hxd.Math.degToRad(verticalAngle) / 2) * range);
-				var p8 =  p4 + new h3d.col.Point(range,hxd.Math.sin(hxd.Math.degToRad(horizontalAngle) / 2) * range,hxd.Math.sin(hxd.Math.degToRad(verticalAngle) / 2) * range);
+				var p1 = left + top;
+				var p2 = right + top;
+				var p3 = left + bot;
+				var p4 = right + bot;
+
+				var vTheta = hxd.Math.degToRad(verticalAngle / 2);
+				var originVertical = new h3d.col.Point(-(height / (2 * hxd.Math.tan(vTheta))), 0, 0);
+				var hTheta = hxd.Math.degToRad(horizontalAngle / 2);
+				var originHorizontal = new h3d.col.Point(-(width / (2 * hxd.Math.tan(hTheta))), 0, 0);
+				var dirTop = vTheta == 0 ? new h3d.Vector(1, 0, 0) : (top - originVertical).normalized();
+				var dirBot = vTheta == 0 ? new h3d.Vector(1, 0, 0) : (bot - originVertical).normalized();
+				var dirLeft = hTheta == 0 ? new h3d.Vector(1, 0, 0) : (left - originHorizontal).normalized();
+				var dirRight = hTheta == 0 ? new h3d.Vector(1, 0, 0) : (right - originHorizontal).normalized();
+
+				var p5 = p1 + new h3d.Vector(1, dirLeft.y, dirTop.z) * range;
+				var p6 = p2 + new h3d.Vector(1, dirRight.y, dirTop.z) * range;
+				var p7 = p3 + new h3d.Vector(1, dirLeft.y, dirBot.z) * range;
+				var p8 = p4 + new h3d.Vector(1, dirRight.y, dirBot.z) * range;
 
 				function drawLine(point1 : h3d.col.Point, point2 : h3d.col.Point) {
 					g.moveTo(point1.x, point1.y, point1.z); g.lineTo(point2.x, point2.y, point2.z);
@@ -662,12 +676,13 @@ class Light extends Object3D {
 		}
 
 		var isSelected = false;
-		if(sel != null){
+		if (sel != null){
 			isSelected = sel.visible;
-			if( debugPoint != null ) debugPoint.visible = (isSelected || shared.editorDisplay);
-			if( debugDir != null ) debugDir.visible = (isSelected || shared.editorDisplay);
-			if( debugSpot != null ) debugSpot.visible = (isSelected || shared.editorDisplay);
-			if( debugCapsule != null ) debugCapsule.visible = (isSelected || shared.editorDisplay);
+			if( debugPoint != null ) debugPoint.visible = (isSelected #if editor || shared.editorDisplay #end);
+			if( debugDir != null ) debugDir.visible = (isSelected #if editor || shared.editorDisplay #end);
+			if( debugSpot != null ) debugSpot.visible = (isSelected #if editor || shared.editorDisplay #end);
+			if( debugCapsule != null ) debugCapsule.visible = (isSelected #if editor || shared.editorDisplay #end);
+			if( debugRectangle != null ) debugRectangle.visible = (isSelected #if editor || shared.editorDisplay #end);
 			sel.name = "__selection";
 		}
 	}
@@ -676,11 +691,14 @@ class Light extends Object3D {
 		var sel = local3d?.getObjectByName("__selection");
 		if( sel != null ) sel.visible = b;
 		refreshDebug();
+		#if editor
 		if (!b && local3d != null)
 			local3d.visible = this.visible && !shared.editor.isHidden(this);
+		#end
 		return true;
 	}
 
+	#if editor
 	override function editorRemoveInstanceObjects() : Void {
 		if (icon != null) {
 			icon.remove();

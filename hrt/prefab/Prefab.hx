@@ -693,6 +693,16 @@ class Prefab {
 		return true;
 	}
 
+	#if (editor || editor_hl)
+	/**
+		Allows to customize how the prefab instance changes when selected/unselected within Hide.
+		Selection of descendants is skipped if false is returned.
+	**/
+	public function setSelected(b : Bool ) : Bool {
+		return true;
+	}
+
+	#end
 
 	#if editor
 	/**
@@ -700,14 +710,6 @@ class Prefab {
 	**/
 	public function getHideProps() : Null<hide.prefab.HideProps> {
 		return { icon : "question-circle", name : Type.getClassName(Type.getClass(this)), hideInAddMenu: true };
-	}
-
-	/**
-		Allows to customize how the prefab instance changes when selected/unselected within Hide.
-		Selection of descendants is skipped if false is returned.
-	**/
-	public function setSelected(b : Bool ) : Bool {
-		return true;
 	}
 
 	/**

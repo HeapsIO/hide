@@ -795,14 +795,7 @@ class Prefab extends HuiView<{path: String}> {
 		}
 
 		for (s in selectedPrefabs.keys()) {
-			var obj3d = Std.downcast(s, hrt.prefab.Object3D);
-			if (obj3d != null && obj3d.local3d != null) {
-				for (m in obj3d.local3d.getMaterials()) {
-					var p = m.getPass("highlight");
-					if (p == null) continue;
-					m.removePass(p);
-				}
-			}
+			s.setSelected(false);
 		}
 
 		selectedPrefabs.clear();
@@ -810,16 +803,7 @@ class Prefab extends HuiView<{path: String}> {
 		var objs = [];
 		for (prefab in selection) {
 			selectedPrefabs.set(prefab, true);
-			var obj3d = Std.downcast(prefab, hrt.prefab.Object3D);
-			if (obj3d != null && obj3d.local3d != null) {
-				objs.push(obj3d.local3d);
-				for (m in obj3d.local3d.getMaterials()) {
-					var p = m.allocPass("highlight");
-					p.culling = None;
-					p.depthWrite = false;
-					p.depthTest = Always;
-				}
-			}
+			prefab.setSelected(true);
 		}
 
 		if (objs.length > 0)
