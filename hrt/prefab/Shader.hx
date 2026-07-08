@@ -7,7 +7,7 @@ import hrt.impl.TextureType;
 import hide.prefab.HideProps;
 #end
 
-@:prefabIcon(hrt.ui.HuiRes.ui.icons.shader)
+@:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.shader)
 @:prefabCategory("Shader")
 @:prefabHideInAddMenu
 class Shader extends Prefab {

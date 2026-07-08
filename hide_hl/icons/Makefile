@@ -8,10 +8,10 @@ MSDFGEN_FLAGS := --pxrange 8 -scale 2 -size 64 64
 
 OUTPUT := ../res/ui/icons/
 
-SRC := $(wildcard **/*.svg)
+SRC := $(shell find src -name "*.svg")
 PNG := $(patsubst src/%.svg, $(OUTPUT)%.sdf.png, $(SRC))
 
-$(OUTPUT)%.sdf.png : %.svg
+$(OUTPUT)%.sdf.png : src/%.svg
 	$(MSDFGEN) -svg $< -o $@ $(MSDFGEN_FLAGS)
 
 .PHONY: all

@@ -470,7 +470,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			try {
 				var res = hrt.ui.HuiRes.loader.load(v.path);
 				setTexture(res.toTexture());
-				imageIsSdf = res is hrt.ui.Sdf;
+				imageIsSdf = StringTools.endsWith(res.entry.name, "sdf.png");
 				imageMode = v.mode;
 				shader.imgBounds.set(0,0,1,1);
 			} catch(e: Dynamic) { }

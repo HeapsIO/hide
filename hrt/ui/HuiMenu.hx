@@ -386,7 +386,7 @@ class HuiMenuItem extends HuiElement {
 
 		if (item.icon != null) {
 			icon.huiBg.setTexture(item.icon.toTexture());
-			icon.huiBg.imageIsSdf = item.icon is hrt.ui.Sdf;
+			icon.huiBg.imageIsSdf = StringTools.endsWith(item.icon.entry.name, "sdf.png");
 			icon.huiBg.imageMode = Fit;
 		}
 

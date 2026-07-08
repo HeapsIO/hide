@@ -13,6 +13,7 @@ class HuiViewGym extends HuiView<{}> {
 		<hui-view-gym>
 			<hui-tab-container>
 				<gym-widgets display-name="Widgets"/>
+				<gym-icons display-name="Icons"/>
 				<gym-layouts display-name="Layouts"/>
 				<gym-search display-name="Search"/>
 				<gym-hui-background display-name="HuiBackground"/>
@@ -376,7 +377,7 @@ class GymWidgets extends HuiElement {
 				e.setHeight(s);
 				e.backgroundType = "hui";
 				e.huiBg.imageTile = img.toTile();
-				e.huiBg.imageIsSdf = true;
+				e.huiBg.imageIsSdf = StringTools.endsWith(img.entry.name, "sdf.png");
 				e.huiBg.imageMode = Fit;
 			}
 			return container;
@@ -406,6 +407,61 @@ class GymWidgets extends HuiElement {
 			int.onClick = (e) -> hide.Ide.showInfo("Clicked box");
 			int.cursor = Button;
 		}
+	}
+}
+
+class GymIcons extends HuiElement {
+	static var SRC =
+		<gym-icons>
+			<hui-virtual-grid id="virtual-grid"/>
+		</gym-icons>
+
+	public function new(?parent) {
+		super(parent);
+		initComponent();
+
+		var virtualGrid : HuiVirtualGrid<hxd.res.Image> = cast virtualGrid;
+		var list = [];
+
+		function rec(entry: hxd.fs.FileEntry) {
+			if (entry.isDirectory) {
+				for (child in entry.iterator()) {
+					rec(child);
+				}
+				return;
+			}
+			if (entry.extension != "png")
+				return;
+			list.push(HuiRes.loader.load(entry.path).toImage());
+		}
+
+		for (file in HuiRes.loader.dir("ui/icons"))
+			rec(file.entry);
+
+		virtualGrid.itemBaseWidth = 16+24+32+64+8;
+		virtualGrid.itemBaseHeight = 64+24;
+
+		virtualGrid.generateItem = (img: hxd.res.Image) -> {
+			var container = new hrt.ui.HuiElement();
+			container.dom.addClass("grid-test");
+
+			var icons = new hrt.ui.HuiElement(container);
+			icons.dom.addClass("icons");
+			var name = StringTools.replace(img.entry.path, "ui/icons/", "");
+			var text = new hrt.ui.HuiText(name, container);
+
+			for (s in [16,24,32,64]) {
+				var e = new hrt.ui.HuiElement(icons);
+				e.setWidth(s);
+				e.setHeight(s);
+				e.backgroundType = "hui";
+				e.huiBg.imageTile = img.toTile();
+				e.huiBg.imageIsSdf = true;
+				e.huiBg.imageMode = Fit;
+			}
+			return container;
+		};
+		virtualGrid.setItems(list);
 	}
 }
 

@@ -7,7 +7,7 @@ class HlMacros {
 
 	public static function init() {
 		#if hui
-		hxd.res.Config.addExtension("sdf.png", "hrt.ui.Sdf");
+		hxd.res.Config.addExtension("sdf.png", "hxd.res.Image");
 
 		domkit.Macros.registerComponentsPath("hrt.ui.$");
 		domkit.Macros.setDefaultParser("hrt.ui.CssParser");
