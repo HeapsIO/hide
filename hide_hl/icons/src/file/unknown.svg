@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="32"
+   height="32"
+   version="1.1"
+   xml:space="preserve"
+   style="clip-rule:evenodd;fill-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs1" />
+    
+<path
+   style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;fill:#ffffff;enable-background:accumulate;stop-color:#000000"
+   d="M 9,2 C 6.2472972,2 4,4.2472972 4,7 v 18 c 0,2.752703 2.2472972,5 5,5 h 14 c 2.752703,0 5,-2.247297 5,-5 V 11.619141 L 19.449219,2 Z m 0,2 h 9 v 4 l 4,4 h 4 v 13 c 0,1.679297 -1.320703,3 -3,3 H 9 C 7.3207028,28 6,26.679297 6,25 V 7 C 6,5.3207028 7.3207028,4 9,4 Z"
+   id="rect6" /><path
+   style="fill:none;fill-opacity:1;stroke:#fefffe;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+   d="m 10,15 6,-6 6,6 -6,3 v 3"
+   id="path217" /><circle
+   style="fill:none;fill-opacity:1;stroke:#fefffe;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+   id="path218"
+   cx="16"
+   cy="24"
+   r="1" /></svg>

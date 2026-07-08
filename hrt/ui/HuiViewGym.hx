@@ -359,18 +359,27 @@ class GymWidgets extends HuiElement {
 			list.push(res.toImage());
 		}
 
-		virtualGrid.itemBaseWidth = 32;
-		virtualGrid.itemBaseHeight = 32;
+		virtualGrid.itemBaseWidth = 16+24+32+64+8;
+		virtualGrid.itemBaseHeight = 64+24;
 
 		virtualGrid.generateItem = (img: hxd.res.Image) -> {
-			var e = new hrt.ui.HuiElement();
-			e.setWidth(16);
-			e.setHeight(16);
-			e.backgroundType = "hui";
-			e.huiBg.imageTile = img.toTile();
-			e.huiBg.imageIsSdf = true;
-			e.huiBg.imageMode = Fit;
-			return e;
+			var container = new hrt.ui.HuiElement();
+			container.dom.addClass("grid-test");
+
+			var icons = new hrt.ui.HuiElement(container);
+			icons.dom.addClass("icons");
+			var text = new hrt.ui.HuiText(img.name.split(".").shift(), container);
+
+			for (s in [16,24,32,64]) {
+				var e = new hrt.ui.HuiElement(icons);
+				e.setWidth(s);
+				e.setHeight(s);
+				e.backgroundType = "hui";
+				e.huiBg.imageTile = img.toTile();
+				e.huiBg.imageIsSdf = true;
+				e.huiBg.imageMode = Fit;
+			}
+			return container;
 		};
 		virtualGrid.setItems(list);
 	}

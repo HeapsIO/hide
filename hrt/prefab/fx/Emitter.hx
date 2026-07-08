@@ -1112,8 +1112,9 @@ class EmitterObject extends h3d.scene.Object {
 							continue;
 						}
 
-						var subEmitterInstance : Emitter = @:privateAccess template.make(scene);
+						var subEmitterInstance : Emitter = @:privateAccess template.make(this);
 						var emitter : EmitterObject = cast subEmitterInstance.local3d;
+						emitter.ignoreParentTransform = true;
 						emitter.isSubEmitter = true;
 						emitter.parentEmitter = this;
 						emitter.updateParentNonEmitter();

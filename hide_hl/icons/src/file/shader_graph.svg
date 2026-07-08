@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="32"
+   height="32"
+   version="1.1"
+   xml:space="preserve"
+   style="clip-rule:evenodd;fill-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs1" />
+    
+<path
+   id="path201"
+   style="baseline-shift:baseline;clip-rule:nonzero;display:inline;overflow:visible;opacity:1;vector-effect:none;fill:#fefffe;fill-rule:nonzero;stroke-linecap:butt;stroke-linejoin:miter;paint-order:stroke fill markers;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+   d="M 5,2 C 3.3552972,2 2,3.3552972 2,5 v 6 c 0,1.644703 1.3552972,3 3,3 h 6 c 1.644703,0 3,-1.355297 3,-3 V 8 h 4.705078 c -0.0253,0.2131399 -0.07144,0.5536991 -0.302734,1.1230469 -0.560019,1.3785071 -1.703151,3.3738101 -2.886719,5.3671871 -1.183568,1.993378 -2.407545,3.993169 -3.179687,5.570313 -0.386073,0.788572 -0.672367,1.44136 -0.765626,2.115234 -0.04663,0.336937 -0.06927,0.730446 0.189454,1.160157 C 12.018487,23.765648 12.590278,24 13,24 h 5 v 3 c 0,1.644703 1.355297,3 3,3 h 6 c 1.644703,0 3,-1.355297 3,-3 v -6 c 0,-1.644703 -1.355297,-3 -3,-3 h -6 c -1.644703,0 -3,1.355297 -3,3 v 1 h -4.275391 c 0.0916,-0.289361 0.163584,-0.560901 0.408203,-1.060547 0.696605,-1.422856 1.910131,-3.423065 3.101563,-5.429687 1.191432,-2.006623 2.3608,-4.01132 3.019531,-5.6328129 0.329366,-0.8107462 0.569619,-1.5027092 0.511719,-2.265625 C 20.736675,7.2298702 20.593915,6.7783207 20.242188,6.4492188 19.89046,6.1201168 19.416667,6 19,6 H 14 V 5 C 14,3.3552972 12.644703,2 11,2 Z M 5,4 H 6 V 6 H 8 V 4 h 2 v 2 h 2 v 2 h -2 v 2 h 2 v 1 c 0,0.571297 -0.428703,1 -1,1 H 10 V 10 H 8 v 2 H 6 V 10 H 4 V 8 H 6 V 6 H 4 V 5 C 4,4.4287028 4.4287028,4 5,4 Z m 1,4 v 2 H 8 V 8 Z m 2,0 h 2 V 6 H 8 Z m 13,12 h 1 v 2 h 2 v -2 h 2 v 2 h 2 v 2 h -2 v 2 h 2 v 1 c 0,0.571297 -0.428703,1 -1,1 h -1 v -2 h -2 v 2 h -2 v -2 h -2 v -2 h 2 v -2 h -2 v -1 c 0,-0.571297 0.428703,-1 1,-1 z m 1,4 v 2 h 2 v -2 z m 2,0 h 2 v -2 h -2 z" /></svg>
