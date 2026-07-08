@@ -30,7 +30,6 @@ class Plugin {
 		"js",
 		"sys",
 		"hscript",
-		"cdb",
 		"format",
 		"domkit",
 
