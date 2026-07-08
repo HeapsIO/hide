@@ -697,6 +697,7 @@ class Light extends Object3D {
 		#end
 		return true;
 	}
+	#end
 
 	#if editor
 	override function editorRemoveInstanceObjects() : Void {
