@@ -27,11 +27,11 @@ class HuiGradientEditor extends HuiPopup {
 						<hui-element class="edit-toolbar">
 							<hui-button-menu(editMenu)>
 								<hui-text("Edit")/>
-								<hui-icon("dropDown")/>
+								<hui-icon("drop_down")/>
 							</hui-button-menu>
 							<hui-button-menu(settingsMenu)>
 								<hui-text("Texture settings")/>
-								<hui-icon("dropDown")/>
+								<hui-icon("drop_down")/>
 							</hui-button-menu>
 						</hui-element>
 					</hui-element>

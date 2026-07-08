@@ -1,3 +1,5 @@
+@button-size: 26;
+@button-padding: 3;
 hui-toolbar {
 	fill-width: true;
 	padding: 2;
@@ -9,19 +11,19 @@ hui-toolbar {
 	}
 
 	hui-toggle {
-		padding: 5;
-		min-width: 26;
-		min-height: 26;
+		padding: @button-padding;
+		min-width: @button-size;
+		min-height: @button-size;
 	}
 
 	hui-button {
-		padding: 5;
-		min-width: 26;
-		min-height: 26;
+		padding: @button-padding;
+		min-width: @button-size;
+		min-height: @button-size;
 	}
 
 	hui-input-box {
-		min-height: 26;
+		min-height: @button-size;
 		width: 50;
 		hui-text-input {
 			align: middle middle;
@@ -30,7 +32,7 @@ hui-toolbar {
 	}
 
 	hui-select {
-		min-height: 26;
+		min-height: @button-size;
 		width: 150;
 		fill-width: false;
 		background-type: hui;

@@ -15,10 +15,10 @@ class VirtualListTest extends HuiView<{}> {
 
 	static var icons = [
 		"ui/icons/check.png",
-		"ui/icons/checkBlank.png",
+		"ui/icons/check_blank.png",
 		"ui/icons/copy.png",
 		"ui/icons/radio.png",
-		"ui/icons/radioBlank.png",
+		"ui/icons/radio_blank.png",
 		"ui/icons/search.png",
 	];
 

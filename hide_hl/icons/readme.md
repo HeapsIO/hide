@@ -1,6 +1,6 @@
 # Icon Guideline / tutorial
 
-It's recomended to use Inkscape for the icon creation
+It's recommended to use Inkscape for the icon creation
 
 Use `../icon_parts/inkscape_icon_template.svg` as a base
 

@@ -355,7 +355,7 @@ class GymWidgets extends HuiElement {
 		for (res in HuiRes.loader.dir("ui/icons/prefab")) {
 			if (res.entry.isDirectory)
 				continue;
-			if (res.entry.extension != "png")
+			if (StringTools.endsWith(res.entry.name, ".sdf.png"))
 				continue;
 			list.push(res.toImage());
 		}
@@ -377,7 +377,7 @@ class GymWidgets extends HuiElement {
 				e.setHeight(s);
 				e.backgroundType = "hui";
 				e.huiBg.imageTile = img.toTile();
-				e.huiBg.imageIsSdf = StringTools.endsWith(img.entry.name, "sdf.png");
+				e.huiBg.imageIsSdf = StringTools.endsWith(img.entry.name, ".sdf.png");
 				e.huiBg.imageMode = Fit;
 			}
 			return container;
@@ -430,7 +430,7 @@ class GymIcons extends HuiElement {
 				}
 				return;
 			}
-			if (entry.extension != "png")
+			if(!StringTools.endsWith(entry.name, ".sdf.png"))
 				return;
 			list.push(HuiRes.loader.load(entry.path).toImage());
 		}

@@ -5,7 +5,7 @@ package hrt.ui;
 class HuiCategory extends HuiElement {
 	static var SRC =
 		<hui-category>
-			<hui-element id="header"><hui-icon("dropDown") id="header-icon"/><hui-text("") id="header-text"/></hui-element>
+			<hui-element id="header"><hui-icon("drop_down") id="header-icon"/><hui-text("") id="header-text"/></hui-element>
 			<hui-element id="content" __content__ public/>
 		</hui-category>
 
@@ -23,7 +23,7 @@ class HuiCategory extends HuiElement {
 		header.onClick = (e) -> {
 			isOpen = !isOpen;
 			content.visible = isOpen;
-			headerIcon.setIcon(isOpen ? "dropDown" : "chevronRight");
+			headerIcon.setIcon(isOpen ? "drop_down" : "chevron_right");
 		};
 	}
 }

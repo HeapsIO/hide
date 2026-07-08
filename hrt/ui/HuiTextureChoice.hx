@@ -13,7 +13,7 @@ class HuiTextureChoice extends HuiElement {
 				<hui-gradient-box id="gradient-box"/>
 			</hui-element>
 			<hui-button-menu(menu) id="button-menu">
-				<hui-icon("verticalDotsSmall")/>
+				<hui-icon("vertical_dots_small")/>
 			</hui-button-menu>
 		</hui-texture-choice>
 

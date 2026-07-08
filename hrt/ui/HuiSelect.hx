@@ -9,7 +9,7 @@ typedef HuiSelectOption = {
 class HuiSelect extends HuiElement {
 	static var SRC = <hui-select>
 		<hui-element id="value-text-container"><hui-text id="value-text"/></hui-element>
-		<hui-icon("dropDown")/>
+		<hui-icon("drop_down")/>
 	</hui-select>
 
 	public var value(default, set) : Dynamic;

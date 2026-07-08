@@ -74,10 +74,10 @@ class HuiTransformWidgets extends HuiElement {
 class HuiSnapWidget extends HuiElement {
 	static var SRC = <hui-snap-widget>
 		<hui-toggle class="group-start" id="snap-btn">
-			<hui-icon("grid-magnet")/>
+			<hui-icon("grid_snap")/>
 		</hui-toggle>
 		<hui-button class="group-end tiny" id="snap-popup-btn">
-			<hui-icon("dropDown")/>
+			<hui-icon("drop_down")/>
 		</hui-button>
 	</hui-snap-widget>
 
@@ -103,7 +103,7 @@ class HuiVisibilityWidget extends HuiElement {
 			<hui-icon("visibility")/>
 		</hui-toggle>
 		<hui-button class="group-end tiny" id="visibility-popup-btn">
-			<hui-icon("dropDown")/>
+			<hui-icon("drop_down")/>
 		</hui-button>
 	</hui-visibility-widget>
 
@@ -270,7 +270,7 @@ class HuiSceneFiltersWidget extends HuiElement {
 	static var SRC = <hui-scene-filters-widget>
 		<hui-button id="btn">
 			<hui-text("Scene Filters")/>
-			<hui-icon("dropDown")/>
+			<hui-icon("drop_down")/>
 		</hui-button>
 	</hui-scene-filters-widget>
 
@@ -361,7 +361,7 @@ class HuiRenderPropsWidget extends HuiElement {
 	static var SRC = <hui-render-props-widget>
 		<hui-button id="btn">
 			<hui-text("Render Props")/>
-			<hui-icon("dropDown")/>
+			<hui-icon("drop_down")/>
 		</hui-button>
 	</hui-render-props-widget>
 
@@ -468,7 +468,7 @@ class HuiViewModesWidget extends HuiElement {
 	static var SRC = <hui-view-modes-widget>
 		<hui-button id="btn">
 			<hui-text("View Modes")/>
-			<hui-icon("dropDown")/>
+			<hui-icon("drop_down")/>
 		</hui-button>
 	</hui-view-modes-widget>
 

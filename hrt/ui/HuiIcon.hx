@@ -13,7 +13,7 @@ class HuiIcon extends HuiElement {
 	}
 
 	public function setIcon(iconName : String) {
-		this.huiBg.image = { path: 'ui/icons/${iconName}.png', mode: CssParser.BackgroundImageMode.Fit };
+		this.huiBg.image = { path: 'ui/icons/${iconName}.sdf.png', mode: CssParser.BackgroundImageMode.Fit };
 	}
 }
 

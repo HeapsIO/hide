@@ -126,7 +126,7 @@ class HuiTreeLine extends HuiElement {
 		}
 		icon.backgroundType = "hui";
 		icon.huiBg.setTexture(data.icon.toTexture());
-		icon.huiBg.imageIsSdf = StringTools.endsWith(data.icon.entry.name, "sdf.png");
+		icon.huiBg.imageIsSdf = StringTools.endsWith(data.icon.entry.name, ".sdf.png");
 		icon.huiBg.imageMode = Fit;
 
 		dom.toggleClass("children", tree.hasChildren(data.item));
