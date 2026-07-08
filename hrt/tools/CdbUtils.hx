@@ -10,15 +10,17 @@ enum PathPart {
 typedef Path = Array<PathPart>;
 
 class CdbUtils {
-	public static function splitPath(rs: {s:Array<{s:cdb.Sheet, c:String, id:Null<String>}>, o:{path:Array<Dynamic>, indexes:Array<Int>}}) {
+	public static function splitPath(rs: cdb.Sheet.Reference) {
 		var path = [];
 		var coords = [];
 		for( i in 0...rs.s.length ) {
 			var s = rs.s[i];
 			var oid = Reflect.field(rs.o.path[i], s.id);
 			var idx = rs.o.indexes[i];
-			if( oid == null || oid == "" )
-				path.push(s.s.name.split("@").pop() + (idx < 0 ? "" : "[" + idx +"]"));
+			if( oid == null || oid == "" ) {
+				var col = i > 0 ? rs.s[i - 1].c : s.c;
+				path.push(col + (idx < 0 ? "" : "[" + idx +"]"));
+			}
 			else {
 				path.push(oid);
 			}

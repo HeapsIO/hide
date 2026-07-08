@@ -128,12 +128,13 @@ class CdbTable extends hide.ui.View<{}> {
 				if( editor.cursor.table != null) {
 					editor.cursor.table.revealLine(lineNo);
 					if (i < path.length-1) {
-						var sub = editor.cursor.getLine().subTable;
+						var line = editor.cursor.getLine();
+						var sub = line == null ? null : line.subTable;
 						var cell = editor.cursor.getCell();
 						if (sub != null && sub.cell == cell) {
 							curTable = sub;
 						}
-						else {
+						else if( cell != null && cell.column.type.match(TList | TProperties | TPolymorph) ) {
 							cell.open(false);
 							curTable = editor.cursor.table;
 						}

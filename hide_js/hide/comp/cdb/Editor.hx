@@ -1279,7 +1279,7 @@ class Editor extends Component {
 		return id;
 	}
 
-	public static function splitPath(rs: {s:Array<{s:cdb.Sheet, c:String, id:Null<String>}>, o:{path:Array<Dynamic>, indexes:Array<Int>}}) {
+	public static function splitPath(rs: cdb.Sheet.Reference) {
 		return hrt.tools.CdbUtils.splitPath(rs);
 	}
 
