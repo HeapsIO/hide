@@ -7,7 +7,7 @@ package hrt.ui;
 @:access(hrt.ui.HuiVirtualList)
 class HuiVirtualGrid<T> extends HuiElement {
 	var items: Array<T> = [];
-	var virtualList: HuiVirtualList<Int>;
+	var virtualList: HuiVirtualList<T>;
 	var itemsPerRow: Int = 4;
 	var needRefresh(default, set): Bool = false;
 
@@ -46,11 +46,13 @@ class HuiVirtualGrid<T> extends HuiElement {
 		updateVirtualListItems();
 	}
 
-	function listGenerateItem(itemId: Int) {
+	function listGenerateItem(item: T) {
+		var itemId = items.indexOf(item);
 		var row = new HuiVirtualGridRow();
 		row.setHeight(Std.int(itemBaseHeight));
-		for (i in itemId...itemId+itemsPerRow) {
-			var item = items[i];
+		row.setWidth(Std.int(itemBaseWidth * itemsPerRow));
+		for (i in 0...itemsPerRow) {
+			var item = items[itemId + i];
 			if (item == null)
 				break;
 			var element = generateItem(item);
@@ -58,12 +60,20 @@ class HuiVirtualGrid<T> extends HuiElement {
 			cell.setWidth(Std.int(itemBaseWidth));
 			cell.setHeight(Std.int(itemBaseHeight));
 			cell.addChild(element);
+			cell.x = i * itemBaseWidth;
 		}
 		return row;
 	}
 
 	function afterReflow() {
 		updateItemsPerRow();
+	}
+
+	/**
+		Prevent need reflow propagation (our layout don't depends of our children)
+	**/
+	override function contentChanged(s : h2d.Object) {
+		onContentChanged();
 	}
 
 	function updateItemsPerRow() {
@@ -74,7 +84,7 @@ class HuiVirtualGrid<T> extends HuiElement {
 	function updateVirtualListItems() {
 		virtualList.items.resize(0);
 		for (i in 0...hxd.Math.ceil(items.length/itemsPerRow)) {
-			virtualList.items.push(i * itemsPerRow);
+			virtualList.items.push(items[i * itemsPerRow]);
 		}
 		virtualList.setItems(virtualList.items);
 	}
@@ -88,6 +98,10 @@ class HuiVirtualGridRow extends HuiElement {
 	public function new(?parent) {
 		super(parent);
 		initComponent();
+	}
+
+	override function contentChanged(s : h2d.Object) {
+		onContentChanged();
 	}
 }
 
