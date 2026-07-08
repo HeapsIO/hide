@@ -6,7 +6,7 @@
    xml:space="preserve"
    style="clip-rule:evenodd;fill-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5"
    id="svg1"
-   sodipodi:docname="magnet.svg"
+   sodipodi:docname="stroke.svg"
    inkscape:export-filename="..\icons\src\world.svg"
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96"
@@ -55,24 +55,7 @@
      bleed="0" /></sodipodi:namedview><defs
    id="defs1" />
     
-<circle
-   style="fill:none;fill-opacity:1;stroke:#fefffe;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+<path
    id="path231"
-   cx="16"
-   cy="16"
-   r="13" /><path
-   id="path232"
-   style="baseline-shift:baseline;clip-rule:nonzero;display:inline;overflow:visible;opacity:1;vector-effect:none;fill:#fefffe;fill-rule:nonzero;stroke-linecap:butt;paint-order:stroke fill markers;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
-   d="M 24.458984,6.1269531 6.1269531,24.458984 a 13,13 0 0 0 1.4140625,1.414063 L 25.873047,7.5410156 A 13,13 0 0 0 24.458984,6.1269531 Z" /><path
-   style="fill:none;fill-opacity:1;stroke:#fefffe;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-   d="M 29,13 H 19"
-   id="path233" /><path
-   style="fill:none;fill-opacity:1;stroke:#fefffe;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-   d="M 29,17 H 15"
-   id="path234" /><path
-   style="fill:none;fill-opacity:1;stroke:#fefffe;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-   d="M 28,21 H 11"
-   id="path235" /><path
-   style="fill:none;fill-opacity:1;stroke:#fefffe;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-   d="M 7,25 H 26"
-   id="path236" /></svg>
+   style="baseline-shift:baseline;clip-rule:nonzero;display:inline;overflow:visible;vector-effect:none;fill:#fefffe;fill-rule:nonzero;stroke-linecap:butt;paint-order:stroke fill markers;enable-background:accumulate;stop-color:#000000;stop-opacity:1;opacity:1"
+   d="M 16 2 C 8.2798581 2 2 8.2798581 2 16 C 2 23.720142 8.2798581 30 16 30 C 19.806519 30 23.262959 28.473294 25.789062 26 L 26 26 L 26 25.789062 C 28.473294 23.262959 30 19.806519 30 16 C 30 8.2798581 23.720142 2 16 2 z M 16 4 C 18.958777 4 21.66427 5.0640228 23.753906 6.8320312 L 6.8320312 23.753906 C 5.0640228 21.66427 4 18.958777 4 16 C 4 9.3607384 9.3607384 4 16 4 z M 25.167969 8.2460938 C 26.09744 9.3446496 26.832119 10.613873 27.320312 12 L 21.414062 12 L 25.167969 8.2460938 z M 19.414062 14 L 27.833984 14 C 27.942571 14.650246 28 15.318385 28 16 L 17.414062 16 L 19.414062 14 z M 15.414062 18 L 27.833984 18 C 27.719014 18.688473 27.546816 19.356887 27.320312 20 L 13.414062 20 L 15.414062 18 z M 11.414062 22 L 26.400391 22 C 25.986655 22.71699 25.501108 23.386926 24.953125 24 L 9.4140625 24 L 11.414062 22 z M 9.3554688 26 L 22.644531 26 C 20.743305 27.264128 18.459851 28 16 28 C 13.54015 28 11.256695 27.264128 9.3554688 26 z " /></svg>

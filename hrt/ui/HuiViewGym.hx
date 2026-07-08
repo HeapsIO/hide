@@ -355,7 +355,7 @@ class GymWidgets extends HuiElement {
 		for (res in HuiRes.loader.dir("ui/icons/prefab")) {
 			if (res.entry.isDirectory)
 				continue;
-			if (StringTools.endsWith(res.entry.name, ".sdf.png"))
+			if (!StringTools.endsWith(res.entry.name, ".sdf.png"))
 				continue;
 			list.push(res.toImage());
 		}
