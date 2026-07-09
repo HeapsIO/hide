@@ -804,6 +804,9 @@ class Prefab extends HuiView<{path: String}> {
 		for (prefab in selection) {
 			selectedPrefabs.set(prefab, true);
 			prefab.setSelected(true);
+			var obj3d = Std.downcast(prefab, hrt.prefab.Object3D);
+			if (obj3d != null && obj3d.local3d != null)
+				objs.push(obj3d.local3d);
 		}
 
 		if (objs.length > 0)
