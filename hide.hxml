@@ -17,6 +17,7 @@ common.hxml
 --macro include("hide.prefab")
 --macro include("hide.tools")
 --macro include("hrt")
+cdb.ConstLoader
 -dce no
 -debug
 #-D shader_debug_dump
