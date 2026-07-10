@@ -68,7 +68,9 @@ class HuiTabViewContainer extends HuiTabContainer {
 			var tabState : Array<ViewData> = [];
 
 			for (child in getTabs()) {
-				tabState.push(getViewState(child));
+				var state = getViewState(child);
+				if (state != null)
+					tabState.push(state);
 			}
 
 			var state : TabViewData = {
@@ -150,14 +152,19 @@ class HuiTabViewContainer extends HuiTabContainer {
 	}
 
 	function loadView(data: ViewData, ?index: Int) : HuiView<Dynamic> {
-		var success = false;
 		syncTabsQueued = true;
 		if (data.type != null) {
 			var cl = HuiView.get(data.type);
 			if (cl != null) {
-				var view : HuiView<Dynamic> = Type.createInstance(cl, [data.state]);
-				addTab(view, index);
-				return view;
+				try {
+					var view : HuiView<Dynamic> = Type.createInstance(cl, [data.state]);
+					addTab(view, index);
+					return view;
+				} catch (e) {
+					var error = new HuiErrorDisplay(content);
+					error.setError('Could not create view ${data.type}', e);
+					return null;
+				}
 			}
 		}
 		var error = new HuiElement(content);
