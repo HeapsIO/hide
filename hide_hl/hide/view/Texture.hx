@@ -256,7 +256,7 @@ class Texture extends HuiView<{path: String}> {
 		}
 
 		viewer.onPush = (e : hxd.Event) -> {
-			if (e.button == 2 || onDrag != null)
+			if (onDrag != null)
 				return;
 
 			if (e.button == 1 && sliderBmp.visible) {
@@ -266,7 +266,7 @@ class Texture extends HuiView<{path: String}> {
 					refresh();
 				}
 			}
-			else if (e.button == 0) {
+			else if (e.button == 0 || e.button == 2) {
 				var originDrag = new h2d.col.Point(e.relX, e.relY);
 				var originPan = pan.clone();
 				onDrag = (e) -> {
