@@ -186,8 +186,6 @@ class Texture extends HuiView<{path: String}> {
 			</hui-element>
 			<hui-element id="details">
 				<hui-category("Compression")>
-					<hui-element class="horizontal"><hui-text("Compressed texture weight") class="label"/><hui-text("1 MB") class="value" id="weight-compressed-el"/></hui-element>
-					<hui-element class="horizontal"><hui-text("Uncompressed texture weight") class="label"/><hui-text("10 MB") class="value" id="weight-uncompressed-el"/></hui-element>
 					<hui-element class="horizontal"><hui-text("Format") class="label"/><hui-select class="value" id="format-sel"/></hui-element>
 					<hui-element class="horizontal" id="alpha-line"><hui-text("Alpha") class="label"/><hui-checkbox id="use-alpha"/><hui-input-box class="value" id="alpha-input"/></hui-element>
 					<hui-element class="horizontal" id="mips-line"><hui-text("Mip Maps") class="label"/><hui-checkbox id="mips"/></hui-element>
@@ -195,6 +193,10 @@ class Texture extends HuiView<{path: String}> {
 					<hui-element class="horizontal"><hui-text("Filter") class="label"/><hui-select id="filter-sel" class="value"/></hui-element>
 					<hui-button class="full" id="reset-soft-btn"><hui-text("Reset Preview")/></hui-button>
 					<hui-button class="full" id="reset-full-btn"><hui-text("Reset Compression")/></hui-button>
+					<hui-element class="vertical" id="compression-infos">
+						<hui-element class="horizontal"><hui-text("Uncompressed texture weight") class="label"/><hui-text("10 MB") class="value" id="weight-uncompressed-el"/></hui-element>
+						<hui-element class="horizontal"><hui-text("Compressed texture weight") class="label"/><hui-text("1 MB") class="value" id="weight-compressed-el"/></hui-element>
+					</hui-element>
 				</hui-category>
 			</hui-element>
 		</hui-split-container>
