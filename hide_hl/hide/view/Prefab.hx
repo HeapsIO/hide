@@ -55,6 +55,8 @@ class Prefab extends HuiView<{path: String}> {
 	var lastPushY : Float = -100;
 	var movedSinceLastPush : Bool = false;
 
+	var previewDrag : hrt.prefab.Object3D;
+
 	// List of prefabs that have make errors
 	var errorPrefabs : Map<hrt.prefab.Prefab, PrefabError> = new Map();
 
@@ -271,6 +273,7 @@ class Prefab extends HuiView<{path: String}> {
 		sceneEditor.scene.onDragMove = sceneDragMove;
 		sceneEditor.scene.onDragOut = sceneDragOut;
 		sceneEditor.scene.onDragOver = sceneDragOver;
+		sceneEditor.scene.onDragEnd = sceneDragEnd;
 		sceneEditor.scene.onDrop = sceneDrop;
 
 
@@ -392,21 +395,64 @@ class Prefab extends HuiView<{path: String}> {
 		if (files.length == 0)
 			return null;
 		var file = files[0];
-		if (!StringTools.endsWith(file, ".prefab") && !StringTools.endsWith(file, ".fx"))
+		if (!StringTools.endsWith(file, ".prefab") && !StringTools.endsWith(file, ".fx") && !StringTools.endsWith(file, ".fbx"))
 			return null;
 		return file;
 	}
 
+	function createRefFromPath(path: String) : hrt.prefab.Object3D {
+		var prefab : hrt.prefab.Object3D;
+		if (StringTools.endsWith(path, ".fbx")) {
+			prefab = new hrt.prefab.Model(null, new hrt.prefab.ContextShared());
+		} else if (StringTools.endsWith(path, ".fx")) {
+			prefab = new hrt.prefab.fx.SubFX(null, new hrt.prefab.ContextShared());
+		} else {
+			prefab = new hrt.prefab.Reference(null, new hrt.prefab.ContextShared());
+		}
+		prefab.source = path;
+		return prefab;
+	}
+
 	function sceneDragOver(op: HuiDragOp) {
 		op.acceptDrop = false;
-		var path = getDropPath(op);
+		var pathAbs = getDropPath(op);
+
+		if (pathAbs == null)
+			return;
+
+		var path = Ide.inst.makeRelative(pathAbs);
+
 		if (path == null)
 			return;
+
 		op.acceptDrop = true;
+
+		if (previewDrag == null) {
+			previewDrag = createRefFromPath(path);
+			tryMake(previewDrag);
+		}
+
+		var point = sceneEditor.screenToGround(op.event.relX, op.event.relY);
+		if (point != null) {
+			previewDrag.x = point.x;
+			previewDrag.y = point.y;
+			previewDrag.z = point.z;
+			previewDrag.updateInstance();
+		}
 	}
 
 	function sceneDragOut(op: HuiDragOp) {
+		if (previewDrag != null) {
+			removePrefabInstance(previewDrag);
+			previewDrag = null;
+		}
+	}
 
+	function sceneDragEnd(op: HuiDragOp) {
+		if (previewDrag != null) {
+			removePrefabInstance(previewDrag);
+			previewDrag = null;
+		}
 	}
 
 	function sceneDragMove(op: HuiDragOp) {
@@ -428,24 +474,13 @@ class Prefab extends HuiView<{path: String}> {
 		var pos = sceneEditor.screenToGround(op.event.relX, op.event.relY);
 		if (pos == null) {
 			pos = new h3d.Vector();
-			Ide.showWarning("Couldn't find a position to place the droppped prefab. It was created at the scene origin");
+			Ide.showWarning("Couldn't find a position to place the dropped prefab. It was created at the scene origin");
 		}
 
-		var parent = getSelectionOrdered()[0] ?? prefab;
-		var ref : hrt.prefab.Reference = if (StringTools.endsWith(path, ".fx")) {
-			new hrt.prefab.fx.SubFX(null, prefab.shared);
-		} else {
-			new hrt.prefab.Reference(null, prefab.shared);
-		}
+		var parent = this.prefab;
+		var ref = createRefFromPath(path);
 
 		ref.name = new haxe.io.Path(path).file;
-		ref.source = path;
-		if (ref.hasCycle()) {
-			Ide.showError('Adding $path to scene would create a cycle');
-			return;
-		}
-
-		ref.shared = new hrt.prefab.ContextShared(null); // the shared was needed for hasCycle but keeping it while the prefab is not in the scene breaks everything so we remove it here
 
 		ref.x = pos.x;
 		ref.y = pos.y;
@@ -728,7 +763,8 @@ class Prefab extends HuiView<{path: String}> {
 		for (child in prefab.flatten()) {
 			removePrefabInteractives(child);
 		}
-		if (prefab == this.prefab) {
+
+		if (prefab.parent == null && prefab.shared.parentPrefab == null) {
 			prefab.shared.root3d.remove();
 			prefab.shared.root2d.remove();
 		}
