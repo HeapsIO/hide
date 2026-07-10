@@ -262,8 +262,12 @@ class Interactive2 extends h2d.Interactive {
 
 		if (newEvent.kind == EPush) {
 			capturing = true;
+			var captureButton = e.button;
+
 			@:privateAccess getScene().events.startCapture((e) -> {
 					handleEvent2(e, false);
+					if (!hxd.Key.isDown(captureButton))
+						@:privateAccess getScene().events.stopCapture();
 				}, () -> {
 				capturing = false;
 			});
