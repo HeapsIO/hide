@@ -78,7 +78,7 @@ class HuiHistogramRange extends HuiElement {
 			<hui-icon("diamond") class="handle" id="handle-range-end"/>
 		</hui-element>
 		<hui-input-box id="input-range-end" class="group"/>
-		<hui-button class="group"><hui-icon("back_arrow")/></hui-button>
+		<hui-button class="group" id="reset-range"><hui-icon("back_arrow")/></hui-button>
 		<hui-button class="group"><hui-icon("histogram")/></hui-button>
 		<hui-toggle class="group-end" id="linear-tog"><hui-icon("gamma")/></hui-toggle>
 	</hui-histogram-range>
@@ -161,6 +161,16 @@ class HuiHistogramRange extends HuiElement {
 			});
 
 			e.propagate = false;
+		}
+
+		resetRange.onClick = (_) -> {
+			curMin = 0.;
+			curMax = 1.;
+			@:privateAccess view.shader.rangeMin = curMin;
+			@:privateAccess view.shader.rangeMax = curMax;
+			inputRangeStart.text = '${curMin}';
+			inputRangeEnd.text = '${curMax}';
+			refresh();
 		}
 
 		range.onAfterReflow = refresh;
