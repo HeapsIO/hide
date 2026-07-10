@@ -445,6 +445,13 @@ class Prefab extends HuiView<{path: String}> {
 			return;
 		}
 
+		ref.shared = new hrt.prefab.ContextShared(null); // the shared was needed for hasCycle but keeping it while the prefab is not in the scene breaks everything so we remove it here
+
+		ref.x = pos.x;
+		ref.y = pos.y;
+		ref.z = pos.z;
+
+
 		var reparent = actionReparentPrefab(ref, parent, parent.children.length);
 		var select = actionMakeSelection([ref]);
 
@@ -456,15 +463,16 @@ class Prefab extends HuiView<{path: String}> {
 		getView().undo.run(action, true);
 	}
 
-
+#if prefab_test_crash
 	var crashSync = false;
 	var crashSyncOneFrame = false;
-
+#end
 
 	override function safeSync(ctx) {
 		super.safeSync(ctx);
 		gizmo.update(ctx.elapsedTime);
 
+#if prefab_test_crash
 		if (crashSync) {
 			throw "test crash sync";
 		}
@@ -473,6 +481,7 @@ class Prefab extends HuiView<{path: String}> {
 			crashSyncOneFrame = false;
 			throw "test crash sync one frame";
 		}
+#end
 
 		if (currentEditContext != null) {
 			@:privateAccess currentEditContext.foregroundEditorTool?.update(ctx.elapsedTime);
@@ -550,7 +559,7 @@ class Prefab extends HuiView<{path: String}> {
 		widgets.push(new hrt.ui.HuiToolbar.HuiSceneFiltersWidget(sceneEditor));
 		widgets.push(new hrt.ui.HuiToolbar.HuiRenderPropsWidget(sceneEditor));
 
-
+#if prefab_test_crash
 		var crashButton = new HuiButton();
 		new HuiIcon("error", crashButton);
 		crashButton.onClick = (e) -> {
@@ -561,6 +570,7 @@ class Prefab extends HuiView<{path: String}> {
 			]);
 		};
 		widgets.push(crashButton);
+#end
 
 		return widgets;
 	}
@@ -718,7 +728,7 @@ class Prefab extends HuiView<{path: String}> {
 		for (child in prefab.flatten()) {
 			removePrefabInteractives(child);
 		}
-		if (prefab.parent == null && prefab.shared.parentPrefab == null) {
+		if (prefab == this.prefab) {
 			prefab.shared.root3d.remove();
 			prefab.shared.root2d.remove();
 		}
@@ -1350,7 +1360,7 @@ class Prefab extends HuiView<{path: String}> {
 	function actionReparentPrefab(prefab: hrt.prefab.Prefab, parent: hrt.prefab.Prefab, index: Int) : hrt.tools.Undo.Action {
 		var oldParent = prefab.parent;
 		var oldIndex = -1;
-		var currentWorldTransform = worldMat(prefab);
+		var currentWorldTransform = prefab.to(hrt.prefab.Object3D)?.getRelativeTransform(null, null, true);
 		var oldTransform = prefab.to(hrt.prefab.Object3D)?.saveTransform();
 		var newTransform = oldTransform;
 		if (oldParent != null) {
@@ -1361,7 +1371,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		if (parent != null && oldTransform != null)
 		{
-			var parentTransform = worldMat(parent);
+			var parentTransform = parent.to(hrt.prefab.Object3D)?.getRelativeTransform(null, null, true) ?? h3d.Matrix.I();
 			parentTransform.invert();
 			var mat = currentWorldTransform;
 			mat.multiply(mat, parentTransform);
