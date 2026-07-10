@@ -235,7 +235,7 @@ class HuiSceneEditor extends HuiElement {
 
 	public function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) {
 		var camera = scene.s3d.camera;
-		var ray = camera.rayFromScreen(sx, sy);
+		var ray = camera.rayFromScreen(sx, sy, scene.s2d.width, scene.s2d.height);
 		var dist = projectToGround(ray, paintOn, ignoreTerrain);
 		if(dist >= 0) {
 			return ray.getPoint(dist);
