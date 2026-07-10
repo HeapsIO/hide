@@ -379,7 +379,7 @@ class Texture extends HuiView<{path: String}> {
 	}
 
 	override function getToolbarWidgets() : Array<HuiElement> {
-		var widgets : Array<HuiElement> = [];
+		var widgets : Array<HuiElement> = super.getToolbarWidgets();
 
 		var helpBtn = new HuiButton();
 		helpBtn.onClick = (_) -> {

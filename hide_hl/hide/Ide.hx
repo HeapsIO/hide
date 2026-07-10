@@ -219,27 +219,26 @@ class Ide extends hide.tools.IdeData {
 		var path = new haxe.io.Path(filePath);
 
 		try {
-			var v = switch (path.ext) {
-				case "prefab", "fx":
-					new hide.view.Prefab({path: filePath});
+			switch (path.ext) {
+				case "prefab":
+					openView(new hide.view.Prefab({path: filePath}), Main, callback);
+				case "fx":
+					openView(new hide.view.Prefab({path: filePath}), Main, callback);
+					openView(new hide.view.Timeline({path: filePath}), Bottom, callback);
 				case "fbx":
-					new hide.view.Model({path: filePath});
+					openView(new hide.view.Model({path: filePath}), Main, callback);
 				case "png", "jpg", "envd", "envs", "hdr":
-					new hide.view.Texture({path: filePath});
+					openView(new hide.view.Texture({path: filePath}), Main, callback);
 				case _:
 					hide.tools.IdeData.openExternalFile(filePath);
 					return;
 			};
-
-			openView(v, Main);
-			if (callback != null)
-				callback(v);
 		} catch (e) {
 			showError('Could not open file ${getRelPath(filePath)} :<br/>$e');
 		}
 	}
 
-	public function openView(view: hrt.ui.HuiView<Dynamic>, position: HideViewPosition = Main) {
+	public function openView(view: hrt.ui.HuiView<Dynamic>, position: HideViewPosition = Main, ?callback : (v : hrt.ui.HuiView<Dynamic>) -> Void) {
 		var layout = app.ui.uiBase.mainLayout.projectLayout;
 		var panel = switch(position) {
 			case Left: layout.leftPanel;
@@ -248,6 +247,8 @@ class Ide extends hide.tools.IdeData {
 		}
 		panel.addTab(view);
 		panel.setTab(view);
+		if (callback != null)
+			callback(view);
 	}
 
 	public function getCDBContent<T>( sheetName : String ) : Array<T> {
