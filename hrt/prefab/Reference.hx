@@ -401,19 +401,24 @@ class Reference extends Object3D {
 					return true;
 				}
 
-				seenPaths.set(ref.source, true);
-				if (rec(ref.resolve(), seenPaths.copy()))
+				var copy = seenPaths.copy();
+				copy.set(ref.source, true);
+				if (rec(ref.resolve(), copy))
 					return true;
 			}
 			for (child in prefab.children) {
-				if(rec(child, seenPaths.copy()))
+				if(rec(child, seenPaths))
 					return true;
 			}
 
 			return false;
 		}
 
-		return rec(this, [this.shared.currentPath => true]);
+		var baseMap = new Map();
+		if (this.shared.currentPath != null) {
+			baseMap.set(this.shared.currentPath, true);
+		}
+		return rec(this, baseMap);
 	}
 
 
