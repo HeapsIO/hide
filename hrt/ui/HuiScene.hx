@@ -238,16 +238,16 @@ class Interactive2 extends h2d.Interactive {
 
 		if (!e.propagate)
 			return;
-		var scale = huiScene.getScene().viewportScaleX;
 
 		var newEvent = e;
 
+		var scene = huiScene.getScene();
 		if (fixPos) {
 			var clone = new hxd.Event(e.kind, e.relX, e.relY);
 
 			// replace global events in screenSpace
-			clone.relX += huiScene.absX * scale;
-			clone.relY += huiScene.absY * scale;
+			clone.relX = scene.mouseX * scene.viewportScaleX;
+			clone.relY = scene.mouseY * scene.viewportScaleY;
 
 			clone.relZ = e.relZ;
 			clone.propagate = e.propagate;
