@@ -11,37 +11,25 @@ class GridShader extends hxsl.Shader {
 		@param var lineWidth : Float;
 		@param var lineSpacing : Float;
 
+		@param var pan : Vec2;
+		@param var zoom : Vec2;
+
 		var absolutePosition : Vec4;
 		var pixelColor : Vec4;
 
 		function grid(position : Vec2, lineWidth: Float, idx : Int) : Float {
-			// var f = length(abs(camera.position - transformedPosition)) / pow(100, float(idx));
-			// lineWidth = min(lineWidth, saturate(lineWidth * f));
-            // var posDDXY = vec4(dFdx(position), dFdy(position));
-            // var posDeriv = vec2(length(posDDXY.xz), length(posDDXY.yw));
-            // var invertLine = length(lineWidth) > 0.5;
-            // var targetWidth = invertLine ? 1.0 - lineWidth : lineWidth;
-            // var drawWidth = clamp(targetWidth, posDeriv, vec2(0.5, 0.5));
-            var gridUV = abs(vec2(position.x % 1, position.y % 1) * 2.0 - 1.0);
-            // gridUV = invertLine ? gridUV : 1.0 - gridUV;
-			// var gridUV = abs(position.x);
-            // var grid2 = smoothstep(vec2(lineWidth) + lineAA, drawWidth - lineAA, gridUV);
-            // grid2 *= saturate(targetWidth / drawWidth);
-            // grid2 = mix(grid2, targetWidth, saturate(posDeriv * 2.0 - 1.0));
-            // grid2 = invertLine ? 1.0 - grid2 : grid2;
-            // return mix(grid2.x, 1.0, grid2.y);
-			return 1 - smoothstep(lineWidth - 1, lineWidth + 1, gridUV.x);
+			var gridUV = abs(fract(position) * 2.0 - 1.0);
+			var lineX = smoothstep(1.0 - lineWidth, 1.0, gridUV.x);
+			var lineY = smoothstep(1.0 - lineWidth, 1.0, gridUV.y);
+			return max(lineX, lineY);
 		}
 
 		function fragment() {
 			pixelColor.rgb = lineColor;
-			// for (idx in 0...3) {
-				var f = 1;//pow(10., float(idx));
-				pixelColor.a = max(pixelColor.a, grid(
-					absolutePosition.xy * (1 / (lineSpacing * f)),
-					lineWidth,
-					0));
-			// }
+			pixelColor.a = max(pixelColor.a, grid(
+				absolutePosition.xy * (1 / lineSpacing) / zoom,
+				lineWidth,
+				0));
 		}
 	}
 }
@@ -65,7 +53,7 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		</timeline>
 
 	static final GRID_COLOR = 0x4C4C4C;
-	static final GRID_WIDTH = 5;
+	static final GRID_WIDTH = 0.01;
 	static final GRID_LINESPACING = 100;
 	static final GRID_ORIGIN_COLOR = 0x7E7E7E;
 	static final GRID_ORIGIN_WIDTH = 2;
@@ -75,6 +63,7 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 	var gridGraphics : h2d.Graphics;
 	var gridLabels = [];
 
+	var gridShader : GridShader = null;
 	var zoom = new h2d.col.Point(1, 1);
 	var pan = new h2d.col.Point(0, 0);
 
@@ -87,10 +76,12 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		super(_state, parent);
 		initComponent();
 
-		var gridShader = new GridShader();
+		gridShader = new GridShader();
 		gridShader.lineColor = h3d.Vector.fromColor(GRID_COLOR);
 		gridShader.lineWidth = GRID_WIDTH;
 		gridShader.lineSpacing = GRID_LINESPACING;
+		gridShader.zoom = new h3d.Vector(1, 1, 0);
+		gridShader.pan = new h3d.Vector(0, 0, 0);
 
 		grid.backgroundType = "hui";
 		grid.huiBg.addShader(gridShader);
@@ -104,10 +95,10 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		rightPanel.onWheel = (e : hxd.Event) -> {
 			var amount = e.wheelDelta * -0.1;
 			if (!hxd.Key.isDown(hxd.Key.SHIFT))
-				zoom.x = hxd.Math.clamp(zoom.x + amount, MIN_ZOOM, MAX_ZOOM);
+				gridShader.zoom.x = hxd.Math.clamp(gridShader.zoom.x + amount, MIN_ZOOM, MAX_ZOOM);
 			if (!hxd.Key.isDown(hxd.Key.CTRL))
-				zoom.y = hxd.Math.clamp(zoom.y + amount, MIN_ZOOM, MAX_ZOOM);
-			// refresh();
+				gridShader.zoom.y = hxd.Math.clamp(gridShader.zoom.y + amount, MIN_ZOOM, MAX_ZOOM);
+			refresh();
 		}
 	}
 
