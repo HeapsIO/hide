@@ -9,7 +9,8 @@ class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
 	@:p public var baseFont(never, set) : String;
 
 	function set_baseFont(v : String) {
-		font = loadFont(v);
+		if (v != "none")
+			font = loadFont(v);
 		return v;
 	}
 

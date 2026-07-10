@@ -19,6 +19,8 @@ class HuiTextInput extends h2d.TextInput implements h2d.domkit.Object {
 			}
 			handleKey(e);
 		};
+
+		smooth = true;
 	}
 
 
