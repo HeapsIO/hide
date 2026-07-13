@@ -22,22 +22,25 @@ class HuiMaterialInspector extends HuiElement {
 	</hui-material-inspector>
 
 	var model : hide.view.Model;
+	var mat : h3d.mat.Material;
+	var props : Dynamic = null;
+	var selectedLib = null;
+	var selectedMat = null;
+	var materials = [];
 
 	public function new(mat : h3d.mat.Material, model: hide.view.Model, ?parent: h2d.Object) {
 		super(parent);
 		this.model = model;
+		this.mat = mat;
 
 		initComponent();
 
-		updateMaterialLibraryInspector(mat);
+		updateMaterialLibraryInspector();
 	}
 
-	function updateMaterialLibraryInspector(mat : h3d.mat.Material) {
-		var selectedLib = null;
-		var selectedMat = null;
-
+	function updateMaterialLibraryInspector() {
 		var def = false;
-		var props : Dynamic = h3d.mat.MaterialSetup.current.loadMaterialProps(mat);
+		props = @:privateAccess model.materialSettings.get(mat.name);
 		if (props != null && props.__ref != null && !def) {
 			selectedMat = props.__ref + "/" + props.name;
 			selectedLib = props.__ref;
@@ -47,17 +50,7 @@ class HuiMaterialInspector extends HuiElement {
 		}
 
 		var matLibs : Array<{ path : String, name : String}> = cast HuiSceneEditor.getMaterialLibraries(@:privateAccess model.state.path);
-		var materials = [];
-
-		function findMat(mname : String) {
-			var material : { path : String, mat : hrt.prefab.Material } = null;
-			for (mat in materials) {
-				if (mat.path + "/" + mat.mat.name == mname)
-					material = mat;
-			}
-
-			return material;
-		}
+		materials = [];
 
 		modeEl.items = [{ value: MaterialLibraryMode.Model, label: "Model Specific" },
 		{ value: MaterialLibraryMode.Folder, label: "Shared By Folder" }];
@@ -81,9 +74,10 @@ class HuiMaterialInspector extends HuiElement {
 				}
 				materials = HuiSceneEditor.getMaterialsFromLibrary(@:privateAccess model.state.path, selectedLib.name);
 				materialEl.items = [ for (mat in materials) { value: mat.path + "/" + mat.mat.name, label: mat.mat.name }];
+				materialEl.items.insert(0, { value: null, label: "None" });
 			}
 			if (props?.name != null) {
-				var material = findMat(libraryEl.value + "/" + props.name);
+				var material = findMaterial(libraryEl.value + "/" + props.name);
 				materialEl.value = material.path + "/" + material.mat.name;
 				selectedMat = materialEl.value;
 			}
@@ -104,31 +98,15 @@ class HuiMaterialInspector extends HuiElement {
 			materialEl.value = null;
 			materialEl.items = [ for (mat in materials) { value: mat.path + "/" + mat.mat.name, label: mat.mat.name }];
 			materialEl.items.insert(0, { value: null, label: "None" });
+			onChange();
 		}
 
 		materialEl.onValueChanged = () -> {
-			var prevV = selectedMat;
-			selectedMat = materialEl.value;
-			var newV = selectedMat;
-
-			function exec(undo : Bool) {
-				selectedMat = undo ? prevV : newV;
-				var material = findMat(selectedMat);
-				if (material != null) {
-					@:privateAccess material.mat.update(mat, material.mat.renderProps(), function(path: String) {
-						return hxd.res.Loader.currentInstance.load(path).toTexture();
-					});
-				}
-
-				materialEl.value = material == null ? null : material.path + "/" + material.mat.name;
-			}
-
-			exec(false);
-			getView().undo.record(exec, true);
+			onChange();
 		}
 
 		gotoBtn.onClick = (_) -> {
-			var material = findMat(selectedMat);
+			var material = findMaterial(selectedMat);
 			if (material != null) {
 				var matName = material.mat.name;
 				hide.Ide.inst.openFile(Reflect.field(material, "path"), (v) -> {
@@ -150,6 +128,46 @@ class HuiMaterialInspector extends HuiElement {
 				hide.Ide.inst.openFile(selectedLib.path);
 			}
 		}
+	}
+
+	function onChange() {
+		var prevV = selectedMat;
+		selectedMat = materialEl.value;
+		var newV = selectedMat;
+
+		function exec(undo : Bool) {
+			selectedMat = undo ? prevV : newV;
+			var material = findMaterial(selectedMat);
+			if (material != null) {
+				@:privateAccess material.mat.update(mat, material.mat.renderProps(), function(path: String) {
+					return hxd.res.Loader.currentInstance.load(path).toTexture();
+				});
+			}
+
+			materialEl.value = material == null ? null : material.path + "/" + material.mat.name;
+
+			if (material?.mat?.name != null) {
+				props = { __ref: libraryEl.value, name: material?.mat?.name };
+				@:privateAccess model.materialSettings.set(mat.name, props);
+			}
+			else {
+				props = null;
+				@:privateAccess model.materialSettings.remove(mat.name);
+			}
+		}
+
+		exec(false);
+		getView().undo.record(exec, true);
+	}
+
+	function findMaterial(mname : String) {
+		var material : { path : String, mat : hrt.prefab.Material } = null;
+		for (mat in materials) {
+			if (mat.path + "/" + mat.mat.name == mname)
+				material = mat;
+		}
+
+		return material;
 	}
 }
 #end

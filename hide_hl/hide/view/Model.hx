@@ -215,6 +215,8 @@ class Model extends HuiView<{path: String}> {
 	var obj : h3d.scene.Object;
 	var selectedObjects: Array<Dynamic> = [];
 	var collisionSettings : Map<String, CollisionSettings>;
+	var materialSettings : Map<String, Dynamic>;
+
 	var modelInspector : hrt.ui.HuiModelInspector;
 	var materialInspector : hrt.ui.HuiMaterialInspector;
 
@@ -354,6 +356,15 @@ class Model extends HuiView<{path: String}> {
 
 			collisionSettings.set(o.name, settings);
 		}
+
+		materialSettings = [];
+		for (mat in obj.getMaterials()) {
+			var props : Dynamic = h3d.mat.MaterialSetup.current.loadMaterialProps(mat);
+			if (props == null)
+				continue;
+			materialSettings.set(mat.name, props);
+		}
+
 		sceneEditor.updateDebugOverlayVisibility();
 	}
 
@@ -460,35 +471,10 @@ class Model extends HuiView<{path: String}> {
 		}
 
 		// Save model library
-		// TODO: keep all modifications that are done on the different mats and apply them later, not only on the current selected
-
-		var mat : h3d.mat.Material = selectedObjects.length > 0 ? Std.downcast(selectedObjects[0], h3d.mat.Material) : null;
-		if (mat != null) {
-			var matProps : Dynamic = h3d.mat.MaterialSetup.current.loadMaterialProps(mat);
-			var libPath = materialInspector.libraryEl.value;
-			var matPath = materialInspector.materialEl.value;
-
-			var material : { path : String, mat : hrt.prefab.Material } = null;
-			var libaries = HuiSceneEditor.getMaterialLibraries(state.path);
-			for (l in libaries) {
-				if (l.path == libPath) {
-					var materials = HuiSceneEditor.getMaterialsFromLibrary(state.path, l.name);
-					for (m in materials) {
-						if (m.path + "/" + m.mat.name == matPath)
-							material = m;
-					}
-				}
-			}
-
-			if (material != null ) {
-				for (f in Reflect.fields((mat.props:Dynamic)) )
-					Reflect.deleteField((mat.props:Dynamic), f);
-				Reflect.setField((mat.props:Dynamic), "__ref", material.path);
-				Reflect.setField((mat.props:Dynamic), "name", material.mat.name);
-				if (materialInspector.modeEl.value == HuiMaterialInspector.MaterialLibraryMode.Model)
-					Reflect.setField((mat.props:Dynamic), "__refMode", "modelSpec");
-				else
-					Reflect.deleteField((mat.props:Dynamic), "__refMode");
+		for (mat in obj.getMaterials()) {
+			var props = materialSettings.get(mat.name);
+			if (props != null ) {
+				mat.props = props;
 			} else {
 				Reflect.deleteField((mat.props:Dynamic), "__ref");
 				Reflect.deleteField((mat.props:Dynamic), "name");
@@ -496,13 +482,6 @@ class Model extends HuiView<{path: String}> {
 			}
 			h3d.mat.MaterialSetup.current.saveMaterialProps(mat);
 		}
-	}
-
-	function load(path : String) {
-		var scene = @:privateAccess sceneEditor.scene;
-		var lib = hxd.res.Loader.currentInstance.load(path).toModel().toHmd();
-		obj = lib.makeObject();
-		sceneEditor.scene.s3d.addChild(obj);
 	}
 
 	function setSelection(selection: Array<Dynamic>) {
@@ -647,6 +626,12 @@ class Model extends HuiView<{path: String}> {
 			sceneEditor.rootDebugCollider.remove();
 			sceneEditor.rootDebugCollider = null;
 		}
+	}
+
+	function load(path : String) {
+		var lib = hxd.res.Loader.currentInstance.load(path).toModel().toHmd();
+		obj = lib.makeObject();
+		sceneEditor.scene.s3d.addChild(obj);
 	}
 }
 
