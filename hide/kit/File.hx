@@ -30,6 +30,7 @@ class File extends Widget<String> {
 		#elseif hui
 		var f = new hrt.ui.HuiFilePicker();
 		f.value = value;
+		f.allowedExtensions = exts ?? types.get(type);
 		f.onValueChanged = () -> {
 			value = f.value;
 			broadcastValueChange(false);

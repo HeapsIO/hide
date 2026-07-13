@@ -10,7 +10,7 @@ class HuiFilePicker extends HuiElement {
 
 	/** Path relative to the res directory **/
 	public var relative : Bool = true;
-
+	public var allowedExtensions : Array<String> = [];
 
 	public function new(?parent) {
 		super(parent);
@@ -21,7 +21,7 @@ class HuiFilePicker extends HuiElement {
 				hxd.File.browse((select) -> {
 					value = validatePath(select.fileName);
 					onValueChanged();
-				}, {fileTypes: [{name: "prefab, l3d, fx", extensions: ["prefab", "l3d", "fx"]}]});
+				}, {fileTypes: [{ name: [for (e in allowedExtensions) e].join(", "), extensions: allowedExtensions }]});
 			} else if (e.button == 1) {
 				var clipboard = hide.Ide.inst.getClipboardText();
 				var validClipboard = true;

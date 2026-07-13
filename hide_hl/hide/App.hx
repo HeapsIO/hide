@@ -22,9 +22,10 @@ class App extends hxd.App {
 		ide.app = this;
 		ui = new hrt.ui.HuiBase(this, s2d);
 
-		if (hide.Ide.inst.ideConfig.recentProjects?.length > 0) {
+		if (hide.Ide.inst.ideConfig.currentProject != null)
+			@:privateAccess hide.Ide.inst.setProject(hide.Ide.inst.ideConfig.currentProject);
+		else if (hide.Ide.inst.ideConfig.recentProjects?.length > 0)
 			@:privateAccess hide.Ide.inst.setProject(hide.Ide.inst.ideConfig.recentProjects[0]);
-		}
 
 		var winSize = ide.getLocalStorage("windowSize") ?? {w: 800, h: 600};
 		// hxd.Window.getInstance().resize(winSize.w, winSize.h);
