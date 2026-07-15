@@ -1,5 +1,7 @@
 package hrt.ui.hide;
 
+#if hui
+
 class HideMissingProject extends HuiElement {
 	static var SRC = <hide-missing-project>
 		<hui-text("No current project")/>
@@ -12,3 +14,5 @@ class HideMissingProject extends HuiElement {
 		hide.Ide.inst.chooseProject();
 	}
 }
+
+#end
