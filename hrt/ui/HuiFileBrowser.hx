@@ -91,6 +91,10 @@ class HuiFileBrowser extends HuiElement {
 						operations.push({from: root.getPath(), to: folder.getPath() + "/" + root.name});
 					}
 
+					operations = operations.filter((f) -> f.from != f.to);
+					if (operations.length == 0)
+						return;
+
 					getView().undo.run(actionMoveFilesAbs(operations), false);
 				}
 			}
