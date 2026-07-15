@@ -536,6 +536,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (!enable)
 			return;
 
+
 		var base = uiBase;
 		var now = haxe.Timer.stamp();
 
@@ -558,10 +559,10 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 					base.lastScrollTime = now;
 				}
 				e.propagate = uiBase.scrollFocus == null;
+				onWheel(e);
 			}
 		}
 
-		onWheel(e);
 	}
 
 	static function emptyFuncEventVoid(e: hxd.Event) { }
