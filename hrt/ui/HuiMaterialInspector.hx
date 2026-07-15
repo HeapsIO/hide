@@ -78,8 +78,13 @@ class HuiMaterialInspector extends HuiElement {
 			}
 			if (props?.name != null) {
 				var material = findMaterial(libraryEl.value + "/" + props.name);
-				materialEl.value = material.path + "/" + material.mat.name;
-				selectedMat = materialEl.value;
+				if (material != null) {
+					materialEl.value = material.path + "/" + material.mat.name;
+					selectedMat = materialEl.value;
+				} else {
+					materialEl.value = " -- Error -- ";
+					selectedMat = null;
+				}
 			}
 			var isModelMode = props != null && props.__refMode != null && ((props: Dynamic).__refMode == "modelSpec");
 			modeEl.value = isModelMode ? MaterialLibraryMode.Model : MaterialLibraryMode.Folder;

@@ -12,9 +12,10 @@ class HuiTextureChoice extends HuiElement {
 				<hui-file-picker id="file-picker"/>
 				<hui-gradient-box id="gradient-box"/>
 			</hui-element>
-			<hui-button-menu(menu) id="button-menu">
+			<hui-button-menu(menu) id="button-menu" class="small-square">
 				<hui-icon("vertical_dots_small")/>
 			</hui-button-menu>
+			<hui-drop-overlay id="drop-overlay"/>
 		</hui-texture-choice>
 
 	public function new(?parent) {
@@ -31,7 +32,16 @@ class HuiTextureChoice extends HuiElement {
 			onValueChange(tempChange);
 		}
 
+		filePicker.allowedExtensions = @:privateAccess hide.kit.File.types["texture"];
+
+		// steal drag drop
+		filePicker.bindDragOperations(this, dropOverlay);
+
 		refreshType();
+
+		onOver = (e) -> {
+			trace("aaa");
+		}
 	}
 
 	public var value(default, set): Any = null;

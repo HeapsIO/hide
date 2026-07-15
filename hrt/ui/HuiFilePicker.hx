@@ -5,7 +5,7 @@ package hrt.ui;
 class HuiFilePicker extends HuiElement {
 	static var SRC = <hui-file-picker>
 		<hui-text id="path"/>
-		<hui-element id="drop-overlay"/>
+		<hui-drop-overlay id="drop-overlay"/>
 	</hui-file-picker>
 
 	public var value(default, set) : String;
@@ -41,32 +41,46 @@ class HuiFilePicker extends HuiElement {
 			}
 		}
 
-		this.onAnyDragStart = (op: HuiDragOp) -> {
+		bindDragOperations(this, dropOverlay);
+
+		onOver = (e) -> {
+			trace("aaa");
+		}
+	}
+
+	public function bindDragOperations(element: HuiElement, overlay: HuiDropOverlay) {
+		this.onAnyDragStart = HuiElement.emptyFuncDragVoid;
+		this.onAnyDragEnd = HuiElement.emptyFuncDragVoid;
+		this.onDragOver = HuiElement.emptyFuncDragVoid;
+		this.onDragOut = HuiElement.emptyFuncDragVoid;
+		this.onDrop = HuiElement.emptyFuncDragVoid;
+
+		element.onAnyDragStart = (op: HuiDragOp) -> {
 			if (validateDrop(op) != null) {
-				dropOverlay.dom.addClass("accept-drop-any");
+				overlay.acceptAny = true;
 			}
 		}
 
-		this.onAnyDragEnd = (op: HuiDragOp) -> {
-			dropOverlay.dom.removeClass("accept-drop-any");
+		element.onAnyDragEnd = (op: HuiDragOp) -> {
+			overlay.reset();
 		}
 
-		this.onDragOver = (op:HuiDragOp) -> {
+		element.onDragOver = (op:HuiDragOp) -> {
 			if (validateDrop(op) != null) {
-				dropOverlay.dom.addClass("accept-drop");
+				overlay.accept = true;
 				op.acceptDrop = true;
 			}
 		}
 
-		this.onDragOut = (op:HuiDragOp) -> {
-			dropOverlay.dom.removeClass("accept-drop");
+		element.onDragOut = (op:HuiDragOp) -> {
+			overlay.accept = false;
 		}
 
-		this.onDrop = (op:HuiDragOp) -> {
+		element.onDrop = (op:HuiDragOp) -> {
 			var path = validateDrop(op);
 			if (path == null)
 				return;
-			value = path;
+			this.value = path;
 			onValueChanged();
 		}
 	}

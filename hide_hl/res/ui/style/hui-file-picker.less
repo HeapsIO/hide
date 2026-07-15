@@ -29,35 +29,4 @@ hui-file-picker {
 			halign: middle;
 		}
 	}
-
-	> #drop-overlay {
-		position: absolute;
-		fill-width: 1;
-		auto-size: 1;
-		fill-height: 1;
-
-		x: -2;
-		y: -2;
-		margin-right: -4;
-		margin-bottom: -4;
-
-		visible: false;
-
-		&.accept-drop-any {
-			visible: true;
-
-			> hui-background {
-				border-radius: 4;
-				outline: 1 green;
-			}
-		}
-
-		&.accept-drop {
-			> hui-background {
-				border-radius: 4;
-				outline: 2 white;
-			}
-		}
-
-	}
 }

@@ -2,8 +2,10 @@ hui-texture-choice {
 	> #widget {
 		fill-width: 1;
 		auto-size: 1;
+		propagate-events: true;
 
 		>#file-picker, >#gradient-box {
+			propagate-events: true;
 			> hui-background {
 				border-radius:  @base-corner-radius 0 0 @base-corner-radius;
 			}
@@ -16,6 +18,8 @@ hui-texture-choice {
 		height: 16;
 		padding: 0;
 		margin: 0;
+		propagate-events: true;
+
 		> hui-icon {
 			margin: 0;
 			padding: 0;
