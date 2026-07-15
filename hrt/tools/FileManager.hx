@@ -507,6 +507,9 @@ class FileManager {
 	}
 
 	public function init() {
+		for (file in fileIndex) {
+			file.dispose();
+		}
 		fileIndex = [];
 		onReadyCallbacks = [];
 
