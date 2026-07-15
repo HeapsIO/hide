@@ -507,6 +507,9 @@ class FileManager {
 	}
 
 	public function init() {
+		fileIndex = [];
+		onReadyCallbacks = [];
+
 		var exclPatterns : Array<String> = hide.Ide.inst.currentConfig.get("filetree.excludes", []);
 		ignorePatterns = [];
 		ignorePatterns.push(~/\.tmp/i);
