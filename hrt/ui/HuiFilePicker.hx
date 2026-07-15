@@ -4,7 +4,9 @@ package hrt.ui;
 #if hui
 class HuiFilePicker extends HuiElement {
 	static var SRC = <hui-file-picker>
-		<hui-text id="path"/>
+		<hui-element id="text-container">
+			<hui-text id="path"/>
+		</hui-element>
 		<hui-drop-overlay id="drop-overlay"/>
 	</hui-file-picker>
 

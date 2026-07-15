@@ -6,9 +6,15 @@ hui-file-picker {
 	padding: 0 3 0 3;
 	//overflow: hidden;
 
-	> hui-text {
+	> #text-container {
 		valign: middle;
-		margin-bottom: 2;
+		overflow: hidden;
+
+		> hui-text {
+			margin-bottom: 2;
+			text-align: left;
+			line-break: false;
+		}
 	}
 
 	background-type: hui;
