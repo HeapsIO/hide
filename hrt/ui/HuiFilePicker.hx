@@ -1,9 +1,11 @@
+
 package hrt.ui;
 
 #if hui
 class HuiFilePicker extends HuiElement {
 	static var SRC = <hui-file-picker>
 		<hui-text id="path"/>
+		<hui-element id="drop-overlay"/>
 	</hui-file-picker>
 
 	public var value(default, set) : String;
@@ -38,6 +40,45 @@ class HuiFilePicker extends HuiElement {
 				]);
 			}
 		}
+
+		this.onAnyDragStart = (op: HuiDragOp) -> {
+			if (validateDrop(op) != null) {
+				dropOverlay.dom.addClass("accept-drop-any");
+			}
+		}
+
+		this.onAnyDragEnd = (op: HuiDragOp) -> {
+			dropOverlay.dom.removeClass("accept-drop-any");
+		}
+
+		this.onDragOver = (op:HuiDragOp) -> {
+			if (validateDrop(op) != null) {
+				dropOverlay.dom.addClass("accept-drop");
+				op.acceptDrop = true;
+			}
+		}
+
+		this.onDragOut = (op:HuiDragOp) -> {
+			dropOverlay.dom.removeClass("accept-drop");
+		}
+
+		this.onDrop = (op:HuiDragOp) -> {
+			var path = validateDrop(op);
+			if (path == null)
+				return;
+			value = path;
+			onValueChanged();
+		}
+	}
+
+	public function validateDrop(op: HuiDragOp) : Null<String> {
+		if (op.type == HuiFileBrowser.fileDragOp) {
+			var files : Array<String> = op.data;
+			if (files.length != 1)
+				return null;
+			return validatePath(files[0]);
+		}
+		return null;
 	}
 
 	public function validatePath(v: String) : Null<String> {
@@ -54,6 +95,10 @@ class HuiFilePicker extends HuiElement {
 		} catch(e) {
 			return null;
 		}
+
+		var ext = haxe.io.Path.extension(v);
+		if (!allowedExtensions.contains(ext))
+			return null;
 
 		if (relative) {
 			return hide.Ide.inst.getRelPath(absPath);
