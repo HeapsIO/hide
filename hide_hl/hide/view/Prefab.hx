@@ -108,6 +108,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		registerCommand(hrt.ui.HuiCommands.cut, View, () -> getView().undo.run(actionCutToClipboard(), true));
 		registerCommand(hrt.ui.HuiCommands.copy, View, () -> copySelectionToClipboard());
+		registerCommand(hrt.ui.HuiCommands.duplicate, View, () -> getView().undo.run(actionDuplicateSelection(), true));
 		registerCommand(hrt.ui.HuiCommands.paste, View, () -> getView().undo.run(actionPasteFromClipboard(), true));
 
 		registerCommand(hrt.ui.HuiCommands.delete, View, () -> getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true));
@@ -183,6 +184,7 @@ class Prefab extends HuiView<{path: String}> {
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.cut, this));
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.copy, this));
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.paste, this));
+			entries.push(HuiMenu.itemFromCommand(hrt.ui.HuiCommands.duplicate, this));
 
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.delete, this));
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.rename, this));
@@ -1303,10 +1305,34 @@ class Prefab extends HuiView<{path: String}> {
 		};
 	}
 
+	function actionDuplicateSelection() : hrt.tools.Undo.Action {
+		var selection = getSelectionOrdered();
+		if (selection.length == 0)
+			return null;
+
+		var actions: Array<hrt.tools.Undo.Action> = [];
+		var selectPrefabs: Array<hrt.prefab.Prefab> = [];
+		var offsets: Map<hrt.prefab.Prefab, Int> = [];
+		for (prefab in selection) {
+			var clone = prefab.clone();
+			var index = prefab.parent.children.indexOf(prefab);
+			var offset = offsets.get(prefab.parent) ?? 0;
+			index += offset;
+			offsets.set(prefab.parent, offset + 1);
+
+			actions.push(actionReparentPrefab(clone, prefab.parent, index + 1));
+			selectPrefabs.push(clone);
+		}
+		actions.push(actionMakeSelection(selectPrefabs));
+
+		return hrt.tools.Undo.actionFromActions(actions);
+	}
 
 	function renamePrefab(target: hrt.prefab.Prefab) {
 		sceneEditor.tree.rename(target, (newName: String) -> {
-			getView().undo.run(actionRenamePrefab(target, newName), true);
+			if (newName != "" && newName != null) {
+				getView().undo.run(actionRenamePrefab(target, newName), true);
+			}
 		});
 	}
 

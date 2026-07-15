@@ -81,4 +81,13 @@ class Undo {
 	public function markClean() {
 		lastSaveUndo = getCurrentUndo();
 	}
+
+	public static function actionFromActions(actions: Array<Action>) : Action {
+		return (isUndo) -> {
+			for (i in 0...actions.length) {
+				var index = isUndo ? actions.length - i - 1 : i;
+				actions[index](isUndo);
+			}
+		}
+	}
 }
