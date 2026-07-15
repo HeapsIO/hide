@@ -1546,7 +1546,7 @@ class Prefab extends HuiView<{path: String}> {
 			return {
 				label: name,
 				click: () -> {
-					var shader = new hrt.prefab.Shader(null, null);
+					var shader = newPrefabByName("shader");
 					shader.name = name;
 					shader.source = path;
 					getView().undo.run(actionAddSelectPrefab(parentElt, parentElt.children.length, shader), true);
@@ -1610,6 +1610,11 @@ class Prefab extends HuiView<{path: String}> {
 		//menu.unshift(custom);
 
 		return menu;
+	}
+
+	function newPrefabByName(name: String) {
+		var cl = hrt.prefab.Prefab.getPrefabInfoByName(name)?.prefabClass ?? hrt.prefab.Unknown;
+		return Type.createInstance(cl, [null, null]);
 	}
 
 	function createPrefabMenu(parent: hrt.prefab.Prefab) : Array<hrt.ui.HuiMenu.MenuItem> {

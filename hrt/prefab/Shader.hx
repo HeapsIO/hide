@@ -219,29 +219,6 @@ class Shader extends Prefab {
 		updateInstance();
 	}
 
-	#if editor
-
-	override function editorRemoveInstanceObjects() : Void {
-		if (shared?.editor != null) {
-			shared.editor.queueRebuild(parent);
-			super.editorRemoveInstanceObjects();
-		}
-	}
-
-	function getEditProps(shaderDef: hxsl.SharedShader) : Array<hrt.prefab.Props.PropDef> {
-		var props = [];
-		for(v in shaderDef.data.vars) {
-			if( v.kind != Param )
-				continue;
-			if( v.qualifiers != null && v.qualifiers.contains(Ignore) )
-				continue;
-			var prop = makeShaderParam(v);
-			if( prop == null ) continue;
-			props.push({name: v.name, t: prop});
-		}
-		return props;
-	}
-
 	override function edit2(ctx:hrt.prefab.EditContext2) {
 		super.edit2(ctx);
 
@@ -302,6 +279,56 @@ class Shader extends Prefab {
 		shaderCat.buildPropsList(props, this.props);
 	}
 
+	function getEditProps(shaderDef: hxsl.SharedShader) : Array<hrt.prefab.Props.PropDef> {
+		var props = [];
+		for(v in shaderDef.data.vars) {
+			if( v.kind != Param )
+				continue;
+			if( v.qualifiers != null && v.qualifiers.contains(Ignore) )
+				continue;
+			var prop = makeShaderParam(v);
+			if( prop == null ) continue;
+			props.push({name: v.name, t: prop});
+		}
+		return props;
+	}
+
+	function makeShaderParam( v : hxsl.Ast.TVar ) : hrt.prefab.Props.PropType {
+		var min : Null<Float> = null, max : Null<Float> = null;
+		if( v.qualifiers != null )
+			for( q in v.qualifiers )
+				switch( q ) {
+				case Range(rmin, rmax): min = rmin; max = rmax;
+				default:
+				}
+		return switch( v.type ) {
+		case TInt:
+			PInt(min == null ? null : Std.int(min), max == null ? null : Std.int(max));
+		case TFloat:
+			PFloat(min != null ? min : 0.0, max != null ? max : 1.0);
+		case TBool:
+			PBool;
+		case TSampler(_):
+			PTexture;
+		case TVec(n, VFloat):
+			if ((n == 3 || n == 4) && !StringTools.startsWith(v.name.toLowerCase(), "vec")) {
+				PColor;
+			}
+			else PVec(n);
+		default:
+			PUnsupported(hxsl.Ast.Tools.toString(v.type));
+		}
+	}
+
+	#if editor
+
+	override function editorRemoveInstanceObjects() : Void {
+		if (shared?.editor != null) {
+			shared.editor.queueRebuild(parent);
+			super.editorRemoveInstanceObjects();
+		}
+	}
+
 	override function edit( ectx : hide.prefab.EditContext ) {
 		super.edit(ectx);
 
@@ -360,33 +387,6 @@ class Shader extends Prefab {
 				//shared.editor.queueRebuild(fx);
 			}
 		});
-	}
-
-	function makeShaderParam( v : hxsl.Ast.TVar ) : hrt.prefab.Props.PropType {
-		var min : Null<Float> = null, max : Null<Float> = null;
-		if( v.qualifiers != null )
-			for( q in v.qualifiers )
-				switch( q ) {
-				case Range(rmin, rmax): min = rmin; max = rmax;
-				default:
-				}
-		return switch( v.type ) {
-		case TInt:
-			PInt(min == null ? null : Std.int(min), max == null ? null : Std.int(max));
-		case TFloat:
-			PFloat(min != null ? min : 0.0, max != null ? max : 1.0);
-		case TBool:
-			PBool;
-		case TSampler(_):
-			PTexture;
-		case TVec(n, VFloat):
-			if ((n == 3 || n == 4) && !StringTools.startsWith(v.name.toLowerCase(), "vec")) {
-				PColor;
-			}
-			else PVec(n);
-		default:
-			PUnsupported(hxsl.Ast.Tools.toString(v.type));
-		}
 	}
 
 	override function getHideProps() : HideProps {
