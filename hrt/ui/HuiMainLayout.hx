@@ -110,9 +110,13 @@ class HuiMainLayout extends HuiElement {
 		@:privateAccess dom.contentRoot = this;
 		init();
 
-		if (hide.Ide.inst.ideConfig.currentProject != null) {
-			mainPanel.removeChildElements();
+		mainPanel.removeChildElements();
+		projectLayout = null;
+
+		if (hide.Ide.inst.isProjectValid()) {
 			projectLayout = new HuiProjectLayout(mainPanel);
+		} else {
+			new hrt.ui.hide.HideMissingProject(mainPanel);
 		}
 	}
 

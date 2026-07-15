@@ -76,6 +76,10 @@ class IdeData {
 		fileWatcher = new hide.tools.FileWatcher();
 	}
 
+	public function isProjectValid() : Bool {
+		return ideConfig.currentProject != "" && ideConfig.currentProject != null;
+	}
+
 	function setProject( dir : String ) {
 		fileWatcher.dispose();
 		dbWatcher = null;

@@ -137,12 +137,14 @@ class Ide extends hide.tools.IdeData {
 	override function setProject(dir:String) {
 		super.setProject(dir);
 
-		hrt.tools.FileManager.inst.init();
+		if (hide.Ide.inst.isProjectValid()) {
+			hrt.tools.FileManager.inst.init();
+			trace("set project " + dir);
+			hxd.res.Loader.currentInstance?.dispose();
+			hxd.res.Loader.currentInstance = new hxd.res.Loader(new hxd.fs.LocalFileSystem(resourceDir, null));
+			loadDatabase(true);
+		}
 
-		trace("set project " + dir);
-		hxd.res.Loader.currentInstance?.dispose();
-		hxd.res.Loader.currentInstance = new hxd.res.Loader(new hxd.fs.LocalFileSystem(resourceDir, null));
-		loadDatabase(true);
 
 		// var pluginPath = getPath("../hide-plugin.hl");
 		// if (sys.FileSystem.exists(pluginPath)) {
