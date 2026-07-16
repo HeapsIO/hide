@@ -147,13 +147,13 @@ class DynamicShader extends Shader {
 		if(shaderDef.shader == null)
 			return;
 
-		var forceInit = #if editor true #else false #end;
+		var forceInit = #if (editor || editor_hl) true #else false #end;
 		if (forceInit || shaderDef.isShaderGraph) {
 			// TODO: Where to init prefab default values?
 			for( v in shaderDef.inits ) {
 				if(!Reflect.hasField(props, v.variable.name)) {
 					var value = v.value;
-					#if editor
+					#if (editor || editor_hl)
 					// deep copy gradients
 					value = haxe.Json.parse(hide.Ide.inst.toJSON(value));
 					#end
