@@ -604,7 +604,7 @@ class HuiCameraSettingsPopup extends HuiPopup {
 			</hui-element>
 			<hui-element class="horizontal" id="speed">
 				<hui-text("Speed") class="label"/>
-				<hui-slider step={0.1} min={0} max={10} decimals={2} class="value"/>
+				<hui-slider step={0.1} min={0} max={10} decimals={2} id="speed-input" class="value"/>
 			</hui-element>
 		</hui-camera-settings-popup>
 
@@ -645,6 +645,8 @@ class HuiCameraSettingsPopup extends HuiPopup {
 		zNear.onValueChanged = (_) -> { cam.zNear = zNear.value; }
 		zFar.value = cam.zFar;
 		zFar.onValueChanged = (_) -> { cam.zFar = zFar.value; }
+		speedInput.value = ctrl.moveSpeed;
+		speedInput.onValueChanged = (_) -> { ctrl.moveSpeed = speedInput.value; }
 
 		var orbitCtrl = Std.downcast(ctrl, h3d.scene.CameraController.OrbitCameraController);
 		if (orbitCtrl != null) {

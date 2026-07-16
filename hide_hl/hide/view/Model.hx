@@ -641,6 +641,9 @@ class Model extends HuiView<{path: String}> {
 		var lib = hxd.res.Loader.currentInstance.load(path).toModel().toHmd();
 		obj = lib.makeObject((path) -> loadTexture(path));
 		sceneEditor.scene.s3d.addChild(obj);
+
+		sceneEditor.resetCamera();
+		sceneEditor.updateDebugOverlayVisibility();
 	}
 
 	function loadTexture(path : String, async : Bool = false) {
