@@ -663,9 +663,23 @@ class HuiGridSettingsPopup extends HuiPopup {
 		}
 
 		@:privateAccess gridSize.value = editor.sceneEditor.gizmoSnapStep;
-		gridSize.onValueChanged = (_) -> {
-			@:privateAccess editor.sceneEditor.gizmoSnapStep = gridSize.value;
-			@:privateAccess editor.sceneEditor.grid.lineSpacing = gridSize.value;
+		gridSize.onValueChanged = (isTempChange) -> {
+			if (isTempChange) {
+				@:privateAccess editor.sceneEditor.grid.lineSpacing = gridSize.value;
+			}
+			else {
+				var prevValue = @:privateAccess editor.sceneEditor.gizmoSnapStep;
+				var newValue = gridSize.value;
+
+				function exec(undo : Bool) {
+					@:privateAccess editor.sceneEditor.gizmoSnapStep = undo ? prevValue : newValue;
+					@:privateAccess editor.sceneEditor.grid.lineSpacing = undo ? prevValue : newValue;
+					gridSize.value = undo ? prevValue : newValue;
+				}
+
+				editor.undo.record(exec, false);
+				exec(false);
+			}
 		};
 	}
 }
