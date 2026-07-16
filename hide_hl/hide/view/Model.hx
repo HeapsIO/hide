@@ -473,14 +473,23 @@ class Model extends HuiView<{path: String}> {
 		// Save model library
 		for (mat in obj.getMaterials()) {
 			var props = materialSettings.get(mat.name);
-			if (props != null ) {
-				mat.props = props;
+			var defaultProps = mat.getDefaultModelProps();
+			if (mat != null) {
+				mat.props = {};
+				if (props != null) {
+					Reflect.setField((mat.props:Dynamic), "__ref", props.__ref);
+					Reflect.setField((mat.props:Dynamic), "name", props.name);
+					if (props.__refMode != null)
+						Reflect.setField((mat.props:Dynamic), "__refMode", "modelSpec");
+					else
+						Reflect.deleteField((mat.props:Dynamic), "__refMode");
+				}
 			} else {
 				Reflect.deleteField((mat.props:Dynamic), "__ref");
 				Reflect.deleteField((mat.props:Dynamic), "name");
 				Reflect.deleteField((mat.props:Dynamic), "__refMode");
 			}
-			h3d.mat.MaterialSetup.current.saveMaterialProps(mat);
+			h3d.mat.MaterialSetup.current.saveMaterialProps(mat, defaultProps);
 		}
 	}
 
@@ -630,8 +639,12 @@ class Model extends HuiView<{path: String}> {
 
 	function load(path : String) {
 		var lib = hxd.res.Loader.currentInstance.load(path).toModel().toHmd();
-		obj = lib.makeObject();
+		obj = lib.makeObject((path) -> loadTexture(path));
 		sceneEditor.scene.s3d.addChild(obj);
+	}
+
+	function loadTexture(path : String, async : Bool = false) {
+		return hrt.prefab.Cache.get().modelCache.loadTexture(null, path, async);
 	}
 }
 

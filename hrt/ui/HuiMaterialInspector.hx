@@ -86,13 +86,11 @@ class HuiMaterialInspector extends HuiElement {
 		}
 
 		libraryEl.onValueChanged = () -> {
-			var prevV = selectedLib;
 			selectedLib = null;
 			for (matLib in matLibs) {
 				if (matLib.path == libraryEl.value)
 					selectedLib = matLib;
 			}
-			var newV = selectedLib;
 
 			materials = selectedLib == null ? [] : HuiSceneEditor.getMaterialsFromLibrary(@:privateAccess model.state.path, selectedLib.name);
 			materialEl.value = null;
@@ -142,6 +140,15 @@ class HuiMaterialInspector extends HuiElement {
 				@:privateAccess material.mat.update(mat, material.mat.renderProps(), function(path: String) {
 					return hxd.res.Loader.currentInstance.load(path).toTexture();
 				});
+			}
+			else {
+				var defaultMat = h3d.mat.MaterialSetup.current.createMaterial();
+				for (f in Reflect.fields(mat)) {
+					if (f == "name" || f == "model")
+						continue;
+					Reflect.setField(mat, f, Reflect.field(defaultMat, f));
+				}
+				mat.props = defaultMat.getDefaultProps();
 			}
 
 			materialEl.value = material == null ? null : material.path + "/" + material.mat.name;
