@@ -30,6 +30,12 @@ class HuiBase extends HuiElement {
 	@:allow(hrt.ui.HuiElement) var scrollFocus: HuiElement;
 	@:allow(hrt.ui.HuiElement) var lastScrollTime: Float;
 
+	@:allow(hrt.ui.HuiElement) var tooltipFocus: HuiElement;
+	@:allow(hrt.ui.HuiElement) var tooltipTime: Float = 0.0;
+	var tooltipDelay: Float = 0.5;
+	var tooltipCurrent: HuiPopup;
+
+
 	public static var cursorForbidden : hxd.Cursor;
 
 	public function new(app: hide.App, ?parent: h2d.Object) {
@@ -86,9 +92,15 @@ class HuiBase extends HuiElement {
 	public function addPopup(popup: HuiPopup, ?anchor: hrt.ui.HuiPopup.Anchor, ?dismissable: Bool = true) {
 		popup.anchor = anchor;
 		if (dismissable)
-			@:privateAccess popup.addDismissable(this);
+			@:privateAccess popup.addDismissable(this.mainLayout.popupOverlay);
 		else
-			@:privateAccess popup.addModal(this);
+			@:privateAccess popup.addModal(this.mainLayout.popupOverlay);
+	}
+
+	public function addTooltip(tooltip: HuiPopup, ?anchor: hrt.ui.HuiPopup.Anchor) {
+		tooltip.anchor = anchor;
+		this.mainLayout.tooltipOverlay.removeChildElements();
+		this.mainLayout.tooltipOverlay.addChild(tooltip);
 	}
 
 	public function confirm(message: String, ?buttons: hrt.ui.HuiConfirmPopup.ConfirmButtons, onCompletion: hrt.ui.HuiConfirmPopup.ConfirmButton -> Void) {
@@ -256,7 +268,7 @@ class HuiBase extends HuiElement {
 	}
 
 	public function updateStyle(dt: Float) {
-		style.sync(dt);
+		updateTooltip(dt);
 		checkedCommandEvents.clear();
 
 		if (hxd.Key.isPressed(hxd.Key.ESCAPE)) {
@@ -300,6 +312,53 @@ class HuiBase extends HuiElement {
 			}
 		}
 		#end
+
+		style.sync(dt);
+
+	}
+
+	function updateTooltip(dt: Float) {
+		var s2d = getScene();
+		// check that the current tooltip is still being overed
+		if (tooltipFocus != null) {
+			var i = tooltipFocus.interactive;
+			var x = s2d.mouseX;
+			var y = s2d.mouseY;
+
+			var dx = x - i.absX;
+			var dy = y - i.absY;
+			var rx = (dx * i.matD - dy * i.matC) * @:privateAccess i.invDet;
+			var ry = (dy * i.matA - dx * i.matB) * @:privateAccess i.invDet;
+
+			if( ry < 0 || rx < 0 || rx >= i.width || ry >= i.height )
+				updateTooltipOver(null);
+		}
+
+		if (tooltipFocus != null) {
+			if (tooltipTime < tooltipDelay && tooltipTime + dt >= tooltipDelay) {
+				var tp = new HuiBasicTooltip();
+				tp.text.text = tooltipFocus.tip;
+				addTooltip(tp, {object: Point(s2d.mouseX + 16, s2d.mouseY + 16), directionX: EndOutside, directionY: EndOutside});
+				tooltipCurrent = tp;
+			}
+			tooltipTime += dt;
+		}
+	}
+
+	function updateTooltipOver(element: HuiElement) {
+		if (element != null) {
+			if (tooltipFocus == element)
+				return;
+			if (element.tip == null)
+				return;
+			// only allow the topmost element with a tip to be the focus
+			if (tooltipFocus?.findParent((f) -> f == element) != null)
+				return;
+		}
+		tooltipFocus = element;
+		tooltipTime = 0;
+		tooltipCurrent?.remove();
+		tooltipCurrent = null;
 	}
 
 	public static var highDpi = false;

@@ -21,6 +21,10 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	@:p public var displayName: String;
 	@:p public var styleEvents: Bool = true;
 
+	/**Tooltip text that appears when the user hovers on the object for a given time**/
+	@:p public var tip(default, set): Null<String> = null;
+	function set_tip(v) {tip = v; makeInteractive(); return v;};
+
 	public var onOut(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onOver(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onMove(default, set) : hxd.Event->Void = emptyFuncEventVoid;
@@ -356,6 +360,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	function onOverInternal(e: hxd.Event) {
 		if (!enable)
 			return;
+		var uiBase = uiBase;
+
+		uiBase.updateTooltipOver(this);
 
 		if (checkDragFn(onDragOver, e)) {
 			@:privateAccess uiBase.currentDrag.setLastOver(this);

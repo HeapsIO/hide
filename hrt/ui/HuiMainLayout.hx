@@ -45,6 +45,12 @@ class HuiMainLayout extends HuiElement {
 				<hui-text("fps") id="fps"/>
 			</hui-element>
 
+			<hui-element id="popup-overlay" public>
+			</hui-element>
+
+			<hui-element id="tooltip-overlay" public>
+			</hui-element>
+
 			<hui-element id="toast-overlay">
 			</hui-element>
 		</hui-main-layout>
