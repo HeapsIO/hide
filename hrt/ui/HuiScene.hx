@@ -35,6 +35,11 @@ class HuiScene extends HuiElement {
 	public var sceneEvents : HuiSceneEvents;
 	public var disableSceneRender : Bool = false;
 
+	public var sceneWidth(get, never) : Int;
+	function get_sceneWidth() : Int {return renderTexture.width;};
+	public var sceneHeight(get, never) : Int;
+	function get_sceneHeight() : Int {return renderTexture.height;};
+
 	var renderTexture : h3d.mat.Texture;
 
 	#if editor_hl
@@ -158,14 +163,14 @@ class HuiScene extends HuiElement {
 		display.height = innerHeight;
 		s2d.scaleMode = Custom(innerWidth, innerHeight, scale, scale);
 		var pos = this.getAbsPos().getPosition();
-		@:privateAccess s2d.offsetX = pos.x * scale;
-		@:privateAccess s2d.offsetY = pos.y  * scale;
+		@:privateAccess s2d.offsetX = 0;
+		@:privateAccess s2d.offsetY = 0;
 
 		var scenePosition = {
-			offsetX : pos.x * scale,
-			offsetY : pos.y * scale,
-			width : Std.int(innerWidth),
-			height : Std.int(innerHeight)
+			offsetX : 0.0,
+			offsetY : 0.0,
+			width : Std.int(textureWidth),
+			height : Std.int(textureHeight)
 		};
 		s3d.scenePosition = scenePosition;
 	}
@@ -233,6 +238,9 @@ class Interactive2 extends h2d.Interactive {
 		handleEvent2(e, true);
 	}
 
+	public var lastX: Int = 0;
+	public var lastY: Int = 0;
+
 	function handleEvent2(e: hxd.Event, fixPos: Bool) {
 		super.handleEvent(e);
 
@@ -241,24 +249,29 @@ class Interactive2 extends h2d.Interactive {
 
 		var newEvent = e;
 
+		var clone = new hxd.Event(e.kind, e.relX, e.relY);
+		clone.relZ = e.relZ;
+		clone.propagate = e.propagate;
+		clone.cancel = e.cancel;
+		clone.button = e.button;
+		clone.touchId = e.touchId;
+		clone.keyCode = e.keyCode;
+		clone.charCode = e.charCode;
+		clone.wheelDelta = e.wheelDelta;
+		newEvent = clone;
+
 		var scene = huiScene.getScene();
 		if (fixPos) {
-			var clone = new hxd.Event(e.kind, e.relX, e.relY);
-
 			// replace global events in screenSpace
 			clone.relX = scene.mouseX * scene.viewportScaleX;
 			clone.relY = scene.mouseY * scene.viewportScaleY;
-
-			clone.relZ = e.relZ;
-			clone.propagate = e.propagate;
-			clone.cancel = e.cancel;
-			clone.button = e.button;
-			clone.touchId = e.touchId;
-			clone.keyCode = e.keyCode;
-			clone.charCode = e.charCode;
-			clone.wheelDelta = e.wheelDelta;
-			newEvent = clone;
 		}
+
+		newEvent.relX -= huiScene.absX * scene.viewportScaleX;
+		newEvent.relY -= huiScene.absY * scene.viewportScaleY;
+
+		lastX = hxd.Math.round(newEvent.relX);
+		lastY = hxd.Math.round(newEvent.relY);
 
 		if (newEvent.kind == EPush) {
 			capturing = true;
@@ -274,6 +287,8 @@ class Interactive2 extends h2d.Interactive {
 		} else if (capturing && (newEvent.kind == ERelease || newEvent.kind == EReleaseOutside)) {
 			@:privateAccess getScene().events.stopCapture();
 		}
+
+
 
 		@:privateAccess huiScene.sceneEvents.onEvent(newEvent);
 
@@ -324,6 +339,22 @@ class HuiSceneInfos extends HuiElement {
 			<hui-text("V Ram : ") class="label"/>
 			<hui-text("78") id="vram-count"/>
 		</hui-element>
+
+		<hui-text("Debug") class="sub-title"/>
+		// <hui-element class="horizontal">
+		// 	<hui-text("Mouse : ") class="label"/>
+		// 	<hui-text("X: 000 Y: 000") id="mousePos"/>
+		// </hui-element>
+
+		// <hui-element class="horizontal">
+		// 	<hui-text("Event Mouse : ") class="label"/>
+		// 	<hui-text("X: 000 Y: 000") id="eventMousePos"/>
+		// </hui-element>
+
+		<hui-element class="horizontal">
+			<hui-text("Scene Size : ") class="label"/>
+			<hui-text("W: 000 H: 000") id="sceneSize"/>
+		</hui-element>
 	</hui-scene-infos>
 
 	var scene : HuiScene;
@@ -359,6 +390,11 @@ class HuiSceneInfos extends HuiElement {
 		texCount.text = '${splitCentaines(memStats.textureCount)}';
 		drawCallsCount.text = '${splitCentaines(engine.drawCalls)}';
 		vramCount.text = '${Std.int(memStats.totalMemory / (1024 * 1024))} Mb';
+
+		// mousePos.text = 'X: ${@:privateAccess scene.s3d.events.mouseX} Y: ${@:privateAccess scene.s3d.events.mouseY}';
+		// var i2 : Interactive2 = cast scene.interactive;
+		// eventMousePos.text = 'X: ${i2.lastX} Y: ${i2.lastY}';
+		@:privateAccess sceneSize.text = 'W: ${scene.renderTexture.width} H: ${scene.renderTexture.height}';
 	}
 }
 

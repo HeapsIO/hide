@@ -166,7 +166,7 @@ class HuiSceneEditor extends HuiElement {
 	public function getObjectsAt(sx : Int, sy : Int, ?root : h3d.scene.Object, ?f : h3d.scene.Object -> Bool) {
 		var hits : Array<{ o : h3d.scene.Object, d : Float }> = [];
 		var r = root ?? scene.s3d;
-		var ray = scene.s3d.camera.rayFromScreen(sx, sy, cast scene.calculatedWidth, cast scene.calculatedHeight);
+		var ray = scene.s3d.camera.rayFromScreen(sx, sy, scene.sceneWidth, scene.sceneHeight);
 		for (o in r.findAll((o) -> o)) {
 			var c = try o.getCollider() ?? o.getBounds()  catch(e) null;
 			if (c == null)
@@ -235,7 +235,7 @@ class HuiSceneEditor extends HuiElement {
 
 	public function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) {
 		var camera = scene.s3d.camera;
-		var ray = camera.rayFromScreen(sx, sy, scene.s2d.width, scene.s2d.height);
+		var ray = camera.rayFromScreen(sx, sy, scene.sceneWidth, scene.sceneHeight);
 		var dist = projectToGround(ray, paintOn, ignoreTerrain);
 		if(dist >= 0) {
 			return ray.getPoint(dist);
