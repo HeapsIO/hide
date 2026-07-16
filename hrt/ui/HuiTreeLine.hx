@@ -133,6 +133,8 @@ class HuiTreeLine extends HuiElement {
 		dom.toggleClass("open", tree.isOpen(data));
 		dom.toggleClass("selected", tree.isSelected(data));
 
+		tip = data.name;
+
 		if (tree.renamedElement?.item == data.item) {
 			rename(tree.renamedElement.callback, tree.renamedElement.selectionRange);
 			tree.renamedElement = null;

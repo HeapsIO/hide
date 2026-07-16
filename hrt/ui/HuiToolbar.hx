@@ -31,13 +31,13 @@ class HuiToolbar extends HuiElement {
 
 class HuiTransformWidgets extends HuiElement {
 	static var SRC = <hui-transform-widgets>
-		<hui-toggle class="group-start" id="translationBtn">
+		<hui-toggle class="group-start" id="translationBtn" tip={"Set Gizmo to Translation Mode"}>
 			<hui-icon("translation")/>
 		</hui-toggle>
-		<hui-toggle class="group" id="rotationBtn">
+		<hui-toggle class="group" id="rotationBtn" tip={"Set Gizmo to Rotation Mode"}>
 			<hui-icon("rotation")/>
 		</hui-toggle>
-		<hui-toggle class="group-end" id="scaleBtn">
+		<hui-toggle class="group-end" id="scaleBtn" tip={"Set Gizmo to Scale Mode"}>
 			<hui-icon("scale")/>
 		</hui-toggle>
 		<hui-button id="transform-space-btn">
@@ -60,9 +60,15 @@ class HuiTransformWidgets extends HuiElement {
 			scaleBtn.toggled = mode.match(Scale);
 		}
 
+		function syncTransformSpaceTip() {
+			transformSpaceBtn.tip = gizmo.isLocalTransform ? "Change to Global Space Transform mode" : "Change to Local Space Transform mode";
+		}
+		syncTransformSpaceTip();
+
 		transformSpaceBtn.onClick = (_) -> {
 			gizmo.isLocalTransform = !gizmo?.isLocalTransform;
 			gizmo.updateTransformSpace();
+			syncTransformSpaceTip();
 		};
 
 		gizmo.onChangeTransformSpace = (isLocalTransform) -> {
