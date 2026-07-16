@@ -102,6 +102,11 @@ class Shader extends Prefab {
 					var childNoise = getOpt(hrt.prefab.l2d.NoiseGenerator, v.name);
 					if(childNoise != null)
 						val = childNoise.toTexture();
+					#if (editor_hl)
+					else {
+						val = h3d.mat.Texture.fromColor(0xFF00FF);
+					}
+					#end
 				}
 			default:
 			}
