@@ -25,6 +25,12 @@ class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
 		defineHtmlTag("h", 0x3185ce);
 	}
 
+	static public function escapeText(t: String) : String {
+		t = StringTools.replace(t, "<", "&lt;");
+		t = StringTools.replace(t, ">", "&gt;");
+		return t;
+	}
+
 	override function loadFont(name: String) : h2d.Font {
 		return loadFontStatic(name);
 	}

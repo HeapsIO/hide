@@ -51,7 +51,7 @@ class HuiErrorDisplay extends HuiPopup {
 		this.visible = true;
 		stackTrace.setItems(exception.stack.asArray());
 		errorTitle.text = title;
-		errorException.text = 'Exception : $exception';
+		errorException.text = HuiText.escapeText('Exception : $exception');
 	}
 
 	public function clearError() {
