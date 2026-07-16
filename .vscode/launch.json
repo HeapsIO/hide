@@ -45,6 +45,7 @@
             "request": "launch",
             "type": "hl",
             "cwd": "${workspaceFolder}",
+			"port": 7779,
             "preLaunchTask": {
                 "type": "haxe",
                 "args": "active configuration"
