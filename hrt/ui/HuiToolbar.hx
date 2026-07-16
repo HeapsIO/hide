@@ -116,6 +116,12 @@ class HuiVisibilityWidget extends HuiElement {
 			visibilityBtn.toggled = !visibilityBtn.toggled;
 			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_OVERLAY_CONFIG_KEY, visibilityBtn.toggled);
 			editor.updateDebugOverlayVisibility();
+
+			var prefabView = Std.downcast(view, hide.view.Prefab);
+			if (prefabView != null) {
+				var visible = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_OVERLAY_CONFIG_KEY, true) && hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_GIZMO_CONFIG_KEY, true);
+				@:privateAccess prefabView.gizmo.setVisible(visible);
+			}
 		}
 
 		visibilityPopupBtn.onClick = (_) -> {
