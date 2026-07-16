@@ -423,7 +423,7 @@ class Model extends HuiView<{path: String}> {
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
 
-		widgets.push(new hrt.ui.HuiToolbar.HuiVisibilityWidget(sceneEditor));
+		widgets.push(new hrt.ui.HuiToolbar.HuiVisibilityWidget(this, sceneEditor));
 		widgets.push(new hrt.ui.HuiToolbar.HuiViewModesWidget(sceneEditor.scene.s3d));
 		widgets.push(new hrt.ui.HuiToolbar.HuiSceneFiltersWidget(sceneEditor));
 		widgets.push(new hrt.ui.HuiToolbar.HuiRenderPropsWidget(sceneEditor));

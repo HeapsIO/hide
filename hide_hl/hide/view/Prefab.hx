@@ -282,6 +282,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		gizmo = new hrt.tools.Gizmo(sceneEditor.scene.s3d);
 		gizmo.visible = false;
+		gizmo.setVisible(hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_GIZMO_CONFIG_KEY));
 		registerCommand(hrt.tools.Gizmo.gizmoSwitchModeCommand, View, gizmo.switchMode);
 		registerCommand(hrt.tools.Gizmo.gizmoTranslateCommand, View, gizmo.translationMode);
 		registerCommand(hrt.tools.Gizmo.gizmoRotateCommand, View, gizmo.rotationMode);
@@ -591,7 +592,7 @@ class Prefab extends HuiView<{path: String}> {
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
 
-		widgets.push(new hrt.ui.HuiToolbar.HuiVisibilityWidget(sceneEditor));
+		widgets.push(new hrt.ui.HuiToolbar.HuiVisibilityWidget(this, sceneEditor));
 		widgets.push(new hrt.ui.HuiToolbar.HuiViewModesWidget(sceneEditor.scene.s3d));
 		widgets.push(new hrt.ui.HuiToolbar.HuiSceneFiltersWidget(sceneEditor));
 		widgets.push(new hrt.ui.HuiToolbar.HuiRenderPropsWidget(sceneEditor));

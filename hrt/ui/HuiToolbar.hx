@@ -107,7 +107,7 @@ class HuiVisibilityWidget extends HuiElement {
 		</hui-button>
 	</hui-visibility-widget>
 
-	public function new(editor: HuiSceneEditor, ?parent : h2d.Object) {
+	public function new(view : HuiView<Dynamic>, editor: HuiSceneEditor, ?parent : h2d.Object) {
 		super(parent);
 		initComponent();
 
@@ -119,7 +119,7 @@ class HuiVisibilityWidget extends HuiElement {
 		}
 
 		visibilityPopupBtn.onClick = (_) -> {
-			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiVisibilitySettingsPopup(editor), { object: Element(this), directionX: StartInside, directionY: EndOutside });
+			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiVisibilitySettingsPopup(view, editor), { object: Element(this), directionX: StartInside, directionY: EndOutside });
 		}
 	}
 }
@@ -155,7 +155,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			</hui-element>
 
 			<hui-text("Sélection") class="sub-title"/>
-			<hui-element class="horizontal">
+			<hui-element class="horizontal" if (Std.isOfType(view, hide.view.Prefab))>
 				<hui-toggle id="gizmo-tog">
 					<hui-icon("translation")/>
 				</hui-toggle>
@@ -197,7 +197,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			</hui-element>
 		</hui-visibility-settings-popup>
 
-	public function new(editor : HuiSceneEditor, ?parent: h2d.Object) {
+	public function new(view : HuiView<Dynamic>, editor : HuiSceneEditor, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 
@@ -229,11 +229,14 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_MISC_CONFIG_KEY, miscTog.toggled);
 		}
 
-		gizmoTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_GIZMO_CONFIG_KEY, true);
-		gizmoTog.onClick = (_) -> {
-			gizmoTog.toggled = !gizmoTog.toggled;
-			// @:privateAccess editor.gizmo.setVisible(gizmoTog.toggled);
-			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_GIZMO_CONFIG_KEY, gizmoTog.toggled);
+		var prefabView = Std.downcast(view, hide.view.Prefab);
+		if (prefabView != null) {
+			gizmoTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_GIZMO_CONFIG_KEY, true);
+			gizmoTog.onClick = (_) -> {
+				gizmoTog.toggled = !gizmoTog.toggled;
+				@:privateAccess prefabView.gizmo.setVisible(gizmoTog.toggled);
+				hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_GIZMO_CONFIG_KEY, gizmoTog.toggled);
+			}
 		}
 
 		outlineTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_OUTLINE_CONFIG_KEY, true);
