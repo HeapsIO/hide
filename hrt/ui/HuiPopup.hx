@@ -70,20 +70,21 @@ class HuiPopup extends HuiElement {
 	}
 
 	static function constraint(anchorDirection: AnchorDirection, anchorStart: Float, anchorEnd: Float, size: Float) : Float {
-		switch(anchorDirection) {
+		var v = switch(anchorDirection) {
 			case StartOutside:
-				return anchorStart - size;
+				anchorStart - size;
 			case StartInside:
-				return anchorStart;
+				anchorStart;
 			case Middle:
-				return anchorStart + (anchorEnd - anchorStart) / 2.0 - size / 2.0;
+				anchorStart + (anchorEnd - anchorStart) / 2.0 - size / 2.0;
 			case Stretch:
-				return anchorStart;
+				anchorStart;
 			case EndInside:
-				return anchorEnd - size;
+				anchorEnd - size;
 			case EndOutside:
-				return anchorEnd;
+				anchorEnd;
 		}
+		return hxd.Math.round(v);
 	}
 
 	static function fixAnchor(anchorDirection: AnchorDirection, pos: Float, size: Float, min: Float, max: Float) {
