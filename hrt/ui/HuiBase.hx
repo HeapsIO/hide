@@ -338,7 +338,7 @@ class HuiBase extends HuiElement {
 			if (tooltipTime < tooltipDelay && tooltipTime + dt >= tooltipDelay) {
 				var tp = new HuiBasicTooltip();
 				tp.text.text = tooltipFocus.tip;
-				addTooltip(tp, {object: Point(s2d.mouseX + 16, s2d.mouseY + 16), directionX: EndOutside, directionY: EndOutside});
+				addTooltip(tp, {object: Point(s2d.mouseX, s2d.mouseY + 20 / s2d.viewportScaleY), directionX: EndOutside, directionY: EndOutside});
 				tooltipCurrent = tp;
 			}
 			tooltipTime += dt;
