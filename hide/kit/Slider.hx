@@ -227,6 +227,8 @@ class Slider<T:Float> extends Widget<T> {
 		#elseif hui
 		var s = new hrt.ui.HuiSlider();
 		s.decimals = 2;
+		if (int)
+			s.decimals = 0;
 		s.value = value;
 		s.min = min;
 		s.max = max;

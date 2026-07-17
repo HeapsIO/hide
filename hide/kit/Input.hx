@@ -49,11 +49,11 @@ class Input extends Widget<String> {
 
 		return input;
 		#elseif hui
-		var textInput = new hrt.ui.HuiTextInput();
+		var textInput = new hrt.ui.HuiInputBox();
 
-		textInput.onChange = () -> {
+		textInput.onChange = (isTemp) -> {
 			value = textInput.text;
-			broadcastValueChange(false);
+			broadcastValueChange(isTemp);
 		};
 
 		input = textInput;
