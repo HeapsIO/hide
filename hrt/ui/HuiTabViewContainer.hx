@@ -61,6 +61,10 @@ class HuiTabViewContainer extends HuiTabContainer {
 		}
 	}
 
+	public function getViews() : Array<HuiView<Any>> {
+		return [for (tab in getTabs()) cast tab];
+	}
+
 	override function syncTabs() {
 		super.syncTabs();
 

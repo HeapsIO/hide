@@ -242,10 +242,9 @@ class Ide extends hide.tools.IdeData {
 
 	public function showFileInResources(fpath : String) {
 		var fileEntry = hrt.tools.FileManager.inst.getFileEntry(fpath);
-		var filebrowsers = getViews(hrt.ui.HuiFileBrowser);
+		var filebrowsers = getViews(hide.view.FileBrowser);
 		for (filebrowser in filebrowsers) {
-			var i = @:privateAccess filebrowser.tree.itemMap.get(fileEntry);
-			@:privateAccess filebrowser.tree.revealItem(fileEntry);
+			@:privateAccess filebrowser.fileBrowser.tree.setSelection([fileEntry]);
 		}
 	}
 
@@ -262,21 +261,22 @@ class Ide extends hide.tools.IdeData {
 			callback(view);
 	}
 
-	public function getViews<T>(cl : Class<T>) {
+	public function getPanels() : Array<hrt.ui.HuiTabViewContainer> {
+		var layout = app.ui.uiBase.mainLayout.projectLayout;
+		return [layout.mainPanel, layout.leftPanel, layout.bottomPanel];
+	}
+
+	public function getViews<T:hrt.ui.HuiView<Any>>(cl : Class<T>) {
 		var views : Array<T> = [];
 		var layout = app.ui.uiBase.mainLayout.projectLayout;
-		for (v in @:privateAccess layout.mainPanel.content) {
-			if (Std.isOfType(v, cl))
-				views.push(cast v);
+
+		for (panel in getPanels()) {
+			for (view in panel.getViews()) {
+				if (Std.downcast(view, cl) != null)
+					views.push(cast view);
+			}
 		}
-		for (v in @:privateAccess layout.leftPanel.content) {
-			if (Std.isOfType(v, cl))
-				views.push(cast v);
-		}
-		for (v in @:privateAccess layout.bottomPanel.content) {
-			if (Std.isOfType(v, cl))
-				views.push(cast v);
-		}
+
 		return views;
 	}
 
