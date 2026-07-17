@@ -533,6 +533,9 @@ class Prefab extends HuiView<{path: String}> {
 		content.push({label: "Save", click: () -> execCommand(HuiCommands.save)});
 		content.push({label: "Rebuild", click: () -> tryMake(prefab)});
 		content.push({isSeparator: true});
+		content.push({label: "View in Explorer", click: () -> hide.tools.IdeData.showFileInExplorer(state.path)});
+		content.push({label: "View in Resources", click: () -> Ide.inst.showFileInResources(state.path)});
+		content.push({isSeparator: true});
 		content.push({label: "Debug dump", click: () -> {
 			var ser = @:privateAccess prefab.serialize();
 			trace(haxe.Json.stringify(ser, "\t"));

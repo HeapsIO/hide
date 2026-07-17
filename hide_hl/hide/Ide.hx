@@ -240,6 +240,15 @@ class Ide extends hide.tools.IdeData {
 		}
 	}
 
+	public function showFileInResources(fpath : String) {
+		var fileEntry = hrt.tools.FileManager.inst.getFileEntry(fpath);
+		var filebrowsers = getViews(hrt.ui.HuiFileBrowser);
+		for (filebrowser in filebrowsers) {
+			var i = @:privateAccess filebrowser.tree.itemMap.get(fileEntry);
+			@:privateAccess filebrowser.tree.revealItem(fileEntry);
+		}
+	}
+
 	public function openView(view: hrt.ui.HuiView<Dynamic>, position: HideViewPosition = Main, ?callback : (v : hrt.ui.HuiView<Dynamic>) -> Void) {
 		var layout = app.ui.uiBase.mainLayout.projectLayout;
 		var panel = switch(position) {
@@ -251,6 +260,24 @@ class Ide extends hide.tools.IdeData {
 		panel.setTab(view);
 		if (callback != null)
 			callback(view);
+	}
+
+	public function getViews<T>(cl : Class<T>) {
+		var views : Array<T> = [];
+		var layout = app.ui.uiBase.mainLayout.projectLayout;
+		for (v in @:privateAccess layout.mainPanel.content) {
+			if (Std.isOfType(v, cl))
+				views.push(cast v);
+		}
+		for (v in @:privateAccess layout.leftPanel.content) {
+			if (Std.isOfType(v, cl))
+				views.push(cast v);
+		}
+		for (v in @:privateAccess layout.bottomPanel.content) {
+			if (Std.isOfType(v, cl))
+				views.push(cast v);
+		}
+		return views;
 	}
 
 	public function getCDBContent<T>( sheetName : String ) : Array<T> {

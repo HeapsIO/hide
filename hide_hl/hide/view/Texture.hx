@@ -370,6 +370,11 @@ class Texture extends HuiView<{path: String}> {
 		return state.path.split("/").splice(-1, 2).join("/");
 	}
 
+	override function getContextMenuContent(content: Array<hrt.ui.HuiMenu.MenuItem>) {
+		content.push({label: "View in Explorer", click: () -> hide.tools.IdeData.showFileInExplorer(state.path)});
+		content.push({label: "View in Resources", click: () -> Ide.inst.showFileInResources(state.path)});
+	}
+
 	override function requestClose(cb: (canClose:Bool) -> Void) {
 		if (hasUnsavedChanges) {
 			uiBase.confirm("Save change before closing ?", Save | DontSave | Cancel, (choice: hrt.ui.HuiConfirmPopup.ConfirmButton) -> {

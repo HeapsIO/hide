@@ -373,13 +373,8 @@ class Model extends HuiView<{path: String}> {
 	}
 
 	override function getContextMenuContent(content: Array<hrt.ui.HuiMenu.MenuItem>) {
-		// content.push({label: "Save", click: () -> execCommand(HuiCommands.save)});
-		// content.push({label: "Rebuild", click: () -> @:privateAccess prefabEditor.tryMake(prefabEditor.prefab)});
-		// content.push({isSeparator: true});
-		// content.push({label: "Debug dump", click: () -> {
-		// 	var ser = @:privateAccess prefabEditor.prefab.serialize();
-		// 	trace(haxe.Json.stringify(ser, "\t"));
-		// }});
+		content.push({label: "View in Explorer", click: () -> hide.tools.IdeData.showFileInExplorer(state.path)});
+		content.push({label: "View in Resources", click: () -> Ide.inst.showFileInResources(state.path)});
 	}
 
 	override function getViewName():String {

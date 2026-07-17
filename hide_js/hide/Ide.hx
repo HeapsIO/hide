@@ -1759,7 +1759,7 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function showFileInResources(path: String) {
-		var filebrowsers = getViews(hide.view.FileBrowser);
+		var filebrowsers = getViews(HuiFileBrowser);
 		for (filebrowser in filebrowsers) {
 			if (@:privateAccess filebrowser.fancyTree == null)
 				filebrowser.onDisplay();
