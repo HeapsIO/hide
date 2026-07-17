@@ -12,6 +12,16 @@ class HuiInputBox extends HuiElement {
 	public var disabled : Bool = false;
 	var canceled = false;
 
+	public var preventDefault = false;
+
+	/**
+		Allow to intercept inputs before they reach the internal TextInput.
+		set preventDefault to true to stop the normal behavior of the InputBox
+	**/
+	public dynamic function onBeforeKeyDown(e: hxd.Event) {
+
+	}
+
 	function get_text() : String {
 		return textInput.text;
 	}
@@ -45,6 +55,18 @@ class HuiInputBox extends HuiElement {
 	}
 
 	override function onKeyDownInternal(e:hxd.Event) {
+		if(HuiBase.get(this).checkCommand(e, this)) {
+			textInput.preventDefault = true;
+			return;
+		}
+
+		preventDefault = false;
+		onBeforeKeyDown(e);
+		if (preventDefault) {
+			textInput.preventDefault = true;
+			return;
+		}
+
 		if (e.keyCode == hxd.Key.ENTER) {
 			textInput.blur();
 			e.propagate = true;

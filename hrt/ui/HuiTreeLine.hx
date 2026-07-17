@@ -51,6 +51,10 @@ class HuiTreeLine extends HuiElement {
 		}
 
 		var tree : HuiTree<Dynamic> = tree;
+
+		onKeyDown = (e) -> {
+			e.propagate = true;
+		}
 	}
 
 	public dynamic function onContextMenu() {

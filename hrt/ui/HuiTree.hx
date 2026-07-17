@@ -95,7 +95,7 @@ class HuiTree<TreeItem> extends HuiElement {
 			openSearch();
 		});
 
-		searchBar.onKeyDown = keyDownHandler.bind(true);
+		searchBar.onBeforeKeyDown = keyDownHandler.bind(true);
 		searchBar.onChange = (tmp) -> {
 			keyboardFocus = null;
 			requestRefresh(RegenerateFlatten);
@@ -113,6 +113,8 @@ class HuiTree<TreeItem> extends HuiElement {
 
 				if (!hxd.Key.isDown(hxd.Key.CTRL)) {
 					selectedElements.clear();
+					lastSelectedElement = null;
+					keyboardFocus = null;
 					userSelectionChanged();
 				}
 
@@ -153,7 +155,7 @@ class HuiTree<TreeItem> extends HuiElement {
 			e.propagate = false;
 		} else if (e.keyCode == hxd.Key.DOWN) {
 			focusMove(1);
-			searchBar.textInput.preventDefault = true;
+			searchBar.preventDefault = true;
 			e.propagate = false;
 		} else if (e.keyCode == hxd.Key.RIGHT) {
 			if (keyboardFocus != null) {
@@ -163,7 +165,7 @@ class HuiTree<TreeItem> extends HuiElement {
 					focusSetInternal(keyboardFocus.children[0]);
 				}
 				e.propagate = false;
-				searchBar.textInput.preventDefault = true;
+				searchBar.preventDefault = true;
 			}
 		} else if (e.keyCode == hxd.Key.LEFT) {
 			if (keyboardFocus != null) {
@@ -174,9 +176,15 @@ class HuiTree<TreeItem> extends HuiElement {
 				} else {
 					toggleItemDataOpen(keyboardFocus, false);
 				}
-				searchBar.textInput.preventDefault = true;
+				searchBar.preventDefault = true;
 				e.propagate = false;
 			}
+		} else if (e.keyCode == hxd.Key.ENTER) {
+			if (keyboardFocus != null) {
+				onItemDoubleClick(e, keyboardFocus.item);
+			}
+			searchBar.preventDefault = true;
+			e.propagate = false;
 		}
 	}
 
@@ -218,11 +226,18 @@ class HuiTree<TreeItem> extends HuiElement {
 		keyboardFocus = newFocus;
 		if (keyboardFocus != null) {
 			list.scrollTo(keyboardFocus);
+			if (!hxd.Key.isDown(hxd.Key.SHIFT))
+				selectedElements.clear();
+			selectedElements.set(cast keyboardFocus.item, true);
+			onUserSelectionChanged();
 		}
 	}
 
 	public function focusMove(offset: Int) : Void {
 		var id = flatList.indexOf(keyboardFocus);
+		if (id == -1) {
+			id = flatList.indexOf(lastSelectedElement);
+		}
 		if (id < 0) {
 			if (offset < 0) {
 				id = flatList.length;
@@ -346,6 +361,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	}
 
+	/**Note : also called when the user press enter on this item using the keyboard**/
 	public dynamic function onItemDoubleClick(e: hxd.Event, item: TreeItem) : Void {
 
 	}
