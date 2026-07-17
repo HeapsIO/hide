@@ -156,7 +156,7 @@ class Element {
 		if (native != null && tooltip != null) {
 			native.get().title = tooltip;
 		}
-		#elseif hl
+		#elseif hui
 		if (native != null && tooltip != null) {
 			var elem = Std.downcast(native, hrt.ui.HuiElement);
 			elem.tip = tooltip;
