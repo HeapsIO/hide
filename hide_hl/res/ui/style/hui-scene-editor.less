@@ -38,7 +38,7 @@ hui-scene-editor {
 			#content {
 				padding-right: 10;
 
-				spacing: 3;
+				spacing: 2;
 			}
 
 			.kit-line {
@@ -58,15 +58,23 @@ hui-scene-editor {
 				}
 			}
 
+			.kit-text {
+				padding: 4;
+
+			}
+
 
 			.kit-label {
 				margin-right: 5;
+				min-height: 1;
+				valign: middle;
 				> * {
 					halign: right;
 				}
 
 				hui-text {
-					margin-bottom: 3;
+					text-align: multiline-right;
+					valign: middle;
 				}
 			}
 
