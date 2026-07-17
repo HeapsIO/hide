@@ -46,8 +46,8 @@ class HuiInputBox extends HuiElement {
 		textInput.onChange = onChangeInternal;
 	}
 
-	public function focus() {
-		textInput.focus();
+	public function focus(autoSelect = true) {
+		textInput.focus(autoSelect);
 	}
 
 	function afterReflow() {

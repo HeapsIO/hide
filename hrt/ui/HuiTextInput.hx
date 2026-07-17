@@ -21,6 +21,14 @@ class HuiTextInput extends h2d.TextInput implements h2d.domkit.Object {
 		smooth = true;
 	}
 
+	override public function focus( autoSelect=true ) {
+		interactive.focus();
+		if( cursorIndex < 0 ) {
+			cursorIndex = getTextLength();
+		}
+		if( autoSelect && text != "" && !multiline ) selectionRange = { start : 0, length : getTextLength() };
+	}
+
 
 	function set_baseFont(v : String) {
 		font = HuiText.loadFontStatic(v);
