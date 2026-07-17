@@ -78,9 +78,9 @@ class HuiHistogramRange extends HuiElement {
 			<hui-icon("diamond") class="handle" id="handle-range-end"/>
 		</hui-element>
 		<hui-input-box id="input-range-end" class="group"/>
-		<hui-button class="group" id="reset-range"><hui-icon("back_arrow")/></hui-button>
-		<hui-button class="group"><hui-icon("histogram")/></hui-button>
-		<hui-toggle class="group-end" id="linear-tog"><hui-icon("gamma")/></hui-toggle>
+		<hui-button class="group" id="reset-range" tip={"Reset range"}><hui-icon("back_arrow")/></hui-button>
+		<hui-button class="group" tip={"Toggle histogram range display"}><hui-icon("histogram")/></hui-button>
+		<hui-toggle class="group-end" id="linear-tog" tip={"Toggle linear space"}><hui-icon("gamma")/></hui-toggle>
 	</hui-histogram-range>
 
 	var curMin = 0.;
@@ -398,24 +398,22 @@ class Texture extends HuiView<{path: String}> {
 	override function getToolbarWidgets() : Array<HuiElement> {
 		var widgets : Array<HuiElement> = super.getToolbarWidgets();
 
-		var helpBtn = new HuiButton();
-		helpBtn.onClick = (_) -> {
-			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiHelpPopup(this.registeredCommands), { object: Element(helpBtn), directionX: StartInside, directionY: EndOutside });
-		};
-
 		var compressedBtn = new HuiToggle();
 		compressedBtn.dom.addClass("group-start");
 		compressedBtn.toggled = true;
+		compressedBtn.tip = "Show compressed texture";
 		new HuiIcon("raw_off", compressedBtn);
 		widgets.push(compressedBtn);
 
 		var uncompressedBtn = new HuiToggle();
 		uncompressedBtn.dom.addClass("group");
+		uncompressedBtn.tip = "Show raw texture";
 		new HuiIcon("raw", uncompressedBtn);
 		widgets.push(uncompressedBtn);
 
 		var compareBtn = new HuiToggle();
 		compareBtn.dom.addClass("group-end");
+		compareBtn.tip = "Show comparison between compressed and raw texture";
 		new HuiIcon("compare", compareBtn);
 		widgets.push(compareBtn);
 
@@ -447,6 +445,7 @@ class Texture extends HuiView<{path: String}> {
 
 		var rChannelBtn = new HuiToggle();
 		rChannelBtn.toggled = true;
+		rChannelBtn.tip = "Toggle Red channel";
 		rChannelBtn.dom.addClass("group-start");
 		new HuiText("R", rChannelBtn);
 		rChannelBtn.onClick = (_) -> {
@@ -457,6 +456,7 @@ class Texture extends HuiView<{path: String}> {
 
 		var gChannelBtn = new HuiToggle();
 		gChannelBtn.toggled = true;
+		gChannelBtn.tip = "Toggle Green channel";
 		gChannelBtn.dom.addClass("group");
 		new HuiText("G", gChannelBtn);
 		gChannelBtn.onClick = (_) -> {
@@ -467,6 +467,7 @@ class Texture extends HuiView<{path: String}> {
 
 		var bChannelBtn = new HuiToggle();
 		bChannelBtn.toggled = true;
+		bChannelBtn.tip = "Toggle Blue channel";
 		bChannelBtn.dom.addClass("group");
 		new HuiText("B", bChannelBtn);
 		bChannelBtn.onClick = (_) -> {
@@ -477,6 +478,7 @@ class Texture extends HuiView<{path: String}> {
 
 		var aChannelBtn = new HuiToggle();
 		aChannelBtn.toggled = true;
+		aChannelBtn.tip = "Toggle Alpha channel";
 		aChannelBtn.dom.addClass("group-end");
 		new HuiText("A", aChannelBtn);
 		aChannelBtn.onClick = (_) -> {
@@ -487,6 +489,7 @@ class Texture extends HuiView<{path: String}> {
 
 		var flipBtn = new HuiToggle();
 		flipBtn.toggled = false;
+		flipBtn.tip = "Flip texture";
 		new HuiIcon("vertical_arrows", flipBtn);
 		flipBtn.onClick = (_) -> {
 			flipBtn.toggled = !flipBtn.toggled;
@@ -497,6 +500,7 @@ class Texture extends HuiView<{path: String}> {
 
 		var resetZoomBtn = new HuiButton();
 		resetZoomBtn.dom.addClass("group-start");
+		resetZoomBtn.tip = "Reset zoom";
 		new HuiIcon("scale1_1", resetZoomBtn);
 		resetZoomBtn.onClick = (_) -> {
 			zoom = 1;
@@ -506,6 +510,7 @@ class Texture extends HuiView<{path: String}> {
 
 		var fitBtn = new HuiButton();
 		fitBtn.dom.addClass("group");
+		fitBtn.tip = "Fit";
 		new HuiIcon("fullscreen", fitBtn);
 		fitBtn.onClick = (_) -> {
 			fit();
@@ -544,6 +549,11 @@ class Texture extends HuiView<{path: String}> {
 		var histogram = new HuiHistogramRange(this);
 		widgets.push(histogram);
 
+		var helpBtn = new HuiButton();
+		helpBtn.tip = "Show help";
+		helpBtn.onClick = (_) -> {
+			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiHelpPopup(this.registeredCommands), { object: Element(helpBtn), directionX: StartInside, directionY: EndOutside });
+		};
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
 
