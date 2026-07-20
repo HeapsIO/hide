@@ -24,7 +24,6 @@ enum RefreshFlag {
 
 typedef RefreshFlags = haxe.EnumFlags<RefreshFlag>;
 
-
 enum FilterFlag {
 	Visible;
 	MatchSearch;
@@ -518,7 +517,36 @@ class HuiTree<TreeItem> extends HuiElement {
 		} else {
 			openState.remove(data.identifier);
 		}
+		saveOpenState();
 		refreshFlags.set(RegenerateFlatten);
+	}
+
+	function saveOpenState() {
+		if (saveDisplayKey == null)
+			return;
+
+		var save: Array<String> = [];
+
+		var allId: Map<String, Bool> = [];
+		for (item in itemMap) {
+			allId.set(item.identifier, true);
+		}
+
+		for (k => v in openState) {
+			if (allId.exists(k))
+				save.push(k);
+		}
+
+		saveDisplayState("openState", save);
+	}
+
+	override function onLoadState() {
+		super.onLoadState();
+
+		var save : Array<String> = getDisplayState("openState", []);
+		for (k in save) {
+			openState.set(k, true);
+		}
 	}
 
 	function refreshItem(item: TreeItemData, element: HuiTreeLine) : Void {
