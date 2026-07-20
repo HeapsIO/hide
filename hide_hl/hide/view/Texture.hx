@@ -798,7 +798,11 @@ class Texture extends HuiView<{path: String}> {
 		var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
 		@:privateAccess fs.convert.configs.clear();
 		@:privateAccess fs.convert.loadConfig(state.path);
-		var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, state.path, Ide.inst.getPath(state.path));
+
+		var dirPos = state.path.lastIndexOf("/");
+		var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
+
+		var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, relPath, state.path);
 		try { fs.convert.run(localEntry); }
 		catch (e) onError();
 		return @:privateAccess fs.convert.getConvertRule(relPath);
