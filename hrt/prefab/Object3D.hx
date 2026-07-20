@@ -380,11 +380,18 @@ class Object3D extends Prefab {
 		}
 		if( visibleMeshes.length == 0 )
 			return null;
-		var colliders = [for(m in visibleMeshes) {
-			var c : h3d.col.Collider = try m.getLocalCollider() catch(e: Dynamic) null;
-			if(c != null) c;
+		var colliders : Array<h3d.col.Collider> = [for(m in visibleMeshes) {
+			var hmd = Std.downcast(m.primitive, h3d.prim.HMDModel);
+			var c : h3d.col.Collider;
+			if (hmd != null) {
+				c = hmd.getRawPolygonCollider();
+			} else {
+				c = try m.getLocalCollider() catch(e: Dynamic) null;
+			}
+
+			if(c != null) new h3d.col.ObjectCollider(m, c);
 		}];
-		var meshCollider = new h3d.col.ObjectCollider(local3d, colliders.length == 1 ? colliders[0] : new h3d.col.Collider.GroupCollider(colliders));
+		var meshCollider : h3d.col.Collider = colliders.length == 1 ? colliders[0] : new h3d.col.Collider.GroupCollider(colliders);
 		var collider : h3d.col.Collider = new h3d.col.ObjectCollider(local3d, bounds);
 		if( hasSkin ) {
 			collider = meshCollider; // can't trust bounds
