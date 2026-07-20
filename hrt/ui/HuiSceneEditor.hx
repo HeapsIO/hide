@@ -36,6 +36,7 @@ class HuiSceneEditor extends HuiElement {
 	public static final VISIBILITY_WIREFRAME_CONFIG_KEY = "editor.visibility.wireframe";
 	public static final VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY = "editor.visibility.disableSceneRender";
 	public static final RENDER_PROPS_SAVE_KEY = "renderPropsPath";
+	public static var RENDER_PROPS_KEY = "scene.renderProps";
 
 	static public var focusCommand = new hrt.ui.HuiCommands.HuiCommand("Focus Selection", {key: hxd.Key.F});
 
@@ -44,15 +45,7 @@ class HuiSceneEditor extends HuiElement {
 	var cameraController : h3d.scene.CameraController;
 	public var lastFocusObjects : Array<h3d.scene.Object> = [];
 
-	// public var renderPropsPath(get, never) : Null<String>; /**Null if the renderProps is in the scene**/
-	var renderProps: hrt.prefab.Prefab;
-	// function get_renderPropsPath() : Null<String> {
-	// 	if (renderProps == null)
-	// 		return null;
-	// 	if (renderProps.getRoot(true) == prefab)
-	// 		return null;
-	// 	return renderProps.shared.currentPath;
-	// }
+	var renderProps : hrt.prefab.RenderProps;
 
 	// Gizmos and guides
 	var grid : hrt.tools.Grid = null;
@@ -85,8 +78,6 @@ class HuiSceneEditor extends HuiElement {
 		scene.s3d.lightSystem = new h3d.scene.pbr.LightSystem();
 
 		scene.s3d.addEventListener(onSceneEvents);
-
-		makeRenderProps();
 
 		var ctrlClass = h3d.scene.CameraController.getCameraControllersClass()[hide.Ide.inst.currentConfig.get(hrt.ui.HuiSceneEditor.CAM_CTRL_CONFIG_KEY, 0)];
 		cameraController = Type.createInstance(ctrlClass, []);
@@ -350,71 +341,73 @@ class HuiSceneEditor extends HuiElement {
 	}
 
 
-	public function getRenderPropsPaths() : Array<{name: String, value: String}> {
-		var renderProps = getConfig()?.getLocal("scene.renderProps");
+	public function setRenderProps(path : String) {
+		if (renderProps != null && renderProps.shared.prefabSource == path)
+			return;
+
+		if (renderProps != null) {
+			this.renderProps.local3d.remove();
+			this.renderProps.remove();
+		}
+
+		var p = hxd.res.Loader.currentInstance.load(path).toPrefab().load().clone();
+		renderProps = p.getOpt(hrt.prefab.RenderProps);
 		if (renderProps == null)
-			return [];
+			throw "This prefab has no render props";
 
-		if (renderProps is String) {
-			return [{name: "", value: (cast renderProps: String)}];
-		}
-
-		if (renderProps is Array) {
-			return cast renderProps;
-		}
-		return [];
+		renderProps.make();
+		scene.s3d.addChild(renderProps.local3d);
+		renderProps.applyProps(scene.s3d.renderer);
 	}
 
-	public function checkRemakeRenderProps(changedPrefab: hrt.prefab.Prefab = null) : Bool {
-		if (changedPrefab != null) {
-			if (changedPrefab.findParent(hrt.prefab.RenderProps) == renderProps) {
-				makeRenderProps();
-				return true;
+	public function getRenderPropsObj() {
+		return scene.s3d.find((o) -> Std.downcast(o, hrt.prefab.RenderProps.RenderPropsObject));
+	}
+
+	public function updateRenderProps() {
+		// Clear previous render props
+		if (renderProps != null) {
+			this.renderProps.local3d.remove();
+			this.renderProps.remove();
+			this.renderProps = null;
+		}
+
+		// If there is already a render props in the scene, just skip
+		var sceneRenderProps = getRenderPropsObj();
+		if (sceneRenderProps != null) {
+			sceneRenderProps.prefab.applyProps(scene.s3d.renderer);
+			return;
+		}
+
+		// If there is a config set for that prefab, just use it
+ 		var path = getView().getDisplayState(RENDER_PROPS_SAVE_KEY, null);
+		if (path != null) {
+			setRenderProps(path);
+			return;
+		}
+
+		// If there is configs but none of it is set for that prefab, juste take the first
+		var configs = getRenderPropsConfigs();
+		if (configs != null && configs.length >= 1)
+			setRenderProps(configs[0].value);
+	}
+
+	public function getRenderPropsConfigs() : Array<{ name: String, value: String }> {
+		var renderProps = [];
+		var renderPropsConfig = hide.Ide.inst.currentConfig.getLocal(RENDER_PROPS_KEY);
+		if (renderPropsConfig is String) {
+			renderProps.push({ name: cast (renderPropsConfig, String), value: cast (renderPropsConfig, String) });
+		}
+
+		if (renderPropsConfig is Array) {
+			for (rpc in cast (renderPropsConfig, Array<Dynamic>)) {
+				renderProps.push({ name: rpc.name, value: rpc.value });
 			}
 		}
-		// if (prefab.find(hrt.prefab.RenderProps) != renderProps) {
-		// 	makeRenderProps();
-		// 	return true;
-		// }
-		return false;
+
+		return renderProps;
 	}
 
-	public function makeRenderProps() {
-		var paths = getRenderPropsPaths();
-
-		// removePrefabInstance(renderProps);
-		// renderProps = null;
-
-		// var prefabRenderProp = prefab.find(hrt.prefab.RenderProps, (p) -> p.enabled);
-		// if (prefabRenderProp != null) {
-		// 	renderProps = prefabRenderProp;
-		// 	if (tryMake(renderProps)) {
-		// 		updateRenderPropsInternal();
-		// 		return;
-		// 	}
-		// }
-
-		var candidates: Array<hrt.prefab.Prefab> = [];
-
-		for (path in paths) {
-			var currentPath = getDisplayState(RENDER_PROPS_SAVE_KEY, "");
-			var prefab = hxd.res.Loader.currentInstance.load(path.value).toPrefab().load().clone();
-			if (path.value == currentPath)
-				candidates.unshift(prefab);
-			else
-				candidates.push(prefab);
-		}
-
-		// for (candidate in candidates) {
-		// 	renderProps = candidate;
-		// 	if (tryMake(renderProps)) {
-		// 		updateRenderPropsInternal();
-		// 		break;
-		// 	}
-		// 	removePrefabInstance(renderProps);
-		// 	renderProps = null;
-		// }
-	}
 
 	public function focusSelection() {
 		focusObjects(getSelectedObjects());
@@ -497,26 +490,6 @@ class HuiSceneEditor extends HuiElement {
 	public function gizmoSnap(v: Float, mode: hrt.tools.Gizmo.EditMode) {
 		return hxd.Math.round(v / this.gizmoSnapStep) * this.gizmoSnapStep;
 	}
-
-	public function setRenderPropsPath(newPath: String) : Void {
-		// if (newPath == renderPropsPath)
-		// 	return;
-		saveDisplayState(RENDER_PROPS_SAVE_KEY, newPath);
-		makeRenderProps();
-	}
-
-	public function updateRenderProps() {
-		if (!checkRemakeRenderProps()) {
-			updateRenderPropsInternal();
-		}
-	}
-
-	function updateRenderPropsInternal() {
-		var trueRenderProps = renderProps.find(hrt.prefab.RenderProps);
-		if (trueRenderProps != null)
-			trueRenderProps.applyProps(scene.s3d.renderer);
-	}
-
 
 	function onSceneEvents(e: hxd.Event) : Void {
 		var oldX = e.relX;

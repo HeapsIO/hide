@@ -224,6 +224,8 @@ class Model extends HuiView<{path: String}> {
 		super(_state, parent);
 		initComponent();
 
+		saveDisplayKey = state != null ? 'model:${state.path}' : "model:__empty";
+
 		var path = Ide.inst.getRelPath(state.path);
 		sceneEditor.load = () -> load(path);
 		sceneEditor.onScenePush = (e) -> {
@@ -370,6 +372,11 @@ class Model extends HuiView<{path: String}> {
 
 	override function safeSync(ctx) {
 		super.safeSync(ctx);
+	}
+
+	override function onLoadState() {
+		super.onLoadState();
+		sceneEditor.updateRenderProps();
 	}
 
 	override function getContextMenuContent(content: Array<hrt.ui.HuiMenu.MenuItem>) {

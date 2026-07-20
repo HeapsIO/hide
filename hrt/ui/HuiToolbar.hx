@@ -380,9 +380,7 @@ class HuiRenderPropsWidget extends HuiElement {
 		</hui-button>
 	</hui-render-props-widget>
 
-	public static var RENDER_PROPS_KEY = "renderProps";
-
-	var editor : hrt.ui.HuiSceneEditor;
+	public var editor : hrt.ui.HuiSceneEditor;
 
 	public function new(editor : hrt.ui.HuiSceneEditor, ?parent : h2d.Object) {
 		super(parent);
@@ -390,56 +388,17 @@ class HuiRenderPropsWidget extends HuiElement {
 		initComponent();
 
 		btn.onClick = (_) -> {
-			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
-
-
-			// if (editor.renderPropsPath == null) {
-			// 	items.push({enabled: false, label: "Render already in scene"});
-			// } else {
-				// var renderProps = editor.getRenderPropsPaths();
-				// items.push({label: "Edit", checked: false, stayOpen: true});
-				// items.push({isSeparator: true});
-
-				// if (renderProps == null || renderProps.length == 0) {
-				// 	items.push({enabled: false, label: "No render props found"});
-				// } else {
-					// for (renderProp in renderProps) {
-					// 	items.push({label: renderProp.name, radio: () -> renderProp.value == editor.renderPropsPath, stayOpen: true, click: () -> editor.setRenderPropsPath(renderProp.value)});
-					// }
-				// }
-			// }
-
-
-
-			uiBase.openMenu(items, {}, { object: Element(this), directionX: StartInside, directionY: EndOutside });
-			//uiBase.addPopup(new hrt.ui.HuiToolbar.HuiRenderPropsPopup(this), { object: Element(this), directionX: StartInside, directionY: EndOutside });
+			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiRenderPropsPopup(this), { object: Element(this), directionX: StartInside, directionY: EndOutside });
 		}
-	}
-
-	public function getRenderProps() {
-		var renderProps = [];
-		var renderPropsConfig = hide.Ide.inst.currentConfig.getLocal("scene.renderProps");
-		if (renderPropsConfig is String) {
-			renderProps.push({ name: cast (renderPropsConfig, String), value: cast (renderPropsConfig, String) });
-		}
-
-		if (renderPropsConfig is Array) {
-			for (rpc in cast (renderPropsConfig, Array<Dynamic>)) {
-				renderProps.push({ name: rpc.name, value: rpc.value });
-			}
-		}
-
-		return renderProps;
 	}
 
 	public function getCurrentRenderProps() : String {
-		return null;
-		// return hide.Ide.inst.getLocalStorage(@:privateAccess editor.prefab.shared.currentPath + "/" + RENDER_PROPS_KEY);
+		return @:privateAccess editor.renderProps?.shared?.prefabSource;
 	}
 
 	public function setCurrentRenderProps(value : String) {
-		// hide.Ide.inst.saveLocalStorage(@:privateAccess editor.prefab.shared.currentPath + "/" + RENDER_PROPS_KEY, value);
-		// @:privateAccess editor.reload();
+		editor.getView().saveDisplayState(HuiSceneEditor.RENDER_PROPS_SAVE_KEY, value);
+		editor.updateRenderProps();
 	}
 }
 
@@ -447,33 +406,37 @@ class HuiRenderPropsPopup extends HuiPopup {
 	static var SRC =
 		<hui-render-props-popup class="vertical">
 			<hui-text("Render Props") class="title"/>
-			for (rpc in widget.getRenderProps()) {
-				<hui-element class="horizontal">
-					<hui-checkbox id="rp[]"/>
-					<hui-text(rpc.name) class="label"/>
-				</hui-element>
-			}
+			<hui-text("No render props config detected in .json file.") if (widget.editor.getRenderPropsConfigs().length == 0)/>
+			<hui-text("This prefab already contains a render props!") if (containsRenderProps)/>
+				for (rpc in widget.editor.getRenderPropsConfigs()) {
+					<hui-element class="horizontal" if (!containsRenderProps)>
+						<hui-checkbox id="rp[]"/>
+						<hui-text(rpc.name) class="label"/>
+					</hui-element>
+				}
 		</hui-render-props-popup>
 
 	var currentIdx = 0;
 
 	public function new(widget : HuiRenderPropsWidget, ?parent: h2d.Object) {
 		super(parent);
-
+		var containsRenderProps = @:privateAccess widget.editor.renderProps == null && widget.editor.getRenderPropsObj() != null;
 		initComponent();
-		var current = widget.getCurrentRenderProps();
-		for (idx => renderProps in widget.getRenderProps()) {
-			if ((current == null && idx == 0) || renderProps.value == current) {
-				currentIdx = idx;
-				rp[currentIdx].enable = false;
-				rp[currentIdx].value = true;
-			}
+		if (!containsRenderProps) {
+			var current = widget.getCurrentRenderProps();
+			for (idx => renderProps in widget.editor.getRenderPropsConfigs()) {
+				if ((current == null && idx == 0) || renderProps.value == current) {
+					currentIdx = idx;
+					rp[currentIdx].enable = false;
+					rp[currentIdx].value = true;
+				}
 
-			rp[idx].onValueChanged = () -> {
-				rp[currentIdx].enable = true;
-				rp[currentIdx].value = false;
-				currentIdx = idx;
-				widget.setCurrentRenderProps(renderProps.value);
+				rp[idx].onValueChanged = () -> {
+					rp[currentIdx].enable = true;
+					rp[currentIdx].value = false;
+					currentIdx = idx;
+					widget.setCurrentRenderProps(renderProps.value);
+				}
 			}
 		}
 	}

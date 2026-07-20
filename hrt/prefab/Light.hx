@@ -398,7 +398,7 @@ class Light extends Object3D {
 						<range(0, 50) field={tmp.power}/>
 					</category>
 					<category("PCF") if (shadows.mode != None && shadows.samplingMode.kind == PCF)>
-						<range(0, 1) field={tmp.quality}/>
+						<select([{label:"Low", value: 0}, {label:"Medium", value: 1}, {label:"High", value: 2}]) field={tmp.quality}/>
 						<range(0, 10) field={tmp.scale}/>
 					</category>
 					<category("Cascades") if (cascade && shadows.mode != None)>

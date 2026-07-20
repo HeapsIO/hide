@@ -654,8 +654,8 @@ class Prefab extends HuiView<{path: String}> {
 			tryMake(prefab);
 
 			sceneEditor.resetCamera();
+			sceneEditor.updateRenderProps();
 			sceneEditor.updateDebugOverlayVisibility();
-
 			clearSelection(isUndo);
 		}
 	}
@@ -686,9 +686,11 @@ class Prefab extends HuiView<{path: String}> {
 		}
 
 		var fx = Std.downcast(prefab.findFirstLocal3d(), hrt.prefab.fx.FX.FXAnimation);
-		if (fx != null) {
+		if (fx != null)
 			fx.loop = true;
-		}
+
+		if (Std.isOfType(prefab, hrt.prefab.RenderProps))
+			sceneEditor.updateRenderProps();
 
 		sceneEditor.tree.rebuild();
 	}
@@ -774,6 +776,9 @@ class Prefab extends HuiView<{path: String}> {
 			prefab.shared.root3d.remove();
 			prefab.shared.root2d.remove();
 		}
+
+		if (Std.isOfType(prefab, hrt.prefab.RenderProps))
+			sceneEditor.updateRenderProps();
 	}
 
 	public function removePrefabInteractives(prefab: hrt.prefab.Prefab) {
@@ -1666,26 +1671,6 @@ class Prefab extends HuiView<{path: String}> {
 		lines.sort((a,b) -> Reflect.compare(a.label, b.label));
 
 		return lines;
-	}
-
-
-	public function getRenderPropsPaths() : Array<{name: String, value: String}> {
-		// var renderProps = config.getLocal("scene.renderProps");
-		// if (renderProps == null)
-		// 	return [];
-
-		// if (renderProps is String) {
-		// 	return [{name: "", value: (cast renderProps: String)}];
-		// }
-
-		// if (renderProps is Array) {
-		// 	return cast renderProps;
-		// }
-		return [];
-	}
-
-	function setRenderProps(path: String) {
-
 	}
 
 	function onScenePush(e: hxd.Event) : Void {

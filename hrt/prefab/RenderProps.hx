@@ -1,7 +1,12 @@
 package hrt.prefab;
 
 class RenderPropsObject extends h3d.scene.Object {
+	public var prefab : RenderProps;
 
+	public function new(prefab : RenderProps, ?parent : h3d.scene.Object) {
+		super(parent);
+		this.prefab = prefab;
+	}
 }
 
 @:prefabIcon(HuiRes.ui.icons.prefab.render_props)
@@ -16,7 +21,7 @@ class RenderProps extends Object3D {
 	}
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
-		return new RenderPropsObject(parent3d);
+		return new RenderPropsObject(this, parent3d);
 	}
 
 	#if editor
@@ -163,6 +168,7 @@ class RenderProps extends Object3D {
 	}
 
 	override function editorRemoveInstanceObjects() {
+		super.editorRemoveInstanceObjects();
 		shared.editor?.queueRefreshRenderProps();
 	}
 
