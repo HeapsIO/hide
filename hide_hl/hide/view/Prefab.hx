@@ -85,7 +85,7 @@ class Prefab extends HuiView<{path: String}> {
 					selectedObjects.push(obj3d.local3d);
 
 				var material = Std.downcast(s, hrt.prefab.Material);
-				if (material != null && hrt.prefab.MaterialLibrary.isMaterialLibrary(state.path))
+				if (material != null && hrt.prefab.MaterialLibrary.isMaterialLibrary(prefab))
 					selectedObjects.push(@:privateAccess material.previewSphere);
 			}
 			return selectedObjects;
@@ -721,7 +721,7 @@ class Prefab extends HuiView<{path: String}> {
 					for (o in objects)
 						prefabLookup.set(o, obj3d);
 				}
-				if (hrt.prefab.MaterialLibrary.isMaterialLibrary(state.path)) {
+				if (hrt.prefab.MaterialLibrary.isMaterialLibrary(prefab)) {
 					var material = Std.downcast(p, hrt.prefab.Material);
 					if (material != null)
 						prefabLookup.set(@:privateAccess material.previewSphere, material);

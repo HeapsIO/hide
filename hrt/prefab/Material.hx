@@ -140,7 +140,7 @@ class Material extends Prefab {
 			previewSphere = null;
 		}
 
-		if (MaterialLibrary.isMaterialLibrary(shared.currentPath) && false) {
+		if (MaterialLibrary.isMaterialLibrary(this.getRoot())) {
 			var root = shared.root3d;
 
 			var sphere = new h3d.prim.Sphere(1., 64, 48);
