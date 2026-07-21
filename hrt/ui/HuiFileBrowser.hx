@@ -59,6 +59,7 @@ class HuiFileBrowser extends HuiElement {
 		tree.getItemChildren = getItemChild;
 		tree.getItemName = getItemName;
 		tree.getItemIcon = getItemIcon;
+		tree.onUserSelectionChanged = treeSelectionChanged;
 		tree.onItemDoubleClick = (e, file) -> onOpen(file);
 
 		tree.dragAndDropInterface = {
@@ -105,6 +106,10 @@ class HuiFileBrowser extends HuiElement {
 		// gallery setup
 		gallery = new HuiVirtualGrid<File>();
 
+		gallery.generateItem = generateGalleryItem;
+		gallery.itemBaseWidth = 64;
+		gallery.itemBaseHeight = 64;
+
 		// Splitter setup
 		splitter = new HuiSplitContainer();
 
@@ -114,6 +119,25 @@ class HuiFileBrowser extends HuiElement {
 		markRefresh();
 
 		fileManager.watchFileChange(onFileChange);
+	}
+
+	function treeSelectionChanged() {
+		refreshGallery();
+	}
+
+	function generateGalleryItem(file: File) : HuiElement {
+		var item = new HuiFileBrowserGalleryItem();
+		item.nameText.text = file.name;
+		file.getIcon((miniaturePath) -> {
+			if (miniaturePath == null)
+				return;
+			item.icon.backgroundType = "hui";
+			miniaturePath = StringTools.replace(miniaturePath, hide.Ide.inst.projectDir + "/res/", "");
+			var tex = hxd.res.Loader.currentInstance.load(miniaturePath)?.toTexture() ?? h3d.mat.Texture.fromColor(0xFF00FF);
+			item.icon.huiBg.setTexture(tex);
+			item.icon.huiBg.imageMode = Fit;
+		});
+		return item;
 	}
 
 	function refreshLayout() {
@@ -493,7 +517,22 @@ class HuiFileBrowser extends HuiElement {
 		rootFile = fileManager.fileRoot;
 
 		tree.rebuild();
+
+		refreshGallery();
+
 		needRefresh = false;
+	}
+
+	function refreshGallery() {
+		var galleryFolder = rootFile;
+		var sel = tree.getSelectedItems();
+		if (sel.length > 0) {
+			var first = sel[0];
+			if (first.kind == Dir) {
+				galleryFolder = first;
+			}
+		}
+		gallery.setItems(galleryFolder.children ?? []);
 	}
 
 	/**
@@ -521,7 +560,10 @@ class HuiFileBrowser extends HuiElement {
 		if (child.kind != Dir)
 			return null;
 
-		return child.children.filter((f) -> !f.ignored && (mode == FileTree || f.kind == Dir) );
+		var children = child.children.filter((f) -> !f.ignored && (mode == FileTree || f.kind == Dir) );
+		if (children.length == 0)
+			return null;
+		return children;
 	}
 
 	public dynamic function onOpen(file: File) {
@@ -556,6 +598,17 @@ class HuiFileBrowser extends HuiElement {
 			}
 		}
 	}
+}
+
+class HuiFileBrowserGalleryItem extends HuiElement {
+	static var SRC = <hui-file-browser-gallery-item>
+		<hui-element id="border">
+			<hui-element id="icon" public/>
+			<hui-element id="name-container">
+				<hui-text id="name-text" public/>
+			</hui-element>
+		</hui-element>
+	</hui-file-browser-gallery-item>
 }
 
 #end

@@ -1,0 +1,32 @@
+hui-file-browser {
+	hui-file-browser-gallery-item {
+		padding: 4;
+		fill-width: 1;
+		fill-height: 1;
+		auto-size: 1;
+
+		#border {
+			layout: vertical;
+			fill-width: 1;
+			fill-height: 1;
+			auto-size: 1;
+			>hui-background {
+				outline: 1 green;
+			}
+		}
+		#icon {
+			fill-width: 1;
+			fill-height: 1;
+			auto-size: 1;
+			> hui-background {
+				background: red;
+			}
+		}
+		#name-container {
+			overflow: hidden;
+		}
+		#name-text {
+			text-align: multiline-center;
+		}
+	}
+}

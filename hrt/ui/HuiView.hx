@@ -86,10 +86,15 @@ class HuiView<T> extends HuiElement {
 
 	final override function sync(ctx : h2d.RenderContext) {
 		var exception : haxe.Exception = null;
-		try {
+
+		if(hide.App.DEBUG) {
 			safeSync(ctx);
-		} catch(e) {
-			exception = e;
+		} else {
+			try {
+				safeSync(ctx);
+			} catch(e) {
+				exception = e;
+			}
 		}
 
 		setException(exception);
