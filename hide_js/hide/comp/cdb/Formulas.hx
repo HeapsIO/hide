@@ -259,7 +259,7 @@ class Formulas {
 		formulas = [];
 		fmap = new Map();
 		validationFuncs = new Map();
-		var o : Dynamic = { Math : Math, Ok : ValidationResult.Ok, Error : ValidationResult.Error, Warning : ValidationResult.Warning };
+		var o : Dynamic = { Math : Math, Reflect : Reflect, Ok : ValidationResult.Ok, Error : ValidationResult.Error, Warning : ValidationResult.Warning };
 		for( r in refs )
 			Reflect.setField(o,r.name, r);
 
@@ -413,6 +413,9 @@ class FormulasView extends hide.view.Script {
 	function initFormulaTypes(check : hide.comp.ScriptEditor.ScriptChecker) {
 		var tstring = check.checker.types.resolve("String");
 		var tany = check.checker.types.resolve("Dynamic");
+		var treflect = check.checker.types.resolve("Reflect");
+		if( treflect != null )
+			check.checker.setGlobal("Reflect", treflect);
 		check.checker.setGlobal("Ok", tany);
 		check.checker.setGlobal("Error", TFun([{t:tstring,name:"message",opt:false}], tany));
 		check.checker.setGlobal("Warning", TFun([{t:tstring,name:"message",opt:false}], tany));
