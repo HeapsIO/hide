@@ -23,7 +23,7 @@ class Material extends Prefab {
 
 	var previewSphere : h3d.scene.Object;
 
-	#if editor
+	#if (editor || editor_hl)
 	var gradientFollower : GradientFollower;
 	#end
 
@@ -83,7 +83,7 @@ class Material extends Prefab {
 			recObj(local3d);
 		}
 
-		#if editor
+		#if (editor || editor_hl)
 		if (this.previewSphere != null)
 			mats = previewSphere.getMaterials();
 
@@ -99,7 +99,7 @@ class Material extends Prefab {
 		#end
 
 		var mat = Lambda.find(mats, function(m) {
-			#if editor
+			#if (editor || editor_hl)
 			if (m.name != null && m.name == "previewMat")
 				return false;
 			#end
@@ -134,26 +134,13 @@ class Material extends Prefab {
 	}
 
 	override function makeInstance() {
-		#if editor
+		#if (editor || editor_hl)
 		if (previewSphere != null) {
 			previewSphere.remove();
 			previewSphere = null;
 		}
 
-		var isMatLib = shared.editor != null && shared.parentPrefab == null;
-		if (isMatLib) {
-			var flat = getRoot().flatten(Prefab);
-			for (f in flat) {
-				var cl = Type.getClass(f);
-				if (cl != hrt.prefab.Object3D && cl != hrt.prefab.Prefab && Std.downcast(f, hrt.prefab.Material) == null && Std.downcast(f, Shader) == null && Std.downcast(f, hrt.prefab.l2d.Gradient) == null) {
-					isMatLib = false;
-					break;
-				}
-			}
-		}
-
-
-		if (isMatLib) {
+		if (MaterialLibrary.isMaterialLibrary(shared.currentPath)) {
 			var root = shared.root3d;
 
 			var sphere = new h3d.prim.Sphere(1., 64, 48);
@@ -179,46 +166,6 @@ class Material extends Prefab {
 
 		updateInstance();
 	}
-
-	#if editor
-	override function makeChild(c:Prefab) : Void {
-		if (shared.customMake == null) {
-			if (previewSphere != null && Std.downcast(c, hrt.prefab.l2d.Gradient) != null) {
-				if (gradientFollower == null) {
-					gradientFollower = new GradientFollower(previewSphere, shared.current2d);
-					gradientFollower.depthMask = true;
-					gradientFollower.offsetZ -= 1.5;
-					gradientFollower.perspectiveScale = 4.0;
-				}
-				var old2d = shared.current2d;
-
-				var numGrads = 0;
-				for (child in children) {
-					if (child == c)
-						break;
-					if (Std.downcast(child, hrt.prefab.l2d.Gradient) != null)
-						numGrads ++;
-				}
-				shared.current2d = new h2d.Object(gradientFollower);
-				shared.current2d.y += numGrads * 66;
-				c.make(shared);
-				shared.current2d = old2d;
-				return;
-			}
-
-			c.make(shared);
-		}
-		else if (c.shouldBeInstanciated()) {
-			shared.customMake(c);
-		}
-	}
-	#end
-
-	#if editor
-	override function findFirstLocal3d(followRefs: Bool = false) {
-		return previewSphere ?? super.findFirstLocal3d(followRefs);
-	}
-	#end
 
 	function applyTo(local3d: h3d.scene.Object, propsToApply : Dynamic, shared: hrt.prefab.ContextShared) {
 		var mats = getMaterials(local3d, true);
@@ -441,7 +388,43 @@ class Material extends Prefab {
 		return null;
 	}
 
-	#if editor
+	#if (editor || editor_hl)
+	override function makeChild(c:Prefab) : Void {
+		if (shared.customMake == null) {
+			if (previewSphere != null && Std.downcast(c, hrt.prefab.l2d.Gradient) != null) {
+				if (gradientFollower == null) {
+					gradientFollower = new GradientFollower(previewSphere, shared.current2d);
+					gradientFollower.depthMask = true;
+					gradientFollower.offsetZ -= 1.5;
+					gradientFollower.perspectiveScale = 4.0;
+				}
+				var old2d = shared.current2d;
+
+				var numGrads = 0;
+				for (child in children) {
+					if (child == c)
+						break;
+					if (Std.downcast(child, hrt.prefab.l2d.Gradient) != null)
+						numGrads ++;
+				}
+				shared.current2d = new h2d.Object(gradientFollower);
+				shared.current2d.y += numGrads * 66;
+				c.make(shared);
+				shared.current2d = old2d;
+				return;
+			}
+
+			c.make(shared);
+		}
+		else if (c.shouldBeInstanciated()) {
+			shared.customMake(c);
+		}
+	}
+
+	override function findFirstLocal3d(followRefs: Bool = false) {
+		return previewSphere ?? super.findFirstLocal3d(followRefs);
+	}
+
 	override function editorRemoveInstanceObjects() : Void {
 		if (gradientFollower != null) {
 			gradientFollower.remove();
@@ -453,10 +436,156 @@ class Material extends Prefab {
 			previewSphere = null;
 		}
 		else {
+			#if editor
 			// temporary untill we find a proper way to remove a material
 			shared.editor?.queueRebuild(parent);
+			#end
 		}
 		super.editorRemoveInstanceObjects();
+	}
+
+	override public function setSelected(b : Bool ) : Bool {
+		if (previewSphere == null)
+			return true;
+
+		var materials = previewSphere.getMaterials();
+
+		if( !b ) {
+			for( m in materials ) {
+				//m.mainPass.stencil = null;
+				m.removePass(m.getPass("highlight"));
+				m.removePass(m.getPass("highlightBack"));
+			}
+			return true;
+		}
+
+		var shader = new h3d.shader.FixedColor(0xffffff);
+		var shader2 = new h3d.shader.FixedColor(0xff8000);
+		for( m in materials ) {
+			if( m.name != null && StringTools.startsWith(m.name,"$UI.") )
+				continue;
+			var p = m.allocPass("highlight");
+			p.culling = None;
+			p.depthWrite = false;
+			p.depthTest = LessEqual;
+			p.addShader(shader);
+			var p = m.allocPass("highlightBack");
+			p.culling = None;
+			p.depthWrite = false;
+			p.depthTest = Always;
+			p.addShader(shader2);
+		}
+
+		return true;
+	}
+
+	#end
+
+	#if editor
+	public static function findMaterialLibraryRefs(libPath : String, matName : String) : Array<hide.view.RefViewer.Reference> {
+		// Find every material.props file with ref of the material library that we're searching
+		var materialPropsFiles : Array<{ path: String, bindMatName : String, ?model : String }> = [];
+		hide.Ide.inst.filterProps(function(data, path) {
+			var indexOf = path.indexOf("materials.props");
+			if (indexOf < 0)
+				return false;
+
+			var mats = Reflect.field(data, "materials");
+			var pbr : Array<Dynamic> = Reflect.field(mats, "PBR");
+			for (f in Reflect.fields(pbr)) {
+				var el = Reflect.field(pbr, f);
+				if (!Reflect.hasField(el, "__ref"))
+					continue;
+
+				var ref = Reflect.field(el, "__ref");
+				var mName = Reflect.field(el, "name");
+				if (ref != libPath || mName != matName)
+					continue;
+
+				var contains = false;
+				for (m in materialPropsFiles) {
+					if (m.path == path)
+						contains = true;
+				}
+
+				if (contains)
+					continue;
+
+				var indexOf = f.indexOf("/");
+				var modelSpec = Reflect.hasField(el, "__refMode") && Reflect.field(el, "__refMode") == "modelSpec";
+				materialPropsFiles.push({ path: path, bindMatName: f.substr(0, indexOf < 0 ? null : indexOf), model: modelSpec ? f.substr(f.lastIndexOf("/") + 1) : null });
+			}
+
+			return false;
+		});
+
+		function findRefInModels(folder : String, bindedMat : String, model : String, libPath : String, matName : String) : Array<hide.view.RefViewer.Result> {
+			var results = [];
+
+			var files = sys.FileSystem.readDirectory(hide.Ide.inst.getPath(folder));
+			for (f in files) {
+				var path = folder + "/" + f;
+
+				if (sys.FileSystem.isDirectory(path) && model != null) {
+					findRefInModels(path, bindedMat, model, libPath, matName);
+					continue;
+				}
+
+				if (path.indexOf(".fbx") < 0)
+					continue;
+
+				var obj = try {
+				hxd.res.Loader.currentInstance.load(hide.Ide.inst.makeRelative(path)).toModel().toHmd().makeObject();
+				} catch(e : Dynamic) null;
+				if (obj != null) {
+					var mat = obj.getMaterialByName(bindedMat);
+					if (mat != null && (model == null || path.substr(path.lastIndexOf("/") + 1) == model))
+						results.push({ text: path, goto: () -> hide.Ide.inst.openFile(hide.Ide.inst.makeRelative(path)) });
+				}
+			}
+
+			return results;
+		}
+
+		function findRefInPrefabs(folder : String, libPath : String, matName : String) : Array<hide.view.RefViewer.Result> {
+			var results = [];
+
+			var visited = new Map<String, Bool>();
+			hide.Ide.inst.filterPrefabs((p : Prefab, path : String) -> {
+				if (visited.get(path) != null)
+					return false;
+				visited.set(path, true);
+				var mats = p.findAll(Material);
+				for (m in mats) {
+					if (m.refMatLib != libPath + "/" + matName)
+						continue;
+					results.push({ text: path, goto: () -> hide.Ide.inst.openFile(hide.Ide.inst.makeRelative(path), null, (v) -> {
+							var prefabView = Std.downcast(v, hide.view.Prefab);
+							if (prefabView != null)
+								prefabView.delaySceneEditor(() -> prefabView.sceneEditor.selectElementsIndirect([m]));
+
+							var fxView = Std.downcast(v, hide.view.FXEditor);
+							if (fxView != null)
+								fxView.delaySceneEditor(() -> @:privateAccess fxView.sceneEditor.selectElementsIndirect([m]));
+						})
+					});
+				}
+				return false;
+			});
+
+			return results;
+		}
+
+		var refs : Array<hide.view.RefViewer.Reference> = [];
+		for (f in materialPropsFiles) {
+			var folderP = f.path.substr(0, f.path.lastIndexOf("/"));
+			var results = findRefInModels(folderP, f.bindMatName, f.model, libPath, matName);
+			results = results.concat(findRefInPrefabs(folderP, libPath, matName));
+			if (results.length > 0)
+				refs.push({ file: folderP, path: f.path, results: results });
+		}
+
+		return refs;
 	}
 
 	override function onEditorTreeChanged(prefab: hrt.prefab.Prefab) : hrt.prefab.Prefab.TreeChangedResult {
@@ -904,147 +1033,6 @@ class Material extends Prefab {
 			allowChildren: function(t) return !Prefab.isOfType(t, Material),
 		};
 	}
-
-	override public function setSelected(b : Bool ) : Bool {
-		if (previewSphere == null)
-			return true;
-
-		var materials = previewSphere.getMaterials();
-
-		if( !b ) {
-			for( m in materials ) {
-				//m.mainPass.stencil = null;
-				m.removePass(m.getPass("highlight"));
-				m.removePass(m.getPass("highlightBack"));
-			}
-			return true;
-		}
-
-		var shader = new h3d.shader.FixedColor(0xffffff);
-		var shader2 = new h3d.shader.FixedColor(0xff8000);
-		for( m in materials ) {
-			if( m.name != null && StringTools.startsWith(m.name,"$UI.") )
-				continue;
-			var p = m.allocPass("highlight");
-			p.culling = None;
-			p.depthWrite = false;
-			p.depthTest = LessEqual;
-			p.addShader(shader);
-			var p = m.allocPass("highlightBack");
-			p.culling = None;
-			p.depthWrite = false;
-			p.depthTest = Always;
-			p.addShader(shader2);
-		}
-
-		return true;
-	}
-
-	public static function findMaterialLibraryRefs(libPath : String, matName : String) : Array<hide.view.RefViewer.Reference> {
-		// Find every material.props file with ref of the material library that we're searching
-		var materialPropsFiles : Array<{ path: String, bindMatName : String, ?model : String }> = [];
-		hide.Ide.inst.filterProps(function(data, path) {
-			var indexOf = path.indexOf("materials.props");
-			if (indexOf < 0)
-				return false;
-
-			var mats = Reflect.field(data, "materials");
-			var pbr : Array<Dynamic> = Reflect.field(mats, "PBR");
-			for (f in Reflect.fields(pbr)) {
-				var el = Reflect.field(pbr, f);
-				if (!Reflect.hasField(el, "__ref"))
-					continue;
-
-				var ref = Reflect.field(el, "__ref");
-				var mName = Reflect.field(el, "name");
-				if (ref != libPath || mName != matName)
-					continue;
-
-				var contains = false;
-				for (m in materialPropsFiles) {
-					if (m.path == path)
-						contains = true;
-				}
-
-				if (contains)
-					continue;
-
-				var indexOf = f.indexOf("/");
-				var modelSpec = Reflect.hasField(el, "__refMode") && Reflect.field(el, "__refMode") == "modelSpec";
-				materialPropsFiles.push({ path: path, bindMatName: f.substr(0, indexOf < 0 ? null : indexOf), model: modelSpec ? f.substr(f.lastIndexOf("/") + 1) : null });
-			}
-
-			return false;
-		});
-
-		function findRefInModels(folder : String, bindedMat : String, model : String, libPath : String, matName : String) : Array<hide.view.RefViewer.Result> {
-			var results = [];
-
-			var files = sys.FileSystem.readDirectory(hide.Ide.inst.getPath(folder));
-			for (f in files) {
-				var path = folder + "/" + f;
-
-				if (sys.FileSystem.isDirectory(path) && model != null) {
-					findRefInModels(path, bindedMat, model, libPath, matName);
-					continue;
-				}
-
-				if (path.indexOf(".fbx") < 0)
-					continue;
-
-				var obj = try {
-				hxd.res.Loader.currentInstance.load(hide.Ide.inst.makeRelative(path)).toModel().toHmd().makeObject();
-				} catch(e : Dynamic) null;
-				if (obj != null) {
-					var mat = obj.getMaterialByName(bindedMat);
-					if (mat != null && (model == null || path.substr(path.lastIndexOf("/") + 1) == model))
-						results.push({ text: path, goto: () -> hide.Ide.inst.openFile(hide.Ide.inst.makeRelative(path)) });
-				}
-			}
-
-			return results;
-		}
-
-		function findRefInPrefabs(folder : String, libPath : String, matName : String) : Array<hide.view.RefViewer.Result> {
-			var results = [];
-
-			var visited = new Map<String, Bool>();
-			hide.Ide.inst.filterPrefabs((p : Prefab, path : String) -> {
-				if (visited.get(path) != null)
-					return false;
-				visited.set(path, true);
-				var mats = p.findAll(Material);
-				for (m in mats) {
-					if (m.refMatLib != libPath + "/" + matName)
-						continue;
-					results.push({ text: path, goto: () -> hide.Ide.inst.openFile(hide.Ide.inst.makeRelative(path), null, (v) -> {
-							var prefabView = Std.downcast(v, hide.view.Prefab);
-							if (prefabView != null)
-								prefabView.delaySceneEditor(() -> prefabView.sceneEditor.selectElementsIndirect([m]));
-
-							var fxView = Std.downcast(v, hide.view.FXEditor);
-							if (fxView != null)
-								fxView.delaySceneEditor(() -> @:privateAccess fxView.sceneEditor.selectElementsIndirect([m]));
-						})
-					});
-				}
-				return false;
-			});
-
-			return results;
-		}
-
-		var refs : Array<hide.view.RefViewer.Reference> = [];
-		for (f in materialPropsFiles) {
-			var folderP = f.path.substr(0, f.path.lastIndexOf("/"));
-			var results = findRefInModels(folderP, f.bindMatName, f.model, libPath, matName);
-			results = results.concat(findRefInPrefabs(folderP, libPath, matName));
-			if (results.length > 0)
-				refs.push({ file: folderP, path: f.path, results: results });
-		}
-
-		return refs;
-	}
 	#end
 
 	override function editorAllowChild(cl) {
@@ -1084,7 +1072,7 @@ class Material extends Prefab {
 	static var _ = Prefab.register("material", Material);
 }
 
-#if editor
+#if (editor || editor_hl)
 class GradientFollower extends h2d.ObjectFollower {
 	public var perspectiveScale : Float = 1.0;
 

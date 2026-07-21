@@ -1394,7 +1394,7 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function filterProps( callb : (data: Dynamic, path: String) -> Bool ) {
-		var exts = ["props", "json"];
+		var exts = ["props", "json", "prefab"];
 		var todo = [];
 		browseFiles(function(path) {
 			var ext = path.split(".").pop();

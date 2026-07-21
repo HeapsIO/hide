@@ -419,7 +419,7 @@ class HuiSceneEditor extends HuiElement {
 		this function
 	**/
 	public function focusObjects(objs : Array<h3d.scene.Object>, ?forceMoveCameraDistance: Bool) {
-		if (objs == null || objs.length < 0)
+		if (objs == null || objs.length <= 0)
 			return;
 
 		var focusChanged = false;
@@ -435,7 +435,7 @@ class HuiSceneEditor extends HuiElement {
 		}
 
 		var bnds = new h3d.col.Bounds();
-		var centroid = new h3d.Vector();
+		var centroid = new h3d.Vector(0, 0, 0);
 		for(obj in objs) {
 			centroid = centroid.add(obj.getAbsPos().getPosition());
 			bnds.add(obj.getBounds());

@@ -169,6 +169,9 @@ class HuiFileBrowser extends HuiElement {
 		},{
 			label: "Prefab",
 			click: () -> createNewFile(file, "New Prefab", "prefab", hide.Ide.inst.toJSON(@:privateAccess new hrt.prefab.Prefab(null, null).serialize()))
+		},{
+			label: "Material Library",
+			click: () -> createNewFile(file, "New Material Library", "matlib", hide.Ide.inst.toJSON(@:privateAccess new hrt.prefab.MaterialLibrary(null, null).serialize()))
 		}];
 
 		var items : Array<hrt.ui.HuiMenu.MenuItem> = [{label: "New ...", menu: createMenu}];

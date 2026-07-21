@@ -997,5 +997,6 @@ class Prefab extends hide.view.FileView {
 
 	static var _ = Extension.registerExtension(Prefab, ["prefab"], { icon : "sitemap", createNew : "Prefab", name: "Prefab" });
 	static var _1 = Extension.registerExtension(Prefab, ["l3d"], { icon : "sitemap", name: "Prefab" });
+	static var _2 = Extension.registerExtension(Prefab, ["matlib"], { icon : "sitemap", createNew: "Material Library", name: "Material Library" });
 
 }

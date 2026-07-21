@@ -45,7 +45,7 @@ class Prefab extends HuiView<{path: String}> {
 	public var hidden : Map<hrt.prefab.Prefab, Bool> = new Map();
 
 	var currentEditContext: EditContext;
-	var prefabLookup : Map<h3d.scene.Object, hrt.prefab.Object3D> = new Map();
+	var prefabLookup : Map<h3d.scene.Object, hrt.prefab.Prefab> = new Map();
 	var gizmo : hrt.tools.Gizmo = null;
 	var rethrowMakeErrors: Bool = false;
 	var prefab: hrt.prefab.Prefab;
@@ -83,6 +83,10 @@ class Prefab extends HuiView<{path: String}> {
 				var obj3d = Std.downcast(s, hrt.prefab.Object3D);
 				if (obj3d != null)
 					selectedObjects.push(obj3d.local3d);
+
+				var material = Std.downcast(s, hrt.prefab.Material);
+				if (material != null && hrt.prefab.MaterialLibrary.isMaterialLibrary(state.path))
+					selectedObjects.push(@:privateAccess material.previewSphere);
 			}
 			return selectedObjects;
 		}
@@ -716,6 +720,11 @@ class Prefab extends HuiView<{path: String}> {
 					var objects = obj3d.local3d.findAll((o) -> Std.downcast(o, h3d.scene.Mesh));
 					for (o in objects)
 						prefabLookup.set(o, obj3d);
+				}
+				if (hrt.prefab.MaterialLibrary.isMaterialLibrary(state.path)) {
+					var material = Std.downcast(p, hrt.prefab.Material);
+					if (material != null)
+						prefabLookup.set(@:privateAccess material.previewSphere, material);
 				}
 			}
 		} catch (e) {
