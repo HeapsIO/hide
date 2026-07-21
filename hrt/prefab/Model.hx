@@ -42,9 +42,10 @@ class Model extends Object3D {
 				throw 'Could not load model $source needed in ${shared.currentPath} \n\n ${e}';
 			}
 
-			if (obj.defaultTransform != null && this.find(Object3D, (p) -> { return p != this; }) != null) {
+			if (obj.defaultTransform != null && children.length > 0) {
 				obj.name = "root";
 				var root = new h3d.scene.Object();
+				root.name = name;
 				root.addChild(obj);
 				obj = root;
 			}
