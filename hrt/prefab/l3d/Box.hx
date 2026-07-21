@@ -5,7 +5,7 @@ class Box extends Object3D {
 
 
 	public function setColor(color: Int) {
-		#if editor
+		#if (editor || editor_hl)
 		if(local3d == null)
 			return;
 		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
@@ -18,7 +18,7 @@ class Box extends Object3D {
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), parent3d);
 
-		#if editor
+		#if (editor || editor_hl)
 		setDebugColor(0x60ffffff, mesh.material);
 
 		var wire = new h3d.scene.Box(mesh);
@@ -34,7 +34,7 @@ class Box extends Object3D {
 		super.edit2(ctx);
 	}
 
-	#if editor
+	#if (editor || editor_hl)
 	static public function setDebugColor(color : Int, mat : h3d.mat.Material) {
 		mat.color.setColor(color);
 		var opaque = (color >>> 24) == 0xff;
@@ -60,7 +60,9 @@ class Box extends Object3D {
 			alpha.depthWrite = false;
 		}
 	}
+	#end
 
+	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "square", name : "Box" };
 	}
