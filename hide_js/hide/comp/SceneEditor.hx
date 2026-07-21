@@ -4352,6 +4352,12 @@ class SceneEditor {
 				var ref = new hrt.prefab.Reference(null, sceneData.shared);
 				ref.source = ide.makeRelative(f.path);
 				ref.make();
+
+				if (ref.refInstance != null) {
+					for (pp in ref.refInstance.flatten(null, null)) {
+						applySceneStyle(pp);
+					}
+				}
 				if (ref.local3d != null)
 					parent.addChild(ref.local3d);
 			}
@@ -5582,6 +5588,13 @@ class SceneEditor {
 		for( p in prefab.flatten(null, null) ) {
 			makeInteractive(p);
 			applySceneStyle(p);
+
+			var ref = Std.downcast(p, hrt.prefab.Reference);
+			if (ref != null && ref.refInstance != null) {
+				for (pp in ref.refInstance.flatten(null, null)) {
+					applySceneStyle(pp);
+				}
+			}
 
 			// Enforce interactive not being actually interactive because we do our own event handling
 			var i3d = interactives.get(p);
