@@ -351,10 +351,12 @@ class HuiSceneEditor extends HuiElement {
 		}
 
 		var p = hxd.res.Loader.currentInstance.load(path).toPrefab().load().clone();
-		renderProps = p.getOpt(hrt.prefab.RenderProps);
-		if (renderProps == null)
-			throw "This prefab has no render props";
+		var renderProps = p.getOpt(hrt.prefab.RenderProps);
+		if (renderProps == null) {
+			return;
+		}
 
+		this.renderProps = renderProps;
 		renderProps.make();
 		scene.s3d.addChild(renderProps.local3d);
 		renderProps.applyProps(scene.s3d.renderer);
