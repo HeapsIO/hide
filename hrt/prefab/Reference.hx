@@ -346,7 +346,14 @@ class Reference extends Object3D {
 			</category>
 		);
 
+		var oldSource = source;
+
 		fileSource.onValueChange = (_) -> {
+			if(this.name == new haxe.io.Path(oldSource).file){
+				this.name = new haxe.io.Path(source).file;
+				ctx.rebuildTree(this);
+				oldSource = source;
+			}
 			ctx.rebuildPrefab(this);
 		}
 
@@ -496,10 +503,11 @@ class Reference extends Object3D {
 		}
 		updateProps();
 
+		var oldSource = source;
+
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
 			if(pname == "source" || pname == "editMode") {
-
 				var oldRefInst = refInstance;
 				refInstance = null; // force resolve to return the new referenced prefab for hasCycle();
 				var cycle = hasCycle();
@@ -514,6 +522,10 @@ class Reference extends Object3D {
 				updateProps();
 				if(!ctx.properties.isTempChange) {
 					if (pname == "source") {
+						if(this.name == new haxe.io.Path(oldSource).file){
+							this.name = new haxe.io.Path(source).file;
+							@:privateAccess shared.editor.refreshTree(All);
+						}
 						ctx.rebuildPrefab(this);
 					}
 					else {
