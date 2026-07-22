@@ -3070,6 +3070,7 @@ class SceneEditor {
 		if (i3d != null) {
 			interactives.set(elt,i3d);
 			i3d.propagateEvents = true;
+			i3d.showDebug = true;
 		}
 		var i2d = Std.downcast(int, h2d.Interactive);
 		if (i2d != null ) {

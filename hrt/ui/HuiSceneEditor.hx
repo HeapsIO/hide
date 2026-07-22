@@ -167,33 +167,53 @@ class HuiSceneEditor extends HuiElement {
 		criticalError.setError(title, exception);
 	}
 
-	public function getObjectsAt(sx : Int, sy : Int, ?root : h3d.scene.Object, ?f : h3d.scene.Object -> Bool) {
-		var hits : Array<{ o : h3d.scene.Object, d : Float }> = [];
+	public function getObjectsAt(sx : Int, sy : Int, ?root : h3d.scene.Object, ?f : h3d.scene.Object -> Bool) : Array<{object: h3d.scene.Object, distance: Float}> {
+		var hits = [];
 		var r = root ?? scene.s3d;
 		var ray = scene.s3d.camera.rayFromScreen(sx, sy, scene.sceneWidth, scene.sceneHeight);
-		for (o in r.findAll((o) -> o)) {
-			var c = try o.getCollider() ?? o.getBounds()  catch(e) null;
-			if (c == null)
+
+		var tmpRay = new h3d.col.Ray();
+
+		for (i in @:privateAccess scene.s3d.interactives) {
+			var o = i.parent;
+			if (!f(o))
+				continue;
+			if (root != null) {
+				var current = o;
+				var rootParent = false;
+				while(current != null && current != root) {
+					current = current.parent;
+				}
+				if (current != root)
+					continue;
+			}
+
+			var localRay = tmpRay;
+			localRay.load(ray);
+			localRay.transform(i.getInvPos());
+
+
+			var distance = i.shape?.rayIntersection(localRay, false) ?? -1;
+			if (distance < 0)
 				continue;
 
-			var dist = c.rayIntersection(ray, true);
-			if ((f != null && f(o)) && dist >= 0) {
-				var added = false;
-				for (idx in 0...hits.length) {
-					if (hits[idx].d > dist) {
-						hits.insert(idx, { o: o, d : dist });
-						added = true;
-						break;
-					}
-				}
+			var distance = i.preciseShape?.rayIntersection(localRay, true) ?? distance;
 
-				if (!added)
-					hits.push({ o: o, d : dist });
+			if (distance > 0) {
+				hits.push({object: o, distance: distance});
 			}
 		}
 
-		return [for (h in hits) h.o];
+		hits.sort((a,b) -> Reflect.compare(a.distance, b.distance));
+
+		return hits;
 	}
+
+	public function add3dInteractive(interactive: h3d.scene.Interactive) {
+
+	}
+
+
 
 	public function projectToGround(ray: h3d.col.Ray, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) : Float {
 		var minDist = -1.;

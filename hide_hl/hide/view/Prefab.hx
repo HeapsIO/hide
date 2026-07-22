@@ -718,8 +718,8 @@ class Prefab extends HuiView<{path: String}> {
 
 		try {
 			prefab.make();
+			makePrefabInteractive(prefab);
 			for (p in prefab.flatten()) {
-				makePrefabInteractive(p);
 				var obj3d = Std.downcast(p, hrt.prefab.Object3D);
 				if (obj3d != null && obj3d.local3d != null) {
 					var objects = obj3d.local3d.findAll((o) -> Std.downcast(o, h3d.scene.Mesh));
@@ -767,13 +767,18 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	public function makePrefabInteractive(prefab: hrt.prefab.Prefab) {
+		if (interactives.get(prefab) != null)
+			throw "prefab already has interactive";
+
 		var int = prefab.makeInteractive();
 		if (int != null) {
 			var i3d = Std.downcast(int, h3d.scene.Interactive);
 			if (i3d != null) {
 				interactives.set(prefab, i3d);
 				i3d.cursor = Default;
+				i3d.showDebug = true;
 			}
+
 		}
 	}
 
@@ -1693,7 +1698,7 @@ class Prefab extends HuiView<{path: String}> {
 			var objs = sceneEditor.getObjectsAt(cast e.relX, cast e.relY, prefab.findFirstLocal3d(), (o) -> Std.isOfType(o, h3d.scene.Mesh));
 			var newSelection : Array<hrt.prefab.Prefab> = [];
 			for (o in objs) {
-				var p = prefabLookup.get(o);
+				var p = prefabLookup.get(o.object);
 				if (p == null || p.locked)
 					continue;
 				prefabs.push(p);
@@ -1751,8 +1756,6 @@ class Prefab extends HuiView<{path: String}> {
 		for (child in prefab.children) {
 			tryMake(child);
 		}
-
-		makePrefabInteractive(prefab);
 	}
 
 	static function dumpObject(obj: h3d.scene.Object, pad: String = "") : String {

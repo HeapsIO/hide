@@ -41,6 +41,7 @@ class HuiScene extends HuiElement {
 	function get_sceneHeight() : Int {return renderTexture.height;};
 
 	var renderTexture : h3d.mat.Texture;
+	var delayedMove : hxd.Event = null;
 
 	#if editor_hl
 	public var showSceneInfos(default, set) : Bool = false;
@@ -137,6 +138,11 @@ class HuiScene extends HuiElement {
 		if (currentVisible) {
 			var scene = getScene();
 			var scale = getScene().viewportScaleX;
+
+			if (delayedMove != null) {
+				@:privateAccess sceneEvents.onEvent(delayedMove);
+				delayedMove = null;
+			}
 
 			sceneEvents.checkEvents();
 
@@ -288,9 +294,12 @@ class Interactive2 extends h2d.Interactive {
 			@:privateAccess getScene().events.stopCapture();
 		}
 
-
-
-		@:privateAccess huiScene.sceneEvents.onEvent(newEvent);
+		if (newEvent.kind == EMove) {
+			// delay move event to have only one per frame to avoid too many raycasts
+			@:privateAccess huiScene.delayedMove = newEvent;
+		} else {
+			@:privateAccess huiScene.sceneEvents.onEvent(newEvent);
+		}
 
 		// stop propagaion for original event
 		e.propagate = false;

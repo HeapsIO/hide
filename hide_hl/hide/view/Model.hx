@@ -229,8 +229,10 @@ class Model extends HuiView<{path: String}> {
 		var path = Ide.inst.getRelPath(state.path);
 		sceneEditor.load = () -> load(path);
 		sceneEditor.onScenePush = (e) -> {
-			if (e.button == 0)
-				setSelection(sceneEditor.getObjectsAt(cast e.relX, cast e.relY, obj, (o) -> Std.isOfType(o, h3d.scene.Mesh)));
+			if (e.button == 0) {
+				var objs = sceneEditor.getObjectsAt(cast e.relX, cast e.relY, obj, (o) -> Std.isOfType(o, h3d.scene.Mesh));
+				setSelection([for (o in objs) o.object]);
+			}
 		}
 		sceneEditor.setColliderDebugVisibility = setColliderDebugVisibility;
 
@@ -640,9 +642,11 @@ class Model extends HuiView<{path: String}> {
 	}
 
 	function load(path : String) {
-		var lib = hxd.res.Loader.currentInstance.load(path).toModel().toHmd();
-		obj = lib.makeObject((path) -> loadTexture(path));
-		sceneEditor.scene.s3d.addChild(obj);
+		var prefab = new hrt.prefab.Model(null, new hrt.prefab.ContextShared(null, null, sceneEditor.scene.s3d));
+		prefab.source = path;
+		prefab.make();
+		prefab.makeInteractive();
+		obj = prefab.local3d;
 
 		sceneEditor.resetCamera();
 		sceneEditor.updateDebugOverlayVisibility();
