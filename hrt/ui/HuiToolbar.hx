@@ -220,21 +220,21 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_GRID_CONFIG_KEY, @:privateAccess editor.grid.visible);
 		}
 
-		boneTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_JOINTS_CONFIG_KEY, true);
+		boneTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_JOINTS_CONFIG_KEY);
 		boneTog.onClick = (_) -> {
 			boneTog.toggled = !boneTog.toggled;
 			editor.setJointsDebugVisibility(boneTog.toggled);
 			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_JOINTS_CONFIG_KEY, boneTog.toggled);
 		}
 
-		colliderTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_COLLIDERS_CONFIG_KEY, true);
+		colliderTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_COLLIDERS_CONFIG_KEY);
 		colliderTog.onClick = (_) -> {
 			colliderTog.toggled = !colliderTog.toggled;
 			editor.setColliderDebugVisibility(colliderTog.toggled);
 			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_COLLIDERS_CONFIG_KEY, colliderTog.toggled);
 		}
 
-		miscTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_MISC_CONFIG_KEY, true);
+		miscTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_MISC_CONFIG_KEY);
 		miscTog.onClick = (_) -> {
 			miscTog.toggled = !miscTog.toggled;
 			editor.setMiscDebugVisibility(miscTog.toggled);
@@ -243,7 +243,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 
 		var prefabView = Std.downcast(view, hide.view.Prefab);
 		if (prefabView != null) {
-			gizmoTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_GIZMO_CONFIG_KEY, true);
+			gizmoTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_GIZMO_CONFIG_KEY);
 			gizmoTog.onClick = (_) -> {
 				gizmoTog.toggled = !gizmoTog.toggled;
 				@:privateAccess prefabView.gizmo.setVisible(gizmoTog.toggled);
@@ -251,28 +251,28 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			}
 		}
 
-		outlineTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_OUTLINE_CONFIG_KEY, true);
+		outlineTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_OUTLINE_CONFIG_KEY);
 		outlineTog.onClick = (_) -> {
 			outlineTog.toggled = !outlineTog.toggled;
 			editor.setOutlineVisibility(outlineTog.toggled);
 			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_OUTLINE_CONFIG_KEY, outlineTog.toggled);
 		}
 
-		sceneInfoTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_SCENE_INFOS_CONFIG_KEY, true);
+		sceneInfoTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_SCENE_INFOS_CONFIG_KEY);
 		sceneInfoTog.onClick = (_) -> {
 			sceneInfoTog.toggled = !sceneInfoTog.toggled;
 			editor.setSceneInfoVisibility(sceneInfoTog.toggled);
 			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_SCENE_INFOS_CONFIG_KEY, sceneInfoTog.toggled);
 		}
 
-		wireframeTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_WIREFRAME_CONFIG_KEY, true);
+		wireframeTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_WIREFRAME_CONFIG_KEY);
 		wireframeTog.onClick = (_) -> {
 			wireframeTog.toggled = !wireframeTog.toggled;
 			editor.setWireframeVisibility(wireframeTog.toggled);
 			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_WIREFRAME_CONFIG_KEY, wireframeTog.toggled);
 		}
 
-		disableSceneTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY, false);
+		disableSceneTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY);
 		disableSceneTog.onClick = (_) -> {
 			disableSceneTog.toggled = !disableSceneTog.toggled;
 			editor.setSceneVisibility(!disableSceneTog.toggled);

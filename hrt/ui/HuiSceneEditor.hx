@@ -35,6 +35,19 @@ class HuiSceneEditor extends HuiElement {
 	public static final VISIBILITY_SCENE_INFOS_CONFIG_KEY = "editor.visibility.sceneInfos";
 	public static final VISIBILITY_WIREFRAME_CONFIG_KEY = "editor.visibility.wireframe";
 	public static final VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY = "editor.visibility.disableSceneRender";
+	public static final DEFAULT_VISIBILITY_STATE = [
+		VISIBILITY_OVERLAY_CONFIG_KEY => true,
+		VISIBILITY_GRID_CONFIG_KEY => true,
+		VISIBILITY_JOINTS_CONFIG_KEY => false,
+		VISIBILITY_COLLIDERS_CONFIG_KEY => false,
+		VISIBILITY_MISC_CONFIG_KEY => true,
+		VISIBILITY_GIZMO_CONFIG_KEY => true,
+		VISIBILITY_OUTLINE_CONFIG_KEY => true,
+		VISIBILITY_SCENE_INFOS_CONFIG_KEY => false,
+		VISIBILITY_WIREFRAME_CONFIG_KEY => false,
+		VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY => false
+	];
+
 	public static final RENDER_PROPS_SAVE_KEY = "renderPropsPath";
 	public static var RENDER_PROPS_KEY = "scene.renderProps";
 
@@ -234,17 +247,25 @@ class HuiSceneEditor extends HuiElement {
 		return null;
 	}
 
-	public function updateDebugOverlayVisibility() {
-		var visibility = hide.Ide.inst.currentConfig.get(VISIBILITY_OVERLAY_CONFIG_KEY, true);
+	public function onViewLoadState() {
+		updateRenderProps();
 
-		grid.visible = visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_GRID_CONFIG_KEY, true);
-		setJointsDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_JOINTS_CONFIG_KEY, true));
-		setColliderDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_COLLIDERS_CONFIG_KEY, true));
-		setMiscDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_COLLIDERS_CONFIG_KEY, true));
-		setOutlineVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_OUTLINE_CONFIG_KEY, true));
-		setSceneInfoVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_SCENE_INFOS_CONFIG_KEY, true));
-		setWireframeVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_WIREFRAME_CONFIG_KEY, true));
-		setSceneVisibility(!hide.Ide.inst.currentConfig.get(VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY, false));
+		for (k in DEFAULT_VISIBILITY_STATE.keys())
+			hide.Ide.inst.currentConfig.set(k, DEFAULT_VISIBILITY_STATE.get(k));
+		updateDebugOverlayVisibility();
+	}
+
+	public function updateDebugOverlayVisibility() {
+		var visibility = hide.Ide.inst.currentConfig.get(VISIBILITY_OVERLAY_CONFIG_KEY);
+
+		grid.visible = visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_GRID_CONFIG_KEY);
+		setJointsDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_JOINTS_CONFIG_KEY));
+		setColliderDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_COLLIDERS_CONFIG_KEY));
+		setMiscDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_COLLIDERS_CONFIG_KEY));
+		setOutlineVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_OUTLINE_CONFIG_KEY));
+		setSceneInfoVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_SCENE_INFOS_CONFIG_KEY));
+		setWireframeVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_WIREFRAME_CONFIG_KEY));
+		setSceneVisibility(!hide.Ide.inst.currentConfig.get(VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY));
 	}
 
 	@:access(h3d.scene.Skin)

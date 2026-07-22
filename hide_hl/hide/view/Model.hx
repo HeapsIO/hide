@@ -376,7 +376,7 @@ class Model extends HuiView<{path: String}> {
 
 	override function onLoadState() {
 		super.onLoadState();
-		sceneEditor.updateRenderProps();
+		sceneEditor.onViewLoadState();
 	}
 
 	override function getContextMenuContent(content: Array<hrt.ui.HuiMenu.MenuItem>) {

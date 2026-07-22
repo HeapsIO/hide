@@ -393,6 +393,11 @@ class Prefab extends HuiView<{path: String}> {
 		}
 	}
 
+	override function onLoadState() {
+		super.onLoadState();
+		sceneEditor.onViewLoadState();
+	}
+
 	function getDropPath(op: HuiDragOp) : Null<String> {
 		if (op.type != HuiFileBrowser.fileDragOp)
 			return null;
