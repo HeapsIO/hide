@@ -170,6 +170,10 @@ class Ide extends hide.tools.IdeData {
 		}
 	}
 
+	public function exit() {
+		Sys.exit(0);
+	}
+
 	public function getLocalStorage(key: String) : Null<Dynamic> {
 		return Reflect.field(localStorage,key);
 

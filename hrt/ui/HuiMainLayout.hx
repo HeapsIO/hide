@@ -69,7 +69,10 @@ class HuiMainLayout extends HuiElement {
 	function fileMenu() : Array<HuiMenu.MenuItem> {
 		return [
 			{label: "Open Project ...", click: () -> hide.Ide.inst.chooseProject()},
-			{label: "Recent", menu: recentMenu(), enabled: hide.Ide.inst.ideConfig.recentProjects.length > 0}
+			{label: "Recent", menu: recentMenu(), enabled: hide.Ide.inst.ideConfig.recentProjects.length > 0},
+			{isSeparator: true},
+			{label: "Open Haxe Project", click: () -> Sys.command("Code", [hide.Ide.inst.projectDir])},
+			{label: "Exit", click: () -> hide.Ide.inst.exit()}
 		];
 	}
 
