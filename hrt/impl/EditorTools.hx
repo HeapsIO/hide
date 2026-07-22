@@ -12,7 +12,7 @@ class EditorIcon extends hrt.prefab.l3d.Billboard.BillboardObj {
 	}
 
 	override function sync(ctx) {
-		#if ( editor || editor_hl)
+		#if editor
 		visible = EditorTools.isVisible(category);
 		#end
 		super.sync(ctx);
