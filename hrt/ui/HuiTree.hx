@@ -625,7 +625,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	function updateData(data: TreeItemData) {
 		data.children = null; // invalidate children if we are regenerating the tree
-		data.name = StringTools.htmlEscape(getItemName(cast data.item));
+		data.name = StringTools.htmlEscape(getItemName(cast data.item) ?? "");
 		data.icon = getItemIcon(cast data.item);
 		data.identifier = getIdentifier(cast data.item);
 	}
