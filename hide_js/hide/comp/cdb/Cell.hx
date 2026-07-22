@@ -144,16 +144,18 @@ class Cell {
 						label : "Show references",
 						click : () -> editor.showReferences(this.value, this),
 						keys : this.editor.config.get("key.cdb.showReferences"),
-					},
-					{
-						label : "Show unreferenced IDs",
-						click : () -> editor.findUnreferenced(this.editColumn, this.table),
-						keys : this.editor.config.get("key.cdb.showUnreferenced"),
-					},
+					}
 					{
 						label : "Add to favorites",
 						click : () -> editor.addToFavorites(this.value),
 					},
+					// TODO: move this option to File > Database > Find unreferenced IDs if this is still used
+					// ,
+					// {
+					// 	label : "Show unreferenced IDs",
+					// 	click : () -> editor.findUnreferenced(this.editColumn, this.table),
+					// 	keys : this.editor.config.get("key.cdb.showUnreferenced"),
+					// },
 				];
 				var remoteMenu = hide.view.RemoteConsoleView.getCdbMenuActions(this.table.sheet.name, this.value);
 				if (!remoteMenu.isEmpty()) {
