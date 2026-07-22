@@ -28,7 +28,7 @@ class WireframeOverlay extends hrt.prefab.Shader {
 
 	@:s public var color : Int = 0xFFFFFF;
 	@:s public var alpha : Float = 0.5;
-	@:s public var thickness : Float = 1.01;
+	@:s public var thickness : Float = 0.01;
 
 	public function new(parent, shared) {
 		super(parent, shared);
