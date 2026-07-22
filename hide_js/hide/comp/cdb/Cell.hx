@@ -144,7 +144,7 @@ class Cell {
 						label : "Show references",
 						click : () -> editor.showReferences(this.value, this),
 						keys : this.editor.config.get("key.cdb.showReferences"),
-					}
+					},
 					{
 						label : "Add to favorites",
 						click : () -> editor.addToFavorites(this.value),
