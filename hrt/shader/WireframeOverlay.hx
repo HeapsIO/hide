@@ -85,7 +85,7 @@ class WireframeOverlay extends hrt.prefab.Shader {
 			<root>
 				<color field={color}/>
 				<range(0.0,1.0) field={alpha}/>
-				<range(0.0,0.1) field={thickness}/>
+				<range(0.0,0.1) step="0.0001" field={thickness}/>
 			</root>
 		);
 	}
