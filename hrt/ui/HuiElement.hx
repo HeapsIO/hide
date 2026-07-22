@@ -260,7 +260,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	override function makeBackground(tile): h2d.ScaleGrid {
 		switch (backgroundType) {
 			case "hui":
-				var b = new HuiBackground();
+				var b = HuiBackground.newPooled();
 				b.dom = domkit.Properties.create("hui-background", b);
 				return b;
 			default:

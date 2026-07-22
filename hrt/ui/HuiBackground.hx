@@ -350,6 +350,11 @@ class BackgroundShader extends hxsl.Shader {
 @:parser(hrt.ui.CssParser)
 class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 
+	var pooled: Bool = false;
+	var poolNext: HuiBackground = null;
+	var poolPrev: HuiBackground = null;
+	static var poolHead: HuiBackground = null;
+
 	@:p public var smoothSpan(never, set) : Float;
 	function set_smoothSpan(v) { shader.pixelPerfect = v == 0.0; shader.smoothSpan = hxd.Math.max(0.001, v); return v; }
 
@@ -640,6 +645,39 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		blendMode = Alpha;
 		initComponent();
 		addShader(shader);
+	}
+
+	public static function newPooled() : HuiBackground {
+		if (poolHead != null) {
+			var bg = poolHead;
+			poolHead = bg.poolNext;
+		}
+		var bg = new HuiBackground();
+		bg.pooled = true;
+		return bg;
+	}
+
+	override function onAdd() {
+		super.onAdd();
+		if (pooled) {
+			if (this.poolPrev == null) {
+				poolHead = this.poolNext;
+			} else {
+				poolPrev.poolNext = this.poolNext;
+			}
+			this.poolPrev = null;
+			this.poolNext = null;
+		}
+	}
+
+	override function onRemove() {
+		super.onRemove();
+		if (pooled) {
+			this.poolPrev = null;
+			this.poolNext = poolHead;
+			this.poolNext?.poolPrev = this;
+			poolHead = this;
+		}
 	}
 
 	override function checkUpdate() {
