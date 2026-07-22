@@ -553,7 +553,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 		if (!uiBase.style.inspectModeActive || !hxd.Key.isDown(hxd.Key.SHIFT)) {
 
-			if( overflow == Scroll && (base.scrollFocus == null || base.scrollFocus == this) ) {
+			if( (overflow == Scroll) && (base.scrollFocus == null || base.scrollFocus == this) ) {
 
 				var maxScroll = Std.int(contentHeight - calculatedHeight);
 				var newPos = hxd.Math.clamp(scrollPosY + e.wheelDelta * scrollWheelSpeed, 0, maxScroll);
@@ -566,8 +566,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 					base.lastScrollTime = now;
 				}
 				e.propagate = uiBase.scrollFocus == null;
-				onWheel(e);
 			}
+
+			onWheel(e);
 		}
 
 	}
