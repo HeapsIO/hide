@@ -90,6 +90,7 @@ class HuiVirtualList<T> extends HuiElement {
 			customScrollbar.getProperties(customScrollbarCursor).isAbsolute = true;
 		}
 
+		onWheel = wheel;
 		makeInteractive();
 		interactive.propagateEvents = true;
 	}
@@ -106,9 +107,6 @@ class HuiVirtualList<T> extends HuiElement {
 	}
 
 	override function sync(ctx:h2d.RenderContext) {
-
-		onWheel = wheel;
-
 		refreshInternal();
 
 		super.sync(ctx);
