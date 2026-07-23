@@ -945,7 +945,6 @@ class Editor extends Component {
 	}
 
 	function delete(x1 : Int, x2 : Int, y1 : Int, y2 : Int) {
-		var modifiedTables = [];
 		var sheet = cursor.table.sheet;
 
 		if (cursor.getCell() == null || cursor.getCell().column.type == TId) {
@@ -960,6 +959,7 @@ class Editor extends Component {
 			}
 		}
 
+		var needRefresh = false;
 		beginChanges();
 		if( cursor.x < 0 ) {
 			// delete lines
@@ -973,7 +973,7 @@ class Editor extends Component {
 				var line = cursor.table.lines[y];
 				if(!cursor.table.lines[y].element.hasClass("filtered")) {
 					sheet.deleteLine(line.index);
-					modifiedTables.pushUnique(cursor.table);
+					needRefresh = true;
 				}
 				y--;
 			}
@@ -982,35 +982,36 @@ class Editor extends Component {
 		}
 		else {
 			// delete cells
-			for( y in y1...y2+1 ) {
+			for (y in y1...y2+1) {
 				var line = cursor.table.lines[y];
 				if (line.element.hasClass("filtered"))
 					continue;
 				var moveCursor = false;
-				for( x in x1...x2+1 ) {
+				for (x in x1...x2+1) {
 					var c = line.columns[x];
-					if( !line.cells[x].canEdit() )
+					if (!line.cells[x].canEdit())
 						continue;
 					var old = Reflect.field(line.obj, c.name);
 					var def = base.getDefault(c,false,sheet);
-					if( old == def )
+					if (old == def)
 						continue;
-					changeObject(line,c,def);
+					changeObject(line, c, def);
+					line.cells[x].refresh();
+					needRefresh = needRefresh || (c.type == TProperties || c.type == TList);
+
 					// Move cursor for props deletion
-					if (Reflect.field(line.obj, c.name) == null && cursor.table.displayMode == Properties) {
+					if (Reflect.field(line.obj, c.name) == null && cursor.table.displayMode == Properties)
 						moveCursor = true;
-					}
-					modifiedTables.pushUnique(cursor.table);
 				}
 
-				if (moveCursor) {
+				if (moveCursor)
 					cursor.set(cursor.table, 0, y1-1, null, true, true, false);
-				}
 			}
 		}
 
 		endChanges();
-		refreshAll();
+		if (needRefresh)
+			refreshAll();
 		updateFilters();
 	}
 
