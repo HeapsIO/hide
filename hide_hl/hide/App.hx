@@ -17,6 +17,10 @@ class App extends hxd.App {
 	override public function init() {
 		super.init();
 
+		var alloc = new hxd.impl.CacheAllocator(false);
+		alloc.maxKeepTime = 60 * 5;
+		hxd.impl.Allocator.set(alloc);
+
 		hxd.Window.getInstance().title = "HideHL";
 		ide = new hide.Ide();
 		ide.app = this;
