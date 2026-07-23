@@ -1548,7 +1548,7 @@ class Cell {
 				var parser = new hscript.Parser();
 				var expr = parser.parseString(str);
 				var res = interp.execute(expr);
-				return editor.base.parseValue(column.type, res, false);
+				return editor.base.parseValue(column.type, res.toString(), false);
 			} catch (e : Dynamic) {
 				throw '$str is not a float';
 			}
@@ -1566,7 +1566,7 @@ class Cell {
 			case TDynamic:
 				newValue = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) null;
 				if (newValue == null) {
-					newValue = interpValue(str);
+					newValue = try interpValue(str) catch(e : Dynamic) Math.NaN;
 					if (hxd.Math.isNaN(newValue))
 						newValue = str;
 				}
