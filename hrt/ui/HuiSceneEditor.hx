@@ -24,6 +24,7 @@ class HuiSceneEditor extends HuiElement {
 		</hui-scene-editor>
 
 	public static var CAM_CTRL_CONFIG_KEY = "editor.camera.type";
+	public static var CAM_POS_CONFIG_KEY = "editor.camera.pos";
 
 	public static final VISIBILITY_OVERLAY_CONFIG_KEY = "editor.visibility.overlay";
 	public static final VISIBILITY_GRID_CONFIG_KEY = "editor.visibility.grid";
@@ -53,10 +54,10 @@ class HuiSceneEditor extends HuiElement {
 
 	static public var focusCommand = new hrt.ui.HuiCommands.HuiCommand("Focus Selection", {key: hxd.Key.F});
 
+	public var lastFocusObjects : Array<h3d.scene.Object> = [];
 	public var tree :  hrt.ui.HuiTree<Dynamic>;
 	var inspectorRoot : hide.kit.KitRoot;
 	var cameraController : h3d.scene.CameraController;
-	public var lastFocusObjects : Array<h3d.scene.Object> = [];
 
 	var renderProps : hrt.prefab.RenderProps;
 
@@ -110,6 +111,26 @@ class HuiSceneEditor extends HuiElement {
 
 		makeGizmos();
 		updateDebugOverlayVisibility();
+	}
+
+	override function sync(ctx) {
+		super.sync(ctx);
+
+		var camera = scene.s3d.camera;
+		if (camera != null) {
+			var state = { x : camera.pos.x,
+				y : camera.pos.y,
+				z : camera.pos.z,
+				tx : camera.target.x,
+				ty : camera.target.y,
+				tz : camera.target.z,
+				ux : camera.up.x,
+				uy : camera.up.y,
+				uz : camera.up.z
+			}
+
+			getView().saveDisplayState(CAM_POS_CONFIG_KEY, state);
+		}
 	}
 
 	public static function getMaterialLibraries(path : String) {
@@ -213,7 +234,6 @@ class HuiSceneEditor extends HuiElement {
 	}
 
 
-
 	public function projectToGround(ray: h3d.col.Ray, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) : Float {
 		var minDist = -1.;
 		// if (!ignoreTerrain) {
@@ -272,6 +292,22 @@ class HuiSceneEditor extends HuiElement {
 		for (k in DEFAULT_VISIBILITY_STATE.keys())
 			hide.Ide.inst.currentConfig.set(k, DEFAULT_VISIBILITY_STATE.get(k));
 		updateDebugOverlayVisibility();
+
+		var cameraState = getView().getDisplayState(CAM_POS_CONFIG_KEY, null);
+		resetCamera();
+		if (cameraState != null) {
+			var camera = scene.s3d.camera;
+			camera.pos.x = cameraState.x;
+			camera.pos.y = cameraState.y;
+			camera.pos.z = cameraState.z;
+			camera.target.x = cameraState.tx;
+			camera.target.y = cameraState.ty;
+			camera.target.z = cameraState.tz;
+			camera.up.x = cameraState.ux;
+			camera.up.y = cameraState.uy;
+			camera.up.z = cameraState.uz;
+			cameraController.loadFromCamera();
+		}
 	}
 
 	public function updateDebugOverlayVisibility() {

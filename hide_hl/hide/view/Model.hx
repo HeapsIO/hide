@@ -639,7 +639,6 @@ class Model extends HuiView<{path: String}> {
 		prefab.makeInteractive();
 		obj = prefab.local3d;
 
-		sceneEditor.resetCamera();
 		sceneEditor.updateDebugOverlayVisibility();
 	}
 

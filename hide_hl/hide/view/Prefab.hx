@@ -662,7 +662,6 @@ class Prefab extends HuiView<{path: String}> {
 
 			tryMake(prefab);
 
-			sceneEditor.resetCamera();
 			sceneEditor.updateRenderProps();
 			sceneEditor.updateDebugOverlayVisibility();
 			clearSelection(isUndo);
