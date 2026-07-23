@@ -348,7 +348,10 @@ class BackgroundShader extends hxsl.Shader {
 }
 
 @:parser(hrt.ui.CssParser)
-class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
+final class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
+	// note : the class is final to avoid inheriting it and breaking the pooling system.
+	// if you really want to override it, adapt the pooling system so only HuiBackgrounds
+	// are pooled
 
 	var pooled: Bool = false;
 	var poolNext: HuiBackground = null;
