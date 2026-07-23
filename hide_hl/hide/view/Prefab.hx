@@ -776,7 +776,6 @@ class Prefab extends HuiView<{path: String}> {
 			if (i3d != null) {
 				interactives.set(prefab, i3d);
 				i3d.cursor = Default;
-				i3d.showDebug = true;
 			}
 
 		}
