@@ -266,9 +266,15 @@ class ThumbnailGenerator {
 
 		var abort = false;
 		if (ext == "fbx") {
-			var model = new hrt.prefab.Model(null, null);
-			model.source = toRender.path;
-			model.make(ctx);
+			try {
+				var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
+				var model = new hrt.prefab.Model(null, null);
+				model.source = cut;
+				model.make(ctx);
+			} catch(e) {
+				trace('miniature render fail for ${toRender.path} : $e');
+				abort = true;
+			}
 		} else if (ext == "prefab" || ext == "l3d" || ext == "fx") {
 			try {
 				var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
