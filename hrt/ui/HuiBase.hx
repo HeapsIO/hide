@@ -289,29 +289,16 @@ class HuiBase extends HuiElement {
 		}
 
 		// HiDPI support for hldx targets
-		#if hldx
-		var monitorDx = @:privateAccess hxd.Window.getInstance().window.getCurrentMonitor();
-		var monitors = hxd.Window.getMonitors();
+		var upscale = hxd.Window.getInstance().displayScale;
 
-		if (monitorDx != null) {
-			var scene = getScene();
-			var monitor = Lambda.find(monitors, (m) -> m.name == monitorDx);
-			if (monitor != null) {
-				// snap to 0.5
-				var upscale = hxd.Math.round((monitor.height / 1080.0) * 2.0) / 2.0;
-
-				upscale = hxd.Math.max(upscale, 1.0);
-
-				if (previousUiScale != upscale) {
-					previousUiScale = upscale;
-					dom.toggleClass("high-dpi", upscale > 1.0);
-					highDpi = upscale > 1.0;
-				}
-				var engine = scene.renderer.engine;
-				scene.scaleMode = Fixed(Math.ceil(engine.width / upscale), Math.ceil(engine.height / upscale), upscale, Center, Center);
-			}
+		if (previousUiScale != upscale) {
+			previousUiScale = upscale;
+			dom.toggleClass("high-dpi", upscale > 1.0);
+			highDpi = upscale > 1.0;
 		}
-		#end
+		var scene = getScene();
+		var engine = scene.renderer.engine;
+		scene.scaleMode = Fixed(Math.ceil(engine.width / upscale), Math.ceil(engine.height / upscale), upscale, Center, Center);
 
 		style.sync(dt);
 
