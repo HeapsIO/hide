@@ -32,12 +32,18 @@ class HuiCdbTable extends HuiElement {
 	public function openSheet(sheet: cdb.Sheet) {
 		this.sheet = sheet;
 
+		if (sheet == null)
+			return;
+
 		computeCellSizes();
 		buildHeader();
 		refreshVisible();
 	}
 
 	function afterReflow() {
+		if (sheet == null)
+			return;
+
 		computeCellSizes();
 
 		headerLine.resizeCells(cellSizes);
