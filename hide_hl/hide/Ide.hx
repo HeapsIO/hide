@@ -34,9 +34,7 @@ class Ide extends hide.tools.IdeData {
 
 		new hrt.tools.FileManager();
 
-		isSVNAvailable = Sys.command("svn",["--version"]) == 0 &&
-			Sys.command("where.exe", ["TortoiseProc.exe"]) == 0 &&
-			Sys.command("svn", ["info", getPath(projectDir)]) == 0;
+		isSVNAvailable = new sys.io.Process("svn", ["info", getPath(projectDir)]).exitCode(true) == 0;
 	}
 
 	var localStorage: Dynamic = {};

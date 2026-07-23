@@ -783,14 +783,14 @@ class FileManager {
 					return false;
 			} else {
 				// Check if origin file and target directory are versioned
-				var isFileVersioned = Sys.command("svn",["info", ide.getPath(path)]) == 0;
+				var isFileVersioned = new sys.io.Process("svn",["info", ide.getPath(path)]).exitCode(true) == 0;
 				var newAbsPath = ide.getPath(newPath);
 				var parentFolder = newAbsPath.substring(0, newAbsPath.lastIndexOf('/'));
-				var isDirVersioned = Sys.command("svn",["info", parentFolder]) == 0;
+				var isDirVersioned = new sys.io.Process("svn",["info", parentFolder]).exitCode(true) == 0;
 				if (isFileVersioned && isDirVersioned) {
 					var cwd = Sys.getCwd();
 					Sys.setCwd(ide.resourceDir);
-					var code = Sys.command("svn",["rename", path, newPath]);
+					var code = new sys.io.Process("svn",["rename", path, newPath]).exitCode(true);
 					Sys.setCwd(cwd);
 					if( code == 0 )
 						wasRenamed = true;

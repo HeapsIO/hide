@@ -268,11 +268,11 @@ class IdeData {
 				// note : the "" is not a typo but a quirk in the way start use the first quoted argument as the
 				// window title when spawning a command, which we don't want
 				filePath = StringTools.replace(filePath, "/", "\\");
-				Sys.command('start "" "$filePath"');
+				new sys.io.Process('start "" "$filePath"',null, true).exitCode();
 			case "Mac":
-				Sys.command('open "$filePath"');
+				new sys.io.Process('open "$filePath"', null, true).exitCode();
 			case "Linux":
-				Sys.command('xdg-open "$filePath"');
+				new sys.io.Process('xdg-open "$filePath"', null, true).exitCode();
 			default: throw "OpenExternalFile not implemented on this platform";
 		}
 	}
