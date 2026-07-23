@@ -106,7 +106,6 @@ class HuiSceneEditor extends HuiElement {
 		}
 
 		outline = new hrt.prefab.rfx.Outline(null, null);
-		outline.outlineColor = 0xFF6600;
 		scene.s3d.renderer.effects.push(outline);
 
 		makeGizmos();
@@ -401,6 +400,9 @@ class HuiSceneEditor extends HuiElement {
 		renderProps.make();
 		scene.s3d.addChild(renderProps.local3d);
 		renderProps.applyProps(scene.s3d.renderer);
+
+		// Reapply outline since it has been disposed by render props application
+		scene.s3d.renderer.effects.push(outline);
 	}
 
 	public function getRenderPropsObj() {

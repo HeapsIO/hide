@@ -448,34 +448,7 @@ class Material extends Prefab {
 		if (previewSphere == null)
 			return true;
 
-		var materials = previewSphere.getMaterials();
-
-		if( !b ) {
-			for( m in materials ) {
-				//m.mainPass.stencil = null;
-				m.removePass(m.getPass("highlight"));
-				m.removePass(m.getPass("highlightBack"));
-			}
-			return true;
-		}
-
-		var shader = new h3d.shader.FixedColor(0xffffff);
-		var shader2 = new h3d.shader.FixedColor(0xff8000);
-		for( m in materials ) {
-			if( m.name != null && StringTools.startsWith(m.name,"$UI.") )
-				continue;
-			var p = m.allocPass("highlight");
-			p.culling = None;
-			p.depthWrite = false;
-			p.depthTest = LessEqual;
-			p.addShader(shader);
-			var p = m.allocPass("highlightBack");
-			p.culling = None;
-			p.depthWrite = false;
-			p.depthTest = Always;
-			p.addShader(shader2);
-		}
-
+		hrt.prefab.rfx.Outline.setHighlight(previewSphere, b);
 		return true;
 	}
 

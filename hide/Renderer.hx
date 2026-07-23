@@ -96,13 +96,14 @@ class PbrSetup extends h3d.mat.PbrMaterialSetup {
 
 class ScreenOutline extends h3d.shader.ScreenShader {
 	static var SRC = {
+
 		@param var texture: Sampler2D;
-		@param var outlineColor: Vec3 = vec3(1, 1, 1);
+		@param var color: Vec3;
 
 		function fragment() {
 			var outval = texture.get(calculatedUV).rgb;
 			pixelColor.a = outval.r > 0.1 && outval.r < 0.5 ? 1.0 : 0.0;
-			pixelColor.rgb = outlineColor;
+			pixelColor.rgb = (outval.r > outval.g ? 0.2 : 1.0) * color;
 		}
 	};
 }

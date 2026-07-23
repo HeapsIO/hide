@@ -68,13 +68,7 @@ class MovablePoint {
 		mesh.setPosition(point.x, point.y, 0);
 
 		// Outline
-		var shader = new h3d.shader.FixedColor(0xffffff);
-		var m = mesh.material;
-		var p = m.allocPass("highlight");
-		p.culling = None;
-		p.depthWrite = true;
-		p.depthTest = Always;
-		p.addShader(shader);
+		hrt.prefab.rfx.Outline.setHighlight(mesh, true);
 
 		localPosText = createText(ctx);
 		worldPosText = createText(ctx);

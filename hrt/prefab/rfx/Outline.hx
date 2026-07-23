@@ -2,7 +2,7 @@ package hrt.prefab.rfx;
 @:access(h3d.scene.Renderer)
 
 class Outline extends RendererFX {
-	public var outlineColor : Int = 0xFFFFFF;
+	public var color = 0xFF6600;
 
 	var outlineShader = new h3d.pass.ScreenFx(new hide.Renderer.ScreenOutline());
 	var outlineBlur = new h3d.pass.Blur(4);
@@ -11,10 +11,33 @@ class Outline extends RendererFX {
 		super(parent, shared);
 	}
 
-	function getInput(r : h3d.scene.Renderer) {
-		var ldrCopy = r.allocTarget("ldrCopy", true, 1.0);
-		h3d.pass.Copy.run(r.ctx.engine.getCurrentTarget(), ldrCopy);
-		return ldrCopy;
+	public static function setHighlight(obj : h3d.scene.Object, visible : Bool = true) {
+		var frontColor = new h3d.shader.FixedColor(0xFFFFFF, 1);
+		var backColor = new h3d.shader.FixedColor(0xFF0000, 1);
+		if (visible) {
+			for (m in obj.getMaterials()) {
+				var p = m.allocPass("highlight");
+				p.culling = None;
+				p.depthWrite = false;
+				p.depthTest = LessEqual;
+				p.addShader(frontColor);
+				var p = m.allocPass("highlightBack");
+				p.culling = None;
+				p.depthWrite = false;
+				p.depthTest = Always;
+				p.addShader(backColor);
+			}
+		}
+		else {
+			for (m in obj.getMaterials()) {
+				var p = m.getPass("highlight");
+				if (p != null)
+					m.removePass(p);
+				p = m.getPass("highlightBack");
+				if (p != null)
+					m.removePass(p);
+			}
+		}
 	}
 
 	override function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
@@ -30,8 +53,8 @@ class Outline extends RendererFX {
 		r.draw("highlight");
 		r.ctx.engine.popTarget();
 		var outlineBlurTex = r.allocTarget("outlineBlur", false);
+		outlineShader.shader.color = h3d.Vector.fromColor(color);
 		outlineShader.pass.setBlendMode(Alpha);
-		outlineShader.shader.outlineColor = h3d.Vector.fromColor(outlineColor);
 		outlineBlur.apply(r.ctx, outlineTex, outlineBlurTex);
 		outlineShader.shader.texture = outlineBlurTex;
 		outlineShader.render();
@@ -47,5 +70,4 @@ class Outline extends RendererFX {
 	}
 
 	static var _ = Prefab.register("rfx.outline", Outline);
-
 }

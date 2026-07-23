@@ -515,11 +515,7 @@ class Model extends HuiView<{path: String}> {
 			var obj = Std.downcast(s, h3d.scene.Object);
 			if (obj == null)
 				continue;
-			for (m in obj.getMaterials()) {
-				var p = m.getPass("highlight");
-				if (p == null) continue;
-				m.removePass(p);
-			}
+			hrt.prefab.rfx.Outline.setHighlight(obj, false);
 		}
 
 		selectedObjects = [];
@@ -530,12 +526,7 @@ class Model extends HuiView<{path: String}> {
 			var obj = Std.downcast(o, h3d.scene.Object);
 			if (obj != null) {
 				objs.push(obj);
-				for (m in obj.getMaterials()) {
-					var p = m.allocPass("highlight");
-					p.culling = None;
-					p.depthWrite = false;
-					p.depthTest = Always;
-				}
+				hrt.prefab.rfx.Outline.setHighlight(obj, true);
 			}
 		}
 

@@ -2677,40 +2677,26 @@ class Model extends FileView {
 	}
 
 	function refreshSelectionHighlight(selectedObj: h3d.scene.Object) {
-		if (selectedObj == lastSelectedObject && selectedObj != null) {
+		if (selectedObj == lastSelectedObject && selectedObj != null)
 			sceneEditor.focusObjects([selectedObj]);
-		}
+
 		lastSelectedObject = selectedObj;
 		var root = this.obj;
 		if (root == null)
 			return;
 
-		var materials = root.getMaterials();
+		hrt.prefab.rfx.Outline.setHighlight(root, false);
 
-		for( m in materials ) {
-			m.removePass(m.getPass("highlight"));
-			m.removePass(m.getPass("highlightBack"));
-		}
-
-		if (selectedObj == null) {
+		if (selectedObj == null)
 			selectedAxes.visible = false;
-		}
 
 		if (!highlightSelection || selectedObj == null)
 			return;
 
-		{
-			selectedAxes.follow = selectedObj;
-			selectedAxes.visible = showSelectionAxes;
-		}
+		selectedAxes.follow = selectedObj;
+		selectedAxes.visible = showSelectionAxes;
 
-		materials = selectedObj.getMaterials();
-
-		for( m in materials ) {
-			if( m.name != null && StringTools.startsWith(m.name,"$UI.") )
-				continue;
-			highlightMaterial(m);
-		}
+		hrt.prefab.rfx.Outline.setHighlight(selectedObj, true);
 	}
 
 	function highlightMaterial(m : h3d.mat.Material) {
