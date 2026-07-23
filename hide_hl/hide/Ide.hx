@@ -225,13 +225,13 @@ class Ide extends hide.tools.IdeData {
 		var path = new haxe.io.Path(filePath);
 
 		try {
-			switch (path.ext) {
+			switch (path.ext.toLowerCase()) {
 				case "prefab", "matlib":
 					openView(new hide.view.Prefab({path: filePath}), Main, callback);
 				case "fx":
 					openView(new hide.view.Prefab({path: filePath}), Main, callback);
 					openView(new hide.view.Timeline({path: filePath}), Bottom, callback);
-				case "fbx":
+				case "fbx", "glb":
 					openView(new hide.view.Model({path: filePath}), Main, callback);
 				case "png", "jpg", "envd", "envs", "hdr":
 					openView(new hide.view.Texture({path: filePath}), Main, callback);
