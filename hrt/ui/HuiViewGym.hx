@@ -19,6 +19,7 @@ class HuiViewGym extends HuiView<{}> {
 				<gym-hui-background display-name="HuiBackground"/>
 				<gym-hui-sdf display-name="HuiSdf"/>
 				<gym-hui-drag-and-drop display-name="DragAndDrop"/>
+				<gym-hui-cdb display-name="Cdb"/>
 			</hui-tab-container>
 		</hui-view-gym>
 
@@ -719,6 +720,14 @@ class GymHuiDragAndDrop extends HuiElement {
 			hide.Ide.showInfo("Dropped " + op.data);
 		}
 	}
+}
+
+class GymHuiCdb extends HuiElement {
+	static var SRC =
+		<gym-hui-cdb>
+			<hui-text("cdb")/>
+			<hui-cdb-table/>
+		</gym-hui-cdb>
 }
 
 #end
