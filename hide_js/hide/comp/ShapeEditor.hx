@@ -432,6 +432,17 @@ class ShapeEditor extends Component {
 		return mesh;
 	}
 
+	public function createDefaultShape(obj : h3d.scene.Object) {
+		var bounds = obj.getBounds();
+		bounds.transform(obj.defaultTransform.getInverse());
+		var size = bounds.getSize();
+		var defBox = Box(bounds.getCenter(), new h3d.Vector(0, 0, 0), size.x, size.y, size.z);
+		this.shapes = [defBox];
+		uninspect();
+		updateShapeList();
+		createAllInteractives();
+	}
+
 	public function createAllInteractives() {
 		removeAllInteractives();
 		for (idx in 0...shapes.length)

@@ -1178,6 +1178,8 @@ class Model extends FileView {
 						case Mesh:
 							Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
 						case Shapes:
+							if (prevMode != curMode && @:privateAccess shapeEditor.shapes?.length == 0)
+								shapeEditor.createDefaultShape(obj);
 							var shapes = settings.fromShapeEditor(shapeEditor.getValue());
 							if( shapes.length == 0 )
 								curParams = null;
