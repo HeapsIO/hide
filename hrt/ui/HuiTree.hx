@@ -83,6 +83,8 @@ class HuiTree<TreeItem> extends HuiElement {
 		super(parent);
 		initComponent();
 
+		makeInteractive();
+
 		list.generateItem = generateItem;
 		list.refreshItem = cast refreshItem;
 		requestRefresh(RegenerateFlatten);

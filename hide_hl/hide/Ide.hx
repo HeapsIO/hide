@@ -9,6 +9,8 @@ class Ide extends hide.tools.IdeData {
 	public static var inst : Ide;
 	public var app : hide.App;
 
+	public var isThumbnailMode = false;
+
 	// Keep a small delay between saves to avoid spamming the disk with writes
 	var localStorageSaveDelay: Float = 0.0;
 	public var isSVNAvailable(default, null): Bool;
@@ -223,7 +225,7 @@ class Ide extends hide.tools.IdeData {
 		var path = new haxe.io.Path(filePath);
 
 		try {
-			switch (path.ext.toLowerCase()) {
+			switch (path.ext?.toLowerCase()) {
 				case "prefab", "matlib":
 					openView(new hide.view.Prefab({path: filePath}), Main, callback);
 				case "fx":

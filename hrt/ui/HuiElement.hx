@@ -21,6 +21,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	@:p public var displayName: String;
 	@:p public var styleEvents: Bool = true;
 
+	// If the element is currently focused by the ui
+	public var focused(default, null): Bool = true;
+
 	/**Tooltip text that appears when the user hovers on the object for a given time**/
 	@:p public var tip(default, set): Null<String> = null;
 	function set_tip(v) {tip = v; makeInteractive(); return v;};
@@ -62,7 +65,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	function set_enable(b) {
 		if( !b && dom != null )
-			dom.hover = dom.active = false;
+			dom.hover = dom.active = dom.focus = false;
 		if( dom != null )
 			dom.toggleClass("disabled", !b);
 		return enable = b;
@@ -244,8 +247,6 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		interactive.onKeyDown = onKeyDownInternal;
 		interactive.onKeyUp = onKeyUpInternal;
 		interactive.onTextInput = onTextInputInternal;
-		interactive.onFocus = onFocusInternal;
-		interactive.onFocusLost = onFocusLostInternal;
 		interactive.enableRightButton = true;
 	}
 
@@ -426,6 +427,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 
 		uiBase.focusView(this);
+		uiBase.focusElement(this, e);
 
 		if (onDoubleClick != null) {
 			var time = haxe.Timer.stamp();
@@ -529,12 +531,18 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 		}
 
+		focused = true;
+		dom.focus = true;
+
 		onFocus(e);
 	}
 
 	function onFocusLostInternal(e: hxd.Event) {
 		if (!enable)
 			return;
+
+		focused = false;
+		dom.focus = false;
 
 		onFocusLost(e);
 	}

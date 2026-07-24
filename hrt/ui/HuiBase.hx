@@ -11,6 +11,7 @@ class HuiBase extends HuiElement {
 	var currentMenu: HuiMenu;
 	public var mainLayout: HuiMainLayout;
 	var focusedView: HuiView<Any>;
+	var focusedElement: HuiElement;
 
 	var checkedCommandEvents: Map<hxd.Event, Bool> = [];
 
@@ -126,6 +127,20 @@ class HuiBase extends HuiElement {
 		var view = element.getView();
 		if (view != null) {
 			focusedView = view;
+		}
+	}
+
+	public function focusElement(element: HuiElement, event: hxd.Event) {
+		while(element != null) {
+			element = Std.downcast(element.parent, HuiElement);
+		}
+
+		if (element != focusedElement) {
+			var old = focusedElement;
+			focusedElement = element;
+
+			old?.onFocusLostInternal(event);
+			focusedElement?.onFocusInternal(event);
 		}
 	}
 

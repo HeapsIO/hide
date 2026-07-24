@@ -10,7 +10,7 @@ class ThumbnailGeneratorApp extends hxd.App {
 			return false;
 
 		hxd.System.createWindow = () -> {
-			new hxd.Window("HideHL - Thumbnail Generator", 64,64,{fixed: true, hidden: true});
+			new hxd.Window("HideHL - Thumbnail Generator", 256,256,{fixed: true, hidden: true});
 		}
 
 		hxd.Res.initLocal();
@@ -23,6 +23,7 @@ class ThumbnailGeneratorApp extends hxd.App {
 	function new(path: String) {
 		super();
 		var ide = new hide.Ide();
+		ide.isThumbnailMode = true;
 		ide.readOnlyConfig = true;
 		@:privateAccess ide.setProject(path);
 	}
@@ -133,6 +134,11 @@ class ThumbnailGenerator {
 		}
 		nw.Window.get().resizeTo(128,128);*/
 
+		if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+			trace("verbose output enabled");
+		else
+			trace("no verbose output");
+
 		bufferedData = haxe.io.Bytes.alloc(maxBufferSize);
 
 		socket = new hxd.net.Socket();
@@ -145,11 +151,15 @@ class ThumbnailGenerator {
 
 		renderTexture = new h3d.mat.Texture(renderRes,renderRes, [Target]);
 
+		new h2d.Bitmap(h2d.Tile.fromTexture(renderTexture), s2d);
+
 		resetScene();
 
-		var handler = new MessageHandler(socket, handleCommand);
 
 		socket.connect(hrt.tools.FileManager.thumbnailGeneratorUrl, hrt.tools.FileManager.thumbnailGeneratorPort, () -> {
+			trace("Connected to main Hide");
+
+			var handler = new MessageHandler(socket, handleCommand);
 		});
 	}
 
@@ -284,9 +294,14 @@ class ThumbnailGenerator {
 		var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
 
 		if (ext == "fbx") {
-			var model = new hrt.prefab.Model(null, null);
-			model.source = cut;
-			model.make(ctx);
+			try {
+				var model = new hrt.prefab.Model(null, null);
+				model.source = cut;
+				model.make(ctx);
+			} catch(e) {
+				trace('miniature render fail for ${toRender.path} : $e');
+				abort = true;
+			}
 		} else if (ext == "prefab" || ext == "l3d" || ext == "fx") {
 			try {
 				var prefab = hxd.res.Loader.currentInstance.load(cut).toPrefab().loadBypassCache();

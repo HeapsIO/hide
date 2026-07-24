@@ -24,6 +24,9 @@ class HuiFileBrowser extends HuiElement {
 
 	@:p public var mode(default, set): BrowserMode = FileTree;
 
+	var zoom : Int = 5;
+	static final zoomLevels = [32, 64, 96, 128,192, 256, 384, 512];
+
 	function set_mode(v: BrowserMode) {
 		mode = v;
 		refreshLayout();
@@ -105,10 +108,26 @@ class HuiFileBrowser extends HuiElement {
 
 		// gallery setup
 		gallery = new HuiVirtualGrid<File>();
+		gallery.dom.setId("gallery");
+
+		@:privateAccess {
+			var oldScroll = gallery.virtualList.onWheel;
+			gallery.virtualList.onWheel = (e) -> {
+				if (hxd.Key.isDown(hxd.Key.CTRL)) {
+					e.cancel = true;
+					e.propagate = false;
+
+					zoom += e.wheelDelta < 0 ? 1 : -1;
+					zoom = hxd.Math.iclamp(zoom, 0, zoomLevels.length-1);
+					refreshZoom();
+				} else {
+					oldScroll(e);
+				}
+			}
+		}
 
 		gallery.generateItem = generateGalleryItem;
-		gallery.itemBaseWidth = 64;
-		gallery.itemBaseHeight = 64;
+		refreshZoom();
 
 		// Splitter setup
 		splitter = new HuiSplitContainer();
@@ -121,6 +140,13 @@ class HuiFileBrowser extends HuiElement {
 		fileManager.watchFileChange(onFileChange);
 	}
 
+	function refreshZoom() {
+		var zoomPx = zoomLevels[zoom];
+		gallery.itemBaseHeight = zoomPx + 16;
+		gallery.itemBaseWidth = zoomPx + 16;
+		@:privateAccess gallery.virtualList.clear();
+	}
+
 	function treeSelectionChanged() {
 		refreshGallery();
 	}
@@ -128,15 +154,34 @@ class HuiFileBrowser extends HuiElement {
 	function generateGalleryItem(file: File) : HuiElement {
 		var item = new HuiFileBrowserGalleryItem();
 		item.nameText.text = file.name;
-		file.getIcon((miniaturePath) -> {
-			if (miniaturePath == null)
-				return;
-			item.icon.backgroundType = "hui";
-			miniaturePath = StringTools.replace(miniaturePath, hide.Ide.inst.projectDir + "/res/", "");
-			var tex = hxd.res.Loader.currentInstance.load(miniaturePath)?.toTexture() ?? h3d.mat.Texture.fromColor(0xFF00FF);
-			item.icon.huiBg.setTexture(tex);
-			item.icon.huiBg.imageMode = Fit;
-		});
+		var zoomPx = zoomLevels[zoom];
+		item.icon.setWidth(zoomPx);
+		item.icon.setHeight(zoomPx);
+
+		item.icon.backgroundType = "hui";
+
+		var icon = getItemIcon(file);
+		item.icon.huiBg.setTexture(getItemIcon(file).toTexture());
+		item.icon.huiBg.imageMode = Fit;
+		item.icon.huiBg.imageIsSdf = true;
+
+		item.onClick = (e) -> {
+			if (e.button == 1) {
+				itemContextMenu(file);
+			}
+		}
+		if (file.kind != Dir) {
+			file.getIcon((miniaturePath) -> {
+				if (miniaturePath == null)
+					return;
+				miniaturePath = StringTools.replace(miniaturePath, hide.Ide.inst.projectDir + "/res/", "");
+				var tex = hxd.res.Loader.currentInstance.load(miniaturePath)?.toTexture() ?? h3d.mat.Texture.fromColor(0xFF00FF);
+				item.icon.huiBg.setTexture(tex);
+				item.icon.huiBg.imageMode = Fit;
+				item.icon.huiBg.imageIsSdf = false;
+
+			});
+		}
 		return item;
 	}
 

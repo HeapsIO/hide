@@ -12,6 +12,8 @@ class FileBrowser extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Bro
 		var path = state.path ?? hide.Ide.inst.resourceDir;
 		fileBrowser = new HuiFileBrowser(path, this);
 		fileBrowser.onOpen = (file) -> {
+			if (file.kind == Dir)
+				return;
 			hide.Ide.inst.openFile(file.path);
 		};
 		updateMode(state.mode ?? FileTree);

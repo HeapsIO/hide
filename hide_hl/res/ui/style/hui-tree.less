@@ -36,6 +36,18 @@ hui-tree {
 		auto-size-height: 1;
 		fill-height: 1;
 	}
+
+	&:focus {
+		hui-tree-line.selected {
+			> hui-background {
+				background: @color-accent;
+			}
+		}
+
+		&:hover > hui-background {
+			background: lighten(@color-accent, @light-hover);
+		}
+	}
 }
 
 hui-tree-line {

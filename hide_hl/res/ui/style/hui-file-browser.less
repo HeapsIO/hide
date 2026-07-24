@@ -1,31 +1,59 @@
 hui-file-browser {
+
+	#gallery {
+		>hui-background {
+				outline: 2 yellow;
+		}
+
+		#virtual-list {
+			>hui-background {
+				outline: 1 red;
+			}
+
+			hui-virtual-grid-row {
+				>hui-background {
+					outline: 1 blue;
+				}
+			}
+		}
+	}
+
 	hui-file-browser-gallery-item {
 		padding: 4;
 		fill-width: 1;
 		fill-height: 1;
 		auto-size: 1;
+		overflow: hidden;
+
+		&:hover {
+			>hui-background {
+				outline: 1 green;
+			}
+		}
 
 		#border {
 			layout: vertical;
 			fill-width: 1;
 			fill-height: 1;
 			auto-size: 1;
-			>hui-background {
-				outline: 1 green;
-			}
+
+
 		}
 		#icon {
-			fill-width: 1;
-			fill-height: 1;
-			auto-size: 1;
-			> hui-background {
-				background: red;
+			halign: middle;
+			valign: top;
+			>hui-background {
+				outline: 1 purple;
 			}
+
 		}
 		#name-container {
+			height: 12;
+			auto-size-height: 1;
 			overflow: hidden;
 		}
 		#name-text {
+			valign: top;
 			text-align: multiline-center;
 		}
 	}

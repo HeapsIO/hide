@@ -22,7 +22,7 @@ class HuiVirtualGrid<T> extends HuiElement {
 	@:p public var itemBaseWidth(default, set): Float = 64;
 	@:p public var itemBaseHeight(default, set): Float = 64;
 
-	function set_itemBaseWidth(v: Float) {needRefresh = true; updateItemsPerRow(); return itemBaseWidth = v;}
+	function set_itemBaseWidth(v: Float) {itemBaseWidth = v; needRefresh = true; updateItemsPerRow(); return v;}
 	function set_itemBaseHeight(v: Float) {needRefresh = true; return itemBaseHeight = v;}
 
 	public var generateItem(default, set) : (item: T) -> HuiElement = null;
@@ -34,6 +34,7 @@ class HuiVirtualGrid<T> extends HuiElement {
 		initComponent();
 
 		virtualList = new HuiVirtualList(this);
+		virtualList.dom.setId("virtual-list");
 		virtualList.setItems([]);
 
 		virtualList.generateItem = listGenerateItem;
@@ -77,7 +78,8 @@ class HuiVirtualGrid<T> extends HuiElement {
 	}
 
 	function updateItemsPerRow() {
-		itemsPerRow = hxd.Math.floor(innerWidth / itemBaseWidth);
+		itemsPerRow = hxd.Math.floor(calculatedWidth / itemBaseWidth);
+		trace(calculatedWidth, itemBaseWidth, itemsPerRow);
 		updateVirtualListItems();
 	}
 
@@ -87,6 +89,7 @@ class HuiVirtualGrid<T> extends HuiElement {
 			virtualList.items.push(items[i * itemsPerRow]);
 		}
 		virtualList.setItems(virtualList.items);
+		virtualList.clear();
 	}
 }
 

@@ -48,6 +48,13 @@ class HuiVirtualList<T> extends HuiElement {
 		needRefresh = true;
 	}
 
+	public function clear() {
+		for (element in elements)
+			element.remove();
+		elements.clear();
+		needRefresh = true;
+	}
+
 	function new(?parent) {
 		super(parent);
 		initComponent();

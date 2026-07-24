@@ -521,7 +521,9 @@ class FileManager {
 			ignorePatterns.push(new EReg(pat, "i"));
 
 		initFileSystem();
-		initThumbnailRenderer();
+
+		if (!hide.Ide.inst.isThumbnailMode)
+			initThumbnailRenderer();
 	}
 
 	function initFileSystem() {
@@ -573,7 +575,7 @@ class FileManager {
 				}
 			});
 
-			thumbnailRendererProcess = new sys.io.Process("hl", [Sys.programPath(), "--thumbnail", hide.Ide.inst.projectDir], false);
+			thumbnailRendererProcess = new sys.io.Process("hl", [Sys.programPath(), "--thumbnail", hide.Ide.inst.projectDir], true);
 		} catch(e) {
 			trace("Couldn't launch thumbnail renderer process : " + e);
 		}
@@ -622,10 +624,10 @@ class FileManager {
 		}
 	}
 	function processPendingMessages() {
+		pendingMessageQueued = false;
 		if (generatorSocket == null) {
 			return;
 		}
-		pendingMessageQueued = false;
 		var len = hxd.Math.imin(300, pendingMessages.length);
 		for (i in 0 ... len) {
 			generatorSocket.out.writeString(pendingMessages[i]);
