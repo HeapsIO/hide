@@ -960,6 +960,7 @@ class Editor extends Component {
 		}
 
 		var needRefresh = false;
+		var modifiedLines = [];
 		beginChanges();
 		if( cursor.x < 0 ) {
 			// delete lines
@@ -997,6 +998,7 @@ class Editor extends Component {
 						continue;
 					changeObject(line, c, def);
 					line.cells[x].refresh();
+					modifiedLines.pushUnique(line);
 					needRefresh = needRefresh || (c.type == TProperties || c.type == TList);
 
 					// Move cursor for props deletion
@@ -1010,9 +1012,20 @@ class Editor extends Component {
 		}
 
 		endChanges();
-		if (needRefresh)
+		if (needRefresh) {
 			refreshAll();
-		updateFilters();
+			updateFilters();
+		}
+		else {
+			for (l in modifiedLines) {
+				l.filtered = isLineFilteredByStatus(l) || isLineFilteredBySearch(l.table, l);
+				if (l.filtered)
+					l.hide();
+				else
+					l.create();
+			}
+
+		}
 	}
 
 	public function changeObject( line : Line, column : cdb.Data.Column, value : Dynamic ) {
