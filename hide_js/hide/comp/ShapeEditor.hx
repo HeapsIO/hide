@@ -114,6 +114,7 @@ class ShapeEditor extends Component {
 		if (selectedShapeIdx != -1 && selectedShapeIdx < this.shapes.length) {
 			inspect(this.shapes[selectedShapeIdx]);
 			gizmo?.setTransform(interactives[selectedShapeIdx].getAbsPos());
+			gizmo.setScale(1);
 		}
 		else {
 			stopShapeEditing();
@@ -276,11 +277,13 @@ class ShapeEditor extends Component {
 		}
 
 		var el = new Element(element[0].ownerDocument.body);
-		el.on("mousemove.shapeeditor", (e) -> {
+		var updateGizmo = (e) -> {
 			gizmo.update(0);
 			e.stopPropagation();
 			e.preventDefault();
-		});
+		}
+		el.on("mousemove.shapeeditor", updateGizmo);
+		el.on("mousewheel.shapeeditor", updateGizmo);
 	}
 
 	function stopShapeEditing() {
@@ -290,6 +293,7 @@ class ShapeEditor extends Component {
 		@:privateAccess scene.editor.showGizmo = true;
 		var el = new Element(element[0].ownerDocument.body);
 		el.off("mousemove.shapeeditor");
+		el.off("mousewheel.shapeeditor");
 		gizmo.remove();
 		gizmo = null;
 		@:privateAccess scene.editor.gizmo.onChangeMode = (mode) -> {};
@@ -312,6 +316,7 @@ class ShapeEditor extends Component {
 			interactives[selectedShapeIdx] = getInteractive(this.shapes[selectedShapeIdx], true, rootDebugObj);
 
 			gizmo?.setTransform(interactives[selectedShapeIdx].getTransform());
+			gizmo.setScale(1);
 			updateShapeList();
 			inspect(this.shapes[selectedShapeIdx]);
 			onChange();
@@ -472,6 +477,7 @@ class ShapeEditor extends Component {
 				}
 
 				selectedShapeIdx = idx;
+				startShapeEditing();
 
 				interactive = interactives[selectedShapeIdx];
 				interactiveMaterial = interactive.material;
@@ -481,6 +487,7 @@ class ShapeEditor extends Component {
 				el.addClass("selected");
 				inspect(s);
 				gizmo?.setTransform(interactives[selectedShapeIdx].getAbsPos());
+				gizmo.setScale(1);
 				interactiveMaterial.color.setColor(SELECTED_COLOR);
 				intersectionMaterial.color.setColor(SELECTED_INTERSECTION_COLOR);
 
