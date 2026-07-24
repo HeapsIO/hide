@@ -296,7 +296,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		for (i => _ in currentSearch) {
 			var child = currentSearch[currentSearch.length - i - 1];
 			if ((child.iconPath == null || child.iconPath == "loading") && child.kind == File) {
-				child.getIcon((_) -> fancyGallery.queueRefresh());
+				child.getIcon((_) -> fancyGallery.refreshThumbnail(child));
 			}
 		}
 
@@ -1374,7 +1374,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}});
 		}
 
-		hide.comp.ContextMenu.createFromEvent(event, options);
+		hide.comp.ContextMenu.createFromPoint(event.clientX, event.clientY, options);
 	}
 
 	function onFindPathRef(path: String) {

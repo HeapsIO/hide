@@ -538,12 +538,7 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 
 		genElement.title = data.title;
 
-		var img = genElement.querySelector("fancy-thumbnail");
-		var imgString = getThumbnail(data.item) ?? '<fancy-image style="background-image:url(\'res/icons/svg/unknown_file.svg\')"></fancy-image>';
-		if (imgString != data.thumbnailStringCache) {
-			img.innerHTML = imgString;
-			data.thumbnailStringCache = imgString;
-		}
+		refreshThumbnailElement(genElement, data);
 
 		var icon = genElement.querySelector(".icon-placement");
 		var iconString = getIcon(data.item);
@@ -553,6 +548,22 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		}
 
 		return genElement;
+	}
+
+	public function refreshThumbnail(item: GalleryItem) {
+		var data = itemMap.get(cast item);
+		if (data?.element != null) {
+			refreshThumbnailElement(data.element, data);
+		}
+	}
+
+	function refreshThumbnailElement(element: js.html.Element, data: GalleryItemData<GalleryItem>) {
+		var img = element.querySelector("fancy-thumbnail");
+		var imgString = getThumbnail(data.item) ?? '<fancy-image style="background-image:url(\'res/icons/svg/unknown_file.svg\')"></fancy-image>';
+		if (imgString != data.thumbnailStringCache) {
+			img.innerHTML = imgString;
+			data.thumbnailStringCache = imgString;
+		}
 	}
 
 	function rebuildItems() {
