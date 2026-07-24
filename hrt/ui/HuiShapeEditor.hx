@@ -490,6 +490,17 @@ class HuiShapeEditor extends HuiElement {
 		this.interactives = [];
 	}
 
+	public function createDefaultShape(obj : h3d.scene.Object) {
+		var bounds = obj.getBounds();
+		bounds.transform(obj.defaultTransform.getInverse());
+		var size = bounds.getSize();
+		var defBox = Box(bounds.getCenter(), new h3d.Vector(0, 0, 0), size.x, size.y, size.z);
+		this.shapes = [defBox];
+		uninspect();
+		updateShapeList();
+		createAllInteractives();
+	}
+
 	function updateShapeList() {
 		shapeList.removeChildren();
 

@@ -311,6 +311,8 @@ class HuiModelInspector extends HuiElement {
 				case hide.view.Model.CollisionMode.Mesh:
 					Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
 				case hide.view.Model.CollisionMode.Shapes:
+					if (prevMode != curMode && @:privateAccess shapeEditor.shapes?.length == 0)
+						shapeEditor.createDefaultShape(obj);
 					var shapes = settings.fromShapeEditor(shapeEditor.getValue());
 					if (shapes.length == 0)
 						curParams = null;
