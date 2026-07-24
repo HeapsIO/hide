@@ -366,7 +366,7 @@ class VolumetricLighting extends RendererFX {
 	@:s public var blend : h3d.mat.PbrMaterial.PbrBlend = Alpha;
 	@:s public var color : Int = 0xFFFFFF;
 	@:s public var steps : Int = 10;
-	@:s public var mode : VolumetricLightingMode = All;
+	@:s public var mode : VolumetricLightingMode = DirectionalOnly;
 	@:s public var blur : Float = 0.0;
 	@:s public var blurDepthThreshold : Float = 10.0;
 	@:s public var startDistance : Float = 0.0;
@@ -664,80 +664,11 @@ class VolumetricLighting extends RendererFX {
 	}
 
 	#if editor
-
 	override function edit( ctx : hide.prefab.EditContext ) {
-		super.edit(ctx);
-		ctx.properties.add(new hide.Element(
-			'<div class="group" name="Fog">
-				<dl>
-					<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
-					<dt>Blend</dt>
-					<dd>
-						<select field="blend">
-							<option value="None">None</option>
-							<option value="Alpha">Alpha</option>
-							<option value="Add">Add</option>
-							<option value="AlphaAdd">AlphaAdd</option>
-							<option value="Multiply">Multiply</option>
-							<option value="AlphaMultiply">AlphaMultiply</option>
-						</select>
-					</dd>
-					<dt>After fx</dt><dd><input type="checkbox" field="AFTER_FX"/></dd>
-					<dt>Begin</dt><dd><input type="range" min="0" field="startDistance"/></dd>
-					<dt>Start distance</dt><dd><input type="range" min="0" field="startDistance"/></dd>
-					<dt>End distance</dt><dd><input type="range" min="0" field="endDistance"/></dd>
-					<dt>Distance opacity</dt><dd><input type="range" min="0" max="1" field="distanceOpacity"/></dd>
-					<dt>Env power</dt><dd><input type="range" min="0" max="2" field="fogEnvPower"/></dd>
-					<dt>Env color mult</dt><dd><input type="range" min="0" max="1" field="fogEnvColorMult"/></dd>
-					<dt>Color</dt><dd><input type="color" field="color"/></dd>
-					<dt>Density</dt><dd><input type="range" min="0" max="2" field="fogDensity"/></dd>
-					<dt>Use noise</dt><dd><input type="range" min="0" max="1" field="fogUseNoise"/></dd>
-					<dt>Bottom [m]</dt><dd><input type="range" min="0" max="1000" field="fogBottom"/></dd>
-					<dt>Top [m]</dt><dd><input type="range" min="0" max="1000" field="fogTop"/></dd>
-					<dt>Height falloff</dt><dd><input type="range" min="0" max="3" field="fogHeightFalloff"/></dd>
-					<dt>Follow Camera Height</dt><dd><input type="checkbox" field="offsetCamHeight"/></dd>
-				</dl>
-			</div>
-			<div class="group" name="Second fog">
-				<dl>
-					<dt>Color</dt><dd><input type="color" field="secondFogColor"/></dd>
-					<dt>Density</dt><dd><input type="range" min="0" max="2" field="secondFogDensity"/></dd>
-					<dt>Use noise</dt><dd><input type="range" min="0" max="1" field="secondFogUseNoise"/></dd>
-					<dt>Bottom [m]</dt><dd><input type="range" min="0" max="1000" field="secondFogBottom"/></dd>
-					<dt>Top [m]</dt><dd><input type="range" min="0" max="1000" field="secondFogTop"/></dd>
-					<dt>Height falloff</dt><dd><input type="range" min="0" max="3" field="secondFogHeightFalloff"/></dd>
-				</dl>
-			</div>
-			<div class="group" name="Emissive">
-				<dl>
-					<dt>Emissive color</dt><dd><input type="color" field="emissiveColor"/></dd>
-					<dt>Emissive Intensity</dt><dd><input type="range" min="0" max="1" field="emissiveIntensity"/></dd>
-				</dl>
-			</div>
-			<div class="group" name="Noise">
-				<dl>
-					<dt><font color=#FF0000>Octaves</font></dt><dd><input type="range" step="1" min="0" max="4" field="noiseOctave"/></dd>
-					<dt>Scale</dt><dd><input type="range" min="0" max="100" field="noiseScale"/></dd>
-					<dt>Turmoil</dt><dd><input type="range" min="0" max="100" field="noiseTurmoil"/></dd>
-					<dt>Persistence</dt><dd><input type="range" min="0" max="1" field="noisePersistence"/></dd>
-					<dt>Lacunarity</dt><dd><input type="range" min="0" max="2" field="noiseLacunarity"/></dd>
-					<dt>Sharpness</dt><dd><input type="range" min="0" max="2" field="noiseSharpness"/></dd>
-				</dl>
-			</div>
-			<div class="group" name="Rendering">
-				<dl>
-					<dt><font color=#FF0000>Steps</font></dt><dd><input type="range" step="1" min="0" max="255" field="steps"/></dd>
-					<dt>Blur</dt><dd><input type="range" step="1" min="0" max="100" field="blur"/></dd>
-					<dt>Blur depth threshold</dt><dd><input type="range" field="blurDepthThreshold"/></dd>
-					<dt>Dithering intensity</dt><dd><input type="range" min="0" max="1" field="ditheringIntensity"/></dd>
-					<dt>Fog quality distance</dt><dd><input type="range" min="0" max="200" field="maxCamDist"/></dd>
-				</dl>
-			</div>
-			'), this, function(pname) {
-				ctx.onChange(this, pname);
-		});
+		ctx.properties.add(new hide.Element('
+			<p style="color: red;"> Use new editor </p>
+		'), this);
 	}
-
 	#end
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {

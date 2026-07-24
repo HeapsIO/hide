@@ -180,6 +180,7 @@
 
 	"sceneeditor.preferEdit2": [
 		//"hrt.prefab.Object3D",
+		"hrt.prefab.rfx.VolumetricLighting",
 		"hrt.prefab.l3d.KitTest",
 		"hrt.prefab.l3d.LocalVolumetricLighting",
 		"hrt.shader.WireframeOverlay"
