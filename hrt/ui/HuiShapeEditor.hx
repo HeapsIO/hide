@@ -163,6 +163,7 @@ class HuiShapeEditor extends HuiElement {
 		if (selectedShapeIdx != -1 && selectedShapeIdx < this.shapes.length) {
 			inspect(this.shapes[selectedShapeIdx]);
 			gizmo?.setTransform(interactives[selectedShapeIdx].getAbsPos());
+			gizmo?.setScale(1);
 		}
 		else {
 			stopShapeEditing();
@@ -338,6 +339,7 @@ class HuiShapeEditor extends HuiElement {
 			interactives[selectedShapeIdx] = getInteractive(this.shapes[selectedShapeIdx], true, rootDebugObj);
 
 			gizmo?.setTransform(interactives[selectedShapeIdx].getTransform());
+			gizmo?.setScale(1);
 			updateShapeList();
 			inspect(this.shapes[selectedShapeIdx]);
 			onChange();
@@ -520,6 +522,7 @@ class HuiShapeEditor extends HuiElement {
 				}
 
 				selectedShapeIdx = idx;
+				startShapeEditing();
 
 				interactive = interactives[selectedShapeIdx];
 				interactiveMaterial = interactive.material;
@@ -530,6 +533,7 @@ class HuiShapeEditor extends HuiElement {
 				shapeEl.dom.addClass("selected");
 				inspect(s);
 				gizmo?.setTransform(interactives[selectedShapeIdx].getAbsPos());
+				gizmo?.setScale(1);
 				interactiveMaterial.color.setColor(SELECTED_COLOR);
 				intersectionMaterial.color.setColor(SELECTED_INTERSECTION_COLOR);
 
