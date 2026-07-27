@@ -402,18 +402,15 @@ class Gizmo extends h3d.scene.Object {
 				case _: DEFAULT_COLOR;
 			});
 			mat.color.setColor(color);
-
-			var highlight = hxd.Math.colorLerp(color, 0xffffff, 0.3);
 			var interactive = new h3d.scene.Interactive(getHandleCollider(o), o);
 			interactive.priority = o.name.indexOf("Full_Scale") >= 0 ? 101 : 100;
 			interactive.onOver = function(e : hxd.Event) {
 				e.propagate = false;
-				mat.color.setColor(highlight);
-				mat.color.w = 1.0;
+				setHighlight(o.name, axis, true);
 			}
 			interactive.onOut = function(e : hxd.Event) {
 				e.propagate = false;
-				mat.color.setColor(color);
+				setHighlight(o.name, axis, false);
 			}
 			interactive.onPush = function(e) {
 				e.propagate = false;
@@ -467,6 +464,36 @@ class Gizmo extends h3d.scene.Object {
 		}
 
 		return obj.primitive.getCollider();
+	}
+
+	function setHighlight(name : String, axis : Int, isHighlighted: Bool) {
+		var axisString = switch (axis) {
+			case 0: "_X_";
+			case 1: "_Y_";
+			case 2: "_Z_";
+			default: "NULL";
+		};
+		
+		var color = (switch (axis) {
+			case 0: X_COLOR;
+			case 1: Y_COLOR;
+			case 2: Z_COLOR;
+			case _: DEFAULT_COLOR;
+		});
+		var highlight = hxd.Math.colorLerp(color, 0xffffff, 0.3);
+
+		function isSame(name : String) {
+			return name.indexOf("_Branch") >= 0 || name.indexOf("_Scale") >= 0 || name.indexOf("_Translate") >= 0;
+		}
+
+		for (o in gizmo.getMeshes()) {
+			if (o.name != name && (o.name.indexOf(axisString) < 0 || !isSame(o.name) || !isSame(name)))
+				continue;
+			
+			var mat = o.getMaterials()[0];
+			mat.color.setColor(isHighlighted ? highlight : color);
+			mat.color.w = 1.0;
+		}
 	}
 
 	function getGizmoLocalRotation() {
