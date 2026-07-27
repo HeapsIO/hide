@@ -466,7 +466,7 @@ class Gizmo extends h3d.scene.Object {
 
 		if (obj.name.indexOf("_Branch") >= 0) {
 			var bounds = obj.primitive.getBounds();
-			var scale = #if editor_hl 2 #elseif editor 4 #end;
+			var scale = #if editor_hl 2 #elseif editor 4 #else 1 #end;
 			switch (axis) {
 				case 0:
 					bounds.zMin *= scale;
@@ -499,7 +499,7 @@ class Gizmo extends h3d.scene.Object {
 			case 2: "_Z_";
 			default: "NULL";
 		};
-		
+
 		var color = (switch (axis) {
 			case 0: X_COLOR;
 			case 1: Y_COLOR;
@@ -515,7 +515,7 @@ class Gizmo extends h3d.scene.Object {
 		for (o in gizmo.getMeshes()) {
 			if (o.name == null || o.name != name && (o.name.indexOf(axisString) < 0 || !isSame(o.name) || !isSame(name)))
 				continue;
-			
+
 			var mat = o.getMaterials()[0];
 			mat.color.setColor(isHighlighted ? highlight : color);
 			mat.color.w = 1.0;
