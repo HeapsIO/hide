@@ -30,9 +30,6 @@ class HuiShapeEditor extends HuiElement {
 				</hui-element>
 				<hui-element id="edition-el" class="vertical">
 					<hui-element class="horizontal">
-						<hui-text("Edit Shape") class="label"/><hui-button class="value" id="edit-btn"><hui-icon("edit")/></hui-button>
-					</hui-element>
-					<hui-element class="horizontal">
 						<hui-text("Center") class="label"/>
 						<hui-element class="horizontal value group">
 							<hui-input-box class="value" id="center-x"/>
@@ -110,9 +107,6 @@ class HuiShapeEditor extends HuiElement {
 		shapeSelectEl.items = [for (idx => s in allowedShapes) { value: idx, label: '${s}' }];
 		shapeSelectEl.value = 0;
 
-		if (options != null && options?.disableShapeEdition)
-			editBtn.parent.visible = false;
-
 		addBtn.onClick = (e) -> {
 			this.shapes.push(Box(new h3d.col.Point(0, 0, 0), new h3d.Vector(0, 0, 0), 1, 1, 1));
 			updateShapeList();
@@ -138,13 +132,6 @@ class HuiShapeEditor extends HuiElement {
 			uninspect();
 			updateShapeList();
 			onChange();
-		}
-
-		editBtn.onClick = (e) -> {
-			if (isInShapeEdition)
-				stopShapeEditing();
-			else
-				startShapeEditing();
 		}
 
 		uninspect();
@@ -192,7 +179,6 @@ class HuiShapeEditor extends HuiElement {
 
 	function startShapeEditing() {
 		isInShapeEdition = true;
-		editBtn.dom.toggleClass("activated", true);
 
 		var lclOffsetPosition = new h3d.Vector(0, 0, 0);
 		var lclOffsetRotation = new h3d.Vector(0, 0, 0);
@@ -319,7 +305,6 @@ class HuiShapeEditor extends HuiElement {
 
 	function stopShapeEditing() {
 		isInShapeEdition = false;
-		editBtn.dom.toggleClass("activated", false);
 
 		gizmo.visible = false;
 	}
