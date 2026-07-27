@@ -254,7 +254,7 @@ class Texture extends HuiView<{path: String}> {
 		}
 
 		viewer.onWheel = (e : hxd.Event) -> {
-			var amount = e.wheelDelta * -0.01;
+			var amount = (e.wheelDelta * -50) / hxd.Math.max(bmp.tile.height, bmp.tile.height);
 			var newZoom = hxd.Math.max(zoom + amount, MIN_ZOOM);
 
 			var absX = (e.relX - pan.x) / zoom;
