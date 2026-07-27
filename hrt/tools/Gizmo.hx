@@ -114,6 +114,7 @@ class Gizmo extends h3d.scene.Object {
 	var initialAbsPos : h3d.Matrix;
 	var initialRay : h3d.col.Ray;
 	var initialMousePos : h2d.col.Point;
+	var interactives : Array<h3d.scene.Interactive> = [];
 
 	public function new(parent: h3d.scene.Object) {
 		super(parent);
@@ -385,7 +386,7 @@ class Gizmo extends h3d.scene.Object {
 		gizmo = model.makeObject();
 
 		for (o in gizmo.getMeshes()) {
-			var axis = o.name.indexOf("_X_") >= 0 ? 0 : o.name.indexOf("_Y_") >= 0 ? 1 : o.name.indexOf("_Z_") >= 0 ? 2 : -1;
+			var axis = getAxis(o.name);
 			var isPlane = o.name.indexOf("Plane") >= 0;
 
 			var mat = o.getMaterials()[0];
@@ -404,14 +405,15 @@ class Gizmo extends h3d.scene.Object {
 			});
 			mat.color.setColor(color);
 			var interactive = new h3d.scene.Interactive(getHandleCollider(o, axis), o);
+			interactives.push(interactive);
 			interactive.priority = o.name.indexOf("Full_Scale") >= 0 ? 101 : 100;
 			interactive.onOver = function(e : hxd.Event) {
 				e.propagate = false;
-				setHighlight(o.name, axis, true);
+				updateHighlight();
 			}
 			interactive.onOut = function(e : hxd.Event) {
 				e.propagate = false;
-				setHighlight(o.name, axis, false);
+				updateHighlight();
 			}
 			interactive.onPush = function(e) {
 				e.propagate = false;
@@ -522,6 +524,20 @@ class Gizmo extends h3d.scene.Object {
 		}
 	}
 
+	function updateHighlight() {
+		// Need to disable highlight before enabling it otherwise it creates a flicker
+		for (int in interactives) {
+			var name = int.parent.name;
+			if (!int.isOver())
+				setHighlight(name, getAxis(name), false);	
+		}
+		for (int in interactives) {
+			var name = int.parent.name;
+			if (int.isOver())
+				setHighlight(name, getAxis(name), true);	
+		}
+	}
+
 	function getGizmoLocalRotation() {
 		var euler = new h3d.Vector(0, 0, 0);
 		if (objects == null || objects.length <= 0)
@@ -532,6 +548,13 @@ class Gizmo extends h3d.scene.Object {
 			invDefMat = objects[objects.length - 1].defaultTransform?.getInverse();
 		euler = invDefMat.multiplied(objects[objects.length - 1].getAbsPos()).getEulerAngles();
 		return euler;
+	}
+
+	function getAxis(name: String) {
+		if (name.indexOf("_X_") >= 0) return 0;
+		if (name.indexOf("_Y_") >= 0) return 1;
+		if (name.indexOf("_Z_") >= 0) return 2;
+		return -1;
 	}
 
 	public dynamic function snap(v: Float, mode: EditMode) : Float { return v; }
