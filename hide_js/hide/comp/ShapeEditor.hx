@@ -51,8 +51,6 @@ class ShapeEditor extends Component {
 				<select id="shape-type">
 					${[for (s in allowedShapes) '<option value="${Shape.createByName(s, []).getIndex()}">${s}</option>'].join("")}
 				</select>
-				<label class="edition">Edit Shape</label>
-				<button id="edit-btn" class="edition"><div class="icon ico ico-pencil"></div></button>
 			</div>
 			<div id="extra-params" class="edition"></div>
 		</div>'));
@@ -89,13 +87,6 @@ class ShapeEditor extends Component {
 			onChange();
 			e.preventDefault();
 			e.stopPropagation();
-		});
-
-		element.find("#edit-btn").on("click", function() {
-			if (isInShapeEdition)
-				stopShapeEditing();
-			else
-				startShapeEditing();
 		});
 
 		uninspect();
@@ -137,8 +128,10 @@ class ShapeEditor extends Component {
 
 
 	function startShapeEditing() {
+		if (isInShapeEdition)
+			stopShapeEditing();
+		
 		isInShapeEdition = true;
-		element.find("#edit-btn").toggleClass("activated", true);
 
 		var lclOffsetPosition = new h3d.Vector(0, 0, 0);
 		var lclOffsetRotation = new h3d.Vector(0, 0, 0);
@@ -288,7 +281,6 @@ class ShapeEditor extends Component {
 
 	function stopShapeEditing() {
 		isInShapeEdition = false;
-		element.find("#edit-btn").toggleClass("activated", false);
 
 		@:privateAccess scene.editor.showGizmo = true;
 		var el = new Element(element[0].ownerDocument.body);
