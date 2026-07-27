@@ -209,6 +209,7 @@ class Gizmo extends h3d.scene.Object {
 
 	public function rotationMode() {
 		for (o in gizmo.getMeshes()) {
+			if (o.name == null) continue;
 			var visible = o.name.indexOf("_Rotate") >= 0;
 			o.visible = visible;
 		}
@@ -402,7 +403,7 @@ class Gizmo extends h3d.scene.Object {
 				case _: DEFAULT_COLOR;
 			});
 			mat.color.setColor(color);
-			var interactive = new h3d.scene.Interactive(getHandleCollider(o), o);
+			var interactive = new h3d.scene.Interactive(getHandleCollider(o, axis), o);
 			interactive.priority = o.name.indexOf("Full_Scale") >= 0 ? 101 : 100;
 			interactive.onOver = function(e : hxd.Event) {
 				e.propagate = false;
@@ -455,12 +456,37 @@ class Gizmo extends h3d.scene.Object {
 		return gizmo;
 	}
 
-	function getHandleCollider(obj: h3d.scene.Mesh) : h3d.col.Collider {
+	function getHandleCollider(obj: h3d.scene.Mesh, axis : Int) : h3d.col.Collider {
 		if (obj.name.indexOf("_Plane") >= 0 || obj.name.indexOf("_Translate") >= 0 || obj.name.indexOf("_Scale") >= 0) {
 			var bounds = obj.primitive.getBounds();
 			var pos = bounds.getCenter();
 			var sphere = new h3d.col.Sphere(pos.x, pos.y, pos.z, (bounds.getSize().length() / 2) * 1.2);
 			return sphere;
+		}
+
+		if (obj.name.indexOf("_Branch") >= 0) {
+			var bounds = obj.primitive.getBounds();
+			var scale = #if editor_hl 2 #elseif editor 4 #end;
+			switch (axis) {
+				case 0:
+					bounds.zMin *= scale;
+					bounds.zMax *= scale;
+					bounds.yMin *= scale;
+					bounds.yMax *= scale;
+				case 1:
+					bounds.xMin *= scale;
+					bounds.xMax *= scale;
+					bounds.zMin *= scale;
+					bounds.zMax *= scale;
+				case 2:
+					bounds.xMin *= scale;
+					bounds.xMax *= scale;
+					bounds.yMin *= scale;
+					bounds.yMax *= scale;
+				default:
+			}
+
+			return bounds;
 		}
 
 		return obj.primitive.getCollider();
@@ -487,7 +513,7 @@ class Gizmo extends h3d.scene.Object {
 		}
 
 		for (o in gizmo.getMeshes()) {
-			if (o.name != name && (o.name.indexOf(axisString) < 0 || !isSame(o.name) || !isSame(name)))
+			if (o.name == null || o.name != name && (o.name.indexOf(axisString) < 0 || !isSame(o.name) || !isSame(name)))
 				continue;
 			
 			var mat = o.getMaterials()[0];
