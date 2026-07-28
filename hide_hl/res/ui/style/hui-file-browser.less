@@ -35,7 +35,7 @@ hui-file-browser {
 			valign: top;
 		}
 		#name-container {
-			height: 12;
+			height: 24;
 			auto-size-height: 1;
 			overflow: hidden;
 			halign: middle;
@@ -65,10 +65,6 @@ hui-file-browser {
 				min-width: 16;
 			}
 		}
-
-		> hui-background {
-			background: green;
-		}
 	}
 
 	.vertical {
@@ -89,10 +85,6 @@ hui-file-browser-main-toolbar-widget {
 		auto-size: 1;
 		min-height: 1;
 	}
-
-	> hui-background {
-		background: blue;
-	}
 }
 
 hui-file-browser-second-toolbar-widget {
@@ -108,8 +100,57 @@ hui-file-browser-second-toolbar-widget {
 
 		min-height: 20;
 	}
+}
 
-	> hui-background {
-		background: red;
+hui-file-browser-gallery-widget {
+	fill-width: true;
+	fill-height: true;
+	auto-size: 1;
+
+	&.no-results {
+		#gallery {
+			visible: false;
+		}
+		#no-results {
+			visible: true;
+		}
+	}
+	&.no-results-search {
+		#for-search {
+			visible: true;
+		}
+		#for-empty {
+			visible: false;
+		}
+	}
+}
+
+hui-file-browser-no-result-widget {
+	visible: false;
+
+	fill-width: true;
+	fill-height: true;
+	auto-size: 1;
+
+	layout: vertical;
+
+	#for-search {
+		visible: false;
+	}
+
+	> hui-element {
+		layout: vertical;
+		fill-width: true;
+		fill-height: true;
+		auto-size: 1;
+		spacing: 8;
+		> * {
+			halign: middle;
+			valign: middle;
+		}
+
+		#buttons {
+			spacing: 8;
+		}
 	}
 }

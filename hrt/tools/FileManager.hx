@@ -111,7 +111,31 @@ class FileEntry {
 		}
 		#end
 		FileManager.inst.fileIndex.remove(this.getRelPath());
+	}
 
+	/**
+		Returns a list of all the files with name that matches the query string in this file children (recursive)
+	**/
+	public function searchAll(queryString:String) : Array<FileEntry> {
+		var query = hide.Search.createSearchQuery(queryString);
+
+		var results = [];
+		searchInternal(query, results);
+		return results;
+	}
+
+	function searchInternal(query: hide.Search.SearchQuery, results: Array<FileEntry>) : Void {
+		if (this.kind == Dir) {
+			if (children != null) {
+				for (child in children) {
+					child.searchInternal(query, results);
+				}
+			}
+		} else {
+			var ranges = hide.Search.computeSearchRanges(name, query, false);
+			if (ranges != null)
+				results.push(this);
+		}
 	}
 
 	public function getIcon(onReady: MiniatureReadyCallback) {

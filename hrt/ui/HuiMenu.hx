@@ -412,9 +412,9 @@ class HuiMenuItem extends HuiElement {
 
 	function updateCheck() {
 		if (item.checked != null) {
-			icon.huiBg.image = {path: item.checked ? "ui/icons/check.png" : "ui/icons/check_blank.png", mode: Fit};
+			icon.huiBg.image = {path: item.checked ? "ui/icons/check.sdf.png" : "ui/icons/check_blank.sdf.png", mode: Fit};
 		} else if (item.radio != null) {
-			icon.huiBg.image = {path: item.radio() ? "ui/icons/radio.png" : "ui/icons/radio_blank.png", mode: Fit};
+			icon.huiBg.image = {path: item.radio() ? "ui/icons/radio.sdf.png" : "ui/icons/radio_blank.sdf.png", mode: Fit};
 		}
 	}
 

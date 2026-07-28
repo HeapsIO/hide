@@ -11,6 +11,7 @@
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96"
    inkscape:version="1.4.4 (dcaf3e7, 2026-05-05)"
+   sodipodi:docname="split_tree.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -55,56 +56,9 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1">
-    <rect
-       style="fill:none;stroke:#fefffe;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:stroke fill markers"
+    <path
        id="rect2"
-       width="26"
-       height="26"
-       x="3"
-       y="3"
-       rx="2"
-       ry="2" />
-    <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:stroke fill markers"
-       id="rect4"
-       width="24"
-       height="2"
-       x="4"
-       y="4" />
-    <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.99999;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:stroke fill markers"
-       id="rect5"
-       width="14"
-       height="4"
-       x="6"
-       y="8" />
-    <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.99999;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:stroke fill markers"
-       id="rect6"
-       width="12"
-       height="4"
-       x="12"
-       y="14" />
-    <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:stroke fill markers"
-       id="rect6-2"
-       width="12"
-       height="2"
-       x="12"
-       y="20" />
-    <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:stroke fill markers"
-       id="rect7"
-       width="12"
-       height="2"
-       x="12"
-       y="22" />
-    <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2.00001;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:stroke fill markers"
-       id="rect8"
-       width="2"
-       height="10"
-       x="8"
-       y="14" />
+       style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;fill:#fefffe;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers;enable-background:accumulate;stop-color:#000000;stop-opacity:1;opacity:1"
+       d="M 5 2 C 3.3552972 2 2 3.3552972 2 5 L 2 27 C 2 28.644703 3.3552972 30 5 30 L 27 30 C 28.644703 30 30 28.644703 30 27 L 30 5 C 30 3.3552972 28.644703 2 27 2 L 5 2 z M 4 6 L 28 6 L 28 27 C 28 27.571297 27.571297 28 27 28 L 5 28 C 4.4287028 28 4 27.571297 4 27 L 4 6 z M 6 8 L 6 12 L 20 12 L 20 8 L 6 8 z M 8 14 L 8 24 L 10 24 L 10 14 L 8 14 z M 12 14 L 12 18 L 24 18 L 24 14 L 12 14 z M 12 20 L 12 22 L 12 24 L 24 24 L 24 22 L 24 20 L 12 20 z " />
   </g>
 </svg>
