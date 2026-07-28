@@ -89,6 +89,15 @@ class ShapeEditor extends Component {
 			e.stopPropagation();
 		});
 
+		var body = new Element(element[0].ownerDocument.body);
+		body.on("keydown.shapeeditor", function(e) {
+			if (e.keyCode == hxd.Key.ESCAPE && selectedShapeIdx != -1) {
+				selectedShapeIdx = -1;
+				uninspect();
+				updateShapeList();
+			}
+		});
+
 		uninspect();
 		updateShapeList();
 		createAllInteractives();
@@ -114,6 +123,8 @@ class ShapeEditor extends Component {
 
 	override function remove() {
 		super.remove();
+		var body = new Element(element[0].ownerDocument.body);
+		body.off("keydown.shapeeditor");
 		uninspect();
 		selectedShapeIdx = -1;
 		for (i in interactives)
@@ -466,6 +477,13 @@ class ShapeEditor extends Component {
 				if (selectedShapeIdx != -1) {
 					interactiveMaterial.color.setColor(DEFAULT_COLOR);
 					intersectionMaterial.color.setColor(INTERSECTION_COLOR);
+				}
+
+				if (selectedShapeIdx == idx) {
+					selectedShapeIdx = -1;
+					uninspect();
+					updateShapeList();
+					return;
 				}
 
 				selectedShapeIdx = idx;

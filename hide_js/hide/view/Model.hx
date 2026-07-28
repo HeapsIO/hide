@@ -302,6 +302,17 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 			rootDebugCollider = null;
 		}
 	}
+	
+	override function selectElements( elts : Array<hrt.prefab.Prefab>, ?mode : hide.comp.SceneEditor.SelectMode ) {
+		var isShapeEditing = false;
+		for (s in parent.shapesEditor.keys())
+			isShapeEditing = isShapeEditing || @:privateAccess parent.shapesEditor.get(s).isInShapeEdition;
+
+		if (isShapeEditing)
+			return;
+
+		super.selectElements(elts, mode);
+	}
 }
 
 class Model extends FileView {
