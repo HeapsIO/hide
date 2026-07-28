@@ -59,11 +59,14 @@ class ShapeEditor extends Component {
 			element.find(".edition").hide();
 
 		element.find("#btn-add").on("click", function(e) {
-			this.shapes.push(Box(new h3d.col.Point(0, 0, 0), new h3d.Vector(0, 0, 0), 1, 1, 1));
-			updateShapeList();
-			var i = getInteractive(this.shapes[this.shapes.length - 1], (this.shapes.length - 1) == selectedShapeIdx, rootDebugObj);
-			interactives.push(i);
-			onChange();
+			ContextMenu.createFromEvent(cast e, [ for (s in allowedShapes) { label : s, click : () -> {
+				this.shapes.push(getDefaultShape(Shape.createByName(s, [])));
+				updateShapeList();
+				var i = getInteractive(this.shapes[this.shapes.length - 1], (this.shapes.length - 1) == selectedShapeIdx, rootDebugObj);
+				interactives.push(i);
+				onChange();
+			}}]);
+
 			e.preventDefault();
 			e.stopPropagation();
 		});
@@ -141,7 +144,7 @@ class ShapeEditor extends Component {
 	function startShapeEditing() {
 		if (isInShapeEdition)
 			stopShapeEditing();
-		
+
 		isInShapeEdition = true;
 
 		var lclOffsetPosition = new h3d.Vector(0, 0, 0);
