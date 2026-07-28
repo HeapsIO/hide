@@ -95,6 +95,11 @@ class HuiShapeEditor extends HuiElement {
 		registerCommand(hrt.tools.Gizmo.gizmoTranslateCommand, View, gizmo.translationMode);
 		registerCommand(hrt.tools.Gizmo.gizmoRotateCommand, View, gizmo.rotationMode);
 		registerCommand(hrt.tools.Gizmo.gizmoScaleCommand, View, gizmo.scalingMode);
+		registerCommand(HuiCommands.escape, View, () -> {
+			selectedShapeIdx = -1;
+			uninspect();
+			updateShapeList();
+		});
 
 		this.rootDebugObj = rootDebugObj;
 		this.shapes = shapes;
@@ -498,6 +503,13 @@ class HuiShapeEditor extends HuiElement {
 			new HuiText(s.getName(), shapeEl);
 
 			shapeEl.onClick = (e) -> {
+				if (selectedShapeIdx == idx) {
+					selectedShapeIdx = -1;
+					uninspect();
+					updateShapeList();
+					return;
+				}
+
 				var interactive = interactives[selectedShapeIdx];
 				var interactiveMaterial = interactive?.material;
 				var intersectionMaterial = cast (interactive?.getObjectByName("intersection"), h3d.scene.Mesh)?.material;

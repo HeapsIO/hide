@@ -230,6 +230,8 @@ class Model extends HuiView<{path: String}> {
 		sceneEditor.load = () -> load(path);
 		sceneEditor.onScenePush = (e) -> {
 			if (e.button == 0) {
+				if (@:privateAccess modelInspector?.shapeEditor.isInShapeEdition)
+					return;
 				var objs = sceneEditor.getObjectsAt(cast e.relX, cast e.relY, obj, (o) -> Std.isOfType(o, h3d.scene.Mesh));
 				setSelection([for (o in objs) o.object]);
 			}
