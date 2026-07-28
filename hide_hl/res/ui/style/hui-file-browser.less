@@ -1,20 +1,11 @@
 hui-file-browser {
+	layout: vertical;
 
 	#gallery {
-		>hui-background {
-				outline: 2 yellow;
-		}
+
 
 		#virtual-list {
-			>hui-background {
-				outline: 1 red;
-			}
 
-			hui-virtual-grid-row {
-				>hui-background {
-					outline: 1 blue;
-				}
-			}
 		}
 	}
 
@@ -27,7 +18,7 @@ hui-file-browser {
 
 		&:hover {
 			>hui-background {
-				outline: 1 green;
+				background: lighten(@color-accent, @light-hover);
 			}
 		}
 
@@ -42,19 +33,83 @@ hui-file-browser {
 		#icon {
 			halign: middle;
 			valign: top;
-			>hui-background {
-				outline: 1 purple;
-			}
-
 		}
 		#name-container {
 			height: 12;
 			auto-size-height: 1;
 			overflow: hidden;
+			halign: middle;
 		}
 		#name-text {
 			valign: top;
 			text-align: multiline-center;
 		}
+		#gallery-container, #tree-container {
+			valign: top;
+			fill-width: true;
+			fill-height: true;
+			layout: vertical;
+		}
+	}
+
+	hui-toolbar {
+		padding: 0;
+		min-height: 0;
+		min-width: 0;
+		hui-button {
+			min-height: 16;
+			min-width: 16;
+
+			hui-icon {
+				min-height: 16;
+				min-width: 16;
+			}
+		}
+
+		> hui-background {
+			background: green;
+		}
+	}
+
+	.vertical {
+		layout: vertical;
+	}
+
+	#gallery-container {
+		layout: vertical;
+	}
+}
+
+hui-file-browser-main-toolbar-widget {
+	padding: 2;
+	auto-size: 1;
+	margin-right: 0 !important;
+	#slugs {
+		fill-width: 1;
+		auto-size: 1;
+		min-height: 1;
+	}
+
+	> hui-background {
+		background: blue;
+	}
+}
+
+hui-file-browser-second-toolbar-widget {
+	padding: 2;
+	margin-right: 0 !important;
+	auto-size: 1;
+	fill-width: 1;
+	#search-bar {
+		fill-width: 1;
+		auto-size: 1;
+
+		min-width: 200;
+
+		min-height: 20;
+	}
+
+	> hui-background {
+		background: red;
 	}
 }

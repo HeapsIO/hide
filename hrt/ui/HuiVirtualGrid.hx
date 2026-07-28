@@ -8,21 +8,16 @@ package hrt.ui;
 class HuiVirtualGrid<T> extends HuiElement {
 	var items: Array<T> = [];
 	var virtualList: HuiVirtualList<T>;
-	var itemsPerRow: Int = 4;
-	var needRefresh(default, set): Bool = false;
-
-	function set_needRefresh(v: Bool) {
-		virtualList.needRefresh = v;
-		return needRefresh = v;
-	}
-
+	var itemsPerRow: Int = -1;
+	var needRefresh: Bool = false;
 	/**
 		Items in the grid must have a fixed width and height
 	**/
 	@:p public var itemBaseWidth(default, set): Float = 64;
 	@:p public var itemBaseHeight(default, set): Float = 64;
 
-	function set_itemBaseWidth(v: Float) {itemBaseWidth = v; needRefresh = true; updateItemsPerRow(); return v;}
+
+	function set_itemBaseWidth(v: Float) {itemBaseWidth = v; itemsPerRow = -1; needRefresh = true; return v;}
 	function set_itemBaseHeight(v: Float) {needRefresh = true; return itemBaseHeight = v;}
 
 	public var generateItem(default, set) : (item: T) -> HuiElement = null;
@@ -67,7 +62,16 @@ class HuiVirtualGrid<T> extends HuiElement {
 	}
 
 	function afterReflow() {
-		updateItemsPerRow();
+		needRefresh = true;
+	}
+
+	override function sync(ctx) {
+		if (needRefresh) {
+			needRefresh = false;
+			virtualList.needRefresh = true;
+			updateItemsPerRow();
+		}
+		super.sync(ctx);
 	}
 
 	/**
@@ -79,7 +83,6 @@ class HuiVirtualGrid<T> extends HuiElement {
 
 	function updateItemsPerRow() {
 		itemsPerRow = hxd.Math.floor(calculatedWidth / itemBaseWidth);
-		trace(calculatedWidth, itemBaseWidth, itemsPerRow);
 		updateVirtualListItems();
 	}
 

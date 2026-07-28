@@ -16,6 +16,11 @@ enum abstract BrowserMode(String) {
 class HuiFileBrowser extends HuiElement {
 	var rootFile: File;
 
+
+	var mainToolbar: HuiElement;
+	var mainToolbarWidget: HuiFileBrowserMainToolbarWidget;
+	var galleryToolbar: HuiElement;
+	var secondToolbarWidget: HuiFileBrowserSecondToolbarWidget;
 	var tree: HuiTree<File>;
 	var splitter: HuiSplitContainer;
 	var gallery: HuiVirtualGrid<File>;
@@ -132,12 +137,26 @@ class HuiFileBrowser extends HuiElement {
 		// Splitter setup
 		splitter = new HuiSplitContainer();
 
+		mainToolbar = new HuiToolbar();
+		mainToolbar.dom.setId("main-toolbar");
+		mainToolbarWidget = new HuiFileBrowserMainToolbarWidget(mainToolbar);
+		galleryToolbar = new HuiToolbar();
+		secondToolbarWidget = new HuiFileBrowserSecondToolbarWidget(galleryToolbar);
 
 		refreshLayout();
 
 		markRefresh();
 
 		fileManager.watchFileChange(onFileChange);
+
+		onAfterReflow = () -> {
+			updateToolbarCompactMode();
+		}
+		updateToolbarCompactMode();
+	}
+
+	function updateToolbarCompactMode() {
+		mainToolbar.dom.toggleClass("vertical", innerWidth < 600);
 	}
 
 	function refreshZoom() {
@@ -170,6 +189,16 @@ class HuiFileBrowser extends HuiElement {
 				itemContextMenu(file);
 			}
 		}
+
+		item.onDoubleClick = (e) -> {
+			if (file.kind == Dir) {
+				tree.setSelection([file]);
+				refreshGallery();
+			} else {
+				onOpen(file);
+			}
+		}
+
 		if (file.kind != Dir) {
 			file.getIcon((miniaturePath) -> {
 				if (miniaturePath == null)
@@ -182,20 +211,42 @@ class HuiFileBrowser extends HuiElement {
 
 			});
 		}
+
 		return item;
 	}
 
 	function refreshLayout() {
 		removeChildElements();
+		splitter.removeChildElements();
+
+		mainToolbar.removeChildElements();
+		galleryToolbar.removeChildElements();
+		mainToolbar.addChild(mainToolbarWidget);
+
 		switch(mode) {
 			case FileTree:
+				addChild(mainToolbar);
+				mainToolbar.addChild(secondToolbarWidget);
 				addChild(tree);
 			case Gallery:
+				addChild(mainToolbar);
+				mainToolbar.addChild(secondToolbarWidget);
 				addChild(gallery);
 			case Horizontal | Vertical:
+				addChild(mainToolbar);
 				addChild(splitter);
-				splitter.addChild(tree);
-				splitter.addChild(gallery);
+
+				var first = new HuiElement(splitter);
+				var second = new HuiElement(splitter);
+				first.addChild(tree);
+				first.dom.setId("tree-container");
+				galleryToolbar.addChild(secondToolbarWidget);
+				second.addChild(galleryToolbar);
+				second.addChild(gallery);
+				second.dom.setId("gallery-container");
+
+				splitter.addChild(first);
+				splitter.addChild(second);
 				if (mode == Horizontal)
 					@:privateAccess splitter.direction = Horizontal;
 				else
@@ -654,6 +705,32 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 			</hui-element>
 		</hui-element>
 	</hui-file-browser-gallery-item>
+}
+
+class HuiFileBrowserMainToolbarWidget extends HuiElement {
+	static var SRC =
+		<hui-file-browser-main-toolbar-widget>
+			<hui-button  class="group-start" id="prev-btn" tip={"Go back to previous folder"} public>
+				<hui-icon("back")/>
+			</hui-button>
+			<hui-button  class="group-start" id="forward-btn" tip={"Go forwards to folder"} public>
+				<hui-icon("forward")/>
+			</hui-button>
+			<hui-button  class="group-start" id="parent-btn" tip={"Go to parent folder"} public>
+				<hui-icon("back_one_level")/>
+			</hui-button>
+			<hui-element id="slugs"/>
+			<hui-button id="split-button" public>
+				<hui-icon("split-tree") id="split-button-icon" public/>
+			</hui-button>
+		</hui-file-browser-main-toolbar-widget>
+}
+
+class HuiFileBrowserSecondToolbarWidget extends HuiElement {
+	static var SRC =
+		<hui-file-browser-second-toolbar-widget>
+			<hui-input-box class="search" id="search-bar" public/>
+		</hui-file-browser-second-toolbar-widget>
 }
 
 #end

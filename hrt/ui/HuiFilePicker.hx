@@ -44,10 +44,6 @@ class HuiFilePicker extends HuiElement {
 		}
 
 		bindDragOperations(this, dropOverlay);
-
-		onOver = (e) -> {
-			trace("aaa");
-		}
 	}
 
 	public function bindDragOperations(element: HuiElement, overlay: HuiDropOverlay) {

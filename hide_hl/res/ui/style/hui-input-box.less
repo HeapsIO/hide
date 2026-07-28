@@ -12,21 +12,37 @@ hui-input-box {
 		outline: 1 @widget-border;
 	}
 
-	> hui-text-input {
+	#input-wrapper {
+		overflow: hidden;
+		fill-width: 1;
+		fill-height: 1;
+		auto-size: 1;
+
+		> hui-background {
+			background: orange;
+		}
+	}
+
+	hui-text-input {
 		margin-bottom: -1;
 		valign: middle;
 	}
 
 	> #icon {
-		position: absolute;
-		halign: right;
+		//position: absolute;
+		//halign: right;
 		valign: middle;
 
 		height: 16;
 		width: 16;
 		background-type: hui;
+		visible: false;
 	}
 
-	&.search > #icon > hui-background {image: "ui/icons/search.sdf.png" fit;}
+
+	&.search > #icon {
+		visible: true;
+		> hui-background {image: "ui/icons/search.sdf.png" fit;}
+	}
 
 }

@@ -4,7 +4,9 @@ package hrt.ui;
 class HuiInputBox extends HuiElement {
 	static var SRC =
 		<hui-input-box>
-			<hui-text-input public id="textInput"/>
+			<hui-element id="input-wrapper">
+				<hui-text-input public id="textInput"/>
+			</hui-element>
 			<hui-element id="icon"/>
 		</hui-input-box>
 
@@ -34,6 +36,8 @@ class HuiInputBox extends HuiElement {
 		super(parent);
 		initComponent();
 
+		var props = inputWrapper.getProperties(textInput);
+		props.isAbsolute = true;
 		textInput.text = "";
 
 		onAfterReflow = afterReflow;
@@ -44,6 +48,10 @@ class HuiInputBox extends HuiElement {
 		textInput.onFocus = onFocusInternal;
 		textInput.onFocusLost = onFocusLostInternal;
 		textInput.onChange = onChangeInternal;
+
+		inputWrapper.onAfterReflow = () -> {
+			textInput.constraintSize(inputWrapper.innerWidth, inputWrapper.innerHeight);
+		}
 	}
 
 	public function focus(autoSelect = true) {

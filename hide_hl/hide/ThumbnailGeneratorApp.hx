@@ -9,6 +9,8 @@ class ThumbnailGeneratorApp extends hxd.App {
 		if(args[0] != "--thumbnail")
 			return false;
 
+		hl.UI.closeConsole();
+
 		hxd.System.createWindow = () -> {
 			new hxd.Window("HideHL - Thumbnail Generator", 256,256,{fixed: true, hidden: true});
 		}
@@ -100,6 +102,7 @@ class ThumbnailGenerator {
 	var prioDirty = false;
 	var renderTexture : h3d.mat.Texture;
 	static final renderRes = 512;
+	var jpegWriter: format.jpg.Writer;
 
 	var s2d: h2d.Scene;
 
@@ -146,6 +149,7 @@ class ThumbnailGenerator {
 
 		// Destroy the generator if any error occurs
 		socket.onError = (msg) -> {
+			trace('Error: $msg. Closing generator');
 			hxd.Window.getInstance().close();
 		}
 
@@ -161,6 +165,8 @@ class ThumbnailGenerator {
 
 			var handler = new MessageHandler(socket, handleCommand);
 		});
+
+		jpegWriter = new format.jpg.Writer(null);
 	}
 
 	function handleCommand(command: String) {
@@ -272,7 +278,7 @@ class ThumbnailGenerator {
 		return string;
 	}
 
-	function handleModel(toRender: RenderInfo) {
+	function handleModel(toRender: RenderInfo, thumbnailPath: String) {
 		s3d.removeChildren();
 		s2d.removeChildren();
 
@@ -377,7 +383,7 @@ class ThumbnailGenerator {
 				s3d.removeChildren();
 				s2d.removeChildren();
 
-				var path = convertAndWriteThumbnail(toRender.path, renderTexture);
+				var path = convertAndWriteThumbnail(toRender.path, thumbnailPath, renderTexture);
 				toRender.cb(path);
 			}
 			catch (e) {
@@ -395,17 +401,19 @@ class ThumbnailGenerator {
 	function resetCam(root: h3d.scene.Object) {
 		var bnds = new h3d.col.Bounds();
 
-		var centroid = new h3d.Vector();
 		var objs = root.findAll((f) -> f);
 		for(obj in objs) {
-			centroid = centroid.add(obj.getAbsPos().getPosition());
 			bnds.add(obj.getBounds());
 		}
+
+		// var dbg = bnds.makeDebugObj();
+		// root.addChild(dbg);
+		var centroid = bnds.getCenter();
 
 		var dist = 1.0;
 		if (!bnds.isEmpty()) {
 			var s = bnds.toSphere();
-			dist = s.r * 4.0;
+			dist = s.r * 4.5;
 		}
 
 		var tetha = 66.0 / 180.0 * hxd.Math.PI;
@@ -428,8 +436,8 @@ class ThumbnailGenerator {
 		s3d = new h3d.scene.Scene();
 	}
 
-	function convertAndWriteThumbnail(basePath: String, texture: h3d.mat.Texture) {
-		var path = getThumbnailPath(basePath).toString();
+	function convertAndWriteThumbnail(basePath: String, thumbnailPath: String, texture: h3d.mat.Texture) {
+		var path = thumbnailPath;
 		path = StringTools.replace(path, "\\", "/");
 
 		var dir = path.split("/");
@@ -439,22 +447,34 @@ class ThumbnailGenerator {
 			sys.FileSystem.createDirectory( hide.Ide.inst.getPath(dirPath));
 
 		var pixels = texture.capturePixels();
-		pixels.convert(ARGB);
 		//sys.io.File.saveBytes(path, renderTexture.capturePixels().toPNG());
+
+		#if new_encode_jpg
+
+		var len : Int = 0;
+		var bytes = format.hl.Native.encodeJPG(pixels.bytes, texture.width, texture.height, texture.width * 4, RGBA, _422, 85, 0, hl.Ref.make(len));
+		if (bytes == null)
+			throw "Convert failed";
+
+		sys.io.File.saveBytes(path, bytes.toBytes(len));
+		#else
+
 		var bytes = new haxe.io.BytesOutput();
-		var writer = new format.jpg.Writer(bytes);
-		writer.write({
+		@:privateAccess jpegWriter.byteout = bytes;
+		jpegWriter.write({
 			width: texture.width,
 			height: texture.height,
 			pixels: pixels.bytes,
-			quality: 85
+			quality: 70
 		});
 
 		sys.io.File.saveBytes(path, bytes.getBytes());
+		#end
+
 		return path;
 	}
 
-	function handleTexture(toRender: RenderInfo) {
+	function handleTexture(toRender: RenderInfo, thumbnailPath: String) {
 		if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
 			trace('handleTexture ${toRender.path}');
 
@@ -513,7 +533,7 @@ class ThumbnailGenerator {
 					s2d.render(engine);
 					engine.popTarget();
 
-					var path = convertAndWriteThumbnail(toRender.path, renderTexture);
+					var path = convertAndWriteThumbnail(toRender.path, thumbnailPath, renderTexture);
 
 					toRender.cb(path);
 
@@ -542,13 +562,18 @@ class ThumbnailGenerator {
 			return;
 		}
 
+		if (miniaturesToRender.length == 0) {
+			return;
+		}
+
 		queued = false;
 
 
 		var startTime = haxe.Timer.stamp();
 
 		// timeslice at 30 FPS
-		while(haxe.Timer.stamp() - startTime < 0.33) {
+		while(haxe.Timer.stamp() - startTime < 0.5) {
+			var benchstart = haxe.Timer.stamp();
 
 			if (miniaturesToRender.length == 0) {
 				return;
@@ -590,12 +615,15 @@ class ThumbnailGenerator {
 			var ext = toRender.path.split(".").pop().toLowerCase();
 			switch(ext) {
 				case "prefab" | "fbx" | "l3d" | "fx" | "shgraph":
-					handleModel(toRender);
+					handleModel(toRender, thumbnailPathString);
 				case "png" | "dds" | "jpg" | "jpeg":
-					handleTexture(toRender);
+					handleTexture(toRender, thumbnailPathString);
 				default:
 					toRender.cb(null);
 			}
+			var benchend = haxe.Timer.stamp();
+
+			trace('rendered ${toRender.path} in ${(benchend - benchstart) * 1000.0}ms');
 
 			if (waitingAsyncLoad) {
 				break;

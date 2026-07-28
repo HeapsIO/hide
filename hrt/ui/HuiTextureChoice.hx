@@ -38,10 +38,6 @@ class HuiTextureChoice extends HuiElement {
 		filePicker.bindDragOperations(this, dropOverlay);
 
 		refreshType();
-
-		onOver = (e) -> {
-			trace("aaa");
-		}
 	}
 
 	public var value(default, set): Any = null;
