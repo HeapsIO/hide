@@ -459,6 +459,8 @@ class ThumbnailGenerator {
 		sys.io.File.saveBytes(path, bytes.toBytes(len));
 		#else
 
+		pixels.convert(ARGB);
+
 		var bytes = new haxe.io.BytesOutput();
 		@:privateAccess jpegWriter.byteout = bytes;
 		jpegWriter.write({
