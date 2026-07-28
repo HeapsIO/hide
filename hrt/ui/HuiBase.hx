@@ -49,6 +49,9 @@ class HuiBase extends HuiElement {
 		if (hide.App.DEBUG) {
 			style.allowInspect = true;
 			style.inspectKeyCode = hxd.Key.SHIFT;
+			style.onInspectHyperlink = function(url: String) {
+				new sys.io.Process('code --goto $url', false).close();
+			}
 		}
 
 		loadStyle();
