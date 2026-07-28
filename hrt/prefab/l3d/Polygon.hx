@@ -269,7 +269,7 @@ class Polygon extends Object3D {
 		primitive.tangents = [for(p in points) new h3d.col.Point(0., 1., 0.)];
 		primitive.uvs = [for(uv in uvs) new h3d.prim.UV(uv.x, uv.y)];
 		primitive.colors = [for(p in points) new h3d.col.Point(1,1,1)];
-		@:privateAccess primitive.uvCount = uvs != null ? 1 : 0;
+		primitive.setUVCount(1);
 		return primitive;
 	}
 
