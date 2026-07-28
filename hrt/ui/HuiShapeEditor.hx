@@ -113,11 +113,13 @@ class HuiShapeEditor extends HuiElement {
 		shapeSelectEl.value = 0;
 
 		addBtn.onClick = (e) -> {
-			this.shapes.push(Box(new h3d.col.Point(0, 0, 0), new h3d.Vector(0, 0, 0), 1, 1, 1));
-			updateShapeList();
-			var i = getInteractive(this.shapes[this.shapes.length - 1], (this.shapes.length - 1) == selectedShapeIdx, rootDebugObj);
-			interactives.push(i);
-			onChange();
+			uiBase.contextMenu([for (idx => s in allowedShapes) { label: s, click: () -> {
+				this.shapes.push(getDefaultShape(Shape.createByIndex(idx, getExtraParams(idx))));
+				updateShapeList();
+				var i = getInteractive(this.shapes[this.shapes.length - 1], (this.shapes.length - 1) == selectedShapeIdx, rootDebugObj);
+				interactives.push(i);
+				onChange();
+			}}]);
 		}
 
 		removeBtn.onClick = (e) -> {
