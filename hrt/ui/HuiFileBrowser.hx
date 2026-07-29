@@ -224,7 +224,7 @@ class HuiFileBrowser extends HuiElement {
 
 	function refreshZoom() {
 		var zoomPx = zoomLevels[zoom];
-		gallery.itemBaseHeight = zoomPx + 32;
+		gallery.itemBaseHeight = zoomPx + 36;
 		gallery.itemBaseWidth = zoomPx + 8;
 		@:privateAccess gallery.virtualList.clear();
 
