@@ -1018,7 +1018,10 @@ class Editor extends Component {
 		}
 		else {
 			for (l in modifiedLines) {
+				var prevFiltered = l.filtered;
 				l.filtered = isLineFilteredByStatus(l) || isLineFilteredBySearch(l.table, l);
+				if (prevFiltered == l.filtered)
+					continue;
 				if (l.filtered)
 					l.hide();
 				else
