@@ -30,6 +30,7 @@ class HuiFileBrowser extends HuiElement {
 	var needRefresh: Bool = false;
 	var galleryList: Array<File> = null;
 	var gallerySelection: Map<File, Bool> = [];
+	var galleryLastClick: File = null;
 
 	var navigationHistory: Array<File> = [];
 	var navigationHistoryPos: Int = 0;
@@ -169,6 +170,7 @@ class HuiFileBrowser extends HuiElement {
 			if (e.button == hxd.Key.MOUSE_LEFT || e.button == hxd.Key.MOUSE_RIGHT) {
 				if (!hxd.Key.isDown(hxd.Key.CTRL)) {
 					gallerySelection.clear();
+					galleryLastClick = null;
 					refreshGalleryItems();
 				}
 
@@ -907,8 +909,30 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 						fileBrowser.gallerySelection.clear();
 					}
 
-					fileBrowser.gallerySelection.set(file, true);
+					if (!hxd.Key.isDown(hxd.Key.SHIFT) || fileBrowser.galleryLastClick == null) {
+						fileBrowser.gallerySelection.set(file, true);
+					} else {
+						var start = fileBrowser.galleryList.indexOf(file);
+						var end = fileBrowser.galleryList.indexOf(fileBrowser.galleryLastClick);
+						if (end == -1 || start == -1) {
+							fileBrowser.gallerySelection.set(file, true);
+						} else {
+							if (end < start) {
+								var swap = end;
+								end = start;
+								start = swap;
+							}
+
+							for (i in start...end+1) {
+								fileBrowser.gallerySelection.set(fileBrowser.galleryList[i], true);
+							}
+						}
+					}
+
+					fileBrowser.galleryLastClick = file;
+
 					fileBrowser.refreshGalleryItems();
+
 
 					if (e.button == hxd.Key.MOUSE_RIGHT) {
 						fileBrowser.itemContextMenu(file);
