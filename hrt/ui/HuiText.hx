@@ -6,12 +6,30 @@ package hrt.ui;
 	Don't use directly, use HuiInputBox instead
 **/
 class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
-	@:p public var baseFont(never, set) : String;
+	/**
+		Load a font by a string id instread of a path, allows for automatic font changes based on
+		dpi and the breakAll feature
+	**/
+	@:p public var baseFont(default, set) : String;
+
+	/** Allow breaking lines on every character. Need a baseFont **/
+	@:p public var breakAll(default, set) : Bool = false;
 
 	function set_baseFont(v : String) {
-		if (v != "none")
+		if (v != "none") {
+			baseFont = v;
 			font = loadFont(v);
+		}
+		else {
+			baseFont = null;
+		}
 		return v;
+	}
+
+	function set_breakAll(v : Bool) {
+		breakAll = v;
+		set_baseFont(baseFont);
+		return breakAll;
 	}
 
 	public function new(?text: String, ?parent: h2d.Object) {
@@ -26,14 +44,14 @@ class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
 	}
 
 	override function loadFont(name: String) : h2d.Font {
-		return loadFontStatic(name);
+		return loadFontStatic(name, breakAll);
 	}
 
-	public static function loadFontStatic(name: String) : h2d.Font {
+	public static function loadFontStatic(name: String, breakAll: Bool) : h2d.Font {
 		var paths = fontPairs.get(name);
 		if (paths != null) {
 			var index = hrt.ui.HuiBase.highDpi ? 1 : 0;
-			return getBitmapFont(paths[index], index);
+			return getBitmapFont(paths[index], index, breakAll);
 		}
 		return hxd.res.DefaultFont.get();
 	}
@@ -45,23 +63,38 @@ class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
 	];
 
 	static var bitmapFontCache: Map<String, Array<h2d.Font>> = [];
-	static function getBitmapFont(path: String, scaleIndex: Int) {
+	static function getBitmapFont(path: String, scaleIndex: Int, breakAll: Bool) {
 		var fnts = bitmapFontCache.get(path);
 		if (fnts == null) {
 			fnts = [];
 			bitmapFontCache.set(path, fnts);
 		}
 
-		var fnt = fnts[scaleIndex];
+		var fntIndex = scaleIndex + (breakAll ? 2 : 0);
+		var fnt = fnts[fntIndex];
 		if (fnt == null) {
 			fnt = HuiRes.loader.load(path).to(hxd.res.BitmapFont).toFont().clone();
 
 			if (scaleIndex == 1)
 				fnt.resizeTo(hxd.Math.round(fnt.size * 0.5));
 
-			fnts[scaleIndex] = fnt;
+			if (breakAll) {
+				var original = getBitmapFont(path, scaleIndex, false);
+				fnt = original.clone();
+				fnt.charset = BreakAllCharset.inst;
+			}
+
+			fnts[fntIndex] = fnt;
 		}
 		return fnt;
 	}
+}
+
+class BreakAllCharset extends hxd.Charset {
+	override function isBreakChar(code) {
+		return true;
+	}
+
+	public static var inst: BreakAllCharset = new BreakAllCharset();
 }
 #end

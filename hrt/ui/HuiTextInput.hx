@@ -31,7 +31,7 @@ class HuiTextInput extends h2d.TextInput implements h2d.domkit.Object {
 
 
 	function set_baseFont(v : String) {
-		font = HuiText.loadFontStatic(v);
+		font = HuiText.loadFontStatic(v, false);
 		return v;
 	}
 
