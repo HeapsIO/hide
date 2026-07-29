@@ -318,6 +318,8 @@ class HuiBase extends HuiElement {
 		var engine = scene.renderer.engine;
 		scene.scaleMode = Fixed(Math.ceil(engine.width / upscale), Math.ceil(engine.height / upscale), upscale, Center, Center);
 
+		update(dt);
+
 		style.sync(dt);
 
 	}

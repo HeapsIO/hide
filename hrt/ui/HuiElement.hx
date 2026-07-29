@@ -157,6 +157,12 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		initComponent();
 	}
 
+	public function update(dt: Float) {
+		for (c in children) {
+			Std.downcast(c, HuiElement)?.update(dt);
+		}
+	}
+
 	public function findParent<T:HuiElement>(?cl: Class<T>, ?filter: T -> Bool) : T {
 		var current = this;
 		while(current != null) {

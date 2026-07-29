@@ -9,12 +9,22 @@ hui-file-browser {
 		}
 	}
 
+	hui-split-container {
+		auto-size: 1;
+	}
+
 	hui-file-browser-gallery-item {
 		padding: 4;
 		fill-width: 1;
 		fill-height: 1;
 		auto-size: 1;
 		overflow: hidden;
+
+		&.selected {
+			>hui-background {
+				background: @color-accent;
+			}
+		}
 
 		&:hover {
 			>hui-background {
@@ -54,8 +64,8 @@ hui-file-browser {
 
 	hui-toolbar {
 		padding: 0;
-		min-height: 0;
 		min-width: 0;
+		min-height: 0;
 		hui-button {
 			min-height: 16;
 			min-width: 16;
@@ -78,12 +88,19 @@ hui-file-browser {
 
 hui-file-browser-main-toolbar-widget {
 	padding: 2;
-	auto-size: 1;
+	auto-size-width: 1;
+	fill-width: 1;
 	margin-right: 0 !important;
 	#slugs {
+		margin-left: 4;
 		fill-width: 1;
+		fill-height: 1;
 		auto-size: 1;
-		min-height: 1;
+
+
+		> hui-text {
+			valign: middle;
+		}
 	}
 }
 
@@ -96,7 +113,7 @@ hui-file-browser-second-toolbar-widget {
 		fill-width: 1;
 		auto-size: 1;
 
-		min-width: 200;
+		min-width: 50;
 
 		min-height: 20;
 	}
@@ -152,5 +169,22 @@ hui-file-browser-no-result-widget {
 		#buttons {
 			spacing: 8;
 		}
+	}
+}
+
+hui-file-browser-slug {
+	.button();
+	fill-height: 1;
+	auto-size-height: 1;
+	padding: 2;
+	margin-top: 2;
+	margin-bottom: 2;
+
+	> hui-background {
+		border-radius: 2;
+	}
+
+	#text {
+		valign: middle;
 	}
 }

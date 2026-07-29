@@ -16,7 +16,6 @@ enum abstract BrowserMode(String) {
 class HuiFileBrowser extends HuiElement {
 	var rootFile: File;
 
-
 	var mainToolbar: HuiElement;
 	var mainToolbarWidget: HuiFileBrowserMainToolbarWidget;
 	var galleryToolbar: HuiElement;
@@ -30,6 +29,7 @@ class HuiFileBrowser extends HuiElement {
 	var rootPath: String;
 	var needRefresh: Bool = false;
 	var galleryList: Array<File> = null;
+	var gallerySelection: Map<File, Bool> = [];
 
 	var navigationHistory: Array<File> = [];
 	var navigationHistoryPos: Int = 0;
@@ -61,6 +61,7 @@ class HuiFileBrowser extends HuiElement {
 	public function new(rootPath: String, ?parent) {
 		super(parent);
 		initComponent();
+		saveDisplayKey = "filebrowser";
 
 		this.rootPath = rootPath;
 
@@ -146,7 +147,22 @@ class HuiFileBrowser extends HuiElement {
 			}
 		}
 
+		gallery.onClick = (e) -> {
+			if (e.button == hxd.Key.MOUSE_LEFT || e.button == hxd.Key.MOUSE_RIGHT) {
+				if (!hxd.Key.isDown(hxd.Key.CTRL)) {
+					gallerySelection.clear();
+					refreshGalleryItems();
+				}
+
+				if (e.button == hxd.Key.MOUSE_RIGHT) {
+					itemContextMenu(currentDir());
+				}
+			}
+		}
+
 		gallery.generateItem = generateGalleryItem;
+
+		zoom = getDisplayState("zoom", 4);
 		refreshZoom();
 
 		noResults = new HuiFileBrowserNoResultWidget();
@@ -211,6 +227,8 @@ class HuiFileBrowser extends HuiElement {
 		gallery.itemBaseHeight = zoomPx + 32;
 		gallery.itemBaseWidth = zoomPx + 8;
 		@:privateAccess gallery.virtualList.clear();
+
+		saveDisplayState("zoom", zoom);
 	}
 
 	function treeSelectionChanged() {
@@ -218,47 +236,7 @@ class HuiFileBrowser extends HuiElement {
 	}
 
 	function generateGalleryItem(file: File) : HuiElement {
-		var item = new HuiFileBrowserGalleryItem();
-		item.nameText.text = file.name;
-		var zoomPx = zoomLevels[zoom];
-		item.icon.setWidth(zoomPx);
-		item.icon.setHeight(zoomPx);
-
-		item.icon.backgroundType = "hui";
-
-		var icon = getItemIcon(file);
-		item.icon.huiBg.setTexture(getItemIcon(file).toTexture());
-		item.icon.huiBg.imageMode = Fit;
-		item.icon.huiBg.imageIsSdf = true;
-
-		item.onClick = (e) -> {
-			if (e.button == 1) {
-				itemContextMenu(file);
-			}
-		}
-
-		item.onDoubleClick = (e) -> {
-			if (file.kind == Dir) {
-				navigateTo(file, true);
-			} else {
-				onOpen(file);
-			}
-		}
-
-		if (file.kind != Dir) {
-			file.getIcon((miniaturePath) -> {
-				if (miniaturePath == null)
-					return;
-				miniaturePath = StringTools.replace(miniaturePath, hide.Ide.inst.projectDir + "/res/", "");
-				var tex = hxd.res.Loader.currentInstance.load(miniaturePath)?.toTexture() ?? h3d.mat.Texture.fromColor(0xFF00FF);
-				item.icon.huiBg.setTexture(tex);
-				item.icon.huiBg.imageMode = Fit;
-				item.icon.huiBg.imageIsSdf = false;
-
-			});
-		}
-
-		return item;
+		return new HuiFileBrowserGalleryItem(file, this);
 	}
 
 	function refreshLayout() {
@@ -331,6 +309,14 @@ class HuiFileBrowser extends HuiElement {
 
 	public function markRefresh() {
 		needRefresh = true;
+	}
+
+	public function refreshGalleryItems() {
+		@:privateAccess
+		var elems = gallery.virtualList.findAll((f) -> Std.downcast(f, HuiFileBrowserGalleryItem));
+		for (elem in elems) {
+			elem.refresh();
+		}
 	}
 
 	function itemContextMenu(file: File) {
@@ -640,7 +626,7 @@ class HuiFileBrowser extends HuiElement {
 		}, {start: 0, length: path.file.length} /* Select before the . of the file*/);
 	}
 
-	override function sync(ctx: h2d.RenderContext) {
+	override function update(dt: Float) {
 		if (needRefresh) {
 			refreshInternal();
 		}
@@ -662,10 +648,51 @@ class HuiFileBrowser extends HuiElement {
 			}
 		}
 
-		super.sync(ctx);
+		if (queueRefreshSlugs) {
+			queueRefreshSlugs = false;
+
+			mainToolbarWidget.slugs.removeChildElements();
+			var path : Array<File> = [];
+			var curr = currentDir();
+			while(curr != null) {
+				path.unshift(curr);
+				curr = curr.parent;
+			}
+
+			for (i => part in path) {
+				if (i > 0) {
+					new HuiText("/", mainToolbarWidget.slugs);
+				}
+
+				var slugButton = new HuiFileBrowserSlug(part.name, mainToolbarWidget.slugs);
+				slugButton.onClick = (e) -> {
+					if (e.button == 0) {
+						navigateTo(part, true);
+					} else if (e.button == 1) {
+						uiBase.contextMenu([
+							{"label": "Copy Path", click: () -> {hide.Ide.inst.setClipboard(currentDir().getRelPath(), {});}},
+							{"label": "Copy Absolute Path", click: () -> {hide.Ide.inst.setClipboard(currentDir().getPath(), {});}},
+							{"label": "Paste Path", click: () -> {
+								var path = hide.Ide.inst.getClipboardText();
+								if (path == null || path == "")
+									return;
+								var file = FileManager.inst.getFileEntry(path);
+								if (file == null)
+									return;
+								if (file.kind == File)
+									file = file.parent;
+								navigateTo(file, true);
+							}},
+						]);
+					}
+				}
+			}
+		}
+
+		super.update(dt);
 	}
 
-	function refreshInternal() {
+	public function refreshInternal() {
 		rootFile = fileManager.fileRoot;
 		if (navigationHistory.length == 0)
 			navigateTo(rootFile, true);
@@ -717,6 +744,8 @@ class HuiFileBrowser extends HuiElement {
 		markRefresh();
 	}
 
+	var queueRefreshSlugs = false;
+
 	function refreshGallery() {
 		if (galleryList == null) {
 			var galleryFolder = currentDir();
@@ -727,6 +756,8 @@ class HuiFileBrowser extends HuiElement {
 					galleryFolder = first;
 				}
 			}
+
+			queueRefreshSlugs = true;
 
 			if (secondToolbarWidget.searchBar.text?.length > 0) {
 				galleryList = galleryFolder.searchAll(secondToolbarWidget.searchBar.text);
@@ -790,7 +821,7 @@ class HuiFileBrowser extends HuiElement {
 						HuiRes.ui.icons.file.shader_graph;
 					case "prefab":
 						HuiRes.ui.icons.file.prefab;
-					case "json":
+					case "json", "props":
 						HuiRes.ui.icons.file.props;
 					case "txt":
 						HuiRes.ui.icons.file.text;
@@ -804,7 +835,11 @@ class HuiFileBrowser extends HuiElement {
 	}
 }
 
+@:access(hrt.ui.HuiFileBrowser)
 class HuiFileBrowserGalleryItem extends HuiElement {
+	var file: File;
+	var fileBrowser: HuiFileBrowser;
+
 	static var SRC = <hui-file-browser-gallery-item>
 		<hui-element id="border">
 			<hui-element id="icon" public/>
@@ -813,6 +848,66 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 			</hui-element>
 		</hui-element>
 	</hui-file-browser-gallery-item>
+
+	public function new(file: File, fileBrowser: HuiFileBrowser, ?parent) {
+		super(parent);
+		initComponent();
+
+		this.file = file;
+		this.fileBrowser = fileBrowser;
+		this.tip = file.name;
+		refresh();
+
+		onClick = (e) -> {
+			if (e.button == hxd.Key.MOUSE_LEFT || e.button == hxd.Key.MOUSE_RIGHT) {
+				if (!hxd.Key.isDown(hxd.Key.CTRL)) {
+					fileBrowser.gallerySelection.clear();
+				}
+
+				fileBrowser.gallerySelection.set(file, true);
+				fileBrowser.refreshGalleryItems();
+
+				if (e.button == hxd.Key.MOUSE_RIGHT) {
+					fileBrowser.itemContextMenu(file);
+				}
+			}
+		}
+
+		onDoubleClick = (e) -> {
+			if (file.kind == Dir) {
+				fileBrowser.navigateTo(file, true);
+			} else {
+				fileBrowser.onOpen(file);
+			}
+		}
+	}
+
+	public function refresh() {
+		nameText.text = file.name;
+		var zoomPx = HuiFileBrowser.zoomLevels[fileBrowser.zoom];
+		icon.setWidth(zoomPx);
+		icon.setHeight(zoomPx);
+
+		icon.backgroundType = "hui";
+
+		icon.huiBg.setTexture(fileBrowser.getItemIcon(file).toTexture());
+		icon.huiBg.imageMode = Fit;
+		icon.huiBg.imageIsSdf = true;
+
+		dom.toggleClass("selected", fileBrowser.gallerySelection.get(file) != null);
+
+		if (file.kind != Dir) {
+			file.getIcon((miniaturePath) -> {
+				if (miniaturePath == null)
+					return;
+				miniaturePath = StringTools.replace(miniaturePath, hide.Ide.inst.projectDir + "/res/", "");
+				var tex = hxd.res.Loader.currentInstance.load(miniaturePath)?.toTexture() ?? h3d.mat.Texture.fromColor(0xFF00FF);
+				icon.huiBg.setTexture(tex);
+				icon.huiBg.imageMode = Fit;
+				icon.huiBg.imageIsSdf = false;
+			});
+		}
+	}
 }
 
 class HuiFileBrowserMainToolbarWidget extends HuiElement {
@@ -827,7 +922,7 @@ class HuiFileBrowserMainToolbarWidget extends HuiElement {
 			<hui-button  id="parent-btn" tip={"Go to parent folder"} public>
 				<hui-icon("back_one_level")/>
 			</hui-button>
-			<hui-element id="slugs"/>
+			<hui-element id="slugs" public/>
 			<hui-button id="split-button" public>
 				<hui-icon("split-tree") id="split-button-icon" public/>
 			</hui-button>
@@ -864,6 +959,20 @@ class HuiFileBrowserGalleryWidget extends HuiElement {
 			<hui-virtual-grid id="gallery" public/>
 			<hui-file-browser-no-result-widget id="no-results" public/>
 		</hui-file-browser-gallery-widget>
+}
+
+class HuiFileBrowserSlug extends HuiElement {
+	static var SRC =
+		<hui-file-browser-slug>
+			<hui-text() id="text"/>
+		</hui-file-browser-slug>
+
+	public function new(text: String, ?parent) {
+		super(parent);
+		initComponent();
+
+		this.text.text = text;
+	}
 }
 
 #end

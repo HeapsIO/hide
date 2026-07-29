@@ -82,7 +82,7 @@ class HuiVirtualGrid<T> extends HuiElement {
 	}
 
 	function updateItemsPerRow() {
-		itemsPerRow = hxd.Math.floor(calculatedWidth / itemBaseWidth);
+		itemsPerRow = hxd.Math.imax(1, hxd.Math.floor(calculatedWidth / itemBaseWidth));
 		updateVirtualListItems();
 	}
 
