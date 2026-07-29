@@ -148,9 +148,9 @@ class HuiSplitContainer extends HuiElement {
 		switch (direction) {
 			case Horizontal:
 				childElement[0].x = firstPos;
-				childElement[0].constraintSize(firstSize, -1.0);
+				childElement[0].setWidth(firstSize);
 				childElement[1].x = secondPos;
-				childElement[1].constraintSize(secondSize, -1.0);
+				childElement[1].setWidth(secondSize);
 				splitter.x = localSplitterPos - (splitterSize >> 1);
 			case Vertical:
 				childElement[0].y = firstPos;
