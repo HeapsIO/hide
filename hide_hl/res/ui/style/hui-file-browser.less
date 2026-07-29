@@ -13,56 +13,6 @@ hui-file-browser {
 		auto-size: 1;
 	}
 
-	hui-file-browser-gallery-item {
-		padding: 4;
-		fill-width: 1;
-		fill-height: 1;
-		auto-size: 1;
-		overflow: hidden;
-
-		&.selected {
-			>hui-background {
-				background: @color-accent;
-			}
-		}
-
-		&:hover {
-			>hui-background {
-				background: lighten(@color-accent, @light-hover);
-			}
-		}
-
-		#border {
-			layout: vertical;
-			fill-width: 1;
-			fill-height: 1;
-			auto-size: 1;
-
-
-		}
-		#icon {
-			halign: middle;
-			valign: top;
-		}
-		#name-container {
-			height: 28;
-			auto-size-height: 1;
-			overflow: hidden;
-			halign: middle;
-		}
-		#name-text {
-			valign: top;
-			text-align: multiline-center;
-			break-all: true;
-		}
-		#gallery-container, #tree-container {
-			valign: top;
-			fill-width: true;
-			fill-height: true;
-			layout: vertical;
-		}
-	}
-
 	hui-toolbar {
 		padding: 0;
 		min-width: 0;
@@ -83,6 +33,56 @@ hui-file-browser {
 	}
 
 	#gallery-container {
+		layout: vertical;
+	}
+}
+
+hui-file-browser-gallery-item {
+	padding: 4;
+	fill-width: 1;
+	fill-height: 1;
+	auto-size: 1;
+	overflow: hidden;
+
+	&.selected {
+		>hui-background {
+			background: @color-accent;
+		}
+	}
+
+	&:hover {
+		>hui-background {
+			background: lighten(@color-accent, @light-hover);
+		}
+	}
+
+	#border {
+		layout: vertical;
+		fill-width: 1;
+		fill-height: 1;
+		auto-size: 1;
+
+
+	}
+	#icon {
+		halign: middle;
+		valign: top;
+	}
+	#name-container {
+		height: 28;
+		auto-size-height: 1;
+		overflow: hidden;
+		halign: middle;
+	}
+	#name-text {
+		valign: top;
+		text-align: multiline-center;
+		break-all: true;
+	}
+	#gallery-container, #tree-container {
+		valign: top;
+		fill-width: true;
+		fill-height: true;
 		layout: vertical;
 	}
 }

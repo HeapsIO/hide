@@ -58,7 +58,7 @@ class HuiColorPicker extends HuiPopup {
 
 	public function new (b : HuiColorBox, ?parent){
 		box = b;
-		super(parent);
+		super(false, parent);
 
 		function colorSpacePickerOptions() {
 			return  [ for (i => mode in colorModes) {label: mode.name, value: i}];

@@ -103,6 +103,9 @@ class HuiBase extends HuiElement {
 
 	public function addTooltip(tooltip: HuiPopup, ?anchor: hrt.ui.HuiPopup.Anchor) {
 		tooltip.anchor = anchor;
+		if (this.mainLayout.tooltipOverlay.children.contains(tooltip))
+			return;
+		tooltip.dom.addClass("tooltip");
 		this.mainLayout.tooltipOverlay.removeChildElements();
 		this.mainLayout.tooltipOverlay.addChild(tooltip);
 	}

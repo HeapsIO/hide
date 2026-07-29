@@ -161,7 +161,7 @@ class HuiCurveEditor extends HuiPopup {
 	inline function py(sy : Float) { return (calculatedHeight - sy - pan.y) / (calculatedHeight * zoom.y); }
 
 	public function new (b : HuiCurveBox, ?parent) {
-		super(parent);
+		super(false, parent);
 		initComponent();
 
 		registerCommand(deleteKeyCmd, ElementAndChildren, () -> delete(selection));
@@ -399,7 +399,7 @@ class HuiCurveEditor extends HuiPopup {
 									value.keys[idx].prevHandle.dt = (value.keys[idx].nextHandle.dt / len) * -otherLen;
 									value.keys[idx].prevHandle.dv = (value.keys[idx].nextHandle.dv / len) * -otherLen;
 								}
-								
+
 								fixKey(idx);
 							}
 						}

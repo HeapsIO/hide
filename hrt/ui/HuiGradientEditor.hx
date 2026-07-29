@@ -45,7 +45,7 @@ class HuiGradientEditor extends HuiPopup {
 		</hui-gradient-editor>
 
 	public function new(?parent) {
-		super(parent);
+		super(false, parent);
 		initComponent();
 
 		stopGraphics = new h2d.Graphics(gradientContainer);

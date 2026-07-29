@@ -17,6 +17,10 @@ class FileBrowser extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Bro
 			hide.Ide.inst.openFile(file.path);
 		};
 		updateMode(state.mode ?? FileTree);
+		fileBrowser.onModeChange = () -> {
+			state.mode = fileBrowser.mode;
+			saveState();
+		}
 	}
 
 	override function getViewName():String {
@@ -26,7 +30,7 @@ class FileBrowser extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Bro
 	function updateMode(mode: hrt.ui.HuiFileBrowser.BrowserMode) {
 		state.mode = mode;
 		fileBrowser.mode = mode;
-
+		saveState();
 	}
 
 	override function getContextMenuContent(content:Array<hrt.ui.HuiMenu.MenuItem>) {

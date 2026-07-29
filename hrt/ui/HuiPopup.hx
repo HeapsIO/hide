@@ -48,12 +48,14 @@ class HuiPopup extends HuiElement {
 	public var onCloseListeners : Array<Void -> Void> = [];
 	var closed = false;
 
-	public function new(?parent: h2d.Object) {
+	public function new(?isTooltip: Bool = false, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 
-		makeInteractive();
-		interactive.propagateEvents = false;
+		if (!isTooltip) {
+			makeInteractive();
+			interactive.propagateEvents = false;
+		}
 
 		onAfterReflow = () -> updateAnchor(true);
 	}

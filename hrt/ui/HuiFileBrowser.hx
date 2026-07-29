@@ -34,6 +34,10 @@ class HuiFileBrowser extends HuiElement {
 	var navigationHistory: Array<File> = [];
 	var navigationHistoryPos: Int = 0;
 
+	var currentHover: File = null;
+	var fullThumbnailPopup: HuiPopup;
+	var fullThumbnailItem: HuiFileBrowserGalleryItem;
+
 	@:p public var mode(default, set): BrowserMode = FileTree;
 
 	var zoom : Int = 5;
@@ -57,6 +61,10 @@ class HuiFileBrowser extends HuiElement {
 	var delaySelect: Array<String> = null;
 
 	static public final fileDragOp = "fileDrag";
+
+	public dynamic function onModeChange() {
+
+	}
 
 	public function new(rootPath: String, ?parent) {
 		super(parent);
@@ -119,6 +127,16 @@ class HuiFileBrowser extends HuiElement {
 
 		tree.onItemContextMenu = itemContextMenu;
 
+		tree.onAfterLineCreation = (item, element) -> {
+			element.onOver = (e) -> {
+				currentHover = item;
+			}
+
+			element.onOut = (e) -> {
+				currentHover = null;
+			}
+		};
+
 		galleryWidget = new HuiFileBrowserGalleryWidget();
 		galleryWidget.noResults.clearSearchBtn.onClick = (e) -> {
 			secondToolbarWidget.searchBar.text = "";
@@ -176,10 +194,10 @@ class HuiFileBrowser extends HuiElement {
 
 		mainToolbarWidget.splitButton.onClick = (e) -> {
 			uiBase.openMenu([
-				{label: "File tree", radio: () -> mode == FileTree, stayOpen: true, click: () -> mode = FileTree},
-				{label: "Gallery", radio: () -> mode == Gallery, stayOpen: true,  click: () -> mode = Gallery},
-				{label: "Horizontal", radio: () -> mode == Horizontal, stayOpen: true,  click: () -> mode = Horizontal},
-				{label: "Vertical", radio: () -> mode == Vertical, stayOpen: true,  click: () -> mode = Vertical},
+				{label: "File tree", radio: () -> mode == FileTree, stayOpen: true, click: () -> {mode = FileTree; onModeChange();}},
+				{label: "Gallery", radio: () -> mode == Gallery, stayOpen: true,  click: () -> {mode = Gallery; onModeChange();}},
+				{label: "Horizontal", radio: () -> mode == Horizontal, stayOpen: true,  click: () -> {mode = Horizontal; onModeChange();}},
+				{label: "Vertical", radio: () -> mode == Vertical, stayOpen: true,  click: () -> {mode = Vertical; onModeChange();}},
 			], {}, {object: Element(mainToolbarWidget.splitButton), directionX: StartInside, directionY: EndOutside});
 		}
 
@@ -689,6 +707,27 @@ class HuiFileBrowser extends HuiElement {
 			}
 		}
 
+		var s2d = this.getScene();
+		if (hxd.Key.isDown(hxd.Key.ALT)) {
+			if (fullThumbnailPopup == null) {
+				fullThumbnailPopup = new HuiPopup(true);
+			}
+			if (currentHover != null) {
+				if (fullThumbnailItem == null) {
+					fullThumbnailItem = new HuiFileBrowserGalleryItem(currentHover, null, fullThumbnailPopup);
+				}
+
+				fullThumbnailItem.file = currentHover;
+				fullThumbnailItem.refresh();
+
+				uiBase.addTooltip(fullThumbnailPopup, {object: Point(s2d.mouseX + 8, s2d.mouseY + 8), directionX: StartOutside, directionY: StartOutside});
+			} else {
+				fullThumbnailPopup.remove();
+			}
+		} else {
+			fullThumbnailPopup.remove();
+		}
+
 		super.update(dt);
 	}
 
@@ -809,7 +848,7 @@ class HuiFileBrowser extends HuiElement {
 		return res.name;
 	}
 
-	function getItemIcon(res: File) : hxd.res.Image {
+	static function getItemIcon(res: File) : hxd.res.Image {
 		return switch(res.kind) {
 			case Dir: HuiRes.ui.icons.folder_filled;
 			case File: {
@@ -835,6 +874,7 @@ class HuiFileBrowser extends HuiElement {
 	}
 }
 
+@:allow(hrt.ui.HuiFileBrowser)
 @:access(hrt.ui.HuiFileBrowser)
 class HuiFileBrowserGalleryItem extends HuiElement {
 	var file: File;
@@ -855,46 +895,64 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 
 		this.file = file;
 		this.fileBrowser = fileBrowser;
-		this.tip = file.name;
+		if (fileBrowser != null)
+			this.tip = file.name;
 		refresh();
 
-		onClick = (e) -> {
-			if (e.button == hxd.Key.MOUSE_LEFT || e.button == hxd.Key.MOUSE_RIGHT) {
-				if (!hxd.Key.isDown(hxd.Key.CTRL)) {
-					fileBrowser.gallerySelection.clear();
-				}
+		// filebrowser == null means we want to display a big thumbnail in a popup
+		if (fileBrowser != null) {
+			onClick = (e) -> {
+				if (e.button == hxd.Key.MOUSE_LEFT || e.button == hxd.Key.MOUSE_RIGHT) {
+					if (!hxd.Key.isDown(hxd.Key.CTRL)) {
+						fileBrowser.gallerySelection.clear();
+					}
 
-				fileBrowser.gallerySelection.set(file, true);
-				fileBrowser.refreshGalleryItems();
+					fileBrowser.gallerySelection.set(file, true);
+					fileBrowser.refreshGalleryItems();
 
-				if (e.button == hxd.Key.MOUSE_RIGHT) {
-					fileBrowser.itemContextMenu(file);
+					if (e.button == hxd.Key.MOUSE_RIGHT) {
+						fileBrowser.itemContextMenu(file);
+					}
 				}
+			}
+
+			onDoubleClick = (e) -> {
+				if (file.kind == Dir) {
+					fileBrowser.navigateTo(file, true);
+				} else {
+					fileBrowser.onOpen(file);
+				}
+			}
+
+			onOver = (e) -> {
+				fileBrowser.currentHover = file;
+			}
+
+			onOut = (e) -> {
+				fileBrowser.currentHover = null;
 			}
 		}
 
-		onDoubleClick = (e) -> {
-			if (file.kind == Dir) {
-				fileBrowser.navigateTo(file, true);
-			} else {
-				fileBrowser.onOpen(file);
-			}
-		}
 	}
 
 	public function refresh() {
 		nameText.text = file.name;
-		var zoomPx = HuiFileBrowser.zoomLevels[fileBrowser.zoom];
+
+		var zoomPx = fileBrowser != null ? HuiFileBrowser.zoomLevels[fileBrowser.zoom] : 512;
 		icon.setWidth(zoomPx);
 		icon.setHeight(zoomPx);
 
 		icon.backgroundType = "hui";
 
-		icon.huiBg.setTexture(fileBrowser.getItemIcon(file).toTexture());
+		icon.huiBg.setTexture(HuiFileBrowser.getItemIcon(file).toTexture());
 		icon.huiBg.imageMode = Fit;
 		icon.huiBg.imageIsSdf = true;
 
-		dom.toggleClass("selected", fileBrowser.gallerySelection.get(file) != null);
+		if (fileBrowser != null) {
+			dom.toggleClass("selected", fileBrowser.gallerySelection.get(file) != null);
+		} else {
+			dom.removeClass("selected");
+		}
 
 		if (file.kind != Dir) {
 			file.getIcon((miniaturePath) -> {

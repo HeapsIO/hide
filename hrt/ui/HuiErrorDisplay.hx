@@ -18,7 +18,7 @@ class HuiErrorDisplay extends HuiPopup {
 	var prevError: String = null;
 
 	public function new(?parent) {
-		super(parent);
+		super(false, parent);
 		initComponent();
 
 		stackTrace.generateItem = generateItem;
