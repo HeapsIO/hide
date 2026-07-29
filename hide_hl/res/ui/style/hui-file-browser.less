@@ -35,6 +35,12 @@ hui-file-browser {
 	#gallery-container {
 		layout: vertical;
 	}
+
+	:focus {
+		hui-file-browser-gallery-item {
+			.hover-select-focus();
+		}
+	}
 }
 
 hui-file-browser-gallery-item {
@@ -44,17 +50,7 @@ hui-file-browser-gallery-item {
 	auto-size: 1;
 	overflow: hidden;
 
-	&.selected {
-		>hui-background {
-			background: @color-accent;
-		}
-	}
-
-	&:hover {
-		>hui-background {
-			background: lighten(@color-accent, @light-hover);
-		}
-	}
+	.hover-select();
 
 	#border {
 		layout: vertical;

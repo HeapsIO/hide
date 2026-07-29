@@ -136,18 +136,54 @@ class HuiBase extends HuiElement {
 		}
 	}
 
+	public function getParents(includeSelf:Bool) : Array<HuiElement> {
+		var list = [];
+		var current = includeSelf ? this : this.parent;
+		while(Std.downcast(current, HuiElement) != null) {
+			list.unshift(cast current);
+			current = current.parent;
+		}
+		return list;
+	}
+
+	public function findCommonParent(a: HuiElement, b: HuiElement) {
+		if (a == null)
+			return null;
+		if (b == null)
+			return null;
+		var aParents = getParents(true);
+		var bParents = getParents(true);
+
+		var i = 0;
+		while(i < aParents.length && i < bParents.length) {
+			if (aParents[i] != bParents[i])
+				break;
+			i++;
+		}
+		if (i > 0)
+			return aParents[i-1];
+		return null;
+
+	}
+
 	public function focusElement(element: HuiElement, event: hxd.Event) {
-		while(element != null) {
-			element = Std.downcast(element.parent, HuiElement);
+		if (element == focusedElement)
+			return;
+
+		var common = findCommonParent(element, focusedElement);
+		var current = focusedElement;
+		while (current != null && current != common) {
+			current.onFocusLostInternal(event);
+			current = current.parentElement;
 		}
 
-		if (element != focusedElement) {
-			var old = focusedElement;
-			focusedElement = element;
-
-			old?.onFocusLostInternal(event);
-			focusedElement?.onFocusInternal(event);
+		var current = element;
+		while(current != null && current != common) {
+			current.onFocusInternal(event);
+			current = current.parentElement;
 		}
+
+		focusedElement = element;
 	}
 
 	/**

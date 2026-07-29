@@ -88,15 +88,7 @@ hui-tree-line {
 
 	}
 
-	&.selected {
-		> hui-background {
-			background: @color-gray-6;
-		}
-
-		&:hover > hui-background {
-			background: lighten(@color-gray-6, @light-hover);
-		}
-	}
+	.hover-select();
 
 	&.children {
 		> #caret {

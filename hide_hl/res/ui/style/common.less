@@ -25,6 +25,14 @@
 
 @color-over-2: lighter(@color-blue, 10%);
 
+@light-hover: 10%;
+
+@color-select: @color-foreground-muted;
+@color-select-focus: @color-accent;
+@color-hover: lighten(@color-select, @light-hover);
+@color-hover-focus: lighten(@color-accent, @light-hover);
+
+
 @widget-base-height: 20;
 @widget-bg: @color-gray-4;
 @widget-border: @color-gray-6;
@@ -47,7 +55,6 @@
 @popup-border: @color-gray-3;
 @popup-shadow: 0 3 3 0 rgba(0,0,0,0.8);
 
-@light-hover: 10%;
 
 @tab-bar-bg: @color-gray-0;
 @tab-tab-bg: @color-gray-2;
@@ -111,6 +118,37 @@
 		}
 	}
 }
+
+
+.hover-select() {
+	&.selected {
+		> hui-background {
+			background: @color-select;
+		}
+
+		&:hover > hui-background {
+			background: @color-hover;
+		}
+	}
+
+	&:hover > hui-background {
+		background: @tree-hover;
+	}
+}
+
+.hover-select-focus() {
+	&.selected {
+		> hui-background {
+			background: @color-select-focus;
+		}
+
+		&:hover > hui-background {
+			background: @color-hover-focus;
+		}
+	}
+}
+
+
 
 hui-background {
 	debug: false;
