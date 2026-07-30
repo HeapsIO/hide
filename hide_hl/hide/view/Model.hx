@@ -53,9 +53,9 @@ class CollisionSettings {
 			var collide = convertRule.cmd?.params?.collide;
 			if (collide != null) {
 				defaultParams = {
-					precision : collide.precision,
 					maxConvexHulls : collide.maxConvexHulls,
-					maxSubdiv : collide.maxSubdiv,
+					scale : collide.scale,
+					shrink : collide.shrink
 				};
 			}
 		}
@@ -86,11 +86,9 @@ class CollisionSettings {
 			case ConvexHulls(colliderModel):
 				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 
-				var dim = hmd.getBounds().dimension();
-				var prec = hxd.Math.min(dim, params.precision);
-				var subdiv = hxd.Math.ceil(dim / prec);
-				subdiv = hxd.Math.imin(subdiv, params.maxSubdiv);
-				var p = { maxConvexHulls: params.maxConvexHulls, maxResolution: subdiv * subdiv * subdiv };
+				var dim = mesh.getBounds().dimension();
+				var resolution = Math.ceil(dim / params.scale);
+				var p = { maxConvexHulls: params.maxConvexHulls, resolution: resolution };
 
 				var vertices : Array<Float> = [];
 				var indexes : Array<Int> = [];

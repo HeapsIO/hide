@@ -93,9 +93,9 @@ class CollisionSettings {
 			var collide = convertRule.cmd?.params?.collide;
 			if (collide != null) {
 				defaultParams = {
-					precision : collide.precision,
 					maxConvexHulls : collide.maxConvexHulls,
-					maxSubdiv : collide.maxSubdiv,
+					scale : collide.scale,
+					shrink : collide.shrink
 				};
 			}
 		}
@@ -125,12 +125,9 @@ class CollisionSettings {
 
 			case ConvexHulls(colliderModel):
 				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
-
-				var dim = hmd.getBounds().dimension();
-				var prec = hxd.Math.min(dim, params.precision);
-				var subdiv = hxd.Math.ceil(dim / prec);
-				subdiv = hxd.Math.imin(subdiv, params.maxSubdiv);
-				var p = { maxConvexHulls: params.maxConvexHulls, maxResolution: subdiv * subdiv * subdiv };
+				var dim = mesh.getBounds().dimension();
+				var resolution = Math.ceil(dim / params.scale);
+				var p = { maxConvexHulls: params.maxConvexHulls, resolution: resolution };
 
 				var vertices : Array<Float> = [];
 				var indexes : Array<Int> = [];
@@ -167,6 +164,8 @@ class CollisionSettings {
 				}
 
 				parentObj.defaultTransform = model.position.toMatrix().getInverse();
+				parentObj.name = "__shrinked";
+				parentObj.setScale(params.shrink ?? 1);
 				return parentObj;
 
 			case Shapes:
@@ -239,7 +238,7 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 					continue;
 
 				var debugCollider = new h3d.scene.Object(rootDebugCollider);
-				debugCollider.name = 'debug collider (${obj.name})';
+				debugCollider.name = 'debug_collider_(${obj.name})';
 				debugCollider.follow = obj;
 
 				var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
@@ -302,7 +301,7 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 			rootDebugCollider = null;
 		}
 	}
-	
+
 	override function selectElements( elts : Array<hrt.prefab.Prefab>, ?mode : hide.comp.SceneEditor.SelectMode ) {
 		var isShapeEditing = false;
 		for (s in parent.shapesEditor.keys())
@@ -1121,21 +1120,25 @@ class Model extends FileView {
 							${[for(idx in 0...CollisionMode.Count) '<option value="${idx}">${cast(idx, CollisionMode).toString()}</option>'].join("")}
 						</select>
 					</dl></div>
-					<div class="collision-param collision-auto"><dl><dt>Precision</dt><dd><input type="text" class="precision"/></dd></dl></div>
+					<div class="collision-param collision-auto"><dl><dt>Scale</dt><dd>
+						<select class="select-scale">
+							${[for(unit in hxd.fmt.hmd.Data.ConvexHullsCollider.SCALE_UNITS.keys()) '<option value="${unit}">${unit}</option>'].join("")}
+						</select>
+					</dd></dl></div>
+					<div class="collision-param collision-auto"><dl><dt>Shrink</dt><dd><input type="range" class="shrink" min="0" max="2.0" step="0.001"/></dd></dl></div>
 					<div class="collision-param collision-auto"><dl><dt>Max convex hulls</dt><dd><input type="text" class="hulls"/></dd></dl></div>
-					<div class="collision-param collision-auto"><dl><dt>Max subdivision</dt><dd><input type="text" class="subdiv"/></dd></dl></div>
 					<div class="collision-param collision-auto collision-mesh"><dl><dt>Mesh</dt><dd>
 						<select class="select-collision-mesh">
 							${[for(mname in meshList) '<option value="${mname}">${mname == null ? "" : mname}</option>'].join("")}
 						</select>
 					</dd></dl></div>
-					<div class="collision-param collision-auto"><dl><dt></dt><dd><input type="button" id="compute-collider" value="Compute Collider"/></dd></dl></div>
+					<div class="collision-param collision-auto"><input type="button" id="compute-collider" value="Compute Collider"/></div>
 					<div class="collision-param collision-shapes collision-shape-editor"></div>
 				</div>');
 				var elMode = collisionParams.find(".select-collision-mode");
-				var elPrec = collisionParams.find(".precision");
 				var elHull = collisionParams.find(".hulls");
-				var elSubdiv = collisionParams.find(".subdiv");
+				var elShrink = collisionParams.find(".shrink");
+				var elScale = collisionParams.find(".select-scale");
 				var elMesh = collisionParams.find(".select-collision-mesh");
 
 				var shapeEditor = new hide.comp.ShapeEditor(scene, obj, settings.toShapeEditor(), null, collisionParams.find(".collision-shape-editor"));
@@ -1157,11 +1160,14 @@ class Model extends FileView {
 					}
 					elMode.val(settings.mode);
 					var params = settings.params ?? {};
-					elPrec.val('${params.precision ?? 1.0}');
 					elHull.val('${params.maxConvexHulls ?? 1}');
-					elSubdiv.val('${params.maxSubdiv ?? 32}');
-					elMesh.val(params.mesh);
-
+					elScale.val("Meter");
+					for (unit in hxd.fmt.hmd.Data.ConvexHullsCollider.SCALE_UNITS.keys())
+						if (hxd.fmt.hmd.Data.ConvexHullsCollider.SCALE_UNITS.get(unit) == params.scale)
+							elScale.val(unit);
+					elShrink.val(params.shrink ?? 1);
+					elShrink.trigger("input");
+					
 					if (settings.mode != Auto)
 						sceneEditor.updateCollidersVisibility();
 				}
@@ -1182,9 +1188,9 @@ class Model extends FileView {
 						case None:
 							curParams = null;
 						case Auto:
-							Reflect.setField(curParams, "precision", Std.parseFloat(elPrec.val()));
 							Reflect.setField(curParams, "maxConvexHulls", Std.parseInt(elHull.val()));
-							Reflect.setField(curParams, "maxSubdiv", Std.parseInt(elSubdiv.val()));
+							Reflect.setField(curParams, "scale", hxd.fmt.hmd.Data.ConvexHullsCollider.SCALE_UNITS.get(elScale.val()));
+							Reflect.setField(curParams, "shrink", Std.parseFloat(elShrink.val()));
 							Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
 						case Mesh:
 							Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
@@ -1222,6 +1228,17 @@ class Model extends FileView {
 						}
 					}));
 				});
+
+				elShrink.on("input", function(_) {
+					var root = @:privateAccess sceneEditor.rootDebugCollider;
+					if (root == null)
+						return;
+					var d = root.getObjectByName('__shrinked');
+					if (d == null)
+						return;
+					d.setScale(Std.parseFloat(elShrink.val()));
+				});
+
 				applySettings(settings);
 				return collisionParams;
 			}
@@ -1955,7 +1972,7 @@ class Model extends FileView {
 							mode = None;
 						else if( Reflect.field(cf, "useDefault") )
 							mode = Default;
-						else if( Reflect.hasField(cf, "precision") )
+						else if( Reflect.hasField(cf, "maxConvexHulls") )
 							mode = Auto;
 						else if( Reflect.hasField(cf, "mesh") )
 							mode = Mesh;

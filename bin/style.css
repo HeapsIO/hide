@@ -2928,6 +2928,23 @@ div.sp-container input:hover {
 .collision-editor fancy-array {
   overflow: hidden;
 }
+.collision-editor #compute-collider {
+  width: 100%;
+  margin-top: 10px;
+}
+.collision-editor #slider-convex-hull {
+  display: flex;
+  padding: 5px;
+}
+.collision-editor #slider-convex-hull label {
+  text-align: right;
+  font-size: 11px;
+  color: #aaa;
+  padding: 2px 5px 2px 5px;
+}
+.collision-editor #slider-convex-hull input {
+  flex: 1;
+}
 /* Script Editor */
 .codeeditor {
   position: relative;
