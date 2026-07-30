@@ -1167,6 +1167,7 @@ class Model extends FileView {
 							elScale.val(unit);
 					elShrink.val(params.shrink ?? 1);
 					elShrink.trigger("input");
+					elMesh.val(params.mesh);
 					
 					if (settings.mode != Auto)
 						sceneEditor.updateCollidersVisibility();
