@@ -435,14 +435,16 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		uiBase.focusView(this);
 		uiBase.focusElement(this, e);
 
-		if (onDoubleClick != null) {
-			var time = haxe.Timer.stamp();
-			if (time - lastClickTime < 0.5) {
-				onDoubleClick(e);
+		if (e.button == hxd.Key.MOUSE_LEFT) {
+			if (onDoubleClick != null) {
+				var time = haxe.Timer.stamp();
+				if (time - lastClickTime < 0.5) {
+					onDoubleClick(e);
+					lastClickTime = time;
+					return;
+				}
 				lastClickTime = time;
-				return;
 			}
-			lastClickTime = time;
 		}
 
 		onClick(e);
