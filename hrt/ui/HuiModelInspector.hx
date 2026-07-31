@@ -266,6 +266,8 @@ class HuiModelInspector extends HuiElement {
 
 		var settings = @:privateAccess model.collisionSettings.get(obj.name);
 		function refreshCollisionEdition() {
+			collisionModeEl.value = settings.mode;
+
 			scaleEl.parent.visible = collisionModeEl.value == hide.view.Model.CollisionMode.Auto;
 			scaleEl.value = settings.params?.scale ?? 1.0;
 

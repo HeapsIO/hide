@@ -256,7 +256,7 @@ class Model extends HuiView<{path: String}> {
 
 			if (obj != null && @:privateAccess obj.children != null) {
 				for (c in @:privateAccess obj.children)
-					if (!Std.isOfType(c, h3d.scene.Graphics))
+					if (!Std.isOfType(c, h3d.scene.Graphics) && !Std.isOfType(c, h3d.scene.Interactive))
 						children.push(c);
 			}
 
