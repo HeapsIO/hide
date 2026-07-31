@@ -54,8 +54,8 @@ class CollisionSettings {
 			if (collide != null) {
 				defaultParams = {
 					maxConvexHulls : collide.maxConvexHulls,
-					scale : collide.scale,
-					shrink : collide.shrink
+					unit : collide.unit,
+					scale : collide.scale
 				};
 			}
 		}

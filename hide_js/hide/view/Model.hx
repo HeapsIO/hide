@@ -94,8 +94,8 @@ class CollisionSettings {
 			if (collide != null) {
 				defaultParams = {
 					maxConvexHulls : collide.maxConvexHulls,
-					scale : collide.scale,
-					shrink : collide.shrink
+					unit : collide.unit,
+					scale : collide.scale
 				};
 			}
 		}
@@ -164,8 +164,8 @@ class CollisionSettings {
 				}
 
 				parentObj.defaultTransform = model.position.toMatrix().getInverse();
-				parentObj.name = "__shrinked";
-				parentObj.setScale(params.shrink ?? 1);
+				parentObj.name = "__scaled";
+				parentObj.setScale(params.scale ?? 1);
 				return parentObj;
 
 			case Shapes:
@@ -1120,12 +1120,12 @@ class Model extends FileView {
 							${[for(idx in 0...CollisionMode.Count) '<option value="${idx}">${cast(idx, CollisionMode).toString()}</option>'].join("")}
 						</select>
 					</dl></div>
-					<div class="collision-param collision-auto"><dl><dt>Scale</dt><dd>
-						<select class="select-scale">
-							${[for(unit in hxd.fmt.hmd.Data.ConvexHullsCollider.SCALE_UNITS.keys()) '<option value="${unit}">${unit}</option>'].join("")}
+					<div class="collision-param collision-auto"><dl><dt>Unit</dt><dd>
+						<select class="select-unit">
+							${[for(unit in hxd.fmt.hmd.Data.ConvexHullsCollider.UNITS.keys()) '<option value="${unit}">${unit}</option>'].join("")}
 						</select>
 					</dd></dl></div>
-					<div class="collision-param collision-auto"><dl><dt>Shrink</dt><dd><input type="range" class="shrink" min="0" max="2.0" step="0.001"/></dd></dl></div>
+					<div class="collision-param collision-auto"><dl><dt>Scale</dt><dd><input type="range" class="scale" min="0.8" max="1.2" step="0.001"/></dd></dl></div>
 					<div class="collision-param collision-auto"><dl><dt>Max convex hulls</dt><dd><input type="text" class="hulls"/></dd></dl></div>
 					<div class="collision-param collision-auto collision-mesh"><dl><dt>Mesh</dt><dd>
 						<select class="select-collision-mesh">
@@ -1137,8 +1137,8 @@ class Model extends FileView {
 				</div>');
 				var elMode = collisionParams.find(".select-collision-mode");
 				var elHull = collisionParams.find(".hulls");
-				var elShrink = collisionParams.find(".shrink");
-				var elScale = collisionParams.find(".select-scale");
+				var elScale = collisionParams.find(".scale");
+				var elUnit = collisionParams.find(".select-unit");
 				var elMesh = collisionParams.find(".select-collision-mesh");
 
 				var shapeEditor = new hide.comp.ShapeEditor(scene, obj, settings.toShapeEditor(), null, collisionParams.find(".collision-shape-editor"));
@@ -1161,12 +1161,12 @@ class Model extends FileView {
 					elMode.val(settings.mode);
 					var params = settings.params ?? {};
 					elHull.val('${params.maxConvexHulls ?? 1}');
-					elScale.val("Meter");
-					for (unit in hxd.fmt.hmd.Data.ConvexHullsCollider.SCALE_UNITS.keys())
-						if (hxd.fmt.hmd.Data.ConvexHullsCollider.SCALE_UNITS.get(unit) == params.scale)
-							elScale.val(unit);
-					elShrink.val(params.shrink ?? 1);
-					elShrink.trigger("input");
+					elUnit.val("Meter");
+					for (unit in hxd.fmt.hmd.Data.ConvexHullsCollider.UNITS.keys())
+						if (hxd.fmt.hmd.Data.ConvexHullsCollider.UNITS.get(unit) == params.scale)
+							elUnit.val(unit);
+					elScale.val(params.scale ?? 1);
+					elScale.trigger("input");
 					elMesh.val(params.mesh);
 					
 					if (settings.mode != Auto)
@@ -1190,8 +1190,8 @@ class Model extends FileView {
 							curParams = null;
 						case Auto:
 							Reflect.setField(curParams, "maxConvexHulls", Std.parseInt(elHull.val()));
-							Reflect.setField(curParams, "scale", hxd.fmt.hmd.Data.ConvexHullsCollider.SCALE_UNITS.get(elScale.val()));
-							Reflect.setField(curParams, "shrink", Std.parseFloat(elShrink.val()));
+							Reflect.setField(curParams, "unit", hxd.fmt.hmd.Data.ConvexHullsCollider.UNITS.get(elUnit.val()));
+							Reflect.setField(curParams, "scale", Std.parseFloat(elScale.val()));
 							Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
 						case Mesh:
 							Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
@@ -1230,14 +1230,14 @@ class Model extends FileView {
 					}));
 				});
 
-				elShrink.on("input", function(_) {
+				elScale.on("input", function(_) {
 					var root = @:privateAccess sceneEditor.rootDebugCollider;
 					if (root == null)
 						return;
-					var d = root.getObjectByName('__shrinked');
+					var d = root.getObjectByName('__scaled');
 					if (d == null)
 						return;
-					d.setScale(Std.parseFloat(elShrink.val()));
+					d.setScale(Std.parseFloat(elScale.val()));
 				});
 
 				applySettings(settings);
