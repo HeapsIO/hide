@@ -54,6 +54,7 @@ class HuiConfirmPopup extends HuiPopup {
 
 	public function complete(button: ConfirmButton) {
 		close();
+		trace("complete");
 		onCompletion(button);
 	}
 }

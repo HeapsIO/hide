@@ -146,44 +146,40 @@ class HuiBase extends HuiElement {
 		return list;
 	}
 
-	public function findCommonParent(a: HuiElement, b: HuiElement) {
-		if (a == null)
-			return null;
-		if (b == null)
-			return null;
-		var aParents = getParents(true);
-		var bParents = getParents(true);
-
-		var i = 0;
-		while(i < aParents.length && i < bParents.length) {
-			if (aParents[i] != bParents[i])
-				break;
-			i++;
-		}
-		if (i > 0)
-			return aParents[i-1];
-		return null;
-
-	}
-
-	public function focusElement(element: HuiElement, event: hxd.Event) {
-		if (element == focusedElement)
+	public function focusElement(newFocusElement: HuiElement, event: hxd.Event) {
+		if (newFocusElement == focusedElement)
 			return;
 
-		var common = findCommonParent(element, focusedElement);
-		var current = focusedElement;
-		while (current != null && current != common) {
-			current.onFocusLostInternal(event);
-			current = current.parentElement;
+		var toUnfocus: Array<HuiElement> = [];
+		var toFocus: Array<HuiElement> = [];
+
+		var cur = focusedElement;
+		while(cur != null) {
+			if (cur.focused) {
+				toUnfocus.push(cur);
+			}
+			cur = cur.parentElement;
 		}
 
-		var current = element;
-		while(current != null && current != common) {
-			current.onFocusInternal(event);
-			current = current.parentElement;
+		var cur = newFocusElement;
+		while(cur != null) {
+			toUnfocus.remove(cur);
+			if (!cur.focused) {
+				toFocus.push(cur);
+			}
+			cur = cur.parentElement;
 		}
 
-		focusedElement = element;
+		for (element in toUnfocus) {
+			element.onFocusLostInternal(event);
+		}
+
+		for (i => _ in toFocus) {
+			var element = toFocus[toFocus.length - 1 - i];
+			element.onFocusInternal(event);
+		}
+
+		focusedElement = newFocusElement;
 	}
 
 	/**

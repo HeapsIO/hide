@@ -22,7 +22,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	@:p public var styleEvents: Bool = true;
 
 	// If the element is currently focused by the ui
-	public var focused(default, null): Bool = true;
+	public var focused(default, null): Bool = false;
 
 	/**Tooltip text that appears when the user hovers on the object for a given time**/
 	@:p public var tip(default, set): Null<String> = null;
@@ -65,7 +65,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	function set_enable(b) {
 		if( !b && dom != null )
-			dom.hover = dom.active = dom.focus = false;
+			dom.hover = dom.active = dom.focus = focused = false;
 		if( dom != null )
 			dom.toggleClass("disabled", !b);
 		return enable = b;
@@ -432,9 +432,6 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (!enable)
 			return;
 
-		uiBase.focusView(this);
-		uiBase.focusElement(this, e);
-
 		if (e.button == hxd.Key.MOUSE_LEFT) {
 			if (onDoubleClick != null) {
 				var time = haxe.Timer.stamp();
@@ -455,6 +452,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 
 		dom.active = true;
+
+		uiBase.focusView(this);
+		uiBase.focusElement(this, e);
 
 		if (onDragStart != emtpyFuncVoidVoid) {
 			var base = uiBase;
@@ -549,10 +549,12 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (!enable)
 			return;
 
-		focused = false;
-		dom.focus = false;
+		if (focused) {
+			focused = false;
+			dom.focus = false;
 
-		onFocusLost(e);
+			onFocusLost(e);
+		}
 	}
 
 	override function onMouseWheel(e: hxd.Event) {

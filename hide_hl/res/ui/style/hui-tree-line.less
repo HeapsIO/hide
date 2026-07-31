@@ -21,9 +21,12 @@ hui-tree-line {
 		visible: false;
 
 		padding-left: 4;
-		padding-right: 4;
+		margin-right: 32;
 
 		fill-width: 1;
+
+		height: 16;
+
 	}
 
 	&.edit {
@@ -85,7 +88,12 @@ hui-tree-line {
 		> #caret > hui-background {
 			image-angle: -1.57079632679489661923;
 		}
+	}
 
+	&.selected {
+		> #caret > hui-background {
+			image-color: @color-foreground;
+		}
 	}
 
 	.hover-select();

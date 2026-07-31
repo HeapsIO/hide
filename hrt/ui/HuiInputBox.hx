@@ -24,6 +24,14 @@ class HuiInputBox extends HuiElement {
 
 	}
 
+	public dynamic function onInputFocus(e: hxd.Event) {
+
+	}
+
+	public dynamic function onInputFocusLost(e: hxd.Event) {
+
+	}
+
 	function get_text() : String {
 		return textInput.text;
 	}
@@ -45,8 +53,8 @@ class HuiInputBox extends HuiElement {
 		textInput.onKeyDown = onKeyDownInternal;
 		textInput.onTextInput = onTextInputInternal;
 		textInput.onKeyUp = onKeyUpInternal;
-		textInput.onFocus = onFocusInternal;
-		textInput.onFocusLost = onFocusLostInternal;
+		textInput.onFocus = onInputFocusInternal;
+		textInput.onFocusLost = onInputFocusLostInternal;
 		textInput.onChange = onChangeInternal;
 
 		inputWrapper.onAfterReflow = () -> {
@@ -89,20 +97,20 @@ class HuiInputBox extends HuiElement {
 		super.onKeyDownInternal(e);
 	}
 
-	override function onFocusInternal(e: hxd.Event) {
+	function onInputFocusInternal(e: hxd.Event) {
 		canceled = false;
-		super.onFocusInternal(e);
+		onInputFocus(e);
 	}
 
 	public dynamic function onChange(isTempChange: Bool) {
 
 	}
 
-	override function onFocusLostInternal(e: hxd.Event) {
-		super.onFocusLostInternal(e);
+	function onInputFocusLostInternal(e: hxd.Event) {
 		if (!canceled && getScene() != null) {
 			onChange(false);
 		}
+		onInputFocusLost(e);
 	}
 
 	function onChangeInternal() {

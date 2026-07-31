@@ -421,7 +421,7 @@ class FileManager {
 			try {
 				deleteFilePath(file);
 			} catch (e) {
-				throw "Couldn't delete " + file + " : " + e;
+				hide.Ide.showWarning("Couldn't delete " + file + " : " + e);
 			}
 		}
 	}

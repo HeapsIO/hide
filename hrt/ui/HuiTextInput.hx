@@ -26,7 +26,13 @@ class HuiTextInput extends h2d.TextInput implements h2d.domkit.Object {
 		if( cursorIndex < 0 ) {
 			cursorIndex = getTextLength();
 		}
-		if( autoSelect && text != "" && !multiline ) selectionRange = { start : 0, length : getTextLength() };
+		if( autoSelect && text != "" && !multiline ) setSelectionRange({ start : 0, length : getTextLength() });
+	}
+
+	public function setSelectionRange(range: {start: Int, length: Int}) {
+		selectionRange = range;
+		cursorIndex = range.length;
+		onCursorChange();
 	}
 
 

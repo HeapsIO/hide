@@ -31,6 +31,7 @@ class HuiFileBrowser extends HuiElement {
 	var galleryList: Array<File> = null;
 	var gallerySelection: Map<File, Bool> = [];
 	var galleryLastClick: File = null;
+	var galleryDelayRename: {file: File, callback : String -> Void, range: HuiTree.SelectionRange} = null;
 
 	var navigationHistory: Array<File> = [];
 	var navigationHistoryPos: Int = 0;
@@ -38,6 +39,12 @@ class HuiFileBrowser extends HuiElement {
 	var currentHover: File = null;
 	var fullThumbnailPopup: HuiPopup;
 	var fullThumbnailItem: HuiFileBrowserGalleryItem;
+
+	/**
+		Never update this direcly, it's only an alias for tree.selectedItems or gallerySelection depending on
+		which one is focused, but it needs to be cached in case the focus has changed in the middle of the frame
+	**/
+	var currentSelectedFiles : Array<File> = [];
 
 	@:p public var mode(default, set): BrowserMode = FileTree;
 
@@ -58,8 +65,9 @@ class HuiFileBrowser extends HuiElement {
 		the filemanager filewatch to refresh the browser (in order to not have to manually
 		update the Filemanager internal filesystem manually when we add files).
 	**/
-	var delayRename: String = null;
-	var delaySelect: Array<String> = null;
+	var delayRename: {path: String, isTree: Bool} = null;
+	var delaySelect: {paths: Array<String>, isTree: Bool} = null;
+	var delayTargetTree: Bool;
 
 	static public final fileDragOp = "fileDrag";
 
@@ -74,11 +82,11 @@ class HuiFileBrowser extends HuiElement {
 
 		this.rootPath = rootPath;
 
-		registerCommand(HuiCommands.delete, View, deleteSelection);
-		registerCommand(HuiCommands.rename, View, renameSelection);
-		registerCommand(HuiCommands.duplicate, View, duplicateSelection);
-		registerCommand(HuiCommands.copy, View, copySelection);
-		registerCommand(HuiCommands.paste, View, pasteSelection);
+		registerCommand(HuiCommands.delete, View, () -> deleteFiles(getSelectedFiles()));
+		registerCommand(HuiCommands.rename, View, () -> renameFiles(getSelectedFiles(), tree.focused));
+		registerCommand(HuiCommands.duplicate, View, () -> duplicateFiles(getSelectedFiles(), tree.focused));
+		registerCommand(HuiCommands.copy, View, () -> copyFiles(getSelectedFiles()));
+		registerCommand(HuiCommands.paste, View, () -> pasteInFiles(getSelectedFiles(), tree.focused));
 
 		tree = new HuiTree<File>();
 		tree.getItemChildren = getItemChild;
@@ -89,7 +97,7 @@ class HuiFileBrowser extends HuiElement {
 
 		tree.dragAndDropInterface = {
 			onDragStart: (item) -> {
-				var filePaths = [for (file in tree.getSelectedItems()) file.path];
+				var filePaths = [for (file in getSelectedFiles()) file.path];
 				var op = tree.startDrag(fileDragOp, filePaths);
 				op.setPreviewText(filePaths.join("<br/>"));
 			},
@@ -171,6 +179,7 @@ class HuiFileBrowser extends HuiElement {
 				if (!hxd.Key.isDown(hxd.Key.CTRL)) {
 					gallerySelection.clear();
 					galleryLastClick = null;
+					updateSelectedFiles();
 					refreshGalleryItems();
 				}
 
@@ -252,6 +261,7 @@ class HuiFileBrowser extends HuiElement {
 	}
 
 	function treeSelectionChanged() {
+		updateSelectedFiles();
 		navigateTo(tree.getSelectedItems()[0] ?? rootFile, false);
 	}
 
@@ -325,6 +335,11 @@ class HuiFileBrowser extends HuiElement {
 
 	public function onFileChange(file: File) {
 		tree.rebuild(file == rootFile ? null : file);
+		var cur = currentDir();
+		if (file == cur || file.parent == cur) {
+			galleryList = null;
+			markRefresh();
+		}
 	}
 
 	public function markRefresh() {
@@ -343,17 +358,21 @@ class HuiFileBrowser extends HuiElement {
 		if (file == null)
 			file = rootFile;
 
-		var allExts = @:privateAccess Lambda.filter(hrt.prefab.Prefab.registry, (inf) -> inf.extension != null);
+		var selection = getSelectedFiles();
+
+		/*var allExts = @:privateAccess Lambda.filter(hrt.prefab.Prefab.registry, (inf) -> inf.extension != null);*/
+
+		var isTree = tree.focused;
 
 		var createMenu : Array<hrt.ui.HuiMenu.MenuItem> = [{
 			label: "Directory",
-			click: () -> createNewDirectory(file),
+			click: () -> createNewDirectory(file, isTree),
 		},{
 			label: "Prefab",
-			click: () -> createNewFile(file, "New Prefab", "prefab", hide.Ide.inst.toJSON(@:privateAccess new hrt.prefab.Prefab(null, null).serialize()))
+			click: () -> createNewFile(file, "New Prefab", "prefab", hide.Ide.inst.toJSON(@:privateAccess new hrt.prefab.Prefab(null, null).serialize()), isTree)
 		},{
 			label: "Material Library",
-			click: () -> createNewFile(file, "New Material Library", "matlib", hide.Ide.inst.toJSON(@:privateAccess new hrt.prefab.MaterialLibrary(null, null).serialize()))
+			click: () -> createNewFile(file, "New Material Library", "matlib", hide.Ide.inst.toJSON(@:privateAccess new hrt.prefab.MaterialLibrary(null, null).serialize()), isTree)
 		}];
 
 		var items : Array<hrt.ui.HuiMenu.MenuItem> = [{label: "New ...", menu: createMenu}];
@@ -367,61 +386,65 @@ class HuiFileBrowser extends HuiElement {
 		items.push({isSeparator: true});
 
 		var duplicate = HuiMenu.itemFromCommand(HuiCommands.duplicate, this);
-		duplicate.enabled = tree.getSelectedItems().length > 0;
+		duplicate.enabled = selection.length > 0;
+		duplicate.click = duplicateFiles.bind(selection, isTree);
 		items.push(duplicate);
 
 		var copy = HuiMenu.itemFromCommand(HuiCommands.copy, this);
-		copy.enabled = tree.getSelectedItems().length > 0;
+		copy.enabled = selection.length > 0;
+		copy.click = copyFiles.bind(selection);
 		items.push(copy);
 
 		var paste = HuiMenu.itemFromCommand(HuiCommands.paste, this);
 		paste.enabled = hide.Ide.inst.getClipboardData()?.type == "file";
+		paste.click = pasteInFiles.bind(selection, isTree);
 		items.push(paste);
 
 		var rename = HuiMenu.itemFromCommand(HuiCommands.rename, this);
-		rename.enabled = file != rootFile;
+		rename.enabled = selection.length > 0 && !selection.contains(rootFile);
+		rename.click = renameFiles.bind(selection, isTree);
 		items.push(rename);
 
 		var delete = HuiMenu.itemFromCommand(HuiCommands.delete, this);
-		delete.enabled = file != rootFile;
+		delete.enabled = selection.length > 0 && !selection.contains(rootFile);
+		delete.click = deleteFiles.bind(selection);
 		items.push(delete);
 
 		items.push({label: "Trigger thumbnail", click: () -> @:privateAccess FileManager.inst.renderMiniature(file, (p) -> trace("Miniature renderer : " + p))});
 
-
 		uiBase.contextMenu(items);
 	}
 
-	function copySelection() {
+	function copyFiles(files: Array<File>) {
 		hide.Ide.inst.setClipboard(null, {
 			type: "file",
-			files: [for (file in tree.getSelectedItems()) file.getPath()],
+			files: [for (file in files) file.getPath()],
 		});
 	}
 
-	function pasteSelection() {
+	function pasteInFiles(files: Array<File>, isTree: Bool) {
 		var data = hide.Ide.inst.getClipboardData();
 		if (data == null || data.type != "file")
 			return;
 
-		var target = tree.getSelectedItems()[0] ?? rootFile;
-		if (target.kind != Dir || !tree.isItemOpen(target)) {
+		var target = files[0] ?? rootFile;
+		if (target.kind != Dir) {
 			target = target.parent;
 		}
 
-		copyFilesToFolder(cast data.files, target.getPath());
+		copyFilesToFolder(cast data.files, target.getPath(), isTree);
 	}
 
-	function duplicateSelection() {
-		var sources = [for (file in tree.getSelectedItems()) file.getPath()];
+	function duplicateFiles(files: Array<File>, isTree) {
+		var sources = [for (file in files) file.getPath()];
 		var destinations = ensureUniquePaths(sources);
 
 		var operations = [for (i in 0...sources.length) {source: sources[i], destination: destinations[i]}];
 
-		getView().undo.run(actionCopyFiles(operations), false);
+		getView().undo.run(actionCopyFiles(operations, isTree), false);
 	}
 
-	function createNewDirectory(parent: File) {
+	function createNewDirectory(parent: File, isTree: Bool) {
 		var dir = parent;
 		if (dir.kind != Dir) {
 			dir = parent.parent;
@@ -460,10 +483,10 @@ class HuiFileBrowser extends HuiElement {
 			markRefresh();
 		}, false);
 
-		delayRename = pathToCreate;
+		delayRename = {path: pathToCreate, isTree: isTree};
 	}
 
-	public function createNewFile(parent: File, baseName: String, extension: String, baseContent: String) {
+	public function createNewFile(parent: File, baseName: String, extension: String, baseContent: String, isTree: Bool) {
 		var dir = parent;
 		if (dir.kind != Dir) {
 			dir = parent.parent;
@@ -502,18 +525,32 @@ class HuiFileBrowser extends HuiElement {
 			markRefresh();
 		}, false);
 
-		delayRename = pathToCreate;
+		delayRename = {path: pathToCreate, isTree: isTree};
 	}
 
 
-	function deleteSelection() {
-		var selectedFiles = tree.getSelectedItems();
+	function getSelectedFiles() : Array<File> {
+		return currentSelectedFiles;
+	}
 
-		var message = if (selectedFiles.length == 1) selectedFiles[0].name else '${selectedFiles.length} files';
+	function updateSelectedFiles() {
+		if (tree.focused) {
+			currentSelectedFiles = tree.getSelectedItems();
+		}
+		else if (gallery.focused) {
+			currentSelectedFiles = [for (k in gallerySelection.keys()) k];
+		}
+		else {
+			currentSelectedFiles = [];
+		}
+	}
+
+	function deleteFiles(files: Array<File>) {
+		var message = if (files.length == 1) files[0].name else '${files.length} files';
 		uiBase.confirm('Really delete $message ? (Cannot be undone)', Cancel | Ok, (button) -> {
 			if (button == Ok) {
 				try {
-					hrt.tools.FileManager.deleteFilesPaths([for(file in selectedFiles) file.getPath()]);
+					hrt.tools.FileManager.deleteFilesPaths([for(file in files) file.getPath()]);
 				} catch (e) {
 					hide.Ide.showError("" + e);
 				}
@@ -522,11 +559,9 @@ class HuiFileBrowser extends HuiElement {
 		});
 	}
 
-	function renameSelection() {
-		var selectedFiles = tree.getSelectedItems();
-
-		if (selectedFiles.length > 0) {
-			promptRenameFile(selectedFiles[0]);
+	function renameFiles(files: Array<File>, isTree: Bool) {
+		if (files.length > 0) {
+			promptRenameFile(files[0], isTree);
 		}
 	}
 
@@ -542,16 +577,20 @@ class HuiFileBrowser extends HuiElement {
 	/**
 		Path in absolute form
 	**/
-	function actionRenameFile(oldPath: String, newPath: String) : hrt.tools.Undo.Action {
+	function actionRenameFile(oldPath: String, newPath: String, isTree: Bool) : hrt.tools.Undo.Action {
 		return (isUndo) -> {
 			var from = isUndo ? newPath : oldPath;
 			var to = isUndo ? oldPath : newPath;
 			var entry = fileManager.getFileEntry(from);
 			var wasSelected = false;
 			if (entry != null) {
-				wasSelected = tree.isItemSelected(entry);
+				if (isTree) {
+					wasSelected = tree.isItemSelected(entry);
+				} else {
+					wasSelected = gallerySelection.exists(entry);
+				}
 			} else {
-				wasSelected = delaySelect?.contains(from);
+				wasSelected = delaySelect?.paths.contains(from);
 			}
 
 			try {
@@ -562,15 +601,15 @@ class HuiFileBrowser extends HuiElement {
 			}
 
 			if (wasSelected) {
-				delaySelect ??= [];
-				delaySelect.push(to);
+				delaySelect ??= {paths: [], isTree: isTree};
+				delaySelect.paths.push(to);
 			}
 		}
 	}
 
 	static var simpleFilenameRegex = ~/(.*) \(\d+\)/;
 
-	function copyFilesToFolder(filePaths: Array<String>, folderPath: String) {
+	function copyFilesToFolder(filePaths: Array<String>, folderPath: String, isTree: Bool) {
 
 		var destinations = [];
 		for (path in filePaths) {
@@ -583,7 +622,7 @@ class HuiFileBrowser extends HuiElement {
 
 		var operations = [for (i in 0...filePaths.length) {source: filePaths[i], destination: destinations[i]}];
 
-		getView().undo.run(actionCopyFiles(operations), false);
+		getView().undo.run(actionCopyFiles(operations, isTree), false);
 	}
 
 	/**
@@ -617,55 +656,95 @@ class HuiFileBrowser extends HuiElement {
 		return newPaths;
 	}
 
-	function actionCopyFiles(operations: Array<{source: String, destination: String}>) {
+	function actionCopyFiles(operations: Array<{source: String, destination: String}>, isTree: Bool) {
 		var operations = operations.copy();
-		var selection = [for (file in tree.getSelectedItems()) file.getPath()];
+		var selection = [for (file in getSelectedFiles()) file.getPath()];
 
 		if (operations.length == 1)
-			delayRename = operations[0].destination;
+			delayRename = {path: operations[0].destination, isTree: isTree};
 
 		return (isUndo) -> {
 			if (isUndo) {
 				hrt.tools.FileManager.deleteFilesPaths([for (op in operations) op.destination]);
-				delaySelect = selection;
+				delaySelect = {paths: selection, isTree: isTree};
 			} else {
 				hrt.tools.FileManager.copyFilesPaths(operations);
-				delaySelect = [for (op in operations) op.destination];
+				delaySelect = {paths: [for (op in operations) op.destination], isTree: isTree};
 			}
 			markRefresh();
 		}
 	}
 
-	function promptRenameFile(file: File) {
+	function promptRenameFile(file: File, isTree: Bool) {
 		var path = new haxe.io.Path(file.path);
-		tree.rename(file, (newName) -> {
+		var callback = (newName) -> {
 			if (path.file + "." + path.ext != newName) {
 				var newPath = haxe.io.Path.join([path.dir, newName]);
-				getView().undo.run(actionRenameFile(file.path, newPath), false);
+				getView().undo.run(actionRenameFile(file.path, newPath, isTree), false);
 			}
-		}, {start: 0, length: path.file.length} /* Select before the . of the file*/);
+		};
+		var range = {start: 0, length: path.file.length}; /* Select before the . of the file*/
+
+		if (isTree) {
+			tree.rename(file, callback, range);
+		} else {
+			galleryRename(file, callback, range);
+		}
+	}
+
+	function galleryRename(file, callback: String -> Void, ?range: HuiTree.SelectionRange) {
+		galleryList = [];
+		galleryDelayRename = {callback: callback, file: file, range: range}
+		markRefresh();
 	}
 
 	override function update(dt: Float) {
+		updateSelectedFiles();
+
 		if (needRefresh) {
 			refreshInternal();
 		}
 
 		if (delayRename != null) {
-			var file = fileManager.getFileEntry(delayRename);
+			var file = fileManager.getFileEntry(delayRename.path);
 			if (file != null) {
-				tree.setSelection([file]);
-				promptRenameFile(file);
+				if (delayRename.isTree) {
+					tree.setSelection([file]);
+					updateSelectedFiles();
+
+					promptRenameFile(file, true);
+				} else {
+					gallerySelection.clear();
+					gallerySelection.set(file, true);
+					updateSelectedFiles();
+
+					promptRenameFile(file, false);
+				}
+
 				delayRename = null;
 			}
 		}
 
 		if (delaySelect != null) {
-			var files = [for (file in delaySelect) fileManager.getFileEntry(file)];
+			var files = [for (file in delaySelect.paths) fileManager.getFileEntry(file)];
 			if (!files.contains(null)) {
-				tree.setSelection(files);
+				if (delaySelect.isTree) {
+					tree.setSelection(files);
+				} else {
+					gallerySelection.clear();
+					for (f in files) {
+						gallerySelection.set(f, true);
+					}
+				}
+				updateSelectedFiles();
+
 				delaySelect = null;
 			}
+		}
+
+		if (galleryDelayRename != null) {
+			gallery.scrollTo(galleryDelayRename.file);
+			refreshGalleryItems();
 		}
 
 		if (queueRefreshSlugs) {
@@ -733,10 +812,19 @@ class HuiFileBrowser extends HuiElement {
 		super.update(dt);
 	}
 
+
 	public function refreshInternal() {
 		rootFile = fileManager.fileRoot;
-		if (navigationHistory.length == 0)
+		if (navigationHistory.length == 0) {
+			tree.toggleItemOpen(rootFile, true);
 			navigateTo(rootFile, true);
+		}
+
+		if (mode == FileTree) {
+			tree.customSearch = secondToolbarWidget.searchBar.text?.length > 0 ? secondToolbarWidget.searchBar.text : null;
+		} else {
+			tree.customSearch = null;
+		}
 
 		tree.rebuild();
 
@@ -753,6 +841,11 @@ class HuiFileBrowser extends HuiElement {
 	}
 
 	function navigateTo(folder: File, updateFileTree: Bool) {
+		if (folder == null)
+			return;
+		if (folder.kind == File)
+			folder = folder.parent;
+
 		navigationHistoryPos++;
 		navigationHistory.resize(navigationHistoryPos);
 		navigationHistory.push(folder);
@@ -790,13 +883,6 @@ class HuiFileBrowser extends HuiElement {
 	function refreshGallery() {
 		if (galleryList == null) {
 			var galleryFolder = currentDir();
-			var sel = tree.getSelectedItems();
-			if (sel.length > 0) {
-				var first = sel[0];
-				if (first.kind == Dir) {
-					galleryFolder = first;
-				}
-			}
 
 			queueRefreshSlugs = true;
 
@@ -836,8 +922,8 @@ class HuiFileBrowser extends HuiElement {
 		if (child.kind != Dir)
 			return null;
 
-		var children = child.children.filter((f) -> !f.ignored && (mode == FileTree || f.kind == Dir) );
-		if (children.length == 0)
+		var children = child?.children.filter((f) -> !f.ignored && (mode == FileTree || f.kind == Dir) );
+		if (children?.length == 0)
 			return null;
 		return children;
 	}
@@ -887,6 +973,7 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 			<hui-element id="icon" public/>
 			<hui-element id="name-container">
 				<hui-text id="name-text" public/>
+				<hui-input-box id="title-edit" public/>
 			</hui-element>
 		</hui-element>
 	</hui-file-browser-gallery-item>
@@ -931,6 +1018,7 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 
 					fileBrowser.galleryLastClick = file;
 
+					fileBrowser.updateSelectedFiles();
 					fileBrowser.refreshGalleryItems();
 
 
@@ -988,6 +1076,33 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 				icon.huiBg.imageMode = Fit;
 				icon.huiBg.imageIsSdf = false;
 			});
+		}
+
+		if (fileBrowser?.galleryDelayRename?.file == file && allocated) {
+			var renameStruct = fileBrowser.galleryDelayRename;
+			rename(renameStruct.callback, renameStruct.range);
+			fileBrowser.galleryDelayRename = null;
+		}
+	}
+
+	public function rename(callback: String -> Void, ?selectionRange: HuiTree.SelectionRange) {
+		dom.addClass("edit");
+		titleEdit.text = file.name;
+		titleEdit.focus(false);
+
+		if (selectionRange != null) {
+			titleEdit.textInput.setSelectionRange(selectionRange);
+		}
+
+
+		titleEdit.onInputFocusLost = (e) -> {
+			dom.removeClass("edit");
+		}
+
+		titleEdit.onChange = (temp) -> {
+			if (!temp) {
+				callback(titleEdit.text);
+			}
 		}
 	}
 }

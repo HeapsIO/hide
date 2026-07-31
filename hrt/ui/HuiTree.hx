@@ -79,6 +79,14 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	var refreshFlags : RefreshFlags = RefreshFlags.ofInt(0);
 
+	public var customSearch(default, set): Null<String> = null;
+	function set_customSearch(v: String) {
+		customSearch = v;
+		requestRefresh(RegenerateFlatten);
+		return customSearch;
+	}
+
+
 	public function new(?parent) {
 		super(parent);
 		initComponent();
@@ -312,6 +320,11 @@ class HuiTree<TreeItem> extends HuiElement {
 	}
 
 	public function toggleItemOpen(item: TreeItem, ?force: Bool) {
+		if (refreshFlags.toInt() != 0) {
+			afterRefreshCallbacks.push(toggleItemOpen.bind(item, force));
+			return;
+		}
+
 		var data = itemMap.get(cast item);
 		if (data == null)
 			return;
@@ -643,9 +656,9 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	function flatten() {
 
-		if (searchBarContainer.visible) {
-			var currentSearch = searchBar.text;
-			var searchQuery = hide.Search.createSearchQuery(searchBar.text.toLowerCase());
+		if (isSearching()) {
+			var currentSearch = customSearch ?? searchBar.text;
+			var searchQuery = hide.Search.createSearchQuery(currentSearch.toLowerCase());
 			function filterRec(children: Array<TreeItemData>, parentMatch: Bool = false) : Bool {
 				var anyVisible = false;
 				for (child in children) {
@@ -689,7 +702,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 		function rec(items: Array<TreeItemData>) {
 			for (item in items) {
-				if (searchBarContainer.visible && !item.filterState.has(Visible)) continue;
+				if (isSearching() && !item.filterState.has(Visible)) continue;
 				flatList.push(item);
 				if (item.children == null) {
 					generateChildren(item);
@@ -699,6 +712,10 @@ class HuiTree<TreeItem> extends HuiElement {
 			}
 		}
 		rec(rootData);
+	}
+
+	function isSearching() {
+		return (customSearch != null || searchBarContainer.visible);
 	}
 
 	function isOpen(data: TreeItemData) : Bool {

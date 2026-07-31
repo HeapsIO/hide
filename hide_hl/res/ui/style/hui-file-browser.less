@@ -36,6 +36,10 @@ hui-file-browser {
 		layout: vertical;
 	}
 
+	> hui-tree {
+		auto-size: 1;
+	}
+
 	:focus {
 		hui-file-browser-gallery-item {
 			.hover-select-focus();
@@ -68,6 +72,8 @@ hui-file-browser-gallery-item {
 		height: 28;
 		auto-size-height: 1;
 		overflow: hidden;
+		fill-width: 1;
+		auto-size-width: 1;
 		halign: middle;
 	}
 	#name-text {
@@ -75,6 +81,24 @@ hui-file-browser-gallery-item {
 		text-align: multiline-center;
 		break-all: true;
 	}
+	#title-edit {
+		valign: top;
+		//width: 150;
+		fill-width: 1;
+		auto-size-width: 1;
+		visible: false;
+	}
+
+	&.edit {
+		#title-edit {
+			visible: true;
+		}
+		#name-text {
+			visible: false;
+		}
+	}
+
+
 	#gallery-container, #tree-container {
 		valign: top;
 		fill-width: true;

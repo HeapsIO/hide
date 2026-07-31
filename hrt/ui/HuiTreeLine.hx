@@ -68,15 +68,14 @@ class HuiTreeLine extends HuiElement {
 		titleEdit.focus();
 
 		if (selectionRange != null) {
-			titleEdit.textInput.selectionRange = selectionRange;
-			@:privateAccess titleEdit.textInput.onCursorChange();
+			titleEdit.textInput.setSelectionRange(selectionRange);
 		}
 
 		function cleanup() {
 			dom.removeClass("edit");
 		}
 
-		titleEdit.onFocusLost = (e) -> {
+		titleEdit.onInputFocusLost = (e) -> {
 			cleanup();
 		}
 

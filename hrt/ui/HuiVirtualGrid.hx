@@ -94,6 +94,12 @@ class HuiVirtualGrid<T> extends HuiElement {
 		virtualList.setItems(virtualList.items);
 		virtualList.clear();
 	}
+
+	public function scrollTo(item: T, request: HuiVirtualList.ScrollRequest = Auto) {
+		var index = items.indexOf(item);
+		var listIndex = hxd.Math.floor(index / itemsPerRow);
+		virtualList.scrollToIndex(listIndex);
+	}
 }
 
 class HuiVirtualGridRow extends HuiElement {
