@@ -649,11 +649,8 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 
 		if (currentRenderProps.refInstance != null) {
 			var renderProps = currentRenderProps.refInstance.getOpt(hrt.prefab.RenderProps, true);
-			if (renderProps != null) {
+			if (renderProps != null)
 				renderProps.applyProps(s3d.renderer);
-				if (outlineRfx != null)
-					scene.s3d.renderer.effects.push(outlineRfx);
-			}
 
 			for (light in currentRenderProps.refInstance.findAll(hrt.prefab.Light, true)) {
 				if (@:privateAccess light.icon != null)
