@@ -105,7 +105,7 @@ class HuiSnapWidget extends HuiElement {
 
 class HuiVisibilityWidget extends HuiElement {
 	static var SRC = <hui-visibility-widget>
-		<hui-toggle class="group-start" id="visibility-btn">
+		<hui-toggle class="group-start" id="visibility-btn" tip={"Toggle global visibility"}>
 			<hui-icon("visibility")/>
 		</hui-toggle>
 		<hui-button class="group-end tiny" id="visibility-popup-btn">
@@ -142,25 +142,25 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			<hui-text("Visibility settings") class="title"/>
 			<hui-text("Guides") class="sub-title"/>
 			<hui-element class="horizontal">
-				<hui-toggle id="grid-tog">
+				<hui-toggle id="grid-tog" tip={"Toggle editor grid visibility"}>
 					<hui-icon("grid")/>
 				</hui-toggle>
 				<hui-text("Grid") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
-				<hui-toggle id="bone-tog">
+				<hui-toggle id="bone-tog" tip={"Toggle animation joints display"}>
 					<hui-icon("bone")/>
 				</hui-toggle>
 				<hui-text("Joints") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
-				<hui-toggle id="collider-tog">
+				<hui-toggle id="collider-tog" tip={"Toggle colliders debug visibility"}>
 					<hui-icon("cube")/>
 				</hui-toggle>
 				<hui-text("Colliders") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
-				<hui-toggle id="misc-tog">
+				<hui-toggle id="misc-tog" tip={"Toggle miscs visibility"}>
 					<hui-icon("question_mark")/>
 				</hui-toggle>
 				<hui-text("Others") class="label"/>
@@ -168,13 +168,13 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 
 			<hui-text("Sélection") class="sub-title"/>
 			<hui-element class="horizontal" if (Std.isOfType(view, hide.view.Prefab))>
-				<hui-toggle id="gizmo-tog">
+				<hui-toggle id="gizmo-tog" tip={"Toggle gizmo visibility"}>
 					<hui-icon("translation")/>
 				</hui-toggle>
 				<hui-text("Gizmo") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
-				<hui-toggle id="outline-tog">
+				<hui-toggle id="outline-tog" tip={"Toggle selection outline visibility"}>
 					<hui-icon("question_mark")/>
 				</hui-toggle>
 				<hui-text("Outline") class="label"/>
@@ -182,19 +182,19 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 
 			<hui-text("Debug") class="sub-title"/>
 			<hui-element class="horizontal">
-				<hui-toggle id="scene-info-tog">
+				<hui-toggle id="scene-info-tog" tip={"Toggle scene infos visibility"}>
 					<hui-icon("info")/>
 				</hui-toggle>
 				<hui-text("Scene info") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
-				<hui-toggle id="wireframe-tog">
+				<hui-toggle id="wireframe-tog" tip={"Toggle wireframe mode"}>
 					<hui-icon("grid")/>
 				</hui-toggle>
 				<hui-text("Wireframe") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
-				<hui-toggle id="disable-scene-tog">
+				<hui-toggle id="disable-scene-tog" tip={"Toggle scene render"}>
 					<hui-icon("visibility_off")/>
 				</hui-toggle>
 				<hui-text("Disable Scene Render") class="label"/>
@@ -202,7 +202,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 
 			<hui-text("Icons") class="sub-title"/>
 			<hui-element class="horizontal">
-				<hui-toggle>
+				<hui-toggle tip={"Toggle 3D Icons visibility"}>
 					<hui-icon("visibility")/>
 				</hui-toggle>
 				<hui-text("3D Icons") class="label"/>
@@ -283,7 +283,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 
 class HuiSceneFiltersWidget extends HuiElement {
 	static var SRC = <hui-scene-filters-widget>
-		<hui-button id="btn">
+		<hui-button id="btn" tip={"Enable / disable display of specific elements in scene"}>
 			<hui-text("Scene Filters")/>
 			<hui-icon("drop_down")/>
 		</hui-button>
@@ -374,7 +374,7 @@ class HuiSceneFiltersPopup extends HuiPopup {
 
 class HuiRenderPropsWidget extends HuiElement {
 	static var SRC = <hui-render-props-widget>
-		<hui-button id="btn">
+		<hui-button id="btn" tip={"Change scene editor render props"}>
 			<hui-text("Render Props")/>
 			<hui-icon("drop_down")/>
 		</hui-button>
@@ -444,7 +444,7 @@ class HuiRenderPropsPopup extends HuiPopup {
 
 class HuiViewModesWidget extends HuiElement {
 	static var SRC = <hui-view-modes-widget>
-		<hui-button id="btn">
+		<hui-button id="btn" tip={"Change scene view mode"}>
 			<hui-text("View Modes")/>
 			<hui-icon("drop_down")/>
 		</hui-button>

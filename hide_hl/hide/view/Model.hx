@@ -415,22 +415,24 @@ class Model extends HuiView<{path: String}> {
 
 		var cameraBtn = new HuiButton();
 		new HuiIcon("camera", cameraBtn);
+		cameraBtn.tip = "Camera settings";
 		cameraBtn.onClick = (_) -> {
 			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiCameraSettingsPopup(sceneEditor), { object: Element(cameraBtn), directionX: StartInside, directionY: EndOutside });
 		}
 		widgets.push(cameraBtn);
 
+		widgets.push(new hrt.ui.HuiToolbar.HuiVisibilityWidget(this, sceneEditor));
+		widgets.push(new hrt.ui.HuiToolbar.HuiViewModesWidget(sceneEditor.scene.s3d));
+		widgets.push(new hrt.ui.HuiToolbar.HuiSceneFiltersWidget(sceneEditor));
+		widgets.push(new hrt.ui.HuiToolbar.HuiRenderPropsWidget(sceneEditor));
+
 		var helpBtn = new HuiButton();
+		helpBtn.tip = "Show help";
 		helpBtn.onClick = (_) -> {
 			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiHelpPopup(this.registeredCommands), { object: Element(helpBtn), directionX: StartInside, directionY: EndOutside });
 		};
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
-
-		widgets.push(new hrt.ui.HuiToolbar.HuiVisibilityWidget(this, sceneEditor));
-		widgets.push(new hrt.ui.HuiToolbar.HuiViewModesWidget(sceneEditor.scene.s3d));
-		widgets.push(new hrt.ui.HuiToolbar.HuiSceneFiltersWidget(sceneEditor));
-		widgets.push(new hrt.ui.HuiToolbar.HuiRenderPropsWidget(sceneEditor));
 
 		return widgets;
 	}
