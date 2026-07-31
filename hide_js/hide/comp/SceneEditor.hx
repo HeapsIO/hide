@@ -2770,6 +2770,8 @@ class SceneEditor {
 		if (previousSceneRenderProps != renderProps)
 			teardownRenderer();
 		renderProps.applyProps(scene.s3d.renderer);
+		if (outlineRfx != null)
+			scene.s3d.renderer.effects.push(outlineRfx);
 		previousSceneRenderProps = renderProps;
 	}
 
@@ -2846,6 +2848,8 @@ class SceneEditor {
 			var renderProps = @:privateAccess renderPropsRoot.refInstance.getOpt(hrt.prefab.RenderProps, true);
 			if( renderProps != null ) {
 				renderProps.applyProps(scene.s3d.renderer);
+				if (outlineRfx != null)
+					scene.s3d.renderer.effects.push(outlineRfx);
 				wasSet = true;
 			}
 		}
