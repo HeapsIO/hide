@@ -535,7 +535,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	function onFocusInternal(e: hxd.Event) {
 		if (!enable) {
-			e.cancel = true;
+			//e.cancel = true;
 			return;
 		}
 

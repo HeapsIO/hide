@@ -198,7 +198,7 @@ class HuiColorPicker extends HuiPopup {
 				}
 			}
 
-			inputBox.textInput.onFocusLost = (e) -> {
+			inputBox.onInputFocusLost = (e) -> {
 				syncColorSecondary(color, true);
 				onValueChanged(false);
 			}
@@ -227,7 +227,7 @@ class HuiColorPicker extends HuiPopup {
 			onValueChanged(temp);
 		}
 
-		colorHex.textInput.onFocusLost = (e) -> {
+		colorHex.onInputFocusLost = (e) -> {
 			syncColorSecondary(color, true);
 			onValueChanged(false);
 		}

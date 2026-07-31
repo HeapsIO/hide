@@ -90,13 +90,6 @@ class HuiMenu extends HuiPopup {
 		};
 	}
 
-	override function onFocusLostInternal(e:hxd.Event) {
-		if (searchBar.visible == false)
-			e.cancel = true;
-		super.onFocusLostInternal(e);
-	}
-
-
 	function regenerateElements() {
 		var filteredList = items;
 		var coloredText: Map<{}, String> = [];
