@@ -87,7 +87,7 @@ class CollisionSettings {
 				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 
 				var dim = mesh.getBounds().dimension();
-				var resolution = Math.ceil(dim / params.scale);
+				var resolution = Math.ceil(dim / params.unit);
 				var p = { maxConvexHulls: params.maxConvexHulls, resolution: resolution };
 
 				var vertices : Array<Float> = [];

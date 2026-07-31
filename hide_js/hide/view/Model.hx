@@ -126,7 +126,7 @@ class CollisionSettings {
 			case ConvexHulls(colliderModel):
 				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 				var dim = mesh.getBounds().dimension();
-				var resolution = Math.ceil(dim / params.scale);
+				var resolution = Math.ceil(dim / params.unit);
 				var p = { maxConvexHulls: params.maxConvexHulls, resolution: resolution };
 
 				var vertices : Array<Float> = [];
@@ -1163,7 +1163,7 @@ class Model extends FileView {
 					elHull.val('${params.maxConvexHulls ?? 1}');
 					elUnit.val("Meter");
 					for (unit in hxd.fmt.hmd.Data.ConvexHullsCollider.UNITS.keys())
-						if (hxd.fmt.hmd.Data.ConvexHullsCollider.UNITS.get(unit) == params.scale)
+						if (hxd.fmt.hmd.Data.ConvexHullsCollider.UNITS.get(unit) == params.unit)
 							elUnit.val(unit);
 					elScale.val(params.scale ?? 1);
 					elScale.trigger("input");
