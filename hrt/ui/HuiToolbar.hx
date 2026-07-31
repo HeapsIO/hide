@@ -79,7 +79,7 @@ class HuiTransformWidgets extends HuiElement {
 
 class HuiSnapWidget extends HuiElement {
 	static var SRC = <hui-snap-widget>
-		<hui-toggle class="group-start" id="snap-btn">
+		<hui-toggle class="group-start" id="snap-btn" tip={"Toggle snap"}>
 			<hui-icon("grid_snap")/>
 		</hui-toggle>
 		<hui-button class="group-end tiny" id="snap-popup-btn">
