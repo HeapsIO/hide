@@ -22,8 +22,8 @@ class HuiModelInspector extends HuiElement {
 		</hui-category>
 		<hui-category("Collision")>
 			<hui-element class="horizontal"><hui-text("Collision Mode") class="label"/><hui-select class="value" id="collision-mode-el"/></hui-element>
-			<hui-element class="horizontal"><hui-text("Scale") class="label"/><hui-select class="value" id="scale-el"/></hui-element>
-			<hui-element class="horizontal"><hui-text("Shrink") class="label"/><hui-slider step={0.001} min={0.0} max={2.0} decimals={2} class="value" id="shrink-el"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Unit") class="label"/><hui-select class="value" id="unit-el"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Scale") class="label"/><hui-slider step={0.001} min={0.0} max={2.0} decimals={2} class="value" id="scale-el"/></hui-element>
 			<hui-element class="horizontal"><hui-text("Max Convex Hulls") class="label"/><hui-input-box class="value" id="max-convex-hulls-el"/></hui-element>
 			<hui-element class="horizontal"><hui-text("Mesh") class="label"/><hui-select class="value" id="mesh-el"/></hui-element>
 			<hui-button class="full" id="compute-collider-btn"><hui-text("Compute Collider")></hui-text></hui-button>
@@ -266,13 +266,13 @@ class HuiModelInspector extends HuiElement {
 
 		var settings = @:privateAccess model.collisionSettings.get(obj.name);
 		function refreshCollisionEdition() {
-			shrinkEl.parent.visible = collisionModeEl.value == hide.view.Model.CollisionMode.Auto;
-			shrinkEl.value = settings.params?.shrink ?? 1.0;
+			scaleEl.parent.visible = collisionModeEl.value == hide.view.Model.CollisionMode.Auto;
+			scaleEl.value = settings.params?.scale ?? 1.0;
 
 			maxConvexHullsEl.parent.visible = collisionModeEl.value == hide.view.Model.CollisionMode.Auto;
 			maxConvexHullsEl.text = '${settings.params?.maxConvexHulls ?? 1}';
 
-			scaleEl.parent.visible = collisionModeEl.value == hide.view.Model.CollisionMode.Auto;
+			unitEl.parent.visible = collisionModeEl.value == hide.view.Model.CollisionMode.Auto;
 			// scaleEl.text = '${settings.params?.maxSubdiv ?? 32}';
 
 			meshEl.items = [ { value: null, label: "None" } ];
@@ -304,9 +304,9 @@ class HuiModelInspector extends HuiElement {
 				case hide.view.Model.CollisionMode.None:
 					curParams = null;
 				case hide.view.Model.CollisionMode.Auto:
-					// Reflect.setField(curParams, "scale", Std.parseFloat(scalEl.value));
 					Reflect.setField(curParams, "maxConvexHulls", Std.parseInt(maxConvexHullsEl.text));
-					Reflect.setField(curParams, "shrink", shrinkEl.value);
+					// Reflect.setField(curParams, "unit", Std.parseFloat(scalEl.value));
+					Reflect.setField(curParams, "scale", scaleEl.value);
 					Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
 				case hide.view.Model.CollisionMode.Mesh:
 					Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
@@ -342,9 +342,9 @@ class HuiModelInspector extends HuiElement {
 
 		collisionModeEl.onValueChanged = () -> applyCollisionEdition();
 		shapeEditor.onChange = () -> applyCollisionEdition();
-		shrinkEl.onValueChanged = (_) -> applyCollisionEdition();
+		scaleEl.onValueChanged = (_) -> applyCollisionEdition();
 		maxConvexHullsEl.onChange = (_) -> applyCollisionEdition();
-		scaleEl.onValueChanged = () -> applyCollisionEdition();
+		unitEl.onValueChanged = () -> applyCollisionEdition();
 		meshEl.onValueChanged = () -> applyCollisionEdition();
 		computeColliderBtn.onClick = (_) -> {
 			applyCollisionEdition();
