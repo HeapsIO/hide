@@ -25,6 +25,18 @@ hui-toolbar {
 		padding: @button-padding;
 		min-width: @button-size;
 		min-height: @button-size;
+
+		&.disabled {
+			> hui-background {
+				outline-color: @color-gray-5;
+			}
+
+			hui-icon {
+				> hui-background {
+					image-color: @text-disabled;
+				}
+			}
+		}
 	}
 
 	hui-input-box {

@@ -891,6 +891,10 @@ class HuiFileBrowser extends HuiElement {
 			navigateTo(rootFile, true);
 		}
 
+		mainToolbarWidget.prevBtn.enable = navigationHistoryPos > 0;
+		mainToolbarWidget.forwardBtn.enable = navigationHistoryPos < navigationHistory.length - 1;
+		mainToolbarWidget.parentBtn.enable = currentDir() != rootFile;
+
 		if (mode == FileTree) {
 			tree.customSearch = secondToolbarWidget.searchBar.text?.length > 0 ? secondToolbarWidget.searchBar.text : null;
 		} else {
