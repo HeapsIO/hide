@@ -966,6 +966,7 @@ class HuiFileBrowser extends HuiElement {
 				gallerySearchRanges = null;
 				galleryList = galleryFolder.children ?? [];
 			}
+			galleryList = galleryList.filter((f) -> !f.ignored);
 			gallery.setItems(galleryList);
 			galleryWidget.dom.toggleClass("no-results", galleryList.length == 0);
 			galleryWidget.dom.toggleClass("no-results-search", secondToolbarWidget.searchBar.text?.length > 0);
