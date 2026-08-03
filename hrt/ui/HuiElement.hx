@@ -458,11 +458,11 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 		if (onDragStart != emtpyFuncVoidVoid) {
 			var base = uiBase;
-			base.startDragX = e.relX;
-			base.startDragY = e.relY;
+			var scene = getScene();
+			base.startDragX = scene.mouseX;
+			base.startDragY = scene.mouseY;
 
-			interactive.startCapture(dragTester, () -> {
-				var base = uiBase;
+			scene.startCapture(dragTester.bind(scene), () -> {
 				base.startDragX = hxd.Math.NaN;
 				base.startDragY = hxd.Math.NaN;
 			});
@@ -471,16 +471,22 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		onPush(e);
 	}
 
-	function dragTester(e:hxd.Event) {
+	function dragTester(scene: h2d.Scene, e:hxd.Event) {
 		e.propagate = true;
 		switch (e.kind) {
 			case ERelease, EReleaseOutside:
-				interactive.stopCapture();
+				scene.stopCapture();
 			case EMove:
 				var base = uiBase;
-				var dist = hxd.Math.distance(base.startDragX - e.relX, base.startDragY - e.relY, 0);
+
+				// if somehow our element has exited the tree;
+				if (base == null) {
+					scene.stopCapture();
+					return;
+				}
+				var dist = hxd.Math.distance(base.startDragX - scene.mouseX, base.startDragY - scene.mouseY, 0);
 				if (dist > HuiBase.dragDistanceThreshold) {
-					interactive.stopCapture();
+					scene.stopCapture();
 					onDragStart();
 				}
 			default:
