@@ -114,27 +114,30 @@ class FileEntry {
 	}
 
 	/**
-		Returns a list of all the files with name that matches the query string in this file children (recursive)
+		Returns a list of all the files with name that matches the query string in this file children (recursive).
+		Pass an array to the ranges parameter to have it filled with the search range corresponding to each file in the result list
 	**/
-	public function searchAll(queryString:String) : Array<FileEntry> {
+	public function searchAll(queryString:String, ?ranges: Array<hide.Search.SearchRanges>) : Array<FileEntry> {
 		var query = hide.Search.createSearchQuery(queryString);
 
 		var results = [];
-		searchInternal(query, results);
+		searchInternal(query, results, ranges);
 		return results;
 	}
 
-	function searchInternal(query: hide.Search.SearchQuery, results: Array<FileEntry>) : Void {
+	function searchInternal(query: hide.Search.SearchQuery, results: Array<FileEntry>, ranges: Array<hide.Search.SearchRanges>) : Void {
 		if (this.kind == Dir) {
 			if (children != null) {
 				for (child in children) {
-					child.searchInternal(query, results);
+					child.searchInternal(query, results, ranges);
 				}
 			}
 		} else {
-			var ranges = hide.Search.computeSearchRanges(name, query, false);
-			if (ranges != null)
+			var range = hide.Search.computeSearchRanges(name, query, false);
+			if (range != null) {
 				results.push(this);
+				ranges?.push(range);
+			}
 		}
 	}
 

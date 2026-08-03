@@ -122,7 +122,7 @@ class HuiTreeLine extends HuiElement {
 
 	public function refresh() {
 		var tree : HuiTree<Dynamic> = tree;
-		if (tree.searchBarContainer.visible && data.searchRanges != null) {
+		if (tree.isSearching() && data.searchRanges != null) {
 			title.text = hide.Search.splitSearchRanges(data.name, data.searchRanges, "<h>", "</h>");
 		} else {
 			title.text = data.name;

@@ -29,6 +29,7 @@ class HuiFileBrowser extends HuiElement {
 	var rootPath: String;
 	var needRefresh: Bool = false;
 	var galleryList: Array<File> = null;
+	var gallerySearchRanges: Array<hide.Search.SearchRanges> = null;
 	var gallerySelection: Map<File, Bool> = [];
 	var galleryLastClick: File = null;
 	var galleryDelayRename: {file: File, callback : String -> Void, range: HuiTree.SelectionRange} = null;
@@ -693,7 +694,7 @@ class HuiFileBrowser extends HuiElement {
 	}
 
 	function galleryRename(file, callback: String -> Void, ?range: HuiTree.SelectionRange) {
-		galleryList = [];
+		galleryList = null;
 		galleryDelayRename = {callback: callback, file: file, range: range}
 		markRefresh();
 	}
@@ -887,8 +888,11 @@ class HuiFileBrowser extends HuiElement {
 			queueRefreshSlugs = true;
 
 			if (secondToolbarWidget.searchBar.text?.length > 0) {
-				galleryList = galleryFolder.searchAll(secondToolbarWidget.searchBar.text);
+				gallerySearchRanges = [];
+				galleryList = galleryFolder.searchAll(secondToolbarWidget.searchBar.text, gallerySearchRanges);
+				trace(gallerySearchRanges);
 			} else {
+				gallerySearchRanges = null;
 				galleryList = galleryFolder.children ?? [];
 			}
 			gallery.setItems(galleryList);
@@ -1048,7 +1052,13 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 	}
 
 	public function refresh() {
-		nameText.text = file.name;
+		if (fileBrowser?.gallerySearchRanges == null) {
+			nameText.text = file.name;
+		} else {
+			var index = fileBrowser.galleryList.indexOf(file);
+			var range = fileBrowser.gallerySearchRanges[index];
+			nameText.text = hide.Search.splitSearchRanges(file.name, range, "<h>", "</h>");
+		}
 
 		var zoomPx = fileBrowser != null ? HuiFileBrowser.zoomLevels[fileBrowser.zoom] : 512;
 		icon.setWidth(zoomPx);
