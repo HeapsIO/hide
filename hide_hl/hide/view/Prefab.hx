@@ -77,6 +77,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		sceneEditor.load = () -> reload();
 		sceneEditor.getConfig = () -> { return config; };
+		sceneEditor.getObjectsAt = getObjectsAt;
 		sceneEditor.getSelectedObjects = () -> {
 			var selectedObjects = [];
 			for (s in selectedPrefabs.keys()) {
@@ -916,6 +917,48 @@ class Prefab extends HuiView<{path: String}> {
 		}
 
 		return objs;
+	}
+
+	function getObjectsAt(sx : Int, sy : Int, ?root : h3d.scene.Object, ?f : h3d.scene.Object -> Bool) : Array<{object: h3d.scene.Object, distance: Float}> {
+		var hits = [];
+		var r = root ?? sceneEditor.scene.s3d;
+		var ray = sceneEditor.scene.s3d.camera.rayFromScreen(sx, sy, sceneEditor.scene.sceneWidth, sceneEditor.scene.sceneHeight);
+
+		var tmpRay = new h3d.col.Ray();
+
+		for (i in @:privateAccess sceneEditor.scene.s3d.interactives) {
+			var o = i.parent;
+			if (!f(o))
+				continue;
+			if (root != null) {
+				var current = o;
+				var rootParent = false;
+				while(current != null && current != root) {
+					current = current.parent;
+				}
+				if (current != root)
+					continue;
+			}
+
+			var localRay = tmpRay;
+			localRay.load(ray);
+			localRay.transform(i.getInvPos());
+
+
+			var distance = i.shape?.rayIntersection(localRay, false) ?? -1;
+			if (distance < 0)
+				continue;
+
+			var distance = i.preciseShape?.rayIntersection(localRay, true) ?? distance;
+
+			if (distance > 0) {
+				hits.push({object: o, distance: distance});
+			}
+		}
+
+		hits.sort((a,b) -> Reflect.compare(a.distance, b.distance));
+
+		return hits;
 	}
 
 	/**

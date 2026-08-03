@@ -226,6 +226,7 @@ class Model extends HuiView<{path: String}> {
 
 		var path = Ide.inst.getRelPath(state.path);
 		sceneEditor.load = () -> load(path);
+		sceneEditor.getObjectsAt = getObjectsAt;
 		sceneEditor.onScenePush = (e) -> {
 			if (e.button == 0) {
 				if (@:privateAccess modelInspector?.shapeEditor.isInShapeEdition)
@@ -634,12 +635,26 @@ class Model extends HuiView<{path: String}> {
 		}
 	}
 
+	function getObjectsAt(sx : Int, sy : Int, ?root : h3d.scene.Object, ?f : h3d.scene.Object -> Bool) : Array<{object: h3d.scene.Object, distance: Float}> {
+		var hits : Array<{object: h3d.scene.Object, distance: Float}> = [];
+		var r = root ?? sceneEditor.scene.s3d;
+		var ray = sceneEditor.scene.s3d.camera.rayFromScreen(sx, sy, sceneEditor.scene.sceneWidth, sceneEditor.scene.sceneHeight);
+
+		r.iterVisibleMeshes((m) -> {
+			var bounds = m.getBounds();
+			var dist = bounds.rayIntersection(ray, false);
+			if (dist > 0)
+				hits.push({ object: m, distance: dist });
+		});
+
+		hits.sort((a,b) -> Reflect.compare(a.distance, b.distance));
+		return hits;
+	}
+
 	function load(path : String) {
-		var prefab = new hrt.prefab.Model(null, new hrt.prefab.ContextShared(null, null, sceneEditor.scene.s3d));
-		prefab.source = path;
-		prefab.make();
-		prefab.makeInteractive();
-		obj = prefab.local3d;
+		var lib = hxd.res.Loader.currentInstance.load(path).toModel().toHmd();
+		obj = lib.makeObject((path) -> loadTexture(path));
+		sceneEditor.scene.s3d.addChild(obj);
 
 		sceneEditor.updateDebugOverlayVisibility();
 	}
