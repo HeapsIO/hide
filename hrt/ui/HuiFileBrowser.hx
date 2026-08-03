@@ -98,40 +98,24 @@ class HuiFileBrowser extends HuiElement {
 
 		tree.dragAndDropInterface = {
 			onDragStart: (item) -> {
-				var filePaths = [for (file in getSelectedFiles()) file.path];
-				var op = tree.startDrag(fileDragOp, filePaths);
-				op.setPreviewText(filePaths.join("<br/>"));
+				itemStartDrag();
 			},
 			getItemDropFlags: function(item, op) : hrt.ui.HuiTree.DropFlags {
 				if (op.type == fileDragOp) {
-					if (item.kind == Dir) {
-						return hrt.ui.HuiTree.DropFlag.Reorder | hrt.ui.HuiTree.DropFlag.Reparent;
+					if (isDragValid(item, op)) {
+						if (item.kind == Dir) {
+							return hrt.ui.HuiTree.DropFlag.Reorder | hrt.ui.HuiTree.DropFlag.Reparent;
+						}
+						return hrt.ui.HuiTree.DropFlag.Reorder;
 					}
-					return hrt.ui.HuiTree.DropFlag.Reorder;
 				}
 				return hrt.ui.HuiTree.DropFlags.ofInt(0);
 			},
 			onDrop: (target: hrt.tools.FileManager.FileEntry, where, op:HuiDragOp) -> {
-				if (op.type == fileDragOp) {
-					var folder = target.kind == Dir ? target : target.parent;
-
-					var paths: Array<String> = cast op.data;
-					var files = [for (path in paths) hrt.tools.FileManager.inst.getFileEntry(path)];
-					files = files.filter((f) -> f != null);
-					var roots = hrt.tools.FileManager.inst.getRoots(files);
-
-					var operations = [];
-					var operationsRev = [];
-					for (root in roots) {
-						operations.push({from: root.getPath(), to: folder.getPath() + "/" + root.name});
-					}
-
-					operations = operations.filter((f) -> f.from != f.to);
-					if (operations.length == 0)
-						return;
-
-					getView().undo.run(actionMoveFilesAbs(operations), false);
+				if (where != Inside) {
+					target = target.parent;
 				}
+				fileOnDrop(target, op, true);
 			}
 		};
 
@@ -146,6 +130,12 @@ class HuiFileBrowser extends HuiElement {
 				currentHover = null;
 			}
 		};
+
+		tree.unregisterCommand(hrt.ui.HuiCommands.search);
+
+		registerCommand(hrt.ui.HuiCommands.search, ElementAndChildren, () -> {
+			secondToolbarWidget.searchBar.focus();
+		});
 
 		galleryWidget = new HuiFileBrowserGalleryWidget();
 		galleryWidget.noResults.clearSearchBtn.onClick = (e) -> {
@@ -188,6 +178,21 @@ class HuiFileBrowser extends HuiElement {
 					itemContextMenu(currentDir());
 				}
 			}
+		}
+
+		gallery.onDragOver = (e) -> {
+			fileOnDragOver(currentDir(), e);
+			if (e.acceptDrop) {
+				gallery.dom.addClass("can-drop-file");
+			}
+		}
+
+		gallery.onDragOut = (e) -> {
+			gallery.dom.removeClass("can-drop-file");
+		}
+
+		gallery.onDragOver = (e) -> {
+			fileOnDragOver(currentDir(), e);
 		}
 
 		gallery.generateItem = generateGalleryItem;
@@ -236,6 +241,12 @@ class HuiFileBrowser extends HuiElement {
 			markRefresh();
 		}
 
+		secondToolbarWidget.searchBar.onBeforeKeyDown = (e) -> {
+			if (mode == FileTree) {
+				tree.keyDownHandler(true, e);
+			}
+		}
+
 		refreshLayout();
 
 		markRefresh();
@@ -246,6 +257,54 @@ class HuiFileBrowser extends HuiElement {
 			updateToolbarCompactMode();
 		}
 		updateToolbarCompactMode();
+	}
+
+	function isDragValid(item: File, op: HuiDragOp) {
+		var item = item.kind == Dir ? item : item.parent;
+		var paths: Array<String> = cast op.data;
+		var files = [for (path in paths) hrt.tools.FileManager.inst.getFileEntry(path)];
+		if (files.contains(item))
+			return false;
+		for (file in files) {
+			if (item.children?.contains(file))
+				return false;
+			if (file.contains(item))
+				return false;
+		}
+		return true;
+	}
+
+	function fileOnDragOver(item: File, op: HuiDragOp) {
+		op.acceptDrop = false;
+		if (op.type == fileDragOp) {
+			op.acceptDrop = isDragValid(item, op);
+		}
+	}
+
+	function fileOnDrop(target: File, op: HuiDragOp, isTree: Bool) {
+		if (op.type == fileDragOp) {
+			var folder = target.kind == Dir ? target : target.parent;
+
+			var paths: Array<String> = cast op.data;
+			var files = [for (path in paths) hrt.tools.FileManager.inst.getFileEntry(path)];
+			files = files.filter((f) -> f != null);
+			var roots = hrt.tools.FileManager.inst.getRoots(files);
+
+			var operations = [];
+			var operationsRev = [];
+			for (root in roots) {
+				if (!root.contains(folder)) {
+					operations.push({from: root.getPath(), to: folder.getPath() + "/" + root.name});
+				}
+			}
+
+			operations = operations.filter((f) -> f.from != f.to);
+			if (operations.length == 0)
+				return;
+
+			getView().undo.run(actionMoveFilesAbs(operations), false);
+			delaySelect = {paths: [for (op in operations) op.to], isTree: isTree};
+		}
 	}
 
 	function updateToolbarCompactMode() {
@@ -339,6 +398,11 @@ class HuiFileBrowser extends HuiElement {
 		var cur = currentDir();
 		if (file == cur || file.parent == cur) {
 			galleryList = null;
+			for (k => _ in gallerySelection.copy()) {
+				if (k.disposed) {
+					gallerySelection.remove(k);
+				}
+			}
 			markRefresh();
 		}
 	}
@@ -699,6 +763,12 @@ class HuiFileBrowser extends HuiElement {
 		markRefresh();
 	}
 
+	function itemStartDrag() {
+		var filePaths = [for (file in getSelectedFiles()) file.path];
+		var op = startDrag(fileDragOp, filePaths);
+		op.setPreviewText(filePaths.join("<br/>"));
+	}
+
 	override function update(dt: Float) {
 		updateSelectedFiles();
 
@@ -855,6 +925,7 @@ class HuiFileBrowser extends HuiElement {
 			tree.setSelection([folder]);
 		}
 
+		gallerySelection = [];
 		galleryList = null;
 		markRefresh();
 	}
@@ -994,7 +1065,7 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 
 		// filebrowser == null means we want to display a big thumbnail in a popup
 		if (fileBrowser != null) {
-			onClick = (e) -> {
+			onPush = (e) -> {
 				if (e.button == hxd.Key.MOUSE_LEFT || e.button == hxd.Key.MOUSE_RIGHT) {
 					if (!hxd.Key.isDown(hxd.Key.CTRL)) {
 						fileBrowser.gallerySelection.clear();
@@ -1047,6 +1118,37 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 			onOut = (e) -> {
 				fileBrowser.currentHover = null;
 			}
+
+			onDragStart = () -> {
+				fileBrowser.itemStartDrag();
+			}
+
+			onDragOver = (op) -> {
+				fileBrowser.fileOnDragOver(file, op);
+				if (op.acceptDrop) {
+					if (file.kind == Dir) {
+						dom.addClass("can-drop-file");
+					} else {
+						fileBrowser.gallery.dom.addClass("can-drop-file");
+					}
+				}
+			}
+
+			onDragMove = (op) -> {
+				fileBrowser.fileOnDragOver(file, op);
+			}
+
+			onDragOut = (op) -> {
+				if (file.kind == Dir) {
+					dom.removeClass("can-drop-file");
+				} else {
+					fileBrowser.gallery.dom.removeClass("can-drop-file");
+				}
+			}
+
+			onDrop = (op) -> {
+				fileBrowser.fileOnDrop(file, op, false);
+			}
 		}
 
 	}
@@ -1077,15 +1179,26 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 		}
 
 		if (file.kind != Dir) {
-			file.getIcon((miniaturePath) -> {
+			var retries = 0;
+			function cb(miniaturePath) {
 				if (miniaturePath == null)
 					return;
 				miniaturePath = StringTools.replace(miniaturePath, hide.Ide.inst.projectDir + "/res/", "");
-				var tex = hxd.res.Loader.currentInstance.load(miniaturePath)?.toTexture() ?? h3d.mat.Texture.fromColor(0xFF00FF);
+				var res = try hxd.res.Loader.currentInstance.load(miniaturePath) catch(e) null;
+				if (res == null) {
+					if (retries < 3) {
+						retries++;
+						hide.App.defer(cb.bind(miniaturePath));
+					}
+					return;
+				}
+
+				var tex = res?.toTexture() ?? h3d.mat.Texture.fromColor(0xFF00FF);
 				icon.huiBg.setTexture(tex);
 				icon.huiBg.imageMode = Fit;
 				icon.huiBg.imageIsSdf = false;
-			});
+			};
+			file.getIcon(cb);
 		}
 
 		if (fileBrowser?.galleryDelayRename?.file == file && allocated) {

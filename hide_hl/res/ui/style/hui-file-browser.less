@@ -3,6 +3,11 @@ hui-file-browser {
 
 	#gallery {
 
+		&.can-drop-file {
+			> hui-background {
+				outline: 2 @color-accent;
+			}
+		}
 
 		#virtual-list {
 
@@ -56,6 +61,12 @@ hui-file-browser-gallery-item {
 
 	.hover-select();
 
+	&.can-drop-file {
+		> hui-background {
+			outline: 2 @color-accent;
+		}
+	}
+
 	#border {
 		layout: vertical;
 		fill-width: 1;
@@ -80,6 +91,7 @@ hui-file-browser-gallery-item {
 		valign: top;
 		text-align: multiline-center;
 		break-all: true;
+		halign: middle;
 	}
 	#title-edit {
 		valign: top;

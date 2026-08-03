@@ -113,6 +113,17 @@ class FileEntry {
 		FileManager.inst.fileIndex.remove(this.getRelPath());
 	}
 
+	public function contains(file: FileEntry) {
+		var current = file;
+		while(current != null) {
+			if (current == this)
+				return true;
+			current = current.parent;
+		}
+		return false;
+	}
+
+
 	/**
 		Returns a list of all the files with name that matches the query string in this file children (recursive).
 		Pass an array to the ranges parameter to have it filled with the search range corresponding to each file in the result list
@@ -190,6 +201,7 @@ class FileEntry {
 		FileManager.inst.fileChangeInternal(this);
 	}
 
+
 	function watch() {
 		#if hl
 		if (watcher != null)
@@ -217,8 +229,8 @@ class FileEntry {
 			return null;
 
 		if (name == null) {
-			refreshChildren();
-			changed();
+			/*refreshChildren();
+			changed();*/
 			return this;
 		}
 
@@ -309,7 +321,7 @@ class FileManager {
 	public var fileRoot: FileEntry;
 	var fileIndex : Map<String, FileEntry> = [];
 
-	public static final thumbnailGeneratorPort = 96691;
+	public static final thumbnailGeneratorPort = 9669;
 	public static final thumbnailGeneratorUrl = "localhost";
 
 	public static var inst(default, null) : FileManager;

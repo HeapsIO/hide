@@ -146,7 +146,7 @@ class HuiTree<TreeItem> extends HuiElement {
 		requestRefresh(RegenerateFlatten);
 	}
 
-	function keyDownHandler(isSearchBar: Bool, e: hxd.Event) {
+	public function keyDownHandler(isSearchBar: Bool, e: hxd.Event) {
 		// we need to do this because e.cancel = true will make the event propagate even
 		// if e.propagate is false, and we need the e.cancel = true to override the search bar
 		// default behavior
