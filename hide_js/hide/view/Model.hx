@@ -1168,7 +1168,7 @@ class Model extends FileView {
 					elScale.val(params.scale ?? 1);
 					elScale.trigger("input");
 					elMesh.val(params.mesh);
-					
+
 					if (settings.mode != Auto)
 						sceneEditor.updateCollidersVisibility();
 				}
@@ -2859,10 +2859,12 @@ class Model extends FileView {
 		}
 
 		var anim = scene.loadAnimation(file);
-		currentAnimation = { file : file, name : scene.animationName(file) };
-		anim.loadProps(loadProps());
+		if (anim != null) {
+			currentAnimation = { file : file, name : scene.animationName(file) };
+			anim.loadProps(loadProps());
 
-		obj.playAnimation(anim);
+			obj.playAnimation(anim);
+		}
 		var skin = Std.downcast(obj, h3d.scene.Skin);
 		if (skin != null)
 			@:privateAccess skin.prevAbsPosFrame = -1;
@@ -2875,7 +2877,7 @@ class Model extends FileView {
 
 	function buildEventPanel(){
 		eventList.empty();
-		var events = @:privateAccess obj.currentAnimation.events;
+		var events = @:privateAccess obj.currentAnimation?.events;
 		var fbxEventList = new Element('<div></div>');
 		fbxEventList.append(new Element('<div class="title"><label>Events</label></div>'));
 		function addEvent( n : String, f : Float, root : Element ){
