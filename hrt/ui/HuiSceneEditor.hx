@@ -146,7 +146,7 @@ class HuiSceneEditor extends HuiElement {
 				uz : camera.up.z
 			}
 
-			// getView().saveDisplayState(CAM_POS_CONFIG_KEY, state);
+			getView().saveDisplayState(CAM_POS_CONFIG_KEY, state);
 		}
 	}
 
