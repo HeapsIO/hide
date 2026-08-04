@@ -474,8 +474,9 @@ class Model extends HuiView<{path: String}> {
 
 			h3d.prim.ModelDatabase.current.saveModelProps(input);
 			var lfs = cast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
-			lfs.removePathFromCache(state.path);
-			@:privateAccess hxd.res.Loader.currentInstance.cache.remove(state.path);
+			lfs.removePathFromCache(Ide.inst.getRelPath(state.path));
+			@:privateAccess hxd.res.Loader.currentInstance.cache.remove(Ide.inst.getRelPath(state.path));
+			@:privateAccess hrt.prefab.Cache.get().modelCache.models.remove(Ide.inst.getRelPath(state.path));
 		}
 
 		// Save model library
