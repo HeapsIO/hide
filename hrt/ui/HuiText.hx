@@ -40,7 +40,9 @@ class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
 
 
 		// Highlight text
-		defineHtmlTag("h", 0x3185ce);
+
+
+
 	}
 
 	override function loadFont(name: String) : h2d.Font {
@@ -88,6 +90,12 @@ class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
 		}
 		return fnt;
 	}
+
+	static var _ = {
+		h2d.HtmlText.defineDefaultHtmlTag("h", 0x3185ce);
+		h2d.HtmlText.defineDefaultHtmlTag("hint", 0x999999, "regular-small");
+		0;
+	};
 }
 
 class BreakAllCharset extends hxd.Charset {
