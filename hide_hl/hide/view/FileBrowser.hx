@@ -9,6 +9,8 @@ class FileBrowser extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Bro
 		super(_state, parent);
 		initComponent();
 
+		saveDisplayKey = "/filebrowser";
+
 		var path = state.path ?? hide.Ide.inst.resourceDir;
 		fileBrowser = new HuiFileBrowser(path, this);
 		fileBrowser.onOpen = (file) -> {

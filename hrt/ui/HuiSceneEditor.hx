@@ -81,6 +81,7 @@ class HuiSceneEditor extends HuiElement {
 		initComponent();
 
 		tree = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelTree);
+		tree.saveDisplayKey = "sceneTree";
 
 		var env = new h3d.scene.pbr.Environment(getEnvMap());
 		env.compute();
@@ -129,7 +130,7 @@ class HuiSceneEditor extends HuiElement {
 				uz : camera.up.z
 			}
 
-			getView().saveDisplayState(CAM_POS_CONFIG_KEY, state);
+			// getView().saveDisplayState(CAM_POS_CONFIG_KEY, state);
 		}
 	}
 

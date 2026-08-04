@@ -131,6 +131,8 @@ class HuiFileBrowser extends HuiElement {
 			}
 		};
 
+		tree.saveDisplayKey = this.saveDisplayKey + "/tree";
+
 		tree.unregisterCommand(hrt.ui.HuiCommands.search);
 
 		registerCommand(hrt.ui.HuiCommands.search, ElementAndChildren, () -> {
@@ -204,6 +206,7 @@ class HuiFileBrowser extends HuiElement {
 
 		// Splitter setup
 		splitter = new HuiSplitContainer();
+		splitter.saveDisplayKey = "splitter";
 
 		mainToolbar = new HuiToolbar();
 		mainToolbar.dom.setId("main-toolbar");
@@ -1065,7 +1068,7 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 		this.file = file;
 		this.fileBrowser = fileBrowser;
 		if (fileBrowser != null)
-			this.tip = file.name;
+			this.tip = file.name + "<br/><hint>Hold ALT to zoom</hint>";
 		refresh();
 
 		// filebrowser == null means we want to display a big thumbnail in a popup

@@ -546,7 +546,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	}
 
 	function saveOpenState() {
-		if (saveDisplayKey == null)
+		if (saveDisplayPath == null)
 			return;
 
 		var save: Array<String> = [];

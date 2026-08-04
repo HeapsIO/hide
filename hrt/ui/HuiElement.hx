@@ -17,9 +17,23 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	@:p public var enable(default, set) : Bool = true;
 	@:p(bgType) var backgroundType(default, set) : String;
-	@:p var saveDisplayKey(default, set): String;
 	@:p public var displayName: String;
 	@:p public var styleEvents: Bool = true;
+
+	/**
+		key to use when saving props with the setDisplayState/getDisplayState functions
+		If stats with a /, then the path is absolute (doesn't depend on its parent saveDisplayKey)
+		If starts with a #, then the path is an ID and will be ignored by other paths (won't appear in the hierarchy)
+	**/
+	@:p var saveDisplayKey(null, set): String;
+
+	/**
+		Actual path that will be used when using setDisplayState/getDisplayState functions.
+		Will be null if :
+			- this.saveDisplayKey is null
+			- this.saveDisplayKey is not absolute and parent.saveDisplayPath is null
+	**/
+	public var saveDisplayPath(get, null): String = null;
 
 	// If the element is currently focused by the ui
 	public var focused(default, null): Bool = false;
@@ -90,12 +104,32 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		return v;
 	}
 
-	function set_saveDisplayKey(v: String) : Dynamic {
+	function set_saveDisplayKey(v: String) : String {
 		if (v == saveDisplayKey)
 			return v;
 		saveDisplayKey = v;
-		onLoadState();
+		invalidateSaveDisplayPath();
 		return saveDisplayKey;
+	}
+
+	function get_saveDisplayPath() : String {
+		if (saveDisplayPath != null)
+			return saveDisplayPath;
+		if (saveDisplayKey == null)
+			return null;
+		if (saveDisplayKey.charAt(0) == "/")
+			return saveDisplayKey;
+		var curParent = parentElement;
+
+		while(curParent != null) {
+			var parentPath = curParent.saveDisplayPath;
+			if (parentPath != null && parentPath.charAt(0) != "#") {
+				saveDisplayPath = parentPath + "/" + saveDisplayKey;
+				return saveDisplayPath;
+			}
+			curParent = curParent.parentElement;
+		}
+		return null;
 	}
 
 	function set_onOut(v) {onOut = v; makeInteractive(); return v;};
@@ -136,6 +170,11 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		return visible;
 	}
 
+	override function onAdd() {
+		super.onAdd();
+		invalidateSaveDisplayPath();
+	}
+
 	function get_huiBg() : HuiBackground {return Std.downcast(background, HuiBackground);};
 	function get_parentElement() : HuiElement {return Std.downcast(parent, HuiElement);};
 	function get_childElements() : Array<HuiElement> {return cast children.filter((e) -> Std.downcast(e, HuiElement) != null);};
@@ -161,6 +200,17 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		for (c in children) {
 			Std.downcast(c, HuiElement)?.update(dt);
 		}
+	}
+
+	function invalidateSaveDisplayPath() {
+		saveDisplayPath = get_saveDisplayPath();
+		if (saveDisplayPath != null) {
+			onLoadState();
+		}
+		for (c in childElements) {
+			c.invalidateSaveDisplayPath();
+		}
+
 	}
 
 	public function findParent<T:HuiElement>(?cl: Class<T>, ?filter: T -> Bool) : T {
@@ -323,24 +373,24 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	}
 
 	function saveDisplayState(key: String, value : Dynamic) : Void {
-		if (saveDisplayKey == null)
+		if (saveDisplayPath == null)
 			return;
 
-		hide.Ide.inst.saveLocalStorage(saveDisplayKey + "/" + key, value);
+		hide.Ide.inst.saveLocalStorage(saveDisplayPath + ":" + key, value);
 	}
 
 	function getDisplayState(key: String, def: Dynamic) : Dynamic {
-		if (saveDisplayKey == null)
+		if (saveDisplayPath == null)
 			return def;
 
-		return hide.Ide.inst.getLocalStorage(saveDisplayKey + "/" + key) ?? def;
+		return hide.Ide.inst.getLocalStorage(saveDisplayPath + ":" + key) ?? def;
 	}
 
 	function clearDisplayState(key: String) : Void {
-		if (saveDisplayKey == null)
+		if (saveDisplayPath == null)
 			return;
 
-		hide.Ide.inst.clearLocalStorage(saveDisplayKey + "/" + key);
+		hide.Ide.inst.clearLocalStorage(saveDisplayPath + ":" + key);
 	}
 
 	function getDisplayName() : String {

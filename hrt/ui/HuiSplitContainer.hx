@@ -53,6 +53,8 @@ class HuiSplitContainer extends HuiElement {
 
 
 	override function onLoadState() {
+		if (findParent(HuiFileBrowser) != null)
+			trace("break");
 		splitterPos = getDisplayState("splitterPos", splitterPos);
 		needReflow = true;
 	}

@@ -68,11 +68,11 @@ class Prefab extends HuiView<{path: String}> {
 
 		if (state != null) {
 			config = hide.Config.loadForFile(hide.Ide.inst, state.path);
-			saveDisplayKey = 'prefabEditor:${state.path}';
+			saveDisplayKey = '/prefabEditor:${state.path}';
 
 		} else {
 			config = hide.Ide.inst.currentConfig;
-			saveDisplayKey = "prefabEditor:__empty";
+			saveDisplayKey = "/prefabEditor:__empty";
 		}
 
 		sceneEditor.load = () -> reload();
