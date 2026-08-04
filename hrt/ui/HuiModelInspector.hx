@@ -275,7 +275,17 @@ class HuiModelInspector extends HuiElement {
 			maxConvexHullsEl.text = '${settings.params?.maxConvexHulls ?? 1}';
 
 			unitEl.parent.visible = collisionModeEl.value == hide.view.Model.CollisionMode.Auto;
-			// scaleEl.text = '${settings.params?.maxSubdiv ?? 32}';
+			var keys = [ for (k in hxd.fmt.hmd.Data.ConvexHullsCollider.UNITS.keys()) k ];
+			keys.sort((a, b) -> return hxd.fmt.hmd.Data.ConvexHullsCollider.UNITS.get(a) < hxd.fmt.hmd.Data.ConvexHullsCollider.UNITS.get(b) ? -1 : 1);
+			var units = [ for (k in keys) { label: k, value: k } ];
+			unitEl.items = units;
+			unitEl.value = 'Meter';
+			if (settings.params?.unit != null) {
+				for (unit in hxd.fmt.hmd.Data.ConvexHullsCollider.UNITS.keys()) {
+					if (hxd.fmt.hmd.Data.ConvexHullsCollider.UNITS.get(unit) == settings.params?.unit)
+						unitEl.value = unit;
+				}
+			}
 
 			meshEl.items = [ { value: null, label: "None" } ];
 			if (hmd != null) {
@@ -299,19 +309,19 @@ class HuiModelInspector extends HuiElement {
 			var prevParams = settings.params;
 			var meshName = meshEl.value;
 			var curMode = collisionModeEl.value;
-			var curParams = {};
+			var curParams : hxd.fmt.fbx.HMDOut.CollideParams = {};
 			switch (curMode) {
 				case hide.view.Model.CollisionMode.Default:
-					Reflect.setField(curParams, "useDefault", true);
+					curParams.useDefault = true;
 				case hide.view.Model.CollisionMode.None:
 					curParams = null;
 				case hide.view.Model.CollisionMode.Auto:
-					Reflect.setField(curParams, "maxConvexHulls", Std.parseInt(maxConvexHullsEl.text));
-					// Reflect.setField(curParams, "unit", Std.parseFloat(scalEl.value));
-					Reflect.setField(curParams, "scale", scaleEl.value);
-					Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
+					curParams.maxConvexHulls = Std.parseInt(maxConvexHullsEl.text);
+					curParams.unit = hxd.fmt.hmd.Data.ConvexHullsCollider.UNITS.get(unitEl.value);
+					curParams.scale = scaleEl.value;
+					curParams.mesh = meshName == "null" ? null : meshName;
 				case hide.view.Model.CollisionMode.Mesh:
-					Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
+					curParams.mesh = meshName == "null" ? null : meshName;
 				case hide.view.Model.CollisionMode.Shapes:
 					if (prevMode != curMode && @:privateAccess shapeEditor.shapes?.length == 0)
 						shapeEditor.createDefaultShape(obj);
@@ -319,7 +329,7 @@ class HuiModelInspector extends HuiElement {
 					if (shapes.length == 0)
 						curParams = null;
 					else
-						Reflect.setField(curParams, "shapes", shapes);
+						curParams.shapes = shapes;
 				default:
 					throw "Unknown collision mode";
 			}
@@ -344,7 +354,16 @@ class HuiModelInspector extends HuiElement {
 
 		collisionModeEl.onValueChanged = () -> applyCollisionEdition();
 		shapeEditor.onChange = () -> applyCollisionEdition();
-		scaleEl.onValueChanged = (_) -> applyCollisionEdition();
+		scaleEl.onValueChanged = (_) -> {
+			var root = @:privateAccess model.sceneEditor.rootDebugCollider;
+			if (root == null)
+				return;
+			var d = root.getObjectByName('__scaled');
+			if (d == null)
+				return;
+			d.setScale(scaleEl.value);
+			applyCollisionEdition();
+		}
 		maxConvexHullsEl.onChange = (_) -> applyCollisionEdition();
 		unitEl.onValueChanged = () -> applyCollisionEdition();
 		meshEl.onValueChanged = () -> applyCollisionEdition();

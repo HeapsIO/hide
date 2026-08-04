@@ -85,7 +85,6 @@ class CollisionSettings {
 
 			case ConvexHulls(colliderModel):
 				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
-
 				var dim = mesh.getBounds().dimension();
 				var resolution = Math.ceil(dim / params.unit);
 				var p = { maxConvexHulls: params.maxConvexHulls, resolution: resolution };
@@ -125,6 +124,8 @@ class CollisionSettings {
 				}
 
 				parentObj.defaultTransform = model.position.toMatrix().getInverse();
+				parentObj.name = "__scaled";
+				parentObj.setScale(params.scale ?? 1);
 				return parentObj;
 
 			case Shapes:
@@ -348,7 +349,7 @@ class Model extends HuiView<{path: String}> {
 							mode = None;
 						else if (Reflect.field(cf, "useDefault"))
 							mode = Default;
-						else if (Reflect.hasField(cf, "precision"))
+						else if (Reflect.hasField(cf, "maxConvexHulls"))
 							mode = Auto;
 						else if (Reflect.hasField(cf, "mesh"))
 							mode = Mesh;
