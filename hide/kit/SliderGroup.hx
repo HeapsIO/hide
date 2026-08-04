@@ -32,6 +32,7 @@ class SliderGroup extends Line {
 			isLocked = !isLocked;
 			saveSetting(Global, "lock", isLocked ? null : false);
 			refresh();
+			e.stopPropagation();
 		}
 
 		labelGroup.addChild(lock);
