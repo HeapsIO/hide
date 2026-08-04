@@ -748,7 +748,7 @@ class Image extends FileView {
 
 		if (format.val().toString() != "none") {
 			var comp = new hxd.fs.Convert.CompressIMG("png,tga,jpg,jpeg,dds,envd,envs","dds");
-			comp.srcPath = Ide.inst.getPath(state.path);
+			comp.setSource(Ide.inst.getPath(state.path));
 			comp.dstPath = Ide.inst.getPath(tmpPath);
 			comp.originalFilename = name;
 			comp.params = buildParams(format, useAlpha, alpha, mips, size, filter, getTextureMaxSize());

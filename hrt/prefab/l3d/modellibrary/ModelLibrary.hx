@@ -858,9 +858,8 @@ class ModelLibrary extends Prefab {
 		function convertFile(name:String) {
 			update("Compress "+name);
 			var filename =  name + ".dds";
-			convert.srcPath = datDir + filename;
+			convert.setSource(datDir + filename);
 			convert.originalFilename = filename;
-			convert.srcBytes = hxd.File.getBytes(convert.srcPath);
 			convert.convert();
 			var success = false;
 			for ( fmt in ["BC1", "BC3", "dds_BC1", "dds_BC3"] ) {
