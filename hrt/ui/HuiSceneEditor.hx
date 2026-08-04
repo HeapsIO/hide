@@ -1,6 +1,17 @@
 package hrt.ui;
 
 #if hui
+
+class HuiCameraSpeedPopup extends HuiPopup {
+	static var SRC =
+	<hui-camera-speed-popup>
+		<hui-text("e")/>
+	</hui-camera-speed-popup>
+	public function new(?parent: h2d.Object) {
+		super(parent);
+		initComponent();
+	}
+}
 class HuiSceneEditor extends HuiElement {
 	static var SRC =
 		<hui-scene-editor>
@@ -96,6 +107,11 @@ class HuiSceneEditor extends HuiElement {
 
 		var ctrlClass = h3d.scene.CameraController.getCameraControllersClass()[hide.Ide.inst.currentConfig.get(hrt.ui.HuiSceneEditor.CAM_CTRL_CONFIG_KEY, 0)];
 		cameraController = Type.createInstance(ctrlClass, []);
+		cameraController.onCustomEvent = (e : hxd.Event) -> {
+			if (e.kind == EWheel) {
+				// uiBase.addPopup(new HuiCameraSpeedPopup(this), { object: Element(cameraBtn), directionX: StartInside, directionY: EndOutside });
+			}
+		}
 		scene.s3d.addChild(cameraController);
 
 		try {
