@@ -496,7 +496,8 @@ class FXAnimation extends h3d.scene.Object {
 			#end
 		}
 
-		Event.updateEvents(events, localTime, oldLocalTime, duration);
+		if( playState != Finished )
+			Event.updateEvents(events, localTime, oldLocalTime, duration);
 	}
 
 	function fixEventSeek() {
