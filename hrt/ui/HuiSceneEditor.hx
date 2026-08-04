@@ -248,7 +248,8 @@ class HuiSceneEditor extends HuiElement {
 		updateRenderProps();
 
 		for (k in DEFAULT_VISIBILITY_STATE.keys())
-			hide.Ide.inst.currentConfig.set(k, DEFAULT_VISIBILITY_STATE.get(k));
+			if (hide.Ide.inst.currentConfig.get(k) == null)
+				hide.Ide.inst.currentConfig.set(k, DEFAULT_VISIBILITY_STATE.get(k));
 		updateDebugOverlayVisibility();
 
 		var cameraState = getView().getDisplayState(CAM_POS_CONFIG_KEY, null);
@@ -274,7 +275,7 @@ class HuiSceneEditor extends HuiElement {
 		grid.visible = visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_GRID_CONFIG_KEY);
 		setJointsDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_JOINTS_CONFIG_KEY));
 		setColliderDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_COLLIDERS_CONFIG_KEY));
-		setMiscDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_COLLIDERS_CONFIG_KEY));
+		setMiscDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_MISC_CONFIG_KEY));
 		setOutlineVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_OUTLINE_CONFIG_KEY));
 		setSceneInfoVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_SCENE_INFOS_CONFIG_KEY));
 		setWireframeVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_WIREFRAME_CONFIG_KEY));
