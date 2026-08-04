@@ -309,6 +309,8 @@ class HuiSceneEditor extends HuiElement {
 				for (g in gizmos)
 					if (g.isGizmo(m))
 						return false;
+				if (m == @:privateAccess grid.plane)
+					return false;
 				return true;
 			});
 
