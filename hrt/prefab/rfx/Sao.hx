@@ -62,6 +62,8 @@ class Sao extends RendererFX {
 	}
 
 	override function begin( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
+		if ( !checkEnabled() )
+			return;
 		if( step == Lighting ) {
 			if ( intensity <= 0.0 )
 				return;
