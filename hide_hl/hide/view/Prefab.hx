@@ -293,6 +293,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		var initialTransform = new Map<hrt.prefab.Object3D, h3d.Matrix>();
 		var initialAbs = new Map<hrt.prefab.Object3D, h3d.Matrix>();
+		var initialCentroid = new h3d.Matrix();
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
 		gizmo.shouldSnap = () -> { return this.gizmoShouldSnap; };
 		gizmo.snap = (v: Float, mode: hrt.tools.Gizmo.EditMode) -> {
@@ -315,6 +316,7 @@ class Prefab extends HuiView<{path: String}> {
 				initialTransform.set(o, o.getTransform().clone());
 				initialAbs.set(o, o.getAbsPos(true).clone());
 			}
+			initialCentroid.load(gizmo.getAbsPos());
 		};
 		gizmo.onMove = (offsetPosition, offsetRotation, offsetScale) -> {
 			if (obj3ds.length <= 0)
@@ -332,7 +334,7 @@ class Prefab extends HuiView<{path: String}> {
 
 				if (offsetRotation != null) {
 					offsetRotation.toMatrix(trs);
-					var t = initialAbs.get(obj3d).getPosition();
+					var t = initialCentroid.getPosition();
 					trs.prependTranslation(-t.x, -t.y, -t.z);
 					trs.translate(t.x, t.y, t.z);
 				}
