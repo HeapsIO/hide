@@ -348,7 +348,9 @@ class HuiTree<TreeItem> extends HuiElement {
 		var data = itemMap.get(cast item);
 		if (data != null) {
 			rec(data.parent);
-			list.scrollTo(data);
+
+			refreshFlags.set(RegenerateFlatten);
+			afterRefreshCallbacks.push(list.scrollTo.bind(data, Auto));
 		}
 	}
 
