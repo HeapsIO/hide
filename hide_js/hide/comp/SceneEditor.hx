@@ -3249,132 +3249,90 @@ class SceneEditor {
 			return x;
 		}
 
-		gizmo.onStartMove = function(handle) {
-			var objects3d = [for(o in selectedPrefabs) {
-				var obj3d = o.to(hrt.prefab.Object3D);
-				if(obj3d != null)
-					obj3d;
-			}];
-			var sceneObjs : Array<Object> = [for(o in objects3d) o.getLocal3d()];
-			var pivotPt = getPivot(sceneObjs);
-			var pivot = new h3d.Matrix();
-			pivot.initTranslation(pivotPt.x, pivotPt.y, pivotPt.z);
-			var invPivot = pivot.clone();
-			invPivot.invert();
-
-			gizmo.snap = gizmoSnap;
-
-			gizmo.shouldSnap = function() {
-				return this.snapForceOnGrid;
+		var initialTransform = new Map<hrt.prefab.Object3D, h3d.Matrix>();
+		var initialAbs = new Map<hrt.prefab.Object3D, h3d.Matrix>();
+		var obj3ds : Array<hrt.prefab.Object3D> = [];
+		gizmo.shouldSnap = () -> { return this.snapForceOnGrid; };
+		gizmo.snap = gizmoSnap;
+		gizmo.onStartMove = (handle : hrt.tools.Gizmo.Handle) -> {
+			obj3ds = [];
+			for (p in selectedPrefabs) {
+				var o = Std.downcast(p, hrt.prefab.Object3D);
+				if (o == null)
+					continue;
+				obj3ds.push(o);
 			}
+			for (o in obj3ds) {
+				initialTransform.set(o, o.getTransform().clone());
+				initialAbs.set(o, o.getAbsPos(true).clone());
+			}
+		};
+		gizmo.onMove = (offsetPosition, offsetRotation, offsetScale) -> {
+			if (obj3ds.length <= 0)
+				return;
 
-			var localMats = [for(o in sceneObjs) {
-				var m = worldMat(o);
-				m.multiply(m, invPivot);
-				m;
-			}];
+			for (obj3d in obj3ds) {
+				var parent3d = Std.downcast(obj3d.parent, hrt.prefab.Object3D);
+				var parentAbs = parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
+				var parentInv = parentAbs.getInverse();
 
-			var prevState = [for(o in objects3d) o.saveTransform()];
-			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
-				var transf = new h3d.Matrix();
-				transf.identity();
-				if(rot != null) {
-					rot.toMatrix(transf);
+				var trs = new h3d.Matrix();
+				trs.identity();
 
-					 }
-				if(translate != null)
-					transf.translate(translate.x, translate.y, translate.z);
-				for(i in 0...sceneObjs.length) {
-					var newMat = localMats[i].clone();
-					newMat.multiply(newMat, transf);
-					newMat.multiply(newMat, pivot);
-					if (snapToGround && handle == XYPlane) {
-						newMat.tz = getZ(newMat.tx, newMat.ty);
-					}
-
-					var obj = sceneObjs[i];
-					if ( obj != null && obj.parent != null ) {
-						var parentMat = obj.parent.getAbsPos().clone();
-						if(obj.follow != null) {
-							if(obj.followPositionOnly)
-								parentMat.setPosition(obj.follow.getAbsPos().getPosition());
-							else
-								parentMat = obj.follow.getAbsPos().clone();
-						}
-						var invParent = parentMat;
-						invParent.invert();
-						newMat.multiply(newMat, invParent);
-						if(scale != null) {
-							newMat.prependScale(scale.x, scale.y, scale.z);
-							// var previousScale = newMat.getScale();
-							// newMat.prependScale(1 / previousScale.x, 1 / previousScale.y, 1 / previousScale.z);
-							// newMat.prependScale(Math.max(0, previousScale.x  + scale.x), Math.max(0, previousScale.y + scale.y), Math.max(0, previousScale.z + scale.z));
-						}
-					}
-
-					var obj3d = objects3d[i];
-					var obj3dPrevTransform = obj3d.getTransform();
-					var euler = newMat.getEulerAngles();
-						  if (translate != null && translate.length() > 0.0001 && snapForceOnGrid) {
-								obj3d.x = snap(quantize(newMat.tx, posQuant), snapMoveStep);
-								obj3d.y = snap(quantize(newMat.ty, posQuant), snapMoveStep);
-								obj3d.z = snap(quantize(newMat.tz, posQuant), snapMoveStep);
-						  }
-						  else { // Don't snap translation if the primary action wasn't a translation (i.e. Rotation around a pivot)
-						obj3d.x = quantize(newMat.tx, posQuant);
-						obj3d.y = quantize(newMat.ty, posQuant);
-						obj3d.z = quantize(newMat.tz, posQuant);
-					}
-
-						  if (rot != null) {
-								obj3d.rotationX = quantize(M.radToDeg(euler.x), rotQuant);
-								obj3d.rotationY = quantize(M.radToDeg(euler.y), rotQuant);
-								obj3d.rotationZ = quantize(M.radToDeg(euler.z), rotQuant);
-					}
-
-					if(scale != null) {
-						var s = newMat.getScale();
-						obj3d.scaleX = quantize(s.x, scaleQuant);
-						obj3d.scaleY = quantize(s.y, scaleQuant);
-						obj3d.scaleZ = quantize(s.z, scaleQuant);
-					}
-					obj3d.applyTransform();
-					if( selfOnlyTransform )
-						restoreChildTransform(obj3d, obj3dPrevTransform);
-					if ( curEdit != null )
-						curEdit.onChange(obj3d, null);
+				if (offsetRotation != null) {
+					offsetRotation.toMatrix(trs);
+					var t = initialAbs.get(obj3d).getPosition();
+					trs.prependTranslation(-t.x, -t.y, -t.z);
+					trs.translate(t.x, t.y, t.z);
 				}
-			}
 
-			gizmo.onFinishMove = function() {
-				var newState = [for(o in objects3d) o.saveTransform()];
-				var selfOnlyTransform = this.selfOnlyTransform;
+				if (offsetPosition != null)
+					trs.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
+
+				trs.multiply(initialAbs.get(obj3d), trs);
+
+				if (gizmo.shouldSnap()) {
+					var p = trs.getPosition();
+					p.x = hxd.Math.round(p.x / snapMoveStep) * snapMoveStep;
+					p.y = hxd.Math.round(p.y / snapMoveStep) * snapMoveStep;
+					p.z = hxd.Math.round(p.z / snapMoveStep) * snapMoveStep;
+					trs.setPosition(p);
+					gizmo.setPosition(p.x, p.y, p.z);
+				}
+
+				trs.multiply(trs, parentInv);
+
+				if (offsetScale != null)
+					trs.prependScale(offsetScale.x, offsetScale.y, offsetScale.z);
+
+				obj3d.setTransform(trs);
+				obj3d.applyTransform();
+			}
+		};
+
+		gizmo.onFinishMove = () -> {
+			var prevTransforms = [];
+			var newTransforms = [];
+			var modifiedObj3ds = obj3ds.copy();
+			for (o in modifiedObj3ds) {
+				prevTransforms.push(initialTransform.get(o).clone());
+				newTransforms.push(o.getTransform());
+			}
+			refreshProps();
+
+			undo.change(Custom((isUndo) -> {
+				var objs = [];
+				for (idx => o in modifiedObj3ds) {
+					o.setTransform(isUndo ? prevTransforms[idx] : newTransforms[idx]);
+					o.applyTransform();
+					if (o.local3d != null)
+						objs.push(o.local3d);
+				}
+				gizmo.moveToObjects(objs);
 				refreshProps();
-				undo.change(Custom(function(undo) {
-					for(i in 0...objects3d.length) {
-						var obj3d = objects3d[i];
-						var obj3dPrevTransform = obj3d.getTransform();
-						obj3d.loadTransform(undo ? prevState[i] : newState[i]);
-						obj3d.applyTransform();
-						if( selfOnlyTransform )
-							restoreChildTransform(obj3d, obj3dPrevTransform);
-					}
-					refreshProps();
+			}));
+		};
 
-					for(o in objects3d) {
-						if ( curEdit != null )
-							curEdit.onChange(o, null);
-						o.updateInstance();
-						applySceneStyle(o);
-					}
-				}));
-
-				for(o in objects3d) {
-					o.updateInstance();
-					applySceneStyle(o);
-				}
-			}
-		}
 		gizmo2d.onStartMove = function(mode) {
 			var objects2d = [for(o in selectedPrefabs) {
 				var obj = o.to(hrt.prefab.Object2D);

@@ -329,8 +329,8 @@ class Prefab extends HuiView<{path: String}> {
 		registerCommand(hrt.tools.Gizmo.gizmoRotateCommand, View, gizmo.rotationMode);
 		registerCommand(hrt.tools.Gizmo.gizmoScaleCommand, View, gizmo.scalingMode);
 
-		var initialTransform = new h3d.Matrix();
-		var initialAbs = new h3d.Matrix();
+		var initialTransform = new Map<hrt.prefab.Object3D, h3d.Matrix>();
+		var initialAbs = new Map<hrt.prefab.Object3D, h3d.Matrix>();
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
 		gizmo.shouldSnap = () -> { return this.gizmoShouldSnap; };
 		gizmo.snap = (v: Float, mode: hrt.tools.Gizmo.EditMode) -> {
@@ -349,51 +349,52 @@ class Prefab extends HuiView<{path: String}> {
 					continue;
 				obj3ds.push(o);
 			}
-			if (obj3ds.length > 0) {
-				initialTransform.load(obj3ds[0].getTransform());
-				initialAbs.load(obj3ds[0].getAbsPos(true));
+			for (o in obj3ds) {
+				initialTransform.set(o, o.getTransform().clone());
+				initialAbs.set(o, o.getAbsPos(true).clone());
 			}
 		};
 		gizmo.onMove = (offsetPosition, offsetRotation, offsetScale) -> {
 			if (obj3ds.length <= 0)
 				return;
 
-			var obj3d = obj3ds[0];
-			var parent3d = Std.downcast(obj3d.parent, hrt.prefab.Object3D);
-			var parentAbs = parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
-			var parentInv = parentAbs.getInverse();
+			for (obj3d in obj3ds) {
+				var parent3d = Std.downcast(obj3d.parent, hrt.prefab.Object3D);
+				var parentAbs = parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
+				var parentInv = parentAbs.getInverse();
 
-			var trs = new h3d.Matrix();
-			trs.identity();
+				var trs = new h3d.Matrix();
+				trs.identity();
 
-			if (offsetRotation != null) {
-				offsetRotation.toMatrix(trs);
-				var t = initialAbs.getPosition();
-				trs.prependTranslation(-t.x, -t.y, -t.z);
-				trs.translate(t.x, t.y, t.z);
+				if (offsetRotation != null) {
+					offsetRotation.toMatrix(trs);
+					var t = initialAbs.get(obj3d).getPosition();
+					trs.prependTranslation(-t.x, -t.y, -t.z);
+					trs.translate(t.x, t.y, t.z);
+				}
+
+				if (offsetPosition != null)
+					trs.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
+
+				trs.multiply(initialAbs.get(obj3d), trs);
+
+				if (gizmo.shouldSnap() && gizmoForceSnapOnGrid) {
+					var p = trs.getPosition();
+					p.x = hxd.Math.round(p.x / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
+					p.y = hxd.Math.round(p.y / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
+					p.z = hxd.Math.round(p.z / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
+					trs.setPosition(p);
+					gizmo.setPosition(p.x, p.y, p.z);
+				}
+
+				trs.multiply(trs, parentInv);
+
+				if (offsetScale != null)
+					trs.prependScale(offsetScale.x, offsetScale.y, offsetScale.z);
+
+				obj3d.setTransform(trs);
+				obj3d.applyTransform();
 			}
-
-			if (offsetPosition != null)
-				trs.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
-
-			trs.multiply(initialAbs, trs);
-
-			if (gizmo.shouldSnap() && gizmoForceSnapOnGrid) {
-				var p = trs.getPosition();
-				p.x = hxd.Math.round(p.x / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
-				p.y = hxd.Math.round(p.y / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
-				p.z = hxd.Math.round(p.z / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
-				trs.setPosition(p);
-				gizmo.setPosition(p.x, p.y, p.z);
-			}
-
-			trs.multiply(trs, parentInv);
-
-			if (offsetScale != null)
-				trs.prependScale(offsetScale.x, offsetScale.y, offsetScale.z);
-
-			obj3d.setTransform(trs);
-			obj3d.applyTransform();
 
 			sceneEditor.inspectorRoot?.refreshFields();
 		};
@@ -401,8 +402,8 @@ class Prefab extends HuiView<{path: String}> {
 			var prevTransforms = [];
 			var newTransforms = [];
 			var modifiedObj3ds = obj3ds.copy();
-			for (idx => o in modifiedObj3ds) {
-				prevTransforms.push(initialTransform.clone());
+			for (o in modifiedObj3ds) {
+				prevTransforms.push(initialTransform.get(o).clone());
 				newTransforms.push(o.getTransform());
 			}
 
