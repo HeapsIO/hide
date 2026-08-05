@@ -351,7 +351,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 			// refreshFlags.set(RegenerateFlatten);
 			// afterRefreshCallbacks.push(list.scrollTo.bind(data, Auto));
-			list.scrollTo.bind(data, Auto)
+			list.scrollTo.bind(data, Auto);
 		}
 	}
 
