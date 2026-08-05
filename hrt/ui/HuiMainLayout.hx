@@ -13,7 +13,7 @@ class HuiMainLayout extends HuiElement {
 				<hui-button-menu(() -> [{label: "Copy"}, {label: "Paste"}, {label: "Cut"}, {isSeparator: true}, {label: "Other stuff", menu: [{label: "Hello there"}]}])>
 					<hui-text("Edit")/>
 				</hui-button-menu>
-				<hui-button-menu(() -> [{label: "Resources", click: () -> hide.Ide.inst.openView(@:privateAccess new hide.view.FileBrowser({rootPath: hide.Ide.inst.resourceDir}), Left)}, {label: "Scene"}, {label: "Settings"}, {label: "Gym", click: () -> hide.Ide.inst.openView(@:privateAccess new HuiViewGym({}))}])>
+				<hui-button-menu(() -> [{label: "Resources", click: () -> hide.Ide.inst.openView(hide.view.FileBrowser, {rootPath: hide.Ide.inst.resourceDir}, Left)}, {label: "Scene"}, {label: "Settings"}, {label: "Gym", click: () -> hide.Ide.inst.openView(HuiViewGym, {})}])>
 					<hui-text("View")/>
 				</hui-button-menu>
 
@@ -28,7 +28,7 @@ class HuiMainLayout extends HuiElement {
 						]},
 						{
 							label: "Prefab Editor Tests",
-							click: ()->hide.Ide.inst.openView(@:privateAccess new hrt.ui.tests.HuiPrefabEditorTests({})),
+							click: ()->hide.Ide.inst.openView(hrt.ui.tests.HuiPrefabEditorTests, {}),
 						}
 					])>
 					<hui-text("Debug")/>
