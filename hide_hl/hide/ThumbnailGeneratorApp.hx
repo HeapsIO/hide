@@ -590,7 +590,11 @@ class ThumbnailGenerator {
 
 			// Check thumbnail cache
 
-			var thumbnailPath = getThumbnailPath(toRender.path);
+			var thumbnailPath = try getThumbnailPath(toRender.path) catch(e) null;
+			if (thumbnailPath == null) {
+				toRender.cb(null);
+				continue;
+			}
 			var thumbnailPathString = thumbnailPath.toString();
 
 			var shouldGenerate = true;
