@@ -436,6 +436,12 @@ class Model extends HuiView<{path: String}> {
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
 
+		var spacer = new HuiElement(this);
+		spacer.dom.addClass("spacer");
+		widgets.push(spacer);
+
+		widgets.push(new hrt.ui.HuiToolbar.HuiSplitterDirectionWidget());
+
 		return widgets;
 	}
 
