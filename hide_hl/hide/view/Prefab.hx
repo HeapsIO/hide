@@ -207,14 +207,11 @@ class Prefab extends HuiView<{path: String}> {
 					var prefabs : Array<hrt.prefab.Prefab> = cast op.data;
 					prefabs = prefabs.copy();
 					sanitizeReparent(target, prefabs);
-					if (prefabs.length != 0) {
-						return Reorder | Reparent;
+					if (prefabs.length == 0) {
+						return hrt.ui.HuiTree.DropFlags.ofInt(0);
 					}
-				} else if (op.type == HuiFileBrowser.fileDragOp) {
-					var path = getDropPath(op);
-					if (path != null) {
-						return Reorder | Reparent;
-					}
+
+					return Reorder | Reparent;
 				}
 				return  hrt.ui.HuiTree.DropFlags.ofInt(0);
 			},
@@ -237,41 +234,8 @@ class Prefab extends HuiView<{path: String}> {
 							index = reparentTo.children.indexOf(target) + 1;
 						case Inside:
 					}
+					trace(operation, target, reparentTo, index);
 					getView().undo.run(actionReparentPrefabs(prefabs, reparentTo, index), true);
-				} else if (op.type == HuiFileBrowser.fileDragOp) {
-					var pathAbs = getDropPath(op);
-
-					var path = Ide.inst.makeRelative(pathAbs);
-
-					if (!hxd.res.Loader.currentInstance.exists(path)) {
-						Ide.showError('Path "$path" is not available from this project resource folder');
-						return;
-					}
-
-
-					var ref = createRefFromPath(path);
-
-					ref.name = new haxe.io.Path(path).file;
-
-
-
-					var parent = target;
-					var index = parent.children.length;
-					if (operation == After || operation == Before) {
-						parent = target.parent;
-						index = parent.children.indexOf(target);
-						if (operation == After)
-							index += 1;
-					}
-					var reparent = actionReparentPrefab(ref, parent, index);
-					var select = actionMakeSelection([ref]);
-
-					var action = (isUndo) -> {
-						reparent(isUndo);
-						select(isUndo);
-					};
-
-					getView().undo.run(action, true);
 				}
 			}
 		}
@@ -319,8 +283,6 @@ class Prefab extends HuiView<{path: String}> {
 		sceneEditor.scene.onDragEnd = sceneDragEnd;
 		sceneEditor.scene.onDrop = sceneDrop;
 
-
-
 		gizmo = new hrt.tools.Gizmo(sceneEditor.scene.s3d);
 		gizmo.visible = false;
 		gizmo.setVisible(hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_GIZMO_CONFIG_KEY));
@@ -360,6 +322,8 @@ class Prefab extends HuiView<{path: String}> {
 
 			for (obj3d in obj3ds) {
 				var parent3d = Std.downcast(obj3d.parent, hrt.prefab.Object3D);
+				if (parent3d == null)
+					parent3d = Std.downcast(obj3d.shared.parentPrefab, hrt.prefab.Object3D);
 				var parentAbs = parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
 				var parentInv = parentAbs.getInverse();
 
@@ -662,12 +626,6 @@ class Prefab extends HuiView<{path: String}> {
 		widgets.push(crashButton);
 #end
 
-		var spacer = new HuiElement(this);
-		spacer.dom.addClass("spacer");
-		widgets.push(spacer);
-
-		widgets.push(new hrt.ui.HuiToolbar.HuiSplitterDirectionWidget());
-
 		return widgets;
 	}
 
@@ -934,7 +892,11 @@ class Prefab extends HuiView<{path: String}> {
 		gizmo.visible = objs.length > 0;
 
 		if (!flags.has(NoRefreshTree)) {
+			@:privateAccess sceneEditor.tree.forceRefreshTree();
 			sceneEditor.tree.setSelection(selection);
+			for (item in selection) {
+				sceneEditor.tree.revealItem(item);
+			}
 		}
 
 		if (!flags.has(NoRecordUndo)) {
@@ -1573,6 +1535,7 @@ class Prefab extends HuiView<{path: String}> {
 			rebuildPrefabTree(newParent);
 			// updateDebugOverlayVisibility();
 			// checkRemakeRenderProps(prefab);
+			sceneEditor.tree.revealItem(prefab);
 		};
 	}
 

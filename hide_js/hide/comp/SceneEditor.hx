@@ -3273,6 +3273,8 @@ class SceneEditor {
 
 			for (obj3d in obj3ds) {
 				var parent3d = Std.downcast(obj3d.parent, hrt.prefab.Object3D);
+				if (parent3d == null)
+					parent3d = Std.downcast(obj3d.shared.parentPrefab, hrt.prefab.Object3D);
 				var parentAbs = parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
 				var parentInv = parentAbs.getInverse();
 
