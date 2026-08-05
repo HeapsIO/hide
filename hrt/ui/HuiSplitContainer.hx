@@ -51,10 +51,7 @@ class HuiSplitContainer extends HuiElement {
 		direction = direction;
 	}
 
-
 	override function onLoadState() {
-		if (findParent(HuiFileBrowser) != null)
-			trace("break");
 		splitterPos = getDisplayState("splitterPos", splitterPos);
 		needReflow = true;
 	}
@@ -69,6 +66,19 @@ class HuiSplitContainer extends HuiElement {
 		}
 
 		childElement = this.childElements;
+
+		// if we only have one child (+ the slider bar)
+		var singleMode = childElements.length < 3;
+		dom.toggleClass("single", singleMode);
+		if (singleMode) {
+			if (childElements[0] != null && childElements[0] != splitter) {
+				childElements[0].minHeight = null;
+				childElements[0].minWidth = null;
+				childElements[0].maxWidth = null;
+				childElements[0].maxHeight = null;
+			}
+			return;
+		}
 
 		var engine = h3d.Engine.getCurrent();
 		if (engine.width <= 32 || engine.height <= 32) {

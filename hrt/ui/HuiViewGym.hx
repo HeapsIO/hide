@@ -104,6 +104,12 @@ class GymWidgets extends HuiElement {
 					<hui-element class="panel"><hui-text("Up")/></hui-element>
 					<hui-element class="panel"><hui-text("Down")/></hui-element>
 				</hui-split-container>
+
+				<hui-split-container direction="horizontal" id="split-single-mode">
+					<hui-element class="panel"><hui-text("Single Mode")/></hui-element>
+				</hui-split-container>
+
+				<hui-button id="single-add-panel"><hui-text("Add/remove panel for single")/></hui-button>
 			</hui-element>
 
 			<hui-text("hui-tab-container")/>
@@ -173,7 +179,19 @@ class GymWidgets extends HuiElement {
 		setupCommands();
 		setupScene();
 		setupVirtualGrid();
+		setupSplitter();
 	}
+
+	function setupSplitter() {
+		singleAddPanel.onClick = (e) -> {
+			if (splitSingleMode.childElements.length < 3) {
+				new HuiElement(splitSingleMode);
+			} else {
+				splitSingleMode.childElements[1].remove();
+			}
+		}
+	}
+
 
 	function testMenu() :  Array<HuiMenu.MenuItem> {
 		var submenu: Array<HuiMenu.MenuItem> = [

@@ -8,4 +8,17 @@ hui-split-container {
 		position: absolute;
 		overflow: hidden;
 	}
+
+	&.single {
+
+		> hui-element {
+			fill-width: 1;
+			fill-height: 1;
+			position: auto;
+		}
+
+		> #splitter {
+			visible: false;
+		}
+	}
 }
