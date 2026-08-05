@@ -103,7 +103,9 @@ class ScreenOutline extends h3d.shader.ScreenShader {
 		function fragment() {
 			var outval = texture.get(calculatedUV).rgb;
 			pixelColor.a = outval.r > 0.1 && outval.r < 0.5 ? 1.0 : 0.0;
-			pixelColor.rgb = (outval.r > outval.g ? 0.2 : 1.0) * color;
+			// Temp remove this feature beacuse combine with temporal it creates a blink behaviour
+			// pixelColor.rgb = (outval.r > outval.g ? 0.2 : 1.0) * color;
+			pixelColor.rgb = color;
 		}
 	};
 }
