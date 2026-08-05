@@ -345,7 +345,11 @@ class HuiTree<TreeItem> extends HuiElement {
 			rec(data.parent);
 		}
 
-		rec(itemMap.get(cast item)?.parent);
+		var data = itemMap.get(cast item);
+		if (data != null) {
+			rec(data.parent);
+			list.scrollTo(data);
+		}
 	}
 
 	public function revealAll() : Void {

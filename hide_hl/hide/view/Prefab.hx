@@ -897,11 +897,7 @@ class Prefab extends HuiView<{path: String}> {
 		gizmo.visible = objs.length > 0;
 
 		if (!flags.has(NoRefreshTree)) {
-			@:privateAccess sceneEditor.tree.forceRefreshTree();
 			sceneEditor.tree.setSelection(selection);
-			for (item in selection) {
-				sceneEditor.tree.revealItem(item);
-			}
 		}
 
 		if (!flags.has(NoRecordUndo)) {
