@@ -1,17 +1,6 @@
 package hrt.ui;
 
 #if hui
-
-class HuiCameraSpeedPopup extends HuiPopup {
-	static var SRC =
-	<hui-camera-speed-popup>
-		<hui-text("e")/>
-	</hui-camera-speed-popup>
-	public function new(?parent: h2d.Object) {
-		super(parent);
-		initComponent();
-	}
-}
 class HuiSceneEditor extends HuiElement {
 	static var SRC =
 		<hui-scene-editor>
@@ -112,7 +101,10 @@ class HuiSceneEditor extends HuiElement {
 		cameraController = Type.createInstance(ctrlClass, []);
 		cameraController.onCustomEvent = (e : hxd.Event) -> {
 			if (e.kind == EWheel) {
-				// uiBase.addPopup(new HuiCameraSpeedPopup(this), { object: Element(cameraBtn), directionX: StartInside, directionY: EndOutside });
+				var p = new HuiPopupInfo(1, this);
+				p.setText('Camera Speed : ${hxd.Math.round(cameraController.moveSpeed * 100) / 100}');
+				uiBase.addPopup(p, { object: Point(scene.absX + scene.calculatedWidth / 2.0, scene.absY + scene.calculatedHeight * 3 / 4), directionX: Middle, directionY: Middle });
+				p.dom.applyStyle(uiBase.style);
 			}
 		}
 		scene.s3d.addChild(cameraController);
