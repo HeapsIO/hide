@@ -27,8 +27,10 @@ class HuiSceneEditor extends HuiElement {
 					</hui-element>
 				</hui-split-container>
 
-				<hui-element id="inspector-panel">
-				</hui-element>
+				<hui-split-container id="side-vertical-splitter">
+					<hui-element id="inspector-panel">
+					</hui-element>
+				</hui-split-container>
 			</hui-split-container>
 
 			<hui-error-display id="critical-error" public/>
@@ -69,6 +71,7 @@ class HuiSceneEditor extends HuiElement {
 	public var tree :  hrt.ui.HuiTree<Dynamic>;
 	var inspectorRoot : hide.kit.KitRoot;
 	var cameraController : h3d.scene.CameraController;
+	var verticalSidebar: Bool = false;
 
 	var renderProps : hrt.prefab.RenderProps;
 
@@ -130,8 +133,24 @@ class HuiSceneEditor extends HuiElement {
 		updateDebugOverlayVisibility();
 	}
 
-	override function sync(ctx) {
-		super.sync(ctx);
+	function syncSidebarMode() {
+		var newMode = hide.Ide.inst.ideConfig.sceneEditorVerticalSidebar ?? false;
+		if (newMode != verticalSidebar) {
+			verticalSidebar = newMode;
+			if (verticalSidebar) {
+				if (panelTree.parentElement != sideVerticalSplitter) {
+					sideVerticalSplitter.addChildElementAt(panelTree, 0);
+				}
+			} else {
+				if (panelTree.parentElement != sceneTreeSplit) {
+					sceneTreeSplit.addChildElementAt(panelTree, 1);
+				}
+			}
+		}
+	}
+
+	override function update(dt:Float) {
+		super.update(dt);
 
 		var camera = scene.s3d.camera;
 		if (camera != null) {
@@ -148,6 +167,8 @@ class HuiSceneEditor extends HuiElement {
 
 			getView().saveDisplayState(CAM_POS_CONFIG_KEY, state);
 		}
+
+		syncSidebarMode();
 	}
 
 	public static function getMaterialLibraries(path : String) {

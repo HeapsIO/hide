@@ -348,6 +348,22 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	}
 
+	/**
+		Add an element as a child of this element at the given position, but
+		only uses the "real" elements and not the internal ones like background, scrollbar and interactive
+	**/
+	function addChildElementAt(e: h2d.Object, pos: Int) {
+		var truePos = 0;
+		while (pos > 0) {
+			var c = getChildAt(truePos);
+			if (background != c && scrollBar != c && interactive != c)
+				pos --;
+
+			truePos ++;
+		}
+		addChildAt(e, truePos);
+	}
+
 	override function addChildAt(s:h2d.Object, pos:Int) {
 		super.addChildAt(s, pos);
 		onChildrenChanged();

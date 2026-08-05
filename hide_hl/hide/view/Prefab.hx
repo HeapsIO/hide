@@ -625,6 +625,12 @@ class Prefab extends HuiView<{path: String}> {
 		widgets.push(crashButton);
 #end
 
+		var spacer = new HuiElement(this);
+		spacer.dom.addClass("spacer");
+		widgets.push(spacer);
+
+		widgets.push(new hrt.ui.HuiToolbar.HuiSplitterDirectionWidget());
+
 		return widgets;
 	}
 

@@ -35,6 +35,9 @@ typedef HideGlobalConfig = {
 	var collisionOnDrag : Bool;
 	var sceneEditorClickCycleObjects : Bool;
 
+	// hidehl
+	var sceneEditorVerticalSidebar: Bool;
+
 	// CDB
 	var searchOnKeyPress : Bool;
 	var highlightActiveLine : Bool;

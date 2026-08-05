@@ -2,12 +2,22 @@ hui-scene-editor {
 	fill-width: 1;
 
 	> #main-split {
-		second-min-size: 300;
+		second-min-size: 250;
+		first-min-size: 50;
 		anchor-to: end;
 
 		> #scene-tree-split {
-			second-min-size: 300;
+			second-min-size: 150;
+			first-min-size: 50;
 			anchor-to: end;
+		}
+
+		#side-vertical-splitter {
+			first-min-size: 100;
+			second-min-size: 100;
+			direction: vertical;
+			anchor-to: start;
+
 		}
 	}
 

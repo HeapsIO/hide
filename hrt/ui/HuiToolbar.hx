@@ -19,6 +19,15 @@ class HuiToolbar extends HuiElement {
 		widgets.push(widget);
 	}
 
+
+	/**
+		Add an element that fills all the available space, so that the next elements are right aligned (or pseudo centered if another spacer is added after that)
+	**/
+	public function addSpacer() {
+		var spacer = new HuiElement(this);
+		spacer.dom.addClass("spacer");
+	}
+
 	public function getWidget(id: String) {
 		if (widgets == null) return null;
 		for (w in widgets) {
@@ -685,6 +694,39 @@ class HuiHelpPopup extends HuiPopup {
 			(c.command.registeredShortcut.shift ? "Shift-" : "") +
 			(c.command.registeredShortcut.ctrl ? "Ctrl-" : "") +
 			hxd.Key.getKeyName(c.command.registeredShortcut.key), container);
+		}
+	}
+}
+
+
+/**
+	Button that allow toggling
+	hide.Ide.inst.ideConfig.sceneEditorVerticalSidebar
+**/
+class HuiSplitterDirectionWidget extends HuiElement {
+		static var SRC = <hui-splitter-direction-widget>
+		<hui-button id="btn" tip={"Change inspector/tree split"}>
+			<hui-icon("") id="icon"/>
+		</hui-button>
+	</hui-splitter-direction-widget>
+
+	public function new(?parent) {
+		super(parent);
+		initComponent();
+
+		btn.onClick = (e: hxd.Event) -> {
+			hide.Ide.inst.ideConfig.sceneEditorVerticalSidebar = !hide.Ide.inst.ideConfig.sceneEditorVerticalSidebar;
+			hide.Ide.inst.config.global.save();
+			refreshIcon();
+		}
+		refreshIcon();
+	}
+
+	function refreshIcon() {
+		if(hide.Ide.inst.ideConfig.sceneEditorVerticalSidebar) {
+			icon.setIcon("split_vertical");
+		} else {
+			icon.setIcon("split_horizontal");
 		}
 	}
 }
