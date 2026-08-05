@@ -62,7 +62,7 @@ class HuiTabViewContainer extends HuiTabContainer {
 	}
 
 	public function getViews() : Array<HuiView<Any>> {
-		return [for (tab in getTabs()) cast tab];
+		return [for (tab in getTabs()) if (Std.downcast(tab, hrt.ui.HuiView) != null) cast tab];
 	}
 
 	override function syncTabs() {
