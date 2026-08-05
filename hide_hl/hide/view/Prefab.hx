@@ -1572,7 +1572,6 @@ class Prefab extends HuiView<{path: String}> {
 			rebuildPrefabTree(newParent);
 			// updateDebugOverlayVisibility();
 			// checkRemakeRenderProps(prefab);
-			sceneEditor.tree.revealItem(prefab);
 		};
 	}
 

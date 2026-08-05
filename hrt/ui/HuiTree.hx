@@ -333,7 +333,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	/** Open all of item parents so that item becomes visible in the tree **/
 	public function revealItem(item: TreeItem) : Void {
-		if (refreshFlags.toInt() != 0) {
+		if (refreshFlags.has(RootData)) {
 			afterRefreshCallbacks.push(revealItem.bind(item));
 			return;
 		}
@@ -349,9 +349,8 @@ class HuiTree<TreeItem> extends HuiElement {
 		if (data != null) {
 			rec(data.parent);
 
-			// refreshFlags.set(RegenerateFlatten);
-			// afterRefreshCallbacks.push(list.scrollTo.bind(data, Auto));
-			list.scrollTo.bind(data, Auto);
+			refreshFlags.set(RegenerateFlatten);
+			afterRefreshCallbacks.push(list.scrollTo.bind(data, Auto));
 		}
 	}
 
@@ -431,7 +430,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	function refreshInternal() {
 		var iterCount = 0;
-		while (refreshFlags.toInt() != 0 && iterCount < 2) {
+		while (refreshFlags.toInt() != 0 && iterCount < 3) {
 			if (refreshFlags.has(RootData)) {
 				rootData = generateChildren(null);
 				refreshFlags.set(RegenerateFlatten);
