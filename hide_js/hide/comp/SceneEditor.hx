@@ -3251,6 +3251,7 @@ class SceneEditor {
 
 		var initialTransform = new Map<hrt.prefab.Object3D, h3d.Matrix>();
 		var initialAbs = new Map<hrt.prefab.Object3D, h3d.Matrix>();
+		var initialCentroid = new h3d.Matrix();
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
 		gizmo.shouldSnap = () -> { return this.snapForceOnGrid; };
 		gizmo.snap = gizmoSnap;
@@ -3266,6 +3267,7 @@ class SceneEditor {
 				initialTransform.set(o, o.getTransform().clone());
 				initialAbs.set(o, o.getAbsPos(true).clone());
 			}
+			initialCentroid.load(gizmo.getAbsPos());
 		};
 		gizmo.onMove = (offsetPosition, offsetRotation, offsetScale) -> {
 			if (obj3ds.length <= 0)
@@ -3283,7 +3285,7 @@ class SceneEditor {
 
 				if (offsetRotation != null) {
 					offsetRotation.toMatrix(trs);
-					var t = initialAbs.get(obj3d).getPosition();
+					var t = initialCentroid.getPosition();
 					trs.prependTranslation(-t.x, -t.y, -t.z);
 					trs.translate(t.x, t.y, t.z);
 				}
