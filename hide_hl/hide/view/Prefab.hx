@@ -207,11 +207,14 @@ class Prefab extends HuiView<{path: String}> {
 					var prefabs : Array<hrt.prefab.Prefab> = cast op.data;
 					prefabs = prefabs.copy();
 					sanitizeReparent(target, prefabs);
-					if (prefabs.length == 0) {
-						return hrt.ui.HuiTree.DropFlags.ofInt(0);
+					if (prefabs.length != 0) {
+						return Reorder | Reparent;
 					}
-
-					return Reorder | Reparent;
+				} else if (op.type == HuiFileBrowser.fileDragOp) {
+					var path = getDropPath(op);
+					if (path != null) {
+						return Reorder | Reparent;
+					}
 				}
 				return  hrt.ui.HuiTree.DropFlags.ofInt(0);
 			},
@@ -234,8 +237,41 @@ class Prefab extends HuiView<{path: String}> {
 							index = reparentTo.children.indexOf(target) + 1;
 						case Inside:
 					}
-					trace(operation, target, reparentTo, index);
 					getView().undo.run(actionReparentPrefabs(prefabs, reparentTo, index), true);
+				} else if (op.type == HuiFileBrowser.fileDragOp) {
+					var pathAbs = getDropPath(op);
+
+					var path = Ide.inst.makeRelative(pathAbs);
+
+					if (!hxd.res.Loader.currentInstance.exists(path)) {
+						Ide.showError('Path "$path" is not available from this project resource folder');
+						return;
+					}
+
+
+					var ref = createRefFromPath(path);
+
+					ref.name = new haxe.io.Path(path).file;
+
+
+
+					var parent = target;
+					var index = parent.children.length;
+					if (operation == After || operation == Before) {
+						parent = target.parent;
+						index = parent.children.indexOf(target);
+						if (operation == After)
+							index += 1;
+					}
+					var reparent = actionReparentPrefab(ref, parent, index);
+					var select = actionMakeSelection([ref]);
+
+					var action = (isUndo) -> {
+						reparent(isUndo);
+						select(isUndo);
+					};
+
+					getView().undo.run(action, true);
 				}
 			}
 		}
