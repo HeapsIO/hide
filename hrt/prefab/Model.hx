@@ -125,10 +125,23 @@ class Model extends Object3D {
 		ctx.build(
 			<category("Animation")>
 				<text(txt)/>
-				<file label="Model" type={"model"} field={source} onValueChange={(_) -> {animation = null; ctx.rebuildPrefab(this); ctx.rebuildInspector();}}/>
+				<file label="Model" type={"model"} field={source} id="fileSource" />
 				<select(anims) field={animation} onValueChange={(_) -> ctx.rebuildPrefab(this);} disabled={anims.length == 0}/>
 			</category>
 		);
+
+		var oldSource = source;
+		fileSource.onValueChange = (_) -> {
+			if( this.name == "" || this.name == new haxe.io.Path(oldSource).file ) {
+				this.name = new haxe.io.Path(source).file;
+				oldSource = source;
+				ctx.rebuildTree(this);
+			}
+
+			animation = null;
+			ctx.rebuildPrefab(this);
+			ctx.rebuildInspector();
+		}
 	}
 
 	#if editor
