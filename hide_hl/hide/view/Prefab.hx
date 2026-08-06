@@ -262,7 +262,7 @@ class Prefab extends HuiView<{path: String}> {
 							index += 1;
 					}
 
-					ref.setTransform(parent.findFirstLocal3d()?.getAbsPos() ?? h3d.Matrix.I());
+					ref.setTransform(parent.to(hrt.prefab.Object3D)?.getRelativeTransform(null, null, false) ?? h3d.Matrix.I());
 
 					var reparent = actionReparentPrefab(ref, parent, index);
 					var select = actionMakeSelection([ref]);
@@ -1567,7 +1567,9 @@ class Prefab extends HuiView<{path: String}> {
 				if (transform != null) {
 					prefab.to(hrt.prefab.Object3D)?.loadTransform(transform);
 				}
-				tryMakeChildren(newParent);
+				// rebuild the parent because object3d with no children are broken when they have a non identity
+				// default transform
+				tryMake(newParent);
 			}
 
 			if (newParent != null)
