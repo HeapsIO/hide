@@ -449,29 +449,12 @@ class ThumbnailGenerator {
 		var pixels = texture.capturePixels();
 		//sys.io.File.saveBytes(path, renderTexture.capturePixels().toPNG());
 
-		#if new_encode_jpg
-
 		var len : Int = 0;
 		var bytes = format.hl.Native.encodeJPG(pixels.bytes, texture.width, texture.height, texture.width * 4, RGBA, _422, 85, 0, hl.Ref.make(len));
 		if (bytes == null)
 			throw "Convert failed";
 
 		sys.io.File.saveBytes(path, bytes.toBytes(len));
-		#else
-
-		pixels.convert(ARGB);
-
-		var bytes = new haxe.io.BytesOutput();
-		@:privateAccess jpegWriter.byteout = bytes;
-		jpegWriter.write({
-			width: texture.width,
-			height: texture.height,
-			pixels: pixels.bytes,
-			quality: 70
-		});
-
-		sys.io.File.saveBytes(path, bytes.getBytes());
-		#end
 
 		return path;
 	}
