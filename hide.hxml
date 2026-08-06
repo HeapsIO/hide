@@ -1,6 +1,5 @@
 common.hxml
 -D hide
--D hl_ver=2.0.0
 
 -js bin/hide.js
 -main hide.Ide

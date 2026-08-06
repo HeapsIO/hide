@@ -47,5 +47,7 @@
 -dce no
 -debug
 
+-D hl_ver=2.0.0
+
 # hack so hxd.Res doesn't create conflicting packages when building hrt.ui.HuiRes
 -D resourcesPath=hide_hl/emptyres
