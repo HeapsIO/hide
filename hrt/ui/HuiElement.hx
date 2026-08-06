@@ -34,6 +34,8 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			- this.saveDisplayKey is not absolute and parent.saveDisplayPath is null
 	**/
 	public var saveDisplayPath(get, null): String = null;
+	var lastStateLoadPath:String = null;
+
 
 	// If the element is currently focused by the ui
 	public var focused(default, null): Bool = false;
@@ -108,7 +110,8 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (v == saveDisplayKey)
 			return v;
 		saveDisplayKey = v;
-		invalidateSaveDisplayPath();
+		if (allocated)
+			invalidateSaveDisplayPath();
 		return saveDisplayKey;
 	}
 
@@ -117,8 +120,12 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return saveDisplayPath;
 		if (saveDisplayKey == null)
 			return null;
-		if (saveDisplayKey.charAt(0) == "/")
-			return saveDisplayKey;
+		switch (saveDisplayKey.charAt(0)) {
+			case "/" | "#":
+				saveDisplayPath = saveDisplayKey;
+				return saveDisplayPath;
+			default:
+		}
 		var curParent = parentElement;
 
 		while(curParent != null) {
@@ -171,8 +178,14 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	}
 
 	override function onAdd() {
+		// reset save display path;
+		saveDisplayPath = null;
+
 		super.onAdd();
-		invalidateSaveDisplayPath();
+
+		if (lastStateLoadPath != saveDisplayPath) {
+			onLoadState();
+		}
 	}
 
 	function get_huiBg() : HuiBackground {return Std.downcast(background, HuiBackground);};
@@ -204,13 +217,12 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	function invalidateSaveDisplayPath() {
 		saveDisplayPath = get_saveDisplayPath();
-		if (saveDisplayPath != null) {
+		if (lastStateLoadPath != saveDisplayPath) {
 			onLoadState();
+			for (c in childElements) {
+				c.invalidateSaveDisplayPath();
+			}
 		}
-		for (c in childElements) {
-			c.invalidateSaveDisplayPath();
-		}
-
 	}
 
 	public function findParent<T:HuiElement>(?cl: Class<T>, ?filter: T -> Bool) : T {
@@ -345,7 +357,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		called when saveDisplayKey is properly initialized
 	**/
 	function onLoadState() {
-
+		lastStateLoadPath = saveDisplayPath;
 	}
 
 	/**

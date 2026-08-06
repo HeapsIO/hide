@@ -35,6 +35,7 @@ class HuiSplitContainer extends HuiElement {
 	function set_secondMaxSize(v) {needReflow = true; return secondMaxSize = v;};
 
 	var splitterPos : Int = 200;
+	var lastSavedPos : Int = 200;
 
 	function set_direction(v: Direction) {
 		direction = v;
@@ -52,8 +53,12 @@ class HuiSplitContainer extends HuiElement {
 	}
 
 	override function onLoadState() {
+		super.onLoadState();
+		var old = splitterPos;
 		splitterPos = getDisplayState("splitterPos", splitterPos);
-		needReflow = true;
+		lastSavedPos = splitterPos;
+		if (old != splitterPos)
+			needReflow = true;
 	}
 
 	function updateLayout() {
@@ -179,7 +184,10 @@ class HuiSplitContainer extends HuiElement {
 				size - localSplitterPos;
 		}
 
-		saveDisplayState("splitterPos", splitterPos);
+		if (lastSavedPos != splitterPos) {
+			saveDisplayState("splitterPos", splitterPos);
+			lastSavedPos = splitterPos;
+		}
 	}
 
 	function onSplitterMove(newPos: Float) {

@@ -1,5 +1,7 @@
 common.hxml
 -D hide
+-D hl_ver=2.0.0
+
 -js bin/hide.js
 -main hide.Ide
 --macro hide.tools.Macros.includeShaderSources()
@@ -20,4 +22,6 @@ common.hxml
 cdb.ConstLoader
 -dce no
 -debug
+
+
 #-D shader_debug_dump

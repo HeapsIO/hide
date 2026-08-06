@@ -4,9 +4,9 @@ package hrt.ui;
 class HuiSceneEditor extends HuiElement {
 	static var SRC =
 		<hui-scene-editor>
-			<hui-split-container id="main-split">
+			<hui-split-container id="main-split" save-display-key={"#sceneEditor.mainSplit"}>
 
-				<hui-split-container id="scene-tree-split">
+				<hui-split-container id="scene-tree-split" save-display-key={"#sceneEditor.treeSplit"}>
 					<hui-element id="scene-panel">
 						<hui-element id="scene-toolbar"/>
 						<hui-scene id="scene"/>
@@ -17,7 +17,7 @@ class HuiSceneEditor extends HuiElement {
 					</hui-element>
 				</hui-split-container>
 
-				<hui-split-container id="side-vertical-splitter">
+				<hui-split-container id="side-vertical-splitter" save-display-key={"#sceneEditor.verticalSplit"}>
 					<hui-element id="inspector-panel">
 					</hui-element>
 				</hui-split-container>
@@ -82,9 +82,18 @@ class HuiSceneEditor extends HuiElement {
 		return gizmoSnapStep = v;
 	}
 
+	var splitters : Array<HuiSplitContainer> = [];
+
 	override function new(?parent) {
 		super(parent);
 		initComponent();
+		saveDisplayKey = "sceneEditor";
+
+		splitters = [
+			sceneTreeSplit,
+			mainSplit,
+			sideVerticalSplitter,
+		];
 
 		tree = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelTree.content);
 		tree.saveDisplayKey = "sceneTree";
@@ -178,8 +187,35 @@ class HuiSceneEditor extends HuiElement {
 		}
 	}
 
+	var oldVisibility = false;
 	override function update(dt:Float) {
 		super.update(dt);
+
+		var visible = true;
+		var cur : h2d.Object = this;
+		while(cur != null) {
+			visible = visible && cur.visible;
+			if (!visible)
+				break;
+			cur = cur.parent;
+		}
+
+		if (visible && !oldVisibility) {
+			for (splitter in splitters) {
+				splitter.onLoadState();
+			}
+		}
+		oldVisibility = visible;
+
+
+		if (resetCameraQueued) {
+			resetCameraQueued = false;
+
+			cameraController.set(20.0, null, null, null, 25.);
+			var objs = [for (o in @:privateAccess scene.s3d.children) o];
+			focusObjects(objs, false);
+			cameraController.toTarget();
+		}
 
 		var camera = scene.s3d.camera;
 		if (camera != null) {
@@ -194,7 +230,7 @@ class HuiSceneEditor extends HuiElement {
 				uz : camera.up.z
 			}
 
-			getView().saveDisplayState(CAM_POS_CONFIG_KEY, state);
+			saveDisplayState(CAM_POS_CONFIG_KEY, state);
 		}
 
 		syncSidebarMode();
@@ -319,8 +355,7 @@ class HuiSceneEditor extends HuiElement {
 				hide.Ide.inst.currentConfig.set(k, DEFAULT_VISIBILITY_STATE.get(k));
 		updateDebugOverlayVisibility();
 
-		var cameraState = getView().getDisplayState(CAM_POS_CONFIG_KEY, null);
-		resetCamera();
+		var cameraState = getDisplayState(CAM_POS_CONFIG_KEY, null);
 		if (cameraState != null) {
 			var camera = scene.s3d.camera;
 			camera.pos.x = cameraState.x;
@@ -332,7 +367,11 @@ class HuiSceneEditor extends HuiElement {
 			camera.up.x = cameraState.ux;
 			camera.up.y = cameraState.uy;
 			camera.up.z = cameraState.uz;
+
 			cameraController.loadFromCamera();
+		} else {
+			resetCamera();
+
 		}
 	}
 
@@ -589,11 +628,9 @@ class HuiSceneEditor extends HuiElement {
 		return t;
 	}
 
+	var resetCameraQueued = false;
 	function resetCamera() {
-		cameraController.set(20.0, null, null, null, 25.);
-		var objs = [for (o in @:privateAccess scene.s3d.children) o];
-		focusObjects(objs, false);
-		cameraController.toTarget();
+		resetCameraQueued = true;
 	}
 
 	public function gizmoSnap(v: Float, mode: hrt.tools.Gizmo.EditMode) {

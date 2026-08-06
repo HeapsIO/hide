@@ -392,14 +392,9 @@ class Prefab extends HuiView<{path: String}> {
 		buildToolbar();
 	}
 
-	var camInit = false;
-	override function onDisplay() {
-		super.onDisplay();
-		if (!camInit) {
-			camInit = true;
-			sceneEditor.resetCamera();
-		}
-	}
+	// override function onDisplay() {
+	// 	super.onDisplay();
+	// }
 
 	override function onLoadState() {
 		super.onLoadState();
