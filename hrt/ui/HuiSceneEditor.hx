@@ -139,7 +139,7 @@ class HuiSceneEditor extends HuiElement {
 		scene.s3d.lightSystem?.dispose();
 		scene.s3d.lightSystem = new h3d.scene.pbr.LightSystem();
 
-		scene.s3d.addEventListener(onSceneEvents);
+		scene.s3d.addEventListener(sceneEventHandler);
 
 		var ctrlClass = h3d.scene.CameraController.getCameraControllersClass()[hide.Ide.inst.currentConfig.get(hrt.ui.HuiSceneEditor.CAM_CTRL_CONFIG_KEY, 0)];
 		cameraController = Type.createInstance(ctrlClass, []);
@@ -637,12 +637,14 @@ class HuiSceneEditor extends HuiElement {
 		return hxd.Math.round(v / this.gizmoSnapStep) * this.gizmoSnapStep;
 	}
 
-	function onSceneEvents(e: hxd.Event) : Void {
+	function sceneEventHandler(e: hxd.Event) : Void {
 		var oldX = e.relX;
 		var oldY = e.relY;
 
 		e.relX -= @:privateAccess scene.s3d.scenePosition?.offsetX;
 		e.relY -= @:privateAccess scene.s3d.scenePosition?.offsetY;
+
+		onSceneEvent(e);
 
 		switch (e.kind) {
 			case EMove:
@@ -656,6 +658,7 @@ class HuiSceneEditor extends HuiElement {
 		e.relY = oldY;
 	}
 
+	public dynamic function onSceneEvent(e: hxd.Event) {}
 	public dynamic function onScenePush(e: hxd.Event) {}
 	public dynamic function onSceneMove(e: hxd.Event) {}
 	public dynamic function getSelectedObjects() : Array<h3d.scene.Object> { return []; }

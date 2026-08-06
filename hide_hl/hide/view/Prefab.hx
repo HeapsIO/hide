@@ -127,6 +127,7 @@ class Prefab extends HuiView<{path: String}> {
 		@:privateAccess sceneEditor.debugGraph = new h2d.Graphics(sceneEditor.scene.s2d);
 
 		sceneEditor.onScenePush = onScenePush;
+		sceneEditor.onSceneEvent = onSceneEvent;
 		sceneEditor.onSceneMove = onSceneMove;
 
 		sceneEditor.tree.getItemChildren = (el) -> {
@@ -1778,56 +1779,85 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	function onScenePush(e: hxd.Event) : Void {
-		if (e.button == 0) {
-			var prefabs = [];
-			var objs = sceneEditor.getObjectsAt(cast e.relX, cast e.relY, prefab.findFirstLocal3d(), (o) -> Std.isOfType(o, h3d.scene.Mesh));
-			var newSelection : Array<hrt.prefab.Prefab> = [];
-			for (o in objs) {
-				var p = prefabLookup.get(o.object);
-				if (p == null || p.locked)
-					continue;
-				prefabs.push(p);
-			}
 
-			var mouseX = e.relX - sceneEditor.scene.absX;
-			var mouseX = e.relY - sceneEditor.scene.absY;
+	}
 
-			lastPushX = e.relX;
-			lastPushY = e.relY;
+	var pushing = false;
+	function onSceneEvent(e: hxd.Event) {
+		switch (e.kind) {
+			case EMove:
+				if (hxd.Math.distance(lastPushX - e.relX, lastPushY - e.relY) > 5.0) {
+					movedSinceLastPush = true;
+				}
+			case EPush:
+				if (e.button == 0) {
+					pushing = true;
+					getScene().startCapture((e) -> {
+						var oldX = e.relX;
+						var oldY = e.relY;
+						e.relX -= sceneEditor.absX;
+						e.relY -= sceneEditor.absY;
+						onSceneEvent(e);
+						e.relX = oldX;
+						e.relY = oldY;
+					} , () -> {
+						pushing = false;
+					});
+					e.propagate = false;
+				}
+			case ERelease:
+				if (e.button == 0 && pushing) {
+					getScene().stopCapture();
 
-			var newPrefab : hrt.prefab.Prefab = null;
-			if (prefabs.length > 0) {
-				newPrefab = prefabs[0];
-				if (!movedSinceLastPush) {
-					// select next prefab in the selection stack
-					for (idx => p in prefabs) {
-						if (selectedPrefabs.get(p)) {
-							newPrefab = prefabs[(idx + 1) % prefabs.length];
-							break;
+					var prefabs = [];
+					var objs = sceneEditor.getObjectsAt(cast e.relX, cast e.relY, prefab.findFirstLocal3d(), (o) -> Std.isOfType(o, h3d.scene.Mesh));
+					var newSelection : Array<hrt.prefab.Prefab> = [];
+					for (o in objs) {
+						var p = prefabLookup.get(o.object);
+						if (p == null || p.locked)
+							continue;
+						prefabs.push(p);
+					}
+
+					var mouseX = e.relX - sceneEditor.scene.absX;
+					var mouseX = e.relY - sceneEditor.scene.absY;
+
+					lastPushX = e.relX;
+					lastPushY = e.relY;
+
+					var newPrefab : hrt.prefab.Prefab = null;
+					if (prefabs.length > 0) {
+						newPrefab = prefabs[0];
+						if (!movedSinceLastPush) {
+							// select next prefab in the selection stack
+							for (idx => p in prefabs) {
+								if (selectedPrefabs.get(p)) {
+									newPrefab = prefabs[(idx + 1) % prefabs.length];
+									break;
+								}
+							}
 						}
 					}
+
+					var newSelection : Array<hrt.prefab.Prefab> = [];
+					if (hxd.Key.isDown(hxd.Key.CTRL)) {
+						newSelection = [for (p in selectedPrefabs.keys()) p];
+					}
+
+					if (newPrefab != null)
+						newSelection.push(newPrefab);
+
+					setSelection(newSelection, SelectionFlags.ofInt(0));
+
+					e.propagate = false;
+					movedSinceLastPush = false;
 				}
-			}
-
-			var newSelection : Array<hrt.prefab.Prefab> = [];
-			if (hxd.Key.isDown(hxd.Key.CTRL)) {
-				newSelection = [for (p in selectedPrefabs.keys()) p];
-			}
-
-			if (newPrefab != null)
-				newSelection.push(newPrefab);
-
-			setSelection(newSelection, SelectionFlags.ofInt(0));
-
-			e.propagate = false;
-			movedSinceLastPush = false;
+			default:
 		}
 	}
 
 	function onSceneMove(e: hxd.Event) : Void {
-		if (hxd.Math.distance(lastPushX - e.relX, lastPushY - e.relY) > 5.0) {
-			movedSinceLastPush = true;
-		}
+
 	}
 
 
