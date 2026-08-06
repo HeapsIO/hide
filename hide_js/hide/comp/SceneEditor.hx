@@ -3295,7 +3295,7 @@ class SceneEditor {
 
 				trs.multiply(initialAbs.get(obj3d), trs);
 
-				if (gizmo.shouldSnap()) {
+				if (gizmo.shouldSnap() && getSnapStatus()) {
 					var p = trs.getPosition();
 					p.x = hxd.Math.round(p.x / snapMoveStep) * snapMoveStep;
 					p.y = hxd.Math.round(p.y / snapMoveStep) * snapMoveStep;
