@@ -11,8 +11,9 @@ class HuiSceneEditor extends HuiElement {
 						<hui-element id="scene-toolbar"/>
 						<hui-scene id="scene"/>
 					</hui-element>
-					<hui-element id="panel-tree">
-
+					<hui-element id="trees-panel">
+						<hui-category("Scene Tree") id="panel-tree"></hui-category>
+						<hui-category("Render Props Tree") id="panel-additional-tree"></hui-category>
 					</hui-element>
 				</hui-split-container>
 
@@ -53,11 +54,13 @@ class HuiSceneEditor extends HuiElement {
 
 	public static final RENDER_PROPS_SAVE_KEY = "renderPropsPath";
 	public static var RENDER_PROPS_KEY = "scene.renderProps";
+	public static final RENDER_PROPS_EDIT_KEY = "editor.renderprops.edit";
 
 	static public var focusCommand = new hrt.ui.HuiCommands.HuiCommand("Focus Selection", {key: hxd.Key.F});
 
 	public var lastFocusObjects : Array<h3d.scene.Object> = [];
 	public var tree :  hrt.ui.HuiTree<Dynamic>;
+	public var renderPropsTree :  hrt.ui.HuiTree<Dynamic>;
 	var inspectorRoot : hide.kit.KitRoot;
 	var cameraController : h3d.scene.CameraController;
 	var verticalSidebar: Bool = false;
@@ -83,8 +86,40 @@ class HuiSceneEditor extends HuiElement {
 		super(parent);
 		initComponent();
 
-		tree = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelTree);
+		tree = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelTree.content);
 		tree.saveDisplayKey = "sceneTree";
+
+		renderPropsTree = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelAdditionalTree.content);
+		panelAdditionalTree.visible = hide.Ide.inst.currentConfig.get(RENDER_PROPS_EDIT_KEY, false);
+		renderPropsTree.saveDisplayKey = "renderPropsTree";
+
+		renderPropsTree.getItemChildren = (el) -> {
+			if (el == null)
+				return this.renderProps != null ? [this.renderProps] : [];
+			var prefab : hrt.prefab.Prefab = Std.downcast(el, hrt.prefab.Prefab);
+			return cast prefab?.children;
+		}
+
+		renderPropsTree.getItemName = (el) -> {
+			var prefab : hrt.prefab.Prefab = cast el;
+			return return prefab.name;
+		}
+
+		renderPropsTree.getItemIcon = (item: hrt.prefab.Prefab) -> {
+			return item.getEditorProps().icon;
+		}
+
+		renderPropsTree.onItemDoubleClick = (_, el) -> {
+			var prefab : hrt.prefab.Prefab = cast el;
+			var obj = prefab.findFirstLocal3d();
+			if (obj != null)
+				focusObjects([obj]);
+		};
+
+		renderPropsTree.getIdentifier = (el) -> {
+			var prefab : hrt.prefab.Prefab = cast el;
+			prefab.getAbsPath(true, true);
+		}
 
 		var env = new h3d.scene.pbr.Environment(getEnvMap());
 		env.compute();

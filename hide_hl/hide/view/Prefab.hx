@@ -273,6 +273,10 @@ class Prefab extends HuiView<{path: String}> {
 			return item.getEditorProps().icon;
 		}
 
+		sceneEditor.renderPropsTree.onUserSelectionChanged = () -> {
+			setSelection(cast sceneEditor.renderPropsTree.getSelectedItems(), NoRefreshTree);
+		}
+
 		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
 		this.gizmoForceSnapOnGrid = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_GRID_CONFIG_KEY, true);
 
@@ -895,9 +899,12 @@ class Prefab extends HuiView<{path: String}> {
 
 		if (!flags.has(NoRefreshTree)) {
 			@:privateAccess sceneEditor.tree.forceRefreshTree();
+			@:privateAccess sceneEditor.renderPropsTree.forceRefreshTree();
 			sceneEditor.tree.setSelection(selection);
+			@:privateAccess sceneEditor.renderPropsTree.setSelection(selection);
 			for (item in selection) {
 				sceneEditor.tree.revealItem(item);
+				sceneEditor.renderPropsTree.revealItem(item);
 			}
 		}
 

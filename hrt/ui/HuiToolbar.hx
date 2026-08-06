@@ -409,14 +409,30 @@ class HuiRenderPropsWidget extends HuiElement {
 		editor.getView().saveDisplayState(HuiSceneEditor.RENDER_PROPS_SAVE_KEY, value);
 		editor.updateRenderProps();
 	}
+
+	public function setRenderPropsEdition(isEditable : Bool) {
+		hide.Ide.inst.currentConfig.set(HuiSceneEditor.RENDER_PROPS_EDIT_KEY, isEditable);
+		@:privateAccess editor.panelAdditionalTree.visible = isEditable;
+	}
+
+	public function getRenderPropsEdition() {
+		return @:privateAccess editor.panelAdditionalTree.visible;
+	}
 }
 
 class HuiRenderPropsPopup extends HuiPopup {
 	static var SRC =
 		<hui-render-props-popup class="vertical">
 			<hui-text("Render Props") class="title"/>
+			<hui-element class="horizontal">
+				<hui-toggle id="edit-renderprops-tog" tip={"Toggle render props edition"}>
+					<hui-icon("edit")/>
+				</hui-toggle>
+				<hui-text("Edit Render Props") class="label"/>
+			</hui-element>
 			<hui-text("No render props config detected in .json file.") if (widget.editor.getRenderPropsConfigs().length == 0)/>
 			<hui-text("This prefab already contains a render props!") if (containsRenderProps)/>
+			<hui-text("Render Props List") id="list-title" if (!containsRenderProps)/>
 				for (rpc in widget.editor.getRenderPropsConfigs()) {
 					<hui-element class="horizontal" if (!containsRenderProps)>
 						<hui-checkbox id="rp[]"/>
@@ -431,6 +447,13 @@ class HuiRenderPropsPopup extends HuiPopup {
 		super(parent);
 		var containsRenderProps = @:privateAccess widget.editor.renderProps == null && widget.editor.getRenderPropsObj() != null;
 		initComponent();
+
+		editRenderpropsTog.toggled = widget.getRenderPropsEdition();
+		editRenderpropsTog.onClick = (e : hxd.Event) -> {
+			editRenderpropsTog.toggled = !editRenderpropsTog.toggled;
+			widget.setRenderPropsEdition(editRenderpropsTog.toggled);
+		}
+
 		if (!containsRenderProps) {
 			var current = widget.getCurrentRenderProps();
 			for (idx => renderProps in widget.editor.getRenderPropsConfigs()) {
