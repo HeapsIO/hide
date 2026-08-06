@@ -328,6 +328,7 @@ class Prefab extends HuiView<{path: String}> {
 		gizmo.visible = false;
 		gizmo.setVisible(hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_GIZMO_CONFIG_KEY));
 		registerCommand(hrt.tools.Gizmo.gizmoSwitchModeCommand, View, gizmo.switchMode);
+		registerCommand(hrt.tools.Gizmo.gizmoSelectCommand, View, gizmo.selectionMode);
 		registerCommand(hrt.tools.Gizmo.gizmoTranslateCommand, View, gizmo.translationMode);
 		registerCommand(hrt.tools.Gizmo.gizmoRotateCommand, View, gizmo.rotationMode);
 		registerCommand(hrt.tools.Gizmo.gizmoScaleCommand, View, gizmo.scalingMode);

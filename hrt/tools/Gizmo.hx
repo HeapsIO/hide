@@ -4,6 +4,7 @@ import hxd.Key as K;
 
 enum EditMode {
 	Full;
+	Selection;
 	Translation;
 	Rotation;
 	Scale;
@@ -74,6 +75,7 @@ class Gizmo extends h3d.scene.Object {
 
 	#if hui
 	static public var gizmoSwitchModeCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Switch Mode", {key: hxd.Key.SPACE});
+	static public var gizmoSelectCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Select", {key: hxd.Key.V});
 	static public var gizmoTranslateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Translate", {key: hxd.Key.W});
 	static public var gizmoRotateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Rotate", {key: hxd.Key.E});
 	static public var gizmoScaleCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Scale", {key: hxd.Key.R});
@@ -184,14 +186,26 @@ class Gizmo extends h3d.scene.Object {
 
 	public function switchMode() {
 		switch (mode) {
-			case Translation:
-				rotationMode();
+ 			case Translation:
+ 				rotationMode();
 			case Rotation:
 				scalingMode();
 			case Scale:
+				selectionMode();
+			case Selection:
 				translationMode();
 			case Full:
 		}
+	}
+
+	public function selectionMode() {
+		for (o in gizmo.getMeshes()) {
+			o.visible = false;
+		}
+
+		mode = Selection;
+		updateTransformSpace();
+		onChangeMode(mode);
 	}
 
 	public function translationMode() {
@@ -304,7 +318,7 @@ class Gizmo extends h3d.scene.Object {
 
 			var speedFactor = hxd.Key.isDown(K.SHIFT) ? 0.08 : 1.0;
 			switch (mode) {
-				case Full:
+				case Full, Selection:
 				case Translation:
 					if (axis != null)
 						delta = delta.dot(axis) * axis;
@@ -529,12 +543,12 @@ class Gizmo extends h3d.scene.Object {
 		for (int in interactives) {
 			var name = int.parent.name;
 			if (!int.isOver())
-				setHighlight(name, getAxis(name), false);	
+				setHighlight(name, getAxis(name), false);
 		}
 		for (int in interactives) {
 			var name = int.parent.name;
 			if (int.isOver())
-				setHighlight(name, getAxis(name), true);	
+				setHighlight(name, getAxis(name), true);
 		}
 	}
 

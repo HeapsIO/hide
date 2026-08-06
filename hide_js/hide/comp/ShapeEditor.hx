@@ -278,7 +278,7 @@ class ShapeEditor extends Component {
 					gizmo.rotationMode();
 				case Scale:
 					gizmo.scalingMode();
-				case Full:
+				case Full, Selection:
 					null;
 			}
 		}

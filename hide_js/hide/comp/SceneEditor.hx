@@ -308,7 +308,7 @@ class SnapSettingsPopup extends hide.comp.Popup {
 				steps = editor.view.config.get("sceneeditor.rotateStepCoarses");
 			case Scale:
 				steps = editor.view.config.get("sceneeditor.gridSnapSteps");
-			case Full:
+			case Full, Selection:
 		}
 
 		for (value in steps) {
@@ -321,7 +321,7 @@ class SnapSettingsPopup extends hide.comp.Popup {
 					editor.snapRotateStep == value;
 				case Scale:
 					editor.snapScaleStep == value;
-				case Full:
+				case Full, Selection:
 					null;
 			}
 
@@ -335,7 +335,7 @@ class SnapSettingsPopup extends hide.comp.Popup {
 						editor.snapRotateStep = value;
 					case Scale:
 						editor.snapScaleStep = value;
-					case Full:
+					case Full, Selection:
 						null;
 				}
 				editor.updateGrid();
@@ -1420,7 +1420,7 @@ class SceneEditor {
 				return hxd.Math.degToRad(snap(hxd.Math.radToDeg(value), snapRotateStep));
 			case Scale:
 				return snap(value, snapScaleStep);
-			case Full:
+			case Full, Selection:
 				null;
 		}
 		return value;
@@ -1939,6 +1939,7 @@ class SceneEditor {
 
 	function onSceneReadyInternal() {
 		gizmo = new hrt.tools.Gizmo(scene.s3d);
+		view.keys.register("sceneeditor.selectionMode", gizmo.selectionMode);
 		view.keys.register("sceneeditor.translationMode", gizmo.translationMode);
 		view.keys.register("sceneeditor.rotationMode", gizmo.rotationMode);
 		view.keys.register("sceneeditor.scalingMode", gizmo.scalingMode);

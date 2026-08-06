@@ -577,6 +577,7 @@ class FXEditor extends hide.view.FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
+		toolsDefs.push({id: "selectionMode", title : "Gizmo selection Mode", icon : "mouse-pointer", type : Button(@:privateAccess sceneEditor.gizmo.selectionMode)});
 		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode)});
 		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "refresh", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode)});
 		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "expand", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
@@ -645,6 +646,7 @@ class FXEditor extends hide.view.FileView {
 		var gizmo = @:privateAccess sceneEditor.gizmo;
 
 		var onSetGizmoMode = function(mode: hrt.tools.Gizmo.EditMode) {
+			tools.element.find("#selectionMode").get(0).toggleAttribute("checked", mode == Selection);
 			tools.element.find("#translationMode").get(0).toggleAttribute("checked", mode == Translation);
 			tools.element.find("#rotationMode").get(0).toggleAttribute("checked", mode == Rotation);
 			tools.element.find("#scalingMode").get(0).toggleAttribute("checked", mode == Scale);

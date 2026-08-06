@@ -40,7 +40,10 @@ class HuiToolbar extends HuiElement {
 
 class HuiTransformWidgets extends HuiElement {
 	static var SRC = <hui-transform-widgets>
-		<hui-toggle class="group-start" id="translationBtn" tip={"Set Gizmo to Translation Mode"}>
+		<hui-toggle class="group-start" id="selectionBtn" tip={"Set Gizmo to Selection Mode"}>
+			<hui-icon("selection")/>
+		</hui-toggle>
+		<hui-toggle class="group" id="translationBtn" tip={"Set Gizmo to Translation Mode"}>
 			<hui-icon("translation")/>
 		</hui-toggle>
 		<hui-toggle class="group" id="rotationBtn" tip={"Set Gizmo to Rotation Mode"}>
@@ -59,11 +62,13 @@ class HuiTransformWidgets extends HuiElement {
 		initComponent();
 
 		translationBtn.toggled = true;
+		selectionBtn.onClick = (_) -> { gizmo?.selectionMode(); };
 		translationBtn.onClick = (_) -> { gizmo?.translationMode(); };
 		rotationBtn.onClick = (_) -> { gizmo?.rotationMode(); };
 		scaleBtn.onClick = (_) -> { gizmo?.scalingMode(); };
 
 		gizmo.onChangeMode = (mode) -> {
+			selectionBtn.toggled = mode.match(Selection);
 			translationBtn.toggled = mode.match(Translation);
 			rotationBtn.toggled = mode.match(Rotation);
 			scaleBtn.toggled = mode.match(Scale);
