@@ -140,7 +140,7 @@ class Prefab extends HuiView<{path: String}> {
 		}
 
 		sceneEditor.tree.onUserSelectionChanged = () -> {
-			setSelection(cast sceneEditor.tree.getSelectedItems(), NoRefreshTree);
+			setSelection(cast sceneEditor.tree.getSelectedItems(), SelectionFlags.ofInt(0));
 		}
 
 		sceneEditor.tree.onItemDoubleClick = (_, el) -> {
@@ -311,7 +311,7 @@ class Prefab extends HuiView<{path: String}> {
 		}
 
 		sceneEditor.renderPropsTree.onUserSelectionChanged = () -> {
-			setSelection(cast sceneEditor.renderPropsTree.getSelectedItems(), NoRefreshTree);
+			setSelection(cast sceneEditor.renderPropsTree.getSelectedItems(), SelectionFlags.ofInt(0));
 		}
 
 		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
@@ -905,10 +905,9 @@ class Prefab extends HuiView<{path: String}> {
 					break;
 				}
 			}
-			if (same) {
 
+			if (same)
 				return;
-			}
 		}
 
 		for (s in selectedPrefabs.keys()) {
@@ -934,7 +933,7 @@ class Prefab extends HuiView<{path: String}> {
 			@:privateAccess sceneEditor.tree.forceRefreshTree();
 			@:privateAccess sceneEditor.renderPropsTree.forceRefreshTree();
 			sceneEditor.tree.setSelection(selection);
-			@:privateAccess sceneEditor.renderPropsTree.setSelection(selection);
+			sceneEditor.renderPropsTree.setSelection(selection);
 			for (item in selection) {
 				sceneEditor.tree.revealItem(item);
 				sceneEditor.renderPropsTree.revealItem(item);
@@ -1290,8 +1289,6 @@ class Prefab extends HuiView<{path: String}> {
 			if (anyPrefabErrors != null)
 				break;
 		}
-
-
 
 		currentEditContext = new EditContext(this, null);
 		sceneEditor.inspectorRoot = new hide.kit.KitRoot(null, null, editPrefab, currentEditContext);

@@ -99,7 +99,7 @@ class HuiSceneEditor extends HuiElement {
 		tree.saveDisplayKey = "sceneTree";
 
 		renderPropsTree = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelAdditionalTree.content);
-		panelAdditionalTree.visible = hide.Ide.inst.currentConfig.get(RENDER_PROPS_EDIT_KEY, false);
+		panelAdditionalTree.visible = hide.Ide.inst.currentConfig.get(RENDER_PROPS_EDIT_KEY, false) && Std.isOfType(getView(), hide.view.Prefab);
 		renderPropsTree.saveDisplayKey = "renderPropsTree";
 
 		renderPropsTree.getItemChildren = (el) -> {
