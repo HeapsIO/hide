@@ -481,7 +481,7 @@ class Gizmo extends h3d.scene.Object {
 		}
 
 		if (obj.name.indexOf("_Branch") >= 0) {
-			var bounds = obj.primitive.getBounds();
+			var bounds = obj.primitive.getBounds().clone();
 			var scale = #if editor_hl 2 #elseif editor 4 #else 1 #end;
 			switch (axis) {
 				case 0:
