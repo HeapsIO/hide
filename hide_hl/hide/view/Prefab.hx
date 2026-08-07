@@ -57,12 +57,23 @@ class Prefab extends HuiView<{path: String}> {
 
 	var previewDrag : hrt.prefab.Object3D;
 
+	var boxSelectStart : Null<h2d.col.Point> = null;
+	var boxSelectEnd : Null<h2d.col.Point> = null;
+
 	// List of prefabs that have make errors
 	var errorPrefabs : Map<hrt.prefab.Prefab, PrefabError> = new Map();
+
+	var graphicsOverlay: h2d.Graphics;
 
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
 		initComponent();
+
+		graphicsOverlay = new h2d.Graphics(sceneEditor.scene);
+		var props = sceneEditor.scene.getProperties(graphicsOverlay);
+		props.isAbsolute = true;
+		graphicsOverlay.x = 0;
+		graphicsOverlay.y = 0;
 
 		hrt.tools.FileManager.inst.watchFileChange(onFileChange);
 
@@ -126,9 +137,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		@:privateAccess sceneEditor.debugGraph = new h2d.Graphics(sceneEditor.scene.s2d);
 
-		sceneEditor.onScenePush = onScenePush;
 		sceneEditor.onSceneEvent = onSceneEvent;
-		sceneEditor.onSceneMove = onSceneMove;
 
 		sceneEditor.tree.getItemChildren = (el) -> {
 			var prefab : hrt.prefab.Prefab = cast el ?? this.prefab;
@@ -550,6 +559,19 @@ class Prefab extends HuiView<{path: String}> {
 		};
 
 		getView().undo.run(action, true);
+	}
+
+	override function update(dt:Float) {
+		super.update(dt);
+
+		graphicsOverlay.clear();
+
+		if (boxSelectStart != null && boxSelectEnd != null) {
+			graphicsOverlay.setColor(0x222222, 0.80);
+			graphicsOverlay.beginFill(0xDDDDDD, 0.20);
+			graphicsOverlay.drawRect(boxSelectStart.x, boxSelectStart.y, boxSelectEnd.x - boxSelectStart.x, boxSelectEnd.y - boxSelectStart.y);
+			graphicsOverlay.endFill();
+		}
 	}
 
 #if prefab_test_crash
@@ -1778,10 +1800,6 @@ class Prefab extends HuiView<{path: String}> {
 		return lines;
 	}
 
-	function onScenePush(e: hxd.Event) : Void {
-
-	}
-
 	var pushing = false;
 	function onSceneEvent(e: hxd.Event) {
 		switch (e.kind) {
@@ -1789,9 +1807,17 @@ class Prefab extends HuiView<{path: String}> {
 				if (hxd.Math.distance(lastPushX - e.relX, lastPushY - e.relY) > 5.0) {
 					movedSinceLastPush = true;
 				}
+
+				if (boxSelectStart?.distance(inline new h2d.col.Point(e.relX, e.relY)) > 5.0) {
+					boxSelectEnd ??= new h2d.col.Point();
+					boxSelectEnd.set(e.relX, e.relY);
+				}
 			case EPush:
 				if (e.button == 0) {
 					pushing = true;
+
+					boxSelectStart = new h2d.col.Point(e.relX, e.relY);
+
 					getScene().startCapture((e) -> {
 						var oldX = e.relX;
 						var oldY = e.relY;
@@ -1802,64 +1828,103 @@ class Prefab extends HuiView<{path: String}> {
 						e.relY = oldY;
 					} , () -> {
 						pushing = false;
+						boxSelectEnd = null;
+						boxSelectStart = null;
 					});
 					e.propagate = false;
 				}
 			case ERelease:
 				if (e.button == 0 && pushing) {
-					getScene().stopCapture();
 
-					var prefabs = [];
-					var objs = sceneEditor.getObjectsAt(cast e.relX, cast e.relY, prefab.findFirstLocal3d(), (o) -> Std.isOfType(o, h3d.scene.Mesh));
-					var newSelection : Array<hrt.prefab.Prefab> = [];
-					for (o in objs) {
-						var p = prefabLookup.get(o.object);
-						if (p == null || p.locked)
-							continue;
-						prefabs.push(p);
-					}
+					// Box selection
+					if (boxSelectStart != null && boxSelectEnd != null) {
+						var newSelection: Array<hrt.prefab.Prefab> = [];
+						var camera = sceneEditor.scene.s3d.camera;
+						var all = prefab.all();
+						for (prefab in all) {
+							var obj3d = prefab.to(hrt.prefab.Object3D);
+							if (obj3d == null)
+								continue;
 
-					var mouseX = e.relX - sceneEditor.scene.absX;
-					var mouseX = e.relY - sceneEditor.scene.absY;
+							var absPos = obj3d.getAbsPos(true);
+							var screenPos = camera.project(absPos.tx, absPos.ty, absPos.tz, sceneEditor.scene.sceneWidth, sceneEditor.scene.sceneHeight);
 
-					lastPushX = e.relX;
-					lastPushY = e.relY;
+							// Swap start/end coordinates so start < end
+							if (boxSelectStart.x > boxSelectEnd.x) {
+								var tmp = boxSelectStart.x;
+								boxSelectStart.x = boxSelectEnd.x;
+								boxSelectEnd.x = tmp;
+							}
 
-					var newPrefab : hrt.prefab.Prefab = null;
-					if (prefabs.length > 0) {
-						newPrefab = prefabs[0];
-						if (!movedSinceLastPush) {
-							// select next prefab in the selection stack
-							for (idx => p in prefabs) {
-								if (selectedPrefabs.get(p)) {
-									newPrefab = prefabs[(idx + 1) % prefabs.length];
-									break;
+							if (boxSelectStart.y > boxSelectEnd.y) {
+								var tmp = boxSelectStart.y;
+								boxSelectStart.y = boxSelectEnd.y;
+								boxSelectEnd.y = tmp;
+							}
+
+							if (screenPos.x >= boxSelectStart.x && screenPos.x <= boxSelectEnd.x && screenPos.y >= boxSelectStart.y && screenPos.y <= boxSelectEnd.y) {
+								newSelection.push(obj3d);
+							}
+						}
+
+						if (hxd.Key.isDown(hxd.Key.CTRL) || hxd.Key.isDown(hxd.Key.SHIFT)) {
+							for (prefab => _ in selectedPrefabs) {
+								newSelection.push(prefab);
+							}
+						}
+
+						undo.run(actionMakeSelection(newSelection), false);
+					} else {
+						// Standard click selection
+
+						var prefabs = [];
+						var objs = sceneEditor.getObjectsAt(cast e.relX, cast e.relY, prefab.findFirstLocal3d(), (o) -> Std.isOfType(o, h3d.scene.Mesh));
+						var newSelection : Array<hrt.prefab.Prefab> = [];
+						for (o in objs) {
+							var p = prefabLookup.get(o.object);
+							if (p == null || p.locked)
+								continue;
+							prefabs.push(p);
+						}
+
+						lastPushX = e.relX;
+						lastPushY = e.relY;
+
+						var newPrefab : hrt.prefab.Prefab = null;
+						if (prefabs.length > 0) {
+							newPrefab = prefabs[0];
+							if (!movedSinceLastPush) {
+								// select next prefab in the selection stack
+								for (idx => p in prefabs) {
+									if (selectedPrefabs.get(p)) {
+										newPrefab = prefabs[(idx + 1) % prefabs.length];
+										break;
+									}
 								}
 							}
 						}
+
+						var newSelection : Array<hrt.prefab.Prefab> = [];
+						if (hxd.Key.isDown(hxd.Key.CTRL)) {
+							newSelection = [for (p in selectedPrefabs.keys()) p];
+						}
+
+						if (newPrefab != null)
+							newSelection.push(newPrefab);
+
+						setSelection(newSelection, SelectionFlags.ofInt(0));
 					}
 
-					var newSelection : Array<hrt.prefab.Prefab> = [];
-					if (hxd.Key.isDown(hxd.Key.CTRL)) {
-						newSelection = [for (p in selectedPrefabs.keys()) p];
-					}
-
-					if (newPrefab != null)
-						newSelection.push(newPrefab);
-
-					setSelection(newSelection, SelectionFlags.ofInt(0));
-
+					boxSelectEnd = null;
+					boxSelectStart = null;
 					e.propagate = false;
 					movedSinceLastPush = false;
+
+					getScene().stopCapture();
 				}
 			default:
 		}
 	}
-
-	function onSceneMove(e: hxd.Event) : Void {
-
-	}
-
 
 	public function tryMakeChildren(prefab: hrt.prefab.Prefab) : Void {
 		for (child in prefab.children) {
