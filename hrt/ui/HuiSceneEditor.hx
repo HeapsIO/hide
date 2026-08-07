@@ -176,12 +176,12 @@ class HuiSceneEditor extends HuiElement {
 		if (newMode != verticalSidebar) {
 			verticalSidebar = newMode;
 			if (verticalSidebar) {
-				if (panelTree.parentElement != sideVerticalSplitter) {
-					sideVerticalSplitter.addChildElementAt(panelTree, 0);
+				if (treesPanel.parentElement != sideVerticalSplitter) {
+					sideVerticalSplitter.addChildElementAt(treesPanel, 0);
 				}
 			} else {
-				if (panelTree.parentElement != sceneTreeSplit) {
-					sceneTreeSplit.addChildElementAt(panelTree, 1);
+				if (treesPanel.parentElement != sceneTreeSplit) {
+					sceneTreeSplit.addChildElementAt(treesPanel, 1);
 				}
 			}
 		}
