@@ -146,7 +146,7 @@ class Grid extends h3d.scene.Object {
 		}
 
 		var uvs = [for(v in points) new h3d.col.Point(v.x + 0.5, v.y + 0.5)];
-		var verts = [for(p in points) new h3d.col.Point(p.x, p.y, 0.)];
+		var verts = [for(p in points) new h3d.col.Point(p.x, p.y, -1e-3)];
 		var idx = new hxd.IndexBuffer();
 		for(i in indices)
 			idx.push(i);
