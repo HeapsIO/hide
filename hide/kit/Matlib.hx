@@ -69,6 +69,8 @@ class Matlib extends Widget<String> {
 	override public function makeSelf() : Void {
 		#if js
 		native = js.Browser.document.createDivElement();
+		#elseif hui
+		native = new hrt.ui.HuiElement();
 		#end
 		syncValueUI();
 	}
