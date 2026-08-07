@@ -95,7 +95,6 @@ class HuiScene extends HuiElement {
 		sceneEvents.huiScene = this;
 		@:privateAccess hxd.Window.getInstance().removeEventTarget(sceneEvents.onEvent);
 
-		var base = uiBase;
 		sceneEvents.addScene(s2d);
 		sceneEvents.addScene(s3d);
 
@@ -106,16 +105,6 @@ class HuiScene extends HuiElement {
 		sceneInfos = new HuiSceneInfos(this, this);
 		showSceneInfos = showSceneInfos;
 		#end
-
-		// new h3d.scene.Box(0x000000, s3d);
-		// var t = new h2d.Text(hxd.res.DefaultFont.get(), s2d);
-		// t.text = "Hello scene";
-
-		// enableInteractive = true;
-		// (cast interactive:Interactive2).huiScene = this;
-
-		// new h3d.scene.CameraController(s3d);
-		// @:privateAccess new hrt.ui.HuiButtonMenu(() -> [], base);
 	}
 
 	var wasVisible = false;
@@ -136,9 +125,6 @@ class HuiScene extends HuiElement {
 		}
 
 		if (currentVisible) {
-			var scene = getScene();
-			var scale = getScene().viewportScaleX;
-
 			if (delayedMove != null) {
 				@:privateAccess sceneEvents.onEvent(delayedMove);
 				delayedMove = null;
@@ -209,10 +195,14 @@ class HuiScene extends HuiElement {
 			var anyError = false;
 			try {
 				if (!disableSceneRender) {
+					#if editor_hl
+					if (sceneInfos.visible)
+						sceneInfos.begin(ctx.engine);
+					#end
 					s3d.render(ctx.engine);
 					#if editor_hl
 					if (sceneInfos.visible)
-						sceneInfos.updateStats(ctx.engine);
+						sceneInfos.end(ctx.engine);
 					#end
 					s2d.render(ctx.engine);
 				}
@@ -309,44 +299,31 @@ class Interactive2 extends h2d.Interactive {
 class HuiSceneInfos extends HuiElement {
 	static var SRC = <hui-scene-infos class="vertical">
 		<hui-text("Statistics") class="title"/>
-		<hui-text("Scene") class="sub-title"/>
 		<hui-element class="horizontal">
 			<hui-text("FPS : ") class="label"/>
-			<hui-text("78") id="fps"/>
+			<hui-text("X") id="fps"/>
 		</hui-element>
 		<hui-element class="horizontal">
-			<hui-text("Scene objects : ") class="label"/>
-			<hui-text("78") id="scene-obj-count"/>
+			<hui-text("CPU ms : ") class="label"/>
+			<hui-text("X") id="cpu-ms-el"/>
 		</hui-element>
 		<hui-element class="horizontal">
-			<hui-text("Interactives 3D : ") class="label"/>
-			<hui-text("78") id="int-3d"/>
-		</hui-element>
-		<hui-element class="horizontal">
-			<hui-text("Interactives 2D : ") class="label"/>
-			<hui-text("78") id="int-2d"/>
+			<hui-text("GPU ms : ") class="label"/>
+			<hui-text("X") id="gpu-ms-el"/>
 		</hui-element>
 
-		<hui-text("Graphics") class="sub-title"/>
+
 		<hui-element class="horizontal">
 			<hui-text("Triangles : ") class="label"/>
-			<hui-text("78") id="triangles-count"/>
+			<hui-text("X") id="triangles-count"/>
 		</hui-element>
 		<hui-element class="horizontal">
-			<hui-text("Buffers : ") class="label"/>
-			<hui-text("78") id="buffers-count"/>
-		</hui-element>
-		<hui-element class="horizontal">
-			<hui-text("Textures : ") class="label"/>
-			<hui-text("78") id="tex-count"/>
-		</hui-element>
-		<hui-element class="horizontal">
-			<hui-text("Draw Calls : ") class="label"/>
-			<hui-text("78") id="draw-calls-count"/>
+			<hui-text("Post Process : ") class="label"/>
+			<hui-text("X") id="post-process-count"/>
 		</hui-element>
 		<hui-element class="horizontal">
 			<hui-text("V Ram : ") class="label"/>
-			<hui-text("78") id="vram-count"/>
+			<hui-text("X") id="vram-count"/>
 		</hui-element>
 
 		<hui-text("Debug") class="sub-title"/>
@@ -368,10 +345,56 @@ class HuiSceneInfos extends HuiElement {
 
 	var scene : HuiScene;
 
+	var cpuMs : Float = 0;
+	var gpuMs : Float = 0;
+	var postProcess : Int = 0;
+	var triangles : Int = 0;
+
+	var driver : h3d.impl.Driver;
+	var gpuFreeQueryPool : Array<h3d.impl.Driver.Query> = [];
+	var gpuPendingQueries : Array<h3d.impl.Driver.Query> = [];
+
 	public function new(scene : HuiScene, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 		this.scene = scene;
+		driver = h3d.Engine.getCurrent().driver;
+	}
+
+	public function begin(engine: h3d.Engine) {
+		triangles = Std.int(engine.drawTriangles);
+		cpuMs = haxe.Timer.stamp() * 1000;
+
+		while (gpuPendingQueries.length >= 2) {
+			var gpuStartQuery = gpuPendingQueries[0];
+			var gpuEndQuery = gpuPendingQueries[1];
+			if( !driver.queryResultAvailable(gpuStartQuery) || !driver.queryResultAvailable(gpuEndQuery) )
+				break;
+			gpuPendingQueries.shift();
+			gpuPendingQueries.shift();
+			var gpuDtNs = driver.queryResult(gpuEndQuery) - driver.queryResult(gpuStartQuery);
+			gpuMs = roundFloat(gpuDtNs / 1e6);
+			gpuFreeQueryPool.push(gpuStartQuery);
+			gpuFreeQueryPool.push(gpuEndQuery);
+		}
+		if( gpuFreeQueryPool.length < 2 ) {
+			gpuFreeQueryPool.push(driver.allocQuery(TimeStamp));
+			gpuFreeQueryPool.push(driver.allocQuery(TimeStamp));
+		}
+		var query = gpuFreeQueryPool.pop();
+		driver.endQuery(query);
+		gpuPendingQueries.push(query);
+	}
+
+	public function end(engine: h3d.Engine) {
+		triangles = Std.int(engine.drawTriangles) - triangles;
+		cpuMs = (haxe.Timer.stamp() * 1000) - cpuMs;
+
+		var query = gpuFreeQueryPool.pop();
+		driver.endQuery(query);
+		gpuPendingQueries.push(query);
+
+		updateStats(engine);
 	}
 
 	public function updateStats(engine: h3d.Engine) {
@@ -387,23 +410,23 @@ class HuiSceneInfos extends HuiElement {
 			return endStr;
 		}
 
+		fps.text = '${Std.int(@:privateAccess engine.realFps)}';
+		cpuMsEl.text = '${roundFloat(cpuMs)} ms';
+		gpuMsEl.text = '${roundFloat(gpuMs)} ms';
+		trianglesCount.text = '${splitCentaines(triangles)}';
+		postProcessCount.text = '${@:privateAccess scene.s3d.renderer.effects.length}';
 		var memStats = engine.mem.stats();
-
-		// Scene stats
-		fps.text = '${Math.round(@:privateAccess engine.realFps)}';
-		sceneObjCount.text = '${splitCentaines(scene.s3d.getObjectsCount())}';
-
-		// Graphics stats
-		trianglesCount.text = '${splitCentaines(Std.int(engine.drawTriangles))}';
-		buffersCount.text = '${splitCentaines(memStats.bufferCount)}';
-		texCount.text = '${splitCentaines(memStats.textureCount)}';
-		drawCallsCount.text = '${splitCentaines(engine.drawCalls)}';
 		vramCount.text = '${Std.int(memStats.totalMemory / (1024 * 1024))} Mb';
 
+		// Debug
 		mousePos.text = 'X: ${@:privateAccess scene.s3d.events.mouseX} Y: ${@:privateAccess scene.s3d.events.mouseY}';
 		var i2 : Interactive2 = cast scene.interactive;
 		eventMousePos.text = 'X: ${i2.lastX} Y: ${i2.lastY}';
 		@:privateAccess sceneSize.text = 'W: ${scene.renderTexture.width} H: ${scene.renderTexture.height}';
+	}
+
+	function roundFloat(v : Float) {
+		return Math.ceil(v * 100) / 100;
 	}
 }
 
