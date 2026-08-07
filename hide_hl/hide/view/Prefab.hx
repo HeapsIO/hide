@@ -28,6 +28,7 @@ class Prefab extends HuiView<{path: String}> {
 	public static var HIDDEN_CONFIG_KEY = "editor.hidden";
 	public static var GIZMO_SNAP_CONFIG_KEY = "editor.gizmoSnap";
 	public static var GIZMO_SNAP_STEP_CONFIG_KEY = "editor.gizmoSnapStep";
+	public static var GIZMO_ROTATION_STEP_CONFIG_KEY = "editor.gizmoRotationStep";
 	public static var GIZMO_SNAP_GRID_CONFIG_KEY = "editor.gizmoSnapOnGrid";
 
 	public var gizmoShouldSnap(default, set) : Bool = true;
@@ -349,12 +350,20 @@ class Prefab extends HuiView<{path: String}> {
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
 		gizmo.shouldSnap = () -> { return this.gizmoShouldSnap; };
 		gizmo.snap = (v: Float, mode: hrt.tools.Gizmo.EditMode) -> {
-			if ((!gizmo.shouldSnap() && !hxd.Key.isDown(hxd.Key.CTRL)) || mode.match(hrt.tools.Gizmo.EditMode.Rotation))
+			if (gizmo.shouldSnap() == hxd.Key.isDown(hxd.Key.CTRL)){
 				return v;
-			v = hxd.Math.round(v / sceneEditor.gizmoSnapStep) * sceneEditor.gizmoSnapStep;
-			if (!gizmoForceSnapOnGrid)
-				return v;
-			return hxd.Math.round(v / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
+			} else {
+				if(mode.match(hrt.tools.Gizmo.EditMode.Rotation)){
+					var roundDegV = hxd.Math.radToDeg(v);
+					roundDegV = hxd.Math.round(roundDegV / sceneEditor.gizmoRotationStep) * sceneEditor.gizmoRotationStep;
+					return hxd.Math.degToRad(roundDegV);
+				} else {
+					v = hxd.Math.round(v / sceneEditor.gizmoSnapStep) * sceneEditor.gizmoSnapStep;
+					if (!gizmoForceSnapOnGrid)
+						return v;
+					return hxd.Math.round(v / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
+				}
+			}
 		};
 		gizmo.onStartMove = (handle : hrt.tools.Gizmo.Handle) -> {
 			obj3ds = [];
@@ -395,16 +404,6 @@ class Prefab extends HuiView<{path: String}> {
 					trs.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
 
 				trs.multiply(initialAbs.get(obj3d), trs);
-
-				if (gizmo.shouldSnap() && gizmoForceSnapOnGrid) {
-					var p = trs.getPosition();
-					p.x = hxd.Math.round(p.x / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
-					p.y = hxd.Math.round(p.y / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
-					p.z = hxd.Math.round(p.z / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
-					trs.setPosition(p);
-					gizmo.setPosition(p.x, p.y, p.z);
-				}
-
 				trs.multiply(trs, parentInv);
 
 				if (offsetScale != null)

@@ -82,6 +82,12 @@ class HuiSceneEditor extends HuiElement {
 		return gizmoSnapStep = v;
 	}
 
+	public var gizmoRotationStep(default, set) : Float = 15.0;
+	public function set_gizmoRotationStep(v : Float) {
+		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_ROTATION_STEP_CONFIG_KEY, v);
+		return gizmoRotationStep = v;
+	}
+
 	var splitters : Array<HuiSplitContainer> = [];
 
 	override function new(?parent) {
@@ -601,6 +607,7 @@ class HuiSceneEditor extends HuiElement {
 
 	function makeGizmos() {
 		this.gizmoSnapStep = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_STEP_CONFIG_KEY, 1.0);
+		this.gizmoRotationStep = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_ROTATION_STEP_CONFIG_KEY, 15.0);
 		grid?.remove();
 		viewportAxis?.remove();
 

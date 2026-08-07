@@ -666,7 +666,11 @@ class HuiGridSettingsPopup extends HuiPopup {
 			<hui-text("Snap settings") class="title"/>
 			<hui-element class="horizontal">
 				<hui-text("Grid Size") class="label"/>
-				<hui-slider step={0.01} min={0} max={100} decimals={2} id="gridSize" class="value"/>
+				<hui-slider step={0.01} min={0.1} max={100} decimals={2} id="gridSize" class="value"/>
+			</hui-element>
+			<hui-element class="horizontal">
+				<hui-text("Rotation Step") class="label"/>
+				<hui-slider step={1} min={0} max={180} decimals={0} id="rotationStep" class="value"/>
 			</hui-element>
 			<hui-element class="horizontal">
 				<hui-text("Force On Grid") class="label"/>
@@ -696,6 +700,22 @@ class HuiGridSettingsPopup extends HuiPopup {
 					@:privateAccess editor.sceneEditor.gizmoSnapStep = undo ? prevValue : newValue;
 					@:privateAccess editor.sceneEditor.grid.lineSpacing = undo ? prevValue : newValue;
 					gridSize.value = undo ? prevValue : newValue;
+				}
+
+				editor.undo.record(exec, false);
+				exec(false);
+			}
+		};
+
+		@:privateAccess rotationStep.value = editor.sceneEditor.gizmoRotationStep;
+		rotationStep.onValueChanged = (isTempChange) -> {
+			if (!isTempChange) {
+				var prevValue = @:privateAccess editor.sceneEditor.gizmoRotationStep;
+				var newValue = rotationStep.value;
+
+				function exec(undo : Bool) {
+					@:privateAccess editor.sceneEditor.gizmoRotationStep = undo ? prevValue : newValue;
+					rotationStep.value = undo ? prevValue : newValue;
 				}
 
 				editor.undo.record(exec, false);
