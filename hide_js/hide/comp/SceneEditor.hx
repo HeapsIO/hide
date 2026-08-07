@@ -3252,6 +3252,7 @@ class SceneEditor {
 
 		var initialTransform = new Map<hrt.prefab.Object3D, h3d.Matrix>();
 		var initialAbs = new Map<hrt.prefab.Object3D, h3d.Matrix>();
+		var localTransform = new Map<hrt.prefab.Object3D, h3d.Matrix>();
 		var initialCentroid = new h3d.Matrix();
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
 		gizmo.shouldSnap = () -> { return this.snapForceOnGrid; };
@@ -3280,6 +3281,7 @@ class SceneEditor {
 					parent3d = Std.downcast(obj3d.shared.parentPrefab, hrt.prefab.Object3D);
 				var parentAbs = parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
 				var parentInv = parentAbs.getInverse();
+				localTransform.set(obj3d, obj3d.getTransform().clone());
 
 				var trs = new h3d.Matrix();
 				trs.identity();
@@ -3312,6 +3314,9 @@ class SceneEditor {
 
 				obj3d.setTransform(trs);
 				obj3d.applyTransform();
+
+				if (selfOnlyTransform)
+					restoreChildTransform(obj3d, localTransform.get(obj3d).clone());
 			}
 		};
 
@@ -3330,6 +3335,8 @@ class SceneEditor {
 				for (idx => o in modifiedObj3ds) {
 					o.setTransform(isUndo ? prevTransforms[idx] : newTransforms[idx]);
 					o.applyTransform();
+					if (selfOnlyTransform)
+						restoreChildTransform(o, localTransform.get(o).clone());
 					if (o.local3d != null)
 						objs.push(o.local3d);
 				}
