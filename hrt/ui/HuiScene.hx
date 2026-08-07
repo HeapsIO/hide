@@ -350,15 +350,15 @@ class HuiSceneInfos extends HuiElement {
 		</hui-element>
 
 		<hui-text("Debug") class="sub-title"/>
-		// <hui-element class="horizontal">
-		// 	<hui-text("Mouse : ") class="label"/>
-		// 	<hui-text("X: 000 Y: 000") id="mousePos"/>
-		// </hui-element>
+		<hui-element class="horizontal">
+			<hui-text("Mouse : ") class="label"/>
+			<hui-text("X: 000 Y: 000") id="mousePos"/>
+		</hui-element>
 
-		// <hui-element class="horizontal">
-		// 	<hui-text("Event Mouse : ") class="label"/>
-		// 	<hui-text("X: 000 Y: 000") id="eventMousePos"/>
-		// </hui-element>
+		<hui-element class="horizontal">
+			<hui-text("Event Mouse : ") class="label"/>
+			<hui-text("X: 000 Y: 000") id="eventMousePos"/>
+		</hui-element>
 
 		<hui-element class="horizontal">
 			<hui-text("Scene Size : ") class="label"/>
@@ -400,9 +400,9 @@ class HuiSceneInfos extends HuiElement {
 		drawCallsCount.text = '${splitCentaines(engine.drawCalls)}';
 		vramCount.text = '${Std.int(memStats.totalMemory / (1024 * 1024))} Mb';
 
-		// mousePos.text = 'X: ${@:privateAccess scene.s3d.events.mouseX} Y: ${@:privateAccess scene.s3d.events.mouseY}';
-		// var i2 : Interactive2 = cast scene.interactive;
-		// eventMousePos.text = 'X: ${i2.lastX} Y: ${i2.lastY}';
+		mousePos.text = 'X: ${@:privateAccess scene.s3d.events.mouseX} Y: ${@:privateAccess scene.s3d.events.mouseY}';
+		var i2 : Interactive2 = cast scene.interactive;
+		eventMousePos.text = 'X: ${i2.lastX} Y: ${i2.lastY}';
 		@:privateAccess sceneSize.text = 'W: ${scene.renderTexture.width} H: ${scene.renderTexture.height}';
 	}
 }
