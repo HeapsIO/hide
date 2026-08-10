@@ -17,6 +17,8 @@ class HuiTabContainer extends HuiElement {
 		</hui-tab-container>
 
 	var activeTabElement: HuiElement = null;
+	var onTabDragged : (e: hxd.Event) -> Void;
+	var onTabRelease : (e: hxd.Event) -> Void;
 
 	function new(?parent) {
 		super(parent);
@@ -65,6 +67,13 @@ class HuiTabContainer extends HuiElement {
 		syncTabsQueued = true;
 	}
 
+	public function setTabIndex(tab: HuiTab, index: Int) {
+		index = index + 1; // Because first child is the background
+		@:privateAccess tabBarContent.children.remove(tab);
+		@:privateAccess tabBarContent.children.insert(index, tab);
+		syncTabs();
+	}
+
 	function getDefaultCurrentTab() : HuiElement {
 		return getTabs()[0];
 	}
@@ -81,6 +90,11 @@ class HuiTabContainer extends HuiElement {
 		var index = content.childElements.indexOf(forElement);
 		tabBarContent.addChildAt(tab, index);
 
+		tab.onMove = (e) -> {
+			if (onTabDragged != null)
+				onTabDragged(e);
+		}
+		
 		tab.onClick = (e) -> {
 			switch(e.button) {
 				case 0: setTab(tab.targetElement);
@@ -88,6 +102,34 @@ class HuiTabContainer extends HuiElement {
 				case 2: requestClose(forElement);
 			}
 		}
+
+		tab.onPush = (e) -> {
+			if (e.button == 0) {
+				var scene = getScene();
+
+				var newIdx = 0;
+				var currentTabs : Array<HuiElement> = cast getTabs();
+				onTabDragged = (e) -> {
+					for (idx => t in currentTabs) {
+						var huiTab : HuiTab = cast getTabTab(t);
+						if (scene.mouseX > huiTab.absX + huiTab.calculatedWidth / 2)
+							newIdx = idx;
+					}
+				}
+
+				onTabRelease = (e) -> {
+					setTabIndex(tab, newIdx);
+				}
+			}
+		}
+
+		tab.onRelease = (e) -> {
+			onTabDragged = null;
+			if (onTabRelease != null)
+				onTabRelease(e);
+			onTabRelease = null;
+		}
+
 		return tab;
 	}
 
