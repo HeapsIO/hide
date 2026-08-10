@@ -3100,7 +3100,9 @@ class SceneEditor {
 			if (int3d != null) {
 				var localRay = ray.clone();
 				localRay.transform(int3d.getAbsPos().getInverse());
+				Std.downcast(int3d.shape, h3d.col.Collider.OptimizedCollider)?.checkInside = true;
 				var distance = int3d.shape?.rayIntersection(localRay, false);
+				Std.downcast(int3d.shape, h3d.col.Collider.OptimizedCollider)?.checkInside = false;
 				if (distance < 0)
 					continue;
 
