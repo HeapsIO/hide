@@ -7,7 +7,10 @@ import h3d.mat.PbrMaterial;
 #if editor
 import hide.prefab.HideProps;
 #end
-
+typedef OverrideProperty = {
+	var pname : String;
+	var value : Dynamic;
+};
 @:prefabIcon(HuiRes.ui.icons.prefab.material)
 class Material extends Prefab {
 
@@ -19,7 +22,7 @@ class Material extends Prefab {
 	@:c public var color : Array<Float> = [1,1,1,1];
 	@:s public var mainPassName : String;
 	@:s public var refMatLib : String;
-	@:s public var overrides : Array<Dynamic> = [];
+	@:s public var overrides : Array<OverrideProperty> = [];
 
 	var previewSphere : h3d.scene.Object;
 
