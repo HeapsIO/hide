@@ -90,7 +90,6 @@ class HuiScene extends HuiElement {
 			display.tile = h2d.Tile.fromTexture(renderTexture);
 		}
 
-
 		sceneEvents = new HuiSceneEvents();
 		sceneEvents.huiScene = this;
 		@:privateAccess hxd.Window.getInstance().removeEventTarget(sceneEvents.onEvent);
@@ -109,6 +108,10 @@ class HuiScene extends HuiElement {
 
 	var wasVisible = false;
 	override function sync(ctx) {
+		#if editor_hl
+		if (sceneInfos.visible)
+			sceneInfos.begin(ctx.engine);
+		#end
 		var currentVisible = true;
 		var current : h2d.Object = this;
 		while(current != null) {
@@ -195,15 +198,7 @@ class HuiScene extends HuiElement {
 			var anyError = false;
 			try {
 				if (!disableSceneRender) {
-					#if editor_hl
-					if (sceneInfos.visible)
-						sceneInfos.begin(ctx.engine);
-					#end
 					s3d.render(ctx.engine);
-					#if editor_hl
-					if (sceneInfos.visible)
-						sceneInfos.end(ctx.engine);
-					#end
 					s2d.render(ctx.engine);
 				}
 			} catch(e) {
@@ -222,6 +217,11 @@ class HuiScene extends HuiElement {
 
 			@:privateAccess ctx.initShaders(ctx.baseShaderList);
 			ctx.setCurrent();
+
+			#if editor_hl
+			if (sceneInfos.visible)
+				sceneInfos.end(ctx.engine);
+			#end
 		}
 	}
 
@@ -387,6 +387,9 @@ class HuiSceneInfos extends HuiElement {
 	}
 
 	public function end(engine: h3d.Engine) {
+		if (gpuPendingQueries.length <= 0)
+			return;
+		
 		triangles = Std.int(engine.drawTriangles) - triangles;
 		cpuMs = (haxe.Timer.stamp() * 1000) - cpuMs;
 
