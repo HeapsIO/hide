@@ -1015,9 +1015,10 @@ class Prefab extends HuiView<{path: String}> {
 			localRay.transform(i.getInvPos());
 
 
-			Std.downcast(i.shape, h3d.col.Collider.OptimizedCollider)?.checkInside = true;
+			var collider = Std.downcast(i.shape, h3d.col.Collider.OptimizedCollider);
+			if(collider != null) collider.checkInside = true;
 			var distance = i.shape?.rayIntersection(localRay, false) ?? -1;
-			Std.downcast(i.shape, h3d.col.Collider.OptimizedCollider)?.checkInside = false;
+			if(collider != null) collider.checkInside = false;
 			if (distance < 0)
 				continue;
 
