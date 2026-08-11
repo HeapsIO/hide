@@ -278,28 +278,31 @@ class Gizmo extends h3d.scene.Object {
 			var scene = getScene();
 			var ray = scene.camera.rayFromScreen(mouseX, mouseY, scene.scenePosition?.width ?? -1, scene.scenePosition?.height ?? -1);
 			var forward = scene.camera.getForward() * -1;
-			var dragPlane = h3d.col.Plane.fromNormalPoint(switch(handle) {
+			if (isLocalTransform || mode == Scale)
+				forward.transform3x3(initialRotation.toMatrix());
+			var planeNormal = switch(handle) {
 				case XYPlane: initialAbsPos.up();
 				case XZPlane: initialAbsPos.right();
 				case YZPlane: initialAbsPos.front();
 				case XArrow:
 					forward.x = 0;
 					if (isLocalTransform || mode == Scale)
-						forward.transformed3x3(initialRotation.toMatrix());
+						forward.transform3x3(initialRotation.toMatrix().getInverse());
 					forward.normalized();
 				case YArrow:
 					forward.y = 0;
 					if (isLocalTransform || mode == Scale)
-						forward.transformed3x3(initialRotation.toMatrix());
+						forward.transform3x3(initialRotation.toMatrix().getInverse());
 					forward.normalized();
 				case ZArrow:
 					forward.z = 0;
 					if (isLocalTransform || mode == Scale)
-						forward.transformed3x3(initialRotation.toMatrix());
+						forward.transform3x3(initialRotation.toMatrix().getInverse());
 					forward.normalized();
 				default: initialRay.getDir();
-			}, initialPosition);
+			}
 
+			var dragPlane = h3d.col.Plane.fromNormalPoint(planeNormal, initialPosition);
 			var deltaPosition : h3d.col.Point = null;
 			var deltaRotation : h3d.Quat = null;
 			var deltaScale : h3d.Vector = null;
