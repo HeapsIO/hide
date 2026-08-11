@@ -991,46 +991,22 @@ class Prefab extends HuiView<{path: String}> {
 
 	function getObjectsAt(sx : Int, sy : Int, ?root : h3d.scene.Object, ?f : h3d.scene.Object -> Bool) : Array<{object: h3d.scene.Object, distance: Float}> {
 		var hits = [];
-		var r = root ?? sceneEditor.scene.s3d;
 		var ray = sceneEditor.scene.s3d.camera.rayFromScreen(sx, sy, sceneEditor.scene.sceneWidth, sceneEditor.scene.sceneHeight);
-
-		var tmpRay = new h3d.col.Ray();
-
-		for (i in @:privateAccess sceneEditor.scene.s3d.interactives) {
-			var o = i.parent;
-			if (!f(o))
+		var hitInteractives = sceneEditor.scene.s3d.rayCastEventTargets(ray);
+		for( h in hitInteractives ) {
+			var o = h.i.parent;
+			if (f != null && !f(o))
 				continue;
 			if (root != null) {
 				var current = o;
-				var rootParent = false;
 				while(current != null && current != root) {
 					current = current.parent;
 				}
 				if (current != root)
 					continue;
 			}
-
-			var localRay = tmpRay;
-			localRay.load(ray);
-			localRay.transform(i.getInvPos());
-
-
-			var collider = Std.downcast(i.shape, h3d.col.Collider.OptimizedCollider);
-			if(collider != null) collider.checkInside = true;
-			var distance = i.shape?.rayIntersection(localRay, false) ?? -1;
-			if(collider != null) collider.checkInside = false;
-			if (distance < 0)
-				continue;
-
-			var distance = i.preciseShape?.rayIntersection(localRay, true) ?? distance;
-
-			if (distance > 0) {
-				hits.push({object: o, distance: distance});
-			}
+			hits.push({object: o, distance: h.distance});
 		}
-
-		hits.sort((a,b) -> Reflect.compare(a.distance, b.distance));
-
 		return hits;
 	}
 
@@ -1316,7 +1292,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		var anyPrefabErrors : PrefabError = null;
 		for (prefab in prefabs) {
-			anyPrefabErrors  = errorPrefabs.get(prefab);
+			anyPrefabErrors = errorPrefabs.get(prefab);
 			if (anyPrefabErrors != null)
 				break;
 		}
@@ -1848,6 +1824,42 @@ class Prefab extends HuiView<{path: String}> {
 					if (boxSelectStart != null && boxSelectEnd != null) {
 						var newSelection: Array<hrt.prefab.Prefab> = [];
 						var camera = sceneEditor.scene.s3d.camera;
+
+						// Swap start/end coordinates so start < end
+						if (boxSelectStart.x > boxSelectEnd.x) {
+							var tmp = boxSelectStart.x;
+							boxSelectStart.x = boxSelectEnd.x;
+							boxSelectEnd.x = tmp;
+						}
+
+						if (boxSelectStart.y > boxSelectEnd.y) {
+							var tmp = boxSelectStart.y;
+							boxSelectStart.y = boxSelectEnd.y;
+							boxSelectEnd.y = tmp;
+						}
+
+						#if hlphysics
+						var sceneWidth = sceneEditor.scene.sceneWidth;
+						var sceneHeight = sceneEditor.scene.sceneHeight;
+
+						var ndcXMin = (boxSelectStart.x / sceneWidth - 0.5) * 2;
+						var ndcXMax = (boxSelectEnd.x / sceneWidth - 0.5) * 2;
+						var ndcYMax = (0.5 - boxSelectStart.y / sceneHeight) * 2;
+						var ndcYMin = (0.5 - boxSelectEnd.y / sceneHeight) * 2;
+						var corners = [
+							camera.unproject(ndcXMin, ndcYMax, 0), camera.unproject(ndcXMax, ndcYMax, 0),
+							camera.unproject(ndcXMax, ndcYMin, 0), camera.unproject(ndcXMin, ndcYMin, 0),
+							camera.unproject(ndcXMin, ndcYMax, 1), camera.unproject(ndcXMax, ndcYMax, 1),
+							camera.unproject(ndcXMax, ndcYMin, 1), camera.unproject(ndcXMin, ndcYMin, 1),
+						];
+						var frustumShape = physics.collision.shapes.FrustumShape.fromHeapsCorners(corners);
+						var collides = sceneEditor.scene.s3d.collideEventTargets(frustumShape);
+						for (i in collides) {
+							var p = prefabLookup.get(i.parent);
+							if (p != null && !p.locked)
+								newSelection.push(p);
+						}
+						#else
 						var all = prefab.all();
 						for (prefab in all) {
 							var obj3d = prefab.to(hrt.prefab.Object3D);
@@ -1857,23 +1869,11 @@ class Prefab extends HuiView<{path: String}> {
 							var absPos = obj3d.getAbsPos(true);
 							var screenPos = camera.project(absPos.tx, absPos.ty, absPos.tz, sceneEditor.scene.sceneWidth, sceneEditor.scene.sceneHeight);
 
-							// Swap start/end coordinates so start < end
-							if (boxSelectStart.x > boxSelectEnd.x) {
-								var tmp = boxSelectStart.x;
-								boxSelectStart.x = boxSelectEnd.x;
-								boxSelectEnd.x = tmp;
-							}
-
-							if (boxSelectStart.y > boxSelectEnd.y) {
-								var tmp = boxSelectStart.y;
-								boxSelectStart.y = boxSelectEnd.y;
-								boxSelectEnd.y = tmp;
-							}
-
 							if (screenPos.x >= boxSelectStart.x && screenPos.x <= boxSelectEnd.x && screenPos.y >= boxSelectStart.y && screenPos.y <= boxSelectEnd.y) {
 								newSelection.push(obj3d);
 							}
 						}
+						#end
 
 						if (hxd.Key.isDown(hxd.Key.CTRL) || hxd.Key.isDown(hxd.Key.SHIFT)) {
 							for (prefab => _ in selectedPrefabs) {
