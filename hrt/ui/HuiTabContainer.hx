@@ -94,7 +94,7 @@ class HuiTabContainer extends HuiElement {
 			if (onTabDragged != null)
 				onTabDragged(e);
 		}
-		
+
 		tab.onClick = (e) -> {
 			switch(e.button) {
 				case 0: setTab(tab.targetElement);
@@ -105,19 +105,25 @@ class HuiTabContainer extends HuiElement {
 
 		tab.onPush = (e) -> {
 			if (e.button == 0) {
+				tab.dom.toggleClass("dragged", true);
 				var scene = getScene();
-
 				var newIdx = 0;
+				var dropTarget = null;
 				var currentTabs : Array<HuiElement> = cast getTabs();
 				onTabDragged = (e) -> {
 					for (idx => t in currentTabs) {
 						var huiTab : HuiTab = cast getTabTab(t);
-						if (scene.mouseX > huiTab.absX + huiTab.calculatedWidth / 2)
+						if (scene.mouseX > huiTab.absX && scene.mouseX < huiTab.absX + huiTab.calculatedWidth)
 							newIdx = idx;
 					}
+					dropTarget?.dom.toggleClass("dropTarget", false);
+					dropTarget = getTabTab(getTabs()[newIdx]);
+					dropTarget.dom.toggleClass("dropTarget", true);
 				}
 
 				onTabRelease = (e) -> {
+					tab.dom.toggleClass("dragged", false);
+					dropTarget?.dom.toggleClass("dropTarget", false);
 					setTabIndex(tab, newIdx);
 				}
 			}

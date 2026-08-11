@@ -53,4 +53,16 @@ hui-tab {
 		}
 	}
 
+	&.dragged {
+		> hui-background {
+			background: @tab-tab-dragged-bg !important;
+		}
+	}
+
+	&.dropTarget {
+		> hui-background {
+			outline: 2 @color-blue;
+			outline-color: @color-blue !important;
+		}
+	}
 }
