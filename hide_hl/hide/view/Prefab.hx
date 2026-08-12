@@ -565,6 +565,9 @@ class Prefab extends HuiView<{path: String}> {
 
 		graphicsOverlay.clear();
 
+		if (@:privateAccess !gizmo?.moving)
+			moveGizmoToPrefabs([for (p in selectedPrefabs.keys()) p]);
+
 		if (boxSelectStart != null && boxSelectEnd != null) {
 			graphicsOverlay.setColor(0x222222, 0.80);
 			graphicsOverlay.beginFill(0xDDDDDD, 0.20);
@@ -911,6 +914,20 @@ class Prefab extends HuiView<{path: String}> {
 		load(path);
 	}
 
+	function moveGizmoToPrefabs(prefabs : Array<hrt.prefab.Prefab>) {
+		if (gizmo == null)
+			return;
+		var objs = [];
+		for (prefab in prefabs) {
+			var obj3d = Std.downcast(prefab, hrt.prefab.Object3D);
+			if (obj3d != null && obj3d.local3d != null)
+				objs.push(obj3d.local3d);
+		}
+
+		if (objs.length > 0)
+			gizmo.moveToObjects(objs);
+	}
+
 	function getSelectionOrdered() : Array<hrt.prefab.Prefab> {
 		var selection : Array<hrt.prefab.Prefab> = [];
 		var flatten = prefab.flatten();
@@ -953,8 +970,7 @@ class Prefab extends HuiView<{path: String}> {
 				objs.push(obj3d.local3d);
 		}
 
-		if (objs.length > 0)
-			gizmo.moveToObjects(objs);
+		moveGizmoToPrefabs(selection);
 		gizmo.visible = objs.length > 0;
 
 		if (!flags.has(NoRefreshTree)) {
