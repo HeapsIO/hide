@@ -48,6 +48,11 @@ typedef CurveKeys = Array<CurveKey>;
 
 @:prefabIcon(HuiRes.ui.icons.prefab.curve)
 class Curve extends Prefab {
+	#if !editor
+	public static var BAKE_ENABLE = true;
+	public static var BAKE_MAX_DURATION = 1.0;
+	public static var BAKE_RESOLUTION = 128.0;
+	#end
 
 	@:s public var keyMode : CurveKeyMode = Linear;
 	@:s public var keys : CurveKeys = [];
@@ -72,6 +77,11 @@ class Curve extends Prefab {
 	public var selected : Bool = false;
 
 	var refCurve : Curve = null;
+
+	#if !editor
+	@:c var bake : haxe.ds.Vector<Float> = null;
+	@:c var bakeDuration = 0.0;
+	#end
 
 	function get_duration() {
 		if (blendMode == Reference) {
@@ -106,11 +116,18 @@ class Curve extends Prefab {
 				name = StringTools.replace(name, parent.name + ":", "");
 			}
 		}
+		#else
+		bakeValues();
 		#end
 	}
 
-	public override function copy(o:Prefab) {
+	override function copy(o:Prefab) {
 		super.copy(o);
+		#if !editor
+		// Optim: curves are not mutated at runtime, avoid recalculating baked values
+		var c = Std.downcast(o, Curve);
+		bake = c.bake;
+		#end
 	}
 
 	override function makeInstance() {
@@ -240,6 +257,23 @@ class Curve extends Prefab {
 		}
 	}
 
+	#if !editor
+	function bakeValues() {
+		if (bake != null || !BAKE_ENABLE || blendMode != None || keys.length < 2 || duration <= 0 || duration > BAKE_MAX_DURATION)
+			return;
+
+		var numPts = Math.ceil(duration * BAKE_RESOLUTION) + 1;
+		var samples = new haxe.ds.Vector<Float>(numPts);
+		var prevLoop = loop;
+		loop = false; // prevent getVal from looping during baking
+		for (i in 0...numPts)
+			samples[i] = getVal(i / BAKE_RESOLUTION);
+		loop = prevLoop;
+		bake = samples;
+		bakeDuration = duration;
+	}
+	#end
+
 	inline function findT(cur: CurveKey, next: CurveKey, time: Float) : {minT: Float, maxT: Float} {
 		inline function sampleTime(t) {
 			return bezier(
@@ -265,6 +299,22 @@ class Curve extends Prefab {
 	}
 
 	public function getVal(time: Float) : Float {
+		#if !editor
+		if (bake != null) {
+			var duration = bakeDuration;
+			var t = time; // HL2 performance hit when modifying func args
+			if (loop)
+				t %= duration;
+			if (t >= 0.0 && t <= duration) {
+				var fidx = t * BAKE_RESOLUTION;
+				var idx = Math.floor(fidx);
+				if (idx >= bake.length - 1)
+					return bake[bake.length - 1];
+				return hxd.Math.lerp(bake[idx], bake[idx + 1], fidx - idx);
+			}
+		}
+		#end
+
 		if (blendMode == Reference) {
 			throw "getVal shoudln't be called on curves with Reference mode";
 		}
