@@ -124,11 +124,6 @@ class Curve extends Prefab {
 
 	override function copy(o:Prefab) {
 		super.copy(o);
-		#if !editor
-		// Optim: curves are not mutated at runtime, avoid recalculating baked values
-		var c = Std.downcast(o, Curve);
-		bake = c.bake;
-		#end
 	}
 
 	override function makeInstance() {
