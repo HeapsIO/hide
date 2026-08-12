@@ -792,19 +792,7 @@ class Prefab extends HuiView<{path: String}> {
 		try {
 			prefab.make();
 			makePrefabInteractive(prefab);
-			for (p in prefab.flatten()) {
-				var obj3d = Std.downcast(p, hrt.prefab.Object3D);
-				if (obj3d != null && obj3d.local3d != null) {
-					var objects = obj3d.local3d.findAll((o) -> Std.downcast(o, h3d.scene.Mesh));
-					for (o in objects)
-						prefabLookup.set(o, obj3d);
-				}
-				if (hrt.prefab.MaterialLibrary.isMaterialLibrary(prefab)) {
-					var material = Std.downcast(p, hrt.prefab.Material);
-					if (material != null)
-						prefabLookup.set(@:privateAccess material.previewSphere, material);
-				}
-			}
+			updatePrefabLookup();
 		} catch (e) {
 			removePrefabInstance(prefab);
 			errorPrefabs.set(prefab, {title: "Prefab make raised an exception", exception: e});
@@ -875,6 +863,23 @@ class Prefab extends HuiView<{path: String}> {
 	public function removePrefabInteractives(prefab: hrt.prefab.Prefab) {
 		interactives.get(prefab)?.remove();
 		interactives.remove(prefab);
+	}
+
+	function updatePrefabLookup() {
+		prefabLookup = new Map();
+		for (p in prefab.flatten()) {
+			var obj3d = Std.downcast(p, hrt.prefab.Object3D);
+			if (obj3d != null && obj3d.local3d != null) {
+				var objects = obj3d.local3d.findAll((o) -> o);
+				for (o in objects)
+					prefabLookup.set(o, obj3d);
+			}
+			if (hrt.prefab.MaterialLibrary.isMaterialLibrary(prefab)) {
+				var material = Std.downcast(p, hrt.prefab.Material);
+				if (material != null)
+					prefabLookup.set(@:privateAccess material.previewSphere, material);
+			}
+		}
 	}
 
 	function load(path : String) {
@@ -1573,6 +1578,7 @@ class Prefab extends HuiView<{path: String}> {
 			mat.multiply(mat, parentTransform);
 			newTransform = hrt.prefab.Object3D.makeTransform(mat);
 		}
+		updatePrefabLookup();
 
 		return (isUndo: Bool) -> {
 			var newParent = isUndo ? oldParent : parent;
@@ -1600,6 +1606,7 @@ class Prefab extends HuiView<{path: String}> {
 			// updateDebugOverlayVisibility();
 			// checkRemakeRenderProps(prefab);
 			sceneEditor.tree.revealItem(prefab);
+			updatePrefabLookup();
 		};
 	}
 
@@ -1902,7 +1909,7 @@ class Prefab extends HuiView<{path: String}> {
 						// Standard click selection
 
 						var prefabs = [];
-						var objs = sceneEditor.getObjectsAt(cast e.relX, cast e.relY, prefab.findFirstLocal3d(), (o) -> Std.isOfType(o, h3d.scene.Mesh));
+						var objs = sceneEditor.getObjectsAt(cast e.relX, cast e.relY, prefab.findFirstLocal3d());
 						var newSelection : Array<hrt.prefab.Prefab> = [];
 						for (o in objs) {
 							var p = prefabLookup.get(o.object);
