@@ -16,6 +16,29 @@ class HuiTextInput extends h2d.TextInput implements h2d.domkit.Object {
 				return;
 			}
 			handleKey(e);
+
+			if (e.keyCode == hxd.Key.TAB) {
+				var next : h2d.TextInput = null;
+				var parent = this.parent;
+				while (parent != null) {
+					var inputs = parent.findAll((o) -> Std.downcast(o, h2d.TextInput));
+					if (inputs != null && inputs.length > 1) {
+						var curIdx = inputs.indexOf(this);
+						if (curIdx != -1) {
+							next = curIdx + 1 < inputs.length ? inputs[curIdx + 1] : inputs[0];
+							break;
+						}
+					}
+					parent = parent.parent;
+				}
+
+				if (next != null) {
+					this.cursorIndex = -1;
+					this.interactive.blur();
+					next.focus();
+				}
+
+			}
 		};
 
 		smooth = true;

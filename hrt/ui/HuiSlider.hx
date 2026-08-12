@@ -29,6 +29,13 @@ class HuiSlider extends HuiElement {
 			onValueChanged(false);
 		};
 
+		inputText.onFocus = (e: hxd.Event) -> {
+			inputText.visible = true;
+			valueText.visible = false;
+			inputText.text = valueText.text;
+			haxe.Timer.delay(() -> inputText.focus(), 0);
+		};
+
 		var moved = false;
 		var startX = -1;
 		var startY = -1;
