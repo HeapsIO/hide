@@ -7,6 +7,7 @@ import hide.prefab.HideProps;
 
 
 import hrt.prefab.fx.Value;
+import hrt.prefab.fx.Evaluator;
 
 using Lambda;
 
@@ -240,7 +241,11 @@ class Curve extends Prefab {
 			case None:
 				return VCurve(this);
 			case Blend:
-				return VBlend(Std.downcast(this.children[0], Curve)?.makeVal() ?? VConst(0.0), Std.downcast(this.children[1], Curve)?.makeVal() ?? VConst(0.0), blendParam);
+				var ca = Std.downcast(this.children[0], Curve);
+				var cb = Std.downcast(this.children[1], Curve);
+				if (ca == null) return cb != null ? VCurve(cb) : VConst(0.0);
+				if (cb == null) return VCurve(ca);
+				return VBlendCurves(1.0, 0.0, ca, cb, blendParam);
 			case RandomBlend:
 				return VCurve(this);
 			case Reference:
@@ -248,9 +253,9 @@ class Curve extends Prefab {
 				if (val == null)
 					return VConst(0.0);
 				if (scale != 1.0)
-					val = VMult(val, VConst(scale));
+					val = Evaluator.vMult(val, VConst(scale));
 				if (offset != 0.0)
-					val = VAdd(val, VConst(offset));
+					val = Evaluator.vAdd(val, VConst(offset));
 				return val;
 			default:
 				throw "invalid blendMode value";
@@ -909,23 +914,12 @@ class Curve extends Prefab {
 		var g = find(":g");
 		var b = find(":b");
 		var a = find(":a");
-		var h = find(":h");
-		var s = find(":s");
-		var l = find(":l");
-
-		if(h != null || s != null || l != null) {
-			return VHsl(
-				h != null ? h.makeVal() : VConst(0.0),
-				s != null ? s.makeVal() : VConst(1.0),
-				l != null ? l.makeVal() : VConst(1.0),
-				a != null ? a.makeVal() : VConst(1.0));
-		}
 
 		if(a != null && r == null && g == null && b == null)
 			return a.makeVal();
 
 		if(a == null && r == null && g == null && b == null)
-			return VOne; // White by default
+			return VConst(1.0); // White by default
 
 		return VVector(
 			r != null ? r.makeVal() : VConst(1.0),

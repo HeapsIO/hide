@@ -647,14 +647,16 @@ class Emitter2D extends Object2D {
 				var randCurve = getCurve(pname + suffix + ":rand");
 				var randVal : Value = VZero;
 				if(randCurve != null)
-					randVal = VRandom(randIdx++, VMult(randCurve.makeVal(), VConst(randProp != null ? randProp : 1.0)));
+					randVal = Evaluator.vMult(VRandom(randIdx++, 1.0, 0.0), Evaluator.vMult(randCurve.makeVal(), VConst(randProp != null ? randProp : 1.0)));
 				else if(randProp != null && randProp != 0.0)
-					randVal = VRandomScale(randIdx++, randProp);
+					randVal = VRandom(randIdx++, randProp, 0.0);
 
 				var xCurve = getCurve(pname + suffix);
 				if (xCurve != null) {
 					if (xCurve.blendMode == CurveBlendMode.RandomBlend) {
-						return VRandomBetweenCurves(randIdx++, xCurve);
+						var ca = Std.downcast(xCurve.children[0], Curve);
+						var cb = Std.downcast(xCurve.children[1], Curve);
+						return VRandomBetweenCurves(randIdx++, ca, cb);
 					}
 					else {
 						if (pname.indexOf("Rotation") >= 0 || pname.indexOf("Offset") >= 0)
@@ -685,8 +687,8 @@ class Emitter2D extends Object2D {
 						makeComp(2, ":z"));
 					if(v.match(VVector(VZero, VZero, VZero)))
 						v = VZero;
-					else if(v.match(VVector(VOne, VOne, VOne)))
-						v = VOne;
+					else if(v.match(VVector(VConst(1.0), VConst(1.0), VConst(1.0))))
+						v = VConst(1.0);
 					return v;
 
 				default:
