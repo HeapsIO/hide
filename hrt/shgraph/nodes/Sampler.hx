@@ -42,6 +42,8 @@ class Sampler extends ShaderNodeHxsl {
 			var size = texture.size();
 			if (wrap == 0) // Clamp
 				uv2 = clamp(uv2, 0.5 / size, (size - vec2(0.5)) / size);
+			if (wrap == 1) // Repeat
+				uv2 = fract(uv2);
 			if (wrap == 2) // Clamp X
 				uv2.x = clamp(uv2.x, 0.5 / size.x, (size.x - 0.5) / size.x);
 			if (wrap == 3) // Clamp Y
