@@ -310,10 +310,10 @@ class HuiSceneFiltersWidget extends HuiElement {
 	var prefab : hrt.prefab.Prefab;
 	var editor : hrt.ui.HuiSceneEditor;
 
-	public function new(editor : hrt.ui.HuiSceneEditor, ?parent : h2d.Object) {
+	public function new(view : hide.view.Prefab, ?parent : h2d.Object) {
 		super(parent);
-		this.prefab = null;//@:privateAccess editor.prefab;
-		this.editor = editor;
+		this.prefab = @:privateAccess view.prefab;
+		this.editor = @:privateAccess view.sceneEditor;
 		initComponent();
 		getSceneFilters();
 		applySceneFilters();

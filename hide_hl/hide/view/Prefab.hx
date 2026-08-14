@@ -666,7 +666,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		widgets.push(new hrt.ui.HuiToolbar.HuiVisibilityWidget(this, sceneEditor));
 		widgets.push(new hrt.ui.HuiToolbar.HuiViewModesWidget(sceneEditor.scene.s3d));
-		widgets.push(new hrt.ui.HuiToolbar.HuiSceneFiltersWidget(sceneEditor));
+		widgets.push(new hrt.ui.HuiToolbar.HuiSceneFiltersWidget(this));
 		widgets.push(new hrt.ui.HuiToolbar.HuiRenderPropsWidget(sceneEditor));
 
 		var helpBtn = new HuiButton();
