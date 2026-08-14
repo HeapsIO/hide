@@ -41,13 +41,10 @@ class HuiTreeLine extends HuiElement {
 		}
 
 		onPush = (e) -> {
-			if (e.button == 0 || e.button == 1) {
+			if (e.button == 0)
 				onItemSelect(hxd.Key.isDown(hxd.Key.SHIFT), hxd.Key.isDown(hxd.Key.CTRL));
-
-				if (e.button == 1) {
-					onContextMenu();
-				}
-			}
+			if (e.button == 1)
+				onContextMenu();
 		}
 
 		var tree : HuiTree<Dynamic> = tree;
