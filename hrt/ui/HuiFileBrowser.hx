@@ -968,7 +968,6 @@ class HuiFileBrowser extends HuiElement {
 			if (secondToolbarWidget.searchBar.text?.length > 0) {
 				gallerySearchRanges = [];
 				galleryList = galleryFolder.searchAll(secondToolbarWidget.searchBar.text, gallerySearchRanges);
-				trace(gallerySearchRanges);
 			} else {
 				gallerySearchRanges = null;
 				galleryList = galleryFolder.children ?? [];
