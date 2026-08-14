@@ -342,7 +342,19 @@ class HuiSceneFiltersWidget extends HuiElement {
 			else if (!hiddenFilters.contains(f))
 				hiddenFilters.push(f);
 
-			var all = prefab.flatten(hrt.prefab.Prefab);
+			var all = [];
+			function flatten(prefab : hrt.prefab.Prefab) {
+				all.push(prefab);
+
+				var ref = Std.downcast(prefab, hrt.prefab.Reference);
+				if (ref != null)
+					flatten(ref.refInstance);
+
+				for (c in prefab.children)
+					flatten(c);
+			}
+			flatten(prefab);
+
 			var tag = StringTools.replace(f, "tag:", "");
 			tag = tag != f ? tag : null;
 			for (p in all) {
