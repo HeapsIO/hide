@@ -59,8 +59,9 @@ class BaseSimulation extends ComputeUtils {
 			var align : Mat4;
 			if ( FACE_CAM ) {
 				align = lookAtMatrix(vec3(0.0), camera.position - prevPos, cameraUp);
-			} else
+			} else {
 				align = rotateMatrixZ(computeVar.globalInvocation.x * 0.35487) * alignMatrix(vec3(0.0, 0.0, 1.0), normalize(speed));
+			}
 			var newPos = prevPos + speed * dt;
 			if ( CAMERA_BOUNDS && computeCameraBounds){
 				newPos = ((newPos - boundsPos) % boundsSize) + boundsPos;

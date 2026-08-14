@@ -5,7 +5,6 @@ import hrt.prefab.fx.gpuemitter.CubeSpawn.CubeSpawnShader;
 
 class ParticleShader extends hxsl.Shader {
 	static var SRC = {
-		@param var localTransform : Mat4;
 		@param var absPos : Mat4;
 
 		@param var particleBuffer : RWPartialBuffer<{
@@ -22,7 +21,6 @@ class ParticleShader extends hxsl.Shader {
 		@flat var particleRandom : Float;
 		@flat var particleColor : Vec4;
 
-		var relativePosition : Vec3;
 		var transformedPosition : Vec3;
 		function __init__vertex() {
 			{
@@ -32,10 +30,6 @@ class ParticleShader extends hxsl.Shader {
 				particleColor = unpackIntColor(floatBitsToInt(particleBuffer[instanceID].color));
 			}
 			transformedPosition = transformedPosition * absPos.mat3x4();
-		}
-
-		function vertex() {
-			relativePosition = relativePosition * localTransform.mat3x4();
 		}
 
 		var pixelColor : Vec4;
@@ -59,6 +53,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 	var particleBuffer : h3d.Buffer;
 	var particleShader : ParticleShader;
+	var applyTransformShader : h3d.shader.ApplyTransformShader;
 	var particleCounter : h3d.GPUCounter;
 
 	var prevModelViewSimulation : PreviousModelViewSimulation;
@@ -82,16 +77,25 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			p = p.parent;
 		}
 
+
+		this.data = data;
+
 		enableGpuUpdate();
 		enableStorageBuffer();
 		if ( materials != null )
 			this.materials = materials;
 		particleShader = new ParticleShader();
+		applyTransformShader = new h3d.shader.ApplyTransformShader();
+		applyTransformShader.invTransform.load(this.data.trs.getInverse());
+		applyTransformShader.transform.load(this.data.trs);
+		applyTransformShader.prevTransform.load(this.data.trs);
+		applyTransformShader.IS_LOCAL = true;
+
 		for ( m in this.materials ) {
 			m.mainPass.addShader(particleShader);
+			m.mainPass.addShader(applyTransformShader);
 			m.shadows = false;
 		}
-		this.data = data;
 		name = "gpuemitter";
 
 		spawnPass = new h3d.mat.Pass("spawn");
@@ -246,7 +250,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				baseSpawn.absPos.identity();
 				particleShader.absPos.load(getAbsPos());
 			case Camera:
-				baseSpawn.absPos.identity();
+				baseSpawn.absPos.load(getAbsPos());
 				particleShader.absPos.identity();
 
 				var camPos = ctx.camera.pos;
@@ -353,7 +357,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 	override function emit(ctx : h3d.scene.RenderContext) {
 		dispatch(ctx);
-		particleShader.localTransform.load(data.trs);
+
 		super.emit(ctx);
 	}
 

@@ -6,7 +6,6 @@ class CubeSpawnShader extends ComputeUtils {
 		@param var boundsMin : Vec3;
 		@param var boundsSize : Vec3;
 
-		var emitNormal : Vec3;
 		var particleRandom : Float;
 		var relativeTransform : Mat4;
 		function main() {

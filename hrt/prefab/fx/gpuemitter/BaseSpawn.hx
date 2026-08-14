@@ -38,7 +38,7 @@ class BaseSpawn extends ComputeUtils {
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
 			life = mix(minLifeTime, maxLifeTime, (global.time + particleRandom) % 1.0);
 			relativeTransform = translationMatrix(vec3(0.0));
-			modelView = relativeTransform * absPos;
+			modelView = absPos * relativeTransform;
 			particleColor = vec4(1.0);
 		}
 

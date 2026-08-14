@@ -31,6 +31,15 @@ class ComputeUtils extends hxsl.Shader {
 						fract(sin(dot(pos, vec2(14.5757,59.147)))*4756.281));
 		}
 
+		function identityMatrix() : Mat4 {
+			return mat4(
+				vec4(1.0, 0.0, 0.0, 0.0),
+				vec4(0.0, 1.0, 0.0, 0.0),
+				vec4(0.0, 0.0, 1.0, 0.0),
+				vec4(0.0, 0.0, 0.0, 1.0)
+			);
+		}
+
 		function translationMatrix(pos : Vec3) : Mat4 {
 			return mat4(
 				vec4(1.0, 0.0, 0.0, pos.x),
