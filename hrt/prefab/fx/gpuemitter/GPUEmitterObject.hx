@@ -271,6 +271,14 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				}
 				cubeSpawn.boundsMin.set(bounds.xMin, bounds.yMin, bounds.zMin);
 				cubeSpawn.boundsSize.set(bounds.xSize, bounds.ySize, bounds.zSize);
+
+				var camWrap = simulationPass.getShader(CameraWrap);
+				if ( camWrap == null ) {
+					camWrap = new CameraWrap();
+					simulationPass.addShader(camWrap);
+				}
+				camWrap.boundsPos.set(bounds.xMin, bounds.yMin, bounds.zMin);
+				camWrap.boundsSize.set(bounds.xSize, bounds.ySize, bounds.zSize);
 			}
 			baseSimulation.CAMERA_BOUNDS = data.mode == Camera;
 

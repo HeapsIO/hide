@@ -37,13 +37,15 @@ class BaseSimulation extends ComputeUtils {
 		var prevModelView : Mat4;
 		var prevSpeed : Vec3;
 		var relativeTransform : Mat4;
-		var computeCameraBounds : Bool;
+		var preventCameraWrap : Bool;
 		var absoluteTranslation : Mat4;
+		var prevPos : Vec3;
+		var nextPos : Vec3;
 
 		function __init__() {
 			setLayout(64, 1, 1);
 			absoluteTranslation = translationMatrix(vec3(0.0));
-			computeCameraBounds = true;
+			preventCameraWrap = false;
 			dt = dtParam;
 			speed = particleBuffer[computeVar.globalInvocation.x].speed;
 			life = particleBuffer[computeVar.globalInvocation.x].life;
@@ -52,21 +54,19 @@ class BaseSimulation extends ComputeUtils {
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
 			particleColor = unpackIntColor(floatBitsToInt(particleBuffer[computeVar.globalInvocation.x].color));
 			relativeTransform = scaleMatrix(((INFINITE || life < lifeTime) ? 1.0 : 0.0) * (computeVar.globalInvocation.x > curCount ? 0.0 : 1.0) * vec3(particleRandom * (maxSize - minSize) + minSize));
+			prevPos = vec3(0.0) * prevModelView.mat3x4();
+			nextPos = prevPos + speed * dt;
 		}
 
 		function main() {
-			var prevPos = vec3(0.0) * prevModelView.mat3x4();
 			var align : Mat4;
 			if ( FACE_CAM ) {
 				align = lookAtMatrix(vec3(0.0), camera.position - prevPos, cameraUp);
 			} else {
 				align = rotateMatrixZ(computeVar.globalInvocation.x * 0.35487) * alignMatrix(vec3(0.0, 0.0, 1.0), normalize(speed));
 			}
-			var newPos = prevPos + speed * dt;
-			if ( CAMERA_BOUNDS && computeCameraBounds){
-				newPos = ((newPos - boundsPos) % boundsSize) + boundsPos;
-			}
-			modelView = relativeTransform * align * translationMatrix(newPos) * absoluteTranslation;
+			
+			modelView = relativeTransform * align * translationMatrix(nextPos) * absoluteTranslation;
 			var idx = computeVar.globalInvocation.x;
 			particleBuffer[idx].life = life + dt;
 			particleBuffer[idx].speed = speed;
