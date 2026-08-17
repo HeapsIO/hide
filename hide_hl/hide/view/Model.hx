@@ -330,7 +330,7 @@ class Model extends HuiView<{path: String}> {
 		// Load collision settings
 		collisionSettings = [];
 		for (o in obj.getMeshes()) {
-			var mesh = Std.downcast(obj, h3d.scene.Mesh);
+			var mesh = Std.downcast(o, h3d.scene.Mesh);
 			var hmd = Std.downcast(mesh?.primitive, h3d.prim.HMDModel);
 			if (hmd == null) continue;
 
