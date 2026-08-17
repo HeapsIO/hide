@@ -1,6 +1,6 @@
 @echo off
 IF NOT "%1"== "" (
-	hl hide_hl/tools/profiler.hl /u %1 --collapse-recursion
+	hl %HASHLINK_SRC%/other/haxelib/profiler.hl /u %1
 ) ELSE (
-	hl hide_hl/tools/profiler.hl --collapse-recursion
+	hl %HASHLINK_SRC%/other/haxelib/profiler.hl
 )

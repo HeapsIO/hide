@@ -4,7 +4,9 @@
 -lib hx3compat
 -lib domkit
 -lib hashlink
+-lib hlphysics
 -D hscriptPos
+-D hlphysics
 # -D editor # Disabled at the moment because most of the #if editor code of hide depends on js and we don't have it in the hl target
 -D no-deprecation-warnings
 -D manual_sync_pad
