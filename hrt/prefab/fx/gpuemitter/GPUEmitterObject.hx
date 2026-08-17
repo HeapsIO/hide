@@ -299,7 +299,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				baseSimulation.particleBuffer = particleBuffer;
 
 				var s = simulationPass.getShader(PreviousModelViewSimulation);
-				if ( b.format.hasInput("previousModelView") ) {
+				if ( b.format.hasInput("previousModelView__m0") ) {
 					if ( prevModelViewSimulation == null )
 						prevModelViewSimulation = new PreviousModelViewSimulation();
 					if ( s == null )
