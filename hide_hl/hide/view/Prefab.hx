@@ -310,6 +310,8 @@ class Prefab extends HuiView<{path: String}> {
 			if (t != null) {
 				var c = hrt.impl.ColorSpace.Color.intFromString(t.color, true);
 				@:privateAccess el.tagColor.visible = true;
+				if (@:privateAccess el.tagColor.huiBg == null)
+					@:privateAccess el.tagColor.backgroundType = "hui";
 				@:privateAccess el.tagColor.huiBg.background = c;
 			}
 			else {
@@ -1204,6 +1206,7 @@ class Prefab extends HuiView<{path: String}> {
 				else {
 					(prefab.props:Dynamic).tag = oldValues[i];
 				}
+				tryMake(prefab);
 			}
 		}
 		exec(false);
