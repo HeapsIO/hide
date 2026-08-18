@@ -225,10 +225,9 @@ class ContextShared {
 		}
 	}
 
-	public function getObjects<T:h3d.scene.Object>( p : Prefab, c: Class<T>, ?filter : h3d.scene.Object -> Bool ) : Array<T> {
+	public function getObjectds<T:h3d.scene.Object>( p : Prefab, c: Class<T>, ?filter : h3d.scene.Object -> Bool ) : Array<T> {
 		var root = p.to(Object3D)?.local3d;
 		if(root == null) return [];
-		var childObjs = getChildrenRoots(root, p, []);
 		var ret = [];
 		function rec(o : h3d.scene.Object) {
 			if ( filter != null && !filter(o) )
@@ -240,8 +239,7 @@ class ContextShared {
 				ret.push(m);
 			}
 			for( child in o )
-				if( childObjs.indexOf(child) < 0 )
-					rec(child);
+				rec(child);
 		}
 		rec(root);
 		return ret;
