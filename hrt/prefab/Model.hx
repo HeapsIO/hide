@@ -49,7 +49,7 @@ class Model extends Object3D {
 				root.addChild(obj);
 				obj = root;
 			}
-			#if editor
+			#if (editor || editor_hl)
 			for(m in obj.getMeshes())
 				if( !Std.isOfType(m,h3d.scene.Skin) )
 					m.cullingCollider = new h3d.col.ObjectCollider(m, m.primitive.getBounds().toSphere());
