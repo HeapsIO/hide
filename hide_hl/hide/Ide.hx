@@ -161,7 +161,8 @@ class Ide extends hide.tools.IdeData {
 
 		hxd.Window.getInstance().title = "HideHL - " + new haxe.io.Path(dir).file;
 
-		h3d.mat.MaterialSetup.current = new h3d.mat.PbrMaterialSetup();
+		if (h3d.mat.MaterialSetup.current.name == "Default")
+			h3d.mat.MaterialSetup.current = new h3d.mat.PbrMaterialSetup();
 
 		// init prefab editor metadata
 		for (prefab in hrt.prefab.Prefab.registry) {
