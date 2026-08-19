@@ -142,6 +142,13 @@ class App extends hxd.App {
 			return;
 		DEBUG = #if hl hl.Api.hasDebugger() #else false #end;
 
+		#if renderdoc
+		if( !hxd.tools.RenderDoc.init() )
+			throw "Can't init RenderDoc, renderdoc.dll may be missing from your PATH!";
+		hxd.tools.RenderDoc.launchReplayUi(true, null);
+		hxd.tools.RenderDoc.setCaptureKeys([Key_F11]);
+		#end
+
 		hxd.Res.initLocal();
 		hrt.ui.HuiRes.init();
 
