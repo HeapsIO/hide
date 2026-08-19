@@ -53,10 +53,12 @@ class CullingContainer extends Object3D {
 		super.setSelected(b);
 		var obj = Std.downcast(this.local3d, CullingContainerObject);
 		if (b){
-			obj?.forceVisible = false;
+			if (obj != null)
+				obj.forceVisible = false;
 			createDebugSphere();
 		} else {
-			obj?.forceVisible = true;
+			if (obj != null)
+				obj.forceVisible = true;
 			prim.dispose();
 			m.remove();
 		}
