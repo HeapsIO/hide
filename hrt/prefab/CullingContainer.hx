@@ -50,13 +50,13 @@ class CullingContainer extends Object3D {
 	}
 
 	override function setSelected(b:Bool):Bool {
-		var obj = Std.downcast(this.local3d, CullingContainerObject);
 		super.setSelected(b);
-		if(b){
-			obj.forceVisible = false;
+		var obj = Std.downcast(this.local3d, CullingContainerObject);
+		if (b){
+			obj?.forceVisible = false;
 			createDebugSphere();
 		} else {
-			obj.forceVisible = true;
+			obj?.forceVisible = true;
 			prim.dispose();
 			m.remove();
 		}
