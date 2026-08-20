@@ -552,7 +552,8 @@ class HuiViewModesPopup extends HuiPopup {
 			{ label : "AO", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = AO; }},
 			{ label : "Shadows", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Shadow; }},
 			{ label : "Performance", enable : (renderer : Renderer) -> { renderer.displayMode = Performance; }},
-			{ label : "UV Checker", disable : () -> { setUVChecker(false); }, enable : (renderer : Renderer) -> { renderer.displayMode = Pbr; renderer.slides.shader.mode = Normal; setUVChecker(true); }}
+			{ label : "UV Checker", disable : () -> { setUVChecker(false); }, enable : (renderer : Renderer) -> { renderer.displayMode = Pbr; renderer.slides.shader.mode = Normal; setUVChecker(true); }},
+			{ label : "Translucency", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Translucency; }}
 		];
 
 		initComponent();
