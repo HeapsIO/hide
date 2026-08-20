@@ -546,6 +546,13 @@ class ViewModePopup extends hide.comp.Popup {
 				display : Debug,
 				debug : Velocity
 			},
+		},
+		{
+			name : "Translucency",
+			inf : {
+				display : Debug,
+				debug : Translucency
+			},
 		}
 	];
 	var renderer:h3d.scene.pbr.Renderer;

@@ -449,7 +449,8 @@ class Model extends FileView {
 				{ label: "Normal", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Debug; shader.mode = h3d.shader.pbr.Slides.DebugMode.Normal; } },
 				{ label: "Albedo", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Debug; shader.mode = h3d.shader.pbr.Slides.DebugMode.Albedo; } },
 				{ label: "Full", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Debug; shader.mode = h3d.shader.pbr.Slides.DebugMode.Full; } },
-				{ label: "LIT", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Pbr; } }
+				{ label: "LIT", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Pbr; } },
+				{ label: "Translucency", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Debug; shader.mode = h3d.shader.pbr.Slides.DebugMode.Translucency; } }
 			]);
 		});
 
