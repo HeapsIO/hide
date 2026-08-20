@@ -42,9 +42,14 @@ class HuiTreeLine extends HuiElement {
 
 		onPush = (e) -> {
 			if (e.button == 0)
-				onItemSelect(hxd.Key.isDown(hxd.Key.SHIFT), hxd.Key.isDown(hxd.Key.CTRL));
+				onItemSelect(hxd.Key.isDown(hxd.Key.SHIFT), hxd.Key.isDown(hxd.Key.CTRL), false);
 			if (e.button == 1)
 				onContextMenu();
+		}
+
+		onClick = (e) -> {
+			if (e.button == 0)
+				onItemSelect(hxd.Key.isDown(hxd.Key.SHIFT), hxd.Key.isDown(hxd.Key.CTRL), true);
 		}
 
 		onKeyDown = (e) -> {
@@ -154,7 +159,7 @@ class HuiTreeLine extends HuiElement {
 
 	}
 
-	dynamic public function onItemSelect(shift: Bool, ctrl: Bool) {
+	dynamic public function onItemSelect(shift: Bool, ctrl: Bool, isClick : Bool) {
 
 	}
 }

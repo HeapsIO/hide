@@ -471,10 +471,9 @@ class HuiTree<TreeItem> extends HuiElement {
 			toggleItemDataOpen(data);
 		}
 
-		line.onItemSelect = (shift, ctrl) -> {
-			if (!ctrl) {
+		line.onItemSelect = (shift, ctrl, isClick) -> {
+			if (!ctrl && (isClick || shift))
 				selectedElements.clear();
-			}
 
 			if (shift && lastSelectedElement != null) {
 				var idx = flatList.indexOf(lastSelectedElement);
