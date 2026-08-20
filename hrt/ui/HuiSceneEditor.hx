@@ -151,7 +151,7 @@ class HuiSceneEditor extends HuiElement {
 		cameraController = Type.createInstance(ctrlClass, []);
 		cameraController.onCustomEvent = (e : hxd.Event) -> {
 			if (e.kind == EWheel) {
-				if (Std.isOfType(cameraController, h3d.scene.CameraController.FPSCameraController)) {
+				if (Std.isOfType(cameraController, h3d.scene.CameraController.FPSCameraController) && hxd.Key.isDown(hxd.Key.MOUSE_RIGHT)) {
 					var p = new HuiPopupInfo(1, this);
 					p.setText('Camera Speed : ${hxd.Math.round(cameraController.moveSpeed * 100) / 100}');
 					uiBase.addPopup(p, { object: Point(scene.absX + scene.calculatedWidth / 2.0, scene.absY + scene.calculatedHeight * 3 / 4), directionX: Middle, directionY: Middle });
