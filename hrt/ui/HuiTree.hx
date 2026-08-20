@@ -472,7 +472,7 @@ class HuiTree<TreeItem> extends HuiElement {
 		}
 
 		line.onItemSelect = (shift, ctrl, isClick) -> {
-			if (!ctrl && (isClick || shift))
+			if (!ctrl && (isClick || shift || (!isClick && selectedElements.get(data.item) == null)))
 				selectedElements.clear();
 
 			if (shift && lastSelectedElement != null) {
