@@ -971,7 +971,9 @@ class Model extends FileView {
 				}));
 			});
 
-			maxLod = Math.max(getLodRatioFromIdx(1), maxLod);
+			var m = getLodRatioFromIdx(1);
+			m = m == 1 ? 1 : m + 0.1; // Add some range to see LOD0 in the lod line
+			maxLod = Math.max(m, maxLod);
 
 			var maxLodElem = lodsEl.find("#max-lod");
 			maxLodElem.val(getLodRatioFromIdx(0) * 100);

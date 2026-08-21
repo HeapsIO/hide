@@ -16,7 +16,9 @@ class HuiLodLine extends HuiElement {
 	public function set_mesh(v) {
 		hmd = Std.downcast(v.primitive, h3d.prim.HMDModel);
 		mesh = v;
-		maxLodRatio = hxd.Math.max(maxLodRatio, getLodRatio(0));
+		var m = getLodRatio(1);
+		m = m == 1 ? 1 : m + 0.1; // Add some range to see LOD0 in the lod line
+		maxLodRatio = hxd.Math.max(m, maxLodRatio);
 		createAreas();
 		return mesh;
 	}
@@ -89,7 +91,7 @@ class HuiLodLine extends HuiElement {
 					newConfig = { ratios : hmd.getLodConfig()?.copy(), cullingRatio: hmd.getCullingScreenRatio() };
 					var limits = [ getLodRatio(idx + 1), getLodRatio(idx - 1) ];
 					areas.onMove = (e) -> {
-						var newRatio = maxLodRatio - (e.relX / areas.calculatedWidth);
+						var newRatio = (1.0 - (e.relX / areas.calculatedWidth)) * maxLodRatio;
 						if (Math.isNaN(newRatio))
 							newRatio = 0;
 
