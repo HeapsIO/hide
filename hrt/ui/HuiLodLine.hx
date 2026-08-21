@@ -56,8 +56,8 @@ class HuiLodLine extends HuiElement {
 	inline function getLodRatio(idx : Int) {
 		var lodConfig = hmd.getLodConfig();
 		if (idx <= 0) return maxLodRatio;
-		if (idx > lodConfig.length) return 0.;
-		if (idx >= hmd.lodCount() + 1) return 0.;
+		if (idx == hmd.lodCount()) return hmd.getCullingScreenRatio();
+		if (idx > lodConfig.length || idx > hmd.lodCount()) return 0.;
 		return lodConfig[idx - 1];
 	}
 
@@ -82,20 +82,24 @@ class HuiLodLine extends HuiElement {
 				var h = new HuiElement(areas);
 				h.dom.addClass("handle");
 				handlesEl.push(h);
-				var prevConfig : Array<Float>;
-				var newConfig : Array<Float>;
+				var prevConfig : { ratios: Array<Float>, cullingRatio : Float };
+				var newConfig : { ratios: Array<Float>, cullingRatio : Float };
 				h.onPush = (e) -> {
-					prevConfig = @:privateAccess hmd.lodConfig?.copy();
-					newConfig = hmd.getLodConfig()?.copy();
-					var limits = [ getLodRatio(idx + 1), getLodRatio(idx - 1)];
+					prevConfig = { ratios : @:privateAccess hmd.lodConfig?.copy(), cullingRatio: hmd.getCullingScreenRatio() };
+					newConfig = { ratios : hmd.getLodConfig()?.copy(), cullingRatio: hmd.getCullingScreenRatio() };
+					var limits = [ getLodRatio(idx + 1), getLodRatio(idx - 1) ];
 					areas.onMove = (e) -> {
 						var newRatio = maxLodRatio - (e.relX / areas.calculatedWidth);
 						if (Math.isNaN(newRatio))
 							newRatio = 0;
 
 						newRatio = hxd.Math.clamp(newRatio, limits[0], limits[1]);
-						newConfig[idx - 1] = newRatio;
-						@:privateAccess hmd.lodConfig = newConfig;
+						if (idx == hmd.lodCount())
+							newConfig.cullingRatio = newRatio;
+						else
+							newConfig.ratios[idx - 1] = newRatio;
+						@:privateAccess hmd.lodConfig = newConfig.ratios;
+						@:privateAccess hmd.cullingScreenRatio = newConfig.cullingRatio;
 						updateAreas();
 					};
 				}
@@ -103,10 +107,8 @@ class HuiLodLine extends HuiElement {
 				h.onRelease = (e) -> {
 					areas.onMove = (e) -> {};
 					getView().undo.record((isUndo) -> {
-						if (isUndo)
-							@:privateAccess hmd.lodConfig = prevConfig;
-						else
-							@:privateAccess hmd.lodConfig = newConfig;
+						@:privateAccess hmd.lodConfig = isUndo ? prevConfig.ratios : newConfig.ratios;
+						@:privateAccess hmd.cullingScreenRatio = isUndo ? prevConfig.cullingRatio : newConfig.cullingRatio;
 						updateAreas();
 					}, true);
 				}
