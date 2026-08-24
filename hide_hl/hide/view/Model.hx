@@ -228,6 +228,7 @@ class Model extends HuiView<{path: String}> {
 		var path = Ide.inst.getRelPath(state.path);
 		sceneEditor.load = () -> load(path);
 		sceneEditor.getObjectsAt = getObjectsAt;
+		sceneEditor.getSelectedObjects = getSelectedObjects;
 		sceneEditor.onScenePush = (e) -> {
 			if (e.button == 0) {
 				if (@:privateAccess modelInspector?.shapeEditor.isInShapeEdition)
@@ -442,6 +443,16 @@ class Model extends HuiView<{path: String}> {
 		widgets.push(new hrt.ui.HuiToolbar.HuiSplitterDirectionWidget());
 
 		return widgets;
+	}
+
+	function getSelectedObjects() : Array<h3d.scene.Object> {
+		var objs = [];
+		for (i in sceneEditor.tree.getSelectedItems()) {
+			var o = Std.downcast(i, h3d.scene.Object);
+			if (o != null)
+				objs.push(o);
+		}
+		return objs;
 	}
 
 	function save() {
