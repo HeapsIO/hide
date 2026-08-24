@@ -9,5 +9,10 @@ class RenderProfile extends Object3D {
 		return this.getOpt(RenderProps);
 	}
 
+	public function new(parent: Prefab, contextShared: ContextShared) {
+		super(parent, contextShared);
+		this.name = "Render Profile";
+	}
+
 	static var _ = Prefab.register("rp", RenderProfile, "rp");
 }
