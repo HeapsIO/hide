@@ -227,7 +227,7 @@ class Ide extends hide.tools.IdeData {
 
 		try {
 			switch (path.ext?.toLowerCase()) {
-				case "prefab", "matlib":
+				case "prefab", "matlib", "rp":
 					openView(hide.view.Prefab,{path: filePath}, Main, callback);
 				case "fx":
 					openView(hide.view.Prefab,{path: filePath}, Main, callback);

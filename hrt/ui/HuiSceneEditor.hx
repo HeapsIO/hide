@@ -13,7 +13,7 @@ class HuiSceneEditor extends HuiElement {
 					</hui-element>
 					<hui-element id="trees-panel">
 						<hui-category("Scene Tree") id="panel-tree"></hui-category>
-						<hui-category("Render Props Tree") id="panel-additional-tree"></hui-category>
+						<hui-category("Render Profile Tree") id="panel-additional-tree"></hui-category>
 					</hui-element>
 				</hui-split-container>
 
@@ -52,20 +52,20 @@ class HuiSceneEditor extends HuiElement {
 		VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY => false
 	];
 
-	public static final RENDER_PROPS_SAVE_KEY = "renderPropsPath";
-	public static var RENDER_PROPS_KEY = "scene.renderProps";
-	public static final RENDER_PROPS_EDIT_KEY = "editor.renderprops.edit";
+	public static final RENDER_PROFILE_SAVE_KEY = "renderProfilePath";
+	public static var RENDER_PROFILE_KEY = "scene.renderProps";
+	public static final RENDER_PROFILE_EDIT_KEY = "editor.renderprofile.edit";
 
 	static public var focusCommand = new hrt.ui.HuiCommands.HuiCommand("Focus Selection", {key: hxd.Key.F});
 
 	public var lastFocusObjects : Array<h3d.scene.Object> = [];
 	public var tree :  hrt.ui.HuiTree<Dynamic>;
-	public var renderPropsTree :  hrt.ui.HuiTree<Dynamic>;
+	public var renderProfileTree :  hrt.ui.HuiTree<Dynamic>;
 	var inspectorRoot : hide.kit.KitRoot;
 	var cameraController : h3d.scene.CameraController;
 	var verticalSidebar: Bool = false;
 
-	var renderProps : hrt.prefab.RenderProps;
+	var renderProfile : hrt.prefab.RenderProfile;
 
 	// Gizmos and guides
 	var grid : hrt.tools.Grid = null;
@@ -104,34 +104,34 @@ class HuiSceneEditor extends HuiElement {
 		tree = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelTree.content);
 		tree.saveDisplayKey = "sceneTree";
 
-		renderPropsTree = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelAdditionalTree.content);
-		panelAdditionalTree.visible = hide.Ide.inst.currentConfig.get(RENDER_PROPS_EDIT_KEY, false) && Std.isOfType(getView(), hide.view.Prefab);
-		renderPropsTree.saveDisplayKey = "renderPropsTree";
+		renderProfileTree = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelAdditionalTree.content);
+		panelAdditionalTree.visible = hide.Ide.inst.currentConfig.get(RENDER_PROFILE_EDIT_KEY, false) && Std.isOfType(getView(), hide.view.Prefab);
+		renderProfileTree.saveDisplayKey = "renderProfileTree";
 
-		renderPropsTree.getItemChildren = (el) -> {
+		renderProfileTree.getItemChildren = (el) -> {
 			if (el == null)
-				return this.renderProps != null ? [this.renderProps] : [];
+				return this.renderProfile != null ? [this.renderProfile] : [];
 			var prefab : hrt.prefab.Prefab = Std.downcast(el, hrt.prefab.Prefab);
 			return cast prefab?.children;
 		}
 
-		renderPropsTree.getItemName = (el) -> {
+		renderProfileTree.getItemName = (el) -> {
 			var prefab : hrt.prefab.Prefab = cast el;
 			return return prefab.name;
 		}
 
-		renderPropsTree.getItemIcon = (item: hrt.prefab.Prefab) -> {
+		renderProfileTree.getItemIcon = (item: hrt.prefab.Prefab) -> {
 			return item.getEditorProps().icon;
 		}
 
-		renderPropsTree.onItemDoubleClick = (_, el) -> {
+		renderProfileTree.onItemDoubleClick = (_, el) -> {
 			var prefab : hrt.prefab.Prefab = cast el;
 			var obj = prefab.findFirstLocal3d();
 			if (obj != null)
 				focusObjects([obj]);
 		};
 
-		renderPropsTree.getIdentifier = (el) -> {
+		renderProfileTree.getIdentifier = (el) -> {
 			var prefab : hrt.prefab.Prefab = cast el;
 			prefab.getAbsPath(true, true);
 		}
@@ -354,7 +354,7 @@ class HuiSceneEditor extends HuiElement {
 	}
 
 	public function onViewLoadState() {
-		updateRenderProps();
+		updateRenderProfile();
 
 		for (k in DEFAULT_VISIBILITY_STATE.keys())
 			if (hide.Ide.inst.currentConfig.get(k) == null)
@@ -490,25 +490,24 @@ class HuiSceneEditor extends HuiElement {
 	}
 
 
-	public function setRenderProps(path : String) {
-		if (renderProps != null && renderProps.shared.prefabSource == path)
+	public function setRenderProfile(path : String) {
+		if (renderProfile != null && renderProfile.shared.prefabSource == path)
 			return;
 
-		if (renderProps != null) {
-			this.renderProps.local3d.remove();
-			this.renderProps.remove();
+		if (renderProfile != null) {
+			this.renderProfile.local3d.remove();
+			this.renderProfile.remove();
 		}
 
 		var p = hxd.res.Loader.currentInstance.load(path).toPrefab().load().clone();
-		var renderProps = p.getOpt(hrt.prefab.RenderProps);
-		if (renderProps == null) {
+		var renderProfile = p.getOpt(hrt.prefab.RenderProfile);
+		if (renderProfile == null)
 			return;
-		}
 
-		this.renderProps = renderProps;
-		renderProps.make();
-		scene.s3d.addChild(renderProps.local3d);
-		renderProps.applyProps(scene.s3d.renderer);
+		this.renderProfile = renderProfile;
+		renderProfile.make();
+		scene.s3d.addChild(renderProfile.local3d);
+		renderProfile.renderProps.applyProps(scene.s3d.renderer);
 
 		// Reapply outline since it has been disposed by render props application
 		scene.s3d.renderer.effects.push(outline);
@@ -518,15 +517,15 @@ class HuiSceneEditor extends HuiElement {
 		return scene.s3d.find((o) -> Std.downcast(o, hrt.prefab.RenderProps.RenderPropsObject));
 	}
 
-	public function updateRenderProps() {
-		// Clear previous render props
-		if (renderProps != null) {
-			this.renderProps.local3d.remove();
-			this.renderProps.remove();
-			this.renderProps = null;
+	public function updateRenderProfile() {
+		// Clear previous render profile
+		if (renderProfile != null) {
+			this.renderProfile.local3d.remove();
+			this.renderProfile.remove();
+			this.renderProfile = null;
 		}
 
-		// If there is already a render props in the scene, just skip
+		// If there is already a render profile in the scene, just skip
 		var sceneRenderProps = getRenderPropsObj();
 		if (sceneRenderProps != null) {
 			sceneRenderProps.prefab.applyProps(scene.s3d.renderer);
@@ -534,32 +533,32 @@ class HuiSceneEditor extends HuiElement {
 		}
 
 		// If there is a config set for that prefab, just use it
- 		var path = getView().getDisplayState(RENDER_PROPS_SAVE_KEY, null);
+ 		var path = getView().getDisplayState(RENDER_PROFILE_SAVE_KEY, null);
 		if (path != null) {
-			setRenderProps(path);
+			setRenderProfile(path);
 			return;
 		}
 
 		// If there is configs but none of it is set for that prefab, juste take the first
-		var configs = getRenderPropsConfigs();
+		var configs = getRenderProfileConfigs();
 		if (configs != null && configs.length >= 1)
-			setRenderProps(configs[0].value);
+			setRenderProfile(configs[0].value);
 	}
 
-	public function getRenderPropsConfigs() : Array<{ name: String, value: String }> {
-		var renderProps = [];
-		var renderPropsConfig = hide.Ide.inst.currentConfig.getLocal(RENDER_PROPS_KEY);
-		if (renderPropsConfig is String) {
-			renderProps.push({ name: cast (renderPropsConfig, String), value: cast (renderPropsConfig, String) });
+	public function getRenderProfileConfigs() : Array<{ name: String, value: String }> {
+		var renderProfiles = [];
+		var renderProfileConfig = hide.Ide.inst.currentConfig.getLocal(RENDER_PROFILE_KEY);
+		if (renderProfileConfig is String) {
+			renderProfiles.push({ name: cast (renderProfileConfig, String), value: cast (renderProfileConfig, String) });
 		}
 
-		if (renderPropsConfig is Array) {
-			for (rpc in cast (renderPropsConfig, Array<Dynamic>)) {
-				renderProps.push({ name: rpc.name, value: rpc.value });
+		if (renderProfileConfig is Array) {
+			for (rpc in cast (renderProfileConfig, Array<Dynamic>)) {
+				renderProfiles.push({ name: rpc.name, value: rpc.value });
 			}
 		}
 
-		return renderProps;
+		return renderProfiles;
 	}
 
 

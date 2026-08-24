@@ -425,7 +425,7 @@ class Model extends HuiView<{path: String}> {
 
 		widgets.push(new hrt.ui.HuiToolbar.HuiVisibilityWidget(this, sceneEditor));
 		widgets.push(new hrt.ui.HuiToolbar.HuiViewModesWidget(sceneEditor.scene.s3d));
-		widgets.push(new hrt.ui.HuiToolbar.HuiRenderPropsWidget(sceneEditor));
+		widgets.push(new hrt.ui.HuiToolbar.HuiRenderProfileWidget(sceneEditor));
 
 		var helpBtn = new HuiButton();
 		helpBtn.tip = "Show help";

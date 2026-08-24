@@ -152,8 +152,8 @@ class Prefab extends HuiView<{path: String}> {
 
 		sceneEditor.tree.onUserSelectionChanged = () -> {
 			setSelection(cast sceneEditor.tree.getSelectedItems(), NoRefreshTree);
-			sceneEditor.renderPropsTree.setSelection([]);
-			@:privateAccess sceneEditor.renderPropsTree.forceRefreshTree();
+			sceneEditor.renderProfileTree.setSelection([]);
+			@:privateAccess sceneEditor.renderProfileTree.forceRefreshTree();
 		}
 
 		sceneEditor.tree.onItemDoubleClick = (_, el) -> {
@@ -325,8 +325,8 @@ class Prefab extends HuiView<{path: String}> {
 			return item.getEditorProps().icon;
 		}
 
-		sceneEditor.renderPropsTree.onUserSelectionChanged = () -> {
-			setSelection(cast sceneEditor.renderPropsTree.getSelectedItems(), NoRefreshTree);
+		sceneEditor.renderProfileTree.onUserSelectionChanged = () -> {
+			setSelection(cast sceneEditor.renderProfileTree.getSelectedItems(), NoRefreshTree);
 			sceneEditor.tree.setSelection([]);
 			@:privateAccess sceneEditor.tree.forceRefreshTree();
 		}
@@ -673,7 +673,7 @@ class Prefab extends HuiView<{path: String}> {
 		widgets.push(new hrt.ui.HuiToolbar.HuiVisibilityWidget(this, sceneEditor));
 		widgets.push(new hrt.ui.HuiToolbar.HuiViewModesWidget(sceneEditor.scene.s3d));
 		widgets.push(new hrt.ui.HuiToolbar.HuiSceneFiltersWidget(this));
-		widgets.push(new hrt.ui.HuiToolbar.HuiRenderPropsWidget(sceneEditor));
+		widgets.push(new hrt.ui.HuiToolbar.HuiRenderProfileWidget(sceneEditor));
 
 		var helpBtn = new HuiButton();
 		helpBtn.tip = "Show help";
@@ -742,7 +742,7 @@ class Prefab extends HuiView<{path: String}> {
 
 			tryMake(prefab);
 
-			sceneEditor.updateRenderProps();
+			sceneEditor.updateRenderProfile();
 			sceneEditor.updateDebugOverlayVisibility();
 			clearSelection(isUndo);
 		}
@@ -778,7 +778,7 @@ class Prefab extends HuiView<{path: String}> {
 			fx.loop = true;
 
 		if (Std.isOfType(prefab, hrt.prefab.RenderProps))
-			sceneEditor.updateRenderProps();
+			sceneEditor.updateRenderProfile();
 
 		sceneEditor.tree.rebuild();
 	}
@@ -863,7 +863,7 @@ class Prefab extends HuiView<{path: String}> {
 		}
 
 		if (Std.isOfType(prefab, hrt.prefab.RenderProps))
-			sceneEditor.updateRenderProps();
+			sceneEditor.updateRenderProfile();
 	}
 
 	public function removePrefabInteractives(prefab: hrt.prefab.Prefab) {
@@ -986,12 +986,12 @@ class Prefab extends HuiView<{path: String}> {
 
 		if (!flags.has(NoRefreshTree)) {
 			@:privateAccess sceneEditor.tree.forceRefreshTree();
-			@:privateAccess sceneEditor.renderPropsTree.forceRefreshTree();
+			@:privateAccess sceneEditor.renderProfileTree.forceRefreshTree();
 			sceneEditor.tree.setSelection(selection);
-			sceneEditor.renderPropsTree.setSelection(selection);
+			sceneEditor.renderProfileTree.setSelection(selection);
 			for (item in selection) {
 				sceneEditor.tree.revealItem(item);
-				sceneEditor.renderPropsTree.revealItem(item);
+				sceneEditor.renderProfileTree.revealItem(item);
 			}
 		}
 

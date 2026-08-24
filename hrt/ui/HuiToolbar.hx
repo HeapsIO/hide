@@ -398,13 +398,13 @@ class HuiSceneFiltersPopup extends HuiPopup {
 	}
 }
 
-class HuiRenderPropsWidget extends HuiElement {
-	static var SRC = <hui-render-props-widget>
-		<hui-button id="btn" tip={"Change scene editor render props"}>
-			<hui-text("Render Props")/>
+class HuiRenderProfileWidget extends HuiElement {
+	static var SRC = <hui-render-profile-widget>
+		<hui-button id="btn" tip={"Change scene editor render profile"}>
+			<hui-text("Render Profile")/>
 			<hui-icon("drop_down")/>
 		</hui-button>
-	</hui-render-props-widget>
+	</hui-render-profile-widget>
 
 	public var editor : hrt.ui.HuiSceneEditor;
 
@@ -414,25 +414,25 @@ class HuiRenderPropsWidget extends HuiElement {
 		initComponent();
 
 		btn.onClick = (_) -> {
-			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiRenderPropsPopup(this), { object: Element(this), directionX: StartInside, directionY: EndOutside });
+			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiRenderProfilePopup(this), { object: Element(this), directionX: StartInside, directionY: EndOutside });
 		}
 	}
 
-	public function getCurrentRenderProps() : String {
-		return @:privateAccess editor.renderProps?.shared?.prefabSource;
+	public function getCurrentRenderProfile() : String {
+		return @:privateAccess editor.renderProfile?.shared?.prefabSource;
 	}
 
-	public function setCurrentRenderProps(value : String) {
-		editor.getView().saveDisplayState(HuiSceneEditor.RENDER_PROPS_SAVE_KEY, value);
-		editor.updateRenderProps();
+	public function setCurrentRenderPofile(value : String) {
+		editor.getView().saveDisplayState(HuiSceneEditor.RENDER_PROFILE_SAVE_KEY, value);
+		editor.updateRenderProfile();
 	}
 
-	public function setRenderPropsEdition(isEditable : Bool) {
-		hide.Ide.inst.currentConfig.set(HuiSceneEditor.RENDER_PROPS_EDIT_KEY, isEditable);
+	public function setRenderProfileEdition(isEditable : Bool) {
+		hide.Ide.inst.currentConfig.set(HuiSceneEditor.RENDER_PROFILE_EDIT_KEY, isEditable);
 		@:privateAccess editor.panelAdditionalTree.visible = isEditable;
 	}
 
-	public function getRenderPropsEdition() {
+	public function getRenderProfileEdition() {
 		return @:privateAccess editor.panelAdditionalTree.visible;
 	}
 
@@ -441,43 +441,43 @@ class HuiRenderPropsWidget extends HuiElement {
 	}
 }
 
-class HuiRenderPropsPopup extends HuiPopup {
+class HuiRenderProfilePopup extends HuiPopup {
 	static var SRC =
-		<hui-render-props-popup class="vertical">
-			<hui-text("Render Props") class="title"/>
+		<hui-render-profile-popup class="vertical">
+			<hui-text("Render Profile") class="title"/>
 			<hui-element class="horizontal" if (widget.isPrefabView())>
-				<hui-toggle id="edit-renderprops-tog" tip={"Toggle render props edition"}>
+				<hui-toggle id="edit-render-profile-tog" tip={"Toggle render profile edition"}>
 					<hui-icon("edit")/>
 				</hui-toggle>
-				<hui-text("Edit Render Props") class="label"/>
+				<hui-text("Edit Render Profile") class="label"/>
 			</hui-element>
-			<hui-text("No render props config detected in .json file.") if (widget.editor.getRenderPropsConfigs().length == 0)/>
-			<hui-text("This prefab already contains a render props!") if (containsRenderProps)/>
+			<hui-text("No render profile config detected in .json file.") if (widget.editor.getRenderProfileConfigs().length == 0)/>
+			<hui-text("This prefab already contains a render profile!") if (containsRenderProps)/>
 			<hui-text("Render Props List") id="list-title" if (!containsRenderProps && widget.isPrefabView())/>
-				for (rpc in widget.editor.getRenderPropsConfigs()) {
+				for (rpc in widget.editor.getRenderProfileConfigs()) {
 					<hui-element class="horizontal" if (!containsRenderProps)>
 						<hui-checkbox id="rp[]"/>
 						<hui-text(rpc.name) class="label"/>
 					</hui-element>
 				}
-		</hui-render-props-popup>
+		</hui-render-profile-popup>
 
 	var currentIdx = 0;
 
-	public function new(widget : HuiRenderPropsWidget, ?parent: h2d.Object) {
+	public function new(widget : HuiRenderProfileWidget, ?parent: h2d.Object) {
 		super(parent);
-		var containsRenderProps = @:privateAccess widget.editor.renderProps == null && widget.editor.getRenderPropsObj() != null;
+		var containsRenderProps = @:privateAccess widget.editor.renderProfile == null && widget.editor.getRenderPropsObj() != null;
 		initComponent();
 
-		editRenderpropsTog?.toggled = widget.getRenderPropsEdition();
-		editRenderpropsTog?.onClick = (e : hxd.Event) -> {
-			editRenderpropsTog.toggled = !editRenderpropsTog.toggled;
-			widget.setRenderPropsEdition(editRenderpropsTog.toggled);
+		editRenderProfileTog?.toggled = widget.getRenderProfileEdition();
+		editRenderProfileTog?.onClick = (e : hxd.Event) -> {
+			editRenderProfileTog.toggled = !editRenderProfileTog.toggled;
+			widget.setRenderProfileEdition(editRenderProfileTog.toggled);
 		}
 
 		if (!containsRenderProps) {
-			var current = widget.getCurrentRenderProps();
-			for (idx => renderProps in widget.editor.getRenderPropsConfigs()) {
+			var current = widget.getCurrentRenderProfile();
+			for (idx => renderProps in widget.editor.getRenderProfileConfigs()) {
 				if ((current == null && idx == 0) || renderProps.value == current) {
 					currentIdx = idx;
 					rp[currentIdx].enable = false;
@@ -488,7 +488,7 @@ class HuiRenderPropsPopup extends HuiPopup {
 					rp[currentIdx].enable = true;
 					rp[currentIdx].value = false;
 					currentIdx = idx;
-					widget.setCurrentRenderProps(renderProps.value);
+					widget.setCurrentRenderPofile(renderProps.value);
 				}
 			}
 		}
