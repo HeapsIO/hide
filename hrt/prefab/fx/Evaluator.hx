@@ -17,6 +17,13 @@ class Evaluator {
 		}
 	}
 
+	static function canRemap(v: Value) : Bool {
+		return switch(v) {
+			case VZero, VConst(_), VRandom(_): true; // only values that we are sure do not use time
+			default: false;
+		}
+	}
+
 	static inline function commute(a: Value, b: Value, fn: (Value, Value) -> Null<Value>) : Null<Value> {
 		var r = fn(a, b);
 		return r != null ? r : fn(b, a);
@@ -37,6 +44,8 @@ class Evaluator {
 				VBlendCurves(scale * va, add * va, ca, cb, bv);
 			case [VConst(va), VRandomBlendCurves(rid, scale, add, ca, cb, bv)]:
 				VRandomBlendCurves(rid, scale * va, add * va, ca, cb, bv);
+			case [_, VParamRemap(v, param)] if(canRemap(a)): VParamRemap(vMult(a, v), param);
+			case [_, VValueRemap(v, remap)] if(canRemap(a)): VValueRemap(vMult(a, v), remap);
 			default: null;
 		});
 		return r != null ? r : VMult(a, b);
@@ -53,6 +62,8 @@ class Evaluator {
 			case [VRandom(rid, scale, add), VCurve(c)]: VRandAddCurve(rid, scale, add, c);
 			case [VRandom(rid, scale, add), VCurveT(c, 1.0, cadd)]: VRandAddCurve(rid, scale, add + cadd, c);
 			case [VConst(va), VBlendCurves(scale, add, ca, cb, bv)]: VBlendCurves(scale, add + va, ca, cb, bv);
+			case [_, VParamRemap(v, param)] if(canRemap(a)): VParamRemap(vAdd(a, v), param);
+			case [_, VValueRemap(v, remap)] if(canRemap(a)): VValueRemap(vAdd(a, v), remap);
 			default: null;
 		});
 		return r != null ? r : VAdd(a, b);
@@ -97,6 +108,10 @@ class Evaluator {
 				var va = a.getVal(time);
 				var vb = b.getVal(time);
 				va + (vb - va) * ((getRandom(pidx, rid) + 1) * 0.5);
+			case VParamRemap(a, param):
+				getFast(pidx, a, parameters[param] ?? 0.0);
+			case VValueRemap(a, remap):
+				getFast(pidx, a, getFast(pidx, remap, time));
 			default:
 				throw "getFast: non-flat Value " + Type.enumConstructor(val);
 		}
