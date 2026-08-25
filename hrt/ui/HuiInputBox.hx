@@ -11,7 +11,14 @@ class HuiInputBox extends HuiElement {
 		</hui-input-box>
 
 	public var text(get, set) : String;
-	public var disabled : Bool = false;
+	public var disabled(get, set) : Bool;
+	function get_disabled() { return !textInput.canEdit; }
+	function set_disabled(v) {
+		textInput.canEdit = !v;
+		trace(textInput.canEdit);
+		return v;
+	}
+
 	var canceled = false;
 
 	public var preventDefault = false;

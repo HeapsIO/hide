@@ -47,10 +47,21 @@ hui-scene-editor {
 		layout: vertical;
 		spacing: 4;
 
-		.class-name {
-			padding: 4;
-			padding-bottom: 0;
-			halign: left;
+		#name-el {
+			fill-width: true;
+			auto-size: 1;
+		}
+		hui-prefab-inspector-header {
+			layout: vertical;
+			padding: 5;
+			spacing: 4;
+			fill-width: true;
+
+			>hui-element {
+				spacing: 5;
+				fill-width: true;
+				auto-size: 1;
+			}
 		}
 
 		> #root {
