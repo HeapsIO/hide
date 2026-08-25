@@ -141,6 +141,10 @@ class HuiSceneEditor extends HuiElement {
 
 		scene.s3d.renderer?.dispose();
 		scene.s3d.renderer = h3d.mat.MaterialSetup.current.createRenderer();
+		var pbrRenderer = Std.downcast(scene.s3d.renderer, h3d.scene.pbr.Renderer);
+		if (pbrRenderer != null) {
+			@:privateAccess pbrRenderer.initGlobals();
+		}
 
 		scene.s3d.lightSystem?.dispose();
 		scene.s3d.lightSystem = h3d.mat.MaterialSetup.current.createLightSystem();
