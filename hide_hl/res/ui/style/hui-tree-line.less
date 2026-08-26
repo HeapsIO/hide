@@ -63,12 +63,43 @@ hui-tree-line {
 		propagate-events: true;
 	}
 
+	>#additional {
+		halign: right;
+		spacing: 2;
+		>hui-icon {
+			alpha: 0;
+			height: 16;
+			width: 16;
+			&:hover {
+				alpha: 1;
+			}
+		}
+	}
+
+	&:hover {
+		>#additional {
+			>hui-icon {
+				alpha: 0.5;
+			}
+		}
+	}
+
 	> #icon {
 		background-type: hui;
 		>hui-background {
 			image-color: @color-foreground;
 		}
 
+		width: 16;
+		height: 16;
+	}
+
+	> #visible {
+		width: 16;
+		height: 16;
+	}
+
+	> #lock {
 		width: 16;
 		height: 16;
 	}
@@ -185,7 +216,8 @@ hui-tree-line {
 	}
 
 	&.locked {
-		// TODO: replace that style by italic text
-		alpha: 0.5;
+		>#title {
+			base-font: italic;
+		}
 	}
 }

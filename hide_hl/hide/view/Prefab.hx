@@ -141,6 +141,30 @@ class Prefab extends HuiView<{path: String}> {
 
 		sceneEditor.onSceneEvent = onSceneEvent;
 
+		sceneEditor.tree.onAfterLineCreation = (item: hrt.ui.HuiViewGym.TreeItem, element : HuiTreeLine) -> {
+			var prefab = Std.downcast(@:privateAccess element.data.item, hrt.prefab.Prefab);
+			var visibleBtn = new HuiIcon(getEditorVisibility(prefab) ? "visibility" : "visibility_off", @:privateAccess element.additional);
+			visibleBtn.name = "visibleBtn";
+			visibleBtn.onClick = (e) -> {
+				var selection = getSelectionOrdered();
+				var visible = !getEditorVisibility(prefab);
+				if (!selection.contains(prefab)) {
+					setEditorVisibility(prefab, visible);
+				}
+				else {
+					for (p in selectedPrefabs.keys())
+						setEditorVisibility(p, visible);
+				}
+			}
+			var lockBtn = new HuiIcon(prefab.locked ? "lock": "unlock", @:privateAccess element.additional);
+			lockBtn.name = "lockBtn";
+			lockBtn.onClick = (e) -> {
+				var locked = !prefab.locked;
+				var selection = getSelectionOrdered();
+				setLock(selection.contains(prefab) ? selection : [prefab], locked);
+			}
+		}
+
 		sceneEditor.tree.getItemChildren = (el) -> {
 			var prefab : hrt.prefab.Prefab = cast el ?? this.prefab;
 			return cast prefab?.children;
@@ -179,10 +203,22 @@ class Prefab extends HuiView<{path: String}> {
 			entries.push({label: "Add Child Prefab", menu: createPrefabMenu(prefab)});
 
 			entries.push({ label : "Enable", checked: prefab.enabled, click: () -> { setEnable(cast sceneEditor.tree.getSelectedItems(), !prefab.enabled); }});
-			entries.push({ label : "Editor Only", checked: prefab.editorOnly, click: () -> { setEditorOnly(cast sceneEditor.tree.getSelectedItems(), !prefab.editorOnly); }});
-			entries.push({ label : "In Game Only", checked: prefab.inGameOnly, click: () -> { setInGameOnly(cast sceneEditor.tree.getSelectedItems(), !prefab.inGameOnly); }});
-			entries.push({ label : "Show In Editor", checked: getEditorVisibility(prefab), click: () -> { setEditorVisibility(prefab, !getEditorVisibility(prefab)); }});
-			entries.push({ label : "Locked", checked: prefab.locked, click: () -> { setLock(cast sceneEditor.tree.getSelectedItems(), !prefab.locked);}});
+			entries.push({ label : "Show In Editor", checked: getEditorVisibility(prefab), click: () -> {
+				var selection = getSelectionOrdered();
+				var visible = !getEditorVisibility(prefab);
+				if (!selection.contains(prefab)) {
+					setEditorVisibility(prefab, visible);
+				}
+				else {
+					for (p in selectedPrefabs.keys())
+						setEditorVisibility(p, visible);
+				}
+			}});
+			entries.push({ label : "Locked", checked: prefab.locked, click: () -> {
+				var locked = !prefab.locked;
+				var selection = getSelectionOrdered();
+				setLock(selection.contains(prefab) ? selection : [prefab], locked);
+			}});
 			entries.push({ label : "Tag", menu: getTagMenu(cast sceneEditor.tree.getSelectedItems()) });
 			entries.push({isSeparator: true});
 
@@ -207,7 +243,6 @@ class Prefab extends HuiView<{path: String}> {
 
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.delete, this));
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.rename, this));
-			entries.push({ label : "Locked", checked: prefab.locked, click: () -> { setLock(cast sceneEditor.tree.getSelectedItems(), !prefab.locked); }});
 
 			uiBase.contextMenu(entries);
 		};
@@ -307,7 +342,11 @@ class Prefab extends HuiView<{path: String}> {
 			el.dom.toggleClass("editor-only", is(item, (p) -> p.editorOnly));
 			el.dom.toggleClass("ingame-only", is(item, (p) -> p.inGameOnly));
 			el.dom.toggleClass("hidden", is(item, (p) -> !getEditorVisibility(p)));
+			var icon : HuiIcon = cast @:privateAccess el.additional.getObjectByName("visibleBtn");
+			icon.setIcon(getEditorVisibility(item) ? "visibility" : "visibility_off");
 			el.dom.toggleClass("locked", is(item, (p) -> p.locked));
+			var icon : HuiIcon = cast @:privateAccess el.additional.getObjectByName("lockBtn");
+			icon.setIcon(item.locked ? "lock" : "unlock");
 
 			var t = getTag(item);
 			if (t != null) {
@@ -1076,6 +1115,8 @@ class Prefab extends HuiView<{path: String}> {
 
 		var obj3d = Std.downcast(prefab, hrt.prefab.Object3D);
 		obj3d.local3d?.visible = isVisible;
+
+		sceneEditor.tree.rebuild();
 	}
 
 	public function setEnable(prefabs : Array<hrt.prefab.Prefab>, isEnable: Bool) {
