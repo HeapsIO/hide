@@ -655,11 +655,12 @@ class HuiCameraSettingsPopup extends HuiPopup {
 
 		var cam = s3d.camera;
 		var ctrl = @:privateAccess editor.cameraController;
+		ctrl.lockZPlanes = true;
 
 		fov.value = ctrl.fovY;
 		fov.onValueChanged = (_) -> { @:privateAccess ctrl.wantedFOV = fov.value; }
 		zNear.value = cam.zNear;
-		zNear.onValueChanged = (_) -> { cam.zNear = zNear.value; }
+		zNear.onValueChanged = (_) -> { cam.zNear = zNear.value;}
 		zFar.value = cam.zFar;
 		zFar.onValueChanged = (_) -> { cam.zFar = zFar.value; }
 		speedInput.value = ctrl.moveSpeed;
