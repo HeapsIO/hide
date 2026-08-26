@@ -1682,6 +1682,64 @@ class Ide extends hide.tools.IdeData {
 			config.global.save();
 		});
 
+		menu.find(".capture-transparentBG").click(function(_) {
+					var currentView : hide.ui.View<Dynamic> = null;
+			for (v in views) {
+				if (v.isActive())
+					currentView = v;
+			}
+
+			var scene : hide.comp.Scene = null;
+			var modelView = Std.downcast(currentView, hide.view.Model);
+			if (modelView != null)
+				scene = @:privateAccess modelView.scene;
+			var prefabView = Std.downcast(currentView, hide.view.Prefab);
+			if (prefabView != null)
+				scene = @:privateAccess prefabView.scene;
+			var fxView = Std.downcast(currentView, hide.view.FXEditor);
+			if (fxView != null)
+				scene = @:privateAccess fxView.scene;
+
+			if (scene == null) {
+				quickError("Active view isn't capturable");
+				return;
+			}
+
+			chooseFileSave("capture.png", (path) -> {
+				var renderer = Std.downcast(scene.s3d.renderer, h3d.scene.pbr.Renderer);
+				if(renderer == null) {
+					quickError("Renderer not available for screen capture");
+					return;
+				}
+
+				var textureRes = ideConfig.screenCaptureResolution;
+				var renderTexture = new h3d.mat.Texture(Std.int(textureRes * scene.s3d.camera.screenRatio), textureRes, [Target], RGBA);
+				renderTexture.depthBuffer = new h3d.mat.Texture(renderTexture.width, renderTexture.height, Depth24Stencil8);
+				renderTexture.clear(0, 0);
+				var prevBackgroundColor = scene.engine.backgroundColor;
+				var prevSkyMode = renderer.skyMode;
+				var props : h3d.scene.pbr.Renderer.RenderProps = renderer.props;
+				var prevForceDirectDiscard = props.forceDirectDiscard;
+
+				scene.engine.backgroundColor &= 0x00FFFFFF;
+				scene.s3d.setOutputTarget(scene.engine, renderTexture);
+				renderer.skyMode = Hide;
+				props.forceDirectDiscard = true;
+
+				scene.s3d.render(scene.engine);
+				scene.s3d.setOutputTarget();
+
+				scene.engine.backgroundColor = prevBackgroundColor;
+				renderer.skyMode = prevSkyMode;
+				props.forceDirectDiscard = prevForceDirectDiscard;
+
+				var pixels = renderTexture.capturePixels();
+				var absPath = getPath(path);
+				sys.io.File.saveBytes(absPath, pixels.toPNG());
+				quickMessage('Screen capture saved at ${path}');
+			});
+		});
+
 		menu.find(".screen-capture").click(function(_) {
 			var currentView : hide.ui.View<Dynamic> = null;
 			for (v in views) {
@@ -1717,7 +1775,7 @@ class Ide extends hide.tools.IdeData {
 
 				var pixels = renderTexture.capturePixels();
 				var absPath = getPath(path);
-				sys.io.File.saveBytes(absPath, pixels.toPNG(0));
+				sys.io.File.saveBytes(absPath, pixels.toPNG());
 				quickMessage('Screen capture saved at ${path}');
 			});
 		});
