@@ -66,12 +66,12 @@ class CloudShadow extends RendererFX {
 		super.updateInstance(propName);
 
 		if( texturePath != null )
-			dlwc.clouds = Loader.currentInstance.load(texturePath).toTexture().clone();
+			dlwc.clouds = Loader.currentInstance.load(texturePath).toTexture();
 		if( dlwc.clouds != null )
 			dlwc.clouds.wrap = Repeat;
 
 		if (distort != null && distort.path != null) {
-			dlwc.distort = Loader.currentInstance.load(distort.path).toTexture().clone();
+			dlwc.distort = Loader.currentInstance.load(distort.path).toTexture();
 			if( dlwc.distort != null ) dlwc.distort.wrap = Repeat;
 		}
 	}
