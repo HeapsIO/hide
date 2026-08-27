@@ -1961,7 +1961,8 @@ class Prefab extends HuiView<{path: String}> {
 							var p = prefabLookup.get(o.object);
 							if (p == null || p.locked)
 								continue;
-							prefabs.push(p);
+							if (!prefabs.contains(p))
+								prefabs.push(p);
 						}
 
 						lastPushX = e.relX;
