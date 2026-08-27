@@ -42,7 +42,7 @@ class HuiTreeLine extends HuiElement {
 		}
 
 		onPush = (e) -> {
-			if (e.button == 0)
+			if (e.button == 0 || e.button == 1)
 				onItemSelect(hxd.Key.isDown(hxd.Key.SHIFT), hxd.Key.isDown(hxd.Key.CTRL), false);
 			if (e.button == 1)
 				onContextMenu();
