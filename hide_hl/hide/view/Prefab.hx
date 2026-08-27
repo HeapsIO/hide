@@ -31,6 +31,8 @@ class Prefab extends HuiView<{path: String}> {
 	public static var GIZMO_ROTATION_STEP_CONFIG_KEY = "editor.gizmoRotationStep";
 	public static var GIZMO_SNAP_GRID_CONFIG_KEY = "editor.gizmoSnapOnGrid";
 
+	static var editorHideCommand = new hrt.ui.HuiCommands.HuiCommand("Editor Hide", {key: hxd.Key.H});
+
 	public var gizmoShouldSnap(default, set) : Bool = true;
 	public function set_gizmoShouldSnap(v : Bool) {
 		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, v);
@@ -125,6 +127,13 @@ class Prefab extends HuiView<{path: String}> {
 		registerCommand(hrt.ui.HuiCommands.paste, View, () -> getView().undo.run(actionPasteFromClipboard(), true));
 
 		registerCommand(hrt.ui.HuiCommands.delete, View, () -> getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true));
+		registerCommand(editorHideCommand, View, () -> {
+			var prefabs = getSelectionOrdered();
+			if (prefabs.length == 0)
+				return;
+			var visible = getEditorVisibility(prefabs[0]);
+			setEditorVisibility(prefabs, !visible);
+		});
 
 		registerCommand(hrt.ui.HuiCommands.selectAll, View, () -> {
 			var all = this.prefab.flatten();
