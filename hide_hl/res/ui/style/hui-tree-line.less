@@ -67,19 +67,14 @@ hui-tree-line {
 		halign: right;
 		spacing: 2;
 		>hui-icon {
-			alpha: 0;
+			alpha: 0.5;
 			height: 16;
 			width: 16;
-			&:hover {
-				alpha: 1;
+			&.hidden {
+				alpha : 0;
 			}
-		}
-	}
-
-	&:hover {
-		>#additional {
-			>hui-icon {
-				alpha: 0.5;
+			&:hover {
+				alpha : 1;
 			}
 		}
 	}

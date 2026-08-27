@@ -345,13 +345,13 @@ class HuiFileBrowser extends HuiElement {
 				addChild(mainToolbar);
 				mainToolbar.addChild(secondToolbarWidget);
 				addChild(tree);
-				mainToolbarWidget.splitButtonIcon.setIcon("split_tree");
+				mainToolbarWidget.splitButtonIcon.setIcon(HuiRes.ui.icons.split_tree);
 			case Gallery:
 				addChild(mainToolbar);
 				mainToolbar.addChild(secondToolbarWidget);
 				addChild(galleryWidget);
 				addChild(noResults);
-				mainToolbarWidget.splitButtonIcon.setIcon("split_gallery");
+				mainToolbarWidget.splitButtonIcon.setIcon(HuiRes.ui.icons.split_gallery);
 			case Horizontal | Vertical:
 				addChild(mainToolbar);
 				addChild(splitter);
@@ -372,10 +372,10 @@ class HuiFileBrowser extends HuiElement {
 
 				if (mode == Horizontal) {
 					@:privateAccess splitter.direction = Horizontal;
-					mainToolbarWidget.splitButtonIcon.setIcon("split_horizontal");
+					mainToolbarWidget.splitButtonIcon.setIcon(HuiRes.ui.icons.split_horizontal);
 				}
 				else {
-					mainToolbarWidget.splitButtonIcon.setIcon("split_vertical");
+					mainToolbarWidget.splitButtonIcon.setIcon(HuiRes.ui.icons.split_vertical);
 					@:privateAccess splitter.direction = Vertical;
 				}
 		}
@@ -1244,17 +1244,17 @@ class HuiFileBrowserMainToolbarWidget extends HuiElement {
 	static var SRC =
 		<hui-file-browser-main-toolbar-widget>
 			<hui-button  class="group-start" id="prev-btn" tip={"Go back to previous folder"} public>
-				<hui-icon("back")/>
+				<hui-icon(HuiRes.ui.icons.back)/>
 			</hui-button>
 			<hui-button  class="group-end" id="forward-btn" tip={"Go forwards to folder"} public>
-				<hui-icon("forward")/>
+				<hui-icon(HuiRes.ui.icons.forward)/>
 			</hui-button>
 			<hui-button  id="parent-btn" tip={"Go to parent folder"} public>
-				<hui-icon("back_one_level")/>
+				<hui-icon(HuiRes.ui.icons.back_one_level)/>
 			</hui-button>
 			<hui-element id="slugs" public/>
 			<hui-button id="split-button" public>
-				<hui-icon("split-tree") id="split-button-icon" public/>
+				<hui-icon(HuiRes.ui.icons.split_tree) id="split-button-icon" public/>
 			</hui-button>
 		</hui-file-browser-main-toolbar-widget>
 }

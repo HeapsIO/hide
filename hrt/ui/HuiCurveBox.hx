@@ -339,7 +339,7 @@ class HuiCurveEditor extends HuiPopup {
 		if (value.keys.length != keysBitmaps.length) {
 			removeBitmapKeys();
 			for (idx => k in value.keys) {
-				var bmp = new HuiIcon("diamond", this);
+				var bmp = new HuiIcon(HuiRes.ui.icons.diamond, this);
 				bmp.alpha = 0.5;
 
 				var g = new h2d.Graphics(this);
@@ -347,7 +347,7 @@ class HuiCurveEditor extends HuiPopup {
 
 				var prevHandleBmp = null;
 				if (k.nextHandle != null) {
-					prevHandleBmp = new HuiIcon("diamond", this);
+					prevHandleBmp = new HuiIcon(HuiRes.ui.icons.diamond, this);
 					prevHandleBmp.alpha = 0.5;
 
 					prevHandleBmp.onPush = (e) -> {
@@ -381,7 +381,7 @@ class HuiCurveEditor extends HuiPopup {
 
 				var nextHandleBmp = null;
 				if (k.prevHandle != null) {
-					nextHandleBmp = new HuiIcon("diamond", this);
+					nextHandleBmp = new HuiIcon(HuiRes.ui.icons.diamond, this);
 					nextHandleBmp.alpha = 0.5;
 
 					nextHandleBmp.onPush = (e) -> {

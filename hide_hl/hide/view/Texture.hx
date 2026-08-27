@@ -74,13 +74,13 @@ class HuiHistogramRange extends HuiElement {
 		<hui-input-box id="input-range-start" class="group-start"/>
 		<hui-element id="range" class="group">
 			<hui-element id="gauge"></hui-element>
-			<hui-icon("diamond") class="handle" id="handle-range-start"/>
-			<hui-icon("diamond") class="handle" id="handle-range-end"/>
+			<hui-icon(HuiRes.ui.icons.diamond) class="handle" id="handle-range-start"/>
+			<hui-icon(HuiRes.ui.icons.diamond) class="handle" id="handle-range-end"/>
 		</hui-element>
 		<hui-input-box id="input-range-end" class="group"/>
-		<hui-button class="group" id="reset-range" tip={"Reset range"}><hui-icon("back_arrow")/></hui-button>
-		<hui-button class="group" tip={"Toggle histogram range display"}><hui-icon("histogram")/></hui-button>
-		<hui-toggle class="group-end" id="linear-tog" tip={"Toggle linear space"}><hui-icon("gamma")/></hui-toggle>
+		<hui-button class="group" id="reset-range" tip={"Reset range"}><hui-icon(HuiRes.ui.icons.back_arrow)/></hui-button>
+		<hui-button class="group" tip={"Toggle histogram range display"}><hui-icon(HuiRes.ui.icons.histogram)/></hui-button>
+		<hui-toggle class="group-end" id="linear-tog" tip={"Toggle linear space"}><hui-icon(HuiRes.ui.icons.gamma)/></hui-toggle>
 	</hui-histogram-range>
 
 	var curMin = 0.;
@@ -402,19 +402,19 @@ class Texture extends HuiView<{path: String}> {
 		compressedBtn.dom.addClass("group-start");
 		compressedBtn.toggled = true;
 		compressedBtn.tip = "Show compressed texture";
-		new HuiIcon("raw_off", compressedBtn);
+		new HuiIcon(HuiRes.ui.icons.raw_off, compressedBtn);
 		widgets.push(compressedBtn);
 
 		var uncompressedBtn = new HuiToggle();
 		uncompressedBtn.dom.addClass("group");
 		uncompressedBtn.tip = "Show raw texture";
-		new HuiIcon("raw", uncompressedBtn);
+		new HuiIcon(HuiRes.ui.icons.raw, uncompressedBtn);
 		widgets.push(uncompressedBtn);
 
 		var compareBtn = new HuiToggle();
 		compareBtn.dom.addClass("group-end");
 		compareBtn.tip = "Show comparison between compressed and raw texture";
-		new HuiIcon("compare", compareBtn);
+		new HuiIcon(HuiRes.ui.icons.compare, compareBtn);
 		widgets.push(compareBtn);
 
 		compressedBtn.onClick = (_) -> {
@@ -490,7 +490,7 @@ class Texture extends HuiView<{path: String}> {
 		var flipBtn = new HuiToggle();
 		flipBtn.toggled = false;
 		flipBtn.tip = "Flip texture";
-		new HuiIcon("vertical_arrows", flipBtn);
+		new HuiIcon(HuiRes.ui.icons.vertical_arrows, flipBtn);
 		flipBtn.onClick = (_) -> {
 			flipBtn.toggled = !flipBtn.toggled;
 			flipped = !flipped;
@@ -501,7 +501,7 @@ class Texture extends HuiView<{path: String}> {
 		var resetZoomBtn = new HuiButton();
 		resetZoomBtn.dom.addClass("group-start");
 		resetZoomBtn.tip = "Reset zoom";
-		new HuiIcon("scale1_1", resetZoomBtn);
+		new HuiIcon(HuiRes.ui.icons.scale1_1, resetZoomBtn);
 		resetZoomBtn.onClick = (_) -> {
 			zoom = 1;
 			refresh();
@@ -511,7 +511,7 @@ class Texture extends HuiView<{path: String}> {
 		var fitBtn = new HuiButton();
 		fitBtn.dom.addClass("group");
 		fitBtn.tip = "Fit";
-		new HuiIcon("fullscreen", fitBtn);
+		new HuiIcon(HuiRes.ui.icons.fullscreen, fitBtn);
 		fitBtn.onClick = (_) -> {
 			fit();
 		}
@@ -554,7 +554,7 @@ class Texture extends HuiView<{path: String}> {
 		helpBtn.onClick = (_) -> {
 			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiHelpPopup(this.registeredCommands), { object: Element(helpBtn), directionX: StartInside, directionY: EndOutside });
 		};
-		new HuiIcon("question_mark", helpBtn);
+		new HuiIcon(HuiRes.ui.icons.question_mark, helpBtn);
 		widgets.push(helpBtn);
 
 		return widgets;

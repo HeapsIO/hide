@@ -147,9 +147,9 @@ class GymWidgets extends HuiElement {
 			<hui-text("hui-buttons")/>
 			<hui-element class="example">
 				<hui-button/>
-				<hui-button><hui-icon("tick")/></hui-button>
+				<hui-button><hui-icon(HuiRes.ui.icons.tick)/></hui-button>
 				<hui-button><hui-text("Text Button")/></hui-button>
-				<hui-button><hui-icon("tick")/><hui-text("Icon Button")/></hui-button>
+				<hui-button><hui-icon(HuiRes.ui.icons.tick)/><hui-text("Icon Button")/></hui-button>
 			</hui-element>
 
 			<hui-text("hui-commands")/>

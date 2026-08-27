@@ -111,27 +111,27 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 
 		var rewindBtn = new HuiButton();
 		rewindBtn.dom.addClass("group-start");
-		new HuiIcon("fast_rewind", rewindBtn);
+		new HuiIcon(HuiRes.ui.icons.fast_rewind, rewindBtn);
 		widgets.push(rewindBtn);
 
 		var previousBtn = new HuiButton();
 		previousBtn.dom.addClass("group");
-		new HuiIcon("skip_previous", previousBtn);
+		new HuiIcon(HuiRes.ui.icons.skip_previous, previousBtn);
 		widgets.push(previousBtn);
 
 		var playBtn = new HuiButton();
 		playBtn.dom.addClass("group");
-		new HuiIcon("play", playBtn);
+		new HuiIcon(HuiRes.ui.icons.play, playBtn);
 		widgets.push(playBtn);
 
 		var nextBtn = new HuiButton();
 		nextBtn.dom.addClass("group");
-		new HuiIcon("skip_next", nextBtn);
+		new HuiIcon(HuiRes.ui.icons.skip_next, nextBtn);
 		widgets.push(nextBtn);
 
 		var forwardBtn = new HuiButton();
 		forwardBtn.dom.addClass("group-end");
-		new HuiIcon("fast_forward", forwardBtn);
+		new HuiIcon(HuiRes.ui.icons.fast_forward, forwardBtn);
 		widgets.push(forwardBtn);
 
 		return widgets;

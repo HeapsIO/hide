@@ -109,12 +109,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		sceneEditor.load();
 
-		var hiddenArr : Array<String> = getDisplayState(HIDDEN_CONFIG_KEY, []);
-		if (this.prefab != null) {
-			for (p in this.prefab.flatten())
-				if (hiddenArr.contains(p.getAbsPath(true, true)))
-					setEditorVisibility(p, false);
-		}
+		applyEditorVisibility();
 
 		registerCommand(hrt.ui.HuiCommands.HuiDebugCommands.debugReload, View, reload);
 		registerCommand(hrt.ui.HuiCommands.rename, View, () -> {
@@ -140,30 +135,6 @@ class Prefab extends HuiView<{path: String}> {
 		@:privateAccess sceneEditor.debugGraph = new h2d.Graphics(sceneEditor.scene.s2d);
 
 		sceneEditor.onSceneEvent = onSceneEvent;
-
-		sceneEditor.tree.onAfterLineCreation = (item: hrt.ui.HuiViewGym.TreeItem, element : HuiTreeLine) -> {
-			var prefab = Std.downcast(@:privateAccess element.data.item, hrt.prefab.Prefab);
-			var visibleBtn = new HuiIcon(getEditorVisibility(prefab) ? "visibility" : "visibility_off", @:privateAccess element.additional);
-			visibleBtn.name = "visibleBtn";
-			visibleBtn.onClick = (e) -> {
-				var selection = getSelectionOrdered();
-				var visible = !getEditorVisibility(prefab);
-				if (!selection.contains(prefab)) {
-					setEditorVisibility(prefab, visible);
-				}
-				else {
-					for (p in selectedPrefabs.keys())
-						setEditorVisibility(p, visible);
-				}
-			}
-			var lockBtn = new HuiIcon(prefab.locked ? "lock": "unlock", @:privateAccess element.additional);
-			lockBtn.name = "lockBtn";
-			lockBtn.onClick = (e) -> {
-				var locked = !prefab.locked;
-				var selection = getSelectionOrdered();
-				setLock(selection.contains(prefab) ? selection : [prefab], locked);
-			}
-		}
 
 		sceneEditor.tree.getItemChildren = (el) -> {
 			var prefab : hrt.prefab.Prefab = cast el ?? this.prefab;
@@ -207,11 +178,10 @@ class Prefab extends HuiView<{path: String}> {
 				var selection = getSelectionOrdered();
 				var visible = !getEditorVisibility(prefab);
 				if (!selection.contains(prefab)) {
-					setEditorVisibility(prefab, visible);
+					setEditorVisibility([prefab], visible);
 				}
 				else {
-					for (p in selectedPrefabs.keys())
-						setEditorVisibility(p, visible);
+					setEditorVisibility(getSelectionOrdered(), visible);
 				}
 			}});
 			entries.push({ label : "Locked", checked: prefab.locked, click: () -> {
@@ -342,11 +312,7 @@ class Prefab extends HuiView<{path: String}> {
 			el.dom.toggleClass("editor-only", is(item, (p) -> p.editorOnly));
 			el.dom.toggleClass("ingame-only", is(item, (p) -> p.inGameOnly));
 			el.dom.toggleClass("hidden", is(item, (p) -> !getEditorVisibility(p)));
-			var icon : HuiIcon = cast @:privateAccess el.additional.getObjectByName("visibleBtn");
-			icon.setIcon(getEditorVisibility(item) ? "visibility" : "visibility_off");
 			el.dom.toggleClass("locked", is(item, (p) -> p.locked));
-			var icon : HuiIcon = cast @:privateAccess el.additional.getObjectByName("lockBtn");
-			icon.setIcon(item.locked ? "lock" : "unlock");
 
 			var t = getTag(item);
 			if (t != null) {
@@ -363,6 +329,43 @@ class Prefab extends HuiView<{path: String}> {
 
 		sceneEditor.tree.getItemIcon = (item: hrt.prefab.Prefab) -> {
 			return item.getEditorProps().icon;
+		}
+
+		sceneEditor.tree.getButtons = (item: hrt.prefab.Prefab) -> {
+			var buttons = [];
+
+			var visibleBtn : hrt.ui.HuiTree.TreeButton<hrt.prefab.Prefab> = {
+				click : (p) -> {
+					var selection = getSelectionOrdered();
+					var visible = !getEditorVisibility(p);
+					if (!selection.contains(p)) {
+						setEditorVisibility([p], visible);
+					}
+					else {
+						setEditorVisibility(getSelectionOrdered(), visible);
+					}
+				},
+				forceVisiblity: (p) -> {
+					return !getEditorVisibility(p);
+				},
+				getIcon : (p) -> { return getEditorVisibility(p) ? HuiRes.ui.icons.visibility : HuiRes.ui.icons.visibility_off; }
+			}
+			buttons.push(visibleBtn);
+
+			var lockBtn : hrt.ui.HuiTree.TreeButton<hrt.prefab.Prefab> = {
+				click : (p) -> {
+					var locked = !p.locked;
+					var selection = getSelectionOrdered();
+					setLock(selection.contains(p) ? selection : [p], locked);
+				},
+				forceVisiblity: (p) -> {
+					return p.locked;
+				},
+				getIcon : (p) -> { return p.locked ? HuiRes.ui.icons.lock : HuiRes.ui.icons.unlock; }
+			}
+			buttons.push(lockBtn);
+
+			return buttons;
 		}
 
 		sceneEditor.renderProfileTree.onUserSelectionChanged = () -> {
@@ -704,7 +707,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		var cameraBtn = new HuiButton();
 		cameraBtn.tip = "Camera settings";
-		new HuiIcon("camera", cameraBtn);
+		new HuiIcon(HuiRes.ui.icons.camera, cameraBtn);
 		cameraBtn.onClick = (_) -> {
 			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiCameraSettingsPopup(sceneEditor), { object: Element(cameraBtn), directionX: StartInside, directionY: EndOutside });
 		}
@@ -720,7 +723,7 @@ class Prefab extends HuiView<{path: String}> {
 		helpBtn.onClick = (_) -> {
 			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiHelpPopup(this.registeredCommands), { object: Element(helpBtn), directionX: StartInside, directionY: EndOutside });
 		};
-		new HuiIcon("question_mark", helpBtn);
+		new HuiIcon(HuiRes.ui.icons.question_mark, helpBtn);
 		widgets.push(helpBtn);
 
 #if prefab_test_crash
@@ -1100,23 +1103,43 @@ class Prefab extends HuiView<{path: String}> {
 		}
 	}
 
+	function applyEditorVisibility() {
+		var hiddenArr : Array<String> = getDisplayState(HIDDEN_CONFIG_KEY, []);
+		hidden = new Map();
+		if (this.prefab != null) {
+			for (p in this.prefab.flatten()) {
+				var visible = !hiddenArr.contains(p.getAbsPath(true, true));
+				if (!visible)
+					hidden.set(p, true);
+				var obj3d = Std.downcast(p, hrt.prefab.Object3D);
+				if (obj3d != null && obj3d.local3d != null)
+					obj3d.local3d.visible = visible;
+			}
+		}
+	}
+
 	function getEditorVisibility(prefab: hrt.prefab.Prefab) {
 		return hidden.get(prefab) == null;
 	}
 
-	function setEditorVisibility(prefab : hrt.prefab.Prefab, isVisible : Bool) {
-		if (isVisible)
-			hidden.remove(prefab);
-		else
-			hidden.set(prefab, true);
+	function setEditorVisibility(prefabs : Array<hrt.prefab.Prefab>, isVisible : Bool) {
+		var prevV = getDisplayState(HIDDEN_CONFIG_KEY, []);
+		for (p in prefabs) {
+			if (isVisible)
+				hidden.remove(p);
+			else
+				hidden.set(p, true);
+		}
+		var newV = [for (h in hidden.keys()) h.getAbsPath(true, true)];
 
-		var hiddenArr = [for (h in hidden.keys()) h.getAbsPath(true, true)];
-		saveDisplayState(HIDDEN_CONFIG_KEY, hiddenArr);
+		function apply(undo : Bool) {
+			saveDisplayState(HIDDEN_CONFIG_KEY, undo ? prevV : newV);
+			applyEditorVisibility();
+			sceneEditor.tree.rebuild();
+		}
 
-		var obj3d = Std.downcast(prefab, hrt.prefab.Object3D);
-		obj3d.local3d?.visible = isVisible;
-
-		sceneEditor.tree.rebuild();
+		apply(false);
+		undo.record(apply, false);
 	}
 
 	public function setEnable(prefabs : Array<hrt.prefab.Prefab>, isEnable: Bool) {
@@ -1138,7 +1161,7 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	public function setEditorOnly(prefabs : Array<hrt.prefab.Prefab>, isEditorOnly: Bool) {
-		var old = [for(p in prefabs) p.enabled];
+		var old = [for(p in prefabs) p.editorOnly];
 		function apply(on) {
 			for (i in 0...prefabs.length) {
 				prefabs[i].editorOnly = on ? isEditorOnly : old[i];
@@ -1155,7 +1178,7 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	public function setInGameOnly(prefabs : Array<hrt.prefab.Prefab>, isInGameOnly: Bool) {
-		var old = [for(p in prefabs) p.enabled];
+		var old = [for(p in prefabs) p.inGameOnly];
 		function apply(on) {
 			for (i in 0...prefabs.length) {
 				prefabs[i].inGameOnly = on ? isInGameOnly : old[i];
@@ -1172,20 +1195,16 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	public function setLock(prefabs : Array<hrt.prefab.Prefab>, isLocked: Bool) {
-		var old = [for(p in prefabs) p.enabled];
-		function apply(on) {
+		var newV = isLocked;
+		var oldV = [for(p in prefabs) p.locked];
+		function apply(undo) {
 			for (i in 0...prefabs.length) {
-				prefabs[i].locked = on ? isLocked : old[i];
+				prefabs[i].locked = undo ? oldV[i] : newV;
 				tryMake(prefabs[i]);
 			}
 		}
-		apply(true);
-		undo.record((undo) -> {
-			if (undo)
-				apply(false);
-			else
-				apply(true);
-		}, true);
+		apply(false);
+		undo.record(apply, true);
 	}
 
 	function getTagMenu(prefabs: Array<hrt.prefab.Prefab>) : Array<hrt.ui.HuiMenu.MenuItem> {

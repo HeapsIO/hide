@@ -21,8 +21,8 @@ class HuiShapeEditor extends HuiElement {
 			<hui-element id="shape-list">
 			</hui-element>
 			<hui-element id="buttons">
-				<hui-button id="add-btn"><hui-icon("add")/></hui-button>
-				<hui-button id="remove-btn"><hui-icon("remove")/></hui-button>
+				<hui-button id="add-btn"><hui-icon(HuiRes.ui.icons.add)/></hui-button>
+				<hui-button id="remove-btn"><hui-icon(HuiRes.ui.icons.remove)/></hui-button>
 			</hui-element>
 			<hui-element id="shape-inspector">
 				<hui-element class="horizontal">

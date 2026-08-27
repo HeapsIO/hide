@@ -41,19 +41,19 @@ class HuiToolbar extends HuiElement {
 class HuiTransformWidgets extends HuiElement {
 	static var SRC = <hui-transform-widgets>
 		<hui-toggle class="group-start" id="selectionBtn" tip={"Set Gizmo to Selection Mode"}>
-			<hui-icon("selection")/>
+			<hui-icon(HuiRes.ui.icons.selection)/>
 		</hui-toggle>
 		<hui-toggle class="group" id="translationBtn" tip={"Set Gizmo to Translation Mode"}>
-			<hui-icon("translation")/>
+			<hui-icon(HuiRes.ui.icons.translation)/>
 		</hui-toggle>
 		<hui-toggle class="group" id="rotationBtn" tip={"Set Gizmo to Rotation Mode"}>
-			<hui-icon("rotation")/>
+			<hui-icon(HuiRes.ui.icons.rotation)/>
 		</hui-toggle>
 		<hui-toggle class="group-end" id="scaleBtn" tip={"Set Gizmo to Scale Mode"}>
-			<hui-icon("scale")/>
+			<hui-icon(HuiRes.ui.icons.scale)/>
 		</hui-toggle>
 		<hui-button id="transform-space-btn">
-			<hui-icon("world") id="transform-space-icon"/>
+			<hui-icon(HuiRes.ui.icons.world) id="transform-space-icon"/>
 		</hui-button>
 	</hui-transform-widgets>
 
@@ -86,7 +86,7 @@ class HuiTransformWidgets extends HuiElement {
 		};
 
 		gizmo.onChangeTransformSpace = (isLocalTransform) -> {
-			transformSpaceIcon.setIcon(isLocalTransform ? "cube" : "world");
+			transformSpaceIcon.setIcon(isLocalTransform ? HuiRes.ui.icons.cube : HuiRes.ui.icons.world);
 		}
 	}
 }
@@ -94,10 +94,10 @@ class HuiTransformWidgets extends HuiElement {
 class HuiSnapWidget extends HuiElement {
 	static var SRC = <hui-snap-widget>
 		<hui-toggle class="group-start" id="snap-btn" tip={"Toggle snap"}>
-			<hui-icon("grid_snap")/>
+			<hui-icon(HuiRes.ui.icons.grid_snap)/>
 		</hui-toggle>
 		<hui-button class="group-end tiny" id="snap-popup-btn">
-			<hui-icon("drop_down")/>
+			<hui-icon(HuiRes.ui.icons.drop_down)/>
 		</hui-button>
 	</hui-snap-widget>
 
@@ -120,10 +120,10 @@ class HuiSnapWidget extends HuiElement {
 class HuiVisibilityWidget extends HuiElement {
 	static var SRC = <hui-visibility-widget>
 		<hui-toggle class="group-start" id="visibility-btn" tip={"Toggle global visibility"}>
-			<hui-icon("visibility")/>
+			<hui-icon(HuiRes.ui.icons.visibility)/>
 		</hui-toggle>
 		<hui-button class="group-end tiny" id="visibility-popup-btn">
-			<hui-icon("drop_down")/>
+			<hui-icon(HuiRes.ui.icons.drop_down)/>
 		</hui-button>
 	</hui-visibility-widget>
 
@@ -157,25 +157,25 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			<hui-text("Guides") class="sub-title"/>
 			<hui-element class="horizontal">
 				<hui-toggle id="grid-tog" tip={"Toggle editor grid visibility"}>
-					<hui-icon("grid")/>
+					<hui-icon(HuiRes.ui.icons.grid)/>
 				</hui-toggle>
 				<hui-text("Grid") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
 				<hui-toggle id="bone-tog" tip={"Toggle animation joints display"}>
-					<hui-icon("bone")/>
+					<hui-icon(HuiRes.ui.icons.bone)/>
 				</hui-toggle>
 				<hui-text("Joints") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
 				<hui-toggle id="collider-tog" tip={"Toggle colliders debug visibility"}>
-					<hui-icon("cube")/>
+					<hui-icon(HuiRes.ui.icons.cube)/>
 				</hui-toggle>
 				<hui-text("Colliders") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
 				<hui-toggle id="misc-tog" tip={"Toggle miscs visibility"}>
-					<hui-icon("question_mark")/>
+					<hui-icon(HuiRes.ui.icons.question_mark)/>
 				</hui-toggle>
 				<hui-text("Others") class="label"/>
 			</hui-element>
@@ -183,13 +183,13 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			<hui-text("Sélection") class="sub-title"/>
 			<hui-element class="horizontal" if (Std.isOfType(view, hide.view.Prefab))>
 				<hui-toggle id="gizmo-tog" tip={"Toggle gizmo visibility"}>
-					<hui-icon("translation")/>
+					<hui-icon(HuiRes.ui.icons.translation)/>
 				</hui-toggle>
 				<hui-text("Gizmo") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
 				<hui-toggle id="outline-tog" tip={"Toggle selection outline visibility"}>
-					<hui-icon("question_mark")/>
+					<hui-icon(HuiRes.ui.icons.question_mark)/>
 				</hui-toggle>
 				<hui-text("Outline") class="label"/>
 			</hui-element>
@@ -197,19 +197,19 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			<hui-text("Debug") class="sub-title"/>
 			<hui-element class="horizontal">
 				<hui-toggle id="scene-info-tog" tip={"Toggle scene infos visibility"}>
-					<hui-icon("info")/>
+					<hui-icon(HuiRes.ui.icons.info)/>
 				</hui-toggle>
 				<hui-text("Scene info") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
 				<hui-toggle id="wireframe-tog" tip={"Toggle wireframe mode"}>
-					<hui-icon("grid")/>
+					<hui-icon(HuiRes.ui.icons.grid)/>
 				</hui-toggle>
 				<hui-text("Wireframe") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
 				<hui-toggle id="disable-scene-tog" tip={"Toggle scene render"}>
-					<hui-icon("visibility_off")/>
+					<hui-icon(HuiRes.ui.icons.visibility_off)/>
 				</hui-toggle>
 				<hui-text("Disable Scene Render") class="label"/>
 			</hui-element>
@@ -217,7 +217,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			<hui-text("Icons") class="sub-title"/>
 			<hui-element class="horizontal">
 				<hui-toggle tip={"Toggle 3D Icons visibility"}>
-					<hui-icon("visibility")/>
+					<hui-icon(HuiRes.ui.icons.visibility)/>
 				</hui-toggle>
 				<hui-text("3D Icons") class="label"/>
 			</hui-element>
@@ -299,7 +299,7 @@ class HuiSceneFiltersWidget extends HuiElement {
 	static var SRC = <hui-scene-filters-widget>
 		<hui-button id="btn" tip={"Enable / disable display of specific elements in scene"}>
 			<hui-text("Scene Filters")/>
-			<hui-icon("drop_down")/>
+			<hui-icon(HuiRes.ui.icons.drop_down)/>
 		</hui-button>
 	</hui-scene-filters-widget>
 
@@ -402,7 +402,7 @@ class HuiRenderProfileWidget extends HuiElement {
 	static var SRC = <hui-render-profile-widget>
 		<hui-button id="btn" tip={"Change scene editor render profile"}>
 			<hui-text("Render Profile")/>
-			<hui-icon("drop_down")/>
+			<hui-icon(HuiRes.ui.icons.drop_down)/>
 		</hui-button>
 	</hui-render-profile-widget>
 
@@ -447,7 +447,7 @@ class HuiRenderProfilePopup extends HuiPopup {
 			<hui-text("Render Profile") class="title"/>
 			<hui-element class="horizontal" if (widget.isPrefabView())>
 				<hui-toggle id="edit-render-profile-tog" tip={"Toggle render profile edition"}>
-					<hui-icon("edit")/>
+					<hui-icon(HuiRes.ui.icons.edit)/>
 				</hui-toggle>
 				<hui-text("Edit Render Profile") class="label"/>
 			</hui-element>
@@ -499,7 +499,7 @@ class HuiViewModesWidget extends HuiElement {
 	static var SRC = <hui-view-modes-widget>
 		<hui-button id="btn" tip={"Change scene view mode"}>
 			<hui-text("View Modes")/>
-			<hui-icon("drop_down")/>
+			<hui-icon(HuiRes.ui.icons.drop_down)/>
 		</hui-button>
 	</hui-view-modes-widget>
 
@@ -772,7 +772,7 @@ class HuiHelpPopup extends HuiPopup {
 class HuiSplitterDirectionWidget extends HuiElement {
 		static var SRC = <hui-splitter-direction-widget>
 		<hui-button id="btn" tip={"Change inspector/tree split"}>
-			<hui-icon("") id="icon"/>
+			<hui-icon(null) id="icon"/>
 		</hui-button>
 	</hui-splitter-direction-widget>
 
@@ -790,9 +790,9 @@ class HuiSplitterDirectionWidget extends HuiElement {
 
 	function refreshIcon() {
 		if(hide.Ide.inst.ideConfig.sceneEditorVerticalSidebar) {
-			icon.setIcon("split_vertical");
+			icon.setIcon(HuiRes.ui.icons.split_vertical);
 		} else {
-			icon.setIcon("split_horizontal");
+			icon.setIcon(HuiRes.ui.icons.split_horizontal);
 		}
 	}
 }

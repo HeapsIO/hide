@@ -417,7 +417,7 @@ class Model extends HuiView<{path: String}> {
 		var widgets : Array<HuiElement> = [];
 
 		var cameraBtn = new HuiButton();
-		new HuiIcon("camera", cameraBtn);
+		new HuiIcon(HuiRes.ui.icons.camera, cameraBtn);
 		cameraBtn.tip = "Camera settings";
 		cameraBtn.onClick = (_) -> {
 			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiCameraSettingsPopup(sceneEditor), { object: Element(cameraBtn), directionX: StartInside, directionY: EndOutside });
@@ -433,7 +433,7 @@ class Model extends HuiView<{path: String}> {
 		helpBtn.onClick = (_) -> {
 			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiHelpPopup(this.registeredCommands), { object: Element(helpBtn), directionX: StartInside, directionY: EndOutside });
 		};
-		new HuiIcon("question_mark", helpBtn);
+		new HuiIcon(HuiRes.ui.icons.question_mark, helpBtn);
 		widgets.push(helpBtn);
 
 		var spacer = new HuiElement(this);
