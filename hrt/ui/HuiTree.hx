@@ -20,6 +20,7 @@ enum RefreshFlag {
 	Refresh;
 	RegenerateFlatten;
 	RootData;
+	FillMap;
 }
 
 typedef RefreshFlags = haxe.EnumFlags<RefreshFlag>;
@@ -114,6 +115,7 @@ class HuiTree<TreeItem> extends HuiElement {
 		list.refreshItem = cast refreshItem;
 		requestRefresh(RegenerateFlatten);
 		requestRefresh(RootData);
+		requestRefresh(FillMap);
 
 		searchBarContainer.visible = false;
 
@@ -767,7 +769,7 @@ class HuiTree<TreeItem> extends HuiElement {
 				if (item.children == null) {
 					generateChildren(item);
 				}
-				if (isOpen(item))
+				if (isOpen(item) || refreshFlags.has(FillMap))
 					rec(item.children);
 			}
 		}
