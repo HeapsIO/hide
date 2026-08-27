@@ -39,6 +39,8 @@ class HuiFilePicker extends HuiElement {
 					{label: "Copy", click: () -> hide.Ide.inst.setClipboard(value ?? "", null)},
 					{label: "Paste", click: () -> {value = pathToPaste; onValueChanged();}, enabled: validClipboard},
 					{label: "Clear", click: () -> {value = null; onValueChanged();}, enabled: value != null},
+					{label: "View in Explorer", click: () -> hide.tools.IdeData.showFileInExplorer(value), enabled: value != null},
+					{label: "View in Resources", click: () -> hide.Ide.inst.showFileInResources(value), enabled: value != null}
 				]);
 			}
 		}
