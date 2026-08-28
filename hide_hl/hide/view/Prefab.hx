@@ -1209,8 +1209,9 @@ class Prefab extends HuiView<{path: String}> {
 		function apply(undo) {
 			for (i in 0...prefabs.length) {
 				prefabs[i].locked = undo ? oldV[i] : newV;
-				tryMake(prefabs[i]);
+				prefabs[i].makeInteractive();
 			}
+			sceneEditor.tree.rebuild();
 		}
 		apply(false);
 		undo.record(apply, true);
