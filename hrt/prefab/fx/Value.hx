@@ -27,4 +27,5 @@ enum Value {
 	VMult(a: Value, b: Value);
 
 	VVector(x: Value, y: Value, z: Value, ?w: Value);
+	VHsl(h: Value, s: Value, l: Value, a: Value);
 }

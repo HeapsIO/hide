@@ -165,6 +165,9 @@ class Evaluator {
 				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time), getFloat(pidx, z, time), 1.0);
 			case VVector(x, y, z, w):
 				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time), getFloat(pidx, z, time), getFloat(pidx, w, time));
+			case VHsl(h, s, l, a):
+				vec.makeColor(getFloat(pidx, h, time), getFloat(pidx, s, time), getFloat(pidx, l, time));
+				vec.a = getFloat(pidx, a, time);
 			case VZero:
 				vec.set(0,0,0,1);
 			default:

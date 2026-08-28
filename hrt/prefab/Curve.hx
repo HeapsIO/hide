@@ -909,6 +909,17 @@ class Curve extends Prefab {
 		var g = find(":g");
 		var b = find(":b");
 		var a = find(":a");
+		var h = find(":h");
+		var s = find(":s");
+		var l = find(":l");
+
+		if(h != null || s != null || l != null) {
+			return VHsl(
+				h != null ? h.makeVal() : VConst(0.0),
+				s != null ? s.makeVal() : VConst(1.0),
+				l != null ? l.makeVal() : VConst(1.0),
+				a != null ? a.makeVal() : VConst(1.0));
+		}
 
 		if(a != null && r == null && g == null && b == null)
 			return a.makeVal();
