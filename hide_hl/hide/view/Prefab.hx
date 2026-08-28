@@ -1122,7 +1122,7 @@ class Prefab extends HuiView<{path: String}> {
 					hidden.set(p, true);
 				var obj3d = Std.downcast(p, hrt.prefab.Object3D);
 				if (obj3d != null && obj3d.local3d != null)
-					obj3d.local3d.visible = visible;
+					obj3d.local3d.visible = obj3d.visible && visible;
 			}
 		}
 	}
