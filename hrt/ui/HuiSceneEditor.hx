@@ -515,6 +515,7 @@ class HuiSceneEditor extends HuiElement {
 
 		// Reapply outline since it has been disposed by render props application
 		scene.s3d.renderer.effects.push(outline);
+		renderProfileTree.rebuild();
 	}
 
 	public function getRenderPropsObj() {

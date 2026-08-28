@@ -456,7 +456,7 @@ class HuiRenderProfilePopup extends HuiPopup {
 			</hui-element>
 			<hui-text("No render profile config detected in .json file.") if (widget.editor.getRenderProfileConfigs().length == 0)/>
 			<hui-text("This prefab already contains a render profile!") if (containsRenderProps)/>
-			<hui-text("Render Props List") id="list-title" if (!containsRenderProps && widget.isPrefabView())/>
+			<hui-text("Render Profile List") id="list-title" if (!containsRenderProps && widget.isPrefabView())/>
 				for (rpc in widget.editor.getRenderProfileConfigs()) {
 					<hui-element class="horizontal" if (!containsRenderProps)>
 						<hui-checkbox id="rp[]"/>
