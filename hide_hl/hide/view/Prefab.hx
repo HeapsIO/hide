@@ -626,7 +626,7 @@ class Prefab extends HuiView<{path: String}> {
 		if (@:privateAccess !gizmo?.moving)
 			moveGizmoToPrefabs([for (p in selectedPrefabs.keys()) p]);
 
-		if (boxSelectStart != null && boxSelectEnd != null) {
+		if (boxSelectStart != null && boxSelectEnd != null && false) {
 			graphicsOverlay.setColor(0x222222, 0.80);
 			graphicsOverlay.beginFill(0xDDDDDD, 0.20);
 			graphicsOverlay.drawRect(boxSelectStart.x, boxSelectStart.y, boxSelectEnd.x - boxSelectStart.x, boxSelectEnd.y - boxSelectStart.y);
@@ -1984,7 +1984,8 @@ class Prefab extends HuiView<{path: String}> {
 						// Standard click selection
 
 						var prefabs = [];
-						var objs = sceneEditor.getObjectsAt(cast e.relX, cast e.relY, prefab.findFirstLocal3d());
+						var events = @:privateAccess sceneEditor.scene.s3d.events;
+						var objs = sceneEditor.getObjectsAt(cast @:privateAccess events.mouseX, cast @:privateAccess events.mouseY, prefab.findFirstLocal3d());
 						var newSelection : Array<hrt.prefab.Prefab> = [];
 						for (o in objs) {
 							var p = prefabLookup.get(o.object);
