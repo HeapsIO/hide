@@ -1,6 +1,6 @@
 package hide.kit;
 
-#if (domkit && cdb)
+#if (domkit && castle)
 
 import hide.comp.cdb.DataFiles;
 
@@ -11,7 +11,7 @@ class CDB extends Element {
 	override public function new(parent: Element, id: String) {
 		super(parent, id);
 
-		#if editor_hl
+		#if editor
 		var types = DataFiles.getAvailableTypes();
 		if (types.length <= 0)
 			return;
