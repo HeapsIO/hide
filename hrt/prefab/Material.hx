@@ -272,9 +272,11 @@ class Material extends Prefab {
 					@:privateAccess var old = widget.onFieldChange;
 					@:privateAccess widget.onFieldChange = (temp) -> {
 						old(temp);
-						addOverrideProperty2(widget.id, true);
-						if (!temp) {
-							ctx.rebuildInspector();
+						if (this.refMatLib != null && this.refMatLib != "") {
+							addOverrideProperty2(widget.id, true);
+							if (!temp) {
+								ctx.rebuildInspector();
+							}
 						}
 					}
 
