@@ -284,7 +284,11 @@ class HuiTree<TreeItem> extends HuiElement {
 	public function rename(item: TreeItem, callback: (newName: String) -> Void, ?selectionRange: SelectionRange) {
 		renamedElement = {
 			item: item,
-			callback: callback,
+			callback: (newName) -> {
+				var open = isItemOpen(item);
+				callback(newName);
+				toggleItemOpen(item, open);
+			},
 			selectionRange: selectionRange,
 		};
 		revealItem(cast item);
