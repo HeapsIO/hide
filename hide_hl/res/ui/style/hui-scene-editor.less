@@ -64,78 +64,90 @@ hui-scene-editor {
 			}
 		}
 
-		> #root {
-
-			valign: top;
-			layout: vertical;
-
-			fill-height: 1;
+		> #root-wrapper {
+			fill-width: true;
 			auto-size-height: 1;
-
 			overflow: scroll;
+			padding-right: 1;
 
-			#content {
+			> #root {
+				fill-width: true;
+				auto-size-width: 1;
 				padding-right: 10;
 
-				spacing: 2;
-			}
 
-			.kit-line {
-				height: 16;
-				spacing: 2;
-			}
+				valign: top;
+				layout: vertical;
 
-			> hui-line {
-				fill-width: true;
-			}
+				#content {
+					spacing: 1;
+					overflow: hidden;
 
-			.first {
-				width: 80;
-				height: 16;
-				> * {
-					halign: right;
-				}
-			}
-
-			.kit-text {
-				padding: 4;
-
-			}
-
-
-			.kit-label {
-				margin-right: 5;
-				min-height: 1;
-				valign: middle;
-				> * {
-					halign: right;
 				}
 
-				hui-text {
-					text-align: multiline-right;
+				.kit-line {
+					height: 16;
+					spacing: 2;
+				}
+
+				> hui-line {
+					fill-width: true;
+				}
+
+				.first {
+					width: 80;
+					height: 16;
+					> * {
+						halign: right;
+					}
+				}
+
+				.kit-text {
+					padding: 4;
+
+				}
+
+
+				.kit-label {
+					margin-right: 5;
 					valign: middle;
+					spacing: 2;
+					> * {
+						halign: right;
+						valign: middle;
+
+					}
+
+					hui-text {
+						text-align: multiline-right;
+						valign: middle;
+					}
+
+					visible: true;
+				}
+
+				.kit-lock {
+					width: 16;
+					height: 16;
+
+					background-type: hui;
+					> hui-background {
+						image: "ui/icons/link_break.sdf.png" fit;
+						image-color: @color-foreground-muted;
+					}
+
+					&:hover > hui-background {
+						image-color: @color-foreground;
+					}
+
+					&.locked > hui-background {
+						image: "ui/icons/link.sdf.png" fit;
+					}
 				}
 			}
 
-			.kit-lock {
-				width: 16;
-				height: 16;
-
-				background-type: hui;
-				> hui-background {
-					image: "ui/icons/link_break.sdf.png" fit;
-					image-color: @color-foreground-muted;
-				}
-
-				&:hover > hui-background {
-					image-color: @color-foreground;
-				}
-
-				&.locked > hui-background {
-					image: "ui/icons/link.sdf.png" fit;
-				}
-			}
 		}
+
 	}
 
 	&.critical-error {

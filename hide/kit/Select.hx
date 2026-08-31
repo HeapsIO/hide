@@ -71,13 +71,12 @@ class Select extends Widget<Dynamic> {
 		return select;
 		#elseif hui
 		var s = new hrt.ui.HuiSelect();
-		s.items = [for (i => entry in entries) { label: entry.label, value: entry.value }];
-		s.value = value;
 		s.onValueChanged = () -> {
 			value = s.value;
 			broadcastValueChange(false);
 		}
 		select = s;
+		syncValueUI();
 		return s;
 		#end
 		return null;
@@ -98,6 +97,7 @@ class Select extends Widget<Dynamic> {
 		#elseif hui
 		if (select == null)
 			return;
+		select.items = [for (i => entry in entries) { label: entry.label, value: entry.value }];
 		for (entry in entries) {
 			if ((entry.value == value) || (entry.equalsNull && value == null) ) {
 				select.value = entry.value;

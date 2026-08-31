@@ -242,7 +242,7 @@ class Config {
 		};
 	}
 
-	public static function loadForFile( ide : hide.Ide, path : String ) {
+	public static function loadForFile( ide : hide.tools.IdeData, path : String ) {
 		var parts = path.split("/");
 		var propFiles = [];
 		var first = true, allowSave = false;

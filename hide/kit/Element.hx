@@ -341,7 +341,8 @@ class Element {
 		}
 		if (content != null) {
 			#if hui
-			if (Std.downcast(content, hrt.ui.HuiLine) == null) {
+
+			if (parentLine == null) {
 				var wrapper = new hrt.ui.HuiLine(native);
 				wrapper.addChild(content);
 			} else {

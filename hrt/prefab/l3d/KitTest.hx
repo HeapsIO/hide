@@ -293,6 +293,9 @@ class KitTest extends Object3D {
 				<category("Labels")>
 					<slider label="Normal"/>
 					<slider field={autoNamed}/> // Widgets without a label try to use the field as the name
+					<slider field={autoNamed} label="Overridden"/>
+					<text("The next slider wont have a label")/>
+					<slider/> // Widgets without a label try to use the field as the name
 
 					// Label Colors
 					<text("Label can have different colors")/>

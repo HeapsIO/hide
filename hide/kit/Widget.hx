@@ -71,9 +71,10 @@ abstract class Widget<ValueType> extends Element {
 		labelElement = js.Browser.document.createElement("kit-label");
 		labelElement.get().innerHTML = label;
 		#elseif hui
-		if (label != null && label.length > 0) {
+
+		if ((label != null && label.length > 0) || parentLine == null) {
 			labelElement = NativeElement.create("kit-label");
-			new hrt.ui.HuiText(label, labelElement);
+			new hrt.ui.HuiText(label ?? "", labelElement);
 		}
 		#end
 

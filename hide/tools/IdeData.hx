@@ -109,6 +109,24 @@ class IdeData {
 		shaderLoader = new hide.tools.ShaderLoader();
 	}
 
+	public function listMatLibraries(path : String) {
+		var config = hide.Config.loadForFile(this, path);
+
+		var matLibs : Array<Dynamic> = config.get("materialLibraries");
+		if( matLibs == null ) matLibs = [];
+
+		if (matLibs.length > 0) {
+			for (idx in 0...matLibs.length) {
+				var m = Std.isOfType(matLibs[idx], String) ? cast (matLibs[idx]) : null;
+				if (m == null)
+					continue;
+				matLibs[idx] = { name : m.substring(m.lastIndexOf("/") + 1), path : m };
+			}
+		}
+
+		return matLibs;
+	}
+
 	public function error( e : Dynamic ) {
 		throw e;
 	}

@@ -1458,7 +1458,9 @@ class Prefab extends HuiView<{path: String}> {
 
 		sceneEditor.inspectorRoot.make();
 
-		sceneEditor.inspectorPanel.addChild(@:privateAccess sceneEditor.inspectorRoot.native);
+		var wrapper = new HuiElement(sceneEditor.inspectorPanel);
+		wrapper.dom.setId("root-wrapper");
+		wrapper.addChild(@:privateAccess sceneEditor.inspectorRoot.native);
 		if (uiBase != null) {
 			@:privateAccess sceneEditor.inspectorRoot.native.get().dom.applyStyle(uiBase.style);
 		}
@@ -2121,7 +2123,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 	}
 
 	public function listMaterialLibraries(path: String) : Array<{path: String, name: String}> {
-		return [];
+		return cast hide.Ide.inst.listMatLibraries(path);
 	}
 
 	public function listModelAnimations(path: String) : Array<String> {
