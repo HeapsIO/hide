@@ -31,22 +31,6 @@ class HuiSelect extends HuiElement {
 				}
 			}
 		}
-
-		this.onWheel = (e : hxd.Event) -> {
-			var valueIdx = 0;
-			for (idx => i in items) {
-				if (i.value == this.value) {
-					valueIdx = idx;
-					break;
-				}
-			}
-
-			valueIdx = Std.int(hxd.Math.clamp(valueIdx + (e.wheelDelta > 0 ? 1 : -1), 0, items.length - 1));
-			if (value != items[valueIdx]) {
-				this.set_value(items[valueIdx].value);
-				onValueChanged();
-			}
-		}
 	}
 
 	public function set_value(v: Dynamic) {
