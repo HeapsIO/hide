@@ -78,11 +78,6 @@ class HuiInputBox extends HuiElement {
 	}
 
 	override function onKeyDownInternal(e:hxd.Event) {
-		if(HuiBase.get(this).checkCommand(e, this)) {
-			textInput.preventDefault = true;
-			return;
-		}
-
 		preventDefault = false;
 		onBeforeKeyDown(e);
 		if (preventDefault) {
@@ -101,7 +96,8 @@ class HuiInputBox extends HuiElement {
 			e.propagate = true;
 			return;
 		}
-		super.onKeyDownInternal(e);
+
+		onKeyDown(e);
 	}
 
 	function onInputFocusInternal(e: hxd.Event) {
