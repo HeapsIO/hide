@@ -60,6 +60,34 @@ class NoiseTexture extends hxsl.Shader {
 	}
 }
 
+class VertexValue extends hxsl.Shader {
+	static var SRC = {
+
+		@param var intensity : Float;
+
+		@input var input : {
+			var tangent : Vec3;
+		};
+
+		@var var transformedTangent : Vec4;
+
+		var modelView : Mat4;
+
+		function __init__vertex() {
+			transformedTangent = vec4(input.tangent * modelView.mat3(),input.tangent.dot(input.tangent) > 0.5 ? 1. : -1.);
+			transformedTangent.w = intensity;
+		}
+
+		var anisotropy : Float;
+		var direction : Vec3;
+
+		function fragment()  {
+			anisotropy = transformedTangent.w;
+			direction = transformedTangent.xyz;
+		}
+	}
+}
+
 class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 	static var SRC = {
 

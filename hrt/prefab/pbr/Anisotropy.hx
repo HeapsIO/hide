@@ -5,6 +5,7 @@ import hrt.shader.AnisotropicForward;
 enum abstract AnisotropyMode(String) {
 	var Flat;
 	var Texture;
+	var Vertex;
 	var Frequency;
 }
 
@@ -45,9 +46,11 @@ class Anisotropy extends Prefab {
 
 	function refreshShaders() {
 		var fv = new FlatValue();
-		var as = new AnisotropicForward();
 		var nt = new NoiseTexture();
 		var ff = new FrequencyValue();
+		var vv = new VertexValue();
+
+		var as = new AnisotropicForward();
 
 		var noiseIntensityTexture = noiseIntensityPath != null ? shared.loadTexture(noiseIntensityPath) : null;
 		var noiseDirectionTexture = noiseDirectionPath != null ? shared.loadTexture(noiseDirectionPath) : null;
@@ -58,6 +61,8 @@ class Anisotropy extends Prefab {
 			m.mainPass.removeShader(m.mainPass.getShader(NoiseTexture));
 			m.mainPass.removeShader(m.mainPass.getShader(FlatValue));
 			m.mainPass.removeShader(m.mainPass.getShader(FrequencyValue));
+			m.mainPass.removeShader(m.mainPass.getShader(VertexValue));
+
 			m.mainPass.removeShader(m.mainPass.getShader(AnisotropicForward));
 		}
 
@@ -72,6 +77,7 @@ class Anisotropy extends Prefab {
 			else {
 				switch mode {
 					case Texture,Flat: m.mainPass.addShader(fv);
+					case Vertex : m.mainPass.addShader(vv);
 					case Frequency:	m.mainPass.addShader(ff);
 					default:
 				}
@@ -107,6 +113,11 @@ class Anisotropy extends Prefab {
 				nt.intensityFactor = intensityFactor;
 				nt.rotationOffset = hxd.Math.degToRad(rotationOffset);
 			}
+
+			var vv = m.mainPass.getShader(VertexValue);
+			if( vv != null ) {
+				vv.intensity = intensity;
+			}
 		}
 	}
 
@@ -122,7 +133,7 @@ class Anisotropy extends Prefab {
 			<root>
 				<category("Anisotropy")>
 					<select field={mode} onValueChange={rebuild}/>
-					<range(0, 1) field={intensity} if(mode == Flat || mode == Frequency)/>
+					<range(0, 1) field={intensity} if(mode == Flat || mode == Frequency || mode == Vertex)/>
 					<range(0, 360) field={direction} if(mode == Flat || mode == Frequency)/>
 					<range(0, 1) label="Factor" field={intensityFactor} if(mode == Texture)/>
 					<range(0, 360) field={rotationOffset} if(mode == Texture)/>
@@ -143,50 +154,9 @@ class Anisotropy extends Prefab {
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {
-		super.edit(ctx);
-
-		var flatParams = 	'<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
-							<dt>Direction</dt><dd><input type="range" min="0" max="360" field="direction"/></dd>';
-
-		var textureParams = '<dt>Factor</dt><dd><input type="range" min="0" max="1" field="intensityFactor"/></dd>
-							<dt>Rotation Offset</dt><dd><input type="range" min="0" max="360" field="rotationOffset"/></dd>
-							<dt>Intensity</dt><dd><input type="texturepath" field="noiseIntensityPath"/>
-							<dt>Direction</dt><dd><input type="texturepath" field="noiseDirectionPath"/>';
-
-		var frequencyParams =	'<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
-								<dt>Noise Intensity</dt><dd><input type="range" min="0" max="1" field="noiseIntensity"/></dd>
-								<dt>Noise Frequency</dt><dd><input type="range" min="0" max="100" field="noiseFrequency"/></dd>
-								<dt>Direction</dt><dd><input type="range" min="0" max="360" field="direction"/></dd>';
-
-		var params = switch mode {
-			case Flat: flatParams;
-			case Texture: textureParams;
-			case Frequency: frequencyParams;
-		};
-
-		var props = new hide.Element('
-			<div class="group" name="Anisotropy">
-				<dl>
-					<dt>Mode</dt>
-						<dd>
-							<select field="mode">
-								<option value="Flat">Flat</option>
-								<option value="Texture">Texture</option>
-								<option value="Frequency">Frequency</option>
-							</select>
-						</dd>
-					' + params + '
-				</dl>
-			</div>
-		');
-
-		ctx.properties.add(props, this, function(pname) {
-			if( pname == "mode" || pname == "noiseIntensityPath" || pname == "noiseDirectionPath" ) {
-				ctx.rebuildProperties();
-				refreshShaders();
-			}
-			ctx.onChange(this, pname);
-		});
+		ctx.properties.add(new hide.Element('
+			<p style="color: red;"> Use new editor </p>
+		'), this);
 	}
 	#end
 
