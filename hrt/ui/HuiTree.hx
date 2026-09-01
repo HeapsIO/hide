@@ -93,12 +93,18 @@ class HuiTree<TreeItem> extends HuiElement {
 	/**Identifier to item open state (item if considered closed if no entry exist in the map)**/
 	var openState: Map<String, Bool> = [];
 
+	/**Open state override for when the search is active**/
+	var tempOpenState: Map<String, Bool> = [];
+
 	var afterRefreshCallbacks: Array<Void -> Void> = [];
 
 	var refreshFlags : RefreshFlags = RefreshFlags.ofInt(0);
 
 	public var customSearch(default, set): Null<String> = null;
 	function set_customSearch(v: String) {
+		if (customSearch == null && v != null) {
+			tempOpenState.clear();
+		}
 		customSearch = v;
 		requestRefresh(RegenerateFlatten);
 		return customSearch;
@@ -224,6 +230,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	}
 	public function openSearch() {
 		searchBarContainer.visible = true;
+		tempOpenState.clear();
 		@:privateAccess searchBar.textInput.focus();
 	}
 
@@ -601,6 +608,7 @@ class HuiTree<TreeItem> extends HuiElement {
 		} else {
 			openState.remove(data.identifier);
 		}
+		tempOpenState.set(data.identifier, newState);
 		saveOpenState();
 		refreshFlags.set(RegenerateFlatten);
 	}
@@ -785,7 +793,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	}
 
 	function isOpen(data: TreeItemData) : Bool {
-		return data.children?.length > 0 && ((openState.get(data.identifier) ?? false) || data.filterState.has(Open));
+		return data.children?.length > 0 && ((openState.get(data.identifier) ?? false) || (isSearching() && tempOpenState.get(data.identifier) != false));
 	}
 
 	function isSelected(data: TreeItemData) : Bool {
