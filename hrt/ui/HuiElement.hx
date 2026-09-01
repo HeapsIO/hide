@@ -338,7 +338,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	}
 
 	override function makeScrollBar() {
-		var bar = new HuiElement();
+		var bar = new HuiScrollbar();
 		bar.dom.addClass("scrollbar");
 		@:privateAccess bar.makeInteractive();
 		return bar;

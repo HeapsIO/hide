@@ -29,6 +29,16 @@ class Category extends Widget<Null<Bool>> {
 	#end
 
 	override function makeSelf(): Void {
+		var level = 0;
+		{
+			var parent = parent;
+			while(parent != null) {
+				if (parent is Category)
+					level++;
+				parent = parent.parent;
+			}
+		}
+
 		#if js
 		native = new hide.Element('
 			<kit-category class="open">
@@ -39,15 +49,7 @@ class Category extends Widget<Null<Bool>> {
 				</div>
 			</div>
 		')[0];
-		var level = 0;
-		{
-			var parent = parent;
-			while(parent != null) {
-				if (parent is Category)
-					level++;
-				parent = parent.parent;
-			}
-		}
+
 		native.addClass('level-$level');
 		jsContent = native.get().querySelector(".content");
 		var title = native.get().querySelector(".title");
@@ -83,6 +85,14 @@ class Category extends Widget<Null<Bool>> {
 
 		#elseif hui
 		native = hlCategory = new hrt.ui.HuiCategory();
+		hlCategory.dom.addClass('level-$level');
+		var index = parent.children.indexOf(this);
+		if (index == 0) {
+			hlCategory.dom.addClass('flush');
+		}
+		if (index == parent.children.length-1) {
+			hlCategory.dom.addClass('flush-last');
+		}
 		openState = true;
 		hlCategory.headerName = name;
 		#end

@@ -67,23 +67,24 @@ hui-scene-editor {
 		> #root-wrapper {
 			fill-width: true;
 			auto-size-height: 1;
-			overflow: scroll;
+			fill-height: 1;
 			padding-right: 1;
+
+			> hui-background {
+				background: rgb(10,10,10);
+			}
 
 			> #root {
 				fill-width: true;
 				auto-size-width: 1;
 				padding-right: 10;
+				overflow: scroll;
 
+				spacing: 1;
+				padding-bottom: 2;
 
 				valign: top;
 				layout: vertical;
-
-				#content {
-					spacing: 1;
-					overflow: hidden;
-
-				}
 
 				.kit-line {
 					height: 16;
@@ -121,6 +122,7 @@ hui-scene-editor {
 					hui-text {
 						text-align: multiline-right;
 						valign: middle;
+						line-spacing: -3;
 					}
 
 					visible: true;

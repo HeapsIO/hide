@@ -1,3 +1,28 @@
+.level(@n) {
+	@c: 10 + @n * 10;
+
+	> #header {
+		padding-left: 1 + @n * 8;
+
+		> hui-background {
+			@c2: @c + 20;
+			background: rgba(@c2, @c2, @c2, 1.0);
+		}
+
+		&:hover {
+			> hui-background {
+				@c3: @c + 30;
+				background: rgba(@c3, @c3, @c3, 1.0);
+			}
+		}
+
+	}
+
+	> hui-background {
+		background: rgba(@c, @c, @c, 1.0);
+	}
+}
+
 hui-category {
 	layout: vertical;
 
@@ -9,6 +34,8 @@ hui-category {
 		background-type: hui;
 		> hui-background {
 			background: @widget-bg;
+			outline: 1 #333;
+			outline-thickness: 1 0 1 0;
 		}
 
 		&:hover {
@@ -22,6 +49,29 @@ hui-category {
 		}
 	}
 
+	&.level-0 {
+		.level(0);
+	}
+
+	&.level-1 {
+		.level(1);
+		> #header > #header-text {
+			base-font: italic;
+		}
+	}
+
+	&.level-2 {
+		.level(2);
+	}
+
+	&.level-3 {
+		.level(3);
+	}
+
+	&.level-4 {
+		.level(4);
+	}
+
 	#header-icon {
 		width: 20;
 		height: 20;
@@ -33,12 +83,23 @@ hui-category {
 	}
 
 	&.open {
-		#header-icon {
+		> #header > #header-icon {
 			> hui-background {
 				image-angle: 0;
 			}
 		}
 	}
+
+	margin-bottom: -2;
+
+	&.flush-last {
+		margin-bottom: -3;
+	}
+
+	&.flush-last.open {
+		margin-bottom: 0;
+	}
+
 
 
 	> #content {
@@ -46,5 +107,15 @@ hui-category {
 		fill-width: true;
 		padding: 3;
 		padding-right: 0;
+		spacing: 1;
+
+
+		hui-category.flush {
+			margin-top: -4;
+		}
+
+		hui-category {
+			margin-left: -3;
+		}
 	}
 }
