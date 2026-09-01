@@ -310,6 +310,18 @@ class HuiFileBrowser extends HuiElement {
 		}
 	}
 
+	public function reveal(file: File) {
+		switch(mode) {
+			case FileTree:
+				tree.setSelection([file]);
+			case Gallery | Horizontal | Vertical:
+				navigateTo(file.parent, true);
+				gallerySelection.clear();
+				gallerySelection.set(file, true);
+				refreshGalleryItems();
+		}
+	}
+
 	function updateToolbarCompactMode() {
 		mainToolbar.dom.toggleClass("vertical", innerWidth < 600);
 	}
@@ -453,6 +465,8 @@ class HuiFileBrowser extends HuiElement {
 		items.push({label: "Copy Path", click: () -> hide.Ide.inst.setClipboard(file.getRelPath(), null)});
 		items.push({label: "Copy Absolute Path", click: () -> hide.Ide.inst.setClipboard(file.getPath(), null)});
 		items.push({label: "Open In Explorer", click: () -> hide.tools.IdeData.showFileInExplorer(file.getPath())});
+		items.push({label: "View In Ressources", click: () -> hide.Ide.inst.showFileInResources(file.getPath())});
+
 
 		items.push({isSeparator: true});
 
@@ -926,6 +940,9 @@ class HuiFileBrowser extends HuiElement {
 			return;
 		if (folder.kind == File)
 			folder = folder.parent;
+
+		if (currentDir() == folder)
+			return;
 
 		navigationHistoryPos++;
 		navigationHistory.resize(navigationHistoryPos);

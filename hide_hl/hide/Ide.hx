@@ -247,9 +247,12 @@ class Ide extends hide.tools.IdeData {
 
 	public function showFileInResources(fpath : String) {
 		var fileEntry = hrt.tools.FileManager.inst.getFileEntry(fpath);
+		if (fileEntry == null)
+			return;
+
 		var filebrowsers = getViews(hide.view.FileBrowser);
 		for (filebrowser in filebrowsers) {
-			@:privateAccess filebrowser.fileBrowser.tree.setSelection([fileEntry]);
+			@:privateAccess filebrowser.fileBrowser.reveal(fileEntry);
 		}
 	}
 
