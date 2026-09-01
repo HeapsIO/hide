@@ -648,7 +648,7 @@ class HuiTree<TreeItem> extends HuiElement {
 			data.children = null;
 		}
 		rootData = generateChildren(null);
-		requestRefresh();
+		requestRefresh(RegenerateFlatten);
 	}
 
 	function generateChildren(parent: TreeItemData) : Array<TreeItemData> {
