@@ -13,6 +13,13 @@ class HuiProjectLayout extends HuiElement {
 				</hui-split-container>
 			</hui-split-container>
 		</hui-project-layout>
+
+	override function update(ctx) {
+		super.update(ctx);
+
+		leftPanel.visible = leftPanel.hasAnyView();
+		bottomPanel.visible = bottomPanel.hasAnyView();
+	}
 }
 
 #end

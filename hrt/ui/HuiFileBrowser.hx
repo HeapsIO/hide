@@ -79,6 +79,9 @@ class HuiFileBrowser extends HuiElement {
 	public function new(rootPath: String, ?parent) {
 		super(parent);
 		initComponent();
+
+		rootFile = fileManager.fileRoot;
+
 		saveDisplayKey = "filebrowser";
 
 		this.rootPath = rootPath;
@@ -254,7 +257,6 @@ class HuiFileBrowser extends HuiElement {
 
 		markRefresh();
 
-		fileManager.watchFileChange(onFileChange);
 
 		onAfterReflow = () -> {
 			updateToolbarCompactMode();
@@ -401,6 +403,11 @@ class HuiFileBrowser extends HuiElement {
 		}
 
 		return (isUndo) -> FileManager.doRenameAbs(isUndo ? operationsRev : operations);
+	}
+
+	override function onAdd() {
+		super.onAdd();
+		fileManager.watchFileChange(onFileChange);
 	}
 
 	override function onRemove() {

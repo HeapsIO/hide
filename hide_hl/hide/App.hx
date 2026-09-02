@@ -14,6 +14,8 @@ class App extends hxd.App {
 	public var lastUpdateTime: Float = 0.0;
 	var currentUpdateTime: Float = 0.0;
 
+	var defered : Array<Void -> Void> = [];
+
 	override public function init() {
 		super.init();
 
@@ -58,6 +60,14 @@ class App extends hxd.App {
 	}
 
 	override public function update(dt: Float) {
+		if (defered.length > 0) {
+			var copy = defered.copy();
+			defered = [];
+			for (defer in copy) {
+				tryCall(defer);
+			}
+		}
+
 		currentUpdateTime = haxe.Timer.stamp();
 		fpsGraph?.begin();
 		super.update(dt);
@@ -166,7 +176,7 @@ class App extends hxd.App {
 			}
 	}
 
-	static public function defer(f: Void->Void) {
-		haxe.Timer.delay(tryCall.bind(f), 0);
+	static public function defer(f: Void->Void) : Void {
+		hide.Ide.inst.app.defered.push(f);
 	}
 }

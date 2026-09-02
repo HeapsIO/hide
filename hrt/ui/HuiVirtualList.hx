@@ -117,7 +117,6 @@ class HuiVirtualList<T> extends HuiElement {
 		refreshInternal();
 
 		super.sync(ctx);
-
 	}
 
 	function wheel(e: hxd.Event) {

@@ -37,12 +37,20 @@ class FileBrowser extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Bro
 
 	override function getContextMenuContent(content:Array<hrt.ui.HuiMenu.MenuItem>) {
 		content.push({label: "Refresh", click: () -> fileBrowser.markRefresh()});
-		content.push({label: "Layout", menu: [
-				{label: "File Tree", click: updateMode.bind(FileTree)},
-				{label: "Galery", click: updateMode.bind(Gallery)},
-				{label: "Horizontal", click: updateMode.bind(Horizontal)},
-				{label: "Vertical", click: updateMode.bind(Vertical)},
-			]
+		var layout = uiBase.mainLayout.projectLayout;
+
+		if (layout.leftPanel.contains(this)) {
+			content.push({label: "Dock To Bottom", click: () -> moveTo(layout.bottomPanel)});
+		} else {
+			content.push({label: "Dock To Left", click: () -> moveTo(layout.leftPanel)});
+		}
+	}
+
+	function moveTo(tabContainer: HuiTabContainer) {
+		hide.App.defer(() -> {
+			tabContainer.addTab(this);
+			tabContainer.setTab(this);
+			tabContainer.dom.applyStyle(uiBase.style);
 		});
 	}
 

@@ -73,17 +73,32 @@ class HuiSplitContainer extends HuiElement {
 		childElement = this.childElements;
 
 		// if we only have one child (+ the slider bar)
-		var singleMode = childElements.length < 3;
+		var visibleCount = 0;
+		var firstVisible = null;
+		for (child in childElement) {
+			if (child == splitter)
+				continue;
+			if (child.visible) {
+				visibleCount ++;
+				if (firstVisible == null)
+					firstVisible = child;
+			}
+		}
+		var singleMode = visibleCount < 2;
+		var wasSingle = dom.hasClass("single");
 		dom.toggleClass("single", singleMode);
 		if (singleMode) {
-			if (childElements[0] != null && childElements[0] != splitter) {
-				childElements[0].minHeight = null;
-				childElements[0].minWidth = null;
-				childElements[0].maxWidth = null;
-				childElements[0].maxHeight = null;
+			if (firstVisible != null && firstVisible != splitter) {
+				firstVisible.minHeight = null;
+				firstVisible.minWidth = null;
+				firstVisible.maxWidth = null;
+				firstVisible.maxHeight = null;
 			}
 			return;
 		}
+
+		if (singleMode != wasSingle)
+			dom.applyStyle(uiBase.style);
 
 		var engine = h3d.Engine.getCurrent();
 		if (engine.width <= 32 || engine.height <= 32) {
@@ -122,10 +137,14 @@ class HuiSplitContainer extends HuiElement {
 				size = Std.int(calculatedHeight);
 		}
 
+		if (size == 0)
+			return;
+
 		var firstPos = 0;
 		var firstSize = 0;
 		var secondPos = 0;
 		var secondSize = 0;
+
 
 		var localSplitterPos = switch (anchorTo) {
 			case Start:
@@ -133,6 +152,9 @@ class HuiSplitContainer extends HuiElement {
 			case End:
 				size - splitterPos;
 		}
+
+		trace(dom.id, "localSplitterPos", localSplitterPos, "size", size);
+
 
 		// try to fit constraints for min/max sizes
 		for (maxConstraint in 0...4) {
@@ -177,11 +199,16 @@ class HuiSplitContainer extends HuiElement {
 				splitter.y = localSplitterPos - (splitterSize >> 1);
 		}
 
-		splitterPos = switch(anchorTo) {
+		var newSplitterPos = switch(anchorTo) {
 			case Start:
 				localSplitterPos;
 			case End:
 				size - localSplitterPos;
+		}
+		if (newSplitterPos >= 0) {
+			splitterPos = newSplitterPos;
+		} else {
+			trace(dom.id, "???", size, localSplitterPos);
 		}
 
 		if (lastSavedPos != splitterPos) {

@@ -253,11 +253,11 @@ class HuiTabContainer extends HuiElement {
 		}
 	}
 
-	override function sync(ctx) {
+	override function update(dt:Float) {
 		if (syncTabsQueued)
 			syncTabs();
 
-		super.sync(ctx);
+		super.update(dt);
 	}
 }
 

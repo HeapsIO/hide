@@ -305,7 +305,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	/**
 		Called for each of your items in the tree. for the root elements, get called with null as a parameter
 	**/
-	public dynamic function getItemChildren(item: TreeItem) : Array<TreeItem> {return null;}
+	public dynamic function getItemChildren(item: TreeItem) : Array<TreeItem> {throw "implement";}
 
 	/**
 		Called to know if an item in the tree can be opened or has children. Default to calling getChildren and seeing if it returns false.
@@ -665,6 +665,8 @@ class HuiTree<TreeItem> extends HuiElement {
 		var childrenData : Array<TreeItemData> = [];
 		if (childrenItems != null) {
 			for (childItem in childrenItems) {
+				if (childItem == null)
+					throw "what";
 				var childData : TreeItemData = hrt.tools.MapUtils.getOrPut(itemMap, cast childItem, {
 					item: childItem,
 					parent: null,

@@ -65,6 +65,15 @@ class HuiTabViewContainer extends HuiTabContainer {
 		return [for (tab in getTabs()) if (Std.downcast(tab, hrt.ui.HuiView) != null) cast tab];
 	}
 
+	public function hasAnyView() : Bool {
+		for (child in content.children) {
+			if (child is HuiElement) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	override function syncTabs() {
 		super.syncTabs();
 
