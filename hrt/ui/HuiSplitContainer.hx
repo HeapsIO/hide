@@ -153,9 +153,6 @@ class HuiSplitContainer extends HuiElement {
 				size - splitterPos;
 		}
 
-		trace(dom.id, "localSplitterPos", localSplitterPos, "size", size);
-
-
 		// try to fit constraints for min/max sizes
 		for (maxConstraint in 0...4) {
 			firstPos = paddingStart;
@@ -207,8 +204,6 @@ class HuiSplitContainer extends HuiElement {
 		}
 		if (newSplitterPos >= 0) {
 			splitterPos = newSplitterPos;
-		} else {
-			trace(dom.id, "???", size, localSplitterPos);
 		}
 
 		if (lastSavedPos != splitterPos) {
