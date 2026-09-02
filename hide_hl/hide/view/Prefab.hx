@@ -833,6 +833,8 @@ class Prefab extends HuiView<{path: String}> {
 			sceneEditor.updateRenderProfile();
 
 		sceneEditor.tree.rebuild();
+
+		updatePrefabLookup();
 	}
 
 	function customTryMake(prefab: hrt.prefab.Prefab) {
@@ -850,7 +852,6 @@ class Prefab extends HuiView<{path: String}> {
 		try {
 			prefab.make();
 			makePrefabInteractive(prefab);
-			updatePrefabLookup();
 		} catch (e) {
 			removePrefabInstance(prefab);
 			errorPrefabs.set(prefab, {title: "Prefab make raised an exception", exception: e});
