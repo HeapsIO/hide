@@ -4,15 +4,26 @@ package hrt.prefab.rfx;
 class SaoMerge extends h3d.shader.ScreenShader {
 
 	static var SRC = {
+		@const @param var blendMode : Int = 0;
 		@param var screenOcclusion : Sampler2D;
 		@param var materialOcclusionIntensity : Float;
 		@ignore @param var materialOcclusion : Channel;
 
 		function fragment() {
-			pixelColor.rgb = screenOcclusion.get(calculatedUV).xxx;
-			pixelColor.rgb *= mix(1.0, materialOcclusion.get(calculatedUV).x, materialOcclusionIntensity);
+			var o = screenOcclusion.get(calculatedUV).x;
+			var mat = materialOcclusion.get(calculatedUV).x;
+			if( blendMode == 0 ) // Mult
+				o = o * mix(1.0, mat, materialOcclusionIntensity);
+			else // Min
+				o = min(o, mat + (1.0 - materialOcclusionIntensity));
+			pixelColor.rgb = vec3(o);
 		}
 	}
+}
+
+enum abstract SaoBlendMode(String) {
+	var Mult;
+	var Min;
 }
 
 class Sao extends RendererFX {
@@ -26,6 +37,7 @@ class Sao extends RendererFX {
 	@:s public var intensity : Float = 1;
 	@:s public var bias : Float;
 	@:s public var microIntensity : Float = 1;
+	@:s public var blendMode : SaoBlendMode = Mult;
 	@:s public var useWorldUV : Bool;
 	@:s public var noiseTexturePath: String;
 	@:s public var USE_START_FADE : Bool = false;
@@ -103,6 +115,7 @@ class Sao extends RendererFX {
 
 			var saoMerge = r.allocTarget("saoMerge",false, 1.0);
 			ctx.engine.pushTarget(saoMerge);
+			saoMergePass.shader.blendMode = blendMode == Min ? 1 : 0;
 			saoMergePass.shader.materialOcclusionIntensity = microIntensity;
 			saoMergePass.shader.materialOcclusionChannel = occlu.channel;
 			saoMergePass.shader.materialOcclusion = occlu.texture;
@@ -135,6 +148,7 @@ class Sao extends RendererFX {
 		s.intensity = s1.intensity;
 		s.bias = s1.bias;
 		s.microIntensity = s1.microIntensity;
+		s.blendMode = s1.blendMode;
 		s.useWorldUV = s1.useWorldUV;
 		s.noiseTexturePath = s1.noiseTexturePath;
 		s.USE_START_FADE = s1.USE_START_FADE;
@@ -155,6 +169,7 @@ class Sao extends RendererFX {
 			s.intensity = hxd.Math.lerp(s1.intensity, s2.intensity, f);
 			s.bias = hxd.Math.lerp(s1.bias, s2.bias, f);
 			s.microIntensity = hxd.Math.lerp(s1.microIntensity, s2.microIntensity, f);
+			s.blendMode = f < 0.5 ? s1.blendMode : s2.blendMode;
 			s.useWorldUV = f < 0.5 ? s1.useWorldUV : s2.useWorldUV;
 			s.noiseTexturePath = f < 0.5 ? s1.noiseTexturePath : s2.noiseTexturePath;
 			s.USE_START_FADE = f < 0.5 ? s1.USE_START_FADE : s2.USE_START_FADE;
@@ -178,6 +193,7 @@ class Sao extends RendererFX {
 					<range(0.0, 1.0) label="Texture Size" field={size}/>
 					<range(3, 127) int field={samples}/>
 					<range(0.0, 1.0) label="Materials occlusion" field={microIntensity}/>
+					<select label="Blend mode" field={blendMode}/>
 				</category>
 				<category("Noise")>
 					<slider default={1.0} label="Scale" poly field={noiseScale}/>
@@ -214,6 +230,10 @@ class Sao extends RendererFX {
 				<dt>Texture Size</dt><dd><input type="range" min="0" max="1" field="size"/></dd>
 				<dt>Samples</dt><dd><input type="range" min="3" max="127" field="samples" step="1"/></dd>
 				<dt>Materials occlusion</dt><dd><input type="range" min="0" max="1" field="microIntensity"/></dd>
+				<dt>Blend mode</dt><dd><select field="blendMode">
+					<option value="Mult">Mult</option>
+					<option value="Min">Min</option>
+				</select></dd>
 			</dl>
 		</div>
 		<div class="group" name="Noise">
