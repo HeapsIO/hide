@@ -27,7 +27,7 @@ class EditorIcon extends hrt.prefab.l3d.Billboard.BillboardObj {
 		absPos.identity();
 		absPos.tx = x;
 		absPos.ty = y;
-		absPos.tx = z;
+		absPos.tz = z;
 
 		if (parent != null) {
 			absPos.tx += parent.absPos.tx;
