@@ -216,12 +216,14 @@ class HuiFileBrowser extends HuiElement {
 		mainToolbarWidget = new HuiFileBrowserMainToolbarWidget(mainToolbar);
 
 		mainToolbarWidget.splitButton.onClick = (e) -> {
-			uiBase.openMenu([
+			var menu : Array<HuiMenu.MenuItem> = [
 				{label: "File tree", radio: () -> mode == FileTree, stayOpen: true, click: () -> {mode = FileTree; onModeChange();}},
 				{label: "Gallery", radio: () -> mode == Gallery, stayOpen: true,  click: () -> {mode = Gallery; onModeChange();}},
 				{label: "Horizontal", radio: () -> mode == Horizontal, stayOpen: true,  click: () -> {mode = Horizontal; onModeChange();}},
 				{label: "Vertical", radio: () -> mode == Vertical, stayOpen: true,  click: () -> {mode = Vertical; onModeChange();}},
-			], {}, {object: Element(mainToolbarWidget.splitButton), directionX: StartInside, directionY: EndOutside});
+			];
+			onModeMenu(menu);
+			uiBase.openMenu(menu, {}, {object: Element(mainToolbarWidget.splitButton), directionX: StartInside, directionY: EndOutside});
 		}
 
 		mainToolbarWidget.prevBtn.onClick = (e) -> {
@@ -262,6 +264,13 @@ class HuiFileBrowser extends HuiElement {
 			updateToolbarCompactMode();
 		}
 		updateToolbarCompactMode();
+	}
+
+	/**
+		Allow to customize the browser mode menu listing
+	**/
+	public dynamic function onModeMenu(items: Array<HuiMenu.MenuItem>) : Void {
+
 	}
 
 	function isDragValid(item: File, op: HuiDragOp) {

@@ -23,6 +23,10 @@ class FileBrowser extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Bro
 			state.mode = fileBrowser.mode;
 			saveState();
 		}
+		fileBrowser.onModeMenu = (items) -> {
+			items.push({isSeparator: true});
+			addDockMenu(items);
+		}
 	}
 
 	override function getViewName():String {
@@ -37,6 +41,10 @@ class FileBrowser extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Bro
 
 	override function getContextMenuContent(content:Array<hrt.ui.HuiMenu.MenuItem>) {
 		content.push({label: "Refresh", click: () -> fileBrowser.markRefresh()});
+		addDockMenu(content);
+	}
+
+	function addDockMenu(content:Array<hrt.ui.HuiMenu.MenuItem>) {
 		var layout = uiBase.mainLayout.projectLayout;
 
 		if (layout.leftPanel.contains(this)) {
