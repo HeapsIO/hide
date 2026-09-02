@@ -38,7 +38,7 @@
 @widget-border: @color-gray-6;
 @widget-border-lighter: @color-gray-7;
 
-@base-corner-radius: 3;
+@base-corner-radius: 4;
 
 @bg-main-toolbar: @color-gray-2;
 @bg-main-footer: @color-gray-2;
@@ -90,6 +90,8 @@
 }
 
 .button() {
+
+
 	&:hover {
 		> hui-background {
 			background: @color-over;
@@ -101,6 +103,7 @@
 			background: @color-over-lighter;
 		}
 		offset-y: 1;
+
 	}
 
 	cursor: button;
@@ -116,6 +119,20 @@
 	&:hover {
 		> hui-background {
 			outline: 1 @widget-border-lighter;
+		}
+	}
+}
+
+.button-shadow() {
+	> hui-background {
+		shadow: 0 1 0 0 0 rgba(0,0,0,0.5);
+	}
+
+	&:active {
+		> hui-background {
+			background: @color-over-lighter;
+			shadow: 0 1 2 0 0 rgba(0,0,0,1.0);
+			shadow-inset: true;
 		}
 	}
 }
