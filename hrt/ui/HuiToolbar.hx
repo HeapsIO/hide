@@ -454,6 +454,11 @@ class HuiRenderProfilePopup extends HuiPopup {
 				</hui-toggle>
 				<hui-text("Edit Render Profile") class="label"/>
 			</hui-element>
+			<hui-element class="horizontal" if (widget.isPrefabView())>
+				<hui-checkbox id="shadow-toggle"/>
+				<hui-text("Shadows") class="label"/>
+			</hui-element>
+
 			<hui-text("No render profile config detected in .json file.") if (widget.editor.getRenderProfileConfigs().length == 0)/>
 			<hui-text("This prefab already contains a render profile!") if (containsRenderProps)/>
 			<hui-text("Render Profile List") id="list-title" if (!containsRenderProps && widget.isPrefabView())/>
@@ -476,6 +481,11 @@ class HuiRenderProfilePopup extends HuiPopup {
 		editRenderProfileTog?.onClick = (e : hxd.Event) -> {
 			editRenderProfileTog.toggled = !editRenderProfileTog.toggled;
 			widget.setRenderProfileEdition(editRenderProfileTog.toggled);
+		}
+
+		shadowToggle.value = widget.editor.scene.s3d.renderer.shadows;
+		shadowToggle.onValueChanged = () -> {
+			widget.editor.scene.s3d.renderer.shadows = shadowToggle.value;
 		}
 
 		if (!containsRenderProps) {

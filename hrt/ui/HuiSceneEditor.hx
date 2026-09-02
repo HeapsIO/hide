@@ -9,7 +9,7 @@ class HuiSceneEditor extends HuiElement {
 				<hui-split-container id="scene-tree-split" save-display-key={"#sceneEditor.treeSplit"}>
 					<hui-element id="scene-panel">
 						<hui-element id="scene-toolbar"/>
-						<hui-scene id="scene"/>
+						<hui-scene id="scene" public/>
 					</hui-element>
 					<hui-element id="trees-panel">
 						<hui-category("Scene Tree") id="panel-tree"></hui-category>
