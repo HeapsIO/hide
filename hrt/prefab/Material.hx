@@ -127,9 +127,15 @@ class Material extends Prefab {
 			return tex;
 		}
 
-		if( getTex("diffuseMap") != null ) mat.texture = getTex("diffuseMap");
-		if( getTex("normalMap") != null ) mat.normalMap = getTex("normalMap");
-		if( getTex("specularMap") != null ) mat.specularTexture = getTex("specularMap");
+		var diffuse = getTex("diffuseMap");
+		var normal = getTex("normalMap");
+		var specular = getTex("specularMap");
+		if( diffuse != null )
+			mat.texture = diffuse;
+		if( normal != null )
+			mat.normalMap = normal;
+		if( specular != null )
+			mat.specularTexture = specular;
 		mat.props = propsToApply;
 
 		if(mainPassName != null && mainPassName.length > 0 )
