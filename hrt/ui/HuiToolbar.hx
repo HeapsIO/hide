@@ -297,7 +297,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 
 class HuiSceneFiltersWidget extends HuiElement {
 	static var SRC = <hui-scene-filters-widget>
-		<hui-button id="btn" tip={"Enable / disable display of specific elements in scene"}>
+		<hui-button id="btn" class="toolbar-dropdown" tip={"Enable / disable display of specific elements in scene"}>
 			<hui-text("Scene Filters")/>
 			<hui-icon(HuiRes.ui.icons.drop_down)/>
 		</hui-button>
@@ -403,7 +403,7 @@ class HuiSceneFiltersPopup extends HuiPopup {
 
 class HuiRenderProfileWidget extends HuiElement {
 	static var SRC = <hui-render-profile-widget>
-		<hui-button id="btn" tip={"Change scene editor render profile"}>
+		<hui-button id="btn" class="toolbar-dropdown" tip={"Change scene editor render profile"}>
 			<hui-text("Render Profile")/>
 			<hui-icon(HuiRes.ui.icons.drop_down)/>
 		</hui-button>
@@ -510,7 +510,7 @@ class HuiRenderProfilePopup extends HuiPopup {
 
 class HuiViewModesWidget extends HuiElement {
 	static var SRC = <hui-view-modes-widget>
-		<hui-button id="btn" tip={"Change scene view mode"}>
+		<hui-button id="btn" class="toolbar-dropdown" tip={"Change scene view mode"}>
 			<hui-text("View Modes")/>
 			<hui-icon(HuiRes.ui.icons.drop_down)/>
 		</hui-button>
