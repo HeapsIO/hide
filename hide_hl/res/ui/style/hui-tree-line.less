@@ -7,6 +7,20 @@ hui-tree-line {
 
 	cursor: button;
 
+	&.edit-mode {
+		>hui-background {
+			outline: 3 @color-blue;
+			outline-thickness: 0 1 0 0;
+		}
+	}
+
+	&.override-mode {
+		>hui-background {
+			outline: 3 @color-peach;
+			outline-thickness: 0 1 0 0;
+		}
+	}
+
 	spacing: 2;
 
 	#spacing {

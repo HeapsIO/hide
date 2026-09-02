@@ -147,6 +147,12 @@ class Prefab extends HuiView<{path: String}> {
 
 		sceneEditor.tree.getItemChildren = (el) -> {
 			var prefab : hrt.prefab.Prefab = cast el ?? this.prefab;
+			var ref = Std.downcast(prefab, hrt.prefab.Reference);
+			if (ref != null) {
+				if (ref.editMode != None && ref.refInstance != null) {
+					return ref.children.concat(ref.refInstance.children);
+				}
+			}
 			return cast prefab?.children;
 		}
 
@@ -322,6 +328,8 @@ class Prefab extends HuiView<{path: String}> {
 			el.dom.toggleClass("ingame-only", is(item, (p) -> p.inGameOnly));
 			el.dom.toggleClass("hidden", is(item, (p) -> !getEditorVisibility(p)));
 			el.dom.toggleClass("locked", is(item, (p) -> p.locked));
+			el.dom.toggleClass("edit-mode", is(item, (p) -> p.shared.parentPrefab != null && p.shared.parentPrefab.to(hrt.prefab.Reference).editMode == Edit));
+			el.dom.toggleClass("override-mode", is(item, (p) -> p.shared.parentPrefab != null && p.shared.parentPrefab.to(hrt.prefab.Reference).editMode == Override));
 
 			var t = getTag(item);
 			if (t != null) {
@@ -1314,6 +1322,11 @@ class Prefab extends HuiView<{path: String}> {
 			hide.Ide.showInfo('Saved $path');
 		} catch(e) {
 			hide.Ide.showError('Save failed for $path : $e');
+		}
+
+		var refs = prefab.findAll(hrt.prefab.Reference, (r) -> r.refInstance != null && r.editMode == Edit, false);
+		for (ref in refs) {
+			trySavePrefab(ref.refInstance);
 		}
 	}
 
