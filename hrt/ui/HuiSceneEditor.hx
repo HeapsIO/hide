@@ -55,6 +55,7 @@ class HuiSceneEditor extends HuiElement {
 	public static final RENDER_PROFILE_SAVE_KEY = "renderProfilePath";
 	public static var RENDER_PROFILE_KEY = "scene.renderProps";
 	public static final RENDER_PROFILE_EDIT_KEY = "editor.renderprofile.edit";
+	public static var RENDER_SHADOW_SAVE_KEY = "shadowsEnabled";
 
 	static public var focusCommand = new hrt.ui.HuiCommands.HuiCommand("Focus Selection", {key: hxd.Key.F});
 
@@ -200,6 +201,8 @@ class HuiSceneEditor extends HuiElement {
 	var oldVisibility = false;
 	override function update(dt:Float) {
 		super.update(dt);
+
+		scene.s3d.renderer.shadows = getDisplayState(RENDER_SHADOW_SAVE_KEY, true);
 
 		var visible = true;
 		var cur : h2d.Object = this;

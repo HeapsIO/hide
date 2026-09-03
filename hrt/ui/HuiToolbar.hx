@@ -483,9 +483,9 @@ class HuiRenderProfilePopup extends HuiPopup {
 			widget.setRenderProfileEdition(editRenderProfileTog.toggled);
 		}
 
-		shadowToggle.value = widget.editor.scene.s3d.renderer.shadows;
+		shadowToggle.value = widget.editor.getDisplayState(hrt.ui.HuiSceneEditor.RENDER_SHADOW_SAVE_KEY, true);
 		shadowToggle.onValueChanged = () -> {
-			widget.editor.scene.s3d.renderer.shadows = shadowToggle.value;
+			widget.editor.saveDisplayState(hrt.ui.HuiSceneEditor.RENDER_SHADOW_SAVE_KEY, shadowToggle.value);
 		}
 
 		if (!containsRenderProps) {
