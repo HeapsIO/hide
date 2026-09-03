@@ -862,6 +862,7 @@ class ProjectedDisplay extends h3d.scene.Object {
 	}
 }
 
+#if domkit
 @:access(hrt.prefab.l3d.Polygon)
 class PolygonEditor2 extends hrt.prefab.editor.Tool {
 	var polygon : Polygon;
@@ -1219,3 +1220,5 @@ class PolygonEditorHandle2 extends h3d.scene.Object {
 	}
 
 }
+
+#end
