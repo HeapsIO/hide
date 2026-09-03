@@ -49,6 +49,9 @@ typedef ChangeParams = {
 	var callback: () -> Void;
 	var isTemporaryEdit: Bool;
 	var recordUndo: Bool;
+
+	/**Function to run after callback and after each undo/redo operation concerning these changes**/
+	var ?sideEffects: (isUndo: Bool) -> Void;
 }
 
 

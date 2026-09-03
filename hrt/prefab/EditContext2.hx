@@ -70,6 +70,11 @@ abstract class EditContext2 {
 	}
 
 	/**
+		Request that the prefab interactive should be re-created
+	**/
+	abstract public function rebuildPrefabInteractive(prefab: Prefab) : Void;
+
+	/**
 		Implement this to support rebuild prefab
 	**/
 	abstract function rebuildPrefabImpl(prefab: Prefab) : Void;

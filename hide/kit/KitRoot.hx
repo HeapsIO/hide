@@ -73,9 +73,11 @@ class KitRoot #if !macro extends Element #end {
 		}
 
 		params.callback();
+		if (params.sideEffects != null)
+			params.sideEffects(false);
 
 		if (!params.isTemporaryEdit && params.recordUndo) {
-			finishUndoPoint();
+			finishUndoPoint(params.sideEffects);
 		}
 	}
 
@@ -92,7 +94,7 @@ class KitRoot #if !macro extends Element #end {
 		}
 	}
 
-	function finishUndoPoint() {
+	function finishUndoPoint(?customSideEffect: (isUndo: Bool) -> Void) {
 		var sideEffects : Array<(isUndo:Bool) -> Void> = [];
 		createUndoStep(sideEffects);
 
@@ -106,6 +108,10 @@ class KitRoot #if !macro extends Element #end {
 
 		if (editor.requestedTreeRebuild) {
 			sideEffects.push((_) -> editor.rebuildTree(null));
+		}
+
+		if (customSideEffect != null) {
+			sideEffects.push(customSideEffect);
 		}
 
 		if (sideEffects.length > 0) {

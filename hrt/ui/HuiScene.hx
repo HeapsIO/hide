@@ -158,8 +158,8 @@ class HuiScene extends HuiElement {
 		display.height = innerHeight;
 		s2d.scaleMode = Custom(innerWidth, innerHeight, scale, scale);
 		var pos = this.getAbsPos().getPosition();
-		@:privateAccess s2d.offsetX = 0;
-		@:privateAccess s2d.offsetY = 0;
+		@:privateAccess s2d.offsetX = absX;
+		@:privateAccess s2d.offsetY = absY;
 
 		var scenePosition = {
 			offsetX : 0.0,
@@ -389,7 +389,7 @@ class HuiSceneInfos extends HuiElement {
 	public function end(engine: h3d.Engine) {
 		if (gpuPendingQueries.length <= 0)
 			return;
-		
+
 		triangles = Std.int(engine.drawTriangles) - triangles;
 		cpuMs = (haxe.Timer.stamp() * 1000) - cpuMs;
 

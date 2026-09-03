@@ -126,7 +126,7 @@ class Prefab extends HuiView<{path: String}> {
 		registerCommand(hrt.ui.HuiCommands.duplicate, View, () -> getView().undo.run(actionDuplicateSelection(), true));
 		registerCommand(hrt.ui.HuiCommands.paste, View, () -> getView().undo.run(actionPasteFromClipboard(), true));
 
-		registerCommand(hrt.ui.HuiCommands.delete, View, () -> getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true));
+		registerCommand(hrt.ui.HuiCommands.delete, View, commandDelete);
 		registerCommand(editorHideCommand, View, () -> {
 			var prefabs = getSelectionOrdered();
 			if (prefabs.length == 0)
@@ -541,6 +541,13 @@ class Prefab extends HuiView<{path: String}> {
 		return prefab;
 	}
 
+	function commandDelete() {
+		if (currentEditContext?.foregroundEditorTool?.onDeleteCommand())
+			return;
+
+		getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true);
+	}
+
 	function sceneDragOver(op: HuiDragOp) {
 		op.acceptDrop = false;
 		var pathAbs = getDropPath(op);
@@ -930,6 +937,11 @@ class Prefab extends HuiView<{path: String}> {
 	public function removePrefabInteractives(prefab: hrt.prefab.Prefab) {
 		interactives.get(prefab)?.remove();
 		interactives.remove(prefab);
+	}
+
+	public function rebuildPrefabInteractive(prefab: hrt.prefab.Prefab) {
+		removePrefabInteractives(prefab);
+		makePrefabInteractive(prefab);
 	}
 
 	function updatePrefabLookup() {
@@ -2095,6 +2107,10 @@ class EditContext extends hrt.prefab.EditContext2 {
 
 	public function rebuildPrefabImpl(prefab: hrt.prefab.Prefab) : Void {
 		editor.tryMake(prefab);
+	}
+
+	public function rebuildPrefabInteractive(prefab: hrt.prefab.Prefab) : Void {
+		editor.rebuildPrefabInteractive(prefab);
 	}
 
 	/**

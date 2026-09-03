@@ -87,6 +87,14 @@ class Tool {
 	}
 
 	/**
+		Return true to tell that the command has processed the delete command and that the command shouldn't be forwarded to
+		the current scene editor
+	**/
+	public function onDeleteCommand() : Bool {
+		return false;
+	}
+
+	/**
 		Called once per frame
 	**/
 	function update(dt: Float) {

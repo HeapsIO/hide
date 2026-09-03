@@ -87,6 +87,7 @@ class Polygon extends Object3D {
 		if (mesh != null) {
 			mesh.primitive = makePrimitive();
 		}
+
 		#if editor
 		setColor(color);
 		if(editor != null)
@@ -392,6 +393,10 @@ class Polygon extends Object3D {
 			}
 			ctx.rebuildInspector();
 		}
+
+		var editorTool = new PolygonEditor2(ctx, this);
+		if (viewModel.kind == "Custom")
+			editorTool.enter();
 
 		ctx.build(
 			<category("Shape")>
@@ -855,4 +860,362 @@ class ProjectedDisplay extends h3d.scene.Object {
 		texture?.dispose();
 		super.onRemove();
 	}
+}
+
+@:access(hrt.prefab.l3d.Polygon)
+class PolygonEditor2 extends hrt.prefab.editor.Tool {
+	var polygon : Polygon;
+	var handles : Array<PolygonEditorHandle2> = [];
+	var dragStart : h2d.col.Point = null;
+	var dragging : Bool = false;
+
+	public function new(ctx, polygon: Polygon) {
+		super(ctx);
+		this.polygon = polygon;
+	}
+
+	override function onEnter() {
+		debugText = new h2d.Text(hxd.res.DefaultFont.get(), ctx.s2d);
+		debugText.dropShadow = {
+			dx: 1,
+			dy: 1,
+			color: 0,
+			alpha: 0.5,
+		};
+
+		dragStart = null;
+		debugText.text = "Polygon editor";
+	}
+
+	override function postInitInteractive() {
+		super.postInitInteractive();
+
+		//interactive.cursor = ResizeNWSE;
+
+		// interactive.onPush = (e) -> {
+		// 	if (e.button == 0) {
+		// 		e.propagate = false;
+		// 	}
+		// }
+
+		// interactive.onRelease = (e) -> {
+		// 	if (e.button == 0)
+		// 		e.propagate = false;
+		// }
+
+		// interactive.onClick = (e) -> {
+		// 	if (e.button == 0) {
+		// 		e.propagate = false;
+		// 	}
+		// }
+
+	}
+
+	override function onDeleteCommand() {
+		var anyDeleted = false;
+		@:privateAccess ctx.root.change({recordUndo: true, callback: () -> {
+			for (i in 0...handles.length) {
+				var index = handles.length - i - 1;
+				if (handles[index].selected) {
+					anyDeleted = true;
+					(polygon.points:Array<Point>).splice(index, 1);
+				}
+			}
+			polygon.updateInstance();
+		}, isTemporaryEdit: false});
+
+		return anyDeleted;
+	}
+
+	override function onQuit() {
+		debugText.remove();
+		clearHandles();
+		cleanupDrag();
+	}
+
+	override function update(dt:Float) {
+
+		updateHandles();
+
+
+
+		// Get selection
+		var x = ctx.s2d.mouseX;
+		var mousePos = inline new h2d.col.Point(ctx.s2d.mouseX, ctx.s2d.mouseY);
+		var ray = s3d.camera.rayFromScreen(ctx.s2d.mouseX, ctx.s2d.mouseY, ctx.s2d.width, ctx.s2d.height);
+
+		var sphereCol = inline new h3d.col.Sphere();
+
+		var nearestDistance = hxd.Math.POSITIVE_INFINITY;
+		var nearestHandleIndex = -1;
+
+		var polygonAbsPos = polygon.getAbsPos();
+
+		var normal = new h3d.Vector(0,0,1);
+		normal.transform3x3(polygonAbsPos);
+		var d = normal.dot(polygonAbsPos.getPosition());
+		var worldMousePos = ray.intersect(new h3d.col.Plane(normal.x,normal.y,normal.z,d));
+
+		debugText.text = 'Polygon editor ${hxd.Math.round(ctx.s2d.mouseX)} ${hxd.Math.round(ctx.s2d.mouseY)} / ${ctx.s2d.width} ${ctx.s2d.height} -> wmp : $worldMousePos';
+
+
+		for (i => handle in handles) {
+			sphereCol.x = handle.x;
+			sphereCol.y = handle.y;
+			sphereCol.z = handle.z;
+			sphereCol.r = handle.scaleX * 0.5;
+
+			var dist = inline sphereCol.rayIntersection(ray, true);
+			if (dist > 0 && dist < nearestDistance) {
+				nearestDistance = dist;
+				nearestHandleIndex = i;
+			}
+		}
+
+		var nearestEdgeHandleIndex = -1;
+		{
+			var nearestDistance = hxd.Math.POSITIVE_INFINITY;
+			for (i => handle in handles) {
+				var next = handles[(i + 1) % handles.length];
+				var abs1 = handle.getAbsPos();
+				var abs2 = next.getAbsPos();
+				var x = (abs1.tx + abs2.tx) * 0.5;
+				var y = (abs1.ty + abs2.ty) * 0.5;
+				var z = (abs1.tz + abs2.tz) * 0.5;
+
+				var distance = hxd.Math.distance(x - worldMousePos.x, y - worldMousePos.y, z - worldMousePos.z);
+				if (distance < nearestDistance) {
+					nearestEdgeHandleIndex = i;
+					nearestDistance = distance;
+				}
+			}
+		}
+
+		for (i => handle in handles) {
+			handle.setHover(i == nearestHandleIndex);
+		}
+
+
+
+		if (hxd.Key.isDown(hxd.Key.MOUSE_LEFT)) {
+			if (dragStart != null) {
+				if (!dragging) {
+					if (inline dragStart.distance(mousePos) > 5.0) {
+						// begin undo
+						@:privateAccess ctx.root.change({recordUndo: true, callback: () -> {}, isTemporaryEdit: true});
+						dragging = true;
+					}
+				} else {
+					var inv = polygonAbsPos.getInverse();
+					var localPoint = worldMousePos.clone();
+					localPoint.transform(inv);
+					for (pid => handle in this.handles) {
+						if (handle.selected) {
+							polygon.points[pid].x = localPoint.x;
+							polygon.points[pid].y = localPoint.y;
+						}
+					}
+					refreshPolygon();
+				}
+			}
+		} else {
+			cleanupDrag();
+		}
+
+		if (hxd.Key.isPressed(hxd.Key.MOUSE_LEFT)) {
+			var shouldQuit = true;
+
+			dragStart = mousePos.clone();
+
+			// if (nearestHandleIndex != -1) {
+			// 	shouldQuit = false;
+			// 	unselectAll();
+			// 	handles[nearestHandleIndex].selected = true;
+			// }
+
+			if (hxd.Key.isDown(hxd.Key.CTRL)) {
+				shouldQuit = false;
+				var inv = polygonAbsPos.getInverse();
+				var localPoint = worldMousePos.clone();
+				var index = nearestEdgeHandleIndex + 1;
+				localPoint.transform(inv);
+				var pt = new h2d.col.Point(localPoint.x, localPoint.y);
+				@:privateAccess ctx.root.change({recordUndo: true, callback: () -> {polygon.points.insert(index, pt);}, isTemporaryEdit: false});
+				updateHandles();
+				unselectAll();
+				handles[index].selected = true;
+				refreshPolygon();
+			}
+
+			// shouldQuit = shouldQuit && polygon.localRayIntersection(ray) <= -1;
+
+			// if (shouldQuit) {
+			// 	quit();
+			// }
+		}
+	}
+
+	public function getMousePos() : h3d.Vector {
+		var polygonAbsPos = polygon.getAbsPos();
+		var ray = s3d.camera.rayFromScreen(ctx.s2d.mouseX, ctx.s2d.mouseY, ctx.s2d.width, ctx.s2d.height);
+
+		var normal = new h3d.Vector(0,0,1);
+		normal.transform3x3(polygonAbsPos);
+		var d = normal.dot(polygonAbsPos.getPosition());
+		return ray.intersect(new h3d.col.Plane(normal.x,normal.y,normal.z,d));
+	}
+
+	/*public function getLocalPolygonPoint() : h2d.col.Point {
+
+	}*/
+
+	function cleanupDrag() {
+		if (dragging) {
+			// record undo
+			@:privateAccess ctx.root.change({recordUndo: true, callback: () -> {}, isTemporaryEdit: false, sideEffects: (isUndo: Bool) -> ctx.rebuildPrefabInteractive(polygon)});
+		}
+
+		dragStart = null;
+		dragging = false;
+	}
+
+	function updateHandles() {
+		while(handles.length > polygon.points.length) {
+			handles.pop()?.remove();
+		}
+
+		while(handles.length < polygon.points.length) {
+			handles.push(new PolygonEditorHandle2(this, ctx.s3d));
+		}
+
+		var polygonAbsPos = polygon.getAbsPos();
+
+		for (i => handle in handles) {
+			var point = polygon.points.points[i];
+			var worldPoint = inline new h3d.Vector(point.x, point.y, 0.0);
+			worldPoint = worldPoint.transformed(polygonAbsPos);
+
+			handle.setPosition(worldPoint.x, worldPoint.y, worldPoint.z);
+		}
+	}
+
+	/** Return true if a handle was selected**/
+	public function unselectAll() {
+		var anySelected = false;
+		for (handle in handles) {
+			if (handle.selected) {
+				anySelected = true;
+				handle.setSelected(false);
+			}
+		}
+		return anySelected;
+	}
+
+	function clearHandles() {
+		for (handle in handles) {
+			handle.remove();
+		}
+		handles.resize(0);
+	}
+
+	function refreshPolygon() {
+		if(!polygon.points.isClockwise())
+			polygon.points.reverse();  // Ensure poly is always clockwise
+		polygon.updateInstance();
+	}
+
+}
+
+
+
+class PolygonEditorHandle2 extends h3d.scene.Object {
+	public var tool : PolygonEditor2 = null;
+	public var sphere : h3d.scene.Mesh = null;
+	public var baseScale : Float = 1.0;
+	public var selected : Bool = false;
+	var interactive : h3d.scene.Interactive;
+
+	static var prim: h3d.prim.Primitive;
+
+	public function new(tool: PolygonEditor2, parent: h3d.scene.Object) {
+		super(parent);
+		this.tool = tool;
+
+		if (prim == null) {
+			var prim = new h3d.prim.Sphere(0.5,16,8);
+			prim.addNormals();
+			PolygonEditorHandle2.prim = prim;
+		}
+
+		sphere = new h3d.scene.Mesh(prim, null, this);
+		sphere.material.setDefaultProps("ui");
+		//sphere.material.mainPass.depthTest = GreaterEqual;
+		sphere.material.mainPass.depthWrite = true;
+		setSelected(false);
+		setHover(false);
+
+		interactive = new h3d.scene.Interactive(prim.getCollider(), this);
+		interactive.propagateEvents = false;
+
+		interactive.onOver = (e) -> {
+			setHover(true);
+		}
+
+		interactive.onOut = (e) -> {
+			setHover(false);
+		}
+
+		interactive.onPush = (e) -> {
+			if (e.button == 0) {
+				if (!hxd.Key.isDown(hxd.Key.CTRL)) {
+					tool.unselectAll();
+				}
+				setSelected(true);
+				e.propagate = false;
+			}
+		}
+
+		var outline = new h3d.scene.Mesh(prim, null, this);
+		outline.scale(1.2);
+		outline.material.setDefaultProps("ui");
+		//outline.material.mainPass.depthTest = GreaterEqual;
+		outline.material.mainPass.culling = Front;
+		outline.material.mainPass.depthWrite = true;
+
+		outline.material.color.set(0,0,0, 1.0);
+	}
+
+	override function sync(ctx:h3d.scene.RenderContext) {
+		var cam = ctx.camera;
+		var gpos = getAbsPos().getPosition();
+		var distToCam = cam.pos.sub(gpos).length();
+		var engine = h3d.Engine.getCurrent();
+		var ratio = 35 / engine.height;
+		// Ignore parent scale
+		var tmp = parent.getAbsPos().getScale();
+		var scale = ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0) * baseScale;
+		scaleX = scale / tmp.x;
+		scaleY = scale / tmp.y;
+		scaleZ = scale / tmp.z;
+		calcAbsPos();
+		super.sync(ctx);
+	}
+
+	public function setSelected(selected: Bool) {
+		this.selected = selected;
+		if (selected) {
+			sphere.material.color.set(1.0,0.0,0.0,1.0);
+		} else {
+			sphere.material.color.set(1.0,1.0,1.0,1.0);
+		}
+	}
+
+	public function setHover(hover: Bool) {
+		if (hover) {
+			baseScale = 1.1;
+		} else {
+			baseScale = 1.0;
+		}
+	}
+
 }
