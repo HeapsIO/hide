@@ -1,6 +1,9 @@
 .cdb-view > .hide-tabs > .tab > ::-webkit-scrollbar {
   width: 12px;
 }
+.cdb-view {
+  z-index: 0;
+}
 .cdb-view .top-bar {
   height: 18px;
   display: flex;
