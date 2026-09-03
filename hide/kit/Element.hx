@@ -370,6 +370,14 @@ class Element {
 				resetWithUndo();
 			}
 		};
+		#elseif hui
+		var element = Std.downcast(label.get(), hrt.ui.HuiElement);
+		element.dom.addClass("reset-label");
+		element?.onClick = (e) -> {
+			if (e.button == 0) {
+				resetWithUndo();
+			}
+		}
 		#end
 	}
 
