@@ -1979,7 +1979,7 @@ class Prefab extends HuiView<{path: String}> {
 							camera.unproject(ndcXMax, ndcYMin, 1), camera.unproject(ndcXMin, ndcYMin, 1),
 						];
 						var frustumShape = physics.collision.shapes.FrustumShape.fromHeapsCorners(corners);
-						var collides = sceneEditor.scene.s3d.collideEventTargets(frustumShape);
+						var collides = sceneEditor.scene.s3d.getEventTargetsInFrustum(frustumShape);
 						for (i in collides) {
 							var p = prefabLookup.get(i.parent);
 							if (p != null && !p.locked)
