@@ -102,8 +102,35 @@ class List<T> extends Widget<Array<T>> {
 		openState = getSetting(SameKind, "openState") ?? false;
 		refresh();
 		syncValueUI();
+
+		#elseif hui
+
+		var listEditor = new hrt.ui.HuiListEditor(value, generateListLine);
+		listEditor.label.text = label ?? "";
+		@:privateAccess
+		{
+			listEditor.saveDisplayKey =  "/"+(cast root.editor:hide.view.Prefab.EditContext).getSaveKey(SameKind, getSaveKey(SameKind, id));
+		}
+		native = listEditor;
+
+		syncValueUI();
 		#end
 	}
+
+	#if hui
+	function generateListLine(header: hrt.ui.HuiElement, content: hrt.ui.HuiElement, item: T, index: Int) {
+		var kitHeader = new Line(this, 'item_header_$id');
+		kitHeader.native = header;
+
+		var kitContent = new Line(this, 'item_content_$id');
+		kitContent.native = content;
+
+		makeLine(kitHeader, kitContent, item, index);
+
+		kitHeader.make(false);
+		kitContent.make(false);
+	}
+	#end
 
 	function resetDragStyle() {
 		#if js
@@ -287,6 +314,10 @@ class List<T> extends Widget<Array<T>> {
 		#if js
 		var info = native.get().querySelector(".info");
 		info.innerHTML = '(${value.length} element(s))';
+		#elseif hui
+		var list : hrt.ui.HuiListEditor<T> = cast native.get();
+		list.items = value;
+		list.refreshLines();
 		#end
 		regenerateItems();
 	}

@@ -140,7 +140,10 @@ class Element {
 		if (singleEdit && root.isMultiEdit)
 			disabled = true;
 
-		makeSelf();
+		if (native == null)
+			makeSelf();
+		else if (Type.getClass(this) != Element && Type.getClass(this) != Line)
+			throw "native override is only allowed on base Element or Line";
 		#if hui
 		if (!(this is Block) && native == null) {
 			native = new hrt.ui.HuiText('missing makeSelf implem for ${Type.getClassName(Type.getClass(this))}');

@@ -1,0 +1,79 @@
+hui-list-editor {
+	layout: vertical;
+	fill-width: 1;
+	auto-size-width: 1;
+
+	#header {
+		cursor: button;
+
+		#caret {
+			halign: left !important;
+			width: 20;
+			height: 20;
+			> hui-background {
+				image: "ui/icons/drop_down.sdf.png" fit;
+				image-angle: 1.57079632679489661923;
+				transition: image-angle 0.07 ease-in-out;
+			}
+		}
+
+		#infos {
+			color: @color-foreground-muted;
+			base-font: italic;
+		}
+
+		#info-container {
+			fill-width: 1;
+			auto-size-width: 1;
+			valign: middle;
+		}
+
+		&:hover {
+			> hui-background {
+				background: @color-over;
+			}
+		}
+	}
+
+	#content {
+		visible: false;
+
+		spacing: 2;
+		padding-top: 2;
+
+	}
+
+	&.open {
+		> #header #caret > hui-background {
+			image-angle: 0;
+		}
+
+		#content {
+			layout: vertical;
+			visible: true;
+		}
+	}
+}
+
+hui-list-editor-line {
+	fill-width: 1;
+	&.no-body {
+		> #header #caret {
+			visible: false;
+		}
+
+		> #body-content {
+			visible: false;
+		}
+	}
+
+	> #body-content {
+		visible: false;
+	}
+
+	&.open {
+		visible: true;
+	}
+
+	layout: vertical;
+}

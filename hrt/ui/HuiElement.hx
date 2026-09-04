@@ -25,7 +25,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		If stats with a /, then the path is absolute (doesn't depend on its parent saveDisplayKey)
 		If starts with a #, then the path is an ID and will be ignored by other paths (won't appear in the hierarchy)
 	**/
-	@:p var saveDisplayKey(null, set): String;
+	@:p public var saveDisplayKey(null, set): String;
 
 	/**
 		Actual path that will be used when using setDisplayState/getDisplayState functions.

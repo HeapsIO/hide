@@ -7,7 +7,7 @@
    viewBox="0 0 32 32"
    version="1.1"
    id="svg1"
-   inkscape:export-filename="drag.svg"
+   inkscape:export-filename="star.svg"
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96"
    inkscape:version="1.4.4 (dcaf3e7, 2026-05-05)"
@@ -25,16 +25,7 @@
      inkscape:pagecheckerboard="true"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
-     showgrid="true"
-     inkscape:zoom="18.318485"
-     inkscape:cx="10.126383"
-     inkscape:cy="18.205654"
-     inkscape:window-width="1920"
-     inkscape:window-height="1009"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="layer1">
+     showgrid="true">
     <inkscape:grid
        id="grid1"
        units="px"
@@ -65,8 +56,8 @@
      inkscape:groupmode="layer"
      id="layer1">
     <path
-       id="path5"
-       style="baseline-shift:baseline;display:inline;overflow:visible;opacity:1;vector-effect:none;fill:#fefffe;stroke-linejoin:round;paint-order:stroke fill markers;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
-       d="M 14.5,4 V 14.5 H 4 v 3 H 14.5 V 28 h 3 V 17.5 H 28 v -3 H 17.5 V 4 Z" />
+       id="path2"
+       style="baseline-shift:baseline;display:inline;overflow:visible;opacity:1;vector-effect:none;fill:#fefffe;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+       d="m 13,4 a 1.0001,1.0001 0 0 0 -0.707031,0.2929688 l -2,2 A 1.0001,1.0001 0 0 0 10,7 V 8 H 7 5 A 1,1 0 0 0 4,9 1,1 0 0 0 5,10 H 6 V 26.414062 C 6,28.38355 7.6164503,30 9.5859375,30 H 22.414062 C 24.38355,30 26,28.38355 26,26.414062 V 10 h 1 A 1,1 0 0 0 28,9 1,1 0 0 0 27,8 H 25 22 V 7 A 1.0001,1.0001 0 0 0 21.707031,6.2929688 l -2,-2 A 1.0001,1.0001 0 0 0 19,4 Z m 0.414062,2 h 5.171876 L 20,7.4140625 V 8 H 12 V 7.4140625 Z M 8,10 H 24 V 26.414062 C 24,27.310139 23.310139,28 22.414062,28 H 9.5859375 C 8.6898615,28 8,27.310139 8,26.414062 Z m 5,2.857422 a 1,1 0 0 0 -1,1 v 10.285156 a 1,1 0 0 0 1,1 1,1 0 0 0 1,-1 V 13.857422 a 1,1 0 0 0 -1,-1 z m 6,0 a 1,1 0 0 0 -1,1 v 10.285156 a 1,1 0 0 0 1,1 1,1 0 0 0 1,-1 V 13.857422 a 1,1 0 0 0 -1,-1 z" />
   </g>
 </svg>
