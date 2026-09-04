@@ -50,6 +50,15 @@ class Material extends Prefab {
 		var obj = super.save();
 		if(color != null && h3d.Vector.fromArray(color).toColor() != 0xffffffff) obj.color = color;
 		if(mainPassName == "" || mainPassName == null ) Reflect.deleteField(obj, "mainPassName");
+		if( props != null ) {
+			var saved : Dynamic = {};
+			for( f in Reflect.fields(props) ) {
+				var v : Dynamic = Reflect.field(props, f);
+				var pbr = Std.downcast(v, PbrProps);
+				Reflect.setField(saved, f, pbr == null ? v : pbr.save());
+			}
+			obj.props = saved;
+		}
 		return obj;
 	}
 
@@ -60,10 +69,8 @@ class Material extends Prefab {
 		var setupName = cur.name;
 
 		var r = Reflect.field(props, setupName);
-		if(r == null) {
-			r = cur.getDefaults();
-			Reflect.setField(props, setupName, r);
-		}
+		r = r == null ? cur.getDefaults() : cur.loadProps(r);
+		Reflect.setField(props, setupName, r);
 
 		return r;
 	}
@@ -250,7 +257,7 @@ class Material extends Prefab {
 			}
 		}
 
-		return newProps;
+		return h3d.mat.MaterialSetup.current.loadProps(newProps);
 	}
 
 	// Work in progress

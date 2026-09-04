@@ -1509,19 +1509,13 @@ class Model extends FileView {
 		}
 		var saveCallback = function(_) {
 			var mat = scene.findMat(materials, matSelect.val());
-			if ( mat != null ) {
-				for ( f in Reflect.fields((m.props:Dynamic)) )
-					Reflect.deleteField((m.props:Dynamic), f);
-				Reflect.setField((m.props:Dynamic), "__ref", mat.path);
-				Reflect.setField((m.props:Dynamic), "name", mat.mat.name);
-				if ( mode.val() == "modelSpec" )
-					Reflect.setField((m.props:Dynamic), "__refMode", "modelSpec");
-				else
-					Reflect.deleteField((m.props:Dynamic), "__refMode");
-			} else {
-				Reflect.deleteField((m.props:Dynamic), "__ref");
-				Reflect.deleteField((m.props:Dynamic), "name");
-				Reflect.deleteField((m.props:Dynamic), "__refMode");
+			if ( mat != null )
+				m.props = m.getDefaultProps();
+			var props = Std.downcast(m.props, h3d.mat.PbrMaterial.PbrProps);
+			if ( props != null ) {
+				props.__ref = mat == null ? null : mat.path;
+				props.name = mat == null ? null : mat.mat.name;
+				props.__refMode = mat != null && mode.val() == "modelSpec" ? "modelSpec" : null;
 			}
 			h3d.mat.MaterialSetup.current.saveMaterialProps(m, defaultProps);
 			Ide.inst.quickMessage('Properties for mat (${m.name}) had been saved');
