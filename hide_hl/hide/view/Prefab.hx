@@ -641,7 +641,7 @@ class Prefab extends HuiView<{path: String}> {
 		if (@:privateAccess !gizmo?.moving)
 			moveGizmoToPrefabs([for (p in selectedPrefabs.keys()) p]);
 
-		if (boxSelectStart != null && boxSelectEnd != null && false) {
+		if (boxSelectStart != null && boxSelectEnd != null) {
 			graphicsOverlay.setColor(0x222222, 0.80);
 			graphicsOverlay.beginFill(0xDDDDDD, 0.20);
 			graphicsOverlay.drawRect(boxSelectStart.x, boxSelectStart.y, boxSelectEnd.x - boxSelectStart.x, boxSelectEnd.y - boxSelectStart.y);
