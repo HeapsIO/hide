@@ -10,7 +10,7 @@ class App extends hxd.App {
 	static public var DEBUG = false;
 	static public var fs : hxd.fs.EmbedFileSystem;
 
-	var fpsGraph : hrt.tools.FpsGraph;
+	var fpsGraph : h3d.impl.FpsGraph;
 	public var lastUpdateTime: Float = 0.0;
 	var currentUpdateTime: Float = 0.0;
 
@@ -111,7 +111,7 @@ class App extends hxd.App {
 
 	public function toggleFPSGraph() {
 		if (fpsGraph == null) {
-			fpsGraph = new hrt.tools.FpsGraph(ui);
+			fpsGraph = new h3d.impl.FpsGraph(ui);
 		} else {
 			fpsGraph.dispose();
 			fpsGraph = null;
