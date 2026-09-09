@@ -398,6 +398,19 @@ class Polygon extends Object3D {
 		if (viewModel.kind == "Custom")
 			editorTool.enter();
 
+		function customEditorLine(header: hide.kit.Element, body: hide.kit.Element, item: Point, i: Int) {
+			header.build(
+				<root>
+					<slider field={item.x}/>
+					<slider field={item.y}/>
+				</root>
+			);
+		}
+		
+		function refreshPoly(tmpEdit: Bool) {
+			editorRefreshPolygon();
+		}
+
 		ctx.build(
 			<category("Shape")>
 				<select(["Quad", "Disc", "Sphere", "Capsule", "Box", "Custom"]) field={kind} onValueChange={changeShape}/>
@@ -414,8 +427,14 @@ class Polygon extends Object3D {
 				<block if(viewModel.kind == "Capsule")>
 					<select([{value: 0, label: "X"},{value: 1, label: "Y"} , {value: 2, label: "Z"}]) field={axis}/>
 				</block>
+
+				<block if(viewModel.kind == "Custom")>
+					<list(customEditorLine, () -> new h2d.col.Point()) field={this.points} onValueChange={refreshPoly} id="polygonEditor"/>
+				</block>
 			</category>
 		, viewModel, onChange);
+
+		editorTool.listEditor = polygonEditor;
 	}
 
 	#if editor
@@ -635,6 +654,12 @@ class Polygon extends Object3D {
 	}
 
 	#end
+
+	function editorRefreshPolygon() {
+		if(!points.isClockwise())
+			points.reverse();  // Ensure poly is always clockwise
+		updateInstance();
+	}
 
 	static var _ = Prefab.register("polygon", Polygon);
 }
@@ -869,6 +894,7 @@ class PolygonEditor2 extends hrt.prefab.editor.Tool {
 	var handles : Array<PolygonEditorHandle2> = [];
 	var dragStart : h2d.col.Point = null;
 	var dragging : Bool = false;
+	public var listEditor : hide.kit.List<h2d.col.Point>;
 
 	public function new(ctx, polygon: Polygon) {
 		super(ctx);
@@ -1016,7 +1042,7 @@ class PolygonEditor2 extends hrt.prefab.editor.Tool {
 							polygon.points[pid].y = localPoint.y;
 						}
 					}
-					refreshPolygon();
+					refreshPolygon(true);
 				}
 			}
 		} else {
@@ -1045,7 +1071,7 @@ class PolygonEditor2 extends hrt.prefab.editor.Tool {
 				updateHandles();
 				unselectAll();
 				handles[index].selected = true;
-				refreshPolygon();
+				refreshPolygon(false);
 			}
 
 			// shouldQuit = shouldQuit && polygon.localRayIntersection(ray) <= -1;
@@ -1073,7 +1099,11 @@ class PolygonEditor2 extends hrt.prefab.editor.Tool {
 	function cleanupDrag() {
 		if (dragging) {
 			// record undo
-			@:privateAccess ctx.root.change({recordUndo: true, callback: () -> {}, isTemporaryEdit: false, sideEffects: (isUndo: Bool) -> ctx.rebuildPrefabInteractive(polygon)});
+			@:privateAccess ctx.root.change({recordUndo: true, callback: () -> {}, isTemporaryEdit: false, sideEffects: (isUndo: Bool) -> {
+				refreshPolygon(false); 
+				ctx.rebuildPrefabInteractive(polygon);
+			}
+			});
 		}
 
 		dragStart = null;
@@ -1119,10 +1149,11 @@ class PolygonEditor2 extends hrt.prefab.editor.Tool {
 		handles.resize(0);
 	}
 
-	function refreshPolygon() {
-		if(!polygon.points.isClockwise())
-			polygon.points.reverse();  // Ensure poly is always clockwise
-		polygon.updateInstance();
+	function refreshPolygon(isTemp) {
+		polygon.editorRefreshPolygon();
+		if (!isTemp) {
+			@:privateAccess listEditor.syncValueUI();
+		}
 	}
 
 }

@@ -107,11 +107,19 @@ class List<T> extends Widget<Array<T>> {
 
 		var listEditor = new hrt.ui.HuiListEditor(value, generateListLine);
 		listEditor.label.text = label ?? "";
+		listEditor.newItem = createItem;
 		listEditor.change = (effects) -> {
 			parent?.change({
-				callback: effects,
+				callback: () -> {
+					effects();
+					onFieldChange(false);
+					root.doTry(() -> {
+						onValueChange(false);
+						@:privateAccess root.prefab?.updateInstance(fieldName);
+					});
+				},
 				isTemporaryEdit: false,
-				recordUndo: true
+				recordUndo: true,
 			});
 		}
 		@:privateAccess
@@ -323,9 +331,14 @@ class List<T> extends Widget<Array<T>> {
 		var info = native.get().querySelector(".info");
 		info.innerHTML = '(${value.length} element(s))';
 		#elseif hui
+		for (child in children.copy())
+			child.remove();
 		var list : hrt.ui.HuiListEditor<T> = cast native.get();
 		list.items = value;
 		list.refreshLines();
+		if (list.uiBase?.style != null) {
+			list.dom.applyStyle(list.uiBase.style);
+		}
 		#end
 		regenerateItems();
 	}
