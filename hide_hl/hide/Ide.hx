@@ -127,11 +127,8 @@ class Ide extends hide.tools.IdeData {
 
 	public function chooseProject() {
 		hxd.File.browse((select) -> {
-			var path = select.fileName.split("\\");
-			path.pop();
-			var dir = path.join("\\");
-			setProject(dir);
-		}, {fileTypes: [{name: "hxml", extensions: ["hxml"]}]});
+			setProject(select.fileName);
+		}, {isFolder: true});
 	}
 
 	override function setProject(dir:String) {
