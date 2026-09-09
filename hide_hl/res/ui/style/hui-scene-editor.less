@@ -88,7 +88,7 @@ hui-scene-editor {
 
 				.kit-line, hui-list-editor > #header {
 					height: 16;
-					spacing: 2;
+					spacing: 6;
 				}
 
 				> hui-line {
@@ -96,7 +96,7 @@ hui-scene-editor {
 				}
 
 				.first {
-					width: 80;
+					width: @inspector-label-width;
 					height: 16;
 					> * {
 						halign: right;
@@ -116,15 +116,18 @@ hui-scene-editor {
 				}
 
 				.kit-label {
-					margin-right: 5;
+					margin-right: 3;
 					valign: middle;
-					spacing: 2;
+					spacing: 6;
 					> * {
 						halign: right;
 						valign: middle;
 
 					}
 
+					&.first {
+						margin-right: -3;
+					}
 
 
 					hui-text {

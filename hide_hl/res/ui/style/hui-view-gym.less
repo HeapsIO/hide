@@ -160,6 +160,71 @@ gym-layouts {
 			}
 		}
 	}
+
+	.root {
+		padding: 2;
+		> hui-background {
+			outline: 1 blue;
+		}
+	}
+
+	.container {
+		fill-height: 1;
+		layout: vertical;
+		padding: 4;
+		padding-right: 10;
+		spacing: 2;
+		overflow: scroll;
+		> hui-background {
+			outline: 2 red;
+		}
+
+		hui-element {
+			tip: "hihi";
+		}
+
+
+
+		.line {
+			layout: horizontal;
+			height: 36;
+			padding: 4;
+			spacing: 2;
+			fill-width: true;
+			> hui-background {
+				outline: 2 green;
+			}
+
+			.fixed {
+				fill-height: true;
+				width: 50;
+
+				> hui-background {
+					outline: 2 purple;
+				}
+			}
+
+			.grow {
+				padding: 4;
+				fill-width: true;
+				auto-size: 1;
+				//min-width: 50;
+				fill-height: true;
+
+				spacing: 2;
+
+				> hui-background {
+					outline: 1 yellow;
+				}
+			}
+		}
+
+		.nested {
+			fill-width: true;
+			spacing: 2;
+			layout: vertical;
+		}
+	}
 }
 
 gym-search {

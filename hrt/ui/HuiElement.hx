@@ -506,6 +506,8 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		onMove(e);
 	}
 
+	var debugMe = false;
+
 	function onClickInternal(e: hxd.Event) {
 		if (!enable)
 			return;
@@ -522,7 +524,22 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			}
 		}
 
+		// Utility to break on the element under the mouse (to inspect it's state)
+		if (hide.App.DEBUG && hxd.Key.isDown(hxd.Key.CONTEXT_MENU)) {
+			hl.Api.breakPoint();
+			debugMe = !debugMe;
+			e.cancel = true;
+			e.propagate = false;
+			return;
+		}
+
 		onClick(e);
+	}
+
+	override function reflow() {
+		if (debugMe)
+			trace("break");
+		super.reflow();
 	}
 
 	function onPushInternal(e: hxd.Event) {

@@ -529,6 +529,198 @@ class GymLayouts extends HuiElement {
 					<hui-element class="second"/>
 				</hui-split-container>
 			</hui-element>
+
+			<hui-element class="example">
+				<hui-split-container direction="horizontal">
+				<hui-element class="root">
+					<hui-element class="container">
+						<hui-element class="line">
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="grow"></hui-element>
+						</hui-element>
+
+						<hui-element class="nested">
+							<hui-element class="line">
+								<hui-element class="fixed"></hui-element>
+								<hui-element class="grow"></hui-element>
+
+							</hui-element>
+							<hui-element class="nested">
+								<hui-element class="line">
+									<hui-element class="fixed"></hui-element>
+									<hui-element class="grow"></hui-element>
+								</hui-element>
+								<hui-element class="line">
+									<hui-element class="fixed"></hui-element>
+									<hui-element class="grow"></hui-element>
+								</hui-element>
+							</hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="fixed"></hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="grow"></hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="nested">
+								<hui-element class="line">
+									<hui-element class="fixed"></hui-element>
+									<hui-element class="grow"></hui-element>
+								</hui-element>
+
+								<hui-element class="line">
+									<hui-element class="fixed"></hui-element>
+
+									<hui-element class="fixed"></hui-element>
+								</hui-element>
+
+								<hui-element class="line">
+									<hui-element class="fixed"></hui-element>
+									<hui-element class="grow">
+										<hui-element class="fixed"></hui-element>
+										<hui-element class="grow"></hui-element>
+										<hui-element class="fixed"></hui-element>
+									</hui-element>
+								</hui-element>
+							</hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="grow">
+								<hui-element class="nested">
+									<hui-element class="line">
+										<hui-element class="fixed"></hui-element>
+										<hui-element class="grow"></hui-element>
+									</hui-element>
+									<hui-element class="line">
+										<hui-element class="fixed"></hui-element>
+										<hui-element class="grow"></hui-element>
+									</hui-element>
+								</hui-element>
+							</hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="grow">
+								<hui-element class="nested">
+									<hui-element class="line">
+										<hui-element class="fixed"></hui-element>
+										<hui-element class="grow"></hui-element>
+									</hui-element>
+									<hui-element class="line">
+										<hui-element class="fixed"></hui-element>
+										<hui-element class="grow"></hui-element>
+									</hui-element>
+								</hui-element>
+							</hui-element>
+							<hui-element class="grow">
+								<hui-element class="nested">
+									<hui-element class="line">
+										<hui-element class="fixed"></hui-element>
+										<hui-element class="grow"></hui-element>
+										<hui-input-box/>
+									</hui-element>
+									<hui-element class="line">
+										<hui-element class="fixed"></hui-element>
+										<hui-element class="grow">
+										</hui-element>
+										<hui-slider/>
+									</hui-element>
+								</hui-element>
+							</hui-element>
+						</hui-element>
+						
+						<hui-element class="line">
+							<hui-element class="grow">
+								<hui-element class="nested">
+									<hui-element class="line">
+										<hui-element class="fixed"></hui-element>
+										<hui-element class="grow"></hui-element>
+									</hui-element>
+									<hui-element class="line">
+										<hui-element class="fixed"></hui-element>
+										<hui-element class="grow"></hui-element>
+									</hui-element>
+								</hui-element>
+							</hui-element>
+							<hui-element class="grow">
+								<hui-element class="nested">
+									<hui-element class="line">
+										<hui-element class="fixed"></hui-element>
+											<hui-input-box/>
+										<hui-element class="grow"></hui-element>
+									</hui-element>
+									<hui-element class="line">
+										<hui-element class="fixed"></hui-element>
+										<hui-element class="grow">
+											<hui-slider/>
+										</hui-element>
+									</hui-element>
+								</hui-element>
+							</hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="grow"></hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="grow"></hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="grow"></hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="grow"></hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="grow"></hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="grow"></hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="grow"></hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="grow"></hui-element>
+						</hui-element>
+
+						<hui-element class="line">
+							<hui-element class="fixed"></hui-element>
+							<hui-element class="grow"></hui-element>
+						</hui-element>
+					</hui-element>
+					
+				</hui-element>
+				<hui-element class="second"/>
+
+				</hui-split-container>
+
+			</hui-element>
+
 		</gym-layouts>
 }
 

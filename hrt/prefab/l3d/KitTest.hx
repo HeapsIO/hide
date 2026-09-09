@@ -34,6 +34,8 @@ typedef ListItem = {
 	x: Float,
 	y: Float,
 	name: String,
+	role: String,
+	subclass: String,
 }
 
 class KitTestTool1 extends hrt.prefab.editor.Tool {
@@ -92,7 +94,7 @@ class KitTest extends Object3D {
 	var substruct: SubStruct = { innerValue: 0.0, };
 
 
-	@:s var list: Array<ListItem> = [{x: 0, y: 0, name: "Alice"}, {x: 42, y: 15, name: "Bob"}];
+	@:s var list: Array<ListItem> = [{x: 0, y: 0, name: "Alice", role: "DPS", subclass: "Rogue"}, {x: 42, y: 15, name: "Bob", role: "Healer", subclass: "Cook"}];
 
 	override function edit2(ctx:hrt.prefab.EditContext2) {
 		this.props = this.props ?? {};
@@ -110,13 +112,17 @@ class KitTest extends Object3D {
 			content.build(
 				<root>
 					<input field={item.name}/>
+					<line>
+						<input field={item.role}/>
+						<input field={item.subclass}/>
+					</line>
 				</root>
 			);
 		}
 
 		ctx.build(
 			<category("List")>
-				<list(makeListItem, () -> {x: 0, y:0, name:""}) field={list}/>
+				<list(makeListItem, () -> {x: 0, y:0, name:"", role:"", subclass:""}) field={list}/>
 			</category>
 		);
 

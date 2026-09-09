@@ -107,6 +107,13 @@ class List<T> extends Widget<Array<T>> {
 
 		var listEditor = new hrt.ui.HuiListEditor(value, generateListLine);
 		listEditor.label.text = label ?? "";
+		listEditor.change = (effects) -> {
+			parent?.change({
+				callback: effects,
+				isTemporaryEdit: false,
+				recordUndo: true
+			});
+		}
 		@:privateAccess
 		{
 			listEditor.saveDisplayKey =  "/"+(cast root.editor:hide.view.Prefab.EditContext).getSaveKey(SameKind, getSaveKey(SameKind, id));
@@ -118,15 +125,16 @@ class List<T> extends Widget<Array<T>> {
 	}
 
 	#if hui
-	function generateListLine(header: hrt.ui.HuiElement, content: hrt.ui.HuiElement, item: T, index: Int) {
+	function generateListLine(line: hrt.ui.HuiListEditor.HuiListEditorLine, item: T, index: Int) {
 		var kitHeader = new Line(this, 'item_header_$id');
-		kitHeader.native = header;
+		kitHeader.native = line.headerContent;
 
-		var kitContent = new Line(this, 'item_content_$id');
-		kitContent.native = content;
+		var kitContent = new Element(this, 'item_content_$id');
+		kitContent.native = line.bodyContent;
 
 		makeLine(kitHeader, kitContent, item, index);
 
+		kitHeader.stealChildLabel(line.labelContainer);
 		kitHeader.make(false);
 		kitContent.make(false);
 	}
