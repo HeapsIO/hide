@@ -429,6 +429,11 @@ class Polygon extends Object3D {
 				</block>
 
 				<block if(viewModel.kind == "Custom")>
+					<separator/>
+					<text("Editor controls : <br/>
+						CTRL + Click : Add Point <br/>
+						Suppr : Delete selected point")/>
+					<separator/>
 					<list(customEditorLine, () -> new h2d.col.Point()) field={this.points} onValueChange={refreshPoly} id="polygonEditor"/>
 				</block>
 			</category>
