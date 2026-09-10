@@ -673,6 +673,9 @@
 .cdb .content-modal form .t_flags .values {
   display: table-row;
 }
+.cdb .content-modal form .t_enum .enumstorage {
+  display: table-row;
+}
 .cdb .content-modal form .t_ref .sheet {
   display: table-row;
 }
@@ -689,6 +692,7 @@
   display: table-row;
 }
 .cdb .content-modal form .values,
+.cdb .content-modal form .enumstorage,
 .cdb .content-modal form .sheet,
 .cdb .content-modal form .custom,
 .cdb .content-modal form .structref,

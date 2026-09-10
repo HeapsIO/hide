@@ -77,9 +77,10 @@ class HuiPropsInspector extends HuiElement {
 					insp = el;
 				case TEnum(values):
 					var el = new HuiSelect(field);
-					el.items = [for (oIdx => o in values) { label: o, value: oIdx }];
+					var isStr = c.enumStr == true;
+					el.items = [for (oIdx => o in values) { label: o, value: isStr ? (o : Dynamic) : oIdx }];
 					if (c.opt)
-						el.items.insert(0, { label: "None", value: -1 });
+						el.items.insert(0, { label: "None", value: isStr ? null : -1 });
 					el.value = Reflect.field(props, fieldName);
 					el.onValueChanged = () -> { onValueChanged(props, fieldName, el.value); };
 					insp = el;
@@ -118,6 +119,8 @@ class HuiPropsInspector extends HuiElement {
 			var defaultValue : Dynamic = null;
 			var valueType : cdb.Data.ColumnType = sel.value.type;
 			switch (valueType) {
+				case TEnum(values) if (sel.value.enumStr == true):
+						defaultValue = values[0];
 				case TFloat, TInt, TEnum(_):
 						defaultValue = 0;
 				case TBool:

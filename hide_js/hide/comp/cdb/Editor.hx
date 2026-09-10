@@ -433,7 +433,7 @@ class Editor extends Component {
 
 					switch(c.type) {
 						case cdb.Data.ColumnType.TEnum(e):
-							interp.variables.set(f, e[Reflect.getProperty(cloned, f)]);
+							interp.variables.set(f, Cell.enumValueName(c, e, Reflect.getProperty(cloned, f)));
 						default:
 							interp.variables.set(f, Reflect.getProperty(cloned, f));
 					}
@@ -815,7 +815,7 @@ class Editor extends Component {
 				return;
 			}
 
-			var f = base.getConvFunction(clipSchema.type, destCol.type);
+			var f = base.getConvFunction(clipSchema, destCol);
 			var v : Dynamic = Reflect.field(cliObj, clipSchema.name);
 			if (f == null) {
 				switch ([clipSchema.type, destCol.type]) {

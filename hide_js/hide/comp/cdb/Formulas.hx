@@ -165,7 +165,7 @@ class Formulas {
 				var sub = s.getSub(c);
 				v = [for( o in (v:Array<Dynamic>) ) remap(o, sub)];
 			case TEnum(values):
-				v = values[v];
+				v = Cell.enumValueName(c, values, v);
 			case TFlags(flags):
 				var fl = {};
 				for( i => f in flags )

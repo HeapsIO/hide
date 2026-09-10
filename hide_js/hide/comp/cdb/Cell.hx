@@ -217,7 +217,7 @@ class Cell {
 					var newVal = editor.base.getDefault(pc, true, ps);
 					var oldPe = getPolyEdit();
 					if( oldPe != null ) {
-						var conv = editor.base.getConvFunction(oldPe.col.type, pc.type);
+						var conv = editor.base.getConvFunction(oldPe.col, pc);
 						if( conv != null ) {
 							var oldVal = Reflect.field(oldPe.obj, oldPe.col.name);
 							newVal = conv.f != null ? conv.f(oldVal) : oldVal;
@@ -310,7 +310,7 @@ class Cell {
 
 		switch( column.type ) {
 		case TEnum(values):
-			var doc = getEnumValueDoc(values[value]);
+			var doc = getEnumValueDoc(enumValueName(column, values, value));
 			if (doc != null)
 				elementHtml.title = doc;
 		case TId, TRef(_):
@@ -518,7 +518,7 @@ class Cell {
 		case TBool:
 			val(v?"Y":"N");
 		case TEnum(values):
-			val(values[v]);
+			val(enumValueName(c, values, v));
 		case TImage:
 			html('<span class="error">#DEPRECATED</span>');
 		case TList:
@@ -918,6 +918,11 @@ class Cell {
 		editor.cursor.set(table, x, y, [{ x1: x, y1: y, x2: x, y2: y, origin: {x: x, y: y} }]);
 	}
 
+	public static function enumValueName( c : cdb.Data.Column, values : Array<String>, v : Dynamic ) : String {
+		if( v == null ) return null;
+		return Std.isOfType(v, String) ? v : values[v];
+	}
+
 	function getEnumValueDoc(v: String) {
 		var colDoc = column.documentation == null ? [] : column.documentation.split("\n");
 		var d = colDoc.find(l -> new EReg('\\b$v\\b', '').match(l));
@@ -1080,7 +1085,7 @@ class Cell {
 						case TId | TBool:
 							ret.push("r_" + c.name + "_" + Reflect.field(o.obj, c.name));
 						case TEnum( values ):
-							ret.push("r_" + c.name + "_" + values[Reflect.field(o.obj, c.name)]);
+							ret.push("r_" + c.name + "_" + enumValueName(c, values, Reflect.field(o.obj, c.name)));
 						case TFlags( values ):
 						default:
 					}
@@ -1147,15 +1152,21 @@ class Cell {
 			elementHtml.innerHTML = null;
 			elementHtml.classList.add("edit");
 			#if js
+			var isStr = column.enumStr == true;
+			var noneId = isStr ? "" : "-1";
 			var elts : Array<hide.comp.Dropdown.Choice> = [for( i in 0...values.length ){
-				id : "" + i,
+				id : isStr ? values[i] : "" + i,
 				text : values[i],
 				doc : getEnumValueDoc(values[i]),
 			}];
 			if( column.opt )
-				elts.unshift( { id : "-1", text : "--- None ---" } );
-			var d = new Dropdown(new Element(elementHtml), elts, "" + currentValue, true);
+				elts.unshift( { id : noneId, text : "--- None ---" } );
+			var d = new Dropdown(new Element(elementHtml), elts, currentValue == null ? noneId : "" + currentValue, true);
 			d.onSelect = function(v) {
+				if( isStr ) {
+					setValue(v == noneId ? null : v);
+					return;
+				}
 				var val = Std.parseInt(v);
 				if( val < 0 ) val = null;
 				setValue(val);
@@ -1708,7 +1719,7 @@ class Cell {
 									case TId | TBool:
 										ret.push("r_" + c.name + "_" + Reflect.field(o.obj, c.name));
 									case TEnum( values ):
-										ret.push("r_" + c.name + "_" + values[Reflect.field(o.obj, c.name)]);
+										ret.push("r_" + c.name + "_" + enumValueName(c, values, Reflect.field(o.obj, c.name)));
 									case TFlags( values ):
 									default:
 								}

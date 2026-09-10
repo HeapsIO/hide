@@ -70,6 +70,14 @@ class ModalColumnForm extends Modal {
 				<td><div contenteditable="true" id="values" class="custom-text-edit-standalone" style="min-height: 3em; max-width: 170px;"></div>
 				</tr>
 
+				<tr class="enumstorage">
+				<td>Storage<td>
+				<select name="enumStorage">
+					<option value="int">Int</option>
+					<option value="string">String</option>
+				</select>
+				</tr>
+
 				<tr class="sheet">
 				<td>Sheet
 				<td><select name="sheet"></select>
@@ -296,6 +304,7 @@ class ModalColumnForm extends Modal {
 				form.find(".doc").removeClass("hide");
 			}
 			updateDefaultValueField();
+			form.find("[name=enumStorage]").val(column.enumStr == true ? "string" : "int");
 			switch( column.type ) {
 			case TEnum(values), TFlags(values):
 				form.find("#values")[0].innerText = values.join("\n");
@@ -525,6 +534,8 @@ class ModalColumnForm extends Modal {
 		if( v.doc != "" ) c.documentation = v.doc;
 
 		if( v.type == "structref" && v.stype != null && v.stype != "" ) c.structRef = v.stype;
+		// only set when true so the flag is absent from the cdb for classic int-stored enums
+		if( v.type == "enum" && v.enumStorage == "string" ) c.enumStr = true;
 		if( v.shared == "on" ) {
 			c.shared = true;
 		}
