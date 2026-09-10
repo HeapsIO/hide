@@ -13,7 +13,7 @@ class HuiMainLayout extends HuiElement {
 				<hui-button-menu(() -> [{label: "Copy"}, {label: "Paste"}, {label: "Cut"}, {isSeparator: true}, {label: "Other stuff", menu: [{label: "Hello there"}]}])>
 					<hui-text("Edit")/>
 				</hui-button-menu>
-				<hui-button-menu(() -> [{label: "Resources", click: () -> hide.Ide.inst.openView(hide.view.FileBrowser, {rootPath: hide.Ide.inst.resourceDir}, Left)}, {label: "Scene"}, {label: "Settings"}, {label: "Gym", click: () -> hide.Ide.inst.openView(HuiViewGym, {})}])>
+				<hui-button-menu(viewMenu)>
 					<hui-text("View")/>
 				</hui-button-menu>
 
@@ -73,6 +73,22 @@ class HuiMainLayout extends HuiElement {
 			{isSeparator: true},
 			{label: "Open Haxe Project", click: () -> Sys.command("Code", [hide.Ide.inst.projectDir])},
 			{label: "Exit", click: () -> hide.Ide.inst.exit()}
+		];
+	}
+
+	function viewMenu() : Array<HuiMenu.MenuItem> {
+		return [
+			{label: "Resources", click: () -> hide.Ide.inst.openView(hide.view.FileBrowser, {rootPath: hide.Ide.inst.resourceDir}, Left)},
+			{label: "Scene"},
+			{label: "Settings"},
+			{label: "Gym", click: () -> hide.Ide.inst.openView(HuiViewGym, {})},
+			{isSeparator: true},
+			{label: "Ui Scale", menu: [
+					for (name => scale in hrt.ui.HuiBase.UIScales) {
+						{label: name, radio: () -> hide.Ide.inst.getLocalStorage(hrt.ui.HuiBase.UIScaleKey) ?? "x1.0" == name, click: () -> hide.Ide.inst.saveLocalStorage(hrt.ui.HuiBase.UIScaleKey, name)}
+					}
+				]
+			},
 		];
 	}
 

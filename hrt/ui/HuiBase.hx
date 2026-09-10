@@ -342,7 +342,7 @@ class HuiBase extends HuiElement {
 		}
 
 		// HiDPI support for hldx targets
-		var upscale = hxd.Window.getInstance().displayScale;
+		var upscale = hxd.Window.getInstance().displayScale * UIScales.get(hide.Ide.inst.getLocalStorage(UIScaleKey) ?? "x1.0");
 
 		if (previousUiScale != upscale) {
 			previousUiScale = upscale;
@@ -356,8 +356,15 @@ class HuiBase extends HuiElement {
 		update(dt);
 
 		style.sync(dt);
-
 	}
+
+	public static final UIScaleKey = "style.uiScale";
+
+	public static final UIScales = [
+		"x1.0" => 1.0,
+		"x1.25" => 1.25,
+		"x1.5" => 1.5,
+	];
 
 	function updateTooltip(dt: Float) {
 		var s2d = getScene();
