@@ -1757,8 +1757,9 @@ class Prefab extends HuiView<{path: String}> {
 			if (oldParent == parent && oldIndex > index)
 				oldIndex += 1;
 		}
-
-		if (parent != null && oldTransform != null)
+		
+		var preserveTransform = prefab.parent != null;
+		if (parent != null && oldTransform != null && preserveTransform)
 		{
 			var parentTransform = parent.to(hrt.prefab.Object3D)?.getRelativeTransform(null, null, true) ?? h3d.Matrix.I();
 			parentTransform.invert();
@@ -2162,7 +2163,7 @@ class Prefab extends HuiView<{path: String}> {
 		if (dist < 0)
 			dist = hxd.Math.POSITIVE_INFINITY;
 		var hits = getObjectsAt(Std.int(sceneEditor.scene.s2d.mouseX), Std.int(sceneEditor.scene.s2d.mouseY));
-		if (hits.length == 0) {
+		if (hits.length > 0) {
 			dist = hxd.Math.min(hits[0].distance, dist);
 		}
 
