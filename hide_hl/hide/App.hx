@@ -36,11 +36,15 @@ class App extends hxd.App {
 		var winSize = ide.getLocalStorage("windowSize") ?? {w: 800, h: 600};
 		// hxd.Window.getInstance().resize(winSize.w, winSize.h);
 
-		hxd.Window.getInstance().setIcon(hrt.ui.HuiRes.ui.icons.hide_icon.toBitmap());
-
 		#if hldx
+		// var iconPath = 'hide_hl/res/${hrt.ui.HuiRes.hide.entry.path}';
+		// iconPath = StringTools.replace(iconPath, "/", "\\");
+		// trace(iconPath);
+		// @:privateAccess hxd.Window.getInstance().window.setIconFromFile(iconPath);
 		@:privateAccess hxd.Window.getInstance().window.maximize();
 		@:privateAccess hxd.Window.getInstance().window.setDarkMode(true);
+		#else
+		hxd.Window.getInstance().setIcon(hrt.ui.HuiRes.ui.icons.hide_icon.toBitmap());
 		#end
 
 		hxd.Window.getInstance().onClose = () -> {
@@ -161,6 +165,16 @@ class App extends hxd.App {
 
 		hxd.Res.initLocal();
 		hrt.ui.HuiRes.init();
+
+		#if hldx
+		hxd.System.createWindow = () -> {
+			var iconPath = 'hide_hl/res/${hrt.ui.HuiRes.hide.entry.path}';
+			iconPath = StringTools.replace(iconPath, "/", "\\");
+			trace(iconPath);
+			dx.Window.setDefaultIcon(dx.Icon.loadIcon(@:privateAccess iconPath.bytes, -1, -1));
+			new hxd.Window("HideHL", 255, 255);
+		}
+		#end
 
 		new App();
 	}
