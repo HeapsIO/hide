@@ -21,6 +21,9 @@ class HuiCommands {
 	static public var rename = new HuiCommand("Rename", {key: K.F2});
 
 	static public var selectAll = new HuiCommand("Select All", {ctrl: true, key: K.A});
+
+	static public var group = new HuiCommand("Group", {ctrl: true, key: K.G});
+
 }
 
 class HuiDebugCommands {

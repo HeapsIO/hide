@@ -141,6 +141,8 @@ class Prefab extends HuiView<{path: String}> {
 			setSelection(all, SelectionFlags.ofInt(0));
 		});
 
+		registerCommand(hrt.ui.HuiCommands.group, View, () -> group3D(getSelectionOrdered()));
+
 		@:privateAccess sceneEditor.debugGraph = new h2d.Graphics(sceneEditor.scene.s2d);
 
 		sceneEditor.onSceneEvent = onSceneEvent;
@@ -1024,6 +1026,33 @@ class Prefab extends HuiView<{path: String}> {
 		return selection;
 	}
 
+	function group3D(selection: Array<hrt.prefab.Prefab>) : Void {
+		var group = new hrt.prefab.Object3D(null, null);
+		group.name = "Group";
+		var abs = gizmo.getAbsPos();
+
+		var groupParent = selection[0].parent;
+		var index = groupParent.children.indexOf(selection[0]);
+
+		// Set the group position to the center of the selection
+		{
+			var parentPos = groupParent.findFirstLocal3d().getAbsPos();
+			var finalPos = new h3d.Matrix();
+			finalPos.load(parentPos);
+			finalPos.invert();
+			finalPos.multiply(abs, parentPos);
+			group.x = finalPos.tx;
+			group.y = finalPos.ty;
+			group.z = finalPos.tz;
+		}
+
+		var action = hrt.tools.Undo.actionFromActions([
+			actionReparentPrefab(group, groupParent, index),
+			actionReparentPrefabs(selection, group, 0),
+		]);
+		getView().undo.run(action, true);
+	}
+
 	function setSelection(selection: Array<hrt.prefab.Prefab>, flags: SelectionFlags, force: Bool = false) {
 		var oldSelection = [for (p => _ in selectedPrefabs) p];
 		if (selection.length == oldSelection.length && !force) {
@@ -1122,6 +1151,59 @@ class Prefab extends HuiView<{path: String}> {
 			newList.push(prefab);
 		}
 		return newList;
+	}
+
+	/**
+		Returns the first parent that has all the other prefabs as a children
+		NOTE : NOT WOKRING at the moment
+	**/
+	function getCommonParent(prefabs: Array<hrt.prefab.Prefab>) : hrt.prefab.Prefab {
+		throw "please debug this function";
+		prefabs = prefabs.copy();
+		var parentCount: Array<Int> = [];
+		var min = 999999;
+
+		// get number of parent for all prefabs
+		for (i => prefab in prefabs) {
+			var count = 0;
+			var cur = prefab;
+			while(cur != null) {
+				count ++;
+				cur = cur.parent;
+			}
+			parentCount[i] = count;
+			min = hxd.Math.imin(min, count);
+		}
+
+		// follow the parent chain until all prefabs have the
+		// same number of parents
+		for (i => prefab in prefabs) {
+			while (parentCount[i] > min) {
+				prefabs[i] = prefabs[i].parent;
+				parentCount[i] --;
+				if (prefabs[i] == null)
+					throw "assert";
+			}
+		}
+
+		// follow the parent chain until all prefabs have the same parent
+		var depth = min;
+		for (i in 0...prefabs.length-1) {
+			if (depth == 0)
+				break;
+			if (prefabs[i] != prefabs[i+1])
+			{
+				for (j in 0...prefabs.length) {
+					prefabs[j] = prefabs[j].parent;
+					if (prefabs[j] == null)
+						throw "assert";
+				}
+				depth --;
+				continue;
+			}
+			break;
+		}
+		return prefabs[0];
 	}
 
 	function sanitizeReparent(target: hrt.prefab.Prefab, elements: Array<hrt.prefab.Prefab>) {
