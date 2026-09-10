@@ -58,6 +58,7 @@ class Prefab extends HuiView<{path: String}> {
 	var lastPushX : Float = -100;
 	var lastPushY : Float = -100;
 	var movedSinceLastPush : Bool = false;
+	var movedPush : Bool = false;
 
 	var previewDrag : hrt.prefab.Object3D;
 
@@ -1670,9 +1671,11 @@ class Prefab extends HuiView<{path: String}> {
 		}
 	}
 
-	function actionCreatePrefab(parent: hrt.prefab.Prefab, index: Int, cl: Class<hrt.prefab.Prefab>) : hrt.tools.Undo.Action {
+	function actionCreatePrefab(parent: hrt.prefab.Prefab, index: Int, cl: Class<hrt.prefab.Prefab>, ?onNew: (prefab: hrt.prefab.Prefab) -> Void) : hrt.tools.Undo.Action {
 		var newPrefab = Type.createInstance(cl, []);
 		newPrefab.name = Type.getClassName(cl).split(".").pop();
+		if (onNew != null)
+			onNew(newPrefab);
 		return actionAddSelectPrefab(parent, index, newPrefab);
 	}
 
@@ -1945,8 +1948,8 @@ class Prefab extends HuiView<{path: String}> {
 		return Type.createInstance(cl, [null, null]);
 	}
 
-	function createPrefabMenu(parent: hrt.prefab.Prefab) : Array<hrt.ui.HuiMenu.MenuItem> {
-		var callback = (cl) -> getView().undo.run(actionCreatePrefab(parent, parent.children.length, cl), true);
+	function createPrefabMenu(parent: hrt.prefab.Prefab, ?onNew: (prefab: hrt.prefab.Prefab) -> Void) : Array<hrt.ui.HuiMenu.MenuItem> {
+		var callback = (cl) -> getView().undo.run(actionCreatePrefab(parent, parent.children.length, cl, onNew), true);
 
 		var lines: Array<hrt.ui.HuiMenu.MenuItem> = [];
 
@@ -1998,6 +2001,7 @@ class Prefab extends HuiView<{path: String}> {
 			case EMove:
 				if (hxd.Math.distance(lastPushX - e.relX, lastPushY - e.relY) > 5.0) {
 					movedSinceLastPush = true;
+					movedPush = true;
 				}
 
 				if (boxSelectStart?.distance(inline new h2d.col.Point(e.relX, e.relY)) > 5.0) {
@@ -2005,8 +2009,10 @@ class Prefab extends HuiView<{path: String}> {
 					boxSelectEnd.set(e.relX, e.relY);
 				}
 			case EPush:
+				pushing = true;
+				movedPush = false;
+
 				if (e.button == 0) {
-					pushing = true;
 
 					boxSelectStart = new h2d.col.Point(e.relX, e.relY);
 
@@ -2140,8 +2146,48 @@ class Prefab extends HuiView<{path: String}> {
 
 					getScene().stopCapture();
 				}
+				if (e.button == hxd.Key.MOUSE_RIGHT && pushing && !movedPush) {
+					contextMenu();
+				}
+				pushing = false;
 			default:
 		}
+	}
+
+	function contextMenu() {
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [];
+		
+		var ray = sceneEditor.scene.s3d.camera.rayFromScreen(sceneEditor.scene.s2d.mouseX, sceneEditor.scene.s2d.mouseY, sceneEditor.scene.sceneWidth, sceneEditor.scene.sceneHeight);
+		var dist = ray.distance(new h3d.col.Plane(0,0,1,0));
+		if (dist < 0)
+			dist = hxd.Math.POSITIVE_INFINITY;
+		var hits = getObjectsAt(Std.int(sceneEditor.scene.s2d.mouseX), Std.int(sceneEditor.scene.s2d.mouseY));
+		if (hits.length == 0) {
+			dist = hxd.Math.min(hits[0].distance, dist);
+		}
+
+		if (dist >= hxd.Math.POSITIVE_INFINITY)
+			dist = 10.0;
+
+		var pos = ray.getPoint(dist);
+
+		var parent = /*getSelectionOrdered()[0] ??*/ prefab;
+		menu.push({label: "Add Prefab", menu: createPrefabMenu(parent, (prefab: hrt.prefab.Prefab) -> {
+				var o3d = prefab.to(hrt.prefab.Object3D);
+				if (o3d != null) {
+					var inv =  parent.findFirstLocal3d().getAbsPos().getInverse();
+					pos.transform(inv);
+
+					o3d.x = pos.x;
+					o3d.y = pos.y;
+					o3d.z = pos.z;
+				}
+			})
+		});
+
+		App.defer(() -> {
+			uiBase.contextMenu(menu);
+		});
 	}
 
 	public function tryMakeChildren(prefab: hrt.prefab.Prefab) : Void {
