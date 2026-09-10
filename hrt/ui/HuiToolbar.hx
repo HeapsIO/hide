@@ -454,7 +454,7 @@ class HuiRenderProfilePopup extends HuiPopup {
 				</hui-toggle>
 				<hui-text("Edit Render Profile") class="label"/>
 			</hui-element>
-			<hui-element class="horizontal" if (widget.isPrefabView())>
+			<hui-element class="horizontal">
 				<hui-checkbox id="shadow-toggle"/>
 				<hui-text("Shadows") class="label"/>
 			</hui-element>
