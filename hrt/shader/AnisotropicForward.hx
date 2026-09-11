@@ -41,7 +41,50 @@ class FlatValue extends hxsl.Shader {
 	}
 }
 
-class NoiseTexture extends hxsl.Shader {
+class FlowmapValue extends hxsl.Shader {
+	static var SRC = {
+
+		@input var input : {
+			var uv : Vec2;
+			var tangent : Vec3;
+		};
+
+		@param var intensity : Float;
+		@param var rotation : Float;
+		@param var flowmap : Sampler2D;
+
+		var transformedNormal : Vec3;
+		var modelView : Mat4;
+
+		var anisotropy : Float;
+		var direction : Vec3;
+		var calculatedUV : Vec2;
+
+		@var var transformedTangent : Vec4;
+
+		function __init__vertex() {
+			transformedTangent = vec4(input.tangent * modelView.mat3(),input.tangent.dot(input.tangent) > 0.5 ? 1. : -1.);
+			calculatedUV = input.uv;
+		}
+
+		function fragment()  {
+			var N = transformedNormal.normalize();
+			var T = transformedTangent.xyz.normalize();
+			var B = N.cross(T) * -transformedTangent.w;
+
+			var c = cos(rotation);
+			var s = sin(rotation);
+			var Tr = T * c + B * s;
+			var Br = B * c - T * s;
+
+			var f = unpackNormal(flowmap.get(calculatedUV));
+			direction = (f.x * Tr + f.y * Br + f.z * N).normalize();
+			anisotropy = intensity * f.length();
+		}
+	}
+}
+
+class NoiseTextureValue extends hxsl.Shader {
 	static var SRC = {
 
 		@param var intensityFactor : Float;
@@ -88,8 +131,23 @@ class VertexValue extends hxsl.Shader {
 	}
 }
 
+class DebugDir extends hxsl.Shader {
+	static var SRC = {
+
+		@var var direction : Vec3;
+
+		var pixelColor : Vec4;
+
+		function fragment()  {
+			pixelColor = vec4(direction * 0.5 + 0.5, 1.0);
+		}
+	}
+}
+
 class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 	static var SRC = {
+
+		@const var localDirection : Bool;
 
 		//-----------------------------------------------------------------------------
 		//-- Uniforms -----------------------------------------------------------------
@@ -268,7 +326,9 @@ class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 		{
 			view = (cameraPosition - transformedPosition).normalize();
 			NdV = transformedNormal.dot(view).max(0.);
-			var tmp = cross(direction * global.modelView.mat3(), transformedNormal).normalize();
+			var tmp = direction;
+			if(localDirection)
+				tmp = cross(direction * global.modelView.mat3(), transformedNormal).normalize();
 			bitangentWorld = cross(tmp, transformedNormal).normalize();
 			tangentWorld = cross(bitangentWorld, transformedNormal).normalize();
 		}

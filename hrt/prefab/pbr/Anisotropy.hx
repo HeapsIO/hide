@@ -4,9 +4,10 @@ import hrt.shader.AnisotropicForward;
 
 enum abstract AnisotropyMode(String) {
 	var Flat;
-	var Texture;
+	var NoiseTexture;
 	var Vertex;
 	var Frequency;
+	var FlowMap;
 }
 
 @:prefabIcon(HuiRes.ui.icons.prefab.anisotropy)
@@ -24,6 +25,10 @@ class Anisotropy extends Prefab {
 	@:s public var noiseIntensityPath : String = null;
 	@:s public var noiseDirectionPath : String = null;
 	@:s public var rotationOffset : Float = 0.0;
+
+	@:s public var flowMapPath : String = null;
+
+	@:s public var debugDirection : Bool = false;
 
 	public function new(parent, shared: ContextShared) {
 		super(parent,shared);
@@ -46,11 +51,13 @@ class Anisotropy extends Prefab {
 
 	function refreshShaders() {
 		var fv = new FlatValue();
-		var nt = new NoiseTexture();
+		var nt = new NoiseTextureValue();
 		var ff = new FrequencyValue();
 		var vv = new VertexValue();
+		var fm = new FlowmapValue();
 
 		var as = new AnisotropicForward();
+		var dd = new DebugDir();
 
 		var noiseIntensityTexture = noiseIntensityPath != null ? shared.loadTexture(noiseIntensityPath) : null;
 		var noiseDirectionTexture = noiseDirectionPath != null ? shared.loadTexture(noiseDirectionPath) : null;
@@ -58,12 +65,14 @@ class Anisotropy extends Prefab {
 		var mat = getMaterials();
 
 		for( m in mat ) {
-			m.mainPass.removeShader(m.mainPass.getShader(NoiseTexture));
+			m.mainPass.removeShader(m.mainPass.getShader(NoiseTextureValue));
 			m.mainPass.removeShader(m.mainPass.getShader(FlatValue));
 			m.mainPass.removeShader(m.mainPass.getShader(FrequencyValue));
 			m.mainPass.removeShader(m.mainPass.getShader(VertexValue));
+			m.mainPass.removeShader(m.mainPass.getShader(FlowmapValue));
 
 			m.mainPass.removeShader(m.mainPass.getShader(AnisotropicForward));
+			m.mainPass.removeShader(m.mainPass.getShader(DebugDir));
 		}
 
 		for( m in mat ) {
@@ -71,25 +80,28 @@ class Anisotropy extends Prefab {
 			if( m.mainPass.name != "forward" )
 				continue;
 
-			if( mode == Texture && noiseIntensityTexture != null && noiseDirectionTexture != null ) {
+			if( mode == NoiseTexture && noiseIntensityTexture != null && noiseDirectionTexture != null ) {
 				m.mainPass.addShader(nt);
 			}
 			else {
 				switch mode {
-					case Texture,Flat: m.mainPass.addShader(fv);
+					case NoiseTexture,Flat: m.mainPass.addShader(fv);
 					case Vertex : m.mainPass.addShader(vv);
 					case Frequency:	m.mainPass.addShader(ff);
+					case FlowMap: m.mainPass.addShader(fm);
 					default:
 				}
 			}
 
-			m.mainPass.addShader(as);
+			if( debugDirection )
+				m.mainPass.addShader(dd);
+			else 
+				m.mainPass.addShader(as);
 		}
 	}
 
 	override function updateInstance(?propName : String ) {
 		for( m in getMaterials() ) {
-
 			var fv = m.mainPass.getShader(FlatValue);
 			if( fv != null ) {
 				fv.intensity = intensity;
@@ -106,7 +118,7 @@ class Anisotropy extends Prefab {
 				ff.dirVector.set(hxd.Math.cos(angle), hxd.Math.sin(angle), 0);
 			}
 
-			var nt = m.mainPass.getShader(NoiseTexture);
+			var nt = m.mainPass.getShader(NoiseTextureValue);
 			if( nt != null ) {
 				nt.noiseIntensityTexture = noiseIntensityPath != null ? shared.loadTexture(noiseIntensityPath) : null;
 				nt.noiseDirectionTexture = noiseDirectionPath != null ? shared.loadTexture(noiseDirectionPath) : null;
@@ -118,6 +130,16 @@ class Anisotropy extends Prefab {
 			if( vv != null ) {
 				vv.intensity = intensity;
 			}
+
+			var fm = m.mainPass.getShader(FlowmapValue);
+			if( fm != null ) {
+				fm.intensity = intensity;
+				fm.rotation = hxd.Math.degToRad(rotationOffset);
+				fm.flowmap = flowMapPath != null ? shared.loadTexture(flowMapPath) : null;
+			}
+
+			var as = m.mainPass.getShader(AnisotropicForward);
+			as?.localDirection = fm != null ? false : true;
 		}
 	}
 
@@ -133,15 +155,17 @@ class Anisotropy extends Prefab {
 			<root>
 				<category("Anisotropy")>
 					<select field={mode} onValueChange={rebuild}/>
-					<range(0, 1) field={intensity} if(mode == Flat || mode == Frequency || mode == Vertex)/>
+					<file label="Flowmap" field={flowMapPath} type="texture" if(mode == FlowMap)/>
+					<range(0, 1) field={intensity} if(mode == Flat || mode == Frequency || mode == Vertex || mode == FlowMap)/>
 					<range(0, 360) field={direction} if(mode == Flat || mode == Frequency)/>
-					<range(0, 1) label="Factor" field={intensityFactor} if(mode == Texture)/>
-					<range(0, 360) field={rotationOffset} if(mode == Texture)/>
-					<file label="Intensity" field={noiseIntensityPath} type="texture" if(mode == Texture)/>
-					<file label="Direction" field={noiseDirectionPath} type="texture" if(mode == Texture)/>
+					<range(0, 1) label="Factor" field={intensityFactor} if(mode == NoiseTexture)/>
+					<range(0, 360) field={rotationOffset} if(mode == NoiseTexture || mode == FlowMap)/>
+					<file label="Intensity" field={noiseIntensityPath} type="texture" if(mode == NoiseTexture)/>
+					<file label="Direction" field={noiseDirectionPath} type="texture" if(mode == NoiseTexture)/>
 					<range(0, 1) field={noiseIntensity} if(mode == Frequency)/>
 					<range(0, 100) field={noiseFrequency} if(mode == Frequency)/>
 				</category>
+				<checkbox label="Debug Direction" field={debugDirection} onValueChange={rebuild}/>
 			</root>
 		);
 	}
