@@ -53,13 +53,6 @@ class HuiTabContainer extends HuiElement {
 			}
 		}
 
-		if (activeTabElement != null) {
-			var view = Std.downcast(activeTabElement, HuiView);
-			if (view != null) {
-				view.onDisplay();
-			}
-		}
-
 		saveDisplayState("currentTab", content.childElements.indexOf(activeTabElement));
 
 		syncActiveTabStyle();

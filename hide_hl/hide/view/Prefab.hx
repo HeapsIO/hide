@@ -524,6 +524,11 @@ class Prefab extends HuiView<{path: String}> {
 		sceneEditor.onViewLoadState();
 	}
 
+	override function onDisplay() {
+		// filters could have changed from another prefab editor
+		updateSceneFilters();
+	}
+
 	function getDropPath(op: HuiDragOp) : Null<String> {
 		if (op.type != HuiFileBrowser.fileDragOp)
 			return null;
@@ -666,7 +671,24 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	function getDefaultSceneFilters() : Map<String, Bool> {
-		return hide.Ide.inst.config.project.get(DEFAULT_SCENE_FILTERS, ([]:Map<String, Bool>));
+		var filters = hide.Ide.inst.config.project.get(DEFAULT_SCENE_FILTERS);
+		if (filters == null)
+			return [];
+		var val : Map<String, Bool> = [];
+		for (key in Reflect.fields(filters)) {
+			val.set(key, Reflect.field(filters, key));
+		}
+		return val;
+	}
+
+	function saveDefaultSceneFilters() {
+		var save = {};
+		for (key => value in actualSceneFilters) {
+			Reflect.setField(save, key, value);
+		}
+		hide.Ide.inst.config.project.set(DEFAULT_SCENE_FILTERS, save);
+		updateSceneFilters();
+		saveSceneFilters();
 	}
 
 	function setSceneFilter(key: String, value: Bool) {
@@ -1877,7 +1899,7 @@ class Prefab extends HuiView<{path: String}> {
 			if (oldParent == parent && oldIndex > index)
 				oldIndex += 1;
 		}
-		
+
 		var preserveTransform = prefab.parent != null;
 		if (parent != null && oldTransform != null && preserveTransform)
 		{
@@ -2277,7 +2299,7 @@ class Prefab extends HuiView<{path: String}> {
 
 	function contextMenu() {
 		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [];
-		
+
 		var ray = sceneEditor.scene.s3d.camera.rayFromScreen(sceneEditor.scene.s2d.mouseX, sceneEditor.scene.s2d.mouseY, sceneEditor.scene.sceneWidth, sceneEditor.scene.sceneHeight);
 		var dist = ray.distance(new h3d.col.Plane(0,0,1,0));
 		if (dist < 0)

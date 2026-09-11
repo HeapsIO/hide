@@ -61,6 +61,17 @@ class HuiTabViewContainer extends HuiTabContainer {
 		}
 	}
 
+	override function setTab(newElement:HuiElement) {		
+		var old = activeTabElement;
+
+		super.setTab(newElement);
+
+		if (old != newElement) {
+			Std.downcast(old, hrt.ui.HuiView)?.onHide();
+			Std.downcast(newElement, hrt.ui.HuiView)?.onDisplay();
+		}
+	}
+
 	public function getViews() : Array<HuiView<Any>> {
 		return [for (tab in getTabs()) if (Std.downcast(tab, hrt.ui.HuiView) != null) cast tab];
 	}

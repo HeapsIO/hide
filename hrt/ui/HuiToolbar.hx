@@ -335,22 +335,32 @@ class HuiSceneFiltersPopup extends HuiPopup {
 					<hui-text(f) class="label"/>
 				</hui-element>
 			}
+			<hui-button tip={"Save the current scene filters as the new default for this project prefab editor for this user"} onClick={(e) -> saveDefault()}>
+				<hui-text("Save as Default")/>
+			</hui-button>
 		</hui-scene-filters-popup>
 
+	var widget : HuiSceneFiltersWidget;
 
 	public function new(widget : HuiSceneFiltersWidget, ?parent: h2d.Object) {
 		super(parent);
+
+		this.widget = widget;
 
 		initComponent();
 
 		@:privateAccess
 		for (idx => filter in widget.filters) {
-			filterCb[idx].value = widget.view.actualSceneFilters.get(filter);
+			filterCb[idx].value = !widget.view.actualSceneFilters.get(filter);
 			filterCb[idx].onValueChanged = () -> {
-				widget.view.setSceneFilter(filter, filterCb[idx].value);
+				widget.view.setSceneFilter(filter, !filterCb[idx].value);
 				widget.view.updateSceneFilters();
 			}
 		}
+	}
+
+	public function saveDefault() {
+		@:privateAccess widget.view.saveDefaultSceneFilters();
 	}
 }
 
