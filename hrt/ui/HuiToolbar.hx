@@ -306,68 +306,22 @@ class HuiSceneFiltersWidget extends HuiElement {
 	public static var FILTER_TYPES_KEY = "prefabeditor.filterTypes";
 	public static var HIDDEN_FILTERS_TYPES_KEY = "hiddenFiltersType";
 
-	public var filters = new Map<String, Bool>();
-	var prefab : hrt.prefab.Prefab;
-	var editor : hrt.ui.HuiSceneEditor;
+	public var filters = new Array<String>();
+	var view : hide.view.Prefab;
 
 	public function new(view : hide.view.Prefab, ?parent : h2d.Object) {
 		super(parent);
-		this.prefab = @:privateAccess view.prefab;
-		this.editor = @:privateAccess view.sceneEditor;
+		this.view = view;
+		filters = hide.Ide.inst.currentConfig.get(FILTER_TYPES_KEY);
 		initComponent();
-		getSceneFilters();
-		applySceneFilters();
 
 		btn.onClick = (_) -> {
 			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiSceneFiltersPopup(this), { object: Element(this), directionX: StartInside, directionY: EndOutside });
 		}
 	}
 
-	function getSceneFilters() {
-		var availableFilters : Array<String> = hide.Ide.inst.currentConfig.get(FILTER_TYPES_KEY);
-		var hiddenFilters = editor.getDisplayState(HIDDEN_FILTERS_TYPES_KEY, []);
-		filters = new Map();
-		for (f in availableFilters ?? [])
-			filters.set(f, !hiddenFilters.contains(f));
-	}
-
 	function applySceneFilters() {
-		if (prefab == null)
-			return;
-
-		var hiddenFilters = editor.getDisplayState(HIDDEN_FILTERS_TYPES_KEY, []);
-		for (f in filters.keys()) {
-			if (filters.get(f))
-				hiddenFilters.remove(f);
-			else if (!hiddenFilters.contains(f))
-				hiddenFilters.push(f);
-
-			var all = [];
-			function flatten(prefab : hrt.prefab.Prefab) {
-				all.push(prefab);
-
-				var ref = Std.downcast(prefab, hrt.prefab.Reference);
-				if (ref != null)
-					flatten(ref.refInstance);
-
-				for (c in prefab.children)
-					flatten(c);
-			}
-			flatten(prefab);
-
-			var tag = StringTools.replace(f, "tag:", "");
-			tag = tag != f ? tag : null;
-			var view = Std.downcast(editor.getView(), hide.view.Prefab);
-			var filterOn = filters.get(f);
-			for (p in all) {
-				if (p.type == f || p.getCdbType() == f || (tag != null && (p.props:Dynamic)?.tag == tag)) {
-					var obj3d = Std.downcast(p, hrt.prefab.Object3D);
-					var hidden = view?.hidden.get(obj3d) != null;
-					obj3d?.local3d?.visible = obj3d?.visible && !hidden && filterOn;
-				}
-			}
-		}
-		editor.saveDisplayState(HIDDEN_FILTERS_TYPES_KEY, hiddenFilters);
+		@:privateAccess view.updateSceneFilters();
 	}
 }
 
@@ -375,7 +329,7 @@ class HuiSceneFiltersPopup extends HuiPopup {
 	static var SRC =
 		<hui-scene-filters-popup class="vertical">
 			<hui-text("Scene Filters") class="title"/>
-			for (f in widget.filters.keys()) {
+			for (f in widget.filters) {
 				<hui-element class="horizontal">
 					<hui-checkbox id="filterCb[]"/>
 					<hui-text(f) class="label"/>
@@ -389,14 +343,13 @@ class HuiSceneFiltersPopup extends HuiPopup {
 
 		initComponent();
 
-		var idx = 0;
-		for (k in widget.filters.keys()) {
-			filterCb[idx].value = widget.filters.get(k);
+		@:privateAccess
+		for (idx => filter in widget.filters) {
+			filterCb[idx].value = widget.view.actualSceneFilters.get(filter);
 			filterCb[idx].onValueChanged = () -> {
-				widget.filters.set(k, !widget.filters.get(k));
-				@:privateAccess widget.applySceneFilters();
+				widget.view.setSceneFilter(filter, filterCb[idx].value);
+				widget.view.updateSceneFilters();
 			}
-			idx++;
 		}
 	}
 }

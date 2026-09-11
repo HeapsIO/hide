@@ -30,6 +30,8 @@ class Prefab extends HuiView<{path: String}> {
 	public static var GIZMO_SNAP_STEP_CONFIG_KEY = "editor.gizmoSnapStep";
 	public static var GIZMO_ROTATION_STEP_CONFIG_KEY = "editor.gizmoRotationStep";
 	public static var GIZMO_SNAP_GRID_CONFIG_KEY = "editor.gizmoSnapOnGrid";
+	public static final DEFAULT_SCENE_FILTERS = "editor.defaultSceneFilters";
+	public static final SCENE_FILTERS = "editor.sceneFilters";
 
 	static var editorHideCommand = new hrt.ui.HuiCommands.HuiCommand("Editor Hide", {key: hxd.Key.H});
 
@@ -59,6 +61,10 @@ class Prefab extends HuiView<{path: String}> {
 	var lastPushY : Float = -100;
 	var movedSinceLastPush : Bool = false;
 	var movedPush : Bool = false;
+	var queueRefreshSceneVisibility : Bool = false;
+
+	var localSceneFilters : Map<String, Bool> = [];
+	var actualSceneFilters : Map<String, Bool> = [];
 
 	var previewDrag : hrt.prefab.Object3D;
 
@@ -112,6 +118,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		sceneEditor.load();
 
+		loadSceneFilters();
 		applyEditorVisibility();
 
 		registerCommand(hrt.ui.HuiCommands.HuiDebugCommands.debugReload, View, reload);
@@ -650,6 +657,121 @@ class Prefab extends HuiView<{path: String}> {
 			graphicsOverlay.drawRect(boxSelectStart.x, boxSelectStart.y, boxSelectEnd.x - boxSelectStart.x, boxSelectEnd.y - boxSelectStart.y);
 			graphicsOverlay.endFill();
 		}
+
+		if (queueRefreshSceneVisibility) {
+			queueRefreshSceneVisibility = false;
+
+			refreshVisibility(prefab, true);
+		}
+	}
+
+	function getDefaultSceneFilters() : Map<String, Bool> {
+		return hide.Ide.inst.config.project.get(DEFAULT_SCENE_FILTERS, ([]:Map<String, Bool>));
+	}
+
+	function setSceneFilter(key: String, value: Bool) {
+		localSceneFilters.set(key, value);
+		saveSceneFilters();
+		updateSceneFilters();
+	}
+
+	function loadSceneFilters() {
+		var ds : Dynamic = getDisplayState(SCENE_FILTERS, {});
+		localSceneFilters = [];
+		for (key in Reflect.fields(ds)) {
+			localSceneFilters.set(key, Reflect.field(ds, key));
+		}
+		updateSceneFilters();
+	}
+
+	function updateSceneFilters() {
+		actualSceneFilters = getDefaultSceneFilters().copy();
+
+		for (key => val in localSceneFilters) {
+			actualSceneFilters.set(key, val);
+		}
+
+		queueRefreshSceneVisibility = true;
+	}
+
+	public function iterChildrenAndRef(prefab: hrt.prefab.Prefab, callback: (prefab: hrt.prefab.Prefab) -> Void, onlyEditMode: Bool) {
+		for (child in prefab.children) {
+			callback(child);
+		}
+		var ref = prefab.to(hrt.prefab.Reference);
+		if (ref != null && ref.refInstance != null) {
+			if (!onlyEditMode || ref.editMode != None)
+				callback(ref.refInstance);
+		}
+	}
+
+	/** Recompute the object3D/2D.visible flag for the given prefab **/
+	public function refreshVisibility(prefab: hrt.prefab.Prefab, recursive: Bool) {
+
+		function refreshVisibilityFlags(prefab: hrt.prefab.Prefab) {
+			var o3d = prefab.to(hrt.prefab.Object3D);
+			var o2d = prefab.to(hrt.prefab.Object2D);
+			var parentRef = prefab.shared.parentPrefab?.to(hrt.prefab.Reference);
+			var isHidden = hidden.get(prefab) != null;
+			if (parentRef != null && parentRef.editMode == None) {
+				isHidden = false;
+			}
+			var visible = (o3d?.visible || o2d?.visible) && !isHidden;
+			o3d?.local3d?.visible = visible;
+			o2d?.local2d?.visible = visible;
+			if (recursive) {
+				iterChildrenAndRef(prefab, refreshVisibilityFlags, false);
+			}
+		}
+
+		function filterPrefab(prefab: hrt.prefab.Prefab, filter: String, tag: String) {
+			var matchFilter = prefab.type == filter || prefab.getCdbType() == filter || (tag != null && (prefab.props:Dynamic)?.tag == tag);
+			if (matchFilter) {
+				prefab.to(hrt.prefab.Object3D)?.local3d?.visible = false;
+				prefab.to(hrt.prefab.Object2D)?.local2d?.visible = false;
+			}
+			else if (recursive) {
+				iterChildrenAndRef(prefab, (p) -> filterPrefab(p, filter, tag), false);
+			}
+		}
+
+		refreshVisibilityFlags(prefab);
+
+		for (filter => enabled in actualSceneFilters) {
+			if (enabled) {
+				var tag = StringTools.replace(filter, "tag:", "");
+				tag = tag != filter ? tag : null;
+				filterPrefab(prefab, filter, tag);
+			}
+		}
+
+		if (prefab == this.prefab && recursive) {
+			queueRefreshSceneVisibility = false;
+		}
+	}
+
+	function refreshVisibilityInterrnal(prefab: hrt.prefab.Prefab) {
+		var o3d = prefab.to(hrt.prefab.Object3D);
+		var o2d = prefab.to(hrt.prefab.Object2D);
+		var hidden = hidden.get(prefab) != null;
+		var visible = (o3d?.visible || o2d?.visible) && !hidden;
+		o3d?.visible = visible;
+		o2d?.visible = visible;
+	}
+
+	function saveSceneFilters() {
+		var toSave : Dynamic = {};
+
+		var def = getDefaultSceneFilters();
+
+		for (key => value in localSceneFilters) {
+			var defValue = def.get(key);
+			if (defValue = null || value != defValue) {
+				Reflect.setField(toSave, key, value);
+			}
+		}
+
+		saveDisplayState(SCENE_FILTERS, toSave);
 	}
 
 #if prefab_test_crash
@@ -851,6 +973,7 @@ class Prefab extends HuiView<{path: String}> {
 			sceneEditor.updateRenderProfile();
 
 		sceneEditor.tree.rebuild();
+		refreshVisibility(prefab, true);
 
 		updatePrefabLookup();
 	}
@@ -1156,7 +1279,7 @@ class Prefab extends HuiView<{path: String}> {
 
 	/**
 		Returns the first parent that has all the other prefabs as a children
-		NOTE : NOT WOKRING at the moment
+		NOTE : NOT WORKING at the moment
 	**/
 	function getCommonParent(prefabs: Array<hrt.prefab.Prefab>) : hrt.prefab.Prefab {
 		throw "please debug this function";
@@ -1224,11 +1347,9 @@ class Prefab extends HuiView<{path: String}> {
 				var visible = !hiddenArr.contains(p.getAbsPath(true, true));
 				if (!visible)
 					hidden.set(p, true);
-				var obj3d = Std.downcast(p, hrt.prefab.Object3D);
-				if (obj3d != null && obj3d.local3d != null)
-					obj3d.local3d.visible = obj3d.visible && visible;
 			}
 		}
+		queueRefreshSceneVisibility = true;
 	}
 
 	function getEditorVisibility(prefab: hrt.prefab.Prefab) {
@@ -1251,8 +1372,7 @@ class Prefab extends HuiView<{path: String}> {
 			sceneEditor.tree.rebuild();
 		}
 
-		apply(false);
-		undo.record(apply, false);
+		undo.run(apply, false);
 	}
 
 	public function setEnable(prefabs : Array<hrt.prefab.Prefab>, isEnable: Bool) {
@@ -2053,7 +2173,7 @@ class Prefab extends HuiView<{path: String}> {
 							boxSelectEnd.y = tmp;
 						}
 
-						#if hlphysics
+						#if (hlphysics && false) // disabled atm because too slow in heavy scenes
 						var sceneWidth = sceneEditor.scene.sceneWidth;
 						var sceneHeight = sceneEditor.scene.sceneHeight;
 
