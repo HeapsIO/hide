@@ -139,7 +139,13 @@ class Anisotropy extends Prefab {
 			}
 
 			var as = m.mainPass.getShader(AnisotropicForward);
-			as?.localDirection = fm != null ? false : true;
+			if(as != null){
+				if(fm != null){
+					as.localDirection = false;
+				} else {
+					as.localDirection = true;
+				}
+			}
 		}
 	}
 
