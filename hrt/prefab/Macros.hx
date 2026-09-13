@@ -292,6 +292,14 @@ class Macros {
 	static public function buildPrefab() {
 		var buildFields = Context.getBuildFields();
 
+		if( !Context.defined("editor") && !Context.defined("editor_hl") ) {
+			for( f in buildFields )
+				if( f.name == "edit2" ) {
+					buildFields.remove(f);
+					break;
+				}
+		}
+
 		var typeName = Context.getLocalClass().get().name;
 
 
