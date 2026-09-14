@@ -312,7 +312,7 @@ class HuiSceneFiltersWidget extends HuiElement {
 	public function new(view : hide.view.Prefab, ?parent : h2d.Object) {
 		super(parent);
 		this.view = view;
-		filters = hide.Ide.inst.currentConfig.get(FILTER_TYPES_KEY);
+		filters = hide.Ide.inst.currentConfig.get(FILTER_TYPES_KEY) ?? ([]:Dynamic);
 		initComponent();
 
 		btn.onClick = (_) -> {
