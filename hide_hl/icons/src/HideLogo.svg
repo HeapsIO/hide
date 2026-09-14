@@ -25,9 +25,9 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
      showgrid="true"
-     inkscape:zoom="5.6568543"
-     inkscape:cx="-16.617009"
-     inkscape:cy="5.2149125"
+     inkscape:zoom="16"
+     inkscape:cx="11.0625"
+     inkscape:cy="23.71875"
      inkscape:window-width="1920"
      inkscape:window-height="1009"
      inkscape:window-x="-8"
@@ -51,6 +51,50 @@
   </sodipodi:namedview>
   <defs
      id="defs1">
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath27">
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.999999;stroke-linecap:butt;stroke-linejoin:bevel;paint-order:stroke markers fill;stop-color:#000000"
+         id="rect28-6"
+         width="46.160622"
+         height="39.922417"
+         x="86.574379"
+         y="420.06253" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath24">
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.999999;stroke-linecap:butt;stroke-linejoin:bevel;paint-order:stroke markers fill;stop-color:#000000"
+         id="rect24"
+         width="44.999748"
+         height="77.937294"
+         x="251.53429"
+         y="222.73541" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath15">
+      <rect
+         style="fill:none;stroke:#000000;stroke-linecap:butt;stroke-linejoin:bevel;paint-order:stroke markers fill;stop-color:#000000"
+         id="rect15-7"
+         width="45.034248"
+         height="38.955639"
+         x="262.48285"
+         y="121.00073" />
+    </clipPath>
+    <inkscape:path-effect
+       effect="offset"
+       id="path-effect4"
+       is_visible="true"
+       lpeversion="1.3"
+       linejoin_type="miter"
+       unit="mm"
+       offset="0.2"
+       miter_limit="4"
+       attempt_force_join="false"
+       update_on_knot_move="true" />
     <inkscape:path-effect
        effect="copy_rotate"
        starting_point="0,0"
@@ -72,11 +116,11 @@
        id="linearGradient12"
        inkscape:collect="always">
       <stop
-         style="stop-color:#fbb040;stop-opacity:1;"
+         style="stop-color:#fba940;stop-opacity:1;"
          offset="0.27582419"
          id="stop12" />
       <stop
-         style="stop-color:#f26b21;stop-opacity:1;"
+         style="stop-color:#f23121;stop-opacity:1;"
          offset="1"
          id="stop13" />
     </linearGradient>
@@ -141,14 +185,6 @@
        split_items="false"
        split_open="false"
        link_styles="true" />
-    <filter
-       style="color-interpolation-filters:sRGB"
-       id="filter24"
-       inkscape:label="filter1"
-       x="0"
-       y="0"
-       width="1"
-       height="1" />
     <clipPath
        clipPathUnits="userSpaceOnUse"
        id="clipPath6">
@@ -176,48 +212,9 @@
            sodipodi:arg2="-2.7428656"
            inkscape:rounded="0"
            inkscape:randomized="0"
-           transform="matrix(1.5555555,0,0,1.5555555,-11.999998,9.7777784)"
-           d="m 8.5738416,3.9431789 2.8010364,-6.648658 6.681943,-2.7206793 6.648658,2.8010365 2.720679,6.681943 -2.801036,6.6486579 -6.681943,2.720679 -6.648658,-2.801036 z" />
+           transform="matrix(1.5555555,0,0,1.5555555,-11.999998,9.7777784)" />
       </g>
     </clipPath>
-    <filter
-       style="color-interpolation-filters:sRGB;"
-       inkscape:label="Drop Shadow"
-       id="filter31"
-       x="-0.054545455"
-       y="-0.054545455"
-       width="1.1090909"
-       height="1.1318182">
-      <feFlood
-         result="flood"
-         in="SourceGraphic"
-         flood-opacity="0.63888888888888884"
-         flood-color="rgb(0,0,0)"
-         id="feFlood30" />
-      <feGaussianBlur
-         result="blur"
-         in="SourceGraphic"
-         stdDeviation="0.500000"
-         id="feGaussianBlur30" />
-      <feOffset
-         result="offset"
-         in="blur"
-         dx="0"
-         dy="0.500000"
-         id="feOffset30" />
-      <feComposite
-         result="comp1"
-         operator="in"
-         in="flood"
-         in2="offset"
-         id="feComposite30" />
-      <feComposite
-         result="comp2"
-         operator="over"
-         in="SourceGraphic"
-         in2="comp1"
-         id="feComposite31" />
-    </filter>
     <linearGradient
        inkscape:collect="always"
        xlink:href="#linearGradient12"
@@ -227,12 +224,72 @@
        x2="31"
        y2="30"
        gradientUnits="userSpaceOnUse" />
+    <pattern
+       id="Voronoi459"
+       width="34.0"
+       height="39.0"
+       patternUnits="userSpaceOnUse"
+       patternTransform="translate(-4, -3)">
+      <path
+         d="M 10.418,4.323 16.140,3.268 M 16.140,3.268 20.417,0.000 M 15.910,5.648 16.140,3.268 M 10.418,4.323 11.143,11.606 M 11.143,11.606 11.580,11.827 M 11.580,11.827 15.910,5.648 M 4.423,12.132 11.143,11.606 M 0.545,8.704 4.423,12.132 M 0.000,4.090 10.418,4.323 M 0.000,8.089 0.545,8.704 M 0.545,8.704 1.762,18.318 M 1.762,18.318 3.892,19.019 M 3.892,19.019 7.208,16.906 M 4.423,12.132 7.208,16.906 M 22.730,15.320 23.081,0.000 M 26.883,16.082 31.543,0.000 M 26.883,16.082 32.106,14.846 M 22.730,15.320 26.659,16.214 M 26.659,16.214 26.883,16.082 M 32.106,14.846 33.981,21.317 M 0.000,20.602 1.762,18.318 M 11.580,11.827 16.576,17.538 M 15.910,5.648 16.576,17.538 M 0.000,21.500 2.282,22.305 M 2.282,22.305 3.892,19.019 M 16.576,17.538 16.814,18.187 M 16.814,18.187 22.730,15.320 M 26.659,16.214 28.705,22.184 M 28.705,22.184 29.386,23.529 M 29.386,23.529 33.981,21.317 M 29.294,24.020 29.386,23.529 M 15.022,21.400 16.814,18.187 M 15.022,21.400 15.392,21.798 M 15.392,21.798 28.705,22.184 M 7.208,16.906 13.372,21.812 M 13.372,21.812 15.022,21.400 M 15.392,21.798 18.122,25.174 M 18.122,25.174 29.294,24.020 M 2.282,22.305 7.276,27.306 M 7.276,27.306 7.744,27.256 M 7.744,27.256 13.372,21.812 M 7.744,27.256 9.714,31.473 M 9.714,31.473 9.838,33.968 M 9.714,31.473 21.855,34.104 M 18.122,25.174 21.855,34.104 M 21.855,34.104 25.319,39.000 M 29.294,24.020 32.001,39.000 M 9.838,33.968 14.942,39.000 M 0.000,31.411 7.276,27.306 M 5.778,39.000 9.838,33.968 M 33.981,21.317 34.000,21.318 M 32.106,14.846 34.000,13.531 "
+         style="stroke:#000000;stroke-width:1.0"
+         id="path5" />
+    </pattern>
+    <pattern
+       id="Voronoi5991"
+       width="34.0"
+       height="39.0"
+       patternUnits="userSpaceOnUse"
+       patternTransform="translate(-4, -3)">
+      <path
+         d="M 7.163,3.952 24.098,5.498 M 2.629,2.152 7.163,3.952 M 29.070,12.838 32.904,12.456 M 7.163,3.952 17.418,11.395 M 17.418,11.395 18.905,11.181 M 18.703,13.323 18.905,11.181 M 18.905,11.181 23.300,9.194 M 23.300,9.194 24.098,5.498 M 23.300,9.194 24.502,11.414 M 24.502,11.414 29.070,12.838 M 13.311,14.852 17.418,11.395 M 24.502,11.414 24.634,15.452 M 29.070,12.838 32.028,18.173 M 32.028,18.173 32.904,12.456 M 8.780,16.109 13.311,14.852 M 24.634,15.452 29.182,19.306 M 13.311,14.852 17.825,19.292 M 17.825,19.292 18.703,13.323 M 2.629,2.152 6.709,15.444 M 6.709,15.444 8.780,16.109 M 6.630,15.547 6.709,15.444 M 26.554,21.921 29.182,19.306 M 29.182,19.306 32.451,19.829 M 32.028,18.173 32.451,19.829 M 32.451,19.829 32.862,20.109 M 0.974,20.221 6.630,15.547 M 21.465,20.886 24.634,15.452 M 21.465,20.886 26.554,21.921 M 18.703,13.323 21.233,21.068 M 21.233,21.068 21.465,20.886 M 17.825,19.292 19.186,22.796 M 19.186,22.796 21.233,21.068 M 26.554,21.921 28.445,27.255 M 28.445,27.255 32.862,20.109 M 28.293,27.939 28.445,27.255 M 6.630,15.547 7.840,28.024 M 0.974,20.221 3.729,28.346 M 3.729,28.346 7.840,28.024 M 17.220,27.007 19.186,22.796 M 8.780,16.109 16.504,27.128 M 16.504,27.128 17.220,27.007 M 7.840,28.024 13.251,29.227 M 13.251,29.227 16.504,27.128 M 17.220,27.007 23.068,30.646 M 23.068,30.646 28.293,27.939 M 1.002,0.000 2.629,2.152 M 0.000,20.169 0.974,20.221 M 0.000,31.748 3.729,28.346 M 11.168,39.000 13.251,29.227 M 23.068,30.646 25.073,39.000 M 28.293,27.939 34.000,29.790 M 32.862,20.109 34.000,20.169 M 32.904,12.456 34.000,11.976 M 24.098,5.498 26.912,0.000 "
+         style="stroke:#000000;stroke-width:1.0"
+         id="path8" />
+    </pattern>
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Drop Shadow"
+       id="filter59"
+       x="-0.016363637"
+       y="-0.016363637"
+       width="1.0781818"
+       height="1.0781818">
+      <feFlood
+         result="flood"
+         in="SourceGraphic"
+         flood-opacity="0.498039"
+         flood-color="rgb(0,0,0)"
+         id="feFlood58" />
+      <feGaussianBlur
+         result="blur"
+         in="SourceGraphic"
+         stdDeviation="0.14999999999999999"
+         id="feGaussianBlur58" />
+      <feOffset
+         result="offset"
+         in="blur"
+         dx="1.000000"
+         dy="1.000000"
+         id="feOffset58" />
+      <feComposite
+         result="comp1"
+         operator="in"
+         in="flood"
+         in2="offset"
+         id="feComposite58" />
+      <feComposite
+         result="comp2"
+         operator="over"
+         in="SourceGraphic"
+         in2="comp1"
+         id="feComposite59" />
+    </filter>
   </defs>
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1">
-    <rect
+    <path
        style="display:inline;fill:url(#linearGradient37);fill-opacity:1;stroke:none;stroke-width:4;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
        id="rect3"
        width="32"
@@ -241,13 +298,14 @@
        y="0"
        rx="0"
        ry="0"
-       clip-path="url(#clipPath6)" />
+       clip-path="url(#clipPath6)"
+       sodipodi:type="rect" />
     <path
-       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill;filter:url(#filter31)"
-       d="m 8,27 6,-3 v -6 h 2 V 14 H 14 V 5 L 8,8 v 5 l -3,3 3,3 z M 24,5 18,8 v 6 h -2 v 4 h 2 v 9 l 6,-3 v -5 l 3,-3 -3,-3 z"
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill;filter:url(#filter59)"
+       d="m 8,27 6,-3 v -6 h 2 V 14 H 14 V 5 L 8,8 v 6 l -3,2 3,2 z M 24,5 18,8 v 6 h -2 v 4 h 2 v 9 l 6,-3 v -6 l 3,-2 -3,-2 z"
        id="path1"
        inkscape:path-effect="#path-effect1;#path-effect10"
-       inkscape:original-d="m 8,27 6,-3 v -6 h 2 V 14 H 14 V 5 L 8,8 v 5 l -3,3 3,3 z"
+       inkscape:original-d="m 8,27 6,-3 v -6 h 2 V 14 H 14 V 5 L 8,8 v 6 l -3,2 3,2 z"
        sodipodi:nodetypes="cccccccccccc" />
   </g>
 </svg>
