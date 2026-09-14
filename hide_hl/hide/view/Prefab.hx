@@ -1182,14 +1182,10 @@ class Prefab extends HuiView<{path: String}> {
 
 		// Set the group position to the center of the selection
 		{
-			var parentPos = groupParent.findFirstLocal3d().getAbsPos();
-			var finalPos = new h3d.Matrix();
-			finalPos.load(parentPos);
-			finalPos.invert();
-			finalPos.multiply(abs, parentPos);
-			group.x = finalPos.tx;
-			group.y = finalPos.ty;
-			group.z = finalPos.tz;
+
+			group.x = abs.tx;
+			group.y = abs.ty;
+			group.z = abs.tz;
 		}
 
 		var action = hrt.tools.Undo.actionFromActions([
@@ -1816,6 +1812,13 @@ class Prefab extends HuiView<{path: String}> {
 	function actionCreatePrefab(parent: hrt.prefab.Prefab, index: Int, cl: Class<hrt.prefab.Prefab>, ?onNew: (prefab: hrt.prefab.Prefab) -> Void) : hrt.tools.Undo.Action {
 		var newPrefab = Type.createInstance(cl, []);
 		newPrefab.name = Type.getClassName(cl).split(".").pop();
+		var o3d = newPrefab.to(hrt.prefab.Object3D);
+		if (o3d != null) {
+			var globalPos = parent.to(hrt.prefab.Object3D)?.getRelativeTransform(null, null, true) ?? h3d.Matrix.I();
+			o3d.x = globalPos.tx;
+			o3d.y = globalPos.ty;
+			o3d.z = globalPos.tz;
+		}
 		if (onNew != null)
 			onNew(newPrefab);
 		return actionAddSelectPrefab(parent, index, newPrefab);
@@ -1900,8 +1903,7 @@ class Prefab extends HuiView<{path: String}> {
 				oldIndex += 1;
 		}
 
-		var preserveTransform = prefab.parent != null;
-		if (parent != null && oldTransform != null && preserveTransform)
+		if (parent != null && oldTransform != null)
 		{
 			var parentTransform = parent.to(hrt.prefab.Object3D)?.getRelativeTransform(null, null, true) ?? h3d.Matrix.I();
 			parentTransform.invert();
