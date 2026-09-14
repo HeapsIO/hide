@@ -10,7 +10,11 @@ class ScenePos extends ShaderNodeHxsl {
 	static var SRC = {
 		@sgoutput var output : Vec3;
 
-        @global var depthMap : Channel;
+		@input var input : {
+			var uv : Vec2;
+		};
+
+		@global var depthMap : Channel;
 
 		@global var camera : {
 			var zNear : Float;
@@ -18,7 +22,11 @@ class ScenePos extends ShaderNodeHxsl {
 			var inverseViewProj : Mat4;
 		};
 
-        var calculatedUV : Vec2;
+		var calculatedUV : Vec2;
+
+		function __init__vertex() {
+			calculatedUV = input.uv;
+		}
 
 		function fragment() {
 			var depth = depthMap.get(calculatedUV);
