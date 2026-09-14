@@ -22,7 +22,7 @@ class SceneNormal extends ShaderNodeHxsl {
 			var inverseViewProj : Mat4;
 		};
 
-        var calculatedUV : Vec2;
+		@sginput(calculatedUV) var uv : Vec2;
 
 		// //! function not supported in shader graph
 		// function getWPos(uv : Vec2) : Vec3 {
@@ -35,11 +35,11 @@ class SceneNormal extends ShaderNodeHxsl {
 		function fragment() {
 			var size = depthMap.size();
 
-			var rightUV = calculatedUV + vec2(1.0, 0.0) * global.pixelSize.x;
-			var botUV = calculatedUV + vec2(0.0, 1.0) * global.pixelSize.y;
+			var rightUV = uv + vec2(1.0, 0.0) * global.pixelSize.x;
+			var botUV = uv + vec2(0.0, 1.0) * global.pixelSize.y;
 
-			var depth = depthMap.get(calculatedUV);
-			var ruv = vec4(uvToScreen(calculatedUV), depth, 1);
+			var depth = depthMap.get(uv);
+			var ruv = vec4(uvToScreen(uv), depth, 1);
 			var ppos = ruv * camera.inverseViewProj;
 			var wpos = ppos.xyz / ppos.w;
 
