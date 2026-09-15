@@ -434,9 +434,6 @@ class Prefab extends HuiView<{path: String}> {
 					roundDegV = hxd.Math.round(roundDegV / sceneEditor.gizmoRotationStep) * sceneEditor.gizmoRotationStep;
 					return hxd.Math.degToRad(roundDegV);
 				} else {
-					v = hxd.Math.round(v / sceneEditor.gizmoSnapStep) * sceneEditor.gizmoSnapStep;
-					if (!gizmoForceSnapOnGrid)
-						return v;
 					return hxd.Math.round(v / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
 				}
 			}
@@ -449,11 +446,36 @@ class Prefab extends HuiView<{path: String}> {
 					continue;
 				obj3ds.push(o);
 			}
+
+			var gizmoOrigin = @:privateAccess gizmo.initialAbsPos;
+			var gizmoOffset = new h3d.Vector(gizmoOrigin.tx, gizmoOrigin.ty, gizmoOrigin.tz);
+			
+			if (gizmoForceSnapOnGrid) {
+				var start = @:privateAccess gizmo.initialAbsPos;
+				switch(gizmo.mode) {
+					case Translation:
+						if (handle.match(Center | XYPlane | XZPlane | XArrow))
+							start.tx = gizmo.snap(start.tx, Translation);
+						if (handle.match(Center | XYPlane | YZPlane | YArrow))
+							start.ty = gizmo.snap(start.ty, Translation);
+						if (handle.match(Center | XZPlane | YZPlane | ZArrow))
+							start.tz = gizmo.snap(start.tz, Translation);
+					default:
+				}
+			}
+
+			// calculate how much the gizmo moved due to snapping
+			gizmoOffset.set(gizmoOrigin.tx - gizmoOffset.x, gizmoOrigin.ty - gizmoOffset.y, gizmoOrigin.tz - gizmoOffset.z);
+
 			for (o in obj3ds) {
 				initialTransform.set(o, o.getTransform().clone());
-				initialAbs.set(o, o.getAbsPos(true).clone());
+
+				var abs = o.getAbsPos(true).clone();
+				abs.translate(gizmoOffset.x, gizmoOffset.y, gizmoOffset.z);
+				initialAbs.set(o, abs);
 			}
 			initialCentroid.load(gizmo.getAbsPos());
+
 		};
 		gizmo.onMove = (offsetPosition, offsetRotation, offsetScale) -> {
 			if (obj3ds.length <= 0)
