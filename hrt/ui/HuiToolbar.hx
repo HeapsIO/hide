@@ -654,6 +654,10 @@ class HuiGridSettingsPopup extends HuiPopup {
 	static var SRC =
 		<hui-grid-settings-popup class="vertical">
 			<hui-text("Snap settings") class="title"/>
+			<hui-element class="horizontal" tip={"Force the translation tool to be exactly on the grid"}>
+				<hui-text("Force On Grid") class="label"/>
+				<hui-checkbox id="forceOnGrid" class="value"/>
+			</hui-element>
 			<hui-element class="horizontal">
 				<hui-text("Grid Size") class="label"/>
 				<hui-slider step={0.01} min={0.1} max={100} decimals={2} id="gridSize" class="value"/>
@@ -663,9 +667,10 @@ class HuiGridSettingsPopup extends HuiPopup {
 				<hui-slider step={1} min={0} max={180} decimals={0} id="rotationStep" class="value"/>
 			</hui-element>
 			<hui-element class="horizontal">
-				<hui-text("Force On Grid") class="label"/>
-				<hui-checkbox id="forceOnGrid" class="value"/>
+				<hui-text("Scale Step") class="label"/>
+				<hui-slider step={0.1} min={0} max={10} decimals={2} id="scaleStep" class="value"/>
 			</hui-element>
+
 		</hui-grid-settings-popup>
 
 	public function new(editor: hide.view.Prefab, ?parent: h2d.Object) {
@@ -712,6 +717,22 @@ class HuiGridSettingsPopup extends HuiPopup {
 				exec(false);
 			}
 		};
+
+		@:privateAccess scaleStep.value = editor.sceneEditor.gizmoScaleStep;
+		scaleStep.onValueChanged = (isTempChange) -> {
+			if (!isTempChange) {
+				var prevValue = @:privateAccess editor.sceneEditor.gizmoScaleStep;
+				var newValue = scaleStep.value;
+
+				function exec(undo : Bool) {
+					@:privateAccess editor.sceneEditor.gizmoScaleStep = undo ? prevValue : newValue;
+					scaleStep.value = undo ? prevValue : newValue;
+				}
+
+				editor.undo.record(exec, false);
+				exec(false);
+			}
+		}
 	}
 }
 

@@ -29,6 +29,7 @@ class Prefab extends HuiView<{path: String}> {
 	public static var GIZMO_SNAP_CONFIG_KEY = "editor.gizmoSnap";
 	public static var GIZMO_SNAP_STEP_CONFIG_KEY = "editor.gizmoSnapStep";
 	public static var GIZMO_ROTATION_STEP_CONFIG_KEY = "editor.gizmoRotationStep";
+	public static var GIZMO_SCALE_STEP_CONFIG_KEY = "editor.gizmoScaleStep";
 	public static var GIZMO_SNAP_GRID_CONFIG_KEY = "editor.gizmoSnapOnGrid";
 	public static final DEFAULT_SCENE_FILTERS = "editor.defaultSceneFilters";
 	public static final SCENE_FILTERS = "editor.sceneFilters";
@@ -433,6 +434,8 @@ class Prefab extends HuiView<{path: String}> {
 					var roundDegV = hxd.Math.radToDeg(v);
 					roundDegV = hxd.Math.round(roundDegV / sceneEditor.gizmoRotationStep) * sceneEditor.gizmoRotationStep;
 					return hxd.Math.degToRad(roundDegV);
+				} else if (mode.match(Scale)) {
+					return hxd.Math.round(v / sceneEditor.gizmoScaleStep) * sceneEditor.gizmoScaleStep;
 				} else {
 					return hxd.Math.round(v / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
 				}
