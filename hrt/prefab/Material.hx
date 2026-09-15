@@ -472,6 +472,16 @@ class Material extends Prefab {
 
 	#end
 
+	#if (editor || editor_hl)
+	override function onEditorTreeChanged(prefab: hrt.prefab.Prefab) : hrt.prefab.Prefab.TreeChangedResult {
+		if (previewSphere != null) {
+			return Rebuild;
+		}
+		return Skip;
+	}
+	#end
+
+
 	#if editor
 	public static function findMaterialLibraryRefs(libPath : String, matName : String) : Array<hide.view.RefViewer.Reference> {
 		// Find every material.props file with ref of the material library that we're searching
@@ -577,13 +587,6 @@ class Material extends Prefab {
 		}
 
 		return refs;
-	}
-
-	override function onEditorTreeChanged(prefab: hrt.prefab.Prefab) : hrt.prefab.Prefab.TreeChangedResult {
-		if (previewSphere != null) {
-			return Rebuild;
-		}
-		return Skip;
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {

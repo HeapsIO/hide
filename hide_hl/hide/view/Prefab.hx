@@ -851,7 +851,7 @@ class Prefab extends HuiView<{path: String}> {
 
 	override function getContextMenuContent(content: Array<hrt.ui.HuiMenu.MenuItem>) {
 		content.push({label: "Save", click: () -> execCommand(HuiCommands.save)});
-		content.push({label: "Rebuild", click: () -> tryMake(prefab)});
+		content.push({label: "Rebuild", click: () -> queueRebuild(prefab)});
 		content.push({isSeparator: true});
 		content.push({label: "View in Explorer", click: () -> hide.tools.IdeData.showFileInExplorer(state.path)});
 		content.push({label: "View in Resources", click: () -> Ide.inst.showFileInResources(state.path)});
@@ -979,7 +979,7 @@ class Prefab extends HuiView<{path: String}> {
 
 			this.prefab = prefab;
 
-			tryMake(prefab);
+			queueRebuild(prefab);
 
 			sceneEditor.updateRenderProfile();
 			sceneEditor.updateDebugOverlayVisibility();
@@ -994,6 +994,7 @@ class Prefab extends HuiView<{path: String}> {
 		For that you should call tryMakeChildren(prefab.parent) instead.
 	**/
 	public function tryMake(prefab: hrt.prefab.Prefab) {
+		rebuildStack++;
 		removePrefabInstance(prefab);
 
 		if (prefab.parent == null && prefab.shared.parentPrefab == null) {
@@ -1023,6 +1024,7 @@ class Prefab extends HuiView<{path: String}> {
 		refreshVisibility(prefab, true);
 
 		updatePrefabLookup();
+		rebuildStack--;
 	}
 
 	function customTryMake(prefab: hrt.prefab.Prefab) {
@@ -1423,7 +1425,7 @@ class Prefab extends HuiView<{path: String}> {
 		function apply(on) {
 			for (i in 0...prefabs.length) {
 				prefabs[i].enabled = on ? isEnable : old[i];
-				tryMake(prefabs[i]);
+				queueRebuild(prefabs[i]);
 			}
 			inspectorHeader.refresh();
 		}
@@ -1441,7 +1443,7 @@ class Prefab extends HuiView<{path: String}> {
 		function apply(on) {
 			for (i in 0...prefabs.length) {
 				prefabs[i].editorOnly = on ? isEditorOnly : old[i];
-				tryMake(prefabs[i]);
+				queueRebuild(prefabs[i]);
 			}
 		}
 		apply(true);
@@ -1458,7 +1460,7 @@ class Prefab extends HuiView<{path: String}> {
 		function apply(on) {
 			for (i in 0...prefabs.length) {
 				prefabs[i].inGameOnly = on ? isInGameOnly : old[i];
-				tryMake(prefabs[i]);
+				queueRebuild(prefabs[i]);
 			}
 		}
 		apply(true);
@@ -1549,7 +1551,7 @@ class Prefab extends HuiView<{path: String}> {
 				else {
 					(prefab.props:Dynamic).tag = oldValues[i];
 				}
-				tryMake(prefab);
+				queueRebuild(prefab);
 			}
 		}
 		exec(false);
@@ -1627,11 +1629,11 @@ class Prefab extends HuiView<{path: String}> {
 			// try to make the prefab if it it's in a error state even if
 			// callback didn't throw
 			if (errorPrefabs.exists(prefab)) {
-				tryMake(prefab);
+				queueRebuild(prefab);
 			}
 		} catch(e) {
 			trace(e);
-			tryMake(prefab);
+			queueRebuild(prefab);
 		}
 	}
 
@@ -1952,9 +1954,7 @@ class Prefab extends HuiView<{path: String}> {
 				if (transform != null) {
 					prefab.to(hrt.prefab.Object3D)?.loadTransform(transform);
 				}
-				// rebuild the parent because object3d with no children are broken when they have a non identity
-				// default transform
-				tryMake(newParent);
+				queueRebuild(prefab);
 			}
 
 			if (newParent != null)
@@ -1966,6 +1966,173 @@ class Prefab extends HuiView<{path: String}> {
 			sceneEditor.tree.revealItem(prefab);
 			updatePrefabLookup();
 		};
+	}
+
+	var rebuildStack = 0;
+	var rebuildQueue : Map<hrt.prefab.Prefab, hrt.prefab.Prefab.TreeChangedResult> = null;
+	var rebuildEndCallbacks : Array<Void -> Void> = null;
+	/** Indicate that this prefab need do be rebuild**/
+	public function queueRebuild(prefab: hrt.prefab.Prefab) {
+		if (rebuildStack > 0)
+			return;
+
+
+		if (rebuildQueue != null && rebuildQueue.exists(prefab))
+			return;
+
+		var instant = false;
+		if (rebuildQueue == null) {
+			beginRebuild();
+			instant = true;
+		}
+
+		var parent = prefab.parent;
+
+		rebuildQueue.set(prefab, Rebuild);
+		checkWantRebuild(parent, prefab);
+
+		if (instant) {
+			endRebuild();
+		}
+	}
+
+	function checkWantRebuild(target: hrt.prefab.Prefab, original: hrt.prefab.Prefab) {
+		if (target == null) return;
+		var wantRebuild = target.onEditorTreeChanged(original);
+		switch(wantRebuild) {
+			case Skip:
+				checkWantRebuild(target.parent, original);
+			case Rebuild:
+				queueRebuild(target);
+			case Notify(callback):
+				rebuildQueue.set(target, wantRebuild);
+				checkWantRebuild(target.parent, original);
+		}
+
+		if (target == this.prefab) {
+			var renderProps = original.find(hrt.prefab.RenderProps, null, true, false);
+			var shouldRebuild = renderProps != null;
+
+			if (shouldRebuild) {
+				var cur : hrt.prefab.Prefab = renderProps;
+				while(cur != null && cur != original) {
+					if (cur.editorOnly && cur.shared.parentPrefab != null) {
+						shouldRebuild = false;
+						break;
+					}
+					cur = cur.parent;
+				}
+			}
+
+			if (shouldRebuild)
+				queueRebuild(target);
+		}
+	}
+
+	var beginRebuildStack = 0;
+	function beginRebuild() {
+		beginRebuildStack++;
+		if (beginRebuildStack > 1)
+			return;
+		rebuildQueue = [];
+		rebuildEndCallbacks = [];
+	}
+
+	function endRebuild() {
+		beginRebuildStack --;
+		if (beginRebuildStack > 0)
+			return;
+
+		var sort2d : Map<h2d.Object, Bool> = [];
+		for (prefab => want in rebuildQueue) {
+			switch (want) {
+				case Skip:
+					continue;
+				case Notify(callback):
+					rebuildEndCallbacks.push(callback);
+				case Rebuild:
+					var parent = prefab.parent ?? prefab.shared.parentPrefab;
+					var skip = false;
+
+					// don't rebuild this prefab if it's parent will get rebuild anyways
+					while(parent != null) {
+						if (rebuildQueue.get(parent) == Rebuild) {
+							skip = true;
+							break;
+						}
+
+						var next = parent.parent ?? parent.shared.parentPrefab;
+						if (next == null)
+							break;
+
+						if (!next.children.contains(parent) && Std.downcast(next, hrt.prefab.Reference)?.refInstance != parent) {
+							skip = true;
+						}
+						parent = next;
+					}
+
+					if (skip == true)
+						continue;
+
+					// Rebuilding the root fx will cause it's play time to be reset.
+					// so we compensate for that here
+					var fxTime = 0.0;
+					if (prefab == this.prefab && Std.downcast(prefab, hrt.prefab.fx.FX) != null) {
+						var fxAnimation : hrt.prefab.fx.FX.FXAnimation = cast prefab.findFirstLocal3d();
+						if (fxAnimation != null) {
+							fxTime = fxAnimation.localTime;
+						}
+					}
+
+					tryMake(prefab);
+
+					if (prefab == this.prefab && Std.downcast(prefab, hrt.prefab.fx.FX) != null) {
+						var fxAnimation : hrt.prefab.fx.FX.FXAnimation = cast prefab.findFirstLocal3d();
+						if (fxAnimation != null) {
+							fxAnimation.setTimeInternal(fxTime, 0, true, true);
+						}
+					}
+
+					if (Std.downcast(prefab, hrt.prefab.Object2D) != null) {
+						var parent2d = prefab.findFirstLocal2d()?.parent;
+						if (parent2d != null) {
+							sort2d.set(parent2d, true);
+						}
+					}
+			}
+		}
+
+		for (callback in rebuildEndCallbacks) {
+			callback();
+		}
+
+		if (sort2d.iterator().hasNext()) {
+			var flat = prefab.flatten();
+			var indexes : Map<h2d.Object, Int> = [];
+			for (index => prefab in flat) {
+				var local2d = Std.downcast(prefab, hrt.prefab.Object2D)?.local2d;
+				if (local2d != null) {
+					indexes.set(local2d, index);
+				}
+			}
+
+			for (toSort => _ in sort2d) {
+				var children = @:privateAccess toSort.children.copy();
+				children.sort((a, b) -> Reflect.compare(indexes.get(a), indexes.get(b)));
+
+				for (child in children) {
+					toSort.addChild(child);
+				}
+			}
+		}
+
+		/*if (queuedRefreshRenderProps) {
+			setRenderProps(queuedRenderProps);
+			queuedRenderProps = null;
+			queuedRefreshRenderProps = false;
+		}*/
+		rebuildQueue = null;
+		rebuildEndCallbacks = null;
 	}
 
 	function rebuildPrefabTree(prefab: hrt.prefab.Prefab) {
@@ -2404,7 +2571,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 
 
 	public function rebuildPrefabImpl(prefab: hrt.prefab.Prefab) : Void {
-		editor.tryMake(prefab);
+		editor.queueRebuild(prefab);
 	}
 
 	public function rebuildPrefabInteractive(prefab: hrt.prefab.Prefab) : Void {

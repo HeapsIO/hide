@@ -144,7 +144,7 @@ class Model extends Object3D {
 		}
 	}
 
-	#if editor
+	#if (editor || editor_hl)
 
 	override function onEditorTreeChanged(child:Prefab):hrt.prefab.Prefab.TreeChangedResult {
 
@@ -154,6 +154,10 @@ class Model extends Object3D {
 		}
 		return super.onEditorTreeChanged(child);
 	}
+
+	#end
+
+	#if editor
 
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);

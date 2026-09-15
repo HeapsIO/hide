@@ -1977,14 +1977,16 @@ class Emitter extends Object3D {
 		return new EmitterObject(parent3d);
 	}
 
-	#if editor
-	/*override function editorRemoveInstance() : Bool {
-		return false; // Emitter removal is buggy
-	}*/
+	#if (editor || editor_hl)
 
 	override function onEditorTreeChanged(child: Prefab) : hrt.prefab.Prefab.TreeChangedResult {
 		return Rebuild;
 	}
+
+	#end
+
+	#if editor
+
 
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);

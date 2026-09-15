@@ -322,11 +322,15 @@ class FX2D extends Object2D implements BaseFX {
 		return inst;
 	}
 
-	#if editor
+	#if (editor || editor_hl)
 
 	override function onEditorTreeChanged(child: Prefab) : hrt.prefab.Prefab.TreeChangedResult {
 		return Rebuild;
 	}
+
+	#end
+
+	#if editor
 
 	public function refreshObjectAnims() {
 		var fxanim = Std.downcast(local2d, FX2DAnimation);

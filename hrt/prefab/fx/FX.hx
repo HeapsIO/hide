@@ -983,11 +983,15 @@ class FX extends Object3D implements BaseFX {
 		return new FXAnimation(parent);
 	}
 
-	#if editor
+	#if (editor || editor_hl)
 
 	override function onEditorTreeChanged(child: Prefab) : hrt.prefab.Prefab.TreeChangedResult {
 		return Rebuild;
 	}
+
+	#end
+
+	#if editor
 
 	public function refreshObjectAnims() : Void {
 		var fxanim = Std.downcast(local3d, FXAnimation);

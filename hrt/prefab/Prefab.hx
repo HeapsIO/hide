@@ -39,7 +39,7 @@ abstract ContextMake(ContextShared) from ContextShared to ContextShared {
 	}
 }
 
-#if editor
+#if (editor || editor_hl)
 enum TreeChangedResult {
 	Skip; /**Don't rebuild this prefab**/
 	Rebuild; /** Force rebuild this prefab **/
@@ -704,19 +704,21 @@ class Prefab {
 
 	#end
 
+	#if (editor || editor_hl)
+	/**
+		Called by the editor when a child of this object gets added, rebuild or removed.
+	**/
+	public function onEditorTreeChanged(child: Prefab) : TreeChangedResult {
+		return Skip;
+	}
+	#end
+
 	#if editor
 	/**
 		Allows to customize how the prefab object is displayed / handled within Hide
 	**/
 	public function getHideProps() : Null<hide.prefab.HideProps> {
 		return { icon : "question-circle", name : Type.getClassName(Type.getClass(this)), hideInAddMenu: true };
-	}
-
-	/**
-		Called by the editor when a child of this object gets added, rebuild or removed.
-	**/
-	public function onEditorTreeChanged(child: Prefab) : TreeChangedResult {
-		return Skip;
 	}
 
 	/**
