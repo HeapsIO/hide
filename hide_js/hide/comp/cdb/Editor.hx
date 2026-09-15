@@ -1674,6 +1674,7 @@ class Editor extends Component {
 		base.sync();
 
 		element.empty();
+		if( cursor != null ) cursor.clearMarks();
 		element.addClass('cdb');
 
 		formulas = new Formulas(this);

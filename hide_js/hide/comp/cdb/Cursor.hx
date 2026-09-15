@@ -26,6 +26,8 @@ class Cursor {
 	public var stateIdx : Int = -1;
 	public var states : Array<CursorState> = [];
 
+	var marked : Array<{ el : js.html.Element, cls : String }> = [];
+
 	public function new(editor) {
 		this.editor = editor;
 		set();
@@ -224,7 +226,7 @@ class Cursor {
 		// Update cursor visual
 		var cursorEl = x < 0 ? line.element.find(".start").get(0) : line.cells[x]?.elementHtml;
 		if (cursorEl != null) {
-			cursorEl.classList.add("cursorView");
+			markNode(cursorEl, "cursorView");
 			cursorEl.focus();
 		}
 
@@ -238,21 +240,21 @@ class Cursor {
 						var cellX = c.columnIndex;
 						var cellY = c.line.index;
 						var el = c.elementHtml;
-						el.classList.add("selected");
+						markNode(el, "selected");
 						if (cellY == sel.y1)
-							el.classList.add("top");
+							markNode(el, "top");
 						if (cellX == sel.x1)
-							el.classList.add("left");
+							markNode(el, "left");
 						if (cellX == sel.x2)
-							el.classList.add("right");
+							markNode(el, "right");
 						if (cellY == sel.y2)
-							el.classList.add("bot");
+							markNode(el, "bot");
 						if (Ide.inst.ideConfig.highlightActiveLineHeader)
-							c.line.element.addClass("highlight");
+							markJq(c.line.element, "highlight");
 						if (Ide.inst.ideConfig.highlightActiveColumnHeader)
-							table.element.find('th[title="${c.column.name}"]').addClass("highlight");
+							markJq(table.element.find('th[title="${c.column.name}"]'), "highlight");
 						if (Ide.inst.ideConfig.highlightActiveLine)
-							c.line.element.addClass("active-line");
+							markJq(c.line.element, "active-line");
 					}
 				}
 
@@ -260,11 +262,11 @@ class Cursor {
 				if (selectedLines != null) {
 					for (l in selectedLines) {
 						var el = l.element;
-						el.addClass("selected");
+						markJq(el, "selected");
 						if (l.index == sel.y1)
-							el.addClass("top");
+							markJq(el, "top");
 						if (l.index == sel.y2)
-							el.addClass("bot");
+							markJq(el, "bot");
 					}
 				}
 			}
@@ -325,16 +327,26 @@ class Cursor {
 		return true;
 	}
 
+	inline function markNode( el : js.html.Element, cls : String ) {
+		if( el != null ) {
+			el.classList.add(cls);
+			marked.push({ el : el, cls : cls });
+		}
+	}
+
+	function markJq( e : hide.Element, cls : String ) {
+		for( i in 0...e.length )
+			markNode(e.get(i), cls);
+	}
+
+	public function clearMarks() {
+		marked.resize(0);
+	}
+
 	public function hide() {
-		var elt = editor.element;
-		elt.find(".active-line").removeClass("active-line");
-		elt.find(".highlight").removeClass("highlight");
-		elt.find(".selected").removeClass("selected");
-		elt.find(".cursorView").removeClass("cursorView");
-		elt.find(".top").removeClass("top");
-		elt.find(".left").removeClass("left");
-		elt.find(".right").removeClass("right");
-		elt.find(".bot").removeClass("bot");
+		for( m in marked )
+			m.el.classList.remove(m.cls);
+		marked.resize(0);
 	}
 
 
@@ -517,7 +529,6 @@ class Cursor {
 
 		updateSelection();
 		table.revealLine(line.index);
-		update();
 	}
 
 	// Ensure each cell in selection is here only once
