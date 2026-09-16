@@ -32,7 +32,6 @@ typedef ShadowSamplingESM = {> ShadowSamplingMode,
 }
 
 typedef ShadowSamplingPCF = {> ShadowSamplingMode,
-	var quality : Int;
 	var scale : Float;
 }
 
@@ -230,7 +229,7 @@ class Light extends Object3D {
 					var cs = Std.downcast(s, h3d.pass.CascadeShadowMap);
 					if ( cs != null ) {
 						cs.cascade = cascadeNbr;
-						cs.ditributionPower = cascadePow;
+						cs.distributionPower = cascadePow;
 						cs.firstCascadeSize = firstCascadeSize;
 						cs.minPixelSize = minPixelSize;
 						cs.debug = debugDisplay;
@@ -280,7 +279,6 @@ class Light extends Object3D {
 					light.shadows.samplingKind = None;
 				case PCF:
 					var sm : ShadowSamplingPCF = cast shadows.samplingMode;
-					light.shadows.pcfQuality = sm.quality;
 					light.shadows.pcfScale = sm.scale;
 					light.shadows.samplingKind = PCF;
 				case ESM:
@@ -398,7 +396,6 @@ class Light extends Object3D {
 						<range(0, 50) field={tmp.power}/>
 					</category>
 					<category("PCF") if (shadows.mode != None && shadows.samplingMode.kind == PCF)>
-						<select([{label:"Low", value: 0}, {label:"Medium", value: 1}, {label:"High", value: 2}]) field={tmp.quality}/>
 						<range(0, 10) field={tmp.scale}/>
 					</category>
 					<category("Cascades") if (cascade && shadows.mode != None)>
@@ -800,14 +797,6 @@ class Light extends Object3D {
 		var shadowModePCF =
 		'<div class="group" name="PCF">
 			<dl>
-				<dt>Quality</dt>
-					<dd>
-						<select field="samplingMode.quality" type="number">
-							<option value="1">Low</option>
-							<option value="2">High</option>
-							<option value="3">Very High</option>
-						</select>
-					</dd>
 				<dt>Scale</dt><dd><input type="range" field="samplingMode.scale" min="0" max="10" /></dd>
 			</dl>
 		</div>';
@@ -871,8 +860,8 @@ class Light extends Object3D {
 			if( pname == "samplingMode.kind" ) {
 				switch (shadows.samplingMode.kind) {
 					case None: shadows.samplingMode = cast { kind : None };
-					case PCF: shadows.samplingMode = cast { kind : PCF, quality : 1, scale : 1.0, bias : 0.1 };
-					case ESM: shadows.samplingMode = cast { kind : ESM, power : 30, bias : 0.1 };
+					case PCF: shadows.samplingMode = cast { kind : PCF, scale : 1.0 };
+					case ESM: shadows.samplingMode = cast { kind : ESM, power : 30 };
 				}
 				ctx.rebuildProperties();
 			}
