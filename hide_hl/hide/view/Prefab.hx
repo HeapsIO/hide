@@ -1805,6 +1805,14 @@ class Prefab extends HuiView<{path: String}> {
 		var offsets: Map<hrt.prefab.Prefab, Int> = [];
 		for (prefab in selection) {
 			var clone = prefab.clone();
+			var c3d = clone.to(hrt.prefab.Object3D);
+			
+			// action reparent prefab expect the prefab transform to be in world space
+			if (c3d != null) {
+				var abs = (cast prefab:hrt.prefab.Object3D).getAbsPos(true);
+				c3d.setTransform(abs);
+			}
+
 			var index = prefab.parent.children.indexOf(prefab);
 			var offset = offsets.get(prefab.parent) ?? 0;
 			index += offset;
