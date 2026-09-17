@@ -452,7 +452,7 @@ class Prefab extends HuiView<{path: String}> {
 
 			var gizmoOrigin = @:privateAccess gizmo.initialAbsPos;
 			var gizmoOffset = new h3d.Vector(gizmoOrigin.tx, gizmoOrigin.ty, gizmoOrigin.tz);
-			
+
 			if (gizmoForceSnapOnGrid) {
 				var start = @:privateAccess gizmo.initialAbsPos;
 				switch(gizmo.mode) {
@@ -1806,7 +1806,7 @@ class Prefab extends HuiView<{path: String}> {
 		for (prefab in selection) {
 			var clone = prefab.clone();
 			var c3d = clone.to(hrt.prefab.Object3D);
-			
+
 			// action reparent prefab expect the prefab transform to be in world space
 			if (c3d != null) {
 				var abs = (cast prefab:hrt.prefab.Object3D).getAbsPos(true);
@@ -2299,20 +2299,37 @@ class Prefab extends HuiView<{path: String}> {
 		var lines: Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 		var submenus : Map<String, Array<hrt.ui.HuiMenu.MenuItem>> = [];
-
 		var parentClass = Type.getClass(parent);
-		for (prefab in hrt.prefab.Prefab.registry) {
 
+		function getLine(prefabKey : String) : hrt.ui.HuiMenu.MenuItem {
+			var prefab = hrt.prefab.Prefab.registry.get(prefabKey);
 			if (prefab.editorProps.hideInAddMenu)
-				continue;
+				return null;
 			if (!parent.editorAllowChild(prefab.prefabClass))
-				continue;
+				return null;
 			if (!Type.createEmptyInstance(prefab.prefabClass).editorAllowParent(parentClass))
-				continue;
-			var category = prefab.editorProps.category;
+				return null;
 			var label = prefab.editorProps.name;
+			return {label: label, click: () -> {
+				callback.bind(prefab.prefabClass)();
+				var recents : Array<String> = Ide.inst.currentConfig.get("editor.newrecents", []);
+				if (recents.contains(prefabKey))
+					recents.remove(prefabKey);
+				recents.insert(0, prefabKey);
+				var maxLength = 10;
+				if (recents.length > 10)
+					recents.resize(10);
+				Ide.inst.currentConfig.set("editor.newrecents", recents);
+			}, icon: prefab.editorProps.icon};
+		}
+
+		for (k => v in hrt.prefab.Prefab.registry) {
+			var category = v.editorProps.category;
 			var submenu = hrt.tools.MapUtils.getOrPut(submenus, category, []);
-			submenu.push({label: label, click: callback.bind(prefab.prefabClass), icon: prefab.editorProps.icon});
+			var l = getLine(k);
+			if (l == null)
+				continue;
+			submenu.push(l);
 		}
 
 		for (category => submenu in submenus) {
@@ -2336,6 +2353,18 @@ class Prefab extends HuiView<{path: String}> {
 		}
 
 		lines.sort((a,b) -> Reflect.compare(a.label, b.label));
+
+		var recents : Array<String> = Ide.inst.currentConfig.get("editor.newrecents", []);
+		var recentLines : Array<hrt.ui.HuiMenu.MenuItem> = [];
+		for (r in recents) {
+			var l = getLine(r);
+			if (l == null)
+				continue;
+			recentLines.push(l);
+		}
+
+		if (recents.length > 0)
+			lines.insert(0, {label: "Recents", menu: recentLines});
 
 		return lines;
 	}
