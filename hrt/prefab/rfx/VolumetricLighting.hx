@@ -146,7 +146,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 					var zMax = saturate(shadowPos.z);
 					var shadowUv = shadowPos.xy;
 					shadowUv.y = 1.0 - shadowUv.y;
-					var depth = cascadeShadowMaps[c].get(shadowUv.xy).r;
+					var depth = cascadeShadowMaps.get(vec3(shadowUv.xy, c)).r;
 					shadow -= zMax > depth ? 1.0 : 0.0;
 				}
 			}

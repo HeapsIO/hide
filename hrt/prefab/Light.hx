@@ -221,13 +221,9 @@ class Light extends Object3D {
 			case Directional:
 				var dl = Std.downcast(light, h3d.scene.pbr.DirLight);
 				if( dl.shadows != null ) {
-					var s = Std.downcast(dl.shadows, h3d.pass.DirShadowMap);
-					s.maxDist = maxDist;
-					s.minDist = minDist;
-					s.autoShrink = autoShrink;
-					s.autoZPlanes = autoZPlanes;
-					var cs = Std.downcast(s, h3d.pass.CascadeShadowMap);
-					if ( cs != null ) {
+					if( cascade ) {
+						var cs = Std.downcast(dl.shadows, h3d.pass.CascadeShadowMap);
+						cs.maxDist = maxDist;
 						cs.cascade = cascadeNbr;
 						cs.distributionPower = cascadePow;
 						cs.firstCascadeSize = firstCascadeSize;
@@ -244,6 +240,12 @@ class Light extends Object3D {
 								params[i] = { depthBias : 1.0, slopeBias : 3.0 };
 						cs.params = params;
 						cs.highPrecision = highPrecision;
+					} else {
+						var s = Std.downcast(dl.shadows, h3d.pass.DirShadowMap);
+						s.maxDist = maxDist;
+						s.minDist = minDist;
+						s.autoShrink = autoShrink;
+						s.autoZPlanes = autoZPlanes;
 					}
 				}
 			case Spot:
