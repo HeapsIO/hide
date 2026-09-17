@@ -58,11 +58,16 @@ hui-color-picker {
 		layout: horizontal;
 		content-valign: middle;
 		spacing: 5;
+		fill-width: true;
+
 
 		>hui-input-box {
 			width: 30;
+			min-width: 0;
 			padding: 0;
 			padding-left: 2;
+			fill-width: false;
+			auto-size-width: none;
 
 			fill-height: true;
 			auto-size-height: 1;
@@ -70,7 +75,7 @@ hui-color-picker {
 			background-type: hui;
 			>hui-background {
 				background: @color-foreground;
-				border-radius: 2;
+				border-radius: @base-corner-radius;
 			}
 		}
 	}
