@@ -78,6 +78,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public var uiBase(get, never) : HuiBase;
 
 	var registeredCommands: Array<RegisteredCommand> = null;
+	var hovered = false;
 
 	function set_enable(b) {
 		if( !b && dom != null )
@@ -464,6 +465,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			dom.hover = true;
 
 		onOver(e);
+		hovered = true;
 	}
 
 	function onOutInternal(e: hxd.Event) {
@@ -480,9 +482,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			dom.hover = false;
 		e.propagate = interactive.propagateEvents;
 
-		if (uiBase.currentDrag != null)
+		if (uiBase.currentDrag != null && !hovered)
 			return;
-
+		hovered = false;
 		onOut(e);
 	}
 
