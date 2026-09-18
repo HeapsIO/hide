@@ -22,6 +22,8 @@ class Object3dRef extends Widget<String> {
 	var select: NativeElement;
 	var text: NativeElement;
 	var dropdown = null;
+	#elseif hui
+	var select: hrt.ui.HuiSelect;
 	#end
 
 	function makeInput():NativeElement {
@@ -64,12 +66,12 @@ class Object3dRef extends Widget<String> {
 					var name = "";
 					while (object3d != null && object3d != @:privateAccess root.prefab.shared.root3d) {
 						if (name.length > 0)
-							name = name + ".";
-						name = name + object3d.name;
+							name = "." + name ;
+						name = object3d.name + name;
 						object3d = object3d.parent;
 					}
 
-					if (@:privateAccess root.prefab.shared.root3d.getObjectByName(name) != objects[0].findFirstLocal3d()) {
+					if (@:privateAccess root.prefab.locateObject(name) != objects[0].findFirstLocal3d()) {
 						root.editor.quickError("Fail");
 					} else {
 						value = name;
@@ -82,11 +84,92 @@ class Object3dRef extends Widget<String> {
 
 		return select;
 		#elseif hui
-		return null;
+		select = new hrt.ui.HuiSelect();
+
+		var options = getNamedObjects();
+
+		select.items = options;
+		select.onValueChanged = () -> {
+			value = select.value;
+			broadcastValueChange(false);
+		}
+
+		var overlay = new hrt.ui.HuiDropOverlay(select);
+		bindDragOperations(select, overlay);
+
+		return select;
 		#else
 		return null;
 		#end
 	}
+
+	#if hui
+	function validateDrop(op: hrt.ui.HuiDragOp) : Null<hrt.prefab.Prefab> {
+		if (op.type == hide.view.Prefab.SCENE_TREE_DRAG_DROP) {
+			var prefabs : Array<hrt.prefab.Prefab> = cast op.data;
+			if (prefabs.length > 0) {
+				return prefabs[0];
+			}
+		}
+		return null;
+	}
+
+	public function bindDragOperations(element: hrt.ui.HuiSelect, overlay: hrt.ui.HuiDropOverlay) {
+		element.onAnyDragStart = (op: hrt.ui.HuiDragOp) -> {
+			if (validateDrop(op) != null) {
+				overlay.acceptAny = true;
+			}
+		}
+
+		element.onAnyDragEnd = (op: hrt.ui.HuiDragOp) -> {
+			overlay.reset();
+		}
+
+		element.onDragOver = (op:hrt.ui.HuiDragOp) -> {
+			if (validateDrop(op) != null) {
+				overlay.accept = true;
+				op.acceptDrop = true;
+			}
+		}
+
+		element.onDragOut = (op:hrt.ui.HuiDragOp) -> {
+			overlay.accept = false;
+		}
+
+		element.onDrop = (op:hrt.ui.HuiDragOp) -> {
+			var prefab = validateDrop(op);
+			if (prefab == null)
+				return;
+
+			var newName = prefab.getUniqueName();
+			var oldName = prefab.name;
+			if (prefab.name == newName) {
+				newName = null;
+			}
+
+			root.change({
+				callback: () -> {
+					if (newName != null) {
+						var old = prefab.name;
+						prefab.name = prefab.getUniqueName();
+						Ide.showInfo('Renamed $old to ${prefab.name} so it could be referenced with an unique name');
+					}
+					value = prefab.getAbsPath(false, true);					
+					changeBehaviorInternal(false);
+				},
+				sideEffects: (isUndo) -> {
+					if (newName != null) {
+						prefab.name = isUndo ? oldName : newName;
+						prefab.updateInstance();
+						root.editor.rebuildTree(prefab);
+					}
+				},
+				isTemporaryEdit: false,
+				recordUndo: true,
+			});
+		}
+	}
+	#end
 
 	function stringToValue(str: String) : Null<String> {return value;};
 
@@ -100,6 +183,9 @@ class Object3dRef extends Widget<String> {
 		if (value != null)
 			label = value.split(".").pop();
 		text.get().innerText = label;
+		#elseif hui
+		select.items = getNamedObjects();
+		select.value = value;
 		#end
 	}
 
@@ -109,7 +195,11 @@ class Object3dRef extends Widget<String> {
 		function formatName(path: Array<String>) {
 			var name = "";
 			for (p in 0...path.length-1) {
+				#if js
 				name += "&nbsp;&nbsp;";
+				#else
+				name += "  ";
+				#end
 			}
 			name += path[path.length-1];
 			return name;

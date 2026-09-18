@@ -41,16 +41,11 @@ class HuiTreeLine extends HuiElement {
 			}
 		}
 
-		onPush = (e) -> {
+		onClick = (e) -> {
 			if (e.button == 0 || e.button == 1)
-				onItemSelect(hxd.Key.isDown(hxd.Key.SHIFT), hxd.Key.isDown(hxd.Key.CTRL), false);
+				onItemSelect(hxd.Key.isDown(hxd.Key.SHIFT), hxd.Key.isDown(hxd.Key.CTRL), true);
 			if (e.button == 1)
 				onContextMenu();
-		}
-
-		onClick = (e) -> {
-			if (e.button == 0)
-				onItemSelect(hxd.Key.isDown(hxd.Key.SHIFT), hxd.Key.isDown(hxd.Key.CTRL), true);
 		}
 
 		onKeyDown = (e) -> {
@@ -136,6 +131,7 @@ class HuiTreeLine extends HuiElement {
 		dom.toggleClass("children", tree.hasChildren(data.item));
 		dom.toggleClass("open", tree.isOpen(data));
 		dom.toggleClass("selected", tree.isSelected(data));
+		dom.toggleClass("drag-selected", tree.dragDropSelection?.contains(data.item) ?? false);
 
 		tip = data.name;
 

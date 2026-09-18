@@ -34,6 +34,8 @@ class Prefab extends HuiView<{path: String}> {
 	public static final DEFAULT_SCENE_FILTERS = "editor.defaultSceneFilters";
 	public static final SCENE_FILTERS = "editor.sceneFilters";
 
+	public static final SCENE_TREE_DRAG_DROP = "prefabs";
+
 	static var editorHideCommand = new hrt.ui.HuiCommands.HuiCommand("Editor Hide", {key: hxd.Key.H});
 
 	public var gizmoShouldSnap(default, set) : Bool = true;
@@ -244,11 +246,11 @@ class Prefab extends HuiView<{path: String}> {
 		};
 
 		sceneEditor.tree.dragAndDropInterface = {
-			onDragStart: function(p: hrt.prefab.Prefab): Void {
-				startDrag("prefabs", getSelectionOrdered());
+			onDragStart: function(p: hrt.prefab.Prefab, selection: Array<Dynamic>): Void {
+				startDrag(SCENE_TREE_DRAG_DROP, cast selection);
 			},
 			getItemDropFlags: function(target: hrt.prefab.Prefab, op: HuiDragOp) : hrt.ui.HuiTree.DropFlags {
-				if (op.type == "prefabs") {
+				if (op.type == SCENE_TREE_DRAG_DROP) {
 					var prefabs : Array<hrt.prefab.Prefab> = cast op.data;
 					prefabs = prefabs.copy();
 					sanitizeReparent(target, prefabs);
@@ -264,7 +266,7 @@ class Prefab extends HuiView<{path: String}> {
 				return  hrt.ui.HuiTree.DropFlags.ofInt(0);
 			},
 			onDrop: function(target: hrt.prefab.Prefab, operation: hrt.ui.HuiTree.DropOperation, op: HuiDragOp) : Void {
-				if (op.type == "prefabs") {
+				if (op.type == SCENE_TREE_DRAG_DROP) {
 					var prefabs : Array<hrt.prefab.Prefab> = cast op.data;
 					prefabs = prefabs.copy();
 					sanitizeReparent(target, prefabs);
@@ -999,7 +1001,9 @@ class Prefab extends HuiView<{path: String}> {
 
 		if (prefab.parent == null && prefab.shared.parentPrefab == null) {
 			@:privateAccess prefab.shared.root2d = prefab.shared.current2d = new h2d.Object(sceneEditor.scene.s2d);
+			prefab.shared.root2d.name = "__rootPrefabEditor2d";
 			@:privateAccess prefab.shared.root3d = prefab.shared.current3d = new h3d.scene.Object(sceneEditor.scene.s3d);
+			prefab.shared.root3d.name = "__rootPrefabEditor3d";
 		} else {
 			prefab.shared.current2d = prefab.findFirstLocal2d(true);
 			prefab.shared.current3d = prefab.findFirstLocal3d(true);
@@ -2619,7 +2623,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 		Request that the scene tree widget should be rebuild for the given prefab
 	**/
 	public function rebuildTreeImpl() : Void {
-		// editor.treePrefab.rebuild();
+		@:privateAccess editor.sceneEditor.tree.rebuild();
 	}
 
 
@@ -2694,7 +2698,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 	}
 
 	function getRootObjects3d() : Array<h3d.scene.Object> {
-		throw "implement";
+		return @:privateAccess editor.prefab.shared.root3d.children;
 	}
 
 	function getSaveKey(category: hrt.prefab.EditContext2.SettingCategory, key: String) {

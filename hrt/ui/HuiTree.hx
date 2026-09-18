@@ -81,6 +81,8 @@ class HuiTree<TreeItem> extends HuiElement {
 	var flatList: Array<TreeItemData> = [];
 	var keyboardFocus: TreeItemData = null;
 
+	var dragDropSelection: Array<TreeItem> = null;
+
 	/**TreeItem -> Bool map**/
 	var selectedElements: Map<{}, Bool> = [];
 	var lastSelectedElement: TreeItemData = null;
@@ -140,7 +142,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 		onKeyDown = keyDownHandler.bind(false);
 
-		onPush = (e:hxd.Event) -> {
+		onClick = (e:hxd.Event) -> {
 			if (e.button == 0 || e.button == 1) {
 				//interactive.focus();
 				e.propagate = false;
@@ -498,6 +500,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	function generateItem(data: TreeItemData) : HuiElement {
 		var line = new HuiTreeLine(data, this);
+		data.line = line;
 
 		line.onCaretClick = () -> {
 			toggleItemDataOpen(data);
@@ -531,7 +534,17 @@ class HuiTree<TreeItem> extends HuiElement {
 
 		if (dragAndDropInterface != null) {
 			line.onDragStart = () -> {
-				dragAndDropInterface.onDragStart(data.item);
+				dragDropSelection = [data.item];
+				if (hxd.Key.isDown(hxd.Key.CTRL)) {
+					dragDropSelection = [];
+					for (item in flatList) {
+						if (data.item == item.item || selectedElements.get(cast item.item) != null) {
+							dragDropSelection.push(item.item);
+						}
+					}
+				}
+				requestRefresh();
+				dragAndDropInterface.onDragStart(data.item, dragDropSelection);
 			}
 
 			line.onDrop = (op: HuiDragOp) -> {
@@ -702,13 +715,16 @@ class HuiTree<TreeItem> extends HuiElement {
 		Drag and drop interface.
 		Set this struct with all of it's function callback to handle drag and drop inside your tree.
 	**/
-	public var dragAndDropInterface :
+	public var dragAndDropInterface(default, set) :
 	{
 		/**
 			Called when the user starts a drag and drop operation on `item`.
-			Call startDrag with your data to initiate the drag
+			Call startDrag with your data to initiate the drag.
+			Selection represent the list of treeItem that want to move
+			with the drag operation. It is different from selectedElements because
+			it includes item. 
 		**/
-		onDragStart: (item: TreeItem) -> Void,
+		onDragStart: (item: TreeItem, selection: Array<TreeItem>) -> Void,
 
 		/**
 			Called when the user hovers on `target` with a drag and drop operation. You need to return what drop operation is allowed
@@ -722,6 +738,29 @@ class HuiTree<TreeItem> extends HuiElement {
 		**/
 		onDrop: (target: TreeItem, where: DropOperation, op : HuiDragOp) -> Void
 	} = null;
+
+	function set_dragAndDropInterface(v) {
+		dragAndDropInterface = v;
+		if (dragAndDropInterface == null) {
+			onAnyDragEnd = HuiElement.emptyFuncDragVoid;
+		} else {
+			onAnyDragEnd = cleanupDragAndDrop;
+		}
+		return dragAndDropInterface;
+	}
+
+	function cleanupDragAndDrop(op: HuiDragOp) {
+		if (dragDropSelection != null) {
+			for (item in dragDropSelection) {
+					var line = itemMap.get(cast item);					
+					if (line != null) {
+						line.line?.refresh();
+					}
+				}
+
+			dragDropSelection = null;
+		}
+	}
 
 	function updateData(data: TreeItemData) {
 		data.children = null; // invalidate children if we are regenerating the tree

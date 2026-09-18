@@ -100,8 +100,8 @@ class HuiFileBrowser extends HuiElement {
 		tree.onItemDoubleClick = (e, file) -> onOpen(file);
 
 		tree.dragAndDropInterface = {
-			onDragStart: (item) -> {
-				itemStartDrag();
+			onDragStart: (item, selection) -> {
+				itemStartDrag(selection);
 			},
 			getItemDropFlags: function(item, op) : hrt.ui.HuiTree.DropFlags {
 				if (op.type == fileDragOp) {
@@ -799,8 +799,8 @@ class HuiFileBrowser extends HuiElement {
 		markRefresh();
 	}
 
-	function itemStartDrag() {
-		var filePaths = [for (file in getSelectedFiles()) file.path];
+	function itemStartDrag(selection: Array<File>) {
+		var filePaths = [for (file in selection) file.path];
 		var op = startDrag(fileDragOp, filePaths);
 		op.setPreviewText(filePaths.join("<br/>"));
 	}
@@ -1163,7 +1163,7 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 			}
 
 			onDragStart = () -> {
-				fileBrowser.itemStartDrag();
+				fileBrowser.itemStartDrag(fileBrowser.getSelectedFiles());
 			}
 
 			onDragOver = (op) -> {

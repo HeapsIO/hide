@@ -350,9 +350,9 @@ class GymWidgets extends HuiElement {
 		}
 
 		tree.dragAndDropInterface = {
-			onDragStart: (item) -> {
-				var op = tree.startDrag("testDrag", tree.getSelectedItems());
-				op.setPreviewText("" + tree.getSelectedItems());
+			onDragStart: (item, selection) -> {
+				var op = tree.startDrag("testDrag", selection);
+				op.setPreviewText("" + selection);
 			},
 			getItemDropFlags: function(item, op) : hrt.ui.HuiTree.DropFlags {
 				if (op.type == "testDrag") {
