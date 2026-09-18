@@ -141,7 +141,7 @@ class Object3dRef extends Widget<String> {
 			if (prefab == null)
 				return;
 
-			var newName = prefab.getUniqueName();
+			var newName = getUniquerName(prefab);
 			var oldName = prefab.name;
 			if (prefab.name == newName) {
 				newName = null;
@@ -150,9 +150,8 @@ class Object3dRef extends Widget<String> {
 			root.change({
 				callback: () -> {
 					if (newName != null) {
-						var old = prefab.name;
-						prefab.name = prefab.getUniqueName();
-						Ide.showInfo('Renamed $old to ${prefab.name} so it could be referenced with an unique name');
+						prefab.name = newName;
+						Ide.showInfo('Renamed $oldName to $newName so it could be referenced with an unique name');
 					}
 					value = prefab.getAbsPath(false, true);					
 					changeBehaviorInternal(false);
@@ -168,6 +167,23 @@ class Object3dRef extends Widget<String> {
 				recordUndo: true,
 			});
 		}
+	}
+
+	/**
+		Different than prefab.getUniqueName because prefab.getUniqueName is kinda broken and
+		doesn't really ensures that the name is really unique
+	**/
+	function getUniquerName(prefab: hrt.prefab.Prefab) {
+		var name = prefab.name;
+		var suffix = 0;
+		if (prefab.parent != null) {
+			var siblingNames = [for (sibling in prefab.parent.children) if (sibling != prefab) sibling.name => true];
+			while(siblingNames.get(name)) {
+				suffix ++;
+				name = prefab.name + "-" + suffix;
+			}
+		}
+		return name;
 	}
 	#end
 
