@@ -1,6 +1,7 @@
 package hrt.ui;
 
 #if hui
+@:build(hide.Config.configMacro("editor"))
 class HuiSceneEditor extends HuiElement {
 	static var SRC =
 		<hui-scene-editor>
@@ -26,35 +27,24 @@ class HuiSceneEditor extends HuiElement {
 			<hui-error-display id="critical-error" public/>
 		</hui-scene-editor>
 
-	public static var CAM_CTRL_CONFIG_KEY = "editor.camera.type";
+	@:config("camera.type") public static var cameraType : Int = 0;
+
+	@:config("visibility.overlay") public static var visibilityOverlay : Bool = true;
+	@:config("visibility.grid") public static var visibilityGrid : Bool = true;
+	@:config("visibility.joints") public static var visibilityJoints : Bool = false;
+	@:config("visibility.colliders") public static var visibilityColliders : Bool = false;
+	@:config("visibility.misc") public static var visibilityMisc : Bool = true;
+	@:config("visibility.gizmo") public static var visibilityGizmo : Bool = true;
+	@:config("visibility.outline") public static var visibilityOutline : Bool = true;
+	@:config("visibility.sceneInfos") public static var visibilitySceneInfos : Bool = false;
+	@:config("visibility.wireframe") public static var visibilityWireframe : Bool = false;
+	@:config("visibility.disableSceneRender") public static var visibilityDisableSceneRender : Bool = false;
+
+	@:config("renderProfile.edit") public static var renderProfileEdit : Bool = false;
+
 	public static var CAM_POS_CONFIG_KEY = "editor.camera.pos";
-
-	public static final VISIBILITY_OVERLAY_CONFIG_KEY = "editor.visibility.overlay";
-	public static final VISIBILITY_GRID_CONFIG_KEY = "editor.visibility.grid";
-	public static final VISIBILITY_JOINTS_CONFIG_KEY = "editor.visibility.joints";
-	public static final VISIBILITY_COLLIDERS_CONFIG_KEY = "editor.visibility.colliders";
-	public static final VISIBILITY_MISC_CONFIG_KEY = "editor.visibility.misc";
-	public static final VISIBILITY_GIZMO_CONFIG_KEY = "editor.visibility.gizmo";
-	public static final VISIBILITY_OUTLINE_CONFIG_KEY = "editor.visibility.outline";
-	public static final VISIBILITY_SCENE_INFOS_CONFIG_KEY = "editor.visibility.sceneInfos";
-	public static final VISIBILITY_WIREFRAME_CONFIG_KEY = "editor.visibility.wireframe";
-	public static final VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY = "editor.visibility.disableSceneRender";
-	public static final DEFAULT_VISIBILITY_STATE = [
-		VISIBILITY_OVERLAY_CONFIG_KEY => true,
-		VISIBILITY_GRID_CONFIG_KEY => true,
-		VISIBILITY_JOINTS_CONFIG_KEY => false,
-		VISIBILITY_COLLIDERS_CONFIG_KEY => false,
-		VISIBILITY_MISC_CONFIG_KEY => true,
-		VISIBILITY_GIZMO_CONFIG_KEY => true,
-		VISIBILITY_OUTLINE_CONFIG_KEY => true,
-		VISIBILITY_SCENE_INFOS_CONFIG_KEY => false,
-		VISIBILITY_WIREFRAME_CONFIG_KEY => false,
-		VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY => false
-	];
-
 	public static final RENDER_PROFILE_SAVE_KEY = "renderProfilePath";
 	public static var RENDER_PROFILE_KEY = "scene.renderProps";
-	public static final RENDER_PROFILE_EDIT_KEY = "editor.renderprofile.edit";
 	public static var RENDER_SHADOW_SAVE_KEY = "shadowsEnabled";
 
 	static public var focusCommand = new hrt.ui.HuiCommands.HuiCommand("Focus Selection", {key: hxd.Key.F});
@@ -112,7 +102,7 @@ class HuiSceneEditor extends HuiElement {
 		tree.saveDisplayKey = "sceneTree";
 
 		renderProfileTree = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelAdditionalTree.content);
-		panelAdditionalTree.visible = hide.Ide.inst.currentConfig.get(RENDER_PROFILE_EDIT_KEY, false) && Std.isOfType(getView(), hide.view.Prefab);
+		panelAdditionalTree.visible = renderProfileEdit && Std.isOfType(getView(), hide.view.Prefab);
 		renderProfileTree.saveDisplayKey = "renderProfileTree";
 
 		renderProfileTree.getItemChildren = (el) -> {
@@ -158,7 +148,7 @@ class HuiSceneEditor extends HuiElement {
 
 		scene.s3d.addEventListener(sceneEventHandler);
 
-		var ctrlClass = h3d.scene.CameraController.getCameraControllersClass()[hide.Ide.inst.currentConfig.get(hrt.ui.HuiSceneEditor.CAM_CTRL_CONFIG_KEY, 0)];
+		var ctrlClass = h3d.scene.CameraController.getCameraControllersClass()[cameraType];
 		cameraController = Type.createInstance(ctrlClass, []);
 		cameraController.onCustomEvent = (e : hxd.Event) -> {
 			if (e.kind == EWheel) {
@@ -368,10 +358,6 @@ class HuiSceneEditor extends HuiElement {
 
 	public function onViewLoadState() {
 		updateRenderProfile();
-
-		for (k in DEFAULT_VISIBILITY_STATE.keys())
-			if (hide.Ide.inst.currentConfig.get(k) == null)
-				hide.Ide.inst.currentConfig.set(k, DEFAULT_VISIBILITY_STATE.get(k));
 		updateDebugOverlayVisibility();
 
 		var cameraState = getDisplayState(CAM_POS_CONFIG_KEY, null);
@@ -395,16 +381,16 @@ class HuiSceneEditor extends HuiElement {
 	}
 
 	public function updateDebugOverlayVisibility() {
-		var visibility = hide.Ide.inst.currentConfig.get(VISIBILITY_OVERLAY_CONFIG_KEY);
+		var visibility = visibilityOverlay;
 
-		grid.visible = visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_GRID_CONFIG_KEY);
-		setJointsDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_JOINTS_CONFIG_KEY));
-		setColliderDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_COLLIDERS_CONFIG_KEY));
-		setMiscDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_MISC_CONFIG_KEY));
-		setOutlineVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_OUTLINE_CONFIG_KEY));
-		setSceneInfoVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_SCENE_INFOS_CONFIG_KEY));
-		setWireframeVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_WIREFRAME_CONFIG_KEY));
-		setSceneVisibility(!hide.Ide.inst.currentConfig.get(VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY));
+		grid.visible = visibility && visibilityGrid;
+		setJointsDebugVisibility(visibility && visibilityJoints);
+		setColliderDebugVisibility(visibility && visibilityColliders);
+		setMiscDebugVisibility(visibility && visibilityMisc);
+		setOutlineVisibility(visibility && visibilityOutline);
+		setSceneInfoVisibility(visibility && visibilitySceneInfos);
+		setWireframeVisibility(visibility && visibilityWireframe);
+		setSceneVisibility(!visibilityDisableSceneRender);
 	}
 
 	@:access(h3d.scene.Skin)

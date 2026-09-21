@@ -150,15 +150,15 @@ class HuiVisibilityWidget extends HuiElement {
 		super(parent);
 		initComponent();
 
-		visibilityBtn.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_OVERLAY_CONFIG_KEY, true);
+		visibilityBtn.toggled = HuiSceneEditor.visibilityOverlay;
 		visibilityBtn.onClick = (_) -> {
 			visibilityBtn.toggled = !visibilityBtn.toggled;
-			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_OVERLAY_CONFIG_KEY, visibilityBtn.toggled);
+			HuiSceneEditor.visibilityOverlay = visibilityBtn.toggled;
 			editor.updateDebugOverlayVisibility();
 
 			var prefabView = Std.downcast(view, hide.view.Prefab);
 			if (prefabView != null) {
-				var visible = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_OVERLAY_CONFIG_KEY, true) && hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_GIZMO_CONFIG_KEY, true);
+				var visible = HuiSceneEditor.visibilityOverlay && HuiSceneEditor.visibilityGizmo;
 				@:privateAccess prefabView.gizmo.setVisible(visible);
 			}
 		}
@@ -250,66 +250,66 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 		gridTog.onClick = (_) -> {
 			@:privateAccess editor.grid.visible = @:privateAccess !editor.grid.visible;
 			gridTog.toggled = !gridTog.toggled;
-			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_GRID_CONFIG_KEY, @:privateAccess editor.grid.visible);
+			HuiSceneEditor.visibilityGrid = @:privateAccess editor.grid.visible;
 		}
 
-		boneTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_JOINTS_CONFIG_KEY);
+		boneTog.toggled = HuiSceneEditor.visibilityJoints;
 		boneTog.onClick = (_) -> {
 			boneTog.toggled = !boneTog.toggled;
 			editor.setJointsDebugVisibility(boneTog.toggled);
-			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_JOINTS_CONFIG_KEY, boneTog.toggled);
+			HuiSceneEditor.visibilityJoints = boneTog.toggled;
 		}
 
-		colliderTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_COLLIDERS_CONFIG_KEY);
+		colliderTog.toggled = HuiSceneEditor.visibilityColliders;
 		colliderTog.onClick = (_) -> {
 			colliderTog.toggled = !colliderTog.toggled;
 			editor.setColliderDebugVisibility(colliderTog.toggled);
-			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_COLLIDERS_CONFIG_KEY, colliderTog.toggled);
+			HuiSceneEditor.visibilityColliders = colliderTog.toggled;
 		}
 
-		miscTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_MISC_CONFIG_KEY);
+		miscTog.toggled = HuiSceneEditor.visibilityMisc;
 		miscTog.onClick = (_) -> {
 			miscTog.toggled = !miscTog.toggled;
 			editor.setMiscDebugVisibility(miscTog.toggled);
-			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_MISC_CONFIG_KEY, miscTog.toggled);
+			HuiSceneEditor.visibilityMisc = miscTog.toggled;
 		}
 
 		var prefabView = Std.downcast(view, hide.view.Prefab);
 		if (prefabView != null) {
-			gizmoTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_GIZMO_CONFIG_KEY);
+			gizmoTog.toggled = HuiSceneEditor.visibilityGizmo;
 			gizmoTog.onClick = (_) -> {
 				gizmoTog.toggled = !gizmoTog.toggled;
 				@:privateAccess prefabView.gizmo.setVisible(gizmoTog.toggled);
-				hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_GIZMO_CONFIG_KEY, gizmoTog.toggled);
+				HuiSceneEditor.visibilityGizmo = gizmoTog.toggled;
 			}
 		}
 
-		outlineTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_OUTLINE_CONFIG_KEY);
+		outlineTog.toggled = HuiSceneEditor.visibilityOutline;
 		outlineTog.onClick = (_) -> {
 			outlineTog.toggled = !outlineTog.toggled;
 			editor.setOutlineVisibility(outlineTog.toggled);
-			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_OUTLINE_CONFIG_KEY, outlineTog.toggled);
+			HuiSceneEditor.visibilityOutline = outlineTog.toggled;
 		}
 
-		sceneInfoTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_SCENE_INFOS_CONFIG_KEY);
+		sceneInfoTog.toggled = HuiSceneEditor.visibilitySceneInfos;
 		sceneInfoTog.onClick = (_) -> {
 			sceneInfoTog.toggled = !sceneInfoTog.toggled;
 			editor.setSceneInfoVisibility(sceneInfoTog.toggled);
-			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_SCENE_INFOS_CONFIG_KEY, sceneInfoTog.toggled);
+			HuiSceneEditor.visibilitySceneInfos = sceneInfoTog.toggled;
 		}
 
-		wireframeTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_WIREFRAME_CONFIG_KEY);
+		wireframeTog.toggled = HuiSceneEditor.visibilityWireframe;
 		wireframeTog.onClick = (_) -> {
 			wireframeTog.toggled = !wireframeTog.toggled;
 			editor.setWireframeVisibility(wireframeTog.toggled);
-			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_WIREFRAME_CONFIG_KEY, wireframeTog.toggled);
+			HuiSceneEditor.visibilityWireframe = wireframeTog.toggled;
 		}
 
-		disableSceneTog.toggled = hide.Ide.inst.currentConfig.get(HuiSceneEditor.VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY);
+		disableSceneTog.toggled = HuiSceneEditor.visibilityDisableSceneRender;
 		disableSceneTog.onClick = (_) -> {
 			disableSceneTog.toggled = !disableSceneTog.toggled;
 			editor.setSceneVisibility(!disableSceneTog.toggled);
-			hide.Ide.inst.currentConfig.set(HuiSceneEditor.VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY, disableSceneTog.toggled);
+			HuiSceneEditor.visibilityDisableSceneRender = disableSceneTog.toggled;
 		}
 	}
 }
@@ -413,7 +413,7 @@ class HuiRenderProfileWidget extends HuiElement {
 	}
 
 	public function setRenderProfileEdition(isEditable : Bool) {
-		hide.Ide.inst.currentConfig.set(HuiSceneEditor.RENDER_PROFILE_EDIT_KEY, isEditable);
+		HuiSceneEditor.renderProfileEdit = isEditable;
 		@:privateAccess editor.panelAdditionalTree.visible = isEditable;
 	}
 
@@ -638,7 +638,7 @@ class HuiCameraSettingsPopup extends HuiPopup {
 					null;
 			};
 
-			hide.Ide.inst.currentConfig.set(HuiSceneEditor.CAM_CTRL_CONFIG_KEY,  h3d.scene.CameraController.getCameraControllerClassIdx(@:privateAccess editor.cameraController));
+			HuiSceneEditor.cameraType = h3d.scene.CameraController.getCameraControllerClassIdx(@:privateAccess editor.cameraController);
 
 			@:privateAccess editor.cameraController.loadFromCamera();
 			zoomDistance.dom.toggleClass("hidden", camType.value != 0);
