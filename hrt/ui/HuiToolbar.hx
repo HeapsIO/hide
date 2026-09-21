@@ -124,10 +124,10 @@ class HuiSnapWidget extends HuiElement {
 		super(parent);
 		initComponent();
 
-		snapBtn.toggled = editor.gizmoShouldSnap;
+		snapBtn.toggled = hide.view.Prefab.gizmoSnap;
 		snapBtn.onClick = (_) -> {
-			editor.gizmoShouldSnap = !editor.gizmoShouldSnap;
-			snapBtn.toggled = editor.gizmoShouldSnap;
+			hide.view.Prefab.gizmoSnap = !hide.view.Prefab.gizmoSnap;
+			snapBtn.toggled = hide.view.Prefab.gizmoSnap;
 		}
 
 		snapPopupBtn.onClick = (_) -> {
@@ -696,9 +696,9 @@ class HuiGridSettingsPopup extends HuiPopup {
 		super(parent);
 		initComponent();
 
-		forceOnGrid.value = editor.gizmoForceSnapOnGrid;
+		forceOnGrid.value = hide.view.Prefab.gizmoSnapOnGrid;
 		forceOnGrid.onValueChanged = () -> {
-			editor.gizmoForceSnapOnGrid = forceOnGrid.value;
+			hide.view.Prefab.gizmoSnapOnGrid = forceOnGrid.value;
 		}
 
 		@:privateAccess gridSize.value = editor.sceneEditor.gizmoSnapStep;

@@ -69,19 +69,19 @@ class HuiSceneEditor extends HuiElement {
 
 	public var gizmoSnapStep(default, set) : Float = 1.0;
 	public function set_gizmoSnapStep(v : Float) {
-		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SNAP_STEP_CONFIG_KEY, v);
+		hide.view.Prefab.gizmoSnapStep = v;
 		return gizmoSnapStep = v;
 	}
 
 	public var gizmoRotationStep(default, set) : Float = 15.0;
 	public function set_gizmoRotationStep(v : Float) {
-		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_ROTATION_STEP_CONFIG_KEY, v);
+		hide.view.Prefab.gizmoRotationStep = v;
 		return gizmoRotationStep = v;
 	}
 
 	public var gizmoScaleStep(default, set) : Float = 0.1;
 	public function set_gizmoScaleStep(v : Float) {
-		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SCALE_STEP_CONFIG_KEY, v);
+		hide.view.Prefab.gizmoScaleStep = v;
 		return gizmoScaleStep = v;
 	}
 
@@ -605,9 +605,9 @@ class HuiSceneEditor extends HuiElement {
 	}
 
 	function makeGizmos() {
-		this.gizmoSnapStep = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_STEP_CONFIG_KEY, 1.0);
-		this.gizmoRotationStep = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_ROTATION_STEP_CONFIG_KEY, 15.0);
-		this.gizmoScaleStep = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SCALE_STEP_CONFIG_KEY, this.gizmoScaleStep);
+		this.gizmoSnapStep = hide.view.Prefab.gizmoSnapStep;
+		this.gizmoRotationStep = hide.view.Prefab.gizmoRotationStep;
+		this.gizmoScaleStep = hide.view.Prefab.gizmoScaleStep;
 		grid?.remove();
 		viewportAxis?.remove();
 

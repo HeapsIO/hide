@@ -16,6 +16,7 @@ typedef PrefabError = {
 	var exception: haxe.Exception;
 };
 @:access(hrt.ui.HuiSceneEditor)
+@:build(hide.Config.configMacro("editor"))
 class Prefab extends HuiView<{path: String}> {
 	static var SRC =
 		<prefab>
@@ -24,31 +25,21 @@ class Prefab extends HuiView<{path: String}> {
 
 	static var _ = HuiView.register("prefab", Prefab);
 
+	@:config public static var gizmoSnap : Bool = true;
+	@:config public static var gizmoSnapStep : Float = 1.0;
+	@:config public static var gizmoRotationStep : Float = 15.0;
+	@:config public static var gizmoScaleStep : Float = 0.1;
+	@:config public static var gizmoSnapOnGrid : Bool = true;
+	@:config public static var keepChildTransform : Bool = false;
+
 	public static var TAGS_CONFIG_KEY = "sceneeditor.tags";
 	public static var HIDDEN_CONFIG_KEY = "editor.hidden";
-	public static var GIZMO_SNAP_CONFIG_KEY = "editor.gizmoSnap";
-	public static var GIZMO_SNAP_STEP_CONFIG_KEY = "editor.gizmoSnapStep";
-	public static var GIZMO_ROTATION_STEP_CONFIG_KEY = "editor.gizmoRotationStep";
-	public static var GIZMO_SCALE_STEP_CONFIG_KEY = "editor.gizmoScaleStep";
-	public static var GIZMO_SNAP_GRID_CONFIG_KEY = "editor.gizmoSnapOnGrid";
-	public static var KEEP_CHILD_TRANSFORM_KEY = "editor.keepChildTransform";
 	public static final DEFAULT_SCENE_FILTERS = "editor.defaultSceneFilters";
 	public static final SCENE_FILTERS = "editor.sceneFilters";
 
 	public static final SCENE_TREE_DRAG_DROP = "prefabs";
 
 	static var editorHideCommand = new hrt.ui.HuiCommands.HuiCommand("Editor Hide", {key: hxd.Key.H});
-
-	public var gizmoShouldSnap(default, set) : Bool = true;
-	public function set_gizmoShouldSnap(v : Bool) {
-		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, v);
-		return gizmoShouldSnap = v;
-	}
-	public var gizmoForceSnapOnGrid(default, set) : Bool = true;
-	public function set_gizmoForceSnapOnGrid(v : Bool) {
-		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SNAP_GRID_CONFIG_KEY, v);
-		return gizmoForceSnapOnGrid = v;
-	}
 
 	public var config(default, null) : hide.Config;
 	public var hidden : Map<hrt.prefab.Prefab, Bool> = new Map();
@@ -405,10 +396,6 @@ class Prefab extends HuiView<{path: String}> {
 			@:privateAccess sceneEditor.tree.forceRefreshTree();
 		}
 
-		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
-		this.gizmoForceSnapOnGrid = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_GRID_CONFIG_KEY, true);
-
-
 		sceneEditor.scene.onDragMove = sceneDragMove;
 		sceneEditor.scene.onDragOut = sceneDragOut;
 		sceneEditor.scene.onDragOver = sceneDragOver;
@@ -428,7 +415,7 @@ class Prefab extends HuiView<{path: String}> {
 		var initialAbs = new Map<hrt.prefab.Object3D, h3d.Matrix>();
 		var initialCentroid = new h3d.Matrix();
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
-		gizmo.shouldSnap = () -> { return this.gizmoShouldSnap; };
+		gizmo.shouldSnap = () -> { return gizmoSnap; };
 		gizmo.snap = (v: Float, mode: hrt.tools.Gizmo.EditMode) -> {
 			if (gizmo.shouldSnap() == hxd.Key.isDown(hxd.Key.CTRL)){
 				return v;
@@ -456,7 +443,7 @@ class Prefab extends HuiView<{path: String}> {
 			var gizmoOrigin = @:privateAccess gizmo.initialAbsPos;
 			var gizmoOffset = new h3d.Vector(gizmoOrigin.tx, gizmoOrigin.ty, gizmoOrigin.tz);
 
-			if (gizmoForceSnapOnGrid) {
+			if (gizmoSnapOnGrid) {
 				var start = @:privateAccess gizmo.initialAbsPos;
 				switch(gizmo.mode) {
 					case Translation:
@@ -473,7 +460,7 @@ class Prefab extends HuiView<{path: String}> {
 			// calculate how much the gizmo moved due to snapping
 			gizmoOffset.set(gizmoOrigin.tx - gizmoOffset.x, gizmoOrigin.ty - gizmoOffset.y, gizmoOrigin.tz - gizmoOffset.z);
 
-			var keepTransform = hide.Ide.inst.currentConfig.get(KEEP_CHILD_TRANSFORM_KEY, false);
+			var keepTransform = keepChildTransform;
 			for (o in obj3ds) {
 				initialTransform.set(o, o.getTransform());
 
@@ -524,8 +511,8 @@ class Prefab extends HuiView<{path: String}> {
 					trs.prependScale(offsetScale.x, offsetScale.y, offsetScale.z);
 
 				var childAbsPos : Array<h3d.Matrix> = [];
-				var keepChildTransform = hide.Ide.inst.currentConfig.get(KEEP_CHILD_TRANSFORM_KEY, false);
-				if (keepChildTransform) {
+				var keepTransform = keepChildTransform;
+				if (keepTransform) {
 					for (child in obj3d.children) {
 						var c3d = child.to(hrt.prefab.Object3D);
 						if (c3d != null) {
@@ -537,7 +524,7 @@ class Prefab extends HuiView<{path: String}> {
 				obj3d.setTransform(trs);
 				obj3d.applyTransform();
 
-				if (keepChildTransform) {
+				if (keepTransform) {
 					var abs = obj3d.getAbsPos(true);
 					var scale = abs.getScale();
 
@@ -566,7 +553,7 @@ class Prefab extends HuiView<{path: String}> {
 			var newTransforms = [];
 			var modifiedObj3ds = obj3ds.copy();
 
-			var keepTransform = hide.Ide.inst.currentConfig.get(KEEP_CHILD_TRANSFORM_KEY, false);
+			var keepTransform = keepChildTransform;
 
 			for (o in modifiedObj3ds) {
 				prevTransforms.push(initialTransform.get(o));
@@ -1018,14 +1005,13 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	public function transformMenu() : Array<hrt.ui.HuiMenu.MenuItem> {
-		var ide = Ide.inst;
 		return [
 			{
 				label: "Keep child transforms",
-				checked: ide.currentConfig.get(KEEP_CHILD_TRANSFORM_KEY, false),
+				checked: keepChildTransform,
 				tooltip: "If on, moving an object won't move it's children with it. Does not work if the object has a non uniform scale",
 				stayOpen: true,
-				click: () -> ide.currentConfig.set(KEEP_CHILD_TRANSFORM_KEY, !ide.currentConfig.get(KEEP_CHILD_TRANSFORM_KEY, false))
+				click: () -> keepChildTransform = !keepChildTransform
 			},
 		];
 	}
