@@ -34,19 +34,10 @@ typedef Data = {
 	var minStartSpeed : Float;
 }
 
-class EditorParticleShader extends hxsl.Shader {
-	static var SRC = {
-
-		var particleLife : Float;
-		var particleLifeTime : Float;
-		var particleRandom : Float;
-
-		function __init__vertex() {
-			particleLife = 0.0;
-			particleLifeTime = 0.0;
-			particleRandom = 0.0;
-		}
-	}
+typedef Template = {
+	var meshes : Array<h3d.scene.Mesh>;
+	var prefab : hrt.prefab.Prefab;
+	var emitters : Array<GPUEmitterObject>;
 }
 
 @:access(hrt.prefab.fx.gpuemitter.GPUEmitterObject)
@@ -73,29 +64,11 @@ class GPUEmitter extends Object3D {
 	@:s var align : Align = FaceCam;
 	@:s var speedMode : SpeedMode = Normal;
 
+	var templates : Array<Template> = null;
+
 	override function makeObject(parent3d : h3d.scene.Object) {
-		return new h3d.scene.Object(parent3d);
-	}
+		var obj = super.makeObject(parent3d);
 
-	function updateEmitters() : Array<{meshes : Array<h3d.scene.Mesh>, prefab : hrt.prefab.Prefab, emitters : Array<GPUEmitterObject>}> {
-		#if editor
-		return [];
-		#end
-		for ( emitter in local3d.findAll(o -> Std.downcast(o, GPUEmitterObject)) )
-			emitter.remove();
-
-		var templates = [];
-		for ( c in children ) {
-			if ( Std.isOfType(c, hrt.prefab.Shader) )
-				continue;
-			var obj = new h3d.scene.Object();
-			var cloned = c.make(new ContextShared(obj));
-			var clonedMeshes = obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh));
-			templates.push({meshes : clonedMeshes, prefab : cloned, emitters : []});
-		}
-		inline function createEmitter(data, prim, materials) {
-			return new GPUEmitterObject(data, prim, materials, local3d);
-		}
 		inline function getData(trs : h3d.Matrix) : Data {
 			return {
 				rate : rate,
@@ -116,59 +89,37 @@ class GPUEmitter extends Object3D {
 			}
 		}
 
-		for ( t in templates ) {
-			for ( mesh in t.meshes ) {
+		for (t in getTemplates()) {
+			for (mesh in t.meshes) {
 				var multimat = Std.downcast(mesh, h3d.scene.MultiMaterial);
 				var materials : Array<h3d.mat.Material>;
-				if ( multimat == null )
+				if (multimat == null)
 					materials = [mesh.material];
 				else
 					materials = multimat.materials;
-				var emitter = createEmitter(getData(mesh.getAbsPos().clone()), cast(mesh.primitive, h3d.prim.MeshPrimitive), materials);
+				var emitter = new GPUEmitterObject(getData(mesh.getAbsPos().clone()), cast(mesh.primitive, h3d.prim.MeshPrimitive), materials, obj);
 				t.emitters.push(emitter);
 				mesh.visible = false;
 				mesh.ignoreCollide = true;
-			}
-		}
 
-		return templates;
-	}
-
-	function init() {
-		var templates = updateEmitters();
-
-		for ( t in templates ) {
-			for ( emitter in t.emitters ) {
 				emitter.customAnimations = [];
 				var shaders = t.prefab.findAll(hrt.prefab.Shader);
-				for ( shader in shaders ) {
-					if( !shader.enabled ) continue;
+				for (shader in shaders) {
+					if (!shader.enabled) continue;
 					hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, emitter.customAnimations, emitter.find(o -> Std.downcast(o, h3d.scene.MeshBatch)));
 				}
 				emitter.init();
 				emitter.bakeAnimations();
 			}
 		}
+
+		return obj;
 	}
 
 	override function makeChild(c : hrt.prefab.Prefab) {
-		if ( !Std.isOfType(c, hrt.prefab.Shader) )
+		if (!Std.isOfType(c, hrt.prefab.Shader))
 			return;
 		super.makeChild(c);
-	}
-
-	override function updateInstance(?propName : String) {
-		super.updateInstance(propName);
-
-		init();
-		#if editor
-		for (m in local3d.getMaterials() ) {
-			var s = m.mainPass.getShader(EditorParticleShader);
-			if ( s != null )
-				m.mainPass.removeShader(s);
-			m.mainPass.addShader(new EditorParticleShader());
-		}
-		#end
 	}
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
@@ -188,8 +139,39 @@ class GPUEmitter extends Object3D {
 				<select([{value:Normal, label:"Normal"}, {value:None, label:"None"}]) label="Speed" field={speedMode}/>
 				<slider min={0.01} field={minStartSpeed}/>
 				<slider min={0.01} field={maxStartSpeed}/>
-			</category>
-		);
+			</category>, null, function(isTemp) {
+				// Remove old emitters
+				if (templates != null) {
+					for (t in templates) {
+						for (e in t.emitters)
+							e.remove();
+					}
+					templates = null;
+				}
+
+				ctx.rebuildPrefab(this);
+			});
+	}
+
+	function getTemplates() : Array<Template> {
+		#if editor
+		return [];
+		#end
+
+		if (templates != null)
+			return templates;
+
+		templates = [];
+		for (c in children) {
+			if (Std.isOfType(c, hrt.prefab.Shader))
+				continue;
+			var obj = new h3d.scene.Object();
+			var cloned = c.make(new ContextShared(obj));
+			var clonedMeshes = obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh));
+			templates.push({meshes : clonedMeshes, prefab : cloned, emitters : []});
+		}
+
+		return templates;
 	}
 
 	#if editor
