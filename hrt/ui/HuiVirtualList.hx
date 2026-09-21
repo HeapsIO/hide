@@ -44,6 +44,13 @@ class HuiVirtualList<T> extends HuiElement {
 
 	}
 
+	/**
+		Called when the HuiElement representing `item` is removed (because it's no longer visible)
+	**/
+	public dynamic function onItemRemoved(item: T) : Void {
+
+	}
+
 	public function refresh() {
 		needRefresh = true;
 	}
@@ -309,6 +316,7 @@ class HuiVirtualList<T> extends HuiElement {
 		for (item => old in oldElements) {
 			old.remove();
 			elements.remove(cast item);
+			onItemRemoved(cast item);
 		}
 	}
 

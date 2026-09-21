@@ -66,7 +66,7 @@ class Object3dRef extends Widget<String> {
 					var name = "";
 					while (object3d != null && object3d != @:privateAccess root.prefab.shared.root3d) {
 						if (name.length > 0)
-							name = "." + name ;
+							name = "." + name;
 						name = object3d.name + name;
 						object3d = object3d.parent;
 					}
@@ -151,9 +151,9 @@ class Object3dRef extends Widget<String> {
 				callback: () -> {
 					if (newName != null) {
 						prefab.name = newName;
-						Ide.showInfo('Renamed $oldName to $newName so it could be referenced with an unique name');
+						Ide.showInfo('Renamed $oldName to $newName so it could be referenced with a unique name');
 					}
-					value = prefab.getAbsPath(false, true);					
+					value = prefab.getAbsPath(false, true);
 					changeBehaviorInternal(false);
 				},
 				sideEffects: (isUndo) -> {

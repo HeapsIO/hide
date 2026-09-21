@@ -121,6 +121,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 		list.generateItem = generateItem;
 		list.refreshItem = cast refreshItem;
+		list.onItemRemoved = cast listItemRemoved;
 		requestRefresh(RegenerateFlatten);
 		requestRefresh(RootData);
 		requestRefresh(FillMap);
@@ -664,6 +665,10 @@ class HuiTree<TreeItem> extends HuiElement {
 		}
 	}
 
+	function listItemRemoved(item: TreeItemData) : Void {
+		item.line = null;
+	}
+
 	function forceRefreshTree() {
 		for (data in itemMap) {
 			data.children = null;
@@ -720,9 +725,9 @@ class HuiTree<TreeItem> extends HuiElement {
 		/**
 			Called when the user starts a drag and drop operation on `item`.
 			Call startDrag with your data to initiate the drag.
-			Selection represent the list of treeItem that want to move
+			Selection represent the list of treeItem elements that want to move
 			with the drag operation. It is different from selectedElements because
-			it includes item. 
+			it includes item.
 		**/
 		onDragStart: (item: TreeItem, selection: Array<TreeItem>) -> Void,
 
@@ -751,14 +756,14 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	function cleanupDragAndDrop(op: HuiDragOp) {
 		if (dragDropSelection != null) {
-			for (item in dragDropSelection) {
-					var line = itemMap.get(cast item);					
-					if (line != null) {
-						line.line?.refresh();
-					}
-				}
-
+			var selection = dragDropSelection;
 			dragDropSelection = null;
+			for (item in selection) {
+				var data = itemMap.get(cast item);
+				if (data != null) {
+					data.line?.refresh();
+				}
+			}
 		}
 	}
 

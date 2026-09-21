@@ -35,17 +35,22 @@ class HuiSelect extends HuiElement {
 
 	public function set_value(v: Dynamic) {
 		var found = false;
-		for (i in items) {
-			if (i.value == v) {
-				valueText.text = i.label;
-				value = i.value;
-				found = true;
-				break;
+		if (v == null) {
+			value = null;
+			valueText.text = "-- None --";
+		} else {
+			for (i in items) {
+				if (i.value == v) {
+					valueText.text = i.label;
+					value = i.value;
+					found = true;
+					break;
+				}
 			}
-		}
-		if (!found) {
-			valueText.text = '$value (!! missing !!)';
-			value = v;
+			if (!found) {
+				value = v;
+				valueText.text = '$value (missing)';
+			}
 		}
 
 		return value;
