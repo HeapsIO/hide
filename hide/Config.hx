@@ -1,5 +1,18 @@
 package hide;
 
+#if macro
+import haxe.macro.Context;
+import haxe.macro.Expr;
+
+/** A static variable decorated with `@:config`, gathered by `Config.configMacro()` **/
+typedef ConfigField = {
+	var field : Field;
+	var key : String;
+	var type : Null<ComplexType>;
+	var defaultValue : Null<Expr>;
+}
+#end
+
 typedef HideGlobalConfig = {
 	var autoSaveLayout : Null<Bool>;
 	var useAlternateFont : Null<Bool>;
@@ -56,6 +69,7 @@ typedef ConfigDef = {
 };
 
 class Config {
+#if !macro
 
 	var ide : Ide;
 	var parent : Config;
@@ -264,4 +278,103 @@ class Config {
 		return allowSave ? parent : new Config(parent);
 	}
 
+#end
+
+#if macro
+
+	/**
+		Build macro to be used as `@:build(hide.Config.configMacro())` on a class.
+
+		Every static variable of that class decorated with `@:config` is meant to be
+		persisted through `hide.Ide.inst.currentConfig.get/set` instead of being stored
+		in the class itself.
+
+		Keys are always prefixed so they can't collide with the ones of another class :
+		the prefix is `prefix` when it is given to the macro (`@:build(hide.Config.configMacro("myPrefix"))`),
+		the full dot path of the class otherwise.
+
+		By default the key of a variable is `<prefix>.<variableName>`. A custom name can be
+		given to the metadata (`@:config("myName")`), which gives `<prefix>.myName`. As an
+		escape hatch, a name starting with a `#` is not prefixed at all : `@:config("#myKey")`
+		uses `myKey` as the full key, which is useful to read a key that already exists
+		somewhere else in the config.
+	**/
+	public static function configMacro( ?prefix : String ) : Array<Field> {
+		var cl = Context.getLocalClass().get();
+		var fields = Context.getBuildFields();
+
+		var keyPrefix = prefix ?? cl.pack.concat([cl.name]).join(".");
+		var configFields : Array<ConfigField> = [];
+
+		for( f in fields ) {
+			var meta = Lambda.find(f.meta, m -> m.name == ":config");
+			if( meta == null ) continue;
+
+			if( f.access == null || !f.access.contains(AStatic) ) {
+				Context.error("@:config can only be used on a static variable", f.pos);
+				continue;
+			}
+
+			switch( f.kind ) {
+			case FVar(t, e):
+				var key = keyPrefix + "." + f.name;
+				if( meta.params != null && meta.params.length > 0 ) {
+					switch( meta.params[0].expr ) {
+					case EConst(CString(s)):
+						key = StringTools.startsWith(s, "#") ? s.substr(1) : keyPrefix + "." + s;
+					default: Context.error("@:config parameter must be a constant string", meta.params[0].pos);
+					}
+				}
+				configFields.push({ field : f, key : key, type : t, defaultValue : e });
+			default:
+				Context.error("@:config can only be used on a variable", f.pos);
+			}
+		}
+
+		for( c in configFields ) {
+			var f = c.field;
+			var name = f.name;
+
+			if( c.type == null ) {
+				Context.error("@:config variable must have an explicit type", f.pos);
+				continue;
+			}
+
+			var t = c.type;
+			var key = c.key;
+			var defaultValue = c.defaultValue ?? macro null;
+
+			// The value isn't stored in the class anymore, it only lives in the config
+			f.kind = FProp("get", "set", t, null);
+
+			fields.push({
+				name : "get_" + name,
+				access : [AStatic],
+				pos : f.pos,
+				kind : FFun({
+					args : [],
+					ret : t,
+					expr : macro return hide.Ide.inst.currentConfig.get($v{key}, $defaultValue),
+				}),
+			});
+
+			fields.push({
+				name : "set_" + name,
+				access : [AStatic],
+				pos : f.pos,
+				kind : FFun({
+					args : [{ name : "value", type : t }],
+					ret : t,
+					expr : macro {
+						hide.Ide.inst.currentConfig.set($v{key}, value);
+						return value;
+					},
+				}),
+			});
+		}
+
+		return fields;
+	}
+
+#end
 }
