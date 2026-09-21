@@ -182,8 +182,7 @@ class GPUEmitter extends Object3D {
 	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "asterisk",
 		name : "GPUEmitter",
-		allowParent : function(p) return p.to(FX) != null || p.findParent(FX) != null,
-		onChildUpdate : function(p : hrt.prefab.Prefab) return updateEmitters(),
+		allowParent : function(p) return p.to(FX) != null || p.findParent(FX) != null
 		};
 	}
 
