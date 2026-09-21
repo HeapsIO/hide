@@ -366,7 +366,7 @@ class Config {
 					args : [{ name : "value", type : t }],
 					ret : t,
 					expr : macro {
-						hide.Ide.inst.currentConfig.set($v{key}, value);
+						hide.Ide.inst.currentConfig.set($v{key}, value != $defaultValue ? value : null);
 						return value;
 					},
 				}),
