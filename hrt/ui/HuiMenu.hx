@@ -396,6 +396,10 @@ class HuiMenuItem extends HuiElement {
 			var text = new HuiText(item.keys, keys);
 		}
 
+		if (item.tooltip != null) {
+			tip = item.tooltip;
+		}
+
 		dom.toggleClass("has-child", item.menu != null);
 
 		interactive.propagateEvents = true;
