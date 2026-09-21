@@ -31,6 +31,7 @@ class Prefab extends HuiView<{path: String}> {
 	public static var GIZMO_ROTATION_STEP_CONFIG_KEY = "editor.gizmoRotationStep";
 	public static var GIZMO_SCALE_STEP_CONFIG_KEY = "editor.gizmoScaleStep";
 	public static var GIZMO_SNAP_GRID_CONFIG_KEY = "editor.gizmoSnapOnGrid";
+	public static var KEEP_CHILD_TRANSFORM_KEY = "editor.keepChildTransform";
 	public static final DEFAULT_SCENE_FILTERS = "editor.defaultSceneFilters";
 	public static final SCENE_FILTERS = "editor.sceneFilters";
 
@@ -472,8 +473,18 @@ class Prefab extends HuiView<{path: String}> {
 			// calculate how much the gizmo moved due to snapping
 			gizmoOffset.set(gizmoOrigin.tx - gizmoOffset.x, gizmoOrigin.ty - gizmoOffset.y, gizmoOrigin.tz - gizmoOffset.z);
 
+			var keepTransform = hide.Ide.inst.currentConfig.get(KEEP_CHILD_TRANSFORM_KEY, false);
 			for (o in obj3ds) {
-				initialTransform.set(o, o.getTransform().clone());
+				initialTransform.set(o, o.getTransform());
+
+				if (keepTransform) {
+					for (child in o.children) {
+						var c3d = child.to(hrt.prefab.Object3D);
+						if(c3d != null) {
+							initialTransform.set(c3d, c3d.getTransform());
+						}
+					}
+				}
 
 				var abs = o.getAbsPos(true).clone();
 				abs.translate(gizmoOffset.x, gizmoOffset.y, gizmoOffset.z);
@@ -512,8 +523,40 @@ class Prefab extends HuiView<{path: String}> {
 				if (offsetScale != null)
 					trs.prependScale(offsetScale.x, offsetScale.y, offsetScale.z);
 
+				var childAbsPos : Array<h3d.Matrix> = [];
+				var keepChildTransform = hide.Ide.inst.currentConfig.get(KEEP_CHILD_TRANSFORM_KEY, false);
+				if (keepChildTransform) {
+					for (child in obj3d.children) {
+						var c3d = child.to(hrt.prefab.Object3D);
+						if (c3d != null) {
+							childAbsPos.push(c3d.getAbsPos(true) ?? h3d.Matrix.I());
+						}
+					}
+				}
+
 				obj3d.setTransform(trs);
 				obj3d.applyTransform();
+
+				if (keepChildTransform) {
+					var abs = obj3d.getAbsPos(true);
+					var scale = abs.getScale();
+
+					var hasUniformScale = hxd.Math.abs(scale.x - scale.y) < hxd.Math.EPSILON && hxd.Math.abs(scale.x - scale.z) < hxd.Math.EPSILON;
+					if (hasUniformScale) {
+						var absInv = abs.getInverse();
+						for (i => child in obj3d.children) {
+							var c3d = child.to(hrt.prefab.Object3D);
+							if (c3d != null) {
+								var childPos = childAbsPos[i];
+								childPos.multiply(childPos, absInv);
+								c3d.setTransform(childPos);
+								c3d.applyTransform();
+							}
+						}
+					} else {
+						Ide.showWarning('Could not keep children transforms for ${obj3d.getAbsPath()} because it has a non uniform scale');
+					}
+				}
 			}
 
 			sceneEditor.inspectorRoot?.refreshFields();
@@ -522,18 +565,41 @@ class Prefab extends HuiView<{path: String}> {
 			var prevTransforms = [];
 			var newTransforms = [];
 			var modifiedObj3ds = obj3ds.copy();
+
+			var keepTransform = hide.Ide.inst.currentConfig.get(KEEP_CHILD_TRANSFORM_KEY, false);
+
 			for (o in modifiedObj3ds) {
-				prevTransforms.push(initialTransform.get(o).clone());
+				prevTransforms.push(initialTransform.get(o));
 				newTransforms.push(o.getTransform());
+				if (keepTransform) {
+					for (child in o.children) {
+						var c3d = child.to(hrt.prefab.Object3D);
+						if(c3d != null) {
+							prevTransforms.push(initialTransform.get(c3d));
+							newTransforms.push(c3d.getTransform());
+						}
+					}
+				}
 			}
 
 			getView().undo.record((isUndo) -> {
 				var objs = [];
-				for (idx => o in modifiedObj3ds) {
-					o.setTransform(isUndo ? prevTransforms[idx] : newTransforms[idx]);
+				var transformIdx = 0;
+				for (o in modifiedObj3ds) {
+					o.setTransform(isUndo ? prevTransforms[transformIdx++] : newTransforms[transformIdx++]);
 					o.applyTransform();
 					if (o.local3d != null)
 						objs.push(o.local3d);
+
+					if (keepTransform) {
+						for (child in o.children) {
+							var c3d = child.to(hrt.prefab.Object3D);
+							if(c3d != null) {
+								c3d.setTransform(isUndo ? prevTransforms[transformIdx++] : newTransforms[transformIdx++]);
+								c3d.applyTransform();
+							}
+						}
+					}
 				}
 				gizmo.moveToObjects(objs);
 			}, true);
@@ -900,7 +966,7 @@ class Prefab extends HuiView<{path: String}> {
 	override function getToolbarWidgets() : Array<HuiElement> {
 		var widgets : Array<HuiElement> = [];
 
-		widgets.push(new hrt.ui.HuiToolbar.HuiTransformWidgets(gizmo));
+		widgets.push(new hrt.ui.HuiToolbar.HuiTransformWidgets(gizmo, transformMenu));
 		widgets.push(new hrt.ui.HuiToolbar.HuiSnapWidget(this));
 
 		var cameraBtn = new HuiButton();
@@ -949,6 +1015,19 @@ class Prefab extends HuiView<{path: String}> {
 	override function onRemove() {
 		super.onRemove();
 		hrt.tools.FileManager.inst.unwatchFileChange(onFileChange);
+	}
+
+	public function transformMenu() : Array<hrt.ui.HuiMenu.MenuItem> {
+		var ide = Ide.inst;
+		return [
+			{
+				label: "Keep child transforms",
+				checked: ide.currentConfig.get(KEEP_CHILD_TRANSFORM_KEY, false),
+				tooltip: "If on, moving an object won't move it's children with it. Does not work if the object has a non uniform scale",
+				stayOpen: true,
+				click: () -> ide.currentConfig.set(KEEP_CHILD_TRANSFORM_KEY, !ide.currentConfig.get(KEEP_CHILD_TRANSFORM_KEY, false))
+			},
+		];
 	}
 
 	public function setPrefab(newPrefab: hrt.prefab.Prefab, recordUndo: Bool) {

@@ -52,20 +52,35 @@ class HuiTransformWidgets extends HuiElement {
 		<hui-toggle class="group-end" id="scaleBtn" tip={"Set Gizmo to Scale Mode"}>
 			<hui-icon(HuiRes.ui.icons.scale)/>
 		</hui-toggle>
-		<hui-button id="transform-space-btn">
+		<hui-button class="group-start" id="transform-space-btn">
 			<hui-icon(HuiRes.ui.icons.world) id="transform-space-icon"/>
+		</hui-button>
+		<hui-button class="group-end tiny" id="transform-options-btn">
+			<hui-icon(HuiRes.ui.icons.drop_down)/>
 		</hui-button>
 	</hui-transform-widgets>
 
-	public function new(gizmo : hrt.tools.Gizmo, ?parent: h2d.Object) {
+	public function new(gizmo : hrt.tools.Gizmo, transformOptionsMenu: () -> Array<hrt.ui.HuiMenu.MenuItem>, ?parent: h2d.Object) {
 		super(parent);
+		this.transformOptionsMenu = transformOptionsMenu;
 		initComponent();
+
+		if (transformOptionsMenu() == null) {
+			transformSpaceBtn.dom.removeClass("group-start");
+			transformSpaceBtn.dom.addClass("group");
+			transformOptionsBtn.visible = false;
+		}
+
 
 		translationBtn.toggled = true;
 		selectionBtn.onClick = (_) -> { gizmo?.selectionMode(); };
 		translationBtn.onClick = (_) -> { gizmo?.translationMode(); };
 		rotationBtn.onClick = (_) -> { gizmo?.rotationMode(); };
 		scaleBtn.onClick = (_) -> { gizmo?.scalingMode(); };
+
+		transformOptionsBtn.onClick = (_) -> {
+			uiBase.openMenu(transformOptionsMenu(), {}, {object: Element(transformOptionsBtn), directionX: Middle, directionY: EndOutside});
+		}
 
 		gizmo.onChangeMode = (mode) -> {
 			selectionBtn.toggled = mode.match(Selection);
@@ -88,6 +103,10 @@ class HuiTransformWidgets extends HuiElement {
 		gizmo.onChangeTransformSpace = (isLocalTransform) -> {
 			transformSpaceIcon.setIcon(isLocalTransform ? HuiRes.ui.icons.cube : HuiRes.ui.icons.world);
 		}
+	}
+
+	dynamic public function transformOptionsMenu() : Array<hrt.ui.HuiMenu.MenuItem> {
+		return null;
 	}
 }
 
