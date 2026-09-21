@@ -103,6 +103,10 @@ class Config {
 	public function save() {
 		ide.removeDefaultValues();
 		sync();
+		saveToDisk();
+	}
+
+	function saveToDisk() {
 		if( path == null ) throw "Cannot save properties (unknown path)";
 		var fullPath = ide.getPath(path);
 		if( Reflect.fields(source).length == 0 )
@@ -119,6 +123,49 @@ class Config {
 			prevConfig = newSer;
 		}
 	}
+
+	#if editor_hl
+
+	static final SAVE_DELAY = 5.0;
+	static var pendingSaves : Array<Config> = [];
+
+	var saveDelay : Float = 0.0;
+
+	/**
+		Same as `save()`, but the write to disk is delayed until `SAVE_DELAY` seconds have
+		passed without any new call, or until the editor closes. Changing a lot of values in
+		a row then only rewrites the file once instead of once per value.
+	**/
+	public function queueSave() {
+		ide.removeDefaultValues();
+		sync();
+		saveDelay = SAVE_DELAY;
+		if( !pendingSaves.contains(this) )
+			pendingSaves.push(this);
+	}
+
+	/** Ticks the delay of every config waiting to be written, called by `Ide.update` **/
+	public static function updatePendingSaves( dt : Float ) {
+		var i = pendingSaves.length;
+		while( i-- > 0 ) {
+			var config = pendingSaves[i];
+			config.saveDelay -= dt;
+			if( config.saveDelay <= 0 ) {
+				pendingSaves.splice(i, 1);
+				config.saveToDisk();
+			}
+		}
+	}
+
+	/** Immediately writes every config waiting to be written, called when the editor closes **/
+	public static function flushPendingSaves() {
+		var configs = pendingSaves;
+		pendingSaves = [];
+		for( config in configs )
+			config.saveToDisk();
+	}
+
+	#end
 
 	public function sync() {
 		if( parent != null ) parent.sync();
@@ -178,11 +225,17 @@ class Config {
 	}
 
 	public function set( key : String, val : Dynamic ) {
+		if (val == Reflect.field(current, key))
+			return;
 		if( val == null )
 			Reflect.deleteField(source, key);
 		else
 			Reflect.setField(source, key, val);
+		#if editor_hl
+		queueSave();
+		#else
 		save();
+		#end
 	}
 
 	static function alert(msg) {

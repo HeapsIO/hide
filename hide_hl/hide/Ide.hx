@@ -77,6 +77,10 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function update(dt: Float) {
+		#if editor_hl
+		hide.Config.updatePendingSaves(dt);
+		#end
+
 		localStorageSaveDelay -= dt;
 		if (localStorageSaveQueued) {
 			if (localStorageSaveDelay < 0) {
@@ -107,6 +111,10 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function dispose() {
+		#if editor_hl
+		hide.Config.flushPendingSaves();
+		#end
+
 		if (localStorageSaveQueued) {
 			saveLocalStorageToDisk();
 			localStorageSaveQueued = false;
