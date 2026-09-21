@@ -282,6 +282,9 @@ class Config {
 
 #if macro
 
+	/** Maps every key declared with `@:config` to the `pack.Class.field` that declared it, to detect duplicates **/
+	static var registeredKeys : Map<String, String> = [];
+
 	/**
 		Build macro to be used as `@:build(hide.Config.configMacro())` on a class.
 
@@ -298,12 +301,19 @@ class Config {
 		escape hatch, a name starting with a `#` is not prefixed at all : `@:config("#myKey")`
 		uses `myKey` as the full key, which is useful to read a key that already exists
 		somewhere else in the config.
+
+		Every key is checked to be unique across the whole project : two `@:config` variables
+		resolving to the same key is a compilation error, because they would silently share
+		their value while each declaring its own default. The check only knows about the
+		variables declared through this macro, so a `#` key can still point at a raw key that
+		is read with `currentConfig.get/set` somewhere else.
 	**/
 	public static function configMacro( ?prefix : String ) : Array<Field> {
 		var cl = Context.getLocalClass().get();
 		var fields = Context.getBuildFields();
 
-		var keyPrefix = prefix ?? cl.pack.concat([cl.name]).join(".");
+		var classPath = cl.pack.concat([cl.name]).join(".");
+		var keyPrefix = prefix ?? classPath;
 		var configFields : Array<ConfigField> = [];
 
 		for( f in fields ) {
@@ -325,6 +335,12 @@ class Config {
 					default: Context.error("@:config parameter must be a constant string", meta.params[0].pos);
 					}
 				}
+				var owner = classPath + "." + f.name;
+				var prev = registeredKeys.get(key);
+				if( prev != null && prev != owner )
+					Context.error('The config key "' + key + '" is already declared by ' + prev, f.pos);
+				registeredKeys.set(key, owner);
+
 				configFields.push({ field : f, key : key, type : t, defaultValue : e });
 			default:
 				Context.error("@:config can only be used on a variable", f.pos);
