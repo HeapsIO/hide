@@ -8,18 +8,21 @@ using hxsl.Ast;
 class SceneDepth extends ShaderNodeHxsl {
 
 	static var SRC = {
+		@sginput("calculatedUV") var uv : Vec2;
 		@sgoutput var output : Float;
 
-        @global var depthMap : Channel;
+		@global var depthMap : Channel;
 
 		@global var camera : {
 			var zNear : Float;
 			var zFar : Float;
 		};
 
-        var screenUV : Vec2;
+		var projectedPosition : Vec4;
+		var screenUV : Vec2;
 
 		function fragment() {
+			screenUV = screenToUv(projectedPosition.xy / projectedPosition.w);
 			output = depthMap.get(screenUV);
 		}
 	};
