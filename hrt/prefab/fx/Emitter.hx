@@ -577,6 +577,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	var random: hxd.Rand;
 	var randomSeed = 0;
+	var subEmitterSeed = 0;
 	var emitCount = 0;
 	var emitTarget = 0.0;
 	var curTime = 0.0;
@@ -1047,7 +1048,7 @@ class EmitterObject extends h3d.scene.Object {
 				onEmit(tmpOffset, tmpQuat);
 
 				if( emitOrientation == Random )
-					tmpQuat.initRotation(hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI));
+					tmpQuat.initRotation(random.srand(Math.PI), random.srand(Math.PI), random.srand(Math.PI));
 
 				switch( simulationSpace ) {
 					case Local:
@@ -1107,6 +1108,7 @@ class EmitterObject extends h3d.scene.Object {
 						emitter.ignoreParentTransform = true;
 						emitter.isSubEmitter = true;
 						emitter.parentEmitter = this;
+						emitter.setRandSeed(randomSeed + (subEmitterSeed++));
 						emitter.updateParentNonEmitter();
 						part.subEmitters = part.subEmitters ?? [];
 						part.subEmitters.push(emitter);
@@ -1459,6 +1461,7 @@ class EmitterObject extends h3d.scene.Object {
 							emitter.setPosition(pos.x - scene.x, pos.y - scene.y, pos.z - scene.z);
 							emitter.isSubEmitter = true;
 							emitter.parentEmitter = this;
+							emitter.setRandSeed(randomSeed + (subEmitterSeed++));
 							if(subEmitters == null)
 								subEmitters = [];
 							subEmitters.push(emitter);
