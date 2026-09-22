@@ -184,7 +184,7 @@ class Prefab extends HuiView<{path: String}> {
 			prefab.getAbsPath(true, true);
 		}
 
-		sceneEditor.tree.onItemContextMenu = (el) -> {
+		sceneEditor.tree.getContextMenu = (el) -> {
 			var prefab : hrt.prefab.Prefab = cast el;
 			if (prefab == null)
 				prefab = this.prefab;
@@ -234,7 +234,7 @@ class Prefab extends HuiView<{path: String}> {
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.delete, this));
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.rename, this));
 
-			uiBase.contextMenu(entries);
+			return entries;
 		};
 
 		sceneEditor.tree.dragAndDropInterface = {

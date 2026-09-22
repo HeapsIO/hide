@@ -154,7 +154,7 @@ class HuiTree<TreeItem> extends HuiElement {
 				}
 
 				if (e.button == 1) {
-					onItemContextMenu(null);
+					openContextMenu(null);
 				}
 			}
 		}
@@ -417,8 +417,21 @@ class HuiTree<TreeItem> extends HuiElement {
 		return HuiRes.ui.icons.file_blank;
 	}
 
-	public dynamic function onItemContextMenu(item: TreeItem) : Void {
+	/**
+		Return the entries of the context menu to open when the user right clicks on an item.
+		`item` is null when the click happened outside of any item of the tree.
 
+		Return null or an empty array to not open any menu.
+	**/
+	public dynamic function getContextMenu(item: TreeItem) : Array<HuiMenu.MenuItem> {
+		return null;
+	}
+
+	function openContextMenu(item: TreeItem) : Void {
+		var entries = getContextMenu(item);
+		if (entries == null || entries.length == 0)
+			return;
+		uiBase.contextMenu(entries);
 	}
 
 	/**Note : also called when the user press enter on this item using the keyboard**/
@@ -528,7 +541,7 @@ class HuiTree<TreeItem> extends HuiElement {
 		}
 
 		line.onContextMenu = () -> {
-			onItemContextMenu(data.item);
+			openContextMenu(data.item);
 		}
 
 		if (dragAndDropInterface != null) {

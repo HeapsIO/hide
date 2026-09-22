@@ -322,8 +322,8 @@ class GymWidgets extends HuiElement {
 			});
 		}
 
-		tree.onItemContextMenu = (item) -> {
-			uiBase.contextMenu([{label: item?.name ?? "no item"}]);
+		tree.getContextMenu = (item) -> {
+			return [{label: item?.name ?? "no item"}];
 		}
 
 		tree.getItemName = (item) -> {
@@ -340,13 +340,13 @@ class GymWidgets extends HuiElement {
 			return item.children;
 		};
 
-		tree.onItemContextMenu = (item) -> {
-			return uiBase.contextMenu([{label:"Rename", enabled: item != null, click: () -> {
+		tree.getContextMenu = (item) -> {
+			return [{label:"Rename", enabled: item != null, click: () -> {
 				tree.rename(item, (str) -> {
 					item.name = str;
 					tree.rebuild(item);
 				});
-			}}]);
+			}}];
 		}
 
 		tree.dragAndDropInterface = {

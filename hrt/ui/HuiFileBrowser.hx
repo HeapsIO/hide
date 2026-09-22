@@ -122,7 +122,7 @@ class HuiFileBrowser extends HuiElement {
 			}
 		};
 
-		tree.onItemContextMenu = itemContextMenu;
+		tree.getContextMenu = getItemContextMenu;
 
 		tree.onAfterLineCreation = (item, element) -> {
 			element.onOver = (e) -> {
@@ -451,6 +451,13 @@ class HuiFileBrowser extends HuiElement {
 	}
 
 	function itemContextMenu(file: File) {
+		var entries = getItemContextMenu(file);
+		if (entries.length == 0)
+			return;
+		uiBase.contextMenu(entries);
+	}
+
+	function getItemContextMenu(file: File) : Array<hrt.ui.HuiMenu.MenuItem> {
 		if (file == null)
 			file = rootFile;
 
@@ -513,7 +520,7 @@ class HuiFileBrowser extends HuiElement {
 
 		items.push({label: "Trigger thumbnail", click: () -> @:privateAccess FileManager.inst.renderMiniature(file, (p) -> trace("Miniature renderer : " + p))});
 
-		uiBase.contextMenu(items);
+		return items;
 	}
 
 	function copyFiles(files: Array<File>) {
