@@ -132,6 +132,35 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			return falloff * falloff * exp(-extinction * dist);
 		}
 
+		function evaluateCapsuleLight( index : Int ) : Vec3 {
+			var i = capsuleLightOffset + index * CAPSULE_LIGHT_STRIDE;
+			var lightColor = unpackIntColor(int(lightInfos[i].r)).rgb * lightInfos[i].g;
+			var radius = lightInfos[i].b;
+			var halfLength = lightInfos[i].a;
+			var lightPos = lightInfos[i+1].rgb;
+			var invRange4 = lightInfos[i+1].a;
+			var left = lightInfos[i+2].rgb;
+
+			var light = capsuleLightDiffuse(lightPos, left, halfLength, radius, invRange4, transformedPosition);
+			return directLighting(light.w * lightColor, light.xyz, light.xyz);
+		}
+
+		function evaluateRectLight( index : Int ) : Vec3 {
+			var i = rectLightOffset + index * RECT_LIGHT_STRIDE;
+			var lightColor = unpackIntColor(int(lightInfos[i].r)).rgb * lightInfos[i].g;
+			var halfSize = vec2(lightInfos[i].b, lightInfos[i].a);
+			var lightPos = lightInfos[i+1].rgb;
+			var invRange4 = lightInfos[i+1].a;
+			var lightDir = lightInfos[i+2].rgb;
+			var range = lightInfos[i+2].a;
+			var right = lightInfos[i+3].rgb;
+			var up = lightInfos[i+4].rgb;
+			var angles = vec4(lightInfos[i+3].a, lightInfos[i+4].a, lightInfos[i+5].r, lightInfos[i+5].g);
+
+			var light = rectangleLightDiffuse(lightPos, lightDir, right, up, halfSize, angles, range, invRange4, transformedPosition);
+			return directLighting(light.w * lightColor, light.xyz, light.xyz);
+		}
+
 		var skipShadow : Bool = false;
 		function evaluateCascadeShadow() : Float {
 			var shadow = 1.0;
@@ -307,6 +336,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 			envColor = irrDiffuse.getLod(-camDir, 0.0).rgb;
 			view = -camDir;
+			transformedNormal = -camDir;
 
 			var stepSize = cameraDistance / float(steps);
 			var dithering = ditheringNoise.getLod(calculatedUV * targetSize / ditheringSize, 0.0).r * stepSize * ditheringIntensity;
