@@ -689,38 +689,31 @@ class EmitterObject extends h3d.scene.Object {
 			batch.name = "emitter";
 			batch.calcBounds = false;
 
-			// Setup mats.
-			// Should we do this manually here or make a recursive makeInstance on the template?
-			var materials = emitterPrefab.findAll(hrt.prefab.Material);
-			for(mat in materials) {
-
-				// Remove materials that are not directly parented to this emitter
-				var p = mat.parent;
-				while (p != null && Std.downcast(p, Emitter) == null)
-					p = p.parent;
-
-				if (this.emitterPrefab == p) {
-					if(checkEnabled(mat)) {
-						@:privateAccess mat.makeInstance();
-					}
+			// like findAll() but skips sub-emitters and Trails
+			function findRec<T:Prefab>( p : Prefab, cl : Class<T>, ?out : Array<T> ) : Array<T> {
+				if( out == null ) out = [];
+				for( c in p.children ) {
+					if( Std.isOfType(c, Emitter) || Std.isOfType(c, hrt.prefab.l3d.Trails) )
+						continue;
+					var v = c.to(cl);
+					if( v != null && checkEnabled(v) )
+						out.push(v);
+					findRec(c, cl, out);
 				}
+				return out;
 			}
+
+			// Setup mats
+			var materials = findRec(emitterPrefab, hrt.prefab.Material);
+			for( mat in materials )
+				@:privateAccess mat.makeInstance();
 
 			// Setup shaders
 			customAnims = [];
-			var shaders = emitterPrefab.findAll(hrt.prefab.Shader);
+			var shaders = findRec(emitterPrefab, hrt.prefab.Shader);
 			for( shader in shaders ) {
-				// Remove shaders that are not directly parented to this emitter
-				var p = shader.parent;
-				while (p != null && Std.downcast(p, Emitter) == null) {
-					p = p.parent;
-				}
-				if (this.emitterPrefab == p) {
-					if( !checkEnabled(shader) ) continue;
-					makeShaderInstance(shader);
-					hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch);
-				}
-
+				makeShaderInstance(shader);
+				hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch);
 			}
 
 			// Animated textures animations
@@ -770,7 +763,7 @@ class EmitterObject extends h3d.scene.Object {
 		reset();
 	}
 
-	public static inline function checkEnabled(prefab: Prefab) {
+	public static function checkEnabled(prefab: Prefab) {
 		#if editor
 		if (prefab.shared.editor?.isHidden(prefab) == true)
 			return false;
@@ -978,6 +971,10 @@ class EmitterObject extends h3d.scene.Object {
 				trails = trailsTemplate.create(this, maxCount);
 				trailsTemplate.local3d = trails;
 				trails.autoTrackPosition = false;
+				for( mat in trailsTemplate.findAll(hrt.prefab.Material, checkEnabled) )
+					@:privateAccess mat.makeInstance();
+				for( shader in trailsTemplate.findAll(hrt.prefab.Shader, checkEnabled) )
+					@:privateAccess shader.makeInstance();
 			}
 
 			for( i in 0...count ) {
