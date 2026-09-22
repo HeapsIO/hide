@@ -32,6 +32,16 @@ class HuiVirtualList<T> extends HuiElement {
 
 	public var generateItem(default, set) : (item: T) -> HuiElement = null;
 
+	/**
+		How many pixels can be scrolled past the bottom of the last item.
+	**/
+	@:p public var afterScroll(default, set) : Int = 0;
+
+	function set_afterScroll(v) {
+		needRefresh = true;
+		return afterScroll = v;
+	}
+
 	function set_generateItem(v) {
 		needRefresh = true;
 		return generateItem = v;
@@ -259,8 +269,8 @@ class HuiVirtualList<T> extends HuiElement {
 				}
 
 				// we reached the bottom
-				if (botIndex >= items.length && botY() < maxY) {
-					finalOffset = maxY - (startY + botOffset);
+				if (botIndex >= items.length && botY() < maxY - afterScroll) {
+					finalOffset = (maxY - afterScroll) - (startY + botOffset);
 				}
 
 				if (topY() > minY && topIndex >= 0) {
