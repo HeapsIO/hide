@@ -759,13 +759,17 @@ class Curve extends Prefab {
 		return false;
 	}
 
+	static inline function checkName(a: String, b: String) {
+		return a == b || a.toLowerCase() == b.toLowerCase();
+	}
+
 	public static function getCurve(parent : Prefab, name: String, onlyEnabled=true) {
 		for(c in parent.children) {
 			if(onlyEnabled && !c.enabled) continue;
 			#if editor
 			if (parent.shared.editor?.isHidden(c)) continue;
 			#end
-			if(c.name != name) continue;
+			if(!checkName(c.name, name)) continue;
 			var curve = c.to(Curve);
 			if(curve == null) continue;
 			return curve;
@@ -782,7 +786,7 @@ class Curve extends Prefab {
 			#end
 			var idx = c.name.indexOf(":");
 			var curvePrefix = (idx >= 0) ? c.name.substr(0, idx) : c.name;
-			if(curvePrefix != prefix)
+			if(!checkName(curvePrefix, prefix))
 				continue;
 			var curve = c.to(Curve);
 			if(curve == null) continue;
@@ -870,7 +874,7 @@ class Curve extends Prefab {
 	#end
 
 	static inline function findCurve(curves: Array<Curve>, suffix: String) {
-		return curves.find(c -> StringTools.endsWith(c.name, suffix));
+		return curves.find(c -> StringTools.endsWith(c.name.toLowerCase(), suffix));
 	}
 
 	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0, scale: Float=1.0, randomValue: Float = 0) : Value {
