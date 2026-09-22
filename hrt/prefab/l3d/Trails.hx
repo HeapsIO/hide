@@ -109,7 +109,7 @@ class TrailObj extends h3d.scene.Mesh {
 	// If set to false, trail can be created by manually calling addPoint()
 	public var autoTrackPosition : Bool = true;
 
-	var numTrails : Int;
+	public var numTrails(default, null) : Int;
 
 	static var tmpHead = new TrailPoint();
 	static var tmpNormal = new h3d.Vector();
@@ -182,9 +182,6 @@ class TrailObj extends h3d.scene.Mesh {
 		vbuf = alloc.allocFloats(calcMaxVertexes() * format.stride);
 		ibuf = alloc.allocIndexes(calcMaxIndexes());
 
-		pool = null;
-		firstFreePointID = 0;
-
 		maxNumPoints = calcMaxTrailPoints() * numTrails;
 		if (maxNumPoints <= 0)
 			maxNumPoints = 1;
@@ -192,9 +189,7 @@ class TrailObj extends h3d.scene.Mesh {
 		points = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(TrailPoint, maxNumPoints) #else [for(i in 0...maxNumPoints) new TrailPoint()] #end;
 		trails = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(TrailHead, numTrails) #else [for(i in 0...numTrails) new TrailHead()] #end;
 
-		for (i in 0...numTrails-1)
-			trails[i].nextTrail = trails[i+1];
-		trailsPool = trails[0];
+		reset();
 	}
 
 	var maxNumPoints : Int = 0;
@@ -227,11 +222,21 @@ class TrailObj extends h3d.scene.Mesh {
 		return r;
 	}
 
-	public function disposeTrail(t : TrailHead) {
+	inline function clearTrail(t : TrailHead) {
 		t.firstPoint = null;
 		t.totalLength = 0;
 		t.numPoints = 0;
 		t.generation++;
+	}
+
+	public function disposeTrail(t : TrailHead) {
+		var p = t.firstPoint;
+		while (p != null) {
+			var n = p.next;
+			disposePoint(p);
+			p = n;
+		}
+		clearTrail(t);
 		t.nextTrail = trailsPool;
 		trailsPool = t;
 	}
@@ -268,15 +273,15 @@ class TrailObj extends h3d.scene.Mesh {
 	public function reset() {
 		if( points == null )
 			return;
-		for (i in 0...numTrails) {
+		// not disposeTrail(): a head that is already free would be linked into the list twice
+		pool = null;
+		firstFreePointID = 0;
+		trailsPool = null;
+		for( i in 0...numTrails ) {
 			var t = trails[i];
-			var p = t.firstPoint;
-			while (p != null) {
-				var n = p.next;
-				disposePoint(p);
-				p = n;
-			}
-			disposeTrail(t);
+			clearTrail(t);
+			t.nextTrail = trailsPool;
+			trailsPool = t;
 		}
 	}
 

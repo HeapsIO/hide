@@ -753,6 +753,11 @@ class EmitterObject extends h3d.scene.Object {
 			}
 		}
 
+		if(trails != null && trails.numTrails != maxCount) {
+			trails.remove();
+			trails = null;
+		}
+
 		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
 		particlesCount = maxCount;
 		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
