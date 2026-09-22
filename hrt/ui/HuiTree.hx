@@ -20,7 +20,6 @@ enum RefreshFlag {
 	Refresh;
 	RegenerateFlatten;
 	RootData;
-	FillMap;
 }
 
 typedef RefreshFlags = haxe.EnumFlags<RefreshFlag>;
@@ -124,7 +123,6 @@ class HuiTree<TreeItem> extends HuiElement {
 		list.onItemRemoved = cast listItemRemoved;
 		requestRefresh(RegenerateFlatten);
 		requestRefresh(RootData);
-		requestRefresh(FillMap);
 
 		searchBarContainer.visible = false;
 
@@ -670,9 +668,6 @@ class HuiTree<TreeItem> extends HuiElement {
 	}
 
 	function forceRefreshTree() {
-		for (data in itemMap) {
-			data.children = null;
-		}
 		rootData = generateChildren(null);
 		requestRefresh(RegenerateFlatten);
 	}
@@ -705,6 +700,7 @@ class HuiTree<TreeItem> extends HuiElement {
 				} else {
 					childData.depth = 0;
 				}
+
 				updateData(childData);
 				childrenData.push(childData);
 			}
@@ -768,7 +764,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	}
 
 	function updateData(data: TreeItemData) {
-		data.children = null; // invalidate children if we are regenerating the tree
+		data.children = generateChildren(data); // invalidate children if we are regenerating the tree
 		data.name = StringTools.htmlEscape(getItemName(cast data.item) ?? "");
 		data.icon = getItemIcon(cast data.item);
 		data.identifier = getIdentifier(cast data.item);
@@ -827,7 +823,7 @@ class HuiTree<TreeItem> extends HuiElement {
 				if (item.children == null) {
 					generateChildren(item);
 				}
-				if (isOpen(item) || refreshFlags.has(FillMap))
+				if (isOpen(item))
 					rec(item.children);
 			}
 		}
@@ -839,7 +835,8 @@ class HuiTree<TreeItem> extends HuiElement {
 	}
 
 	function isOpen(data: TreeItemData) : Bool {
-		return data.children?.length > 0 && ((openState.get(data.identifier) ?? false) || (isSearching() && tempOpenState.get(data.identifier) != false));
+		var o = data.children?.length > 0 && ((openState.get(data.identifier) ?? false) || (isSearching() && tempOpenState.get(data.identifier) != false));
+		return o;
 	}
 
 	function isSelected(data: TreeItemData) : Bool {
