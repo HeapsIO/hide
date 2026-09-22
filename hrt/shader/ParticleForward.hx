@@ -63,7 +63,7 @@ class ParticleForward extends h3d.shader.pbr.DefaultForward {
 			return indirect;
 		}
 
-		function directLighting( lightColor : Vec3, lightDirection : Vec3) : Vec3 {
+		function directLighting( lightColor : Vec3, lightDirection : Vec3, specularDirection : Vec3 ) : Vec3 {
 			var result = vec3(0);
 
 			// HL2 basis for vertexLighting with normalmap

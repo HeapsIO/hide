@@ -252,7 +252,7 @@ class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 		//-----------------------------------------------------------------------------
 		//-- Overrided Functions ------------------------------------------------------
 
-		function directLighting( lightColor : Vec3, lightDirection : Vec3) : Vec3
+		function directLighting( lightColor : Vec3, lightDirection : Vec3, specularDirection : Vec3 ) : Vec3
 		{
 			var result = vec3(0,0,0);
 			/* Checks if is lit */
@@ -260,7 +260,7 @@ class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 			if( lightColor.dot(lightColor) > 0.0001 && NdL > 0.0 )
 			{
 				/* Half Vector */
-				var H = normalize(view+lightDirection);
+				var H = normalize(view+specularDirection);
 				/* Normal dot products */
 				var NdH = dot(transformedNormal,H);
 				/* Tangent dot products */
