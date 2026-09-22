@@ -857,7 +857,6 @@ class Light extends Object3D {
 		}
 
 		var e = ctx.properties.add(shadowGroup,shadows,function(pname) {
-			ctx.onChange(this,pname);
 			if( pname == "mode" ) ctx.rebuildProperties();
 			if( pname == "samplingMode.kind" ) {
 				switch (shadows.samplingMode.kind) {
@@ -867,6 +866,7 @@ class Light extends Object3D {
 				}
 				ctx.rebuildProperties();
 			}
+			ctx.onChange(this,pname);
 		});
 
 		if( shadows.mode == None ) {
