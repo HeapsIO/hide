@@ -14,129 +14,23 @@ class HierarchicalSSR extends RendererFX {
 	@:s var debugRoughnessFactor : Float = 1.0;
 	@:s var debugIteration : Int = 0;
 
-	var ssrResolve : h3d.pass.ScreenFx<h3d.shader.pbr.SSR.SSRResolve>;
-	var ssrFilter :  h3d.pass.ScreenFx<h3d.shader.pbr.SSR.SSRFilter>;
-	var ssrShader : h3d.shader.pbr.SSR;
-	var copyPass : h3d.pass.Copy;
-
-	function new(parent, shared) {
-		super(parent, shared);
-		ssrResolve = new h3d.pass.ScreenFx(new h3d.shader.pbr.SSR.SSRResolve());
-		ssrFilter = new h3d.pass.ScreenFx(new h3d.shader.pbr.SSR.SSRFilter());
-		ssrFilter.shader.invSize = new h3d.Vector();
-		ssrShader = new h3d.shader.pbr.SSR();
-		ssrShader.screenSize = new h3d.Vector();
-		copyPass = new h3d.pass.Copy();
-	}
-
-	function execute( r : h3d.scene.pbr.Renderer, step : h3d.impl.RendererFX.Step ) {
-		if ( !checkEnabled() )
-			return;
-
-		var ctx = r.ctx;
-		r.mark("SSR");
-
-		var hdr = @:privateAccess r.textures.hdr;
-		var normal = @:privateAccess r.textures.normal;
-		var roughness = @:privateAccess r.textures.pbr;
-		var hzbMax = ctx.camera.reverseDepth ? true : false;
-		r.updateHZB(hzbMax);
-		var hzb = ctx.hzb;
-
-		var width = hdr.width;
-		var height = hdr.height;
-
-		var ssrTarget = r.allocTarget("SSR", false, 1.0, RGBA16F, [Writable, MipMapped, ManualMipMapGen]);
-		var ssrTargetCopy = r.allocTarget("SSRCopy", false, 1.0, RGBA16F, [Writable, MipMapped, ManualMipMapGen]);
-		var ssrMipLevels = r.allocTarget("SSRMipLevels", false, 1.0, R8, [Writable, MipMapped, ManualMipMapGen]);
-		var ssrDebug : h3d.mat.Texture = null;
-
-		ssrTargetCopy.filter = Nearest;
-		ssrTargetCopy.mipMap = Nearest;
-
-		ssrShader.DEBUG = debugEnabled;
-		if ( debugEnabled ) {
-			ssrDebug = r.allocTarget("SSRDebug", false, 1.0, RGBA, [Writable]);
-			ssrDebug.clear(0, 0);
-			var window = hxd.Window.getInstance();
-			ssrShader.debugPixelX = window.mouseX;
-			ssrShader.debugPixelY = window.mouseY;
-			ssrShader.debugIteration = debugIteration;
-			ssrShader.debugRoughnessFactor = debugRoughnessFactor;
-			ssrShader.debugSSR = ssrDebug;
-		}
-
-		ssrShader.hdrMap = hdr;
-		ssrShader.depthMap = hzb;
-		ssrShader.normalMap = normal;
-		ssrShader.roughnessMap = roughness;
-		ssrShader.outputColor = ssrTarget;
-		ssrShader.outputMipLevel = ssrMipLevels;
-
-		ssrShader.screenSize.set(width, height);
-		ssrShader.mipMaps = hzb.mipLevels;
-		ssrShader.stepCount = stepCount;
-		ssrShader.fadeInExponent = fadeInExponent;
-		ssrShader.fadeOutExponent = fadeOutExponent;
-		ssrShader.depthTolerance = depthTolerance;
-		ssrShader.distanceBias = distanceBias;
-		ssrShader.distancePowerBias = distancePowerBias;
-		ssrShader.marginSize = marginSize;
-		ssrShader.ORTHOGONAL = ctx.camera.orthoBounds != null;
-		ctx.computeDispatch(ssrShader, Std.int((width + 8 - 1) / 8), Std.int((height + 8 - 1) / 8));
-
-		copyPass.shader.texture = ssrTarget;
-		ctx.engine.pushTarget(ssrTargetCopy);
-		copyPass.render();
-		ctx.engine.popTarget();
-
-		var curWidth = width;
-		var curHeight = height;
-		var mipLevels = ssrTarget.mipLevels;
-		// DX12Driver doesn't yet handle transitions at sub-resource level.
-		// This means that we cannot bind a mip and use a different one as target.
-		// For now, we use a copy as workaround.
-		for ( lvl in 1...mipLevels ) {
-			var source = lvl & 1 == 0 ? ssrTargetCopy : ssrTarget;
-			var target = lvl & 1 == 0 ? ssrTarget : ssrTargetCopy;
-			ssrFilter.shader.ssrColor = source;
-			ssrFilter.shader.invSize.set(1.0/curWidth, 1.0/curHeight);
-			ssrFilter.shader.mipLevel = lvl;
-			source.startingMip = lvl - 1;
-			ctx.engine.pushTarget(target, 0, lvl);
-			ssrFilter.render();
-			ctx.engine.popTarget();
-
-			if ( target == ssrTargetCopy ) {
-				ssrTargetCopy.startingMip = lvl;
-				h3d.pass.Copy.run(ssrTargetCopy, ssrTarget, None, null, 0, lvl);
-			}
-			ssrTarget.startingMip = lvl;
-			ctx.engine.pushTarget(ssrTargetCopy, 0, lvl);
-			copyPass.render();
-			ctx.engine.popTarget();
-			curWidth >>= 1;
-			curHeight >>= 1;
-		}
-		ssrTarget.startingMip = 0;
-		ssrTargetCopy.startingMip = 0;
-
-		ssrResolve.shader.ssrMipLevel = ssrMipLevels;
-		ssrResolve.shader.ssrColor = ssrTarget;
-		ssrResolve.pass.setBlendMode(Alpha);
-		ctx.engine.pushTarget(hdr);
-		ssrResolve.render();
-		ctx.engine.popTarget();
-
-		if ( debugEnabled )
-			h3d.pass.Copy.run(ssrDebug, hdr, Alpha);
-	}
+	var ssr = new h3d.pass.SSR();
 
 	override function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
 		#if !editor
 		var r = Std.downcast(r, h3d.scene.pbr.Renderer);
-		if( step == Forward && r != null) {
-			execute(r, step);
+		if( step == Forward && r != null && checkEnabled() ) {
+			ssr.stepCount = stepCount;
+			ssr.fadeInExponent = fadeInExponent;
+			ssr.fadeOutExponent = fadeOutExponent;
+			ssr.depthTolerance = depthTolerance;
+			ssr.distanceBias = distanceBias;
+			ssr.distancePowerBias = distancePowerBias;
+			ssr.marginSize = marginSize;
+			ssr.debugEnabled = debugEnabled;
+			ssr.debugRoughnessFactor = debugRoughnessFactor;
+			ssr.debugIteration = debugIteration;
+			ssr.apply(r);
 		}
 		#end
 	}
