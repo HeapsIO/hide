@@ -23,9 +23,27 @@ class EmitterHelper {
 
 	public static function resetParam(props : Dynamic, param: ParamDef) {
 		if(param.def is Array)
-			Reflect.setField(props, param.name, cast(param.def, Array<Dynamic>).copy());
+			Reflect.setProperty(props, param.name, cast(param.def, Array<Dynamic>).copy());
 		else
-			Reflect.setField(props, param.name, param.def);
+			Reflect.setProperty(props, param.name, param.def);
+	}
+
+	public static function toArray( v : Dynamic ) : Array<Float> {
+		if( v == null )
+			return null;
+		var a : Array<Dynamic> = v;
+		return [for( x in a ) (x : Float)];
+	}
+
+	public static function sameArray( a : Array<Float>, b : Array<Float> ) {
+		if( a == null || b == null )
+			return a == b;
+		if( a.length != b.length )
+			return false;
+		for( i in 0...a.length )
+			if( a[i] != b[i] )
+				return false;
+		return true;
 	}
 
 	public static function getParamVal(params: Map<String, ParamDef>, props: Dynamic, name: String, rand: Bool=false) : Dynamic {
@@ -48,7 +66,9 @@ class EmitterHelper {
 	}
 
 	#if editor
-	public static function generateEdit(params : Array<ParamDef>, instanceParams : Array<ParamDef>, props : Dynamic, properties : hide.comp.PropsEditor, onChange : (?pname : String) -> Void, refresh : Void -> Void) {
+	public static function generateEdit(params : Array<ParamDef>, instanceParams : Array<ParamDef>, props : Dynamic, properties : hide.comp.PropsEditor, onChange : (?pname : String) -> Void, refresh : Void -> Void, typed = false) {
+		inline function isSet(name: String) return typed ? Reflect.getProperty(props, name) != null : Reflect.hasField(props, name);
+		inline function unset(name: String) if( typed ) Reflect.setProperty(props, name, null) else Reflect.deleteField(props, name);
 		// Emitter
 		{
 			// Sort by groupName
@@ -89,14 +109,14 @@ class EmitterHelper {
 					var dd = new hide.Element('<dd>').appendTo(dl);
 
 					function addUndo(pname: String) {
-						properties.undo.change(Field(props, pname, Reflect.field(props, pname)), function() {
-							if(Reflect.field(props, pname) == null)
-								Reflect.deleteField(props, pname);
+						properties.undo.change(Field(props, pname, Reflect.getProperty(props, pname)), function() {
+							if(Reflect.getProperty(props, pname) == null)
+								unset(pname);
 							refresh();
 						});
 					}
 
-					if(Reflect.hasField(props, p.name)) {
+					if(isSet(p.name)) {
 						hide.comp.PropsEditor.makePropEl(p, dd);
 						dt.contextmenu(function(e) {
 							e.preventDefault();
@@ -109,7 +129,7 @@ class EmitterHelper {
 								} },
 								{ label : "Remove", click : function() {
 									addUndo(p.name);
-									Reflect.deleteField(props, p.name);
+									unset(p.name);
 									onChange();
 									refresh();
 								} },
@@ -132,7 +152,7 @@ class EmitterHelper {
 						case PFloat(_): 0.0;
 						default: 0;
 					};
-					if(Reflect.hasField(props, EmitterHelper.randProp(p.name))) {
+					if(isSet(EmitterHelper.randProp(p.name))) {
 						hide.comp.PropsEditor.makePropEl({
 							name: EmitterHelper.randProp(p.name),
 							t: p.t,
@@ -142,13 +162,13 @@ class EmitterHelper {
 							hide.comp.ContextMenu.createFromEvent(cast e, [
 								{ label : "Reset", click : function() {
 									addUndo(EmitterHelper.randProp(p.name));
-									Reflect.setField(props, EmitterHelper.randProp(p.name), randDef);
+									Reflect.setProperty(props, EmitterHelper.randProp(p.name), randDef);
 									onChange();
 									refresh();
 								} },
 								{ label : "Remove", click : function() {
 									addUndo(EmitterHelper.randProp(p.name));
-									Reflect.deleteField(props, EmitterHelper.randProp(p.name));
+									unset(EmitterHelper.randProp(p.name));
 									onChange();
 									refresh();
 								} },
@@ -160,7 +180,7 @@ class EmitterHelper {
 						var btn = new hide.Element('<input type="button" value="+"></input>').appendTo(dd);
 						btn.click(function(e) {
 							addUndo(EmitterHelper.randProp(p.name));
-							Reflect.setField(props, EmitterHelper.randProp(p.name), randDef);
+							Reflect.setProperty(props, EmitterHelper.randProp(p.name), randDef);
 							refresh();
 						});
 					}
