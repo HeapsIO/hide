@@ -15,6 +15,10 @@ class HierarchicalSSR extends RendererFX {
 	@:s var debugIteration : Int = 0;
 
 	var ssr = new h3d.pass.SSR();
+	var ssrResolve(get, never) : h3d.pass.ScreenFx<h3d.shader.pbr.SSR.SSRResolve>;
+	function get_ssrResolve() {
+		return ssr.ssrResolve;
+	}
 
 	override function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
 		#if !editor
