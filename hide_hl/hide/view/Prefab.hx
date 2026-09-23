@@ -586,18 +586,24 @@ class Prefab extends HuiView<{path: String}> {
 		buildToolbar();
 	}
 
-	// override function onDisplay() {
-	// 	super.onDisplay();
-	// }
-
 	override function onLoadState() {
 		super.onLoadState();
 		sceneEditor.onViewLoadState();
 	}
 
 	override function onDisplay() {
+		super.onDisplay();
+
 		// filters could have changed from another prefab editor
 		updateSceneFilters();
+
+		bindTimeline(cast hide.Ide.inst.getView(Timeline));
+	}
+
+	override function onOtherViewDisplayed(v) {
+		super.onOtherViewDisplayed(v);
+
+		bindTimeline(Std.downcast(v, Timeline));
 	}
 
 	function getDropPath(op: HuiDragOp) : Null<String> {
@@ -1231,6 +1237,21 @@ class Prefab extends HuiView<{path: String}> {
 	function reload() {
 		var path = Ide.inst.getRelPath(state.path);
 		load(path);
+	}
+
+	function bindTimeline(t : Timeline) {
+		if (t == null || hide.Ide.inst.getActiveView() != this)
+			return;
+
+		t.getTime = () -> {
+			var fx = Std.downcast(prefab, hrt.prefab.fx.FX);
+			var fxAnim = Std.downcast(fx?.local3d, hrt.prefab.fx.FX.FXAnimation);
+			if (fxAnim != null)
+				return fxAnim.localTime;
+			return 0.;
+		}
+
+		t.refresh();
 	}
 
 	function moveGizmoToPrefabs(prefabs : Array<hrt.prefab.Prefab>) {

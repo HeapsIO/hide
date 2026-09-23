@@ -1,13 +1,47 @@
 timeline {
 	#right-panel {
-		layout: vertical;
+		layout: stack;
+
+		#playhead {
+			position: absolute;
+			layout: vertical;
+
+			#head {
+				padding: 4 7 4 7;
+				min-width: 31;
+				background-type: hui;
+				> hui-background {
+					border-radius: 4;
+					background: #426dae;
+				}
+
+				#time {
+					align: middle middle;
+					margin-top: -2;
+				}
+			}
+
+			#body {
+				halign: middle;
+				width: 3;
+				fill-height: true;
+				background-type: hui;
+				> hui-background {
+					background: #426dae;
+				}
+			}
+		}
 
 		#timer-track {
 			fill-width: true;
 			height: 20;
 			background-type: hui;
 			> hui-background {
-				background: red;
+				background: @color-gray-5;
+			}
+
+			> hui-text {
+				position: absolute;
 			}
 		}
 
@@ -24,6 +58,7 @@ timeline {
 			fill-width: true;
 			fill-height: true;
 			overflow: hidden;
+
 			// background-type: hui;
 			// > hui-background {
 			// 	background: green;

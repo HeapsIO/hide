@@ -235,8 +235,8 @@ class Ide extends hide.tools.IdeData {
 				case "prefab", "matlib", "rp":
 					openView(hide.view.Prefab,{path: filePath}, Main, callback);
 				case "fx":
-					openView(hide.view.Prefab,{path: filePath}, Main, callback);
-					openView(hide.view.Timeline,{path: filePath}, Bottom, callback);
+					openView(hide.view.Prefab, {path: filePath}, Main, callback);
+					openView(hide.view.Timeline, {path: filePath}, Bottom, callback);
 				case "fbx", "glb":
 					openView(hide.view.Model,{path: filePath}, Main, callback);
 				case "png", "jpg", "envd", "envs", "hdr":
@@ -261,7 +261,7 @@ class Ide extends hide.tools.IdeData {
 		}
 	}
 
-	public function openView(cl: Class<hrt.ui.HuiView<Any>>, state: Dynamic, position: HideViewPosition = Main, ?callback : (v : hrt.ui.HuiView<Dynamic>) -> Void) {
+	public function openView(cl: Class<hrt.ui.HuiView<Any>>, state: Dynamic, position: HideViewPosition = Main, ?callback : (v : hrt.ui.HuiView<Dynamic>) -> Void) : hrt.ui.HuiView<Any> {
 		var layout = app.ui.uiBase.mainLayout.projectLayout;
 		var panel = switch(position) {
 			case Left: layout.leftPanel;
@@ -278,7 +278,7 @@ class Ide extends hide.tools.IdeData {
 				if (callback != null) {
 					callback(view);
 				}
-				return;
+				return view;
 			}
 		}
 
@@ -288,6 +288,8 @@ class Ide extends hide.tools.IdeData {
 		panel.setTab(view);
 		if (callback != null)
 			callback(view);
+
+		return view;
 	}
 
 	public function getPanels() : Array<hrt.ui.HuiTabViewContainer> {
@@ -295,18 +297,38 @@ class Ide extends hide.tools.IdeData {
 		return [layout.mainPanel, layout.leftPanel, layout.bottomPanel];
 	}
 
-	public function getViews<T:hrt.ui.HuiView<Any>>(cl : Class<T>) {
-		var views : Array<T> = [];
+	public function getActiveView(position: HideViewPosition = Main) : hrt.ui.HuiView<Any> {
 		var layout = app.ui.uiBase.mainLayout.projectLayout;
+		var panel = switch(position) {
+			case Left: layout.leftPanel;
+			case Main: layout.mainPanel;
+			case Bottom: layout.bottomPanel;
+		}
 
+		return cast @:privateAccess panel.activeTabElement;
+	}
+
+	public function getViews<T:hrt.ui.HuiView<Any>>(?cl : Class<T>) {
+		var views : Array<T> = [];
 		for (panel in getPanels()) {
 			for (view in panel.getViews()) {
-				if (Std.downcast(view, cl) != null)
+				if (cl == null || Std.downcast(view, cl) != null)
 					views.push(cast view);
 			}
 		}
 
 		return views;
+	}
+
+	public function getView<T:hrt.ui.HuiView<Any>>(cl : Class<T>) {
+		for (panel in getPanels()) {
+			for (view in panel.getViews()) {
+				if (Std.downcast(view, cl) != null)
+					return cast view;
+			}
+		}
+
+		return null;
 	}
 
 	public function getCDBContent<T>( sheetName : String ) : Array<T> {

@@ -1,0 +1,53 @@
+timeline #right-panel {
+  layout: stack;
+}
+timeline #right-panel #playhead {
+  position: absolute;
+  layout: vertical;
+}
+timeline #right-panel #playhead #head {
+  padding: 4 7 4 7;
+  min-width: 31;
+  background-type: hui;
+}
+timeline #right-panel #playhead #head > hui-background {
+  border-radius: 4;
+  background: #426dae;
+}
+timeline #right-panel #playhead #head #time {
+  align: middle middle;
+  margin-top: -2;
+}
+timeline #right-panel #playhead #body {
+  halign: middle;
+  width: 3;
+  fill-height: true;
+  background-type: hui;
+}
+timeline #right-panel #playhead #body > hui-background {
+  background: #426dae;
+}
+timeline #right-panel #timer-track {
+  fill-width: true;
+  height: 17;
+  background-type: hui;
+}
+timeline #right-panel #timer-track > hui-background {
+  background: red;
+}
+timeline #right-panel #timer-track > hui-text {
+  position: absolute;
+}
+timeline #right-panel #event-track {
+  fill-width: true;
+  height: 30;
+  background-type: hui;
+}
+timeline #right-panel #event-track > hui-background {
+  background: blue;
+}
+timeline #right-panel #grid {
+  fill-width: true;
+  fill-height: true;
+  overflow: hidden;
+}

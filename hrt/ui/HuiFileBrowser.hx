@@ -474,6 +474,9 @@ class HuiFileBrowser extends HuiElement {
 			label: "Prefab",
 			click: () -> createNewFile(file, "New Prefab", "prefab", hide.Ide.inst.toJSON(@:privateAccess new hrt.prefab.Prefab(null, null).serialize()), isTree)
 		},{
+			label: "FX",
+			click: () -> createNewFile(file, "New FX", "fx", hide.Ide.inst.toJSON(@:privateAccess new hrt.prefab.fx.FX(null, null).serialize()), isTree)
+		},{
 			label: "Material Library",
 			click: () -> createNewFile(file, "New Material Library", "matlib", hide.Ide.inst.toJSON(@:privateAccess new hrt.prefab.MaterialLibrary(null, null).serialize()), isTree)
 		},{

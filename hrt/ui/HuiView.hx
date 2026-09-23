@@ -108,7 +108,9 @@ class HuiView<T> extends HuiElement {
 		Called when the view becomes visible on the screen
 	**/
 	function onDisplay() {
-
+		for (v in hide.Ide.inst.getViews())
+			if (v != this)
+				v.onOtherViewDisplayed(this);
 	}
 
 	/**
@@ -122,6 +124,14 @@ class HuiView<T> extends HuiElement {
 		Called before the user closes the view
 	**/
 	function onClose() {
+
+	}
+
+	/**
+		Called on every already existing view whenever a new view is displayed,
+		with the newly created view passed as argument.
+	**/
+	function onOtherViewDisplayed(view: HuiView<Dynamic>) {
 
 	}
 

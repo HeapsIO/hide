@@ -17,19 +17,27 @@ class GridShader extends hxsl.Shader {
 		var absolutePosition : Vec4;
 		var pixelColor : Vec4;
 
-		function grid(position : Vec2, lineWidth: Float, idx : Int) : Float {
+		function grid(position : Vec2, lineWidth : Float, idx : Int) : Float {
+			var deriv = fwidth(position);
+			var drawWidth = clamp(vec2(lineWidth, lineWidth), deriv, vec2(0.5, 0.5));
+			var lineAA = max(deriv, vec2(0.0001, 0.0001)) * 1.5;
 			var gridUV = abs(fract(position) * 2.0 - 1.0);
-			var lineX = smoothstep(1.0 - lineWidth, 1.0, gridUV.x);
-			var lineY = smoothstep(1.0 - lineWidth, 1.0, gridUV.y);
-			return max(lineX, lineY);
+			var grid2 = smoothstep(drawWidth + lineAA, drawWidth - lineAA, 1.0 - gridUV);
+			grid2 *= saturate(vec2(lineWidth, lineWidth) / drawWidth);
+			grid2 = mix(grid2, vec2(lineWidth, lineWidth), saturate(deriv * 2.0 - 1.0));
+			return max(grid2.x, grid2.y);
 		}
 
 		function fragment() {
 			pixelColor.rgb = lineColor;
-			pixelColor.a = max(pixelColor.a, grid(
-				absolutePosition.xy * (1 / lineSpacing) / zoom,
-				lineWidth,
-				0));
+			pixelColor.a = 0;
+			for (idx in 0...2) {
+				var f = pow(10., float(idx));
+				pixelColor.a = max(pixelColor.a, grid(
+					absolutePosition.xy * (1 / (lineSpacing * f)) / zoom,
+					lineWidth,
+					idx));
+			}
 		}
 	}
 }
@@ -40,13 +48,16 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 			<hui-split-container id="container" direction={hrt.ui.HuiSplitContainer.Direction.Horizontal} anchor-to={hrt.ui.HuiSplitContainer.AnchorTo.End} save-display-key="timeline-panel-split">
 				<hui-element id="left-panel"></hui-element>
 				<hui-element id="right-panel">
-					<hui-element id="timer-track"></hui-element>
-					<hui-element id="event-track"></hui-element>
-					<hui-element id="grid"></hui-element>
+					<hui-element class="vertical">
+						<hui-element id="timer-track"></hui-element>
+						<hui-element id="event-track"></hui-element>
+						<hui-element id="grid"></hui-element>
+					</hui-element>
 					<hui-element id="playhead">
 						<hui-element id="head">
 							<hui-text("0.4") id="time"/>
 						</hui-element>
+						<hui-element id="body"></hui-element>
 					</hui-element>
 				</hui-element>
 			</hui-split-container>
@@ -60,12 +71,13 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 	static final MIN_ZOOM = 0.1;
 	static final MAX_ZOOM = 2;
 
-	var gridGraphics : h2d.Graphics;
-	var gridLabels = [];
+	var labels = [];
 
+	// Edition
 	var gridShader : GridShader = null;
 	var zoom = new h2d.col.Point(1, 1);
 	var pan = new h2d.col.Point(0, 0);
+	var onPanDrag : (e : hxd.Event) -> Void;
 
 	inline function sx(px : Float) { return px * calculatedWidth * zoom.x + pan.x; }
 	inline function sy(py : Float) { return calculatedHeight - (py * calculatedHeight * zoom.y + pan.y); }
@@ -93,13 +105,77 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		}
 
 		rightPanel.onWheel = (e : hxd.Event) -> {
-			var amount = e.wheelDelta * -0.1;
+			var amount = e.wheelDelta * -0.05;
 			if (!hxd.Key.isDown(hxd.Key.SHIFT))
-				gridShader.zoom.x = hxd.Math.clamp(gridShader.zoom.x + amount, MIN_ZOOM, MAX_ZOOM);
+				zoom.x = hxd.Math.clamp(zoom.x + amount, MIN_ZOOM, MAX_ZOOM);
 			if (!hxd.Key.isDown(hxd.Key.CTRL))
-				gridShader.zoom.y = hxd.Math.clamp(gridShader.zoom.y + amount, MIN_ZOOM, MAX_ZOOM);
+				zoom.y = hxd.Math.clamp(zoom.y + amount, MIN_ZOOM, MAX_ZOOM);
 			refresh();
 		}
+
+		rightPanel.onPush = (e : hxd.Event) -> {
+			if (onPanDrag != null)
+				return;
+
+			if (e.button == 0 || e.button == 1 || e.button == 2) {
+				var originDrag = new h2d.col.Point(e.relX, e.relY);
+				var originPan = pan.clone();
+				onPanDrag = (e) -> {
+					pan.x = originPan.x + (e.relX - originDrag.x);
+					pan.y = originPan.y - (e.relY - originDrag.y);
+					refresh();
+				}
+			}
+		}
+
+		rightPanel.onMove = (e : hxd.Event) -> {
+			if (onPanDrag != null)
+				onPanDrag(e);
+		}
+
+		rightPanel.onRelease = (e : hxd.Event) -> {
+			onPanDrag = null;
+		}
+
+		refresh();
+	}
+
+	public function refresh() {
+		for (l in labels)
+			l.remove();
+		labels.resize(0);
+
+		var minX = Math.floor(px(0));
+		var maxX = Math.ceil(px(rightPanel.calculatedWidth));
+
+		var hstep = 0.1;
+		while((maxX - minX) / hstep > 21)
+			hstep *= 2;
+		var minS = Math.floor(minX / hstep);
+		var maxS = Math.ceil(maxX / hstep);
+
+		for (i in minS...(maxS+1)) {
+			var ix = i * hstep;
+
+			var label = new HuiText('${hxd.Math.fmt(ix)}', timerTrack);
+			label.setPosition(sx(ix), (timerTrack.calculatedHeight / 2) - (label.textHeight / 2));
+			labels.push(label);
+		}
+	}
+
+	public dynamic function getTime() : Float { return 0.; };
+	public dynamic function onPause() {};
+	public dynamic function onPlay() {};
+
+	override function update(dt: Float) {
+		super.update(dt);
+
+		var t = getTime();
+		time.text = '${hxd.Math.round(t * 10) / 10}';
+		playhead.setPosition(sx(t), (timerTrack.calculatedHeight / 2) - (playhead.calculatedHeight / 2));
+
+		// if (scene != null)
+		// 	setTime(@:privateAccess scene.renderer.ctx.time);
 	}
 
 	override function getViewName():String {
@@ -123,6 +199,13 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		playBtn.dom.addClass("group");
 		new HuiIcon(HuiRes.ui.icons.play, playBtn);
 		widgets.push(playBtn);
+		playBtn.onClick = (e) -> {
+			// isPaused = !isPaused;
+			// if (isPaused)
+			// 	onPause();
+			// else
+			// 	onPlay();
+		}
 
 		var nextBtn = new HuiButton();
 		nextBtn.dom.addClass("group");
@@ -146,54 +229,6 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		// 		{label: "Vertical", click: updateMode.bind(Vertical)},
 		// 	]
 		// });
-	}
-
-	function refresh() {
-		if (gridGraphics == null)
-			gridGraphics = new h2d.Graphics(grid);
-
-		for (l in gridLabels) l.remove();
-		gridLabels = [];
-		gridGraphics.clear();
-		gridGraphics.setPosition(0, 0);
-
-		// Grid columns
-		var min = Math.floor(px(0));
-		var max = Math.ceil(px(calculatedWidth));
-		var step = Math.floor((0.1 * (1 / zoom.x) * 20)) / 20;
-		var minS = Math.floor(min / step);
-		var maxS = Math.ceil(max / step);
-		for (i in minS...(maxS+1)) {
-			var ix = i * step;
-
-			gridGraphics.lineStyle(ix == 0 ? GRID_ORIGIN_WIDTH : GRID_WIDTH, ix == 0 ? GRID_ORIGIN_COLOR : GRID_COLOR, 1);
-
-			gridGraphics.moveTo(sx(ix), 0);
-			gridGraphics.lineTo(sx(ix), calculatedHeight);
-
-			// var l = new HuiText(""+hxd.Math.fmt(ix), this);
-			// l.setPosition(sx(ix) + 5, calculatedHeight - 18);
-			// gridLabels.push(l);
-		}
-
-		// Grid lines
-		var min = Math.floor(py(calculatedHeight));
-		var max = Math.ceil(py(0));
-		step = Math.floor((0.1 * (1 / zoom.y) * 20)) / 20;
-		minS = Math.floor(min / step);
-		maxS = Math.ceil(max / step);
-		for (i in minS...(maxS+1)) {
-			var iy = i * step;
-
-			gridGraphics.lineStyle(iy == 0 ? GRID_ORIGIN_WIDTH : GRID_WIDTH, iy == 0 ? GRID_ORIGIN_COLOR : GRID_COLOR, 1);
-
-			gridGraphics.moveTo(0, sy(iy));
-			gridGraphics.lineTo(calculatedWidth, sy(iy));
-
-			// var l = new HuiText(""+hxd.Math.fmt(iy), this);
-			// l.setPosition(0, sy(iy) - 18);
-			// gridLabels.push(l);
-		}
 	}
 
 	static var _ = HuiView.register("timeline", Timeline);
