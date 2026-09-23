@@ -89,8 +89,8 @@ class Button extends Element {
 		this.button = button;
 		new hrt.ui.HuiText(label, button);
 		button.onClick = (e) -> {
-			if (e.button == 0)
-				onClick();
+			if (e.button == 0 && !disabled)
+				broadcastClick();
 		}
 		#end
 		setupPropLine(null, button);

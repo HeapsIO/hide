@@ -2090,24 +2090,31 @@ class Emitter extends Object3D {
 			return cat;
 		}
 
+		function makeSlider(line: hide.kit.Line, name: String, label: String, value: Float, min: Null<Float>, max: Null<Float>, set: Float -> Void) {
+			var slider = new hide.kit.Slider<Float>(line, name);
+			slider.label = label;
+			slider.value = value;
+			slider.min = min;
+			slider.max = max;
+			@:privateAccess slider.showRange = min != null && max != null;
+			@:privateAccess slider.onFieldChange = (_) -> set(slider.value);
+			slider.onValueChange = (isTemp) -> onChange(name, isTemp);
+		}
+
+		// Vectors are built here rather than with buildProp, which goes through Array<Dynamic>
+		function addVecSliders(line: hide.kit.Line, name: String, n: Int, min: Null<Float>, max: Null<Float>) {
+			var vec : Array<Float> = Reflect.field(this, name);
+			for (i in 0...n)
+				makeSlider(line, name + "." + i, ["X", "Y", "Z", "W"][i], vec[i], min, max, (v) -> vec[i] = v);
+		}
+
 		function addParam(p: hrt.prefab.fx.EmitterHelper.ParamDef) {
 			var cat = getCategory(p.groupName ?? "Emitter");
 			switch (p.t) {
 				case PVec(n, min, max) if (p.name.toLowerCase().indexOf("color") < 0):
-					// Built here rather than with buildProp, which goes through Array<Dynamic>
-					var vec : Array<Float> = Reflect.field(this, p.name);
 					var line = new hide.kit.Line(cat, p.name);
 					line.label = p.disp ?? hide.kit.Macros.camelToSpaceCase(p.name);
-					for (i in 0...n) {
-						var slider = new hide.kit.Slider<Float>(line, p.name + "." + i);
-						slider.label = ["X", "Y", "Z", "W"][i];
-						slider.value = vec[i];
-						slider.min = min;
-						slider.max = max;
-						@:privateAccess slider.showRange = min != null && max != null;
-						@:privateAccess slider.onFieldChange = (_) -> vec[i] = slider.value;
-						slider.onValueChange = (isTemp) -> onChange(p.name, isTemp);
-					}
+					addVecSliders(line, p.name, n, min, max);
 				default:
 					var widget = cat.buildProp(p, this);
 					if (widget != null)
@@ -2118,13 +2125,40 @@ class Emitter extends Object3D {
 		for (p in getVisibleParams())
 			addParam(p);
 
-		// Instance params are only shown once set (adding / removing them is not supported yet)
+		// Instance params are optional (null means default), "+" sets them and "-" removes them
+		function addOptional(cat: hide.kit.Category, name: String, label: String, t: hrt.prefab.Props.PropType, init: () -> Dynamic) {
+			var line = new hide.kit.Line(cat, name);
+			line.label = label;
+			var set = Reflect.field(this, name) != null;
+			if (set) {
+				switch (t) {
+					case PVec(n, min, max):
+						addVecSliders(line, name, n, min, max);
+					case PFloat(min, max):
+						makeSlider(line, name, "", Reflect.field(this, name), min, max, (v) -> Reflect.setField(this, name, v));
+					default:
+						throw "Unsupported instance param type " + t;
+				}
+			}
+			var btn = new hide.kit.Button(line, set ? "remove" : "add", set ? "-" : "+");
+			btn.width = 1;
+			btn.onClick = () -> {
+				Reflect.setField(this, name, set ? null : init());
+				ctx.rebuildPrefab(this);
+				ctx.rebuildInspector();
+			}
+		}
+
 		for (p in instanceParams) {
-			if (Reflect.field(this, p.name) != null)
-				addParam(p);
-			var rand = hrt.prefab.fx.EmitterHelper.randProp(p.name);
-			if (Reflect.field(this, rand) != null)
-				addParam({ name: rand, t: p.t, disp: (p.disp ?? p.name) + " Rand", groupName: p.groupName });
+			var cat = getCategory(p.groupName ?? "Particles");
+			addOptional(cat, p.name, p.disp ?? hide.kit.Macros.camelToSpaceCase(p.name), p.t, function() : Dynamic return switch (p.t) {
+				case PVec(_): ((p.def : Array<Float>).copy() : Dynamic);
+				default: p.def;
+			});
+			addOptional(cat, hrt.prefab.fx.EmitterHelper.randProp(p.name), "~", p.t, function() : Dynamic return switch (p.t) {
+				case PVec(n): ([for (_ in 0...n) 0.0] : Dynamic);
+				default: (0.0 : Dynamic);
+			});
 		}
 	}
 
