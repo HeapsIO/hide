@@ -23,6 +23,21 @@ typedef Param = {
 
 class EmitterMacros {
 
+	public static macro function param( e : haxe.macro.Expr ) : haxe.macro.Expr {
+		var name = switch( e.expr ) {
+			case EConst(CIdent(n)): n;
+			default: haxe.macro.Context.error("param() expects an emitter param name", e.pos);
+		}
+		var decl = macro @:pos(e.pos) $i{"P_" + name};
+		var randName = name + "_rand";
+		var hasRand = Lambda.exists(haxe.macro.Context.getLocalClass().get().fields.get(), f -> f.name == randName);
+		var rand = hasRand ? macro @:pos(e.pos) $i{randName} : macro @:pos(e.pos) null;
+		return switch( haxe.macro.Context.followWithAbstracts(haxe.macro.Context.typeof(e)) ) {
+			case TInst(_.get().name => "Array", _): macro @:pos(e.pos) vparam($decl, $e, $rand);
+			default: macro @:pos(e.pos) fparam($decl, $e, $rand);
+		}
+	}
+
 	#if macro
 
 	static function metaObj( f : Field, name : String ) : Null<Array<ObjectField>> {

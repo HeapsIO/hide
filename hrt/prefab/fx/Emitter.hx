@@ -4,6 +4,7 @@ import hrt.prefab.l3d.Polygon;
 import hrt.prefab.Curve;
 import hrt.prefab.fx.Value;
 import hrt.prefab.fx.Evaluator;
+import hrt.prefab.fx.EmitterMacros.param;
 
 #if editor
 import hide.prefab.HideProps;
@@ -1868,20 +1869,20 @@ class Emitter extends Object3D {
 		}
 
 		var d = new InstanceDef();
-		d.localSpeed = vparam(P_instSpeed, instSpeed, instSpeed_rand);
-		d.worldSpeed = vparam(P_instWorldSpeed, instWorldSpeed, instWorldSpeed_rand);
-		d.orbitSpeed = vparam(P_instOrbitSpeed, instOrbitSpeed, instOrbitSpeed_rand);
-		d.orbitSpeedOverTime = fparam(P_instOrbitSpeedOverTime, instOrbitSpeedOverTime, instOrbitSpeedOverTime_rand);
-		d.acceleration = vparam(P_instAcceleration, instAcceleration, instAcceleration_rand);
-		d.worldAcceleration = vparam(P_instWorldAcceleration, instWorldAcceleration, instWorldAcceleration_rand);
-		d.localOffset = vparam(P_instOffset, instOffset, instOffset_rand);
-		d.scale = fparam(P_instScale, instScale, instScale_rand);
-		d.scaleOverTime = fparam(P_instScaleOverTime, instScaleOverTime, instScaleOverTime_rand);
-		d.dampen = fparam(P_instDampen, instDampen, instDampen_rand);
-		d.maxVelocity = fparam(P_instMaxVelocity, instMaxVelocity, instMaxVelocity_rand);
-		d.stretch = vparam(P_instStretch, instStretch, instStretch_rand);
-		d.stretchVelocity = fparam(P_instStretchVelocity, instStretchVelocity, instStretchVelocity_rand);
-		d.rotation = vparam(P_instRotation, instRotation, instRotation_rand);
+		d.localSpeed = param(instSpeed);
+		d.worldSpeed = param(instWorldSpeed);
+		d.orbitSpeed = param(instOrbitSpeed);
+		d.orbitSpeedOverTime = param(instOrbitSpeedOverTime);
+		d.acceleration = param(instAcceleration);
+		d.worldAcceleration = param(instWorldAcceleration);
+		d.localOffset = param(instOffset);
+		d.scale = param(instScale);
+		d.scaleOverTime = param(instScaleOverTime);
+		d.dampen = param(instDampen);
+		d.maxVelocity = param(instMaxVelocity);
+		d.stretch = param(instStretch);
+		d.stretchVelocity = param(instStretchVelocity);
+		d.rotation = param(instRotation);
 		emitterObj.instDef = d;
 		emitterObj.particleTemplate = template;
 
@@ -1906,21 +1907,21 @@ class Emitter extends Object3D {
 		emitterObj.emitType 			= 	emitType;
 		emitterObj.burstCount 			= 	Std.int(burstCount);
 		emitterObj.burstDelay 			= 	burstDelay;
-		emitterObj.burstParticleCount 	= 	fparam(P_burstParticleCount, burstParticleCount, null);
+		emitterObj.burstParticleCount 	= 	param(burstParticleCount);
 		emitterObj.emitDuration 		= 	emitDuration;
 		emitterObj.simulationSpace 		= 	simulationSpace;
 		emitterObj.particleScaling		= 	particleScaling;
 		emitterObj.emitOrientation 		= 	emitOrientation;
 		emitterObj.maxCount 			= 	maxCount;
 		emitterObj.sortMode 			= 	enableSort ? sortMode : None;
-		emitterObj.emitRate 			= 	fparam(P_emitRate, emitRate, null);
-		emitterObj.emitRateMin 			= 	fparam(P_emitRateMin, emitRateMin, null);
-		emitterObj.emitRateMax 			= 	fparam(P_emitRateMax, emitRateMax, null);
+		emitterObj.emitRate 			= 	param(emitRate);
+		emitterObj.emitRateMin 			= 	param(emitRateMin);
+		emitterObj.emitRateMax 			= 	param(emitRateMax);
 		emitterObj.emitRateChangeDelay 	= 	emitRateChangeDelay;
 		emitterObj.emitShape 			= 	emitShape;
 		emitterObj.followRotation 		= 	followRotation;
 		// EMIT SHAPE
-		emitterObj.emitAngle 			= 	fparam(P_emitAngle, emitAngle, null);
+		emitterObj.emitAngle 			= 	param(emitAngle);
 		emitterObj.emitRad1 			= 	emitRad1;
 		emitterObj.emitRad2 			= 	emitRad2;
 		emitterObj.emitSurface 			= 	emitSurface;
@@ -1949,8 +1950,8 @@ class Emitter extends Object3D {
 		emitterObj.randomGradient 		= 	randomGradient;
 
 		// PARTICLE MOVEMENT
-		emitterObj.startSpeed			=	vparam(P_instStartSpeed, instStartSpeed, instStartSpeed_rand);
-		emitterObj.startWorldSpeed 		= 	vparam(P_instStartWorldSpeed, instStartWorldSpeed, instStartWorldSpeed_rand);
+		emitterObj.startSpeed			=	param(instStartSpeed);
+		emitterObj.startWorldSpeed 		= 	param(instStartWorldSpeed);
 
 		// DEBUG
 		#if editor
