@@ -1979,44 +1979,9 @@ class Emitter extends Object3D {
 		return Rebuild;
 	}
 
-	#end
+	static var REFRESH_PARAMS = ["emitShape", "alignMode", "useCollision", "emitType", "useRandomColor", "useRandomGradient"];
 
-	#if editor
-
-
-	override function edit( ctx : hide.prefab.EditContext ) {
-		super.edit(ctx);
-
-		function refresh() {
-			ctx.rebuildProperties();
-		}
-
-		function onChange(?pname: String) {
-			if (pname == "useRandomGradient") {
-				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
-				refresh();
-			}
-
-			ctx.onChange(this, pname);
-
-			if (pname == "warmUpTime") {
-				if (warmUpTime < 0) {
-					warmUpTime = 0;
-					hide.Ide.inst.quickError("Warm up time can no longer be negative. Use the Delay property instead");
-					refresh();
-				}
-			}
-
-			if(["emitShape",
-				"alignMode",
-				"useCollision",
-				"emitType",
-				"useRandomColor",
-				].indexOf(pname) >= 0) {
-					refresh();
-				}
-		}
-
+	function getVisibleParams() : Array<hrt.prefab.fx.EmitterHelper.ParamDef> {
 		var params = emitterParams.copy();
 		inline function removeParam(pname: String) {
 			params.remove(params.find(p -> p.name == pname));
@@ -2095,7 +2060,110 @@ class Emitter extends Object3D {
 				removeParam("emitRateMax");
 				removeParam("emitRateChangeDelay");
 		}
+		return params;
+	}
 
+	#end
+
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+
+		function onChange(pname: String, isTemp: Bool) {
+			if (pname == "useRandomGradient")
+				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
+			if (pname == "warmUpTime" && warmUpTime < 0) {
+				warmUpTime = 0;
+				ctx.quickError("Warm up time can no longer be negative. Use the Delay property instead");
+			}
+			ctx.rebuildPrefab(this);
+			if (!isTemp && REFRESH_PARAMS.contains(pname))
+				ctx.rebuildInspector();
+		}
+
+		var categories = new Map<String, hide.kit.Category>();
+		function getCategory(name: String) {
+			var cat = categories.get(name);
+			if (cat == null) {
+				cat = new hide.kit.Category(ctx.root, name, name);
+				categories.set(name, cat);
+			}
+			return cat;
+		}
+
+		function addParam(p: hrt.prefab.fx.EmitterHelper.ParamDef) {
+			var cat = getCategory(p.groupName ?? "Emitter");
+			switch (p.t) {
+				case PVec(n, min, max) if (p.name.toLowerCase().indexOf("color") < 0):
+					// Built here rather than with buildProp, which goes through Array<Dynamic>
+					var vec : Array<Float> = Reflect.field(this, p.name);
+					var line = new hide.kit.Line(cat, p.name);
+					line.label = p.disp ?? hide.kit.Macros.camelToSpaceCase(p.name);
+					for (i in 0...n) {
+						var slider = new hide.kit.Slider<Float>(line, p.name + "." + i);
+						slider.label = ["X", "Y", "Z", "W"][i];
+						slider.value = vec[i];
+						slider.min = min;
+						slider.max = max;
+						@:privateAccess slider.showRange = min != null && max != null;
+						@:privateAccess slider.onFieldChange = (_) -> vec[i] = slider.value;
+						slider.onValueChange = (isTemp) -> onChange(p.name, isTemp);
+					}
+				default:
+					var widget = cat.buildProp(p, this);
+					if (widget != null)
+						widget.onValueChange = (isTemp) -> onChange(p.name, isTemp);
+			}
+		}
+
+		for (p in getVisibleParams())
+			addParam(p);
+
+		// Instance params are only shown once set (adding / removing them is not supported yet)
+		for (p in instanceParams) {
+			if (Reflect.field(this, p.name) != null)
+				addParam(p);
+			var rand = hrt.prefab.fx.EmitterHelper.randProp(p.name);
+			if (Reflect.field(this, rand) != null)
+				addParam({ name: rand, t: p.t, disp: (p.disp ?? p.name) + " Rand", groupName: p.groupName });
+		}
+	}
+
+	#if editor
+
+	override function edit( ctx : hide.prefab.EditContext ) {
+		super.edit(ctx);
+
+		function refresh() {
+			ctx.rebuildProperties();
+		}
+
+		function onChange(?pname: String) {
+			if (pname == "useRandomGradient") {
+				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
+				refresh();
+			}
+
+			ctx.onChange(this, pname);
+
+			if (pname == "warmUpTime") {
+				if (warmUpTime < 0) {
+					warmUpTime = 0;
+					hide.Ide.inst.quickError("Warm up time can no longer be negative. Use the Delay property instead");
+					refresh();
+				}
+			}
+
+			if(["emitShape",
+				"alignMode",
+				"useCollision",
+				"emitType",
+				"useRandomColor",
+				].indexOf(pname) >= 0) {
+					refresh();
+				}
+		}
+
+		var params = getVisibleParams();
 		EmitterHelper.generateEdit(params, instanceParams, this, ctx.properties, onChange, refresh, true);
 	}
 

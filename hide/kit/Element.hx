@@ -630,7 +630,7 @@ class Element {
 		}
 	}
 
-	public function buildProp(def: hrt.prefab.Props.PropDef, props: Dynamic) : Void {
+	public function buildProp(def: hrt.prefab.Props.PropDef, props: Dynamic) {
 		var defValue: Dynamic = null;
 		var widget : hide.kit.Widget<Dynamic> = switch(def.t) {
 			case PInt(min, max):
@@ -720,6 +720,7 @@ class Element {
 				Reflect.setField(props, def.name, widget.value);
 			};
 		}
+		return widget;
 	}
 
 	public function remove() {
