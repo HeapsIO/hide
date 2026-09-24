@@ -17,6 +17,17 @@
         {
             "type": "nwjs",
             "request": "launch",
+            "name": "Launch HIDE (Enable logging)",
+            "nwjsVersion": "any",
+            "webRoot": "${workspaceFolder}/bin",
+            "env": {"HIDE_DEBUG":"1"},
+            "runtimeArgs": ["--enable-logging", "--log-file=${workspaceFolder}/chrome_debug.log"],
+            "preLaunchTask": "Build",
+            "reloadAfterAttached": false
+        },
+        {
+            "type": "nwjs",
+            "request": "launch",
             "name": "Launch CDB",
             "nwjsVersion": "any",
             "webRoot": "${workspaceFolder}/bin",
