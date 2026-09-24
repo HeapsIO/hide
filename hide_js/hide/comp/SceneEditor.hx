@@ -5813,7 +5813,6 @@ class SceneEditor {
 
 	static var globalShaders : Array<Class<hxsl.Shader>> = [
 		hrt.shader.DissolveBurn,
-		hrt.shader.Bloom,
 		hrt.shader.UVDebug,
 		hrt.shader.GradientMap,
 		hrt.shader.HeightGradient,
@@ -5823,7 +5822,6 @@ class SceneEditor {
 		hrt.shader.MaskColorAlpha,
 		hrt.shader.Spinner,
 		hrt.shader.SDF,
-		hrt.shader.FireShader,
 		hrt.shader.MeshWave,
 		hrt.shader.TextureRotate,
 		hrt.shader.GradientMapLife,
