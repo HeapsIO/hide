@@ -15,16 +15,7 @@ class ShaderParam extends ShaderNode {
 
 	override function getOutputs() : Array<ShaderNode.OutputInfo> {
 		var variable = getVariable();
-		var t = switch(variable.type) {
-			case TFloat:
-				SgFloat(1);
-			case TVec(n, _):
-				SgFloat(n);
-			case TSampler(_,_):
-				SgSampler;
-			default:
-				throw "Unhandled var type " + variable.type;
-		}
+		var t = ShaderGraph.typeToSgType(variable.type);
 		return [{name: variable.name, type: t}];
 	}
 

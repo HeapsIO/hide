@@ -778,6 +778,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 						p.type = std.Type.createEnum(Type, typeString[0], params);
 					case "TFloat":
 						p.type = TFloat;
+					case "TBool":
+						p.type = TBool;
 					default:
 						throw "Couldn't unserialize type " + typeString[0];
 				}

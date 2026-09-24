@@ -442,6 +442,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		rightPannel.appendTo(element);
 
 		var newParamCtxMenu : Array<hide.comp.ContextMenu.MenuItem> = [
+			{ label : "Bool", click : () -> createParameter(HxslType.TBool) },
 			{ label : "Number", click : () -> createParameter(HxslType.TFloat) },
 			{ label : "Vec2", click : () -> createParameter(HxslType.TVec(2, VFloat)) },
 			{ label : "Vec3", click : () -> createParameter(HxslType.TVec(3, VFloat)) },
@@ -476,6 +477,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		parametersList.getItemContent = getParameterContent;
 		parametersList.customizeHeader = (p:Parameter, header:Element) -> {
 			var type = switch(p.type) {
+				case TBool: "Bool";
 				case TFloat: "Number";
 				case TVec(4, VFloat): "Color";
 				case TVec(1, VFloat): "Float";
@@ -993,6 +995,26 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 						requestRecompile();
 					}
 				}
+			case TBool:
+				if (parameter.defaultValue == null)
+					parameter.defaultValue = false;
+
+				var checkbox = new Element('<input type="checkbox"/>').appendTo(defaultValue);
+				defaultValue.addClass("single-line");
+				checkbox.prop("checked", parameter.defaultValue);
+
+				checkbox.on("change", function(e) {
+					var old : Bool = parameter.defaultValue;
+					var curr : Bool = checkbox.prop("checked");
+					function exec(isUndo : Bool) {
+						var v = isUndo ? old : curr;
+						shaderGraph.setParameterDefaultValue(parameter.id, v);
+						checkbox.prop("checked", v);
+						updateParam(parameter.id);
+					}
+					exec(false);
+					undo.change(Custom(exec));
+				});
 
 			default:
 		}

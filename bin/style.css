@@ -2217,6 +2217,12 @@ input[type=checkbox].indeterminate:after {
   display: flex;
   flex-direction: column;
 }
+.shader-editor #rightPanel .hide-block .parameters .content .values.single-line,
+.shader-editor #rightPanel .hide-block .variables .content .values.single-line {
+  flex-direction: row;
+  gap: 1em;
+  align-items: center;
+}
 .shader-editor #rightPanel .options-block {
   flex: 0;
 }
