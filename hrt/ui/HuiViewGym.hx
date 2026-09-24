@@ -637,7 +637,7 @@ class GymLayouts extends HuiElement {
 								</hui-element>
 							</hui-element>
 						</hui-element>
-						
+
 						<hui-element class="line">
 							<hui-element class="grow">
 								<hui-element class="nested">
@@ -713,7 +713,7 @@ class GymLayouts extends HuiElement {
 							<hui-element class="grow"></hui-element>
 						</hui-element>
 					</hui-element>
-					
+
 				</hui-element>
 				<hui-element class="second"/>
 
