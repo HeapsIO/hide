@@ -5,7 +5,7 @@ class HierarchicalSSR extends RendererFX {
 	@:s var stepCount : Int = 64;
 	@:s var fadeInExponent : Float = 0.2;
 	@:s var fadeOutExponent : Float = 2.0;
-	@:s var depthTolerance : Float = 0.5;
+	@:s var depthTolerance : Float = 0.05;
 	@:s var distanceBias : Float = 0.0;
 	@:s var distancePowerBias : Float = 1.0;
 	@:s var marginSize : Float = 0.1;
