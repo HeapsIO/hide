@@ -11,4 +11,6 @@ enum SgHxslVar {
 	SgConst;
 	SgOutput(isDynamic: Bool);
 	SgInit; // @sginit : Make sure the variable is initialized in the __init__ part of the shader in case it's not assigned by a previous shader
+	SgIsFragment; // isFragment : replaced by a constant bool that is true if the node is generated in the fragment domain
+	SgIsVertex; // isVertex : replaced by a constant bool that is true if the node is generated in the vertex domain
 }

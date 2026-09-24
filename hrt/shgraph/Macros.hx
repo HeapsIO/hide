@@ -117,6 +117,25 @@ class Macros {
 							}
 
 							expr.iter(iter);
+
+							// Inject isFragment/isVertex variables, replaced by constants depending on the domain at generation time
+							switch (expr.expr) {
+								case EBlock(exprs):
+									var declared : Map<String, Bool> = [];
+									for (e in exprs) {
+										switch (e.expr) {
+											case EVars(vars): for (v in vars) declared.set(v.name, true);
+											default:
+										}
+									}
+									for (name => info in ["isFragment" => hrt.shgraph.SgHxslVar.SgIsFragment, "isVertex" => hrt.shgraph.SgHxslVar.SgIsVertex]) {
+										if (declared.exists(name)) continue;
+										exprs.unshift(macro var $name : Bool);
+										varmap.set(name, info);
+									}
+								default:
+							}
+
 							var shaderExpr = new hxsl.MacroParser().parseExpr(expr);
 							var name = Std.string(c);
 

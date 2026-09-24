@@ -9,7 +9,7 @@ using Lambda;
 
 typedef FunctionCache = {
 	fun: TFunction,
-	useSgIO: Bool,
+	needPatching: Bool,
 }
 typedef CacheEntry = {
 	expr: TExpr,
@@ -113,6 +113,7 @@ class ShaderNodeHxsl extends ShaderNode {
 					idOutputOrder.set(v.id, outputCount++);
 				case SgConst:
 				case SgInit:
+				case SgIsFragment, SgIsVertex:
 				case null:
 			}
 		}
@@ -126,21 +127,23 @@ class ShaderNodeHxsl extends ShaderNode {
 			} else {
 				fn.ref.name = shortName + "_" + fn.ref.name; // De-duplicate function name if multiple nodes declare the same function name to avoid conflics
 
-				var useSgIO = false;
+				var needPatching = false;
 				function hasShaderInput(e: TExpr) : Void {
 					switch (e.e) {
 						case TVar(v):
 							switch(infos.get(v.id)) {
 								case SgInput(isDynamic, defaultValue):
-									useSgIO = true;
+									needPatching = true;
 									return;
 								case SgOutput(_):
-									useSgIO = true;
+									needPatching = true;
+								case SgIsFragment, SgIsVertex:
+									needPatching = true; // function must be patched per node to replace the domain constants
 								case null:
 								default:
 							}
 						default:
-							if (!useSgIO)
+							if (!needPatching)
 								e.iter(hasShaderInput);
 					}
 				};
@@ -148,7 +151,7 @@ class ShaderNodeHxsl extends ShaderNode {
 
 				funs.push({
 					fun: fn,
-					useSgIO: useSgIO,
+					needPatching: needPatching,
 				});
 			}
 		}
@@ -203,6 +206,10 @@ class ShaderNodeHxsl extends ShaderNode {
 							}
 						case SgConst:
 							replacement = makeInt(getConstValue(v.name) ?? 0);
+						case SgIsFragment:
+							replacement = makeExpr(TConst(CBool(ctx.domain == ShaderGraph.Domain.Fragment)), TBool);
+						case SgIsVertex:
+							replacement = makeExpr(TConst(CBool(ctx.domain == ShaderGraph.Domain.Vertex)), TBool);
 						case SgOutput(_):
 							var outputId = cache.idOutputOrder.get(v.id);
 							var t = ctx.getType(cache.outputs[outputId].type);
@@ -270,7 +277,7 @@ class ShaderNodeHxsl extends ShaderNode {
 
 		for (fun in cache.funs) {
 
-			if (fun.useSgIO) {
+			if (fun.needPatching) {
 				// If the function use input/outputs, we need to duplicate it per Node invocation,
 				// because we need to patch the function to properly set the input/outputs
 				var fun = fun.fun;
@@ -306,7 +313,7 @@ class ShaderNodeHxsl extends ShaderNode {
 					kind: fun.kind
 				}
 
-				funs.push({fun: replacementFunc, useSgIO: true});
+				funs.push({fun: replacementFunc, needPatching: true});
 			}
 			else {
 				funs.push(fun);
@@ -315,7 +322,7 @@ class ShaderNodeHxsl extends ShaderNode {
 
 		var expr = patch(cache.expr);
 		for (fun in funs) {
-			if (fun.useSgIO)
+			if (fun.needPatching)
 				fun.fun.expr = patch(fun.fun.expr);
 		}
 
