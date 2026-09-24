@@ -190,9 +190,9 @@ class RelativeTransformSimulation extends SimulationShader {
 					<slider label="Z" field={rotZ}/>
 				</line>
 				<line label="Speed">
-					<slider label="X" field={speedX}/>
-					<slider label="Y" field={speedY}/>
-					<slider label="Z" field={speedZ}/>
+					<slider label="X" field={speedX} step={0.0001}/>
+					<slider label="Y" field={speedY} step={0.0001}/>
+					<slider label="Z" field={speedZ} step={0.0001}/>
 				</line>
 			</category>
 		);
