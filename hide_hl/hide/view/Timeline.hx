@@ -8,36 +8,44 @@ class GridShader extends hxsl.Shader {
 		}
 
 		@param var lineColor : Vec3;
-		@param var lineWidth : Float;
-		@param var lineSpacing : Float;
 
-		@param var pan : Vec2;
-		@param var zoom : Vec2;
+		@param var stepOrigin : Vec2;
+		@param var stepSpacing : Vec2;
+		@param var stepWidth : Float;
+		@param var subdivisions : Float;
+		@param var subAlpha : Float;
+		@param var originColor : Vec3;
+		@param var originWidth : Float;
 
 		var absolutePosition : Vec4;
 		var pixelColor : Vec4;
 
-		function grid(position : Vec2, lineWidth : Float, idx : Int) : Float {
-			var deriv = fwidth(position);
-			var drawWidth = clamp(vec2(lineWidth, lineWidth), deriv, vec2(0.5, 0.5));
-			var lineAA = max(deriv, vec2(0.0001, 0.0001)) * 1.5;
-			var gridUV = abs(fract(position) * 2.0 - 1.0);
-			var grid2 = smoothstep(drawWidth + lineAA, drawWidth - lineAA, 1.0 - gridUV);
-			grid2 *= saturate(vec2(lineWidth, lineWidth) / drawWidth);
-			grid2 = mix(grid2, vec2(lineWidth, lineWidth), saturate(deriv * 2.0 - 1.0));
-			return max(grid2.x, grid2.y);
+		function lineMask(dist : Float, width : Float) : Float {
+			return 1.0 - smoothstep(width * 0.5 - 0.5, width * 0.5 + 0.5, dist);
+		}
+
+		function stepLines(p : Float, origin : Float, spacing : Float) : Float {
+			var dist = abs(fract((p - origin) / spacing + 0.5) - 0.5) * spacing;
+			return lineMask(dist, stepWidth);
 		}
 
 		function fragment() {
-			pixelColor.rgb = lineColor;
-			pixelColor.a = 0;
-			for (idx in 0...2) {
-				var f = pow(10., float(idx));
-				pixelColor.a = max(pixelColor.a, grid(
-					absolutePosition.xy * (1 / (lineSpacing * f)) / zoom,
-					lineWidth,
-					idx));
-			}
+			var major = max(
+				stepLines(absolutePosition.x, stepOrigin.x, stepSpacing.x),
+				stepLines(absolutePosition.y, stepOrigin.y, stepSpacing.y));
+
+			var subSpacing = stepSpacing / subdivisions;
+			var subFade = saturate((subSpacing - 4.0) / 4.0);
+			var minor = max(
+				stepLines(absolutePosition.x, stepOrigin.x, subSpacing.x) * subFade.x,
+				stepLines(absolutePosition.y, stepOrigin.y, subSpacing.y) * subFade.y);
+
+			var origin = max(
+				lineMask(abs(absolutePosition.x - stepOrigin.x), originWidth),
+				lineMask(abs(absolutePosition.y - stepOrigin.y), originWidth));
+
+			pixelColor.rgb = mix(lineColor, originColor, origin);
+			pixelColor.a = max(max(major, minor * subAlpha), origin);
 		}
 	}
 }
@@ -64,25 +72,30 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		</timeline>
 
 	static final GRID_COLOR = 0x4C4C4C;
-	static final GRID_WIDTH = 0.01;
-	static final GRID_LINESPACING = 100;
+	static final GRID_STEP_WIDTH = 1;
+	static final GRID_SUBDIVISIONS = 5;
+	static final GRID_SUB_ALPHA = 0.35;
 	static final GRID_ORIGIN_COLOR = 0x7E7E7E;
 	static final GRID_ORIGIN_WIDTH = 2;
-	static final MIN_ZOOM = 0.1;
-	static final MAX_ZOOM = 2;
+	static final MIN_STEP = 1e-2;
+	static final MAX_LABELS = 21;
+	static final ZOOM_SPEED = 1.1;
+	static final MIN_ZOOM = 1e-4;
+	static final MAX_ZOOM = 1e4;
 
-	var labels = [];
-
-	// Edition
 	var gridShader : GridShader = null;
 	var zoom = new h2d.col.Point(1, 1);
 	var pan = new h2d.col.Point(0, 0);
 	var onPanDrag : (e : hxd.Event) -> Void;
+	var labels = [];
+	var needRefresh = true;
+	var hstep = MIN_STEP;
+	var vstep = MIN_STEP;
 
 	inline function sx(px : Float) { return px * calculatedWidth * zoom.x + pan.x; }
-	inline function sy(py : Float) { return calculatedHeight - (py * calculatedHeight * zoom.y + pan.y); }
+	inline function sy(py : Float) { return grid.calculatedHeight - (py * grid.calculatedHeight * zoom.y + pan.y); }
 	inline function px(sx : Float) { return (sx - pan.x) / (calculatedWidth * zoom.x); }
-	inline function py(sy : Float) { return (calculatedHeight - sy - pan.y) / (calculatedHeight * zoom.y); }
+	inline function py(sy : Float) { return (grid.calculatedHeight - sy - pan.y) / (grid.calculatedHeight * zoom.y); }
 
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
@@ -90,10 +103,11 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 
 		gridShader = new GridShader();
 		gridShader.lineColor = h3d.Vector.fromColor(GRID_COLOR);
-		gridShader.lineWidth = GRID_WIDTH;
-		gridShader.lineSpacing = GRID_LINESPACING;
-		gridShader.zoom = new h3d.Vector(1, 1, 0);
-		gridShader.pan = new h3d.Vector(0, 0, 0);
+		gridShader.stepWidth = GRID_STEP_WIDTH;
+		gridShader.subdivisions = GRID_SUBDIVISIONS;
+		gridShader.subAlpha = GRID_SUB_ALPHA;
+		gridShader.originColor = h3d.Vector.fromColor(GRID_ORIGIN_COLOR);
+		gridShader.originWidth = GRID_ORIGIN_WIDTH;
 
 		grid.backgroundType = "hui";
 		grid.huiBg.addShader(gridShader);
@@ -101,81 +115,88 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		buildToolbar();
 
 		onAfterReflow = () -> {
-			// refresh();
-		}
-
-		rightPanel.onWheel = (e : hxd.Event) -> {
-			var amount = e.wheelDelta * -0.05;
-			if (!hxd.Key.isDown(hxd.Key.SHIFT))
-				zoom.x = hxd.Math.clamp(zoom.x + amount, MIN_ZOOM, MAX_ZOOM);
-			if (!hxd.Key.isDown(hxd.Key.CTRL))
-				zoom.y = hxd.Math.clamp(zoom.y + amount, MIN_ZOOM, MAX_ZOOM);
 			refresh();
 		}
 
-		rightPanel.onPush = (e : hxd.Event) -> {
-			if (onPanDrag != null)
+		rightPanel.onWheel = (e : hxd.Event) -> {
+			// Keep the value under the mouse at the same screen position
+			var mouse = grid.globalToLocal(rightPanel.localToGlobal(new h2d.col.Point(e.relX, e.relY)));
+			var mouseX = px(mouse.x);
+			var mouseY = py(mouse.y);
+
+			var factor = Math.pow(ZOOM_SPEED, -e.wheelDelta);
+			if (!hxd.Key.isDown(hxd.Key.SHIFT))
+				zoom.x = hxd.Math.clamp(zoom.x * factor, MIN_ZOOM, MAX_ZOOM);
+			if (!hxd.Key.isDown(hxd.Key.CTRL))
+				zoom.y = hxd.Math.clamp(zoom.y * factor, MIN_ZOOM, MAX_ZOOM);
+
+			pan.x = mouse.x - mouseX * calculatedWidth * zoom.x;
+			pan.y = grid.calculatedHeight - mouse.y - mouseY * grid.calculatedHeight * zoom.y;
+			refresh();
+		}
+
+		grid.onPush = (e : hxd.Event) -> {
+			if (e.button != 0 && e.button != 1 && e.button != 2)
 				return;
 
-			if (e.button == 0 || e.button == 1 || e.button == 2) {
-				var originDrag = new h2d.col.Point(e.relX, e.relY);
-				var originPan = pan.clone();
-				onPanDrag = (e) -> {
-					pan.x = originPan.x + (e.relX - originDrag.x);
-					pan.y = originPan.y - (e.relY - originDrag.y);
-					refresh();
+			var scene = getScene();
+			var originDrag = new h2d.col.Point(scene.mouseX, scene.mouseY);
+			var originPan = pan.clone();
+			scene.startCapture((e : hxd.Event) -> {
+				switch (e.kind) {
+					case ERelease, EReleaseOutside:
+						scene.stopCapture();
+					case EMove:
+						pan.x = originPan.x + (scene.mouseX - originDrag.x);
+						pan.y = originPan.y - (scene.mouseY - originDrag.y);
+						refresh();
+					default:
 				}
+			});
+		}
+
+		timerTrack.onPush = (e : hxd.Event) -> {
+			if (e.button != 0 && e.button != 1 && e.button != 2)
+				return;
+
+			var scene = getScene();
+			inline function setTimeFromMouse() {
+				setTime(px(timerTrack.globalToLocal(new h2d.col.Point(scene.mouseX, scene.mouseY)).x));
 			}
-		}
 
-		rightPanel.onMove = (e : hxd.Event) -> {
-			if (onPanDrag != null)
-				onPanDrag(e);
+			setTimeFromMouse();
+			scene.startCapture((e : hxd.Event) -> {
+				switch (e.kind) {
+					case ERelease, EReleaseOutside:
+						scene.stopCapture();
+					case EMove:
+						setTimeFromMouse();
+					default:
+				}
+			});
 		}
-
-		rightPanel.onRelease = (e : hxd.Event) -> {
-			onPanDrag = null;
-		}
-
-		refresh();
 	}
 
 	public function refresh() {
-		for (l in labels)
-			l.remove();
-		labels.resize(0);
-
-		var minX = Math.floor(px(0));
-		var maxX = Math.ceil(px(rightPanel.calculatedWidth));
-
-		var hstep = 0.1;
-		while((maxX - minX) / hstep > 21)
-			hstep *= 2;
-		var minS = Math.floor(minX / hstep);
-		var maxS = Math.ceil(maxX / hstep);
-
-		for (i in minS...(maxS+1)) {
-			var ix = i * hstep;
-
-			var label = new HuiText('${hxd.Math.fmt(ix)}', timerTrack);
-			label.setPosition(sx(ix), (timerTrack.calculatedHeight / 2) - (label.textHeight / 2));
-			labels.push(label);
-		}
+		needRefresh = true;
 	}
 
 	public dynamic function getTime() : Float { return 0.; };
-	public dynamic function onPause() {};
-	public dynamic function onPlay() {};
+	public dynamic function setTime(t : Float) {};
+	public dynamic function isPaused() : Bool { return false; };
+	public dynamic function setPaused(v : Bool) {};
 
 	override function update(dt: Float) {
 		super.update(dt);
 
 		var t = getTime();
-		time.text = '${hxd.Math.round(t * 10) / 10}';
-		playhead.setPosition(sx(t), (timerTrack.calculatedHeight / 2) - (playhead.calculatedHeight / 2));
+		var decimals = hxd.Math.imax(0, Math.ceil(-Math.log(hstep) / Math.log(10) - 1e-6));
+		var f = Math.pow(10, decimals);
+		time.text = '${Math.round(t * f) / f}';
+		playhead.setPosition(sx(t) - (playhead.calculatedWidth / 2), (timerTrack.calculatedHeight / 2) - (head.calculatedHeight / 2));
 
-		// if (scene != null)
-		// 	setTime(@:privateAccess scene.renderer.ctx.time);
+		if (needRefresh)
+			refreshInternal();
 	}
 
 	override function getViewName():String {
@@ -197,14 +218,11 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 
 		var playBtn = new HuiButton();
 		playBtn.dom.addClass("group");
-		new HuiIcon(HuiRes.ui.icons.play, playBtn);
+		var playBtnIcon = new HuiIcon(isPaused() ? HuiRes.ui.icons.play : HuiRes.ui.icons.pause, playBtn);
 		widgets.push(playBtn);
 		playBtn.onClick = (e) -> {
-			// isPaused = !isPaused;
-			// if (isPaused)
-			// 	onPause();
-			// else
-			// 	onPlay();
+			setPaused(!isPaused());
+			playBtnIcon.setIcon(isPaused() ? HuiRes.ui.icons.play : HuiRes.ui.icons.pause);
 		}
 
 		var nextBtn = new HuiButton();
@@ -229,6 +247,61 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		// 		{label: "Vertical", click: updateMode.bind(Vertical)},
 		// 	]
 		// });
+	}
+
+	function getStep(range : Float) : Float {
+		var step = MIN_STEP;
+		var i = 0;
+		while (range / step > MAX_LABELS)
+			step *= (i++ % 3 == 1) ? 2.5 : 2;
+		return step;
+	}
+
+	function refreshInternal() {
+		for (l in labels)
+			l.remove();
+		labels.resize(0);
+
+		var minX = px(0);
+		var maxX = px(rightPanel.calculatedWidth);
+
+		hstep = getStep(maxX - minX);
+		var minS = Math.floor(minX / hstep);
+		var maxS = Math.ceil(maxX / hstep);
+
+		for (i in minS...(maxS+1)) {
+			var ix = i * hstep;
+
+			var label = new HuiText('${hxd.Math.fmt(ix)}', timerTrack);
+			label.setPosition(sx(ix) - (label.textWidth / 2), (timerTrack.calculatedHeight / 2) - (label.textHeight / 2));
+			labels.push(label);
+		}
+
+		var minY = py(grid.calculatedHeight);
+		var maxY = py(0);
+
+		vstep = getStep(maxY - minY);
+		minS = Math.floor(minY / vstep);
+		maxS = Math.ceil(maxY / vstep);
+
+		for (i in minS...(maxS+1)) {
+			var iy = i * vstep;
+
+			var label = new HuiText('${hxd.Math.fmt(iy)}', grid);
+			label.setPosition(5, sy(iy) - (label.textHeight / 2));
+			labels.push(label);
+		}
+
+		var h = Std.int(rightPanel.calculatedHeight - playhead.y);
+		if (body.minHeight != h)
+			body.minHeight = body.maxHeight = h;
+
+		// Update Grid
+		var gridOrigin = grid.localToGlobal(new h2d.col.Point(0, 0));
+		gridShader.stepOrigin = new h3d.Vector(gridOrigin.x + sx(0), gridOrigin.y + sy(0), 0);
+		gridShader.stepSpacing = new h3d.Vector(sx(hstep) - sx(0), sy(0) - sy(vstep), 0);
+
+		needRefresh = false;
 	}
 
 	static var _ = HuiView.register("timeline", Timeline);

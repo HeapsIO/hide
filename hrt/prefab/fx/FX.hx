@@ -43,6 +43,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	public var onEnd : Void -> Void;
+	public var paused : Bool = false;
 	public var playSpeed : Float = 0;
 	public var localTime : Float = 0.0;
 	public var startDelay : Float = 0.0;
@@ -347,7 +348,7 @@ class FXAnimation extends h3d.scene.Object {
 		var needIncrement = false;
 		var curTime = localTime;
 
-		if(playSpeed > 0 || firstSync) {
+		if((playSpeed > 0 && !paused) || firstSync) {
 			if (parentFX == null) {
 				var dt = firstSync ? 0 : ctx.elapsedTime * playSpeed;
 

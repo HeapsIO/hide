@@ -24,7 +24,6 @@ timeline {
 			#body {
 				halign: middle;
 				width: 3;
-				fill-height: true;
 				background-type: hui;
 				> hui-background {
 					background: #426dae;
@@ -50,7 +49,7 @@ timeline {
 			height: 30;
 			background-type: hui;
 			> hui-background {
-				background: blue;
+				background: @color-gray-6;
 			}
 		}
 
@@ -58,6 +57,10 @@ timeline {
 			fill-width: true;
 			fill-height: true;
 			overflow: hidden;
+
+			> hui-text {
+				position: absolute;
+			}
 
 			// background-type: hui;
 			// > hui-background {

@@ -1243,12 +1243,29 @@ class Prefab extends HuiView<{path: String}> {
 		if (t == null || hide.Ide.inst.getActiveView() != this)
 			return;
 
-		t.getTime = () -> {
+		function getFXAnim() {
 			var fx = Std.downcast(prefab, hrt.prefab.fx.FX);
-			var fxAnim = Std.downcast(fx?.local3d, hrt.prefab.fx.FX.FXAnimation);
-			if (fxAnim != null)
-				return fxAnim.localTime;
-			return 0.;
+			return Std.downcast(fx?.local3d, hrt.prefab.fx.FX.FXAnimation);
+		}
+
+		t.getTime = () -> {
+			return getFXAnim()?.localTime;
+		}
+
+		t.setTime = (t : Float) -> {
+			var fx  = getFXAnim();
+			if (fx != null)
+				fx.localTime = t;
+		}
+
+		t.isPaused = () -> {
+			return getFXAnim()?.paused;
+		}
+
+		t.setPaused = (v : Bool) -> {
+			var fx  = getFXAnim();
+			if (fx != null)
+				fx.paused = v;
 		}
 
 		t.refresh();

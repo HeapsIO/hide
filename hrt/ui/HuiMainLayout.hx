@@ -80,6 +80,7 @@ class HuiMainLayout extends HuiElement {
 		return [
 			{label: "Resources", click: () -> hide.Ide.inst.openView(hide.view.FileBrowser, {rootPath: hide.Ide.inst.resourceDir}, Left)},
 			{label: "Scene"},
+			{label: "Timeline", click: () -> hide.Ide.inst.openView(hide.view.Timeline, null, Bottom)},
 			{label: "Settings"},
 			{label: "Gym", click: () -> hide.Ide.inst.openView(HuiViewGym, {})},
 			{isSeparator: true},
