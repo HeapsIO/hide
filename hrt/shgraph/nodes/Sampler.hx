@@ -36,6 +36,16 @@ class Sampler extends ShaderNodeHxsl {
 		@sgconst var wrap : Int;
 		@sgconst var filter : Int;
 
+		function mipLevel(uv : Vec2, texSize : Vec2) : Float {
+			var dx = dFdx(uv) * texSize;
+			var dy = dFdy(uv) * texSize;
+			var d = max(dot(dx, dx), dot(dy, dy));
+			var mip = 0.5 * log2(max(d, 1e-5));
+			var mipCount = floor(log2(max(texSize.x, texSize.y)));
+			mip = clamp(mip, 0.0, mipCount);
+			return mip;
+		}
+
 		function fragment() {
 			var uv2 = uv;
 
@@ -53,7 +63,12 @@ class Sampler extends ShaderNodeHxsl {
 				var size = texture.size();
 				uv2 = (floor( size * uv2 ) + 0.5) / size ;
 			}
-			RGBA = texture.get(uv2);
+			if(wrap == 1 && isFragment){
+				var mip = mipLevel(uv, size);
+				RGBA = texture.getLod(uv2, mip);
+			} else {
+				RGBA = texture.get(uv2);
+			}
 		}
 	}
 
