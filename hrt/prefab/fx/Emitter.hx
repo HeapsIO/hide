@@ -34,6 +34,7 @@ enum AlignMode {
 	Screen;
 	Axis;
     Speed;
+	ScreenSpeed;
 }
 
 enum AlignLockAxis {
@@ -251,6 +252,15 @@ class ParticleInstance {
 					absPos.multiply(emitter.screenRot, absPos);
 				} else
 					absPos.load(emitter.screenRot);
+			case ScreenSpeed:
+				// qRot X axis is the speed direction (see update()), projected on the screen plane
+				var n = emitter.screenRot.up();
+				var dir = qRot.toQuat().getDirection();
+				dir = dir - n * dir.dot(n);
+				if( dir.lengthSq() < 1e-8 )
+					absPos.load(emitter.screenRot);
+				else
+					h3d.Matrix.lookAtXInline(dir, n, absPos);
 			default:
 				inline qRot.toQuat().toMatrix(absPos);
 		}
@@ -442,7 +452,7 @@ class ParticleInstance {
 		this.speedAccumulation.load(speedAccumulation);
 
 
-		if((emitter.emitOrientation == Speed || emitter.alignMode == Speed) && speed.lengthSq() > 0.01) {
+		if((emitter.emitOrientation == Speed || emitter.alignMode == Speed || emitter.alignMode == ScreenSpeed) && speed.lengthSq() > 0.01) {
 			var q = qRot.toQuat();
 			inline q.initDirection(speed);
 			this.qRot.loadQuat(q);
@@ -1286,7 +1296,7 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function updateAlignment() {
-		if(alignMode == Screen) {
+		if(alignMode == Screen || alignMode == ScreenSpeed) {
 			var cam = scene?.camera;
 			if (cam == null)
 				return;
@@ -1995,7 +2005,7 @@ class Emitter extends Object3D {
 		}
 
 		switch(alignMode) {
-			case None | Screen | Speed:
+			case None | Screen | Speed | ScreenSpeed:
 				removeParam("alignLockAxis");
 			default:
 		}
