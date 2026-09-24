@@ -1,6 +1,7 @@
 package hrt.shgraph;
 
 enum ShaderDefInput {
+	NoDefault;
 	Var(name: String);
 	Const(intialValue: Float);
 	ConstBool(initialValue: Bool);

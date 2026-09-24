@@ -36,12 +36,12 @@ class Preview extends ShaderNode {
 	public var previewID : Int = 1;
 
 	override function getInputs() {
-		static var inputs : Array<ShaderNode.InputInfo> = [{name: "input", type: SgFloat(4)}];
+		static var inputs : Array<ShaderNode.InputInfo> = [{name: "input", type: SgFloat(4), def: Const(0.0)}];
 		return inputs;
 	}
 
 	override function generate(ctx:NodeGenContext) {
-		var input = ctx.getInput(0, Const(0.0));
+		var input = ctx.getInput(0);
 		ctx.addPreview(input);
 	}
 }

@@ -16,17 +16,17 @@ class IfCondition extends ShaderNode {
 	override function getInputs() {
 		static var inputs : Array<ShaderNode.InputInfo> =
 		[
-			{name: "condition", type: SgBool},
-			{name: "true", type: SgGeneric(0, ConstraintFloat), def: Const(1.0)},
-			{name: "false", type: SgGeneric(0, ConstraintFloat), def: Const(0.0)},
+			{name: "condition", type: SgBool, def: ConstBool(true)},
+			{name: "true", type: SgGeneric(0, ConstraintFloat), def: Const(1.0), inlineEditable: true},
+			{name: "false", type: SgGeneric(0, ConstraintFloat), def: Const(0.0), inlineEditable: true},
 		];
 		return inputs;
 	}
 
 	override function generate(ctx: NodeGenContext) {
-		var cond = ctx.getInput(0, ConstBool(true));
-		var vTrue = ctx.getInput(1, Const(1.0));
-		var vFalse = ctx.getInput(2, Const(0.0));
+		var cond = ctx.getInput(0);
+		var vTrue = ctx.getInput(1);
+		var vFalse = ctx.getInput(2);
 
 		var outType = ctx.getType(SgGeneric(0, ConstraintFloat));
 

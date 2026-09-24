@@ -44,13 +44,13 @@ class SubGraph extends ShaderNode {
 		for (name => info in nodeGenCtx.globalInVars) {
 			var global = nodeGenCtx.globalVars.get(name);
 			var t = typeToSgType(global.v.type);
-			inputs[info.id] = {name: name, type: hrt.shgraph.ShaderGraph.typeToSgType(info.type)};
+			inputs[info.id] = {name: name, type: hrt.shgraph.ShaderGraph.typeToSgType(info.type), def: NoDefault};
 		}
 
 		return inputs;
 	}
 
-	override public function getOutputs() : Array<ShaderNode.InputInfo> {
+	override public function getOutputs() : Array<ShaderNode.OutputInfo> {
 		#if !editor
 		var shader = cast hxd.res.Loader.currentInstance.load(pathShaderGraph).toPrefab().load();
 		#else
@@ -61,7 +61,7 @@ class SubGraph extends ShaderNode {
 		var genCtx = new ShaderGraphGenContext(graph, false);
 		var nodeGenCtx = new NodeGenContext.NodeGenContextSubGraph(graph, null);
 		genCtx.generate(nodeGenCtx);
-		var outputs: Array<ShaderNode.InputInfo> = [];
+		var outputs: Array<ShaderNode.OutputInfo> = [];
 
 		for (name => info in nodeGenCtx.globalOutVars) {
 			outputs[info.id] = {name: name, type: hrt.shgraph.ShaderGraph.typeToSgType(info.type)};

@@ -13,7 +13,7 @@ class VarWrite extends ShaderVar {
 	var inputs: Array<ShaderNode.InputInfo>;
 	override public function getInputs() : Array<ShaderNode.InputInfo> {
 		if (inputs == null) {
-			inputs = [{name:"error", type: SgBool}];
+			inputs = [{name:"error", type: SgBool, def: NoDefault}];
 		}
 		// reassign name and type in case they have changed since the last getInput
 		inputs[0].name = graph.parent.variables[varId]?.name ?? "error";

@@ -36,7 +36,7 @@ class Macros {
 									case EMeta(meta, subexpr):
 										switch (meta.name) {
 											case "sginput":
-												var defValue : hrt.shgraph.SgHxslVar.ShaderDefInput = null;
+												var defValue : hrt.shgraph.SgHxslVar.ShaderDefInput = NoDefault;
 												if (meta.params != null && meta.params.length > 0) {
 													switch (meta.params[0].expr) {
 														case EConst(v):

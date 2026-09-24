@@ -106,7 +106,7 @@ class ShaderNodeHxsl extends ShaderNode {
 			var info = infos.get(v.id);
 			switch (info) {
 				case SgInput(isDynamic, defaultValue):
-					inputs.push({name: v.name, type: isDynamic ? SgGeneric(0, ShaderGraph.ConstraintFloat) : typeToSgType(v.type), def: defaultValue});
+					inputs.push({name: v.name, type: isDynamic ? SgGeneric(0, ShaderGraph.ConstraintFloat) : typeToSgType(v.type), def: defaultValue, inlineEditable: !defaultValue.match(NoDefault)});
 					idInputOrder.set(v.id, inputCount++);
 				case SgOutput(isDynamic):
 					outputs.push({name: v.name, type: isDynamic ? SgGeneric(0, ShaderGraph.ConstraintFloat) : typeToSgType(v.type)});
@@ -178,32 +178,12 @@ class ShaderNodeHxsl extends ShaderNode {
 					if (replacement != null)
 						return replacement;
 
-					var type = e.t;
-
 					var info = infos.get(v.id);
 
 					switch(info) {
-						case SgInput(isDynamic, defaultValue):
-							if (isDynamic) {
-								type = ctx.getType(SgGeneric(0, ShaderGraph.ConstraintFloat));
-							}
+						case SgInput(_, _):
 							var inputId = cache.idInputOrder.get(v.id);
 							replacement = ctx.getInput(inputId);
-
-							// default value handling if we have no input connected
-							if (replacement == null) {
-								switch (defaultValue) {
-									case Const(init):
-										replacement = NodeGenContext.convertToType(type, makeFloat(getDef(v.name, init)));
-									case Var(name):
-										var globalId = Variables.getGlobalNameMap().get(name);
-										if (globalId != null) {
-											replacement = ctx.getGlobalInput(globalId);
-										}
-									case null, _:
-										genFailure = true;
-								}
-							}
 						case SgConst:
 							replacement = makeInt(getConstValue(v.name) ?? 0);
 						case SgIsFragment:

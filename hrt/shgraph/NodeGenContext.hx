@@ -371,22 +371,33 @@ class NodeGenContext {
 		return genericTypes[id];
 	}
 
-	public function getInput(id: Int, ?defValue: SgHxslVar.ShaderDefInput) : Null<TExpr> {
+	/**
+		Returns the expression connected to the input `id`, or its default value (InputInfo.def) if nothing is connected.
+		If the input is inlineEditable, the value set by the user on the node is used instead of the default.
+		Returns null if the input has no default value.
+	**/
+	public function getInput(id: Int) : Null<TExpr> {
 		var input = nodeInputExprs[id];
-		var inputType = getType(nodeInputInfo[id].type);
+		var info = nodeInputInfo[id];
+		var inputType = getType(info.type);
 		if (input != null) {
 			return convertToType(inputType, input);
 		}
 
-		if (defValue != null) {
-			switch(defValue) {
-				case Const(f):
-					return convertToType(inputType, makeFloat(f));
-				default:
-					throw "def value not handled yet";
-			}
+		switch(info.def) {
+			case NoDefault:
+				return null;
+			case Const(f):
+				var value = info.inlineEditable ? @:privateAccess node.getDef(info.name, f) : f;
+				return convertToType(inputType, makeFloat(value));
+			case ConstBool(b):
+				return makeExpr(TConst(CBool(b)), TBool);
+			case Var(name):
+				var globalId = Variables.getGlobalNameMap().get(name);
+				if (globalId == null)
+					return null;
+				return getGlobalInput(globalId);
 		}
-		return null;
 	}
 
 	/**

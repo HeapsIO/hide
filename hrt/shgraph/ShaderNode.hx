@@ -36,7 +36,7 @@ class AlphaPreview extends hxsl.Shader {
 	}
 }
 
-typedef InputInfo = {name: String, type: SgType, ?def: ShaderDefInput};
+typedef InputInfo = {name: String, type: SgType, def: ShaderDefInput, ?inlineEditable: Bool};
 typedef OutputInfo = {name: String, type: SgType};
 typedef VariableDecl = {v: TVar, display: String, ?vertexOnly: Bool};
 typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description : String, ?args : Array<Dynamic>, ?group: String};
@@ -67,7 +67,7 @@ implements hide.view.GraphInterface.IGraphNode
 			inputs: [
 				for (i in getInputs()) {
 					var defaultParam = null;
-					switch (i.def) {
+					if (i.inlineEditable) switch (i.def) {
 						case Const(intialValue):
 							defaultParam = {
 								get: () -> Std.string(Reflect.getProperty(defaults, i.name) ?? intialValue),

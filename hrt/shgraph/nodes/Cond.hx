@@ -17,15 +17,15 @@ class Cond extends ShaderNode {
 	override function getInputs() {
 		static var inputs : Array<ShaderNode.InputInfo> =
 			[
-				{name: "a", type: SgFloat(1), def: Const(0.0)},
-				{name: "b", type: SgFloat(1), def: Const(0.0)},
+				{name: "a", type: SgFloat(1), def: Const(0.0), inlineEditable: true},
+				{name: "b", type: SgFloat(1), def: Const(0.0), inlineEditable: true},
 			];
 		return inputs;
 	}
 
 	override function generate(ctx: NodeGenContext) {
-		var a = ctx.getInput(0, Const(0.0));
-		var b = ctx.getInput(1, Const(0.0));
+		var a = ctx.getInput(0);
+		var b = ctx.getInput(1);
 
 		var expr = makeExpr(TBinop(condition, a, b), TBool);
 		ctx.setOutput(0, expr);

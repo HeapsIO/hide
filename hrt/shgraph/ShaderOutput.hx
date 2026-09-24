@@ -24,13 +24,13 @@ class ShaderOutput extends ShaderNode {
 		if (inputs == null) {
 			var global = availableOutputs[variable].g;
 			var info = Variables.Globals[global];
-			inputs = [{name: "input", type: ShaderGraph.typeToSgType(info.type)}];
+			inputs = [{name: "input", type: ShaderGraph.typeToSgType(info.type), def: Const(0.0)}];
 		}
 		return inputs;
 	}
 
 	override public function generate(ctx: NodeGenContext) {
-		var out = ctx.getInput(0, SgHxslVar.ShaderDefInput.Const(getDef("input", 0.0)));
+		var out = ctx.getInput(0);
 		ctx.setGlobalOutput(availableOutputs[variable].g, out);
 		ctx.addPreview(out);
 	}
