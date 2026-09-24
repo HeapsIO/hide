@@ -22,6 +22,11 @@ class Slider<T:Float> extends Widget<T> {
 	public var step : Null<T> = null;
 
 	/**
+		If set, value will be rounded at this number of decimals
+	**/
+	public var decimals : Null<Int> = null;
+
+	/**
 		If set, the slider will use an exponential curve (e^x) for editing values.
 	**/
 	public var exp : Bool = false;
@@ -226,7 +231,7 @@ class Slider<T:Float> extends Widget<T> {
 		return container;
 		#elseif hui
 		var s = new hrt.ui.HuiSlider();
-		s.decimals = 2;
+		s.decimals = decimals;
 		if (int)
 			s.decimals = 0;
 		s.value = value;
