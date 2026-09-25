@@ -87,18 +87,24 @@ implements hide.view.GraphInterface.IGraphNode
 							};
 						default:
 					}
+					var t = getResolvedInputType(inputId);
 					{
 						name: i.name,
-						color: getTypeColor(getResolvedInputType(inputId)),
+						color: getTypeColor(t),
+						shape: getTypeShape(t),
+						tooltip: getTypeDisplayName(t),
 						defaultParam: defaultParam,
 					}
 				}
 			],
 			outputs: [
 				for (outputId => o in getOutputs()) {
+					var t = getResolvedOutputType(outputId);
 					{
 						name: o.name,
-						color: getTypeColor(getResolvedOutputType(outputId)),
+						color: getTypeColor(t),
+						shape: getTypeShape(t),
+						tooltip: getTypeDisplayName(t),
 					}
 				}
 			],
@@ -130,6 +136,36 @@ implements hide.view.GraphInterface.IGraphNode
 				0xd20f39;
 			default:
 				0xbcc0cc;
+		}
+	}
+
+	static function getTypeShape(type: SgType) : PinShape {
+		return switch (type) {
+			case SgFloat(_):
+				return Dot;
+			case SgSampler:
+				return Square;
+			case SgBool:
+				return Rhombus;
+			default:
+				return Dot;
+		}
+	}
+
+	static function getTypeDisplayName(type: SgType) : String {
+		return switch (type) {
+			case SgFloat(1):
+				return 'Float';
+			case SgFloat(n):
+				return 'Vec$n';
+			case SgInt:
+				return 'Int';
+			case SgSampler:
+				return 'Sampler';
+			case SgBool:
+				return 'Bool';
+			default:
+				return 'Unknown';
 		}
 	}
 

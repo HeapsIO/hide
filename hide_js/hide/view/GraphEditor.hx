@@ -1194,7 +1194,12 @@ class GraphEditor extends hide.comp.Component {
 			var defaultValue : String = input.defaultParam?.get();
 			//defaultValue= Reflect.getProperty(box.getInstance().defaults, '${input.name}');
 
-			var grNode = box.addInput(this, input.name, defaultValue, input.color);
+			var grNode = box.addInput(this, input.name, defaultValue, input.shape);
+			if (input.tooltip != null) {
+				var title = js.Browser.document.createElementNS('http://www.w3.org/2000/svg', 'title');
+				title.textContent = input.tooltip;
+				grNode.prepend(title);
+			}
 			if (defaultValue != null) {
 				var fieldEditInput = grNode.find("input");
 				fieldEditInput.on("change", function(ev) {
@@ -1240,7 +1245,12 @@ class GraphEditor extends hide.comp.Component {
 			});
 		}
 		for (outputId => info in box.info.outputs) {
-			var grNode = box.addOutput(this, info.name, info.color);
+			var grNode = box.addOutput(this, info.name, info.shape);
+			if (info.tooltip != null) {
+				var title = js.Browser.document.createElementNS('http://www.w3.org/2000/svg', 'title');
+				title.textContent = info.tooltip;
+				grNode.prepend(title);
+			}
 			grNode.find(".node").attr("field", outputId);
 			grNode.get(0).addEventListener("pointerdown", function(e) {
 				if (e.button == 0) {
@@ -1252,6 +1262,8 @@ class GraphEditor extends hide.comp.Component {
 				}
 			});
 		}
+
+		box.refreshPinColors(true);
 
 		box.generateProperties(this);
 

@@ -281,14 +281,28 @@ class Box {
 		closePreviewBtn.find(".ico").toggleClass("ico-angle-up", viz);
 	}
 
-	public function addInput(editor : GraphEditor, name : String, valueDefault : String = null, color : Int) {
+	public function genPinShape(editor: GraphEditor, parent: Element, height: Float, shape: PinShape, isOutput: Bool) : Element{
+		var cl = isOutput ? "output-node" : "input-node";
+		var node = editor.editorDisplay.group(parent, "node " + cl).attr({transform : 'translate(${isOutput ? width : 0}, $height)'});
+		switch (shape) {
+			case Dot, null:
+				var circle = editor.editorDisplay.circle(node, 0, 0, NODE_RADIUS, {}).addClass("node-visible");
+			case Square:
+				var square = editor.editorDisplay.rect(node, -NODE_RADIUS, -NODE_RADIUS, NODE_RADIUS * 2, NODE_RADIUS * 2, {}).addClass("node-visible");
+			case Rhombus:
+				var size = NODE_RADIUS * 0.7;
+				var square = editor.editorDisplay.rect(node, -size, -size, size * 2, size * 2, {}).addClass("node-visible");
+				square.attr({transform: 'rotate(45)'});
+		}
+		var hitbox = editor.editorDisplay.circle(node, 0, 0, NODE_HITBOX_RADIUS).addClass("hitbox");
+		return node;
+	}
+
+	public function addInput(editor : GraphEditor, name : String, valueDefault : String = null, shape: PinShape) {
 		var node = editor.editorDisplay.group(element).addClass("input-node-group");
 		var nodeHeight = getNodeHeight(inputs.length);
-		var style = {fill : '#${StringTools.hex(color, 6)}'};
 
-		var nodeCircle = editor.editorDisplay.group(node, "node input-node").attr({transform : 'translate(0, $nodeHeight)'});
-		var circle = editor.editorDisplay.circle(nodeCircle, 0, 0, NODE_RADIUS, style).addClass("node-visible");
-		var hitbox = editor.editorDisplay.circle(nodeCircle, 0, 0, NODE_HITBOX_RADIUS).addClass("hitbox");
+		var nodeCircle = genPinShape(editor, node, nodeHeight, shape, false);
 
 		var nameWidth = 0.0;
 		if (name.length > 0 && name != "input") {
@@ -338,14 +352,11 @@ class Box {
 		}
 	}
 
-	public function addOutput(editor : GraphEditor, name : String, color : Int) {
+	public function addOutput(editor : GraphEditor, name : String, shape: PinShape) {
 		var node = editor.editorDisplay.group(element).addClass("output-node-group");
 		var nodeHeight = getNodeHeight(outputs.length);
-		var style = {fill : '#${StringTools.hex(color, 6)}'};
 
-		var nodeCircle = editor.editorDisplay.group(node, "node output-node").attr({transform : 'translate($width, $nodeHeight)'});
-		var circle = editor.editorDisplay.circle(nodeCircle, 0, 0, NODE_RADIUS, style).addClass("node-visible");
-		var hitbox = editor.editorDisplay.circle(nodeCircle, 0, 0, NODE_HITBOX_RADIUS).addClass("hitbox");
+		var nodeCircle = genPinShape(editor, node, nodeHeight, shape, true);
 
 		if (name.length > 0 && name != "output")
 			editor.editorDisplay.text(node, width - NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node").attr("text-anchor", "end");
@@ -357,14 +368,14 @@ class Box {
 	}
 
 	/** Update the pins colors from the node current info, without rebuilding the box **/
-	public function refreshPinColors() {
+	public function refreshPinColors(force: Bool = false) {
 		var newInfo = node.getInfo();
 		function refresh(pins: Array<JQuery>, infos: Array<{color: Null<Int>}>, newInfos: Array<{color: Null<Int>}>) {
 			if (pins.length != newInfos.length)
 				return;
 			for (i => pin in pins) {
 				var color = newInfos[i].color;
-				if (color == infos[i].color)
+				if (!force && color == infos[i].color)
 					continue;
 				infos[i].color = color;
 				if (color != null)

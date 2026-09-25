@@ -1,6 +1,10 @@
 package hide.view;
 
-
+enum PinShape {
+	Dot;
+	Square;
+	Rhombus;
+}
 typedef GraphNodeInfo = {
     name: String,
     ?headerColor: Int,
@@ -48,6 +52,8 @@ typedef NodeInput = {
     /**Display name of the node input **/
     name: String,
     ?color: Int,
+	?shape: PinShape,
+	?tooltip: String,
 
     /**If set, the input will have a input text box next to it when not connected**/
     ?defaultParam: {
@@ -59,6 +65,8 @@ typedef NodeInput = {
 typedef NodeOutput = {
     name: String,
     ?color: Int,
+	?shape: PinShape,
+	?tooltip: String,
 };
 
 typedef AddNodeMenuEntry = {
