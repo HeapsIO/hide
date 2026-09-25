@@ -375,6 +375,10 @@ class Material extends Prefab {
 			,pbrProps);
 		}
 
+		var materialList = findFirstLocal3d()?.getMaterials();
+		var list = [for (material in materialList) if(material.name != null && material.name != "") {label: material.name, value: material.name}];
+		list.unshift({label: "Any", value: null});
+
 		ctx.build(
 			<category("Overrides")>
 				<file type="texture" field={diffuseMap} label={isPbr ? "Albedo" : "Diffuse"}/>
@@ -383,6 +387,10 @@ class Material extends Prefab {
 				<checkbox field={wrapRepeat} label="Wrap"/>
 				<color field={color} arr/>
 				<input field={mainPassName} label="Pass Name"/>
+				<select(list) field={materialName} onValueChange={(tmp) -> if (!tmp) {
+					ctx.rebuildInspector();
+					ctx.rebuildPrefab(this);
+				}}/>
 			</category>,
 			this,
 			function(_) {
