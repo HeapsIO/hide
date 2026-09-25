@@ -235,7 +235,9 @@ class Box {
 
 		// nodes div
 
-		editor.editorDisplay.line(element, 0, HEADER_HEIGHT, width, HEADER_HEIGHT).addClass("separator");
+		if (!info.noHeader) {
+			editor.editorDisplay.line(element, 0, HEADER_HEIGHT, width, HEADER_HEIGHT).addClass("separator");
+		}
 
 		// var bg = editor.editorDisplay.rect(element, 0, HEADER_HEIGHT, this.width, 0).addClass("nodes");
 		// if (!hasHeader && color != null) {
@@ -355,7 +357,8 @@ class Box {
 	}
 
 	public function getNodeHeight(id: Int) {
-		return NODE_MARGIN * (id+2);
+		var offset = info.noHeader ? 0 : 2;
+		return NODE_MARGIN * (id+offset);
 	}
 
 	public function generateProperties(editor : GraphEditor) {
@@ -403,9 +406,12 @@ class Box {
 		var width = width;
 		var nodesHeight = getNodesHeight();
 		var height = getHeight();
+
+		var noHeaderOffset = info.noHeader ? -NODE_MARGIN / 2 : 0;
+
 		element.find(".nodes").height(nodesHeight).width(width);
-		element.find(".background").attr("height", height).width(width);
-		element.find(".outline").attr("height", height+2).width(width+2);
+		element.find(".background").attr("height", height).width(width).attr("y", noHeaderOffset);
+		element.find(".outline").attr("height", height+2).width(width+2).attr("y", noHeaderOffset);
 
 		if (hasHeader) {
 			element.find(".head-box").width(width);
@@ -425,7 +431,7 @@ class Box {
 			element.find("#commentTitle").attr("width", width - 2);
 		}
 
-		if (inputs.length >= 1 && outputs.length >= 1) {
+		if (inputs.length >= 1 && outputs.length >= 1 && !info.noHeader) {
 			element.find(".nodes-separator").attr("y2", nodesHeight);
 			element.find(".nodes-separator").show();
 		}

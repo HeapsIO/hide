@@ -258,7 +258,11 @@ class ShaderGraphGenContext {
 			node.node.generate(genContext);
 
 			for (outputId => expr in genContext.outputs) {
-				if (expr == null) throw "null expr for output " + outputId;
+				if (expr == null) {
+					// Unconnected reroutes leave their output null so downstream inputs stay unconnected
+					if (Std.isOfType(node.node, hrt.shgraph.nodes.Reroute)) continue;
+					throw "null expr for output " + outputId;
+				}
 				var targets = node.outputs[outputId];
 				if (targets == null) continue;
 				for (target in targets) {
