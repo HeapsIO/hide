@@ -33,8 +33,11 @@ class HuiSlider extends HuiElement {
 			inputText.visible = false;
 			valueText.visible = true;
 			if (textChanged) {
-				value = Std.parseFloat(inputText.text);
-				onValueChanged(false);
+				var newValue = Std.parseFloat(inputText.text);
+				if (hxd.Math.isFinite(newValue)) {
+					value = newValue;
+					onValueChanged(false);
+				}
 			}
 		};
 
