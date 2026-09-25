@@ -430,16 +430,15 @@ class ParticleInstance {
 
 			tmpMat.initRotation(v.x * dt, v.y * dt, v.z * dt);
 
-			// Rotate in emitter space and convert back to world space
-			var parentAbsPos = emitter.parentTransform;
+			// Rotate in emitter space and convert back to particle space
 			var prevPos = getPosition();
-			var pos = prevPos.add(parentAbsPos.getPosition());
-			pos.transform(emitter.getInvPos());
+			var pos = prevPos.clone();
+			pos.transform(emitter.orbitToEmitter);
 			pos.transform3x3(tmpMat);
-			pos.transform(emitter.getAbsPos());
-			x = pos.x - parentAbsPos.tx;
-			y = pos.y - parentAbsPos.ty;
-			z = pos.z - parentAbsPos.tz;
+			pos.transform(emitter.orbitFromEmitter);
+			x = pos.x;
+			y = pos.y;
+			z = pos.z;
 
 			// Take transform into account into local speed
 			var delta = getPosition().sub(prevPos);
@@ -600,6 +599,8 @@ class EmitterObject extends h3d.scene.Object {
 	var colorMultShader : h3d.shader.ColorMult = null;
 
 	var parentTransform = new h3d.Matrix();
+	var orbitToEmitter = new h3d.Matrix();
+	var orbitFromEmitter = new h3d.Matrix();
 	var baseEmitMat : h3d.Matrix;
 	var randomValues : Array<Float>;
 	var randSlots : Int;
@@ -1444,6 +1445,12 @@ class EmitterObject extends h3d.scene.Object {
 		if (particleScaling == None) {
 			var scale = parentTransform.getScale();
 			parentTransform.scale(1.0/scale.x, 1.0/scale.y, 1.0/scale.z);
+		}
+
+		// Particle space <-> emitter space, for orbit speed
+		if (instDef.orbitSpeed != VZero) {
+			orbitToEmitter.multiply(parentTransform, getInvPos());
+			orbitFromEmitter.initInverse(orbitToEmitter);
 		}
 
 		var camPos = scene.camera.pos;
