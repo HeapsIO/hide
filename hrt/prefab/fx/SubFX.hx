@@ -6,6 +6,7 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 
 	@:s public var time(default, set) : Float;
 	@:s public var loop(default, set) : Bool;
+	@:s public var speed(default, set) : Float = 1.0;
 	@:s public var duration : Float;
 
 	var instance : hrt.prefab.fx.FX.FXAnimation;
@@ -21,6 +22,7 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 			if(fxanim != null) {
 				fxanim.startDelay = time;
 			   fxanim.loop = loop;
+				fxanim.playSpeed = speed;
 				instance = fxanim;
 			}
 		}
@@ -34,15 +36,25 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 		return time = v;
 	}
 
+	function set_speed(v) {
+		#if editor
+		if(instance != null)
+			instance.playSpeed = v;
+		#end
+		return speed = v;
+	}
+
 	public function getDuration() {
 		if (instance != null)
-			return instance.duration;
+			return instance.duration / speed;
 		return 0.0;
 	}
 
 	#if editor
-	public function setDuration(v) : Void {
-		duration = v;
+	// stretching the strip changes the playback speed
+	public function setDuration(v : Float) : Void {
+		if (instance != null && instance.duration > 0 && v > 0)
+			speed = instance.duration / v;
 	}
 	#end
 
@@ -75,6 +87,7 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 			<category("Event")>
 				<slider field={time}/>
 				<checkbox field={loop}/>
+				<slider field={speed}/>
 			</category>
 		);
 		super.edit2(ctx);
@@ -88,6 +101,7 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 				<dl>
 					<dt>Time</dt><dd><input type="number" value="0" field="time"/></dd>
 					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
+					<dt>Speed</dt><dd><input type="number" value="1" min="0.01" field="speed"/></dd>
 				</dl>
 			</div>
 		'),this, function(pname) {
@@ -99,8 +113,8 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 	public function getDisplayInfo(ctx:hide.prefab.EditContext) {
 		var ref = Std.downcast(resolve(), FX);
 		return {
-			label: ref != null ? new haxe.io.Path(source).file : "null",
-			length: ref != null ? ref.duration : 1.0,
+			label: ref != null ? new haxe.io.Path(source).file + (speed != 1 ? ' x${hxd.Math.fmt(speed)}' : "") : "null",
+			length: ref != null ? ref.duration / speed : 1.0,
 			loop: loop
 		};
 	}

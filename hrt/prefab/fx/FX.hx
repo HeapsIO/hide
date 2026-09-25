@@ -408,6 +408,11 @@ class FXAnimation extends h3d.scene.Object {
 		seek(newTime, fullsync);
 	}
 
+	// Root FX applies playSpeed in syncRec, sub FX use playSpeed relative to their parent
+	inline function localSpeed() {
+		return parentFX != null ? playSpeed : 1.0;
+	}
+
 	/**
 		newTime is the new time to set, relative to the "parent" timeline
 		dt is the relative delta of time since the last "parent" update
@@ -416,7 +421,10 @@ class FXAnimation extends h3d.scene.Object {
 	public function setTimeInternal(newTimeParent:Float, dt: Float, isSeek: Bool, fullSync: Bool = true) {
 
 		var oldLocalTime = localTime;
-		localTime = newTimeParent - startDelay;
+		var scale = localSpeed();
+		localTime = (newTimeParent - startDelay) * scale;
+		var parentDt = dt;
+		dt *= scale;
 
 		if (isSeek && loop) {
 			if (loopEnd > 0 && localTime >= loopEnd) {
@@ -491,7 +499,7 @@ class FXAnimation extends h3d.scene.Object {
 			}
 
 			#if editor
-			if (isSeek || hxd.Math.abs(dt) > hxd.Timer.dt * 1.5) {
+			if (isSeek || hxd.Math.abs(parentDt) > hxd.Timer.dt * 1.5) {
 				fixEventSeek();
 			}
 			#end
@@ -697,7 +705,7 @@ class FXAnimation extends h3d.scene.Object {
 			instant = true;
 		if (instant == true) {
 			if (localTime < duration)
-				setTimeInternal(startDelay + duration, 0, true, true);
+				setTimeInternal(startDelay + duration / localSpeed(), 0, true, true);
 		} else {
 			stopTime = localTime;
 		}

@@ -683,6 +683,9 @@ class FXEditor extends hide.view.FileView {
 			}
 		}
 
+		if (pname == "speed" && p is hrt.prefab.fx.SubFX)
+			rebuildAnimPanel();
+
 		if (pname == "blendMode" || pname == "remapPath") {
 			var curve = Std.downcast(p, Curve);
 
