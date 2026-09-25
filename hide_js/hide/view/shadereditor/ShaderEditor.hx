@@ -153,6 +153,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var previewShaderAlpha : GraphEditor.PreviewShaderAlpha;
 	var previewVar : hxsl.Ast.TVar;
 	var needRecompile : Bool = true;
+	var needResolveTypes : Bool = true;
 
 	var meshPreviewScene : hide.comp.Scene;
 	var meshPreviewMeshes : Array<h3d.scene.Mesh> = [];
@@ -208,6 +209,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		catch (e) null) ?? Fragment;
 
 		currentGraph = shaderGraph.getGraph(targetGraph);
+		currentGraph.resolveTypes();
 		previewShaderBase = new PreviewShaderBase();
 		previewShaderAlpha = new GraphEditor.PreviewShaderAlpha();
 
@@ -581,6 +583,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		function exec(isUndo : Bool) {
 			var curr = !isUndo ? to : from;
 			currentGraph = shaderGraph.getGraph(curr);
+			currentGraph.resolveTypes();
 			domainSelection.val(haxe.EnumTools.EnumValueTools.getName(curr));
 			graphEditor.reload();
 			graphEditor.centerView();
@@ -1775,6 +1778,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	static var I = h3d.Matrix.I();
 	public function onPreviewUpdate() {
+		checkResolveTypes();
 
 		@:privateAccess
 		{
@@ -2038,6 +2042,16 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	public function requestRecompile() {
 		needRecompile = true;
+		needResolveTypes = true;
+	}
+
+	/** Update the dynamic types of the nodes and the color of their pins after the graph changed **/
+	function checkResolveTypes() {
+		if (!needResolveTypes)
+			return;
+		needResolveTypes = false;
+		currentGraph.resolveTypes();
+		graphEditor.refreshPinColors();
 	}
 
 	public function checkCompileShader() {

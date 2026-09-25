@@ -356,6 +356,25 @@ class Box {
 		return node;
 	}
 
+	/** Update the pins colors from the node current info, without rebuilding the box **/
+	public function refreshPinColors() {
+		var newInfo = node.getInfo();
+		function refresh(pins: Array<JQuery>, infos: Array<{color: Null<Int>}>, newInfos: Array<{color: Null<Int>}>) {
+			if (pins.length != newInfos.length)
+				return;
+			for (i => pin in pins) {
+				var color = newInfos[i].color;
+				if (color == infos[i].color)
+					continue;
+				infos[i].color = color;
+				if (color != null)
+					pin.find(".node-visible").css("fill", '#${StringTools.hex(color, 6)}');
+			}
+		}
+		refresh(inputs, info.inputs, newInfo.inputs);
+		refresh(outputs, info.outputs, newInfo.outputs);
+	}
+
 	public function getNodeHeight(id: Int) {
 		var offset = info.noHeader ? 0 : 2;
 		return NODE_MARGIN * (id+offset);

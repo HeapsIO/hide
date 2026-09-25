@@ -59,13 +59,25 @@ implements hide.view.GraphInterface.IGraphNode
 
 
 	#if editor
+	/** Types of the inputs/outputs with their dynamic types resolved, set by Graph.resolveTypes() (null entries are unresolved) **/
+	public var resolvedInputTypes : Array<Null<SgType>> = null;
+	public var resolvedOutputTypes : Array<Null<SgType>> = null;
+
+	public function getResolvedInputType(id: Int) : Null<SgType> {
+		return (resolvedInputTypes != null ? resolvedInputTypes[id] : null) ?? getInputs()[id]?.type;
+	}
+
+	public function getResolvedOutputType(id: Int) : Null<SgType> {
+		return (resolvedOutputTypes != null ? resolvedOutputTypes[id] : null) ?? getOutputs()[id]?.type;
+	}
+
 	// IGraphNode Interface
 	public function getInfo() : GraphNodeInfo {
 		var metas = haxe.rtti.Meta.getType(HaxeType.getClass(this));
 		return {
 			name: nameOverride ?? (metas.name != null ? metas.name[0] : "undefined"),
 			inputs: [
-				for (i in getInputs()) {
+				for (inputId => i in getInputs()) {
 					var defaultParam = null;
 					if (i.inlineEditable) switch (i.def) {
 						case Const(intialValue):
@@ -77,16 +89,16 @@ implements hide.view.GraphInterface.IGraphNode
 					}
 					{
 						name: i.name,
-						color: getTypeColor(i.type),
+						color: getTypeColor(getResolvedInputType(inputId)),
 						defaultParam: defaultParam,
 					}
 				}
 			],
 			outputs: [
-				for (o in getOutputs()) {
+				for (outputId => o in getOutputs()) {
 					{
 						name: o.name,
-						color: getTypeColor(o.type),
+						color: getTypeColor(getResolvedOutputType(outputId)),
 					}
 				}
 			],

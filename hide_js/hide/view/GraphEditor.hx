@@ -790,6 +790,13 @@ class GraphEditor extends hide.comp.Component {
 		}
 	}
 
+	/** Update the pins colors of all the boxes from their node info **/
+	public function refreshPinColors() {
+		for (box in boxes) {
+			box.refreshPinColors();
+		}
+	}
+
 	public function refreshBox(id: Int) {
 		var node = boxes.get(id).node;
 		removeBox(id);

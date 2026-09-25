@@ -1118,6 +1118,61 @@ class Graph {
 		return parent.getParameter(id);
 	}
 
+	#if editor
+	/**
+		Resolve the type of the dynamic (SgGeneric) inputs/outputs of every node from their connections,
+		using the same rules as NodeGenContext.initForNode, and store them in
+		ShaderNode.resolvedInputTypes/resolvedOutputTypes. When nothing is connected to a generic,
+		it falls back to the most generic type of its constraint if one of its inputs has an inline value,
+		else its ios are left null (unresolved).
+	**/
+	public function resolveTypes() : Void {
+		var ctx = new ShaderGraphGenContext(this, false);
+		@:privateAccess ctx.initNodes();
+		var sortedNodes = @:privateAccess ctx.sortGraph();
+		if (sortedNodes == null)
+			return;
+
+		for (id in sortedNodes) {
+			var node = nodes.get(id);
+			var genericTypes : Array<Type> = [];
+			var inlineConstraints : Array<(Type, Type) -> Null<Type>> = [];
+
+			var inputs = node.getInputs();
+			for (inputId => input in inputs) {
+				switch (input.type) {
+					case SgGeneric(genericId, constraint):
+						if (input.inlineEditable && input.def.match(Const(_)))
+							inlineConstraints[genericId] = constraint;
+						var connection = node.connections[inputId];
+						var incoming = connection?.from.getResolvedOutputType(connection.outputId);
+						if (incoming == null || incoming.match(SgGeneric(_, _)))
+							continue;
+						genericTypes[genericId] = constraint(sgTypeToType(incoming), genericTypes[genericId]) ?? genericTypes[genericId];
+					default:
+				}
+			}
+
+			for (genericId => constraint in inlineConstraints) {
+				if (constraint != null && genericTypes[genericId] == null)
+					genericTypes[genericId] = constraint(null, null);
+			}
+
+			function resolve(type: SgType) : Null<SgType> {
+				return switch (type) {
+					case SgGeneric(genericId, _):
+						genericTypes[genericId] != null ? typeToSgType(genericTypes[genericId]) : null;
+					default:
+						type;
+				}
+			}
+
+			node.resolvedInputTypes = [for (input in inputs) resolve(input.type)];
+			node.resolvedOutputTypes = [for (output in node.getOutputs()) resolve(output.type)];
+		}
+	}
+	#end
+
 	public function hasCycle() : Bool {
 		var ctx = new ShaderGraphGenContext(this, false);
 		@:privateAccess ctx.initNodes();
