@@ -119,6 +119,9 @@ interface IGraphEditor {
     /**Create a comment node. Return null if you don't have a comment node in your editor**/
     public function createCommentNode() : Null<IGraphNode>;
 
+    /**Create a reroute node that can be inserted in the middle of `edge`. Return null if you don't have reroute nodes in your editor**/
+    public function createRerouteNode(edge: Edge) : Null<IGraphNode>;
+
 
     /**Returns false if the edge can't be created because the input/output types don't match**/
     public function canAddEdge(edge : Edge) : Bool;

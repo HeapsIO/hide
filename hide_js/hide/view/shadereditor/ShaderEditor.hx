@@ -1892,6 +1892,21 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		return node;
 	}
 
+	public function createRerouteNode(edge: Edge) : Null<IGraphNode> {
+		var from = currentGraph.getNode(edge.nodeFromId);
+		var type = from?.getOutputs()[edge.outputFromId]?.type;
+		var node : ShaderNode = switch (type) {
+			case SgFloat(_), SgGeneric(_, _): new hrt.shgraph.nodes.Reroute.RerouteFloat();
+			case SgSampler: new hrt.shgraph.nodes.Reroute.RerouteSampler();
+			case SgBool: new hrt.shgraph.nodes.Reroute.RerouteBool();
+			case SgInt: new hrt.shgraph.nodes.Reroute.RerouteInt();
+			case null: return null;
+		}
+		@:privateAccess var newId = currentGraph.current_node_id++;
+		node.setId(newId);
+		return node;
+	}
+
 	public function getAddNodesMenu(currentEdge: Null<Edge>) : Array<AddNodeMenuEntry> {
 		var entries : Array<AddNodeMenuEntry> = [];
 

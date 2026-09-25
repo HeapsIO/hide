@@ -16,6 +16,9 @@ class Reroute extends ShaderNode {
 	var inputs : Array<ShaderNode.InputInfo>;
 	var outputs : Array<ShaderNode.OutputInfo>;
 
+	public function new() {
+	}
+
 	function getRerouteType() : SgType {
 		throw "getRerouteType is not defined for class " + std.Type.getClassName(std.Type.getClass(this));
 	}

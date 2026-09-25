@@ -341,6 +341,10 @@ class TextureEditor extends hide.view.FileView implements GraphInterface.IGraphE
 		return node;
 	}
 
+	public function createRerouteNode(edge: Edge):Null<IGraphNode> {
+		return null;
+	}
+
 	public function canAddEdge(edge: Edge):Bool {
 		return textureGraph.canAddEdge({ outputNodeId: edge.nodeFromId, outputId: edge.outputFromId, inputNodeId: edge.nodeToId, inputId: edge.inputToId });
 	}

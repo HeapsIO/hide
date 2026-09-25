@@ -2620,6 +2620,7 @@ input[type=checkbox].indeterminate:after {
   background: rgba(0, 0, 0, 0);
   border: none;
   overflow-x: hidden;
+  overflow-y: hidden;
   text-wrap: nowrap;
 }
 .graph-view .heaps-scene svg .comment-title br {

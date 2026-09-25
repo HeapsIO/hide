@@ -90,6 +90,9 @@ class GraphEditor extends hide.comp.Component {
 	var edgeCreationOutput : Null<Int> = null;
 	var edgeCreationInput : Null<Int> = null;
 	var edgeCreationMode : EdgeState = None;
+	// Edge clicked by the user, only detached once the pointer moves so double clicks can be detected
+	var pendingEdgeDrag : {output: Int, input: Int, clientX: Float, clientY: Float, pointerId: Int} = null;
+	static final EDGE_DRAG_THRESHOLD = 4.0;
 	var lastCurveX : Float = 0;
 	var lastCurveY : Float = 0;
 	var snapToGrid : Bool = true;
@@ -158,7 +161,7 @@ class GraphEditor extends hide.comp.Component {
 		keys.register("delete", deleteSelection);
 		keys.register("sceneeditor.focus", centerView);
 		keys.register("copy", copySelection);
-		keys.register("paste", paste);
+		keys.register("paste", () -> paste());
 		keys.register("cut", cutSelection);
 		keys.register("shadergraph.hide", onHide);
 		keys.register("selectAll", selectAll);
@@ -227,6 +230,12 @@ class GraphEditor extends hide.comp.Component {
 			if(timerUpdateView != null)
 				stopUpdateViewPosition();
 			if (e.button == 0) {
+				// Click on an edge without dragging it
+				if (pendingEdgeDrag != null) {
+					pendingEdgeDrag = null;
+					return;
+				}
+
 				// Stop rectangle selection
 				if (edgeCreationInput != null || edgeCreationOutput != null) {
 					if (edgeCreationInput != null && edgeCreationOutput != null) {
@@ -625,6 +634,17 @@ class GraphEditor extends hide.comp.Component {
 			});
 		}
 
+		if (edge == null) {
+			var hasSelection = boxesSelected.iterator().hasNext();
+			var pastePos = lastOpenAddMenuPoint.clone();
+			menu.push({isSeparator: true});
+			menu.push({label: "Cut", click: cutSelection, enabled: hasSelection, keys: config.get("key.cut")});
+			menu.push({label: "Copy", click: copySelection, enabled: hasSelection, keys: config.get("key.copy")});
+			menu.push({label: "Paste", click: () -> paste(pastePos), keys: config.get("key.paste")});
+			menu.push({label: "Delete selection", click: deleteSelection, enabled: hasSelection, keys: config.get("key.delete")});
+			menu.push({label: "Comment selection", click: commentFromSelection, enabled: hasSelection, keys: config.get("key.shadergraph.comment")});
+		}
+
 		contextMenu = hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu, {search: Visible, noIcons: true, flat: nodes.length < 10});
 		contextMenu.onClose = () -> {
 			contextMenu = null;
@@ -637,6 +657,12 @@ class GraphEditor extends hide.comp.Component {
 
 		if (contextMenu != null)
 			return;
+
+		if (pendingEdgeDrag != null) {
+			if (hxd.Math.distance(clientX - pendingEdgeDrag.clientX, clientY - pendingEdgeDrag.clientY) < EDGE_DRAG_THRESHOLD)
+				return;
+			beginEdgeDrag();
+		}
 
 		if (edgeCreationInput != null || edgeCreationOutput != null) {
 			startUpdateViewPosition();
@@ -1043,6 +1069,48 @@ class GraphEditor extends hide.comp.Component {
 			undoBuffer.push(exec);
 			exec(false);
 		}
+	}
+
+	/** Detach the edge the user clicked on and start moving the end that was closest to the click **/
+	function beginEdgeDrag() {
+		var drag = pendingEdgeDrag;
+		pendingEdgeDrag = null;
+
+		opEdge(drag.output, drag.input, false, currentUndoBuffer);
+
+		heapsScene.get(0).setPointerCapture(drag.pointerId);
+
+		var start = boxes[unpackIO(drag.output).nodeId].outputs[unpackIO(drag.output).ioId].offset();
+		var end = boxes[unpackIO(drag.input).nodeId].inputs[unpackIO(drag.input).ioId].offset();
+		if (hxd.Math.distance(drag.clientX - start.left, drag.clientY - start.top) < hxd.Math.distance(drag.clientX - end.left, drag.clientY - end.top)) {
+			edgeCreationInput = drag.input;
+			edgeCreationMode = FromInput;
+		} else {
+			edgeCreationOutput = drag.output;
+			edgeCreationMode = FromOutput;
+		}
+	}
+
+	/** Split the edge between output and input by inserting a reroute node at x,y (in graph coordinates) **/
+	function insertReroute(output: Int, input: Int, x: Float, y: Float) {
+		var node = editor.createRerouteNode(edgeFromPack(output, input));
+		if (node == null)
+			return;
+		node.editor = this;
+
+		opEdge(output, input, false, currentUndoBuffer);
+
+		tmpPoint.set(x, y);
+		node.setPos(tmpPoint);
+		opBox(node, true, currentUndoBuffer);
+
+		// Center the reroute pins on the click position
+		var box = boxes[node.id];
+		opMove(box, x - @:privateAccess box.width / 2, y - box.getNodeHeight(0), currentUndoBuffer);
+
+		opEdge(output, packIO(node.id, 0), true, currentUndoBuffer);
+		opEdge(packIO(node.id, 0), input, true, currentUndoBuffer);
+		commitUndo();
 	}
 
 	function finalizeUserCreateEdge() {
@@ -1475,7 +1543,8 @@ class GraphEditor extends hide.comp.Component {
 		}
 	}
 
-	function paste() {
+	/** Paste the clipboard content centered on pos (in graph coordinates), or on the mouse if pos is null **/
+	function paste(?pos: h2d.col.Point) {
 		var nodes : Array<IGraphNode> = [];
 		var idRemap : Map<Int, Int> = [];
 		var edges : Array<Edge> = [];
@@ -1517,8 +1586,8 @@ class GraphEditor extends hide.comp.Component {
 		for (node in nodes) {
 			node.getPos(pt);
 			pt -= offset;
-			pt.x += lX(ide.mouseX);
-			pt.y += lY(ide.mouseY);
+			pt.x += pos?.x ?? lX(ide.mouseX);
+			pt.y += pos?.y ?? lY(ide.mouseY);
 			node.setPos(pt);
 			opBox(node, true, currentUndoBuffer);
 			opSelect(node.id, true, currentUndoBuffer);
@@ -1595,29 +1664,26 @@ class GraphEditor extends hide.comp.Component {
 			curveHitbox.on("pointerdown", function(e) {
 
 				if (e.button == 0) {
-					opEdge(packedOutput, packedInput, false, currentUndoBuffer);
-
-					heapsScene.get(0).setPointerCapture(e.pointerId);
-
-					var mx = lX(e.clientX);
-					var my = lY(e.clientY);
-					if (hxd.Math.distance(mx - startX, my - startY, 0) < hxd.Math.distance(mx - endX, my - endY, 0)) {
-						edgeCreationInput = packedInput;
-						edgeCreationMode = FromInput;
-					} else {
-						edgeCreationOutput = packedOutput;
-						edgeCreationMode = FromOutput;
-					}
-
+					pendingEdgeDrag = {output: packedOutput, input: packedInput, clientX: e.clientX, clientY: e.clientY, pointerId: e.pointerId};
 
 					e.preventDefault();
 					e.stopPropagation();
 				}
 			});
 
+			curveHitbox.on("dblclick", function(e) {
+				pendingEdgeDrag = null;
+				insertReroute(packedOutput, packedInput, lX(e.clientX), lY(e.clientY));
+				e.preventDefault();
+				e.stopPropagation();
+			});
+
 			curveHitbox.get(0).oncontextmenu = function(e: js.html.MouseEvent) {
+				var x = lX(e.clientX);
+				var y = lY(e.clientY);
 				hide.comp.ContextMenu.createFromEvent(e, [
-					{label: "Delete ?", click: function() {
+					{label: "Create Reroute", click: () -> insertReroute(packedOutput, packedInput, x, y)},
+					{label: "Delete", click: function() {
 							var edge = edgeFromPack(packedOutput, packedInput);
 							opEdge(packedOutput, packedInput, false, currentUndoBuffer);
 							commitUndo();

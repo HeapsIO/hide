@@ -158,6 +158,10 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
         throw "implement";
     }
 
+    public function createRerouteNode(edge: Edge) : Null<IGraphNode> {
+        return null;
+    }
+
     public function canAddEdge(edge : Edge) : Bool {
         throw "implement";
     }
