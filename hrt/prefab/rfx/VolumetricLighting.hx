@@ -218,18 +218,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 			F0 = mix(pbrSpecularColor, albedoGamma, metalness);
 
-			// Dir Light With Shadow
-			@unroll for( l in 0 ... MAX_DIR_SHADOW_COUNT ) {
-				if ( l < dirShadowCount ) {
-					var c = evaluateDirLight(l);
-					if ( dot(c, c) > 1e-6 )
-						c *= evaluateDirShadow(l);
-					lightAccumulation += c;
-				}
-			}
-			// Dir Light
-			for( l in dirShadowCount ... dirLightCount )
-				lightAccumulation += evaluateDirLight(l);
+			lightAccumulation = accumulateLights(lightAccumulation, LIGHT_DIR, dirShadowCount, dirLightCount, MAX_DIR_SHADOW_COUNT);
 
 			// Cascade shadows
 			if ( CASCADE_COUNT > 0 ) {
@@ -252,29 +241,14 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 			F0 = mix(pbrSpecularColor, albedoGamma, metalness);
 
-			// Dir Light With Shadow
-			@unroll for( l in 0 ... MAX_DIR_SHADOW_COUNT ) {
-				if ( l < dirShadowCount ) {
-					var c = evaluateDirLight(l);
-					if ( dot(c, c) > 1e-6 )
-						c *= evaluateDirShadow(l);
-					lightAccumulation += c;
-				}
+			if( CLUSTERED ) {
+				var cluster = clusterIndex();
+				clusterCounts = clusterData[cluster];
+				clusterStart = cluster + 1;
 			}
-			// Dir Light
-			for( l in dirShadowCount ... dirLightCount )
-				lightAccumulation += evaluateDirLight(l);
 
-			// Spot Light With Shadow
-			@unroll for( l in 0 ... MAX_SPOT_SHADOW_COUNT ) {
-				var c = evaluateSpotLight(l);
-				if ( dot(c, c) > 1e-6 )
-					c *= evaluateSpotShadow(l);
-				lightAccumulation += c;
-			}
-			// Spot Light
-			for( l in spotShadowCount ... spotLightCount + spotShadowCount )
-				lightAccumulation += evaluateSpotLight(l);
+			lightAccumulation = accumulateLights(lightAccumulation, LIGHT_DIR, dirShadowCount, dirLightCount, MAX_DIR_SHADOW_COUNT);
+			lightAccumulation = accumulateLights(lightAccumulation, LIGHT_SPOT, spotShadowCount, spotLightCount, MAX_SPOT_SHADOW_COUNT);
 
 			// Cascade shadows
 			if ( CASCADE_COUNT > 0 ) {
@@ -298,6 +272,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var transmittance = exp(-extinction*stepSize);
 
 			var emissiveLum = emissiveIntensity * emissiveColor;
+			projectedPosition = vec4(transformedPosition, 1) * camera.viewProj;
 
 			var lighting = vec3(0);
 			switch ( MODE ) {
