@@ -8,7 +8,7 @@
 		"show" : true
 	},
 	"main" : "app.html",
-	"chromium-args":"--enable-spell-checking",
+	"chromium-args":"--enable-spell-checking --disable-features=AllowSoftwareGLFallbackDueToCrashes",
 	"js-flags": "--expose-gc",
 	"dependencies": {
 		"mongodb": "^3.2.2"
