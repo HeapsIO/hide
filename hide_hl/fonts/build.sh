@@ -18,3 +18,6 @@ build Inter-Regular-cv05-cv08-tnum-13pt
 build Inter-Regular-cv05-cv08-tnum-26pt
 build Inter-Italic-cv05-cv08-tnum-13pt
 build Inter-Italic-cv05-cv08-tnum-26pt
+
+build Iosevka-Regular-15pt
+build Iosevka-Regular-30pt

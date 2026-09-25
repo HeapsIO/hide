@@ -5,6 +5,11 @@ package hrt.ui;
 class HuiTextInput extends h2d.TextInput implements h2d.domkit.Object {
 	@:p public var baseFont(never, set) : String;
 
+	function set_baseFont(v : String) {
+		font = HuiText.loadFontStatic(v, false);
+		return v;
+	}
+
 	public function new(?txt : String, ?maxCharacters: Int, ?parent) {
 		super(hxd.res.DefaultFont.get(), parent);
 		initComponent();
@@ -59,10 +64,7 @@ class HuiTextInput extends h2d.TextInput implements h2d.domkit.Object {
 	}
 
 
-	function set_baseFont(v : String) {
-		font = HuiText.loadFontStatic(v, false);
-		return v;
-	}
+
 
 	public var preventDefault: Bool = false;
 }

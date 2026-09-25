@@ -35,6 +35,11 @@ class GymWidgets extends HuiElement {
 
 	static var SRC =
 		<gym-widgets>
+			<hui-text("hui-code-editor")/>
+			<hui-element class="example">
+				<hui-code-editor id="code-editor"/>
+			</hui-element>
+
 
 			<hui-text("hui-virtual-grid")/>
 			<hui-element class="example">

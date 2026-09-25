@@ -62,6 +62,7 @@ class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
 		"regular" => ["font/Inter-Regular-cv05-cv08-tnum-13pt.fnt", "font/Inter-Regular-cv05-cv08-tnum-26pt.fnt"],
 		"regular-small" => ["font/Inter-Regular-cv05-cv08-tnum-10pt.fnt", "font/Inter-Regular-cv05-cv08-tnum-20pt.fnt"],
 		"italic" => ["font/Inter-Italic-cv05-cv08-tnum-13pt.fnt", "font/Inter-Italic-cv05-cv08-tnum-26pt.fnt"],
+		"code" => ["font/Iosevka-Regular-15pt.fnt", "font/Iosevka-Regular-30pt.fnt"],
 	];
 
 	static var bitmapFontCache: Map<String, Array<h2d.Font>> = [];

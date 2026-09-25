@@ -1,0 +1,40 @@
+hui-code-editor-internal, #line-numbers {
+	base-font: "code";
+	valign: top;
+}
+
+#line-numbers {
+	text-align: multiline-right;
+}
+
+hui-code-tip {
+	position: absolute;
+	layout: vertical;
+	padding: 4 8;
+
+	min-width: 200;
+
+	> hui-background {
+		background: @color-gray-5;
+	}
+
+
+	.c {
+		fill-width: 1;
+		auto-size-width: 1;
+		padding: 2;
+	}
+	.name {
+		base-font: "code";
+	}
+	.sel {
+		> hui-background {
+			background: @color-accent;
+		}
+	}
+}
+
+hui-code-editor {
+	layout: horizontal;
+	spacing: 4;
+}
