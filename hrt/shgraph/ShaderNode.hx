@@ -103,19 +103,21 @@ implements hide.view.GraphInterface.IGraphNode
 	static function getTypeColor(type: SgType) : Int {
 		return switch (type) {
 			case SgFloat(1):
-				0x00ff73;
+				0x179299;
 			case SgFloat(2):
-				0x5eff00;
+				0x40a02b;
 			case SgFloat(3):
-				0xeeff00;
+				0xdf8e1d;
 			case SgFloat(4):
-				0xfc6703;
+				0xfe640b;
 			case SgInt:
-				0x00ffea;
+				0x04a5e5;
 			case SgSampler:
-				0x600aff;
+				0x8839ef;
+			case SgBool:
+				0xd20f39;
 			default:
-				0xc8c8c8;
+				0xbcc0cc;
 		}
 	}
 
