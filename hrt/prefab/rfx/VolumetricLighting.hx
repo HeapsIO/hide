@@ -272,7 +272,6 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var transmittance = exp(-extinction*stepSize);
 
 			var emissiveLum = emissiveIntensity * emissiveColor;
-			projectedPosition = vec4(transformedPosition, 1) * camera.viewProj;
 
 			var lighting = vec3(0);
 			switch ( MODE ) {
