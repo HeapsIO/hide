@@ -6,13 +6,18 @@ class TextureRotate extends hxsl.Shader {
 
 		@param @range(0,360) var rotate = 0.0;
 		@param var rotateCenter : Vec2 = vec2(0.5,0.5);
+		@const var flipX : Bool;
+		@const var flipY : Bool;
 
 		var calculatedUV : Vec2;
 
         function fragment() {
 			var a = rotate * 2 * 3.14159265 / 360.0;
 			var m = mat2(vec2(cos(a), -sin(a)), vec2(sin(a), cos(a)));
-			calculatedUV = (calculatedUV - rotateCenter) * m + rotateCenter;
+			var uv = calculatedUV;
+			if( flipX ) uv.x = 1 - uv.x;
+			if( flipY ) uv.y = 1 - uv.y;
+			calculatedUV = (uv - rotateCenter) * m + rotateCenter;
         }
 	};
 }
