@@ -61,10 +61,19 @@ class HuiPropsInspector extends HuiElement {
 			var fieldName = c.name;
 			switch (c.type) {
 				case TId, TString, TDynamic, TFile:
-					var el = new HuiInputBox(field);
-					el.text = Reflect.field(props, fieldName);
-					el.onChange = (isTempValue) -> { if (isTempValue) return; onValueChanged(props, fieldName, el.text); };
-					insp = el;
+					if (c.kind == Script) {
+						var el = new HuiCodeEditor(field);
+						el.value = Reflect.field(props, fieldName);
+						@:privateAccess el.editor.onFocusLost = (e) -> {
+							onValueChanged(props, fieldName, el.value);
+						}
+						insp = el;
+					} else {
+						var el = new HuiInputBox(field);
+						el.text = Reflect.field(props, fieldName);
+						el.onChange = (isTempValue) -> { if (isTempValue) return; onValueChanged(props, fieldName, el.text); };
+						insp = el;
+					}
 				case TBool:
 					var el = new HuiCheckbox(field);
 					el.value = Reflect.field(props, fieldName);

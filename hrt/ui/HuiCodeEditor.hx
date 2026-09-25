@@ -36,10 +36,23 @@ class HuiCodeEditor extends HuiElement {
 	static var SRC =
 		<hui-code-editor>
 			<hui-text id="line-numbers"/>
-			<hui-code-editor-internal id="editor" public></hui-code-editor-internal>
+			<hui-code-editor-internal id="editor"></hui-code-editor-internal>
 		</hui-code-editor>
 
 	public var currentTip : HuiCodeTip;
+
+	public var value(get, set) : String;
+	function get_value() {
+		return editor.text;
+	}
+
+	function set_value(v) {
+		editor.text = v;
+		syncColors();
+		syncLines();
+		return editor.text;
+	}
+
 
 	public function new(?parent) {
 		super(parent);
@@ -50,8 +63,6 @@ class HuiCodeEditor extends HuiElement {
 			syncLines();
 			syncColors();
 		}
-		syncLines();
-		syncColors();
 	}
 
 	public dynamic function onCodeChange() {

@@ -5,6 +5,7 @@ hui-code-editor-internal, #line-numbers {
 
 #line-numbers {
 	text-align: multiline-right;
+	min-width: 20;
 }
 
 hui-code-tip {
@@ -37,4 +38,12 @@ hui-code-tip {
 hui-code-editor {
 	layout: horizontal;
 	spacing: 4;
+	padding: 4;
+
+	height: 250;
+
+	> hui-background {
+		border-radius: 4;
+		outline: 1 @widget-border;
+	}
 }
