@@ -405,8 +405,6 @@ class VolumetricLighting extends RendererFX {
 
 	@:s public var offsetCamHeight : Bool = false;
 
-	var noiseTex : h3d.mat.Texture;
-
 	function execute(r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step) {
 		if( step == BeforeTonemapping ) {
 			if ( distanceOpacity <= 0.0 )
@@ -414,9 +412,6 @@ class VolumetricLighting extends RendererFX {
 
 			var r = cast(r, h3d.scene.pbr.Renderer);
 			r.mark("VolumetricLighting");
-
-			if ( noiseTex == null )
-				noiseTex = makeNoiseTex();
 
 			var depth = r.textures.albedo.depthBuffer;
 
@@ -501,7 +496,11 @@ class VolumetricLighting extends RendererFX {
 			execute(r, step);
 	}
 
-	function makeNoiseTex() : h3d.mat.Texture {
+	static function getNoiseTex() : h3d.mat.Texture {
+		var resCache = @:privateAccess h3d.Engine.getCurrent().resCache;
+		var tex : h3d.mat.Texture = resCache.get("volumetricNoise");
+		if ( tex != null && !tex.isDisposed() )
+			return tex;
 		var rands : Array<Int> = [];
 		var rand = new hxd.Rand(0);
 		for(x in 0...256)
@@ -518,9 +517,10 @@ class VolumetricLighting extends RendererFX {
 				pix.bytes.set(off+3, 255);
 			}
 		}
-		var tex = new h3d.mat.Texture(pix.width, pix.height, [], RGBA);
+		tex = new h3d.mat.Texture(pix.width, pix.height, [], RGBA);
 		tex.uploadPixels(pix);
 		tex.wrap = Repeat;
+		resCache.set("volumetricNoise", tex);
 		return tex;
 	}
 
@@ -534,7 +534,7 @@ class VolumetricLighting extends RendererFX {
 		vshader.steps = steps;
 		vshader.ditheringSize.set(vshader.ditheringNoise.width, vshader.ditheringNoise.height);
 		vshader.ditheringIntensity = ditheringIntensity;
-		vshader.noiseTex = noiseTex;
+		vshader.noiseTex = getNoiseTex();
 		vshader.noiseScale = noiseScale;
 		vshader.noiseOctave = noiseOctave;
 		vshader.noiseTurmoil = noiseTurmoil;
