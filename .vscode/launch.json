@@ -38,6 +38,7 @@
             "type": "chrome",
             "request": "attach",
             "name": "Attach to HIDE",
+            "address": "127.0.0.1",
             "port": 9222,
             "webRoot": "${workspaceFolder}/bin",
             "preLaunchTask": "Build"
@@ -46,6 +47,7 @@
             "type": "chrome",
             "request": "attach",
             "name": "Attach to HIDE (chrome)",
+            "address": "127.0.0.1",
             "port": 9222,
             "preLaunchTask": "Build",
 			"sourceMaps": true,
