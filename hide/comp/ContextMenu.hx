@@ -1,20 +1,5 @@
 package hide.comp;
 
-typedef MenuItem = {
-    ?label: String,
-    ?isSeparator: Bool,
-    ?menu: Array<MenuItem>,
-    ?click: Void -> Void,
-    ?enabled: Bool,
-    ?stayOpen : Bool,
-    ?icon: String,
-    ?keys: String,
-    ?checked: Bool,
-    ?tooltip: String,
-    ?radio: () -> Bool, // Radio button instead of checked.
-	?color: Int
-}
-
 #if js
 
 // for retrocompat with the old menu system

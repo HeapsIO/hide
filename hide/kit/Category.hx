@@ -93,12 +93,15 @@ class Category extends Widget<Null<Bool>> {
 		if (index == parent.children.length-1) {
 			hlCategory.dom.addClass('flush-last');
 		}
-		openState = true;
 		hlCategory.headerName = name;
+		hlCategory.onToggle = () -> toggleOpenState();
+		openState = getSetting(SameKind, "openState") ?? !closed;
+		addEditMenu(hlCategory);
+		refresh();
 		#end
 	}
 
-	override function getEditMenuContent() : Array<hide.comp.ContextMenu.MenuItem> {
+	override function getEditMenuContent() : Array<hrt.ui.HuiMenu.MenuItem> {
 		var content = super.getEditMenuContent();
 		content.unshift({isSeparator: true});
 		content.unshift({label: "Collapse", click: collapse});
@@ -180,7 +183,11 @@ class Category extends Widget<Null<Bool>> {
 	}
 
 	function refresh() {
+		#if js
 		native.toggleClass("open", openState);
+		#elseif hui
+		hlCategory.isOpen = openState;
+		#end
 	}
 }
 

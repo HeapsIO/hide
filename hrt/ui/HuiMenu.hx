@@ -1,7 +1,5 @@
 package hrt.ui;
 
-#if hui
-
 typedef MenuItem = {
     ?label: String,
     ?isSeparator: Bool,
@@ -16,6 +14,8 @@ typedef MenuItem = {
     ?radio: () -> Bool, // Radio button instead of checked.
 	?color: Int
 }
+
+#if hui
 
 typedef MenuOptions = {
 };

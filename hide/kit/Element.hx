@@ -250,7 +250,7 @@ class Element {
 		}
 	}
 
-	function getEditMenuContent() : Array<hide.comp.ContextMenu.MenuItem> {
+	function getEditMenuContent() : Array<hrt.ui.HuiMenu.MenuItem> {
 		return [
 			{label: "Copy", click: copyToClipboard, enabled: canCopy()},
 			{label: "Paste", click: pasteFromClipboard, enabled: canPaste()},
@@ -274,19 +274,26 @@ class Element {
 		newChild.root = this.root;
 	}
 
-	function addEditMenu(e: NativeElement) {
-		#if js
+	function addEditMenu(el: NativeElement) {
 		if (!disabled) {
-			native.get().addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
-				if ((cast e.target:js.html.Element).closest(".is-cdb-editor") != null)
-					return;
-				e.preventDefault();
-				e.stopPropagation();
+		#if js
+		el.get().addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
+			if ((cast e.target:js.html.Element).closest(".is-cdb-editor") != null)
+				return;
+			e.preventDefault();
+			e.stopPropagation();
 
-				hide.comp.ContextMenu.createFromEvent(e, getEditMenuContent());
-			});
+			hide.comp.ContextMenu.createFromEvent(e, getEditMenuContent());
+		});
+		#elseif hui
+		var element = Std.downcast(el.get(), hrt.ui.HuiElement);
+		element?.onClick = (e) -> {
+			if (e.button != hxd.Key.MOUSE_RIGHT)
+				return;
+			element.uiBase.contextMenu(getEditMenuContent());
 		}
 		#end
+		}
 	}
 
 	function canCopy() : Bool {

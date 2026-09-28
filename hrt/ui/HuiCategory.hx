@@ -22,12 +22,24 @@ class HuiCategory extends HuiElement {
 		initComponent();
 		this.headerName = headerName;
 
+		header.onPush = (e) -> {
+			if (e.button != hxd.Key.MOUSE_LEFT)
+				e.propagate = true;
+		};
+
 		header.onClick = (e) -> {
-			isOpen = !isOpen;
+			if (e.button != hxd.Key.MOUSE_LEFT) {
+				e.propagate = true;
+				return;
+			}
+
+			onToggle();
 		};
 
 		isOpen = isOpen;
 	}
+
+	public dynamic function onToggle() { isOpen = !isOpen; }
 
 	function refreshStyle() {
 		dom.toggleClass("open", isOpen);
