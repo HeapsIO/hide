@@ -652,7 +652,7 @@ class Reference extends Object3D {
 		editor.view.undo.change(Custom(exec));
 	}
 
-	static function onContextMenu(selection: Array<hrt.prefab.Prefab>) : Array<hide.comp.ContextMenu.MenuItem> {
+	static function onContextMenu(selection: Array<hrt.prefab.Prefab>) : Array<hrt.ui.HuiMenu.MenuItem> {
 		return [{
 			label: "Break References",
 			click: () -> {

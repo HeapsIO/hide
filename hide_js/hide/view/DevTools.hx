@@ -38,7 +38,7 @@ class DevTools extends hide.ui.View<{ profileFilePath : String }> {
 			watch(this.state.profileFilePath, () -> openProfile());
 	}
 
-	override function buildTabMenu():Array<hide.comp.ContextMenu.MenuItem> {
+	override function buildTabMenu():Array<hrt.ui.HuiMenu.MenuItem> {
 		var menu = super.buildTabMenu();
 		menu.push({isSeparator: true});
 		menu.push({label: "Debug", click: () -> {

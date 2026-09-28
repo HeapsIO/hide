@@ -11,7 +11,7 @@ class AnimPicker extends hide.comp.Component {
 
 		button.label = get();
 
-		var items : Array<hide.comp.ContextMenu.MenuItem> = [];
+		var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 		function setPointPath(path: String) {
 			var old = get();

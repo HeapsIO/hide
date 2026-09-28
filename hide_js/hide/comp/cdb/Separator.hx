@@ -63,7 +63,7 @@ class Separator extends Component {
 					allowedParents.push(prevSibling);
 			}
 
-			var opts : Array<hide.comp.ContextMenu.MenuItem> = [
+			var opts : Array<hrt.ui.HuiMenu.MenuItem> = [
 				{ label : "Expand", click : function() expand(), enabled: data.title != null },
 				{ label : "Collapse", click : function() collapse(), enabled: data.title != null },
 				{

@@ -1031,8 +1031,8 @@ class TerrainEditor {
 			var surfaceElem = new Element('<div class=" surface"><span class="tooltiptext">$label</span></div>').prepend(img);
 			surfaceElem.contextmenu(function(e) {
 				e.preventDefault();
-				var cmi :Array< hide.comp.ContextMenu.MenuItem> = [];
-				var delete : hide.comp.ContextMenu.MenuItem = {label : "Delete"};
+				var cmi :Array< hrt.ui.HuiMenu.MenuItem> = [];
+				var delete : hrt.ui.HuiMenu.MenuItem = {label : "Delete"};
 				delete.click = function(){
 					removeSurface(i, function(){refreshSurfaces(props, ctx);});
 				};

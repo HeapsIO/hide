@@ -83,7 +83,7 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 		}
 
 		function addNewInstances() {
-			var items = new Array<hide.comp.ContextMenu.MenuItem>();
+			var items = new Array<hrt.ui.HuiMenu.MenuItem>();
 			for(type in DataFiles.getAvailableTypes() ) {
 				var typeId = DataFiles.getTypeName(type);
 				var label = typeId.charAt(0).toUpperCase() + typeId.substr(1);
@@ -103,7 +103,7 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 				}
 
 				if(idCol != null && refSheet.props.dataFiles == null ) {
-					var kindItems = new Array<hide.comp.ContextMenu.MenuItem>();
+					var kindItems = new Array<hrt.ui.HuiMenu.MenuItem>();
 					for(line in refSheet.lines) {
 						var kind : String = Reflect.getProperty(line, idCol.name);
 						kindItems.push({
@@ -852,8 +852,8 @@ class Prefab extends hide.view.FileView {
 		}
 	}
 
-	function filtersToMenuItem(filters : Map<String, Bool>, type : String) : Array<hide.comp.ContextMenu.MenuItem> {
-		var content : Array<hide.comp.ContextMenu.MenuItem> = [];
+	function filtersToMenuItem(filters : Map<String, Bool>, type : String) : Array<hrt.ui.HuiMenu.MenuItem> {
+		var content : Array<hrt.ui.HuiMenu.MenuItem> = [];
 		var initDone = false;
 		for(typeid in filters.keys()) {
 			if ( type == "View" ) {

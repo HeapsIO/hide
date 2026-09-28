@@ -1,5 +1,7 @@
 package hrt.ui;
 
+typedef MenuIcon = #if js String #else hxd.res.Image #end;
+
 typedef MenuItem = {
     ?label: String,
     ?isSeparator: Bool,
@@ -7,7 +9,7 @@ typedef MenuItem = {
     ?click: Void -> Void,
     ?enabled: Bool,
     ?stayOpen : Bool,
-    ?icon: hxd.res.Image,
+    ?icon: MenuIcon,
     ?keys: String,
     ?checked: Bool,
     ?tooltip: String,

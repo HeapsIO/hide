@@ -370,7 +370,7 @@ class Gym extends hide.ui.View<{}> {
 		sock = null;
 	}
 
-	static function getContextMenuContent() : Array<hide.comp.ContextMenu.MenuItem> {
+	static function getContextMenuContent() : Array<hrt.ui.HuiMenu.MenuItem> {
 
 		var radioState = 0;
 		return [

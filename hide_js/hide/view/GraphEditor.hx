@@ -622,9 +622,9 @@ class GraphEditor extends hide.comp.Component {
 			commitUndo();
 		}
 
-		var menu : Array<hide.comp.ContextMenu.MenuItem> = [];
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [];
 		for (group => entries in groups) {
-			var submenu: Array<hide.comp.ContextMenu.MenuItem> = [];
+			var submenu: Array<hrt.ui.HuiMenu.MenuItem> = [];
 			for (entry in entries) {
 				submenu.push({label: entry.name, click: doAdd.bind(entry.onConstructNode), tooltip: entry.description});
 			}

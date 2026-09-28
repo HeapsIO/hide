@@ -40,7 +40,7 @@ class Object3dRef extends Widget<String> {
 		var entries = getNamedObjects();
 
 		select.get().onclick = (e: js.html.MouseEvent) -> {
-			var selectEntries: Array<hide.comp.ContextMenu.MenuItem> = [for (i => entry in entries) {label: entry.label, click: valueChanged.bind(entry.value)}];
+			var selectEntries: Array<hrt.ui.HuiMenu.MenuItem> = [for (i => entry in entries) {label: entry.label, click: valueChanged.bind(entry.value)}];
 			if (dropdown == null) {
 				dropdown = hide.comp.ContextMenu.createDropdown(select, selectEntries);
 				dropdown.onClose = () -> {

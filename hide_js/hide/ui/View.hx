@@ -317,7 +317,7 @@ class View<T> extends hide.comp.Component {
 		@:privateAccess ide.lastClosedTabStates.push(state);
 	}
 
-	function buildTabMenu() : Array<hide.comp.ContextMenu.MenuItem> {
+	function buildTabMenu() : Array<hrt.ui.HuiMenu.MenuItem> {
 		if( @:privateAccess ide.subView != null )
 			return [];
 		return [

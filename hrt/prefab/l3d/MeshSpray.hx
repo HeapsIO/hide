@@ -670,7 +670,7 @@ class MeshSpray extends Spray {
 		};
 	}
 
-	static function onContextMenu(selection: Array<hrt.prefab.Prefab>) : Array<hide.comp.ContextMenu.MenuItem> {
+	static function onContextMenu(selection: Array<hrt.prefab.Prefab>) : Array<hrt.ui.HuiMenu.MenuItem> {
 		return [{
 			label: "Set To Ground",
 			click: () -> {

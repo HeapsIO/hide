@@ -472,7 +472,7 @@ class MemProfilerSearchBar extends hide.comp.Component {
 		refreshSearchBar();
 		haxe.Timer.delay(() -> searchBtn.click(), 1);
 	}
-	function buildHistoryMenu( begin : Int, end : Int ) : Array<hide.comp.ContextMenu.MenuItem> {
+	function buildHistoryMenu( begin : Int, end : Int ) : Array<hrt.ui.HuiMenu.MenuItem> {
 		var items = [];
 		for( i in begin...end ) {
 			if( searchHistory[i] != null ) {

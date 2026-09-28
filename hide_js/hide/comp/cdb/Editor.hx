@@ -2158,7 +2158,7 @@ class Editor extends Component {
 			return;
 		var sheet = table.getRealSheet();
 		var indexColumn = sheet.columns.indexOf(col);
-		var menu : Array<hide.comp.ContextMenu.MenuItem> = [
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [
 			{ label : "Edit", click : function () editColumn(sheet, col) },
 			{
 				label : "Add Column",
@@ -2291,7 +2291,7 @@ class Editor extends Component {
 
 	public function popupLine( line : Line ) {
 		var sheet = line.table.sheet;
-		var remoteMenu: Array<hide.comp.ContextMenu.MenuItem> = [];
+		var remoteMenu: Array<hrt.ui.HuiMenu.MenuItem> = [];
 		if (sheet.idCol != null) {
 			var id = Reflect.field(line.obj, sheet.idCol.name);
 			remoteMenu.append(hide.view.RemoteConsoleView.getCdbMenuActions(sheet.name, id));
@@ -2316,8 +2316,8 @@ class Editor extends Component {
 				break;
 			}
 
-		var moveSubmenu : Array<hide.comp.ContextMenu.MenuItem> = [];
-		var moveStack : Array<hide.comp.ContextMenu.MenuItem> = [];
+		var moveSubmenu : Array<hrt.ui.HuiMenu.MenuItem> = [];
+		var moveStack : Array<hrt.ui.HuiMenu.MenuItem> = [];
 		for( sepIndex => sep in sheet.separators ) {
 			if( sep.title == null )
 				continue;
@@ -2388,7 +2388,7 @@ class Editor extends Component {
 		if( sheet.parent == null )
 			checkRec(sheet);
 
-		var menu : Array<hide.comp.ContextMenu.MenuItem> = [
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [
 			{
 				label : "Move Up",
 				enabled:  (firstLine.index > 0 || sepIndex >= 0),
@@ -2525,7 +2525,7 @@ class Editor extends Component {
 	}
 
 	function categoriesMenu(categories: Array<String>, setFunc : Array<String> -> Void) {
-		var menu : Array<ContextMenu.MenuItem> = [{ label : "Set...", click : function() {
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [{ label : "Set...", click : function() {
 			var wstr = "";
 			if(categories != null)
 				wstr = categories.join(",");
@@ -2590,7 +2590,7 @@ class Editor extends Component {
 		if( onChange == null ) onChange = function() {}
 		var index = base.sheets.indexOf(sheet);
 
-		var content : Array<ContextMenu.MenuItem> = [];
+		var content : Array<hrt.ui.HuiMenu.MenuItem> = [];
 		if (withMacro) {
 			content = content.concat([
 				{ label : "Add Sheet", click : function() {

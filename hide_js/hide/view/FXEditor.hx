@@ -180,7 +180,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
 		if(current != null && current.to(hrt.prefab.Shader) != null) {
-			var ret : Array<hide.comp.ContextMenu.MenuItem> = [];
+			var ret : Array<hrt.ui.HuiMenu.MenuItem> = [];
 			ret.push({
 				label: "Animation",
 				menu: parent.getNewTrackMenu(current)
@@ -192,9 +192,9 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		var recents = getNewRecentContextMenu(current, onMake);
 
 		var menu = [];
-		var shaderItems : Array<hide.comp.ContextMenu.MenuItem> = [];
-		var spawnItems : Array<hide.comp.ContextMenu.MenuItem> = [];
-		var simulationItems : Array<hide.comp.ContextMenu.MenuItem> = [];
+		var shaderItems : Array<hrt.ui.HuiMenu.MenuItem> = [];
+		var spawnItems : Array<hrt.ui.HuiMenu.MenuItem> = [];
+		var simulationItems : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 		if (parent.is2D) {
 			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Emitter 2D", "Text", "Shader", "Shader Graph", "Placeholder"]) {
@@ -1381,7 +1381,7 @@ class FXEditor extends hide.view.FileView {
 		return added;
 	}
 
-	public function getNewTrackMenu(elt: PrefabElement) : Array<hide.comp.ContextMenu.MenuItem> {
+	public function getNewTrackMenu(elt: PrefabElement) : Array<hrt.ui.HuiMenu.MenuItem> {
 		var obj3dElt = Std.downcast(elt, hrt.prefab.Object3D);
 		var obj2dElt = Std.downcast(elt, hrt.prefab.Object2D);
 		var shaderElt = Std.downcast(elt, hrt.prefab.Shader);
@@ -1392,14 +1392,14 @@ class FXEditor extends hide.view.FileView {
 		var emitter2DElt = Std.downcast(elt, hrt.prefab.fx.Emitter2D);
 
 		var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
-		var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [];
+		var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [];
 		var lightElt = Std.downcast(elt, Light);
 
 		inline function hasTrack(pname) {
 			return getTrack(elt, pname) != null;
 		}
 
-		function trackItem(name: String, props: Array<PropTrackDef>, ?prefix: String) : hide.comp.ContextMenu.MenuItem {
+		function trackItem(name: String, props: Array<PropTrackDef>, ?prefix: String) : hrt.ui.HuiMenu.MenuItem {
 			var hasAllTracks = true;
 			for(p in props) {
 				if(getTrack(elt, prefix + ":" + p.name) == null)
@@ -1413,7 +1413,7 @@ class FXEditor extends hide.view.FileView {
 				enabled: !hasAllTracks };
 		}
 
-		function groupedTracks(prefix: String, props: Array<PropTrackDef>) : Array<hide.comp.ContextMenu.MenuItem> {
+		function groupedTracks(prefix: String, props: Array<PropTrackDef>) : Array<hrt.ui.HuiMenu.MenuItem> {
 			var allLabel = [for(p in props) upperCase(p.name)].join("/");
 			var ret = [];
 			ret.push(trackItem(allLabel, props, prefix));
@@ -1489,7 +1489,7 @@ class FXEditor extends hide.view.FileView {
 			for(param in params) {
 				if (param.qualifiers?.contains(Ignore) ?? false)
 					continue;
-				var item : hide.comp.ContextMenu.MenuItem = switch(param.type) {
+				var item : hrt.ui.HuiMenu.MenuItem = switch(param.type) {
 					case TVec(n, VFloat):
 						var color = param.name.toLowerCase().indexOf("color") >= 0;
 						var label = upperCase(param.name);
@@ -1532,7 +1532,7 @@ class FXEditor extends hide.view.FileView {
 		}
 		function addParam(param : hrt.prefab.fx.EmitterHelper.ParamDef, prefix: String) {
 			var label = prefix + (param.disp != null ? param.disp : upperCase(param.name));
-			var item : hide.comp.ContextMenu.MenuItem = switch(param.t) {
+			var item : hrt.ui.HuiMenu.MenuItem = switch(param.t) {
 				case PVec(n, _):
 					{
 						label: label,

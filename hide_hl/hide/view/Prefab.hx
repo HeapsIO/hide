@@ -2326,7 +2326,7 @@ class Prefab extends HuiView<{path: String}> {
 			}
 		}
 
-		// function graphShaderItem(path) : hide.comp.ContextMenu.MenuItem {
+		// function graphShaderItem(path) : hrt.ui.HuiMenu.MenuItem {
 		// 	var name = new haxe.io.Path(path).file;
 		// 	return getNewTypeMenuItem("shgraph", parentElt, onMake, name, name, path);
 		// }

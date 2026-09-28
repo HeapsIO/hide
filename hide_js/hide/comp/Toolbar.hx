@@ -5,7 +5,7 @@ enum ToolType {
 	Toggle(toggle: Bool->Void);
 	Range(onChange: Float->Void);
 	Color(onChange: Int -> Void);
-	Menu(items: Array<hide.comp.ContextMenu.MenuItem>);
+	Menu(items: Array<hrt.ui.HuiMenu.MenuItem>);
 	Popup(click: hide.Element -> hide.comp.Popup);
 	Separator;
 }
@@ -40,7 +40,7 @@ typedef ToolSelect<T> = {
 
 typedef ToolMenu<T> = {
 	var element : Element;
-	function setContent( elements : Array<hide.comp.ContextMenu.MenuItem> ) : Void;
+	function setContent( elements : Array<hrt.ui.HuiMenu.MenuItem> ) : Void;
 	dynamic function onSelect( v : T ) : Void;
 }
 
@@ -174,7 +174,7 @@ class Toolbar extends Component {
 
 		var header = e.find(".header");
 		var label = header.find(".label");
-		var items: Array<ContextMenu.MenuItem> = [];
+		var items: Array<hrt.ui.HuiMenu.MenuItem> = [];
 		var tool : ToolSelect<T> = {
 			element : e,
 			setContent : function(_) {},
@@ -221,7 +221,7 @@ class Toolbar extends Component {
         if (label != null && label.length > 0) {
             menu.append(new Element('<span class="label">${label==null ? "" : label}</span>'));
         }
-		var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [];
+		var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [];
 		var tool : ToolMenu<T> = {
 			element : menu,
 			setContent : function(c) {

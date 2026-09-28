@@ -261,7 +261,7 @@ class CdbTable extends hide.ui.View<{}> {
 					return;
 				var allCats = hide.comp.cdb.Editor.getCategories(ide.database);
 				var c = allCats[index % sheets.length];
-				var content : Array<hide.comp.ContextMenu.MenuItem> = [];
+				var content : Array<hrt.ui.HuiMenu.MenuItem> = [];
 				for (idx => s in sheets) {
 					var props = hide.comp.cdb.Editor.getSheetProps(s);
 					if (props.categories == null || props.categories.indexOf(c) < 0)
@@ -270,7 +270,7 @@ class CdbTable extends hide.ui.View<{}> {
 						tabs.currentTab = tabs.getTabs().siblings('[index=$idx]');
 					} });
 				}
-				var catMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
+				var catMenu : Array<hrt.ui.HuiMenu.MenuItem> = [];
 				for (c in allCats) {
 					var visibleCats = ide.projectConfig.dbCategories;
 					catMenu.push({ label: c, icon: visibleCats != null && visibleCats.indexOf(c) < 0 ? null : "check", click: () -> {

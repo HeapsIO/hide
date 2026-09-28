@@ -135,7 +135,7 @@ class Cell {
 	function showMenu() {
 		if( inEdit )
 			return false;
-		var menu : Array<hide.comp.ContextMenu.MenuItem> = null;
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = null;
 		switch( editColumn.type ) {
 		case TId:
 			if( value != null && value != "" )
@@ -184,7 +184,7 @@ class Cell {
 				editor.endChanges();
 				refresh();
 			}
-			var forms : Array<hide.comp.ContextMenu.MenuItem>;
+			var forms : Array<hrt.ui.HuiMenu.MenuItem>;
 			var current = editor.formulas.get(this);
 			forms = [for( f in editor.formulas.getList(table.sheet) ) { label : f.name, click : () -> if( f == current ) setF(null) else setF(f), checked : f == current }];
 			#if !hl
@@ -230,7 +230,7 @@ class Cell {
 				editor.endChanges();
 				refresh();
 			}
-			var variants : Array<hide.comp.ContextMenu.MenuItem> = [for( pc in ps.columns ) {
+			var variants : Array<hrt.ui.HuiMenu.MenuItem> = [for( pc in ps.columns ) {
 				label : pc.name,
 				checked : pe != null && pe.col == pc,
 				click : () -> setVariant(pc),

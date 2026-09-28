@@ -63,7 +63,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			this.favorites = [];
 	}
 
-	override function buildTabMenu():Array<hide.comp.ContextMenu.MenuItem> {
+	override function buildTabMenu():Array<hrt.ui.HuiMenu.MenuItem> {
 		var menu = super.buildTabMenu();
 
 		menu.push({isSeparator: true});
@@ -548,7 +548,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			event.stopPropagation();
 			event.preventDefault();
 
-			var options : Array<hide.comp.ContextMenu.MenuItem> = [];
+			var options : Array<hrt.ui.HuiMenu.MenuItem> = [];
 			options.push({
 				label: "Collapse",
 				click: () -> {
@@ -935,7 +935,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		var filterMoreButton = browserLayout.find(".bnt-filter-dropdown").get(0);
 		filterMoreButton.onclick = (e: js.html.MouseEvent) -> {
-			var options : Array<hide.comp.ContextMenu.MenuItem> = [];
+			var options : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 			for (name => info in filters) {
 				options.push({
@@ -1133,9 +1133,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		event.stopPropagation();
 		event.preventDefault();
 
-		var options : Array<hide.comp.ContextMenu.MenuItem> = [];
+		var options : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
-		var collapseAll : hide.comp.ContextMenu.MenuItem = {
+		var collapseAll : hrt.ui.HuiMenu.MenuItem = {
 			label: "Collapse All",
 			click: () -> {
 				for (child in root.children) {
@@ -1159,7 +1159,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			item = currentFolder;
 		}
 
-		var newMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
+		var newMenu : Array<hrt.ui.HuiMenu.MenuItem> = [];
 		newMenu.push({
 				label: "Directory",
 				icon: "folder",

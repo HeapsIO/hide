@@ -162,7 +162,7 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 		stopServer();
 	}
 
-	public static function getCdbMenuActions( sheet : String, id : String ) : Array<hide.comp.ContextMenu.MenuItem> {
+	public static function getCdbMenuActions( sheet : String, id : String ) : Array<hrt.ui.HuiMenu.MenuItem> {
 		if( rcmd == null || !rcmd.isConnected() || rcmd.connections.length == 0)
 			return [];
 		var actions = [];

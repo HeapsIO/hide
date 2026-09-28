@@ -377,7 +377,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		variableList.refresh();
 
 		var addVariable = rightPannel.find(".add-variable");
-		var createVariableMenu : Array<hide.comp.ContextMenu.MenuItem> = [
+		var createVariableMenu : Array<hrt.ui.HuiMenu.MenuItem> = [
 			{
 				label: "Int",
 				click: () -> createVariable(SgInt),
@@ -443,7 +443,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		rightPannel.appendTo(element);
 
-		var newParamCtxMenu : Array<hide.comp.ContextMenu.MenuItem> = [
+		var newParamCtxMenu : Array<hrt.ui.HuiMenu.MenuItem> = [
 			{ label : "Bool", click : () -> createParameter(HxslType.TBool) },
 			{ label : "Number", click : () -> createParameter(HxslType.TFloat) },
 			{ label : "Vec2", click : () -> createParameter(HxslType.TVec(2, VFloat)) },
@@ -1310,7 +1310,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		var menu = new Element('<div class="button2 transparent" title="More options"><div class="ico ico-navicon"></div></div>');
 		menu.appendTo(group);
 
-		function getScreenFXBlend(blend: h3d.mat.PbrMaterial.PbrBlend) : hide.comp.ContextMenu.MenuItem {
+		function getScreenFXBlend(blend: h3d.mat.PbrMaterial.PbrBlend) : hrt.ui.HuiMenu.MenuItem {
 			return {label: "Blend " + cast blend, click: () -> {
 					previewSettings.screenFXBlend = blend;
 
@@ -1334,7 +1334,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		];
 
 
-		var screenFXMenu: Array<hide.comp.ContextMenu.MenuItem> = [
+		var screenFXMenu: Array<hrt.ui.HuiMenu.MenuItem> = [
 			{label: "Use Prev Target", click: () -> setPreviewScreenFXUsePrevTarget(!previewSettings.screenFXusePrevTarget), checked: previewSettings.screenFXusePrevTarget},
 			{isSeparator: true},
 		];
@@ -1343,7 +1343,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			screenFXMenu.push(getScreenFXBlend(blend));
 		}
 
-		var renderPropMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
+		var renderPropMenu : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 		var renderProps = listRenderProps();
 		if (renderProps != null) {

@@ -1596,7 +1596,7 @@ class SceneEditor {
 		undo.change(Custom(exec));
 	}
 
-	function splitMenu(menu : Array<hide.comp.ContextMenu.MenuItem>, name : String, entries : Array<hide.comp.ContextMenu.MenuItem>, len : Int = 30) {
+	function splitMenu(menu : Array<hrt.ui.HuiMenu.MenuItem>, name : String, entries : Array<hrt.ui.HuiMenu.MenuItem>, len : Int = 30) {
 		entries.sort((a,b) -> Reflect.compare(a.label, b.label));
 
 		var pos = 0;
@@ -1622,7 +1622,7 @@ class SceneEditor {
 		}
 	}
 
-	function getTagMenu(prefabs: Array<PrefabElement>) : Array<hide.comp.ContextMenu.MenuItem> {
+	function getTagMenu(prefabs: Array<PrefabElement>) : Array<hrt.ui.HuiMenu.MenuItem> {
 		var tags = getAvailableTags();
 		if(tags == null) return null;
 		tags = tags.copy();
@@ -2280,15 +2280,15 @@ class SceneEditor {
 				selectElements([p]);
 
 			var newItems = getNewContextMenu(p);
-			var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [
+			var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [
 				{ label : "New...", menu : newItems },
 			];
-			var actionItems : Array<hide.comp.ContextMenu.MenuItem> = [
+			var actionItems : Array<hrt.ui.HuiMenu.MenuItem> = [
 				{ label : "Rename", enabled : p != null, click : function() { tree.rename(p); }, keys : view.config.get("key.rename") },
 				{ label : "Delete", enabled : p != null, click : function() deleteElements(selectedPrefabs), keys : view.config.get("key.delete") },
 				{ label : "Duplicate", enabled : p != null, click : duplicate.bind(false), keys : view.config.get("key.duplicateInPlace") },
 			];
-			var collapseItems : Array<hide.comp.ContextMenu.MenuItem> = [
+			var collapseItems : Array<hrt.ui.HuiMenu.MenuItem> = [
 				{ label : "Collapse", enabled : p != null, click : () -> {
 					var curItem = @:privateAccess tree.itemMap.get(p);
 					while (curItem.children == null || curItem.children.length <= 0) {
@@ -2319,7 +2319,7 @@ class SceneEditor {
 					{ label : "Select all", click : selectAll, keys : view.config.get("key.selectAll") },
 					{ label : "Select children", enabled : p != null, click : function() selectElements(p.flatten()) },
 				]);
-				var exportMenu = new Array<hide.comp.ContextMenu.MenuItem>();
+				var exportMenu = new Array<hrt.ui.HuiMenu.MenuItem>();
 				exportMenu.push({ label : "Export (default)", enabled : curEdit != null && canExportSelection(), click : function() exportSelection({forward:"0", forwardSign:"1", up:"2", upSign:"1"}), keys : null });
 				exportMenu.push({ label : "Export (-X Forward, Z Up)", enabled : curEdit != null && canExportSelection(), click : function() exportSelection({forward:"0", forwardSign:"-1", up:"2", upSign:"1"}), keys : null });
 
@@ -2334,7 +2334,7 @@ class SceneEditor {
 			if (isMatLib()) {
 				var matLibs = scene.listMatLibraries(sceneData.shared.currentPath);
 
-				var menu : Array<hide.comp.ContextMenu.MenuItem> = [];
+				var menu : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 				for (matLib in matLibs) {
 					if (matLib.path == view.state.path) {
@@ -2372,7 +2372,7 @@ class SceneEditor {
 
 			// Gather custom context menu entries
 			{
-				var customContextMenus: Array<hide.comp.ContextMenu.MenuItem> = [];
+				var customContextMenus: Array<hrt.ui.HuiMenu.MenuItem> = [];
 				var uniqueClasses : Map<{}, Bool> = [];
 
 				for (prefab in selectedPrefabs) {
@@ -3171,7 +3171,7 @@ class SceneEditor {
 			origTrans.identity();
 		}
 
-		var selectItems: Array<hide.comp.ContextMenu.MenuItem> = [];
+		var selectItems: Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 		for (hit in getAllPrefabsUnderMouse()) {
 			selectItems.push({
@@ -3211,7 +3211,7 @@ class SceneEditor {
 				newObj2d.y = pt.y;
 			}
 		});
-		var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [
+		var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [
 			{ label : "Select", menu: selectItems },
 			{ label : "New...", menu : newItems },
 			{ isSeparator : true, label : "" },
@@ -5683,7 +5683,7 @@ class SceneEditor {
 		return "sceneeditor.newrecents";
 	}
 
-	function getNewRecentContextMenu(current, ?onMake: PrefabElement->Void=null) : Array<hide.comp.ContextMenu.MenuItem> {
+	function getNewRecentContextMenu(current, ?onMake: PrefabElement->Void=null) : Array<hrt.ui.HuiMenu.MenuItem> {
 		var parent = current == null ? sceneData : current;
 		var grecent = [];
 		var recents : Array<String> = ide.currentConfig.get(getRecentMenuKey(), []);
@@ -5696,8 +5696,8 @@ class SceneEditor {
 	}
 
 	// Override
-	function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType=true ) : Array<hide.comp.ContextMenu.MenuItem> {
-		var newItems = new Array<hide.comp.ContextMenu.MenuItem>();
+	function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType=true ) : Array<hrt.ui.HuiMenu.MenuItem> {
+		var newItems = new Array<hrt.ui.HuiMenu.MenuItem>();
 
 		@:privateAccess var allRegs = hrt.prefab.Prefab.registry.copy();
 		allRegs.remove("reference");
@@ -5741,7 +5741,7 @@ class SceneEditor {
 				if( !found ) gother.push(m);
 			}
 		}
-		function sortByLabel(arr:Array<hide.comp.ContextMenu.MenuItem>) {
+		function sortByLabel(arr:Array<hrt.ui.HuiMenu.MenuItem>) {
 			arr.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
 		}
 		for( g in groups )
@@ -5767,7 +5767,7 @@ class SceneEditor {
 		?label: String,
 		?objectName: String,
 		?path: String
-	) : hide.comp.ContextMenu.MenuItem {
+	) : hrt.ui.HuiMenu.MenuItem {
 		var prefabInfo = hrt.prefab.Prefab.getPrefabInfoByName(ptype);
 		return {
 			label : label != null ? label : prefabInfo.inf.name,
@@ -5830,7 +5830,7 @@ class SceneEditor {
 		hrt.shader.GradientFlat,
 	];
 
-	function getNewShaderMenu(parentElt: PrefabElement, ?onMake: PrefabElement->Void) : hide.comp.ContextMenu.MenuItem {
+	function getNewShaderMenu(parentElt: PrefabElement, ?onMake: PrefabElement->Void) : hrt.ui.HuiMenu.MenuItem {
 		function isClassShader(path: String) {
 			return Type.resolveClass(path) != null || StringTools.endsWith(path, ".hx") || StringTools.endsWith(path, ".shgraph");
 		}
@@ -5867,7 +5867,7 @@ class SceneEditor {
 			icon : shModel.inf.icon,
 		};
 
-		function classShaderItem(path) : hide.comp.ContextMenu.MenuItem {
+		function classShaderItem(path) : hrt.ui.HuiMenu.MenuItem {
 			var name = path;
 			if(StringTools.endsWith(name, ".hx")) {
 				name = new haxe.io.Path(path).file;
@@ -5878,12 +5878,12 @@ class SceneEditor {
 			return getNewTypeMenuItem("shader", parentElt, onMake, name, name, path);
 		}
 
-		function graphShaderItem(path) : hide.comp.ContextMenu.MenuItem {
+		function graphShaderItem(path) : hrt.ui.HuiMenu.MenuItem {
 			var name = new haxe.io.Path(path).file;
 			return getNewTypeMenuItem("shgraph", parentElt, onMake, name, name, path);
 		}
 
-		var menu : Array<hide.comp.ContextMenu.MenuItem> = [];
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 		var shaders : Array<String> = hide.Ide.inst.currentConfig.get("fx.shaders", []);
 		for (sh in globalShaders) {
@@ -6241,8 +6241,8 @@ class SceneEditor {
 		return null;
 	}
 
-	static var contextMenuExtRegistry : Map<{}, (elements: Array<hrt.prefab.Prefab>) -> Array<hide.comp.ContextMenu.MenuItem>> = [];
-	static public function registerContextMenuExtension(cl: Class<hrt.prefab.Prefab>, callback: (elements: Array<hrt.prefab.Prefab>) -> Array<hide.comp.ContextMenu.MenuItem>) : Int {
+	static var contextMenuExtRegistry : Map<{}, (elements: Array<hrt.prefab.Prefab>) -> Array<hrt.ui.HuiMenu.MenuItem>> = [];
+	static public function registerContextMenuExtension(cl: Class<hrt.prefab.Prefab>, callback: (elements: Array<hrt.prefab.Prefab>) -> Array<hrt.ui.HuiMenu.MenuItem>) : Int {
 		contextMenuExtRegistry.set(cast cl, callback);
 		return 0;
 	}

@@ -217,7 +217,7 @@ class AnimGraphEditor extends GenericGraphEditor {
         return element;
     }
 
-    override function buildTabMenu():Array<hide.comp.ContextMenu.MenuItem> {
+    override function buildTabMenu():Array<hrt.ui.HuiMenu.MenuItem> {
         var menu = super.buildTabMenu();
         menu.push({isSeparator: true});
         menu.push({label: "Reset Model Folder", click: () -> {
@@ -267,10 +267,10 @@ class AnimGraphEditor extends GenericGraphEditor {
         return paths;
     }
 
-    override function getPreviewOptionsMenu() : Array<hide.comp.ContextMenu.MenuItem> {
+    override function getPreviewOptionsMenu() : Array<hrt.ui.HuiMenu.MenuItem> {
         var options = super.getPreviewOptionsMenu();
 
-        var models : Array<hide.comp.ContextMenu.MenuItem> = [];
+        var models : Array<hrt.ui.HuiMenu.MenuItem> = [];
         var paths = gatherAllPreviewModels(animGraph.animFolder);
         for (path in paths) {
             var basePath = StringTools.replace(path, animGraph.animFolder + "/", "");
@@ -294,7 +294,7 @@ class AnimGraphEditor extends GenericGraphEditor {
             var button = new hide.comp.Button(div, null, null, {hasDropdown: true});
             button.label = providers[getIndex()].name;
 
-            var options : Array<hide.comp.ContextMenu.MenuItem> = [];
+            var options : Array<hrt.ui.HuiMenu.MenuItem> = [];
             for (i => provider in providers) {
                 options.push({
                     label: provider.name,

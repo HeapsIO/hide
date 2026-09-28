@@ -604,7 +604,7 @@ class Model extends FileView {
 
 	override function buildTabMenu() {
 		var menu = super.buildTabMenu();
-		var arr : Array<hide.comp.ContextMenu.MenuItem> = [
+		var arr : Array<hrt.ui.HuiMenu.MenuItem> = [
 			{ label : null, isSeparator : true },
 			{ label : "Export", click : function() {
 				ide.chooseFileSave(this.getPath().substr(0,-4)+"_dump.txt", function(file) {
@@ -1258,7 +1258,7 @@ class Model extends FileView {
 			header.find('.label').text(name);
 		}
 
-		var items: Array<hide.comp.ContextMenu.MenuItem> = [{ label: "-- None --", click: () -> onFollowSelected("-- None --")}];
+		var items: Array<hrt.ui.HuiMenu.MenuItem> = [{ label: "-- None --", click: () -> onFollowSelected("-- None --")}];
 		for( path in getNamedObjects(obj) ) {
 			var parts = path.split(".");
 			var name = parts[parts.length - 1];
@@ -2176,7 +2176,7 @@ class Model extends FileView {
 			event.preventDefault();
 			event.stopPropagation();
 			var item = item;
-			var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [
+			var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [
 				{ label : "Merge selected", enabled : false /*canMergeElements(selectedElements)*/, click: () -> mergeModels(cast selectedElements) },
 				{ label : "Merge all meshes", enabled : true, click: () -> mergeModels(cast [for (m in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh))) m]) },
 				{ label : "Copy Name", enabled : true, click: () ->  {
@@ -2984,7 +2984,7 @@ class Model extends FileView {
 					}));
 				}
 				var frame = Math.round((e.relX / W) * obj.currentAnimation.frameCount);
-				var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [
+				var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [
 					{ label : "New", click: function(){ addEvent("NewEvent", frame); }},
 				];
 				if(obj.currentAnimation.events != null && obj.currentAnimation.events[frame] != null){

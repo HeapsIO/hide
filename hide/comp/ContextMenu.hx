@@ -1,10 +1,12 @@
 package hide.comp;
 
+import hrt.ui.HuiMenu.MenuItem;
+
 #if js
 
 // for retrocompat with the old menu system
 @:deprecated("Use MenuItem instead")
-typedef ContextMenuItem = hide.comp.ContextMenu.MenuItem;
+typedef ContextMenuItem = hrt.ui.HuiMenu.MenuItem;
 
 
 enum SearchMode {

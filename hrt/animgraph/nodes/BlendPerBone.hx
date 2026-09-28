@@ -74,10 +74,10 @@ class BlendPerBone extends AnimNode {
 
 			var skins = model.findAll((o) -> Std.downcast(o, h3d.scene.Skin));
 
-			var menu : Array<hide.comp.ContextMenu.MenuItem> = [];
+			var menu : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
-			function gatherJoints(joint: h3d.anim.Skin.Joint, arr: Array<hide.comp.ContextMenu.MenuItem>) {
-				var subList : Array<hide.comp.ContextMenu.MenuItem> = [];
+			function gatherJoints(joint: h3d.anim.Skin.Joint, arr: Array<hrt.ui.HuiMenu.MenuItem>) {
+				var subList : Array<hrt.ui.HuiMenu.MenuItem> = [];
 				for (sub in joint.subs) {
 					gatherJoints(sub, subList);
 				}
@@ -89,10 +89,10 @@ class BlendPerBone extends AnimNode {
 			}
 
 			for (skin in skins) {
-				var item : hide.comp.ContextMenu.MenuItem = {label: skin.name};
+				var item : hrt.ui.HuiMenu.MenuItem = {label: skin.name};
 
 				var skinData =skin.getSkinData();
-				var sub : Array<hide.comp.ContextMenu.MenuItem> = [];
+				var sub : Array<hrt.ui.HuiMenu.MenuItem> = [];
 				for (root in skinData.rootJoints) {
 					gatherJoints(root, sub);
 				}

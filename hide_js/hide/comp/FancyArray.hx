@@ -203,8 +203,8 @@ class FancyArray<T> extends hide.comp.Component {
 		}
 	}
 
-	public function getDropdownMenu(index: Int) : Array<hide.comp.ContextMenu.MenuItem> {
-		var menu : Array<hide.comp.ContextMenu.MenuItem> = [];
+	public function getDropdownMenu(index: Int) : Array<hrt.ui.HuiMenu.MenuItem> {
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 		if (removeItem != null) {
 			menu.push({label: "Delete", click: () -> removeItem(index)});

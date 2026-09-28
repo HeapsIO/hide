@@ -114,7 +114,7 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
         previewContainer.height(height);
     }
 
-    function getPreviewOptionsMenu() : Array<hide.comp.ContextMenu.MenuItem> {
+    function getPreviewOptionsMenu() : Array<hrt.ui.HuiMenu.MenuItem> {
         return [];
     }
 

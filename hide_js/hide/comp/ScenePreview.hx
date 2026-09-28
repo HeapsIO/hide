@@ -34,11 +34,11 @@ class ScenePreview extends Scene {
 		var menu = toolbar.find(".button2");
 
 		menu.get(0).onclick = (e: js.html.MouseEvent) -> {
-			var items : Array<hide.comp.ContextMenu.MenuItem> = [];
+			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 			var loadableMeshes = listLoadableMeshes();
 			if (loadableMeshes.length > 0) {
-				var loadableMeshesMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
+				var loadableMeshesMenu : Array<hrt.ui.HuiMenu.MenuItem> = [];
 				for (mesh in loadableMeshes) {
 					loadableMeshesMenu.push(
 						{
@@ -54,7 +54,7 @@ class ScenePreview extends Scene {
 
 			var renderProps = listRenderProps();
 			if (renderProps.length > 0) {
-				var renderPropsMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
+				var renderPropsMenu : Array<hrt.ui.HuiMenu.MenuItem> = [];
 				for (prop in renderProps) {
 					renderPropsMenu.push({label: prop.name, click: () -> {
 						previewSettings.renderPropsPath = prop.value;

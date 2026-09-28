@@ -218,7 +218,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				dragHandler.oncontextmenu = (e:js.html.MouseEvent) -> {
 					e.preventDefault();
 
-					var options : Array<hide.comp.ContextMenu.MenuItem> = [];
+					var options : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 					if (hoverPoint > -1) {
 						var toDel = hoverPoint > -1 ? hoverPoint : selectedPoint;
@@ -333,7 +333,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		keys.register("delete", deleteSelection);
 	}
 
-	override function buildTabMenu():Array<hide.comp.ContextMenu.MenuItem> {
+	override function buildTabMenu():Array<hrt.ui.HuiMenu.MenuItem> {
 		var menu = super.buildTabMenu();
 		menu.push({isSeparator: true});
 		menu.push({label: "Reset Model Folder", click: () -> {
