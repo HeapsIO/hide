@@ -560,9 +560,7 @@ class FileManager {
 			ignorePatterns.push(new EReg(pat, "i"));
 
 		initFileSystem();
-
-		if (!hide.Ide.inst.isThumbnailMode)
-			initThumbnailRenderer();
+		disposeThumbnailRenderer();
 	}
 
 	function initFileSystem() {
@@ -687,6 +685,9 @@ class FileManager {
 		switch(ext) {
 			case "prefab" | "fbx" | "l3d" | "fx" | "shgraph" | "jpg" | "jpeg" | "png" | "dds":
 				file.iconPath = "loading";
+				// started on first use
+				if (thumbnailRendererProcess == null && !hide.Ide.inst.isThumbnailMode)
+					initThumbnailRenderer();
 				var callbacks = onReadyCallbacks.get(path);
 				if (callbacks == null) {
 					onReadyCallbacks.set(path, [onReady]);

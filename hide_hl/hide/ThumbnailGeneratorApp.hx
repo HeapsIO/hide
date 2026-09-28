@@ -12,7 +12,7 @@ class ThumbnailGeneratorApp extends hxd.App {
 		hl.UI.closeConsole();
 
 		hxd.System.createWindow = () -> {
-			new hxd.Window("HideHL - Thumbnail Generator", 256,256,{fixed: true, hidden: true});
+			new hxd.Window("HideHL - Thumbnail Generator", 256,256,{fixed: true, hidden: true, background: true});
 		}
 
 		hxd.Res.initLocal();
