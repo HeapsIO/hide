@@ -63,6 +63,12 @@ class HuiCodeEditor extends HuiElement {
 			syncLines();
 			syncColors();
 		}
+
+		onAfterReflow = afterReflow;
+	}
+
+	function afterReflow() {
+		editor.maxWidth = innerWidth-50;
 	}
 
 	public dynamic function onCodeChange() {
