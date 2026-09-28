@@ -62,10 +62,7 @@ class HuiPropsInspector extends HuiElement {
 			switch (c.type) {
 				case TId, TString, TDynamic, TFile:
 					if (c.kind == Script) {
-						var fold = new HuiCategory("Code", field);
-
-
-						var el = new HuiCodeEditor(fold.content);
+						var el = new HuiCodeEditor(field);
 						el.value = Reflect.field(props, fieldName);
 						@:privateAccess el.editor.onFocusLost = (e) -> {
 							onValueChanged(props, fieldName, el.value);

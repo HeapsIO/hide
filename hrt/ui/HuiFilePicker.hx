@@ -22,10 +22,17 @@ class HuiFilePicker extends HuiElement {
 
 		this.onClick = (e: hxd.Event) -> {
 			if (e.button == 0) {
+
+				var options : hxd.File.BrowseOptions = {
+					fileTypes: [{ name: [for (e in allowedExtensions) e].join(", "), extensions: allowedExtensions }],
+					defaultPath: value != null ? hide.Ide.inst.getDirPath(hide.Ide.inst.getPath(value)) : null
+				};
+
 				hxd.File.browse((select) -> {
 					value = validatePath(select.fileName);
 					onValueChanged();
-				}, {fileTypes: [{ name: [for (e in allowedExtensions) e].join(", "), extensions: allowedExtensions }]});
+				}, options);
+
 			} else if (e.button == 1) {
 				var clipboard = hide.Ide.inst.getClipboardText();
 				var validClipboard = true;
