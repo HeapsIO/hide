@@ -185,6 +185,7 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 	public dynamic function setTime(t : Float) {};
 	public dynamic function isPaused() : Bool { return false; };
 	public dynamic function setPaused(v : Bool) {};
+	public dynamic function getContent() : HuiElement { return null; };
 
 	override function update(dt: Float) {
 		super.update(dt);
@@ -258,6 +259,11 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 	}
 
 	function refreshInternal() {
+		leftPanel.removeChildren();
+		var c = getContent();
+		if (c != null)
+			leftPanel.addChild(getContent());
+
 		for (l in labels)
 			l.remove();
 		labels.resize(0);

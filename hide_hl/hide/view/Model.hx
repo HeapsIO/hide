@@ -375,6 +375,18 @@ class Model extends HuiView<{path: String}> {
 		sceneEditor.updateDebugOverlayVisibility();
 	}
 
+	override function onDisplay() {
+		super.onDisplay();
+
+		bindTimeline(cast hide.Ide.inst.getView(Timeline));
+	}
+
+	override function onOtherViewDisplayed(v) {
+		super.onOtherViewDisplayed(v);
+
+		bindTimeline(Std.downcast(v, Timeline));
+	}
+
 	override function safeSync(ctx) {
 		super.safeSync(ctx);
 	}
@@ -443,6 +455,61 @@ class Model extends HuiView<{path: String}> {
 		widgets.push(new hrt.ui.HuiToolbar.HuiSplitterDirectionWidget());
 
 		return widgets;
+	}
+
+	function bindTimeline(t : Timeline) {
+		var anims = hide.Ide.inst.listAnims(Ide.inst.getRelPath(state.path));
+		if (anims.length <= 0 || t == null || hide.Ide.inst.getActiveView() != this)
+			return;
+
+		t.getContent = () -> {
+			var animSel = new HuiSelect();
+			animSel.items = [for (a in anims) { label: a.substring(a.lastIndexOf("/") + 1), value: a }];
+			animSel.items.insert(0, { label: "None", value: "none"});
+			animSel.value = null;
+
+			if (obj.currentAnimation != null)
+				animSel.value = obj.currentAnimation;
+			else
+				animSel.value = "none";
+
+			animSel.onValueChanged = () -> {
+				if (animSel.value == "none") {
+					obj.stopAnimation();
+					return;
+				}
+
+				var anim = @:privateAccess hrt.prefab.Cache.get().modelCache.loadAnimation(hxd.res.Loader.currentInstance.load(animSel.value).toModel());
+				obj.playAnimation(anim);
+			};
+
+			return animSel;
+		}
+
+		t.getTime = () -> {
+			return obj.currentAnimation != null ? (obj.currentAnimation.frame / obj.currentAnimation.frameCount) * obj.currentAnimation.getDuration() : 0.;
+		}
+
+		t.setTime = (t : Float) -> {
+			if (obj.currentAnimation == null)
+				return;
+
+			return obj.currentAnimation.setFrame((t / obj.currentAnimation.getDuration()) * obj.currentAnimation.frameCount);
+		}
+
+		t.isPaused = () -> {
+			if (obj.currentAnimation == null)
+				return false;
+			return obj.currentAnimation.pause;
+		}
+
+		t.setPaused = (v : Bool) -> {
+			if (obj.currentAnimation == null)
+				return;
+			obj.currentAnimation.pause = v;
+		}
+
+		t.refresh();
 	}
 
 	function getSelectedObjects() : Array<h3d.scene.Object> {
