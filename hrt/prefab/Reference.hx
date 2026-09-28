@@ -184,7 +184,14 @@ class Reference extends Object3D {
 			if (overrides != null) {
 				var refInstanceData = @:privateAccess res.loadData();
 
-				refInstanceData = hrt.prefab.Diff.apply(refInstanceData, overrides);
+				// Diff.apply takes ownership of the diff. In game, each Reference has its own overrides object
+				// (prefabs are created from a deep copy of their data), but in editor the refInstance can be
+				// resolved again multiple times, so we need to keep overrides intact
+				var overridesToApply = overrides;
+				#if (editor || editor_hl)
+				overridesToApply = hrt.prefab.Diff.deepCopy(overridesToApply);
+				#end
+				refInstanceData = hrt.prefab.Diff.apply(refInstanceData, overridesToApply);
 				refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
 			} else {
 				// Don't clone the refInstance if we are the original prefab
@@ -488,7 +495,7 @@ class Reference extends Object3D {
 			}
 		}
 		else if (overrides != null) {
-			pristineData = hrt.prefab.Diff.apply(pristineData, overrides);
+			pristineData = hrt.prefab.Diff.apply(pristineData, hrt.prefab.Diff.deepCopy(overrides));
 		}
 
 		originalSource = hrt.prefab.Diff.deepCopy(data);
