@@ -174,7 +174,6 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 	@:s public var catmullRom : Bool = true;
 	@:s public var velocity : Bool = true;
 	@:s public var jitterPattern : FrustumJitter.Pattern = Halton_2_3_x8;
-	@:s public var jitterScale : Float = 0.5;
 	@:s public var renderMode : String = "AfterTonemapping";
 	@:s public var keepAlpha : Bool = false;
 	@:s public var keepSkyAlpha : Bool = false;
@@ -194,7 +193,6 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			var s = pass.shader;
 
 			frustumJitter.curPattern = jitterPattern;
-			frustumJitter.patternScale = jitterScale;
 			frustumJitter.update();
 
 			var prevJitterOffsetX = -frustumJitter.prevSample.x / ctx.renderResolutionWidth;
@@ -206,6 +204,8 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			ctx.camera.jitterOffsetX = jitterOffsetX;
 			ctx.camera.jitterOffsetY = jitterOffsetY;
 			ctx.camera.update();
+			// Update inverse proj
+			ctx.camera.getInverseProj();
 			@:privateAccess ctx.cameraJitterOffsets.set( jitterOffsetX, jitterOffsetY, prevJitterOffsetX, prevJitterOffsetY );
 			s.cameraInverseViewProj.initInverse(curMatNoJitter);
 			@:privateAccess r.ctx.cameraPreviousViewProj.load(prevMatJittered);
@@ -220,49 +220,13 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			var output : h3d.mat.Texture = ctx.engine.getCurrentTarget();
 			var depthMap : Dynamic = ctx.getGlobal("depthMap");
 			var prevFrame = r.allocTarget("prevFrame", false, 1.0, output.format);
-			if ( !prevFrame.flags.has(WasCleared) ) {
+			if ( prevFrame.flags.has(WasCleared) )
+				resolve(r, output, prevFrame, depthMap);
+			else
 				prevFrame.flags.set(WasCleared);
-				h3d.pass.Copy.run(output, prevFrame);
-				return;
-			}
-			var curFrame = r.allocTarget("curFrame", false, 1.0, output.format);
-			h3d.pass.Copy.run(output, curFrame);
-
-			var s = pass.shader;
-			s.curFrame = curFrame;
-			s.curFrame.filter = Linear;
-			s.prevFrame = prevFrame;
-			s.prevFrame.filter = Linear;
-			s.amount = amount;
-
-			s.PACKED_DEPTH = depthMap.packed != null && depthMap.packed == true;
-			if( s.PACKED_DEPTH ) {
-				s.depthTexture = depthMap.texture;
-			}
-			else {
-				s.depthChannel = depthMap.texture;
-				s.depthChannelChannel = depthMap.channel == null ? hxsl.Channel.R : depthMap.channel;
-			}
-
-			s.VARIANCE_CLIPPING = varianceClipping;
-			s.CATMULL_ROM = catmullRom;
-			s.VARIANCE_CLIPPING = varianceClipping;
-			var pbrRenderer = Std.downcast(r, h3d.scene.pbr.Renderer);
-			var useVelocity = velocity && pbrRenderer != null;
-			if ( useVelocity ) {
-				s.velocityBuffer = ctx.getGlobal("velocity");
-				s.velocityBuffer.filter = Nearest;
-			}
-			s.VELOCITY = useVelocity;
-
-			s.KEEP_ALPHA = keepAlpha;
-			s.KEEP_SKY_ALPHA = keepSkyAlpha;
-
-			r.setTarget(output, NotBound);
-			pass.render();
 
 			h3d.pass.Copy.run(output, prevFrame);
-			s.prevCamMat.load(curMatNoJitter);
+			pass.shader.prevCamMat.load(curMatNoJitter);
 
 			ctx.camera.jitterOffsetX = 0;
 			ctx.camera.jitterOffsetY = 0;
@@ -270,7 +234,47 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			// Remove Jitter for effects post TAA
 			prevMatJittered.load(r.ctx.camera.m);
 			r.ctx.camera.update();
+			// Update inverse proj
+			r.ctx.camera.getInverseProj();
 		}
+	}
+
+	function resolve( r : h3d.scene.Renderer, output : h3d.mat.Texture, prevFrame : h3d.mat.Texture, depthMap : Dynamic ) {
+		var ctx = r.ctx;
+		var curFrame = r.allocTarget("curFrame", false, 1.0, output.format);
+		h3d.pass.Copy.run(output, curFrame);
+
+		var s = pass.shader;
+		s.curFrame = curFrame;
+		s.curFrame.filter = Linear;
+		s.prevFrame = prevFrame;
+		s.prevFrame.filter = Linear;
+		s.amount = amount;
+
+		s.PACKED_DEPTH = depthMap.packed != null && depthMap.packed == true;
+		if( s.PACKED_DEPTH ) {
+			s.depthTexture = depthMap.texture;
+		}
+		else {
+			s.depthChannel = depthMap.texture;
+			s.depthChannelChannel = depthMap.channel == null ? hxsl.Channel.R : depthMap.channel;
+		}
+
+		s.VARIANCE_CLIPPING = varianceClipping;
+		s.CATMULL_ROM = catmullRom;
+		var pbrRenderer = Std.downcast(r, h3d.scene.pbr.Renderer);
+		var useVelocity = velocity && pbrRenderer != null;
+		if ( useVelocity ) {
+			s.velocityBuffer = ctx.getGlobal("velocity");
+			s.velocityBuffer.filter = Nearest;
+		}
+		s.VELOCITY = useVelocity;
+
+		s.KEEP_ALPHA = keepAlpha;
+		s.KEEP_SKY_ALPHA = keepSkyAlpha;
+
+		r.setTarget(output, NotBound);
+		pass.render();
 	}
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
@@ -306,7 +310,6 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 						{value: "MotionPerp2",      label: "MotionPerp2"},
 						{value: "MotionVPerp2",     label: "MotionVPerp2"},
 					]) label="Pattern" field={jitterPattern}/>
-					<range(0.0, 2.0) label="Scale" field={jitterScale}/>
 				</category>
 			</root>
 		);
@@ -343,7 +346,6 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 								<option value="MotionVPerp2">MotionVPerp2</option>
 							</select>
 						</dd>
-					<dt>Scale</dt><dd><input type="range" min="0" max="2" field="jitterScale"/></dd>
 				</div>
 				<div class="group" name="Rendering">
 					<dt>Render Mode</dt>
