@@ -56,13 +56,7 @@ class Category extends Widget<Null<Bool>> {
 		title.addEventListener("mousedown", (event: js.html.MouseEvent) -> {
 			if (event.button != 0 || event.target == headerCheckbox)
 				return;
-			openState = !openState;
-			if (closed) {
-				saveSetting(SameKind, "openState", openState ? true : null);
-			} else {
-				saveSetting(SameKind, "openState", openState ? null : false);
-			}
-			refresh();
+			toggleOpenState();
 		});
 
 		headerCheckbox = cast native.get().querySelector(".header-checkbox");
@@ -148,10 +142,10 @@ class Category extends Widget<Null<Bool>> {
 
 	public function toggleOpenState(?force: Bool) {
 		openState = force ?? !openState;
-		if (closed) {
-			saveSetting(SameKind, "openState", openState ? true : null);
+		if (openState == closed) {
+			saveSetting(SameKind, "openState", openState);
 		} else {
-			saveSetting(SameKind, "openState", openState ? null : false);
+			saveSetting(SameKind, "openState", null);
 		}
 		refresh();
 	}
