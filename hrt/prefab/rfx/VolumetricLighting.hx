@@ -166,7 +166,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var shadow = 1.0;
 			var shadowViewProj = mat3x4(lightInfos[2], lightInfos[3], lightInfos[4]);
 
-			@unroll for ( c in 0...CASCADE_COUNT ) {
+			@unroll for ( c in 0...MAX_CASCADE_COUNT ) {
 				var cascadeScale = lightInfos[5 + 2 * c];
 				var shadowPos0 = transformedPosition * shadowViewProj;
 				var shadowPos = c == 0 ? shadowPos0 : shadowPos0 * cascadeScale.xyz + lightInfos[6 + 2 * c].xyz;
@@ -221,7 +221,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			lightAccumulation = accumulateLights(lightAccumulation, LIGHT_DIR, dirShadowCount, dirLightCount, MAX_DIR_SHADOW_COUNT);
 
 			// Cascade shadows
-			if ( CASCADE_COUNT > 0 ) {
+			if ( MAX_CASCADE_COUNT > 0 ) {
 				var c = evaluateCascadeLight();
 				if ( dot(c, c) > 1e-6 )
 					c *= evaluateCascadeShadow();
