@@ -1161,10 +1161,14 @@ class Prefab extends HuiView<{path: String}> {
 	public function removePrefabInstance(prefab: hrt.prefab.Prefab) {
 		if (prefab == null)
 			return;
-		prefab.editorRemoveObjects();
-		for (child in prefab.flatten()) {
-			removePrefabInteractives(child);
+		// Remove interactives before the objects, as removing a Reference objects can discard its refInstance
+		function recRemoveInteractives(p: hrt.prefab.Prefab) {
+			removePrefabInteractives(p);
+			iterChildrenAndRef(p, recRemoveInteractives, false);
 		}
+		recRemoveInteractives(prefab);
+
+		prefab.editorRemoveObjects();
 
 		if (prefab.parent == null && prefab.shared.parentPrefab == null) {
 			prefab.shared.root3d.remove();
@@ -2092,7 +2096,7 @@ class Prefab extends HuiView<{path: String}> {
 			instant = true;
 		}
 
-		var parent = prefab.parent;
+		var parent = prefab.parent ?? prefab.shared.parentPrefab;
 
 		rebuildQueue.set(prefab, Rebuild);
 		checkWantRebuild(parent, prefab);
@@ -2107,12 +2111,12 @@ class Prefab extends HuiView<{path: String}> {
 		var wantRebuild = target.onEditorTreeChanged(original);
 		switch(wantRebuild) {
 			case Skip:
-				checkWantRebuild(target.parent, original);
+				checkWantRebuild(target.parent ?? target.shared.parentPrefab, original);
 			case Rebuild:
 				queueRebuild(target);
 			case Notify(callback):
 				rebuildQueue.set(target, wantRebuild);
-				checkWantRebuild(target.parent, original);
+				checkWantRebuild(target.parent ?? target.shared.parentPrefab, original);
 		}
 
 		if (target == this.prefab) {

@@ -3700,6 +3700,12 @@ class SceneEditor {
 				recRemove(c);
 			}
 
+			// refInstance interactives exist only in Edit/Override mode, but the mode may have changed since they were made
+			var ref = Std.downcast(e, Reference);
+			if (ref != null && ref.refInstance != null) {
+				recRemove(ref.refInstance);
+			}
+
 			removeInteractive(e);
 		}
 
@@ -5333,12 +5339,12 @@ class SceneEditor {
 		var wantRebuild = target.onEditorTreeChanged(original);
 		switch(wantRebuild) {
 			case Skip:
-				checkWantRebuild(target.parent, original);
+				checkWantRebuild(target.parent ?? target.shared.parentPrefab, original);
 			case Rebuild:
 				queueRebuild(target);
 			case Notify(callback):
 				rebuildQueue.set(target, wantRebuild);
-				checkWantRebuild(target.parent, original);
+				checkWantRebuild(target.parent ?? target.shared.parentPrefab, original);
 		}
 
 		if (target == sceneData) {
@@ -5378,7 +5384,7 @@ class SceneEditor {
 			instant = true;
 		}
 
-		var parent = prefab.parent;
+		var parent = prefab.parent ?? prefab.shared.parentPrefab;
 
 		rebuildQueue.set(prefab, Rebuild);
 		checkWantRebuild(parent, prefab);

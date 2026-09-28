@@ -224,6 +224,12 @@ class Reference extends Object3D {
 		}
 		#end
 
+		#if (editor || editor_hl)
+		// The refInstance is kept between makes in Edit/Override mode, the editor must remove its objects before remaking it
+		if (wasMade && refInstance != null)
+			throw 'Reference ${getAbsPath()} is made again but its refInstance objects were not removed by the editor';
+		#end
+
 		// in the case source has changed since the last load (can happen when creating references manually)
 		if (refInstance?.shared.currentPath != source) {
 			initRefInstance();
@@ -284,6 +290,11 @@ class Reference extends Object3D {
 
 	override function editorRemoveInstanceObjects() {
 		super.editorRemoveInstanceObjects();
+
+		// Keep the refInstance when it can be edited, so unsaved changes are not lost on rebuild
+		if (editMode != None)
+			return;
+
 		// Clean cache to force proper ref reloading
 		@:privateAccess if (source != null) {
 			var cachedPrefab = Std.downcast(hxd.res.Loader.currentInstance.cache.get(source), hrt.prefab.Resource);
@@ -293,6 +304,21 @@ class Reference extends Object3D {
 		}
 		refInstance = null;
 	}
+
+	#if (editor || editor_hl)
+	override public function editorRemoveObjects() : Void {
+		if (refInstance != null)
+			refInstance.editorRemoveObjects();
+		wasMade = false;
+		super.editorRemoveObjects();
+	}
+
+	override public function onEditorTreeChanged(prefab: Prefab) : hrt.prefab.Prefab.TreeChangedResult {
+		if (prefab == refInstance)
+			return Rebuild;
+		return super.onEditorTreeChanged(prefab);
+	}
+	#end
 
 	override public function findRec<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false, includeDisabled: Bool = true) : Null<T> {
 		if (!includeDisabled && !enabled)
@@ -439,17 +465,6 @@ class Reference extends Object3D {
 		}
 	}
 
-	override public function editorRemoveObjects() : Void {
-		if (refInstance != null && wasMade) {
-			for (child in refInstance.flatten()) {
-				shared.editor.removeInteractive(child);
-			}
-			refInstance.editorRemoveObjects();
-		}
-		wasMade = false;
-		super.editorRemoveObjects();
-	}
-
 	/**
 		Updates the original reference data to be equal to `data`.
 		If the ref is an override, the override will be kept as is
@@ -529,13 +544,7 @@ class Reference extends Object3D {
 						ctx.rebuildPrefab(this);
 					}
 					else {
-						if (refInstance != null) {
-							for (child in refInstance.flatten()) {
-								shared.editor.removeInteractive(child);
-							}
-						}
-
-						shared.editor.refreshInteractive(this);
+						ctx.rebuildPrefab(this);
 						@:privateAccess shared.editor.refreshTree(All);
 					}
 				}
