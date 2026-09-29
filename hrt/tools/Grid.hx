@@ -69,7 +69,7 @@ class Grid extends h3d.scene.Object {
 
 		plane.material.mainPass.setBlendMode(Alpha);
 		plane.material.mainPass.culling = None;
-		plane.material.mainPass.setPassName("overlay");
+		plane.material.mainPass.setPassName("afterTonemapping");
 
 		cam = parent.getScene().camera;
 		refresh();
