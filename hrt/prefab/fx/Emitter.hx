@@ -789,11 +789,14 @@ class EmitterObject extends h3d.scene.Object {
 			for (sub in subEmitters) {
 				sub.remove();
 			}
+			subEmitters = null;
 		}
 
 		for (i in 0...numInstances) {
 			particles[i].clear(this);
 		}
+		numInstances = 0;
+		listHead = null;
 
 		#if editor
 		debugGraphics.remove();
