@@ -599,17 +599,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 		if (dragAndDropInterface != null) {
 			line.onDragStart = () -> {
-				dragDropSelection = [data.item];
-				if (hxd.Key.isDown(hxd.Key.CTRL)) {
-					dragDropSelection = [];
-					for (item in flatList) {
-						if (data.item == item.item || selectedElements.get(cast item.item) != null) {
-							dragDropSelection.push(item.item);
-						}
-					}
-				}
-				requestRefresh();
-				dragAndDropInterface.onDragStart(data.item, dragDropSelection);
+				dragAndDropInterface.onDragStart(data.item, getSelectedItems());
 			}
 
 			line.onDrop = (op: HuiDragOp) -> {
