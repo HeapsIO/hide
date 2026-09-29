@@ -110,9 +110,11 @@ class MeshSpray extends Spray {
 	@:s var editChildren = false; // We assume that editChildren can't be activated when binary storage is activated
 
 	var binaryMeshes : Array<{ path : String, x : Float, y : Float, z : Float, rotX : Float, rotY : Float, rotZ : Float, scale : Float }>;
+	var binaryName : String = null;
 
 	override function load(obj : Dynamic) {
 		super.load(obj);
+		binaryName = name;
 		//backward compatibility
 		if(Reflect.hasField(obj, "meshes")) {
 			var oldSources : Array<Spray.Source> = Reflect.field(obj, "meshes");
@@ -124,11 +126,12 @@ class MeshSpray extends Spray {
 
 	override function copy(other : Prefab) {
 		super.copy(other);
+		binaryName = (cast other:MeshSpray).binaryName;
 	}
 
 	function loadBinary() {
 		binaryMeshes = [];
-		var bytes = new haxe.io.BytesInput(shared.loadPrefabDat("content","dat",name).entry.getBytes());
+		var bytes = new haxe.io.BytesInput(shared.loadPrefabDat("content","dat",binaryName).entry.getBytes());
 		try {
 			while( true ) {
 				binaryMeshes.push({
@@ -153,17 +156,7 @@ class MeshSpray extends Spray {
 			return;
 
 		// Delete dat files
-		var path = hide.Ide.inst.getPath(shared.getPrefabDatPath("content", "dat", name));
-		var prefabPath = shared.getFolderDatPath();
-		prefabPath = hide.Ide.inst.getPath(prefabPath.substring(0, prefabPath.length - 1));
-		var folderPath = prefabPath + '/${name}';
-		folderPath = hide.Ide.inst.getPath(folderPath);
-		if (sys.FileSystem.exists(path))
-			sys.FileSystem.deleteFile(path);
-		if (sys.FileSystem.readDirectory(folderPath).length == 0)
-			sys.FileSystem.deleteDirectory(folderPath);
-		if (sys.FileSystem.readDirectory(prefabPath).length == 0)
-			sys.FileSystem.deleteDirectory(prefabPath);
+		shared.savePrefabDat("content", "dat", binaryName, null);
 
 		// Add models to the scene
 		for (binModel in binaryMeshes) {
@@ -419,6 +412,8 @@ class MeshSpray extends Spray {
 	}
 
 	function saveToBinary() {
+		if (binaryName == null)
+			binaryName = name;
 		if( binaryMeshes == null )
 			binaryMeshes = [];
 		var meshes = new Map();
@@ -436,8 +431,13 @@ class MeshSpray extends Spray {
 			c.remove();
 			binaryChanged = true;
 		}
+		#if (editor || editor_hl)
+		if (binaryName != name) {
+			binaryChanged = true;
+		}
 		if( !binaryChanged )
 			return;
+		#end
 		function align(x:Float,y:Float) {
 			return y + x * 0.001;
 		}
@@ -465,7 +465,14 @@ class MeshSpray extends Spray {
 			bytes.addFloat(c.rotZ);
 			bytes.addByte("\n".code);
 		}
-		shared.savePrefabDat("content","dat",name, bytes.getBytes());
+		#if (editor || editor_hl)
+		if (binaryName != name) {
+			// delete old dir
+			shared.savePrefabDat("content","dat",binaryName, null);
+		}
+		#end
+		binaryName = name;
+		shared.savePrefabDat("content","dat",binaryName, bytes.getBytes());
 		binaryChanged = false;
 
 		loadBinary();
