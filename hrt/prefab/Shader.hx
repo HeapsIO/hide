@@ -135,7 +135,7 @@ class Shader extends Prefab {
 		return targetMaterial == null || targetMaterial == mat.name;
 	}
 
-	function iterMaterials(callb, filterObj : (obj : h3d.scene.Object) -> Bool = null) {
+	function iterMaterials(callb, filterObj : (obj : h3d.scene.Object) -> Bool = null, onlyTarget = false) {
 		if (parent == null)
 			return;
 		var parent = parent;
@@ -155,32 +155,40 @@ class Shader extends Prefab {
 		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
 			for( m in material.getMaterials(true, filterObj) )
-				callb(null, m);
+				if( !onlyTarget || checkMaterial(m) )
+					callb(null, m);
 		} else if ( Std.isOfType(parent, MaterialSelector) ) {
 			var materialSelector = cast(parent, MaterialSelector);
 			var passSelect = h3d.mat.MaterialSetup.current.createMaterial();
 			for ( p in materialSelector.getPasses(null, filterObj) ) {
 				passSelect.name = p.all ? "" : PASS_SELECT;
 				@:privateAccess passSelect.passes = p.pass;
-				callb(null, passSelect);
+				if( !onlyTarget || checkMaterial(passSelect) )
+					callb(null, passSelect);
 			}
 		} else {
 			var objs = [];
-			function pushUnique(obj : h3d.scene.Object ) {
-				for ( o in objs )
-					if ( o == obj )
-						return;
-				objs.push(obj);
+			var seen = new Map<h3d.scene.Object, Bool>();
+			function rec(o : h3d.scene.Object) {
+				if( seen.exists(o) || (filterObj != null && !filterObj(o)) )
+					return;
+				seen.set(o, true);
+				objs.push(o);
+				for( c in o )
+					rec(c);
+			}
+			function collect(p : Prefab) {
+				var root = p.to(Object3D)?.local3d;
+				if( root != null )
+					rec(root);
 			}
 			if( recursiveApply ) {
 				for( c in parent.flatten() )
-					for( o in shared.getObjects(c, h3d.scene.Object, filterObj) )
-						pushUnique(o);
+					collect(c);
 			} else if( parent.type == "object" ) {
 				// apply to all immediate children
 				for( c in parent.children )
-					for( o in shared.getObjects(c, h3d.scene.Object, filterObj) )
-						pushUnique(o);
+					collect(c);
 			} else {
 				var obj3d = Std.downcast(parent,hrt.prefab.Object3D);
 				if (obj3d != null)
@@ -188,19 +196,20 @@ class Shader extends Prefab {
 			}
 			for( obj in objs )
 				for( m in obj.getMaterials(false) )
-					callb(obj, m);
+					if( !onlyTarget || checkMaterial(m) )
+						callb(obj, m);
 		}
 	}
 
 	override function dispose() {
 		if( shared.current3d != null )
-			iterMaterials(function(obj,mat) if(checkMaterial(mat)) removeShader(obj, mat, shader));
+			iterMaterials(function(obj,mat) removeShader(obj, mat, shader), null, true);
 		super.dispose();
 	}
 
 	public function apply3d(filterObj : (obj : h3d.scene.Object) -> Bool = null) {
 		if( shared.current3d != null )
-			iterMaterials(function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader), filterObj);
+			iterMaterials(function(obj,mat) applyShader(obj, mat, shader), filterObj, true);
 	}
 
 	override function makeInstance() {
@@ -219,7 +228,7 @@ class Shader extends Prefab {
 
 		// can't use apply3d(), macros?
 		if( shared.current3d != null )
-			iterMaterials(function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader));
+			iterMaterials(function(obj,mat) applyShader(obj, mat, shader), null, true);
 		this.shader = shader;
 		updateInstance();
 	}
