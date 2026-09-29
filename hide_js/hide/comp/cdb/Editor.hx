@@ -718,6 +718,11 @@ class Editor extends Component {
 		var targetCells = cursor.getSelectedCells();
 		var targetSheet = cursor.table.sheet;
 
+		// copyPasteImmutable columns can still be pasted into when they are the only target cell
+		function isPasteImmutable(col : cdb.Data.Column) {
+			return targetCells.length != 1 && Editor.getColumnProps(col).copyPasteImmutable;
+		}
+
 		function refresh() {
 			formulas.evaluateAll(targetSheet.realSheet);
 			if (targetSheet.realSheet.parent == null)
@@ -789,7 +794,7 @@ class Editor extends Component {
 			beginChanges();
 			for (c in targetCells) {
 				var col = c.column;
-				if (!c.table.canEditColumn(col.name) || Editor.getColumnProps(col).copyPasteImmutable)
+				if (!c.table.canEditColumn(col.name) || isPasteImmutable(col))
 					continue;
 
 				var parsedValue = parseCDBValue(plainText, col.type);
@@ -861,7 +866,7 @@ class Editor extends Component {
 			if (schema.length == 1) {
 				for (c in targetCells) {
 					var col = c.column;
-					if (!c.table.canEditColumn(col.name) || Editor.getColumnProps(col).copyPasteImmutable)
+					if (!c.table.canEditColumn(col.name) || isPasteImmutable(col))
 						continue;
 					setValue(data[0], c.line.obj, schema[0], col);
 					toRefresh.push(c);
