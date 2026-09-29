@@ -407,14 +407,23 @@ class Reference extends Object3D {
 			</category>
 		);
 
+		// The kit undo only saves/loads the reference data, which doesn't restore the refInstance, so we record our own undo
+		btnClearOverrides.noUndo = true;
 		btnClearOverrides.onClick = () -> {
-			this.overrides = null;
-			if (originalSource != null) {
-				originalSource = null;
-				refInstance = null;
+			var oldRef = refInstance;
+			var oldOverrides = overrides;
+			overrides = null;
+			refInstance = null;
+			var newRef = resolve();
+
+			function exec(isUndo: Bool) {
+				refInstance = isUndo ? oldRef : newRef;
+				overrides = isUndo ? oldOverrides : null;
 				ctx.rebuildPrefab(this);
 				ctx.rebuildInspector();
 			}
+			exec(false);
+			ctx.recordUndo(exec);
 		};
 
 	}
