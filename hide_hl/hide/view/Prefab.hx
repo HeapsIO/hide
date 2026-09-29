@@ -50,7 +50,6 @@ class Prefab extends HuiView<{path: String}> {
 	var gizmo : hrt.tools.Gizmo = null;
 	var rethrowMakeErrors: Bool = false;
 	var prefab: hrt.prefab.Prefab;
-	var interactives: Map<hrt.prefab.Prefab, h3d.scene.Interactive> = [];
 	var selectedPrefabs: Map<hrt.prefab.Prefab, Bool> = [];
 	var lastPushX : Float = -100;
 	var lastPushY : Float = -100;
@@ -1036,7 +1035,6 @@ class Prefab extends HuiView<{path: String}> {
 				removePrefabInstance(this.prefab);
 				this.prefab.shared.root2d.remove();
 				this.prefab.shared.root3d.remove();
-				this.interactives.clear();
 				this.prefab = null;
 			}
 
@@ -1143,14 +1141,14 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	public function makePrefabInteractive(prefab: hrt.prefab.Prefab) {
-		if (interactives.get(prefab) != null)
+		if (prefab.editorInteractive != null)
 			throw "prefab already has interactive";
 
 		var int = prefab.makeInteractive();
 		if (int != null) {
 			var i3d = Std.downcast(int, h3d.scene.Interactive);
 			if (i3d != null) {
-				interactives.set(prefab, i3d);
+				prefab.editorInteractive = i3d;
 				i3d.cursor = Default;
 			}
 
@@ -1161,12 +1159,6 @@ class Prefab extends HuiView<{path: String}> {
 	public function removePrefabInstance(prefab: hrt.prefab.Prefab) {
 		if (prefab == null)
 			return;
-		// Remove interactives before the objects, as removing a Reference objects can discard its refInstance
-		function recRemoveInteractives(p: hrt.prefab.Prefab) {
-			removePrefabInteractives(p);
-			iterChildrenAndRef(p, recRemoveInteractives, false);
-		}
-		recRemoveInteractives(prefab);
 
 		prefab.editorRemoveObjects();
 
@@ -1180,8 +1172,8 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	public function removePrefabInteractives(prefab: hrt.prefab.Prefab) {
-		interactives.get(prefab)?.remove();
-		interactives.remove(prefab);
+		prefab.editorInteractive?.remove();
+		prefab.editorInteractive = null;
 	}
 
 	public function rebuildPrefabInteractive(prefab: hrt.prefab.Prefab) {

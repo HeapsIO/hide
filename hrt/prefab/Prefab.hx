@@ -67,6 +67,13 @@ class Prefab {
 	@:s public var name : String = "";
 	public static var emptyNameReplacement = "$no_name";
 
+	#if editor_hl
+	/**
+		The interactive created by the editor for this prefab, removed in editorRemoveObjects
+	**/
+	public var editorInteractive : h3d.scene.Interactive;
+	#end
+
 	/**
 		The associated source file (an image, a 3D model, etc.) if the prefab type needs it.
 	**/
@@ -648,6 +655,10 @@ class Prefab {
 		for (child in children) {
 			child.editorRemoveObjects();
 		}
+		#if editor_hl
+		editorInteractive?.remove();
+		editorInteractive = null;
+		#end
 		editorRemoveInstanceObjects();
 		dispose();
 	}
