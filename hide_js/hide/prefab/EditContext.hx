@@ -97,15 +97,78 @@ class EditContext {
 	}
 
 	/**
+		Multi edit context this context is a child of. Rebuild requests are forwarded to it
+		and queued until `flushChildRequests` is called
+	**/
+	public var parentContext : EditContext;
+	var queuedRebuilds : Array<{ p : Prefab, sceneOnly : Bool }> = [];
+	var queuedProperties = false;
+	var queuedTree = false;
+
+	/**
+		Process the queued child requests. Returns a function to call after an undo/redo of
+		the edit, that rebuilds the same prefabs again and processes what the undo/redo queued
+	**/
+	public function flushChildRequests() : Void -> Void {
+		var rebuilds = queuedRebuilds;
+		queuedRebuilds = [];
+		for( r in rebuilds )
+			rebuildPrefabImpl(r.p, r.sceneOnly);
+		if( queuedTree ) {
+			queuedTree = false;
+			refreshTreeImpl();
+		}
+		if( queuedProperties ) {
+			queuedProperties = false;
+			rebuildPropertiesImpl();
+		}
+		return () -> {
+			for( r in rebuilds )
+				queuedRebuilds.push(r);
+			flushChildRequests();
+		};
+	}
+
+	/**
 		Rebuild the edit window
 	**/
 	public function rebuildProperties() {
+		if( parentContext != null ) {
+			parentContext.queuedProperties = true;
+			return;
+		}
+		rebuildPropertiesImpl();
 	}
 
 	/**
 		Force rebuilding makeInstance for the given hierarchy
 	**/
 	public function rebuildPrefab( p : Prefab, ?sceneOnly=false) {
+		if( parentContext != null ) {
+			parentContext.queuedRebuilds.push({ p : p, sceneOnly : sceneOnly });
+			return;
+		}
+		rebuildPrefabImpl(p, sceneOnly);
+	}
+
+	/**
+		Refresh the scene tree
+	**/
+	public function refreshTree() {
+		if( parentContext != null ) {
+			parentContext.queuedTree = true;
+			return;
+		}
+		refreshTreeImpl();
+	}
+
+	function rebuildPropertiesImpl() {
+	}
+
+	function rebuildPrefabImpl( p : Prefab, sceneOnly : Bool ) {
+	}
+
+	function refreshTreeImpl() {
 	}
 
 	public function getNamedObjects( ?exclude : h3d.scene.Object ) {

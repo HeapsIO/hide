@@ -425,13 +425,17 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		return c;
 	}*/
 
-	override function rebuildProperties() {
+	override function rebuildPropertiesImpl() {
 		editor.scene.setCurrent();
 		editor.selectElements(elements, NoHistory);
 	}
 
-	override function rebuildPrefab( p : hrt.prefab.Prefab, ?sceneOnly : Bool) {
+	override function rebuildPrefabImpl( p : hrt.prefab.Prefab, sceneOnly : Bool) {
 		editor.queueRebuild(p);
+	}
+
+	override function refreshTreeImpl() {
+		editor.refreshTree(All);
 	}
 
 	public function cleanup() {
@@ -3869,6 +3873,7 @@ class SceneEditor {
 		properties.element.append(pasteButton);
 
 		edit.properties.multiPropsEditor.clear();
+		edit.properties.onMultiEditEnd = edit.flushChildRequests;
 
 		if (Type.getClass(e) == hrt.prefab.Prefab && others != null) {
 			properties.add(new hide.Element('<p>The selected prefabs are too different to be multi edited</p>'));
@@ -3882,6 +3887,7 @@ class SceneEditor {
 					multiProps.isShadowEditor = true;
 					edit.properties.multiPropsEditor.push(multiProps);
 					var ctx = new SceneEditorContext(undo, [prefab], this);
+					ctx.parentContext = edit;
 					ctx.properties = multiProps;
 					ctx.scene = this.scene;
 					prefab.edit(ctx);

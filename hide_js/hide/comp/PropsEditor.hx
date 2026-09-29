@@ -22,6 +22,11 @@ class PropsEditor extends Component {
 	public var isTempChange = false;
 	public var isShadowEditor = false;
 
+	// Called once a change has been propagated to all the multiPropsEditor, the returned function is called after undo/redo of that change
+	public dynamic function onMultiEditEnd() : Void -> Void {
+		return null;
+	}
+
 	public function new(?undo,?parent,?el) {
 		super(parent,el);
 		element.addClass("hide-properties");
@@ -310,12 +315,14 @@ class PropsEditor extends Component {
 				isTempChange = f.isTempChange;
 				lastChange = haxe.Timer.stamp();
 
+				var afterUndo : Void -> Void = null;
 				if (multiPropsEditor.length > 0) {
 					var index = element.find(querry).index();
 					if (!undo) {
 						multiPropFields((propField) -> {
 							propField.propagateValueChange(f.getFieldValue(), isTempChange);
 						});
+						afterUndo = onMultiEditEnd();
 					}
 				}
 				var tempUndo = f.undoHistory;
@@ -336,6 +343,8 @@ class PropsEditor extends Component {
 							} else {
 								while(tempUndo.redo()) {};
 							}
+							if (afterUndo != null)
+								afterUndo();
 						}));
 					}
 				}

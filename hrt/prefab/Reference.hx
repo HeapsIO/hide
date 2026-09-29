@@ -557,13 +557,13 @@ class Reference extends Object3D {
 					if (pname == "source") {
 						if(this.name == new haxe.io.Path(oldSource).file){
 							this.name = new haxe.io.Path(source).file;
-							@:privateAccess shared.editor.refreshTree(All);
+							ctx.refreshTree();
 						}
 						ctx.rebuildPrefab(this);
 					}
 					else {
 						ctx.rebuildPrefab(this);
-						@:privateAccess shared.editor.refreshTree(All);
+						ctx.refreshTree();
 					}
 				}
 			}
