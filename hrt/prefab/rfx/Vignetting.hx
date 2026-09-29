@@ -29,6 +29,7 @@ class Vignetting extends RendererFX {
 	@:s public var alpha : Float = 1;
 	@:s public var radius : Float = 1;
 	@:s public var softness : Float;
+	@:s public var renderAfterUpscaling : Bool = false;
 
 	function sync( r : h3d.scene.Renderer ) {
 		var ctx = r.ctx;
@@ -41,7 +42,7 @@ class Vignetting extends RendererFX {
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( !checkEnabled() ) return;
-		if( step == AfterTonemapping ) {
+		if( renderAfterUpscaling ? step == AfterUpscaling : step == AfterTonemapping ) {
 			r.mark("Vignetting");
 			sync(r);
 			vignettingPass.render();
@@ -95,6 +96,7 @@ class Vignetting extends RendererFX {
 				<dt>Alpha</dt><dd><input type="range" min="0" max="1" field="alpha"/></dd>
 				<dt>Radius</dt><dd><input type="range" min="0" max="1" field="radius"/></dd>
 				<dt>Softness</dt><dd><input type="range" min="0" max="1" field="softness"/></dd>
+				<dt>Render After Upscaling</dt><dd><input type="checkbox" field="renderAfterUpscaling"/></dd>
 			</dl>
 		'),this, function(pname) {
 			ctx.onChange(this, pname);
@@ -110,6 +112,7 @@ class Vignetting extends RendererFX {
 				<range(0,1) field={alpha} />
 				<range(0,1) field={radius} />
 				<range(0,1) field={softness} />
+				<checkbox field={renderAfterUpscaling} />
 			</root>
 		);
 		super.edit2(ctx);
