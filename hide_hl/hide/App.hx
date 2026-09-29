@@ -9,7 +9,7 @@ class App extends hxd.App {
 	public var ide : hide.Ide;
 	static public var DEBUG = false;
 	static public var fs : hxd.fs.EmbedFileSystem;
-	static public var remoteScript = false;
+	static public var background = false;
 
 	var fpsGraph : h3d.impl.FpsGraph;
 	public var lastUpdateTime: Float = 0.0;
@@ -42,7 +42,7 @@ class App extends hxd.App {
 		// iconPath = StringTools.replace(iconPath, "/", "\\");
 		// trace(iconPath);
 		// @:privateAccess hxd.Window.getInstance().window.setIconFromFile(iconPath);
-		if (!remoteScript)
+		if (!background)
 			@:privateAccess hxd.Window.getInstance().window.maximize();
 		@:privateAccess hxd.Window.getInstance().window.setDarkMode(true);
 		#else
@@ -157,7 +157,7 @@ class App extends hxd.App {
 		if (hide.ThumbnailGeneratorApp.tryStart())
 			return;
 		DEBUG = #if hl hl.Api.hasDebugger() #else false #end;
-		remoteScript = Sys.args().indexOf("--remotescript") != -1;
+		background = Sys.args().indexOf("--background") != -1;
 
 		#if renderdoc
 		if( !hxd.tools.RenderDoc.init() )
@@ -176,13 +176,12 @@ class App extends hxd.App {
 			trace(iconPath);
 			dx.Window.setDefaultIcon(dx.Icon.loadIcon(@:privateAccess iconPath.bytes, -1, -1));
 			new hxd.Window("HideHL", 1600, 900, {
-				background: remoteScript
+				background: background
 			});
 		}
 		#end
 		#if shiro
-		if(remoteScript)
-			new hide.tools.RemoteApi().start();
+		shiro.Hide.init();
 		#end
 
 		new App();
