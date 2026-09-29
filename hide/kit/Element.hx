@@ -474,10 +474,12 @@ class Element {
 		Copy this element value and its children to the clipboard
 	**/
 	final function copyToClipboard() {
-		#if js
 		var data = {};
 		copy(data);
+		#if js
 		Ide.inst.setClipboard(haxe.Json.stringify(data));
+		#elseif hui
+		Ide.inst.setClipboard(haxe.Json.stringify(data), null);
 		#end
 	}
 
@@ -498,22 +500,29 @@ class Element {
 	}
 
 	final function pasteFromClipboard() {
+		var str = "";
+
 		#if js
-		var clipboard = Ide.inst.getClipboard();
-		if (clipboard == null)
+		str = Ide.inst.getClipboard();
+		#elseif hui
+		str = Ide.inst.getClipboardText();
+		#end
+
+		if (str == null || str == "")
 			return;
 
-		var data = try {
-			haxe.Json.parse(clipboard);
+		var data : Dynamic = try {
+			haxe.Json.parse(str);
 		} catch (e) {
-			clipboard;
+			str;
 		}
+
 		if (data == null)
 			return;
 
 		@:privateAccess root.prepareUndoPoint();
 
-		switch(Type.typeof(data)) {
+		switch (Type.typeof(data)) {
 			case TObject, TClass(String):
 				paste(data);
 			default:
@@ -521,14 +530,16 @@ class Element {
 					var string = haxe.Json.stringify(data);
 					paste(string);
 				} catch(e) {
+					#if js
 					Ide.inst.quickError(e);
+					#elseif hui
+					Ide.showError(e.message);
+					#end
 				}
 		}
 
 		@:privateAccess root.finishUndoPoint();
-
 		root.editor.rebuildInspector();
-		#end
 	}
 
 	/**
