@@ -929,6 +929,10 @@ class Light extends Object3D {
 	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "sun-o", name : "Light" };
 	}
+
+	override function needUniqueName() {
+		return true;
+	}
 	#end
 
 	static var _ = Prefab.register("light", Light);

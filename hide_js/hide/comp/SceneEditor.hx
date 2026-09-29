@@ -5616,17 +5616,11 @@ class SceneEditor {
 	}
 
 	function autoName(p : PrefabElement) {
-		var uniqueName = false;
-
-		if( p.type == "volumetricLightmap" || p.type == "light" )
-			uniqueName = true;
+		var uniqueName = p.needUniqueName();
 
 		var dataPath = getDataPath(p.name);
 		if( !uniqueName && p.name != null && p.name.length > 0 && dataPath != null && sys.FileSystem.exists(dataPath) )
 			uniqueName = true;
-
-		var mat = Std.downcast(p, hrt.prefab.Material);
-		uniqueName = !uniqueName && mat != null && mat.parent == sceneData.getRoot() && isMatLib();
 
 		var prefix = null;
 		if(p.name != null && p.name.length > 0) {

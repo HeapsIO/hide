@@ -156,7 +156,8 @@ class MeshSpray extends Spray {
 			return;
 
 		// Delete dat files
-		shared.savePrefabDat("content", "dat", binaryName, null);
+		if (!isBinaryNameUsed())
+			shared.savePrefabDat("content", "dat", binaryName, null);
 
 		// Add models to the scene
 		for (binModel in binaryMeshes) {
@@ -411,6 +412,11 @@ class MeshSpray extends Spray {
 		return super.save();
 	}
 
+	// Another mesh spray (duplicate, paste) can still reference our dat file
+	function isBinaryNameUsed() {
+		return getRoot().find(MeshSpray, m -> m != this && m.name == binaryName) != null;
+	}
+
 	function saveToBinary() {
 		if (binaryName == null)
 			binaryName = name;
@@ -466,7 +472,7 @@ class MeshSpray extends Spray {
 			bytes.addByte("\n".code);
 		}
 		#if (editor || editor_hl)
-		if (binaryName != name) {
+		if (binaryName != name && !isBinaryNameUsed()) {
 			// delete old dir
 			shared.savePrefabDat("content","dat",binaryName, null);
 		}
@@ -675,6 +681,10 @@ class MeshSpray extends Spray {
 			hideChildren : p -> return (!editChildren && Std.isOfType(p, Model)),
 			onChildUpdate: p -> cast(local3d, MeshSprayObject).redraw(),
 		};
+	}
+
+	override function needUniqueName() {
+		return true;
 	}
 
 	static function onContextMenu(selection: Array<hrt.prefab.Prefab>) : Array<hrt.ui.HuiMenu.MenuItem> {

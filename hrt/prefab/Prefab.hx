@@ -733,6 +733,13 @@ class Prefab {
 	}
 
 	/**
+		If true, the editor will give this prefab a unique name when it's created or duplicated
+	**/
+	public function needUniqueName() : Bool {
+		return false;
+	}
+
+	/**
 		Called when the hide editor wants to edit this Prefab.
 		Used to create the various editor interfaces
 	**/

@@ -1035,6 +1035,11 @@ class Material extends Prefab {
 			allowChildren: function(t) return !Prefab.isOfType(t, Material),
 		};
 	}
+
+	override function needUniqueName() {
+		var editor = shared.editor;
+		return editor != null && @:privateAccess editor.isMatLib() && parent == @:privateAccess editor.sceneData.getRoot();
+	}
 	#end
 
 	override function editorAllowChild(cl) {

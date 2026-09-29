@@ -181,6 +181,10 @@ class VolumetricLightmap extends Object3D {
 		return { icon : "map-o", name : "VolumetricLightmap" };
 	}
 
+	override function needUniqueName() {
+		return true;
+	}
+
 	override function setSelected(b : Bool ) {
 		if( b ) {
 			var obj = local3d;
