@@ -1863,12 +1863,21 @@ class Prefab extends HuiView<{path: String}> {
 		}
 		for (parent in selection) {
 			var createdPrefabs : Array<hrt.prefab.Prefab> = [];
+			var parentTransform = parent.to(hrt.prefab.Object3D)?.getRelativeTransform(null, null, true);
 			for (data in json) {
 				if (!Reflect.hasField(data, "type"))
 					continue;
 
 				try {
 					var prefab = hrt.prefab.Prefab.createFromDynamic(data, null);
+
+					var obj3d = prefab.to(hrt.prefab.Object3D);
+					if (obj3d != null && parentTransform != null) {
+						var mat = obj3d.getTransform();
+						mat.multiply(mat, parentTransform);
+						obj3d.setTransform(mat);
+					}
+
 					createdPrefabs.push(prefab);
 					selectPrefabs.push(prefab);
 				} catch (e) {
