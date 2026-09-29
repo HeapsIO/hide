@@ -101,11 +101,13 @@ class Reference extends Object3D {
 
 		// Clone the refInstance from the original prefab on copy
 		if (source != null && shouldBeInstanciated()) {
+			#if !editor_hl
 			var newVersion = try hxd.res.Loader.currentInstance.load(source).toPrefab().reloadedVersion catch(e) -1;
 			if (newVersion != otherRef.refInstanceVersion) {
 				otherRef.refInstance = null;
 				otherRef.initRefInstance();
 			}
+			#end
 
 			if (otherRef.refInstance != null) {
 				refInstance = otherRef.refInstance.clone(new ContextShared(source, null, null, true));
