@@ -24,8 +24,17 @@ enum DiffResult {
 	@removed : an array of keys name that are present in A but were removed in B
 	@index : in the prefab children data, indicate that this child has changed index between the A.children and B.children array
 
+	The root of a diffPrefab result also contains a `#v` field, set to DIFF_VERSION
+
 **/
 class Diff {
+
+	/**
+		Version of the diffPrefab format, stored in the `#v` field of the diff root.
+		Diffs without a version (saved before versioning) are applied with the original apply code,
+		to reproduce the results they had when they were saved
+	**/
+	public static inline var DIFF_VERSION = 1;
 
 	/**
 		Add or Set a key/value pair to a DiffResult. If "diff" was a Skip, it will become a Set({key: value})
@@ -96,6 +105,16 @@ class Diff {
 		(because we consider that changing the type of a prefab in a diff means the prefab was destroyed then re-created)
 	**/
 	public static function diffPrefab(original: Dynamic, modified: Dynamic) : DiffResult {
+		var result = diffPrefabRec(original, modified);
+		switch (result) {
+			case Set(v) if (v != null):
+				Reflect.setField(v, "#v", DIFF_VERSION);
+			default:
+		}
+		return result;
+	}
+
+	static function diffPrefabRec(original: Dynamic, modified: Dynamic) : DiffResult {
 		if (original == null || modified == null) {
 			if (original == modified)
 				return Skip;
@@ -136,7 +155,7 @@ class Diff {
 				if (index > 0)
 					key += '@$index';
 
-				var diff = diffPrefab(originalChild?.child, modifiedChild?.child);
+				var diff = diffPrefabRec(originalChild?.child, modifiedChild?.child);
 
 				if (originalChild?.index != modifiedChild?.index) {
 					if (modifiedChild?.index != null) {
@@ -241,8 +260,29 @@ class Diff {
 		from `diff` are directly referenced in the result, and `diff` itself can be modified during
 		the process (for example, `@index` fields are consumed). If you need to keep `diff` intact
 		(e.g. to apply it several times), pass `deepCopy(diff)` instead.
+
+		The root of `diff` must contain a `#v` field set to DIFF_VERSION (diffPrefab sets it).
+		If you craft a diff by hand, add it : a diff without `#v` (or with `#v` == 0) is applied
+		with the original apply code, which is only kept to load diffs saved before versioning as they were.
 	**/
 	public static function apply(target: Dynamic, diff: Dynamic) : Dynamic {
+		if (diff == null)
+			return null;
+
+		var version : Null<Int> = Reflect.field(diff, "#v");
+		if (version == null || version == 0)
+			return applyV0(target, diff);
+
+		var result = applyPrefab(target, diff);
+		// The diff is returned as is when the root prefab type changed, don't keep the version in the prefab data
+		if (result == diff) {
+			result = Reflect.copy(diff);
+			Reflect.deleteField(result, "#v");
+		}
+		return result;
+	}
+
+	static function applyPrefab(target: Dynamic, diff: Dynamic) : Dynamic {
 		if (diff == null)
 			return null;
 
@@ -262,6 +302,9 @@ class Diff {
 	**/
 	static function applyObject(target: Dynamic, diff: Dynamic) : Dynamic {
 		for (field in Reflect.fields(diff)) {
+			if (field == "#v")
+				continue;
+
 			if (field == "children")
 			{
 				var targetChildren : Array<Dynamic> = Reflect.field(target, "children") ?? [];
@@ -304,7 +347,7 @@ class Diff {
 							continue;
 					}
 
-					targetChildren[originalIndex] = apply(targetChild, diffChild);
+					targetChildren[originalIndex] = applyPrefab(targetChild, diffChild);
 				}
 
 				// Reorder the targetChildren array based on @indexes.
@@ -355,6 +398,122 @@ class Diff {
 				applyObject(targetValue, diffValue);
 			} else {
 				Reflect.setField(target, field, diffValue);
+			}
+		}
+		return target;
+	}
+
+	/**
+		Original apply code, used for diffs without `#v`. Don't fix the bugs in this function :
+		it must give the same result as when these diffs were saved
+	**/
+	static function applyV0(target: Dynamic, diff: Dynamic) : Dynamic {
+		if (diff == null)
+			return null;
+
+		if (target == null)
+			target = {};
+
+		if (diff.type != null && diff.type != target.type) {
+			return diff;
+		}
+
+		for (field in Reflect.fields(diff)) {
+			if (field == "children")
+			{
+				var targetChildren = Reflect.field(target, "children") ?? [];
+				var diffChildren = Reflect.field(diff, "children");
+
+				for (fields in Reflect.fields(diffChildren)) {
+					var diffChild = Reflect.field(diffChildren, fields);
+					var name = fields;
+					var split = name.split("@");
+					var nthChild = 0;
+					if (split.length == 2) {
+						name = split[0];
+						nthChild = Std.parseInt(split[1]);
+					}
+
+					var targetChild = null;
+					var originalIndex = targetChildren.length; // if we don't found any children with the right name in the array, this will make sure we add the newly created children at the end of the array
+					for (index => child in targetChildren) {
+						// Can happen if a child get deleted, it is nulled and removed at the end
+						if (child == null)
+							continue;
+						if (name == child.name) {
+							if (nthChild == 0) {
+								targetChild = child;
+								originalIndex = index;
+								break;
+							} else {
+								nthChild --;
+							}
+						}
+					}
+
+					// Remove child if null
+					if (diffChild == null) {
+						targetChildren[originalIndex] = null;
+						continue;
+					}
+
+					// Skip diff children that don't have type if they don't
+					// modify a prefab from target object (because we can't create a prefab without a type)
+					if (targetChild == null && diffChild.type == null) {
+							continue;
+					}
+
+					targetChildren[originalIndex] = applyV0(targetChild, diffChild);
+				}
+
+				// Reorder the targetChildren array based on @indexes.
+				// if the @index point to a slot already taken, find the next free slot
+				// This should ensure that arrays are somewhat coherent in bad situation like
+				// the target children array has been modified since the last diff
+				var finalChildren : Array<Dynamic> = [];
+				for (index => child in targetChildren) {
+					if (child == null) continue;
+					var changedIndex = Reflect.field(child, "@index");
+					var targetIndex = if (changedIndex != null) {
+						Reflect.deleteField(child, "@index");
+						changedIndex;
+					} else {
+						index;
+					}
+					while (finalChildren[targetIndex] != null) {
+						targetIndex ++;
+					}
+					finalChildren[targetIndex] = child;
+				}
+				// If a prefab has been removed, it get inserted as a null in the childrenArray
+				// we fix that here
+				finalChildren = finalChildren.filter((f) -> f != null);
+
+				Reflect.setField(target, "children", finalChildren);
+				continue;
+			}
+
+			if (field == "@removed") {
+				var removed = Reflect.field(diff, "@removed");
+				for (field in (removed:Array<String>)) {
+					Reflect.deleteField(target, field);
+				}
+				continue;
+			}
+
+			var targetValue = Reflect.getProperty(target, field);
+			var diffValue = Reflect.getProperty(diff, field);
+
+			var targetType = Type.typeof(targetValue);
+			var diffType = Type.typeof(diffValue);
+
+			switch (targetType) {
+				case TNull | TInt | TFloat | TBool | TClass(Array) | TClass(String):
+					Reflect.setField(target, field, diffValue);
+				case TObject:
+					applyV0(targetValue, diffValue);
+				default:
+					throw "unhandeld type " + targetType;
 			}
 		}
 		return target;
