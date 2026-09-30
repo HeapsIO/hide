@@ -230,7 +230,7 @@ class Diff {
 		Returns the difference between two arrays. If the arrays are found to be different, a full copy of
 		modified will be returned as a Set()
 	**/
-	public static function diffArray(original: Array<Dynamic>, modified: Dynamic) : DiffResult {
+	public static function diffArray(original: Dynamic, modified: Dynamic) : DiffResult {
 		if (original.length != modified.length) {
 			return Set(deepCopy(modified));
 		}
@@ -269,7 +269,7 @@ class Diff {
 		if (diff == null)
 			return null;
 
-		var version : Null<Int> = Reflect.field(diff, "#v");
+		var version = Reflect.field(diff, "#v");
 		if (version == null || version == 0)
 			return applyV0(target, diff);
 
@@ -307,7 +307,7 @@ class Diff {
 
 			if (field == "children")
 			{
-				var targetChildren : Array<Dynamic> = Reflect.field(target, "children") ?? [];
+				var targetChildren = Reflect.field(target, "children") ?? [];
 				var diffChildren = Reflect.field(diff, "children");
 
 				// Index the target children by name before modifying targetChildren, so the `name@n` lookup
@@ -383,8 +383,8 @@ class Diff {
 
 			if (field == "@removed") {
 				var removed = Reflect.field(diff, "@removed");
-				for (field in (removed:Array<String>)) {
-					Reflect.deleteField(target, field);
+				for (i in 0...removed.length) {
+					Reflect.deleteField(target, removed[i]);
 				}
 				continue;
 			}
@@ -495,8 +495,8 @@ class Diff {
 
 			if (field == "@removed") {
 				var removed = Reflect.field(diff, "@removed");
-				for (field in (removed:Array<String>)) {
-					Reflect.deleteField(target, field);
+				for (i in 0...removed.length) {
+					Reflect.deleteField(target, removed[i]);
 				}
 				continue;
 			}
