@@ -1,14 +1,20 @@
 package hide.view;
 import hrt.ui.*;
 
+enum Unit {
+	SECOND;
+	FRAME;
+	TIMECODE;
+}
+
 class GridShader extends hxsl.Shader {
 	static var SRC = {
 		@global var camera : {
 			var position : Vec2;
 		}
 
+		@param var useYAxis : Bool;
 		@param var lineColor : Vec3;
-
 		@param var stepOrigin : Vec2;
 		@param var stepSpacing : Vec2;
 		@param var stepWidth : Float;
@@ -32,17 +38,17 @@ class GridShader extends hxsl.Shader {
 		function fragment() {
 			var major = max(
 				stepLines(absolutePosition.x, stepOrigin.x, stepSpacing.x),
-				stepLines(absolutePosition.y, stepOrigin.y, stepSpacing.y));
+				useYAxis ? stepLines(absolutePosition.y, stepOrigin.y, stepSpacing.y) : 0.);
 
 			var subSpacing = stepSpacing / subdivisions;
 			var subFade = saturate((subSpacing - 4.0) / 4.0);
 			var minor = max(
 				stepLines(absolutePosition.x, stepOrigin.x, subSpacing.x) * subFade.x,
-				stepLines(absolutePosition.y, stepOrigin.y, subSpacing.y) * subFade.y);
+				useYAxis ? stepLines(absolutePosition.y, stepOrigin.y, subSpacing.y) * subFade.y : 0.);
 
 			var origin = max(
 				lineMask(abs(absolutePosition.x - stepOrigin.x), originWidth),
-				lineMask(abs(absolutePosition.y - stepOrigin.y), originWidth));
+				useYAxis ? lineMask(abs(absolutePosition.y - stepOrigin.y), originWidth) : 0.);
 
 			pixelColor.rgb = mix(lineColor, originColor, origin);
 			pixelColor.a = max(max(major, minor * subAlpha), origin);
@@ -72,16 +78,19 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		</timeline>
 
 	static final GRID_COLOR = 0x4C4C4C;
+	static final GRID_ORIGIN_COLOR = 0x7E7E7E;
+	static final GRID_SUB_ALPHA = 0.35;
+	static final GRID_ORIGIN_WIDTH = 2;
 	static final GRID_STEP_WIDTH = 1;
 	static final GRID_SUBDIVISIONS = 5;
-	static final GRID_SUB_ALPHA = 0.35;
-	static final GRID_ORIGIN_COLOR = 0x7E7E7E;
-	static final GRID_ORIGIN_WIDTH = 2;
 	static final MIN_STEP = 1e-2;
 	static final MAX_LABELS = 21;
-	static final ZOOM_SPEED = 1.1;
 	static final MIN_ZOOM = 1e-4;
 	static final MAX_ZOOM = 1e4;
+	static final ZOOM_SPEED = 1.1;
+
+	public var unit : Unit = Unit.SECOND;
+	public var useYAxis : Bool = true;
 
 	var gridShader : GridShader = null;
 	var zoom = new h2d.col.Point(1, 1);
@@ -127,11 +136,12 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 			var factor = Math.pow(ZOOM_SPEED, -e.wheelDelta);
 			if (!hxd.Key.isDown(hxd.Key.SHIFT))
 				zoom.x = hxd.Math.clamp(zoom.x * factor, MIN_ZOOM, MAX_ZOOM);
-			if (!hxd.Key.isDown(hxd.Key.CTRL))
+			if (useYAxis && !hxd.Key.isDown(hxd.Key.CTRL))
 				zoom.y = hxd.Math.clamp(zoom.y * factor, MIN_ZOOM, MAX_ZOOM);
 
 			pan.x = mouse.x - mouseX * calculatedWidth * zoom.x;
-			pan.y = grid.calculatedHeight - mouse.y - mouseY * grid.calculatedHeight * zoom.y;
+			if (useYAxis)
+				pan.y = grid.calculatedHeight - mouse.y - mouseY * grid.calculatedHeight * zoom.y;
 			refresh();
 		}
 
@@ -148,7 +158,8 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 						scene.stopCapture();
 					case EMove:
 						pan.x = originPan.x + (scene.mouseX - originDrag.x);
-						pan.y = originPan.y - (scene.mouseY - originDrag.y);
+						if (useYAxis)
+							pan.y = originPan.y - (scene.mouseY - originDrag.y);
 						refresh();
 					default:
 				}
@@ -180,12 +191,6 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 	public function refresh() {
 		needRefresh = true;
 	}
-
-	public dynamic function getTime() : Float { return 0.; };
-	public dynamic function setTime(t : Float) {};
-	public dynamic function isPaused() : Bool { return false; };
-	public dynamic function setPaused(v : Bool) {};
-	public dynamic function getContent() : HuiElement { return null; };
 
 	override function update(dt: Float) {
 		super.update(dt);
@@ -283,19 +288,21 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 			labels.push(label);
 		}
 
-		var minY = py(grid.calculatedHeight);
-		var maxY = py(0);
+		if (useYAxis) {
+			var minY = py(grid.calculatedHeight);
+			var maxY = py(0);
 
-		vstep = getStep(maxY - minY);
-		minS = Math.floor(minY / vstep);
-		maxS = Math.ceil(maxY / vstep);
+			vstep = getStep(maxY - minY);
+			minS = Math.floor(minY / vstep);
+			maxS = Math.ceil(maxY / vstep);
 
-		for (i in minS...(maxS+1)) {
-			var iy = i * vstep;
+			for (i in minS...(maxS+1)) {
+				var iy = i * vstep;
 
-			var label = new HuiText('${hxd.Math.fmt(iy)}', grid);
-			label.setPosition(5, sy(iy) - (label.textHeight / 2));
-			labels.push(label);
+				var label = new HuiText('${hxd.Math.fmt(iy)}', grid);
+				label.setPosition(5, sy(iy) - (label.textHeight / 2));
+				labels.push(label);
+			}
 		}
 
 		var h = Std.int(rightPanel.calculatedHeight - playhead.y);
@@ -306,9 +313,16 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		var gridOrigin = grid.localToGlobal(new h2d.col.Point(0, 0));
 		gridShader.stepOrigin = new h3d.Vector(gridOrigin.x + sx(0), gridOrigin.y + sy(0), 0);
 		gridShader.stepSpacing = new h3d.Vector(sx(hstep) - sx(0), sy(0) - sy(vstep), 0);
+		gridShader.useYAxis = useYAxis;
 
 		needRefresh = false;
 	}
+
+	public dynamic function getTime() : Float { return 0.; };
+	public dynamic function setTime(t : Float) {};
+	public dynamic function isPaused() : Bool { return false; };
+	public dynamic function setPaused(v : Bool) {};
+	public dynamic function getContent() : HuiElement { return null; };
 
 	static var _ = HuiView.register("timeline", Timeline);
 }

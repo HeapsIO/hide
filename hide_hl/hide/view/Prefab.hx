@@ -1244,6 +1244,9 @@ class Prefab extends HuiView<{path: String}> {
 			return Std.downcast(fx?.local3d, hrt.prefab.fx.FX.FXAnimation);
 		}
 
+		t.useYAxis = true;
+		t.unit = Timeline.Unit.SECOND;
+
 		t.getTime = () -> {
 			return getFXAnim()?.localTime;
 		}

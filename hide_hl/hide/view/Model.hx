@@ -462,14 +462,17 @@ class Model extends HuiView<{path: String}> {
 		if (anims.length <= 0 || t == null || hide.Ide.inst.getActiveView() != this)
 			return;
 
+		t.useYAxis = false;
+		t.unit = Timeline.Unit.FRAME;
+
 		t.getContent = () -> {
 			var animSel = new HuiSelect();
-			animSel.items = [for (a in anims) { label: a.substring(a.lastIndexOf("/") + 1), value: a }];
+			animSel.items = [for (a in anims) { label: a.substring(a.lastIndexOf("/") + 1, a.lastIndexOf(".")), value: a }];
 			animSel.items.insert(0, { label: "None", value: "none"});
 			animSel.value = null;
 
 			if (obj.currentAnimation != null)
-				animSel.value = obj.currentAnimation;
+				animSel.value = obj.currentAnimation.resourcePath;
 			else
 				animSel.value = "none";
 
