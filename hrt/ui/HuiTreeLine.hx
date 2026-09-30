@@ -41,9 +41,14 @@ class HuiTreeLine extends HuiElement {
 			}
 		}
 
+		onPush = (e) -> {
+			if (e.button == 0 || e.button == 1)
+				onItemSelect(hxd.Key.isDown(hxd.Key.SHIFT), hxd.Key.isDown(hxd.Key.CTRL), e.button, false);
+		}
+
 		onClick = (e) -> {
 			if (e.button == 0 || e.button == 1)
-				onItemSelect(hxd.Key.isDown(hxd.Key.SHIFT), hxd.Key.isDown(hxd.Key.CTRL), true);
+				onItemSelect(hxd.Key.isDown(hxd.Key.SHIFT), hxd.Key.isDown(hxd.Key.CTRL), e.button, true);
 			if (e.button == 1)
 				onContextMenu();
 		}
@@ -156,7 +161,7 @@ class HuiTreeLine extends HuiElement {
 
 	}
 
-	dynamic public function onItemSelect(shift: Bool, ctrl: Bool, isClick : Bool) {
+	dynamic public function onItemSelect(shift: Bool, ctrl: Bool, button: Int, isRelease: Bool) {
 
 	}
 }

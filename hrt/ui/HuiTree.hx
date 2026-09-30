@@ -85,6 +85,8 @@ class HuiTree<TreeItem> extends HuiElement {
 	/**TreeItem -> Bool map**/
 	var selectedElements: Map<{}, Bool> = [];
 	var lastSelectedElement: TreeItemData = null;
+	/** Line pushed with the left button whose selection is applied on release, unless a drag started **/
+	var deferredSelect: { data: TreeItemData, ctrl: Bool } = null;
 
 	var renamedElement: {item: TreeItem, callback: (String) -> Void, selectionRange: SelectionRange};
 
@@ -146,7 +148,7 @@ class HuiTree<TreeItem> extends HuiElement {
 				//interactive.focus();
 				e.propagate = false;
 
-				if (!hxd.Key.isDown(hxd.Key.CTRL)) {
+				if (e.button == 1 || !hxd.Key.isDown(hxd.Key.CTRL)) {
 					selectedElements.clear();
 					lastSelectedElement = null;
 					keyboardFocus = null;
@@ -571,26 +573,38 @@ class HuiTree<TreeItem> extends HuiElement {
 			toggleItemDataOpen(data);
 		}
 
-		line.onItemSelect = (shift, ctrl, isClick) -> {
-			if (!ctrl && (isClick || shift || (!isClick && selectedElements.get(data.item) == null)))
-				selectedElements.clear();
-
-			if (shift && lastSelectedElement != null) {
-				var idx = flatList.indexOf(lastSelectedElement);
-				var ourIndex = flatList.indexOf(data);
-				var min = hxd.Math.imin(idx, ourIndex);
-				var max = hxd.Math.imax(idx, ourIndex);
-
-				if (min >= 0) {
-					for (i in min...max+1) {
-						selectedElements.set(cast flatList[i].item, true);
-					}
+		line.onItemSelect = (shift, ctrl, button, isRelease) -> {
+			if (isRelease) {
+				if (deferredSelect?.data != data)
+					return;
+				var toggle = deferredSelect.ctrl;
+				deferredSelect = null;
+				if (toggle && isSelected(data)) {
+					selectedElements.remove(cast data.item);
+					lastSelectedElement = data;
+					userSelectionChanged();
+				} else {
+					selectFromClick(data, false, toggle);
 				}
-			} else {
-				selectedElements.set(cast data.item, true);
-				lastSelectedElement = data;
+				return;
 			}
-			userSelectionChanged();
+
+			deferredSelect = null;
+			if (button == 1) {
+				if (!ctrl && !isSelected(data))
+					selectFromClick(data, false, false);
+				return;
+			}
+			if (shift) {
+				selectFromClick(data, true, ctrl);
+				return;
+			}
+			// keep the selection intact so it can be dragged, resolve it on release
+			if (ctrl || isSelected(data)) {
+				deferredSelect = { data: data, ctrl: ctrl };
+				return;
+			}
+			selectFromClick(data, false, false);
 		}
 
 		line.onContextMenu = () -> {
@@ -599,6 +613,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 		if (dragAndDropInterface != null) {
 			line.onDragStart = () -> {
+				deferredSelect = null;
 				dragAndDropInterface.onDragStart(data.item, getSelectedItems());
 			}
 
@@ -897,6 +912,22 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	function isSelected(data: TreeItemData) : Bool {
 		return selectedElements.get(cast data.item) == true;
+	}
+
+	function selectFromClick(data: TreeItemData, shift: Bool, ctrl: Bool) {
+		if (!ctrl)
+			selectedElements.clear();
+
+		var anchor = shift ? flatList.indexOf(lastSelectedElement) : -1;
+		if (anchor >= 0) {
+			var idx = flatList.indexOf(data);
+			for (i in hxd.Math.imin(anchor, idx)...hxd.Math.imax(anchor, idx) + 1)
+				selectedElements.set(cast flatList[i].item, true);
+		} else {
+			selectedElements.set(cast data.item, true);
+			lastSelectedElement = data;
+		}
+		userSelectionChanged();
 	}
 
 	public function isItemSelected(data: TreeItem) : Bool {
