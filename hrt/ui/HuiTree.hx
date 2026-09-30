@@ -150,7 +150,6 @@ class HuiTree<TreeItem> extends HuiElement {
 
 				if (e.button == 1 || !hxd.Key.isDown(hxd.Key.CTRL)) {
 					selectedElements.clear();
-					lastSelectedElement = null;
 					keyboardFocus = null;
 					userSelectionChanged();
 				}

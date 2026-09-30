@@ -32,6 +32,8 @@ class HuiFileBrowser extends HuiElement {
 	var gallerySearchRanges: Array<hide.Search.SearchRanges> = null;
 	var gallerySelection: Map<File, Bool> = [];
 	var galleryLastClick: File = null;
+	/** Item pushed with the left button whose selection is applied on release, unless a drag started **/
+	var galleryDeferredSelect: { file: File, ctrl: Bool } = null;
 	var galleryDelayRename: {file: File, callback : String -> Void, range: HuiTree.SelectionRange} = null;
 
 	var navigationHistory: Array<File> = [];
@@ -172,9 +174,8 @@ class HuiFileBrowser extends HuiElement {
 
 		gallery.onClick = (e) -> {
 			if (e.button == hxd.Key.MOUSE_LEFT || e.button == hxd.Key.MOUSE_RIGHT) {
-				if (!hxd.Key.isDown(hxd.Key.CTRL)) {
+				if (e.button == hxd.Key.MOUSE_RIGHT || !hxd.Key.isDown(hxd.Key.CTRL)) {
 					gallerySelection.clear();
-					galleryLastClick = null;
 					updateSelectedFiles();
 					refreshGalleryItems();
 				}
@@ -1003,6 +1004,24 @@ class HuiFileBrowser extends HuiElement {
 		markRefresh();
 	}
 
+	function gallerySelectFromClick(file: File, shift: Bool, ctrl: Bool) {
+		if (!ctrl)
+			gallerySelection.clear();
+
+		var anchor = shift ? galleryList.indexOf(galleryLastClick) : -1;
+		if (anchor >= 0) {
+			var idx = galleryList.indexOf(file);
+			for (i in hxd.Math.imin(anchor, idx)...hxd.Math.imax(anchor, idx) + 1)
+				gallerySelection.set(galleryList[i], true);
+		} else {
+			gallerySelection.set(file, true);
+			galleryLastClick = file;
+		}
+
+		updateSelectedFiles();
+		refreshGalleryItems();
+	}
+
 	var queueRefreshSlugs = false;
 
 	function refreshGallery() {
@@ -1119,40 +1138,39 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 		// filebrowser == null means we want to display a big thumbnail in a popup
 		if (fileBrowser != null) {
 			onPush = (e) -> {
-				if (e.button == hxd.Key.MOUSE_LEFT || e.button == hxd.Key.MOUSE_RIGHT) {
-					if (!hxd.Key.isDown(hxd.Key.CTRL)) {
-						fileBrowser.gallerySelection.clear();
-					}
+				var ctrl = hxd.Key.isDown(hxd.Key.CTRL);
+				var selected = fileBrowser.gallerySelection.exists(file);
+				fileBrowser.galleryDeferredSelect = null;
+				if (e.button == hxd.Key.MOUSE_RIGHT) {
+					if (!ctrl && !selected)
+						fileBrowser.gallerySelectFromClick(file, false, false);
+				} else if (e.button == hxd.Key.MOUSE_LEFT) {
+					if (hxd.Key.isDown(hxd.Key.SHIFT))
+						fileBrowser.gallerySelectFromClick(file, true, ctrl);
+					// keep the selection intact so it can be dragged, resolve it on release
+					else if (ctrl || selected)
+						fileBrowser.galleryDeferredSelect = { file: file, ctrl: ctrl };
+					else
+						fileBrowser.gallerySelectFromClick(file, false, false);
+				}
+			}
 
-					if (!hxd.Key.isDown(hxd.Key.SHIFT) || fileBrowser.galleryLastClick == null) {
-						fileBrowser.gallerySelection.set(file, true);
+			onClick = (e) -> {
+				if (e.button == hxd.Key.MOUSE_LEFT && fileBrowser.galleryDeferredSelect?.file == file) {
+					var toggle = fileBrowser.galleryDeferredSelect.ctrl;
+					fileBrowser.galleryDeferredSelect = null;
+					if (toggle && fileBrowser.gallerySelection.exists(file)) {
+						fileBrowser.gallerySelection.remove(file);
+						fileBrowser.galleryLastClick = file;
+						fileBrowser.updateSelectedFiles();
+						fileBrowser.refreshGalleryItems();
 					} else {
-						var start = fileBrowser.galleryList.indexOf(file);
-						var end = fileBrowser.galleryList.indexOf(fileBrowser.galleryLastClick);
-						if (end == -1 || start == -1) {
-							fileBrowser.gallerySelection.set(file, true);
-						} else {
-							if (end < start) {
-								var swap = end;
-								end = start;
-								start = swap;
-							}
-
-							for (i in start...end+1) {
-								fileBrowser.gallerySelection.set(fileBrowser.galleryList[i], true);
-							}
-						}
+						fileBrowser.gallerySelectFromClick(file, false, toggle);
 					}
+				}
 
-					fileBrowser.galleryLastClick = file;
-
-					fileBrowser.updateSelectedFiles();
-					fileBrowser.refreshGalleryItems();
-
-
-					if (e.button == hxd.Key.MOUSE_RIGHT) {
-						fileBrowser.itemContextMenu(file);
-					}
+				if (e.button == hxd.Key.MOUSE_RIGHT) {
+					fileBrowser.itemContextMenu(file);
 				}
 			}
 
@@ -1173,6 +1191,7 @@ class HuiFileBrowserGalleryItem extends HuiElement {
 			}
 
 			onDragStart = () -> {
+				fileBrowser.galleryDeferredSelect = null;
 				fileBrowser.itemStartDrag(fileBrowser.getSelectedFiles());
 			}
 
