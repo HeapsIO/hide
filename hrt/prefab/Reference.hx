@@ -11,6 +11,12 @@ enum EditMode {
 	Override;
 }
 
+typedef LoadedReference = {
+	prefab: Prefab,
+	version: Int,
+	?originalSource: Dynamic,
+};
+
 @:prefabIcon(HuiRes.ui.icons.prefab.reference)
 class Reference extends Object3D {
 	/**
@@ -40,12 +46,14 @@ class Reference extends Object3D {
 	var wasMade : Bool = false;
 	#end
 
+	#if editor
 	override function set_source(newSource:String):String {
 		if (newSource != source) {
 			resetRefInstance();
 		}
 		return source = newSource;
 	}
+	#end
 
 	override function save() {
 		#if (editor || editor_hl)
@@ -175,39 +183,7 @@ class Reference extends Object3D {
 		#if (editor || editor_hl)
 		try {
 		#end
-			var res = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab();
-
-			#if (editor || editor_hl)
-			if (editMode == Override) {
-				originalSource = @:privateAccess res.loadData();
-			}
-			#end
-
-			if (overrides != null) {
-				var refInstanceData = @:privateAccess res.loadData();
-
-				// Diff.apply takes ownership of the diff. In game, each Reference has its own overrides object
-				// (prefabs are created from a deep copy of their data), but in editor the refInstance can be
-				// resolved again multiple times, so we need to keep overrides intact
-				var overridesToApply = overrides;
-				#if (editor || editor_hl)
-				overridesToApply = hrt.prefab.Diff.deepCopy(overridesToApply);
-				#end
-				refInstanceData = hrt.prefab.Diff.apply(refInstanceData, overridesToApply);
-				refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
-			} else {
-				// Don't clone the refInstance if we are the original prefab
-				if (!shared.isInstance && false /**Temp disabled until we figure out how to manage how to handle the prefab api that uses followRef on cached prefabs**/) {
-					refInstance = res.load();
-				} else {
-					refInstance = res.load().clone();
-				}
-			}
-
-			refInstanceVersion = res.reloadedVersion;
-
-			refInstance.shared.parentPrefab = this;
-
+			setRefInstance(loadReference(source, editMode, overrides));
 		#if (editor || editor_hl)
 		} catch (e) {
 			return null;
@@ -215,6 +191,61 @@ class Reference extends Object3D {
 		#end
 
 		return refInstance;
+	}
+
+	/**
+		Load the prefab at `source` and apply `overrides` to it. Does not modify any Reference state
+	**/
+	public static function loadReference(source: String, editMode: EditMode, overrides: Dynamic) : LoadedReference {
+		var res = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab();
+		var loaded : LoadedReference = { prefab: null, version: res.reloadedVersion };
+
+		#if (editor || editor_hl)
+		if (editMode == Override) {
+			loaded.originalSource = @:privateAccess res.loadData();
+		}
+		#end
+
+		if (overrides != null) {
+			var refInstanceData = @:privateAccess res.loadData();
+
+			// Diff.apply takes ownership of the diff. In game, each Reference has its own overrides object
+			// (prefabs are created from a deep copy of their data), but in editor the refInstance can be
+			// resolved again multiple times, so we need to keep overrides intact
+			var overridesToApply = overrides;
+			#if (editor || editor_hl)
+			overridesToApply = hrt.prefab.Diff.deepCopy(overridesToApply);
+			#end
+			refInstanceData = hrt.prefab.Diff.apply(refInstanceData, overridesToApply);
+			loaded.prefab = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
+		} else {
+			// Don't clone the refInstance if we are the original prefab
+			// Temp disabled until we figure out how to manage how to handle the prefab api that uses followRef on cached prefabs
+			loaded.prefab = res.load().clone();
+		}
+
+		return loaded;
+	}
+
+	/**
+		Replace the refInstance of this reference with `loaded`, removing the objects of the previous refInstance
+	**/
+	public function setRefInstance(loaded: LoadedReference) {
+		refInstance?.editorRemoveObjects();
+
+		refInstance = loaded?.prefab;
+		refInstanceVersion = loaded?.version ?? -1;
+		originalSource = loaded?.originalSource;
+
+		if (refInstance != null)
+			refInstance.shared.parentPrefab = this;
+	}
+
+	/**
+		Return the current refInstance state of this reference, to be restored later with setRefInstance
+	**/
+	public function saveRefInstance() : LoadedReference {
+		return { prefab: refInstance, version: refInstanceVersion, originalSource: originalSource };
 	}
 
 	override function makeInstance() {
@@ -375,27 +406,68 @@ class Reference extends Object3D {
 
 		ctx.build(
 			<category("Reference")>
-				<file type="prefab" field={source} id="fileSource"/>
-				<select field={editMode} id="editModeSelect"/>
+				<file type="prefab" field={source} id="fileSource" no-undo/>
+				<select field={editMode} id="editModeSelect" no-undo default-value={None}/>
 				<text("Warning : Edit mode enabled while there are override on this reference. Saving will cause the overrides to be applied to the original reference !") if(overrides != null && editMode == Edit)/>
 			</category>
 		);
 
-		var oldSource = source;
 
-		fileSource.onValueChange = (_) -> {
-			if(this.name == new haxe.io.Path(oldSource).file){
-				this.name = new haxe.io.Path(source).file;
-				ctx.rebuildTree(this);
-				oldSource = source;
+		@:privateAccess fileSource.onFieldChange = (_) -> {
+
+			var oldSource = source;
+			var newSource = fileSource.value;
+
+			var oldName = this.name;
+			var newName = this.name;
+			if(oldName == new haxe.io.Path(oldSource).file){
+				newName = new haxe.io.Path(newSource).file;
 			}
-			ctx.rebuildPrefab(this);
+
+			var oldRef = saveRefInstance();
+			var newRef = try {
+				loadReference(newSource, editMode, null);
+			} catch (e) {
+				ctx.quickError('Couldn\'t load $newSource, source is not changed');
+				ctx.rebuildInspector();
+				return;
+			}
+
+			if (checkCycle(this, newRef.prefab)) {
+				ctx.quickError('Couldn\'t load $newSource, this create a reference cycle');
+				ctx.rebuildInspector();
+				return;
+			}
+
+			function exec(isUndo) {
+				if (oldName != newName) {
+					this.name = isUndo ? oldName : newName;
+					ctx.rebuildTree(this);
+				}
+				source = isUndo ? oldSource : newSource;
+				setRefInstance(isUndo ? oldRef : newRef);
+				ctx.rebuildPrefab(this);
+				ctx.rebuildInspector();
+			};
+			exec(false);
+			ctx.recordUndo(exec);
 		}
 
-		editModeSelect.onValueChange = (_) -> {
-			ctx.rebuildPrefab(this);
-			ctx.rebuildTree(this);
-			ctx.rebuildInspector();
+		@:privateAccess editModeSelect.onFieldChange = (_) -> {
+			var oldRef = saveRefInstance();
+			var oldEditMode = editMode;
+			var newEditMode = editModeSelect.value;
+			var newRef = loadReference(source, newEditMode, overrides);
+
+			function exec(isUndo) {
+				editMode = isUndo ? oldEditMode : newEditMode;
+				setRefInstance(isUndo ? oldRef : newRef);
+				ctx.rebuildPrefab(this);
+				ctx.rebuildTree(this);
+				ctx.rebuildInspector();
+			};
+			exec(false);
+			ctx.recordUndo(exec);
 		}
 
 		super.edit2(ctx);
@@ -441,6 +513,13 @@ class Reference extends Object3D {
 		meaning that references depends on each other
 	**/
 	public function hasCycle() : Bool {
+		return checkCycle(this, resolve());
+	}
+
+	/**
+		Returns true if `reference` would have a cycle if `refPrefab` was its refInstance
+	**/
+	public static function checkCycle(reference: Reference, refPrefab: Prefab) : Bool {
 
 		function rec(prefab: Prefab, seenPaths: Map<String, Bool>) : Bool {
 			if (prefab == null)
@@ -448,13 +527,16 @@ class Reference extends Object3D {
 
 			var ref = Std.downcast(prefab, Reference);
 			if (ref != null && ref.source != null && ref.shouldBeInstanciated() && !ref.editorOnly) {
-				if (seenPaths.get(ref.source) == true) {
+				// the checked reference uses refPrefab instead of its own refInstance
+				var inst = ref == reference ? refPrefab : ref.resolve();
+				var path = ref == reference ? (refPrefab?.shared.currentPath ?? ref.source) : ref.source;
+				if (seenPaths.get(path) == true) {
 					return true;
 				}
 
 				var copy = seenPaths.copy();
-				copy.set(ref.source, true);
-				if (rec(ref.resolve(), copy))
+				copy.set(path, true);
+				if (rec(inst, copy))
 					return true;
 			}
 			for (child in prefab.children) {
@@ -466,10 +548,10 @@ class Reference extends Object3D {
 		}
 
 		var baseMap = new Map();
-		if (this.shared.currentPath != null) {
-			baseMap.set(this.shared.currentPath, true);
+		if (reference.shared.currentPath != null) {
+			baseMap.set(reference.shared.currentPath, true);
 		}
-		return rec(this, baseMap);
+		return rec(reference, baseMap);
 	}
 
 
