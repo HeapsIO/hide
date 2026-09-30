@@ -133,7 +133,63 @@ abstract class EditContext2 {
 
 	public abstract function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) : h3d.Vector;
 
-	public abstract function recordUndo(callback: (isUndo: Bool) -> Void ) : Void;
+	/** Undo steps recorded between beginMultiUndo/finishMultiUndo, only used on the top context **/
+	var multiUndo : Array<(isUndo: Bool) -> Void> = null;
+	var multiUndoDepth : Int = 0;
+
+	function getTopContext() : EditContext2 {
+		var ctx = this;
+		while (ctx.parent != null)
+			ctx = ctx.parent;
+		return ctx;
+	}
+
+	/**
+		Record an undo step. If called between beginMultiUndo/finishMultiUndo, the step is merged with the others in a single undo step
+	**/
+	public final function recordUndo(callback: (isUndo: Bool) -> Void ) : Void {
+		var top = getTopContext();
+		if (top.multiUndo != null) {
+			top.multiUndo.push(callback);
+			return;
+		}
+		recordUndoImpl(callback);
+	}
+
+	/**
+		Implement this to record the undo step in the editor undo stack
+	**/
+	abstract function recordUndoImpl(callback: (isUndo: Bool) -> Void ) : Void;
+
+	/**
+		All the undo steps recorded until the matching finishMultiUndo will be merged in a single undo step
+	**/
+	public function beginMultiUndo() : Void {
+		var top = getTopContext();
+		top.multiUndoDepth++;
+		if (top.multiUndo == null)
+			top.multiUndo = [];
+	}
+
+	public function finishMultiUndo() : Void {
+		var top = getTopContext();
+		top.multiUndoDepth--;
+		if (top.multiUndoDepth > 0)
+			return;
+		var actions = top.multiUndo;
+		top.multiUndo = null;
+		if (actions.length == 0)
+			return;
+		if (actions.length == 1) {
+			top.recordUndoImpl(actions[0]);
+			return;
+		}
+		top.recordUndoImpl((isUndo: Bool) -> {
+			for (i in 0...actions.length) {
+				actions[isUndo ? actions.length - i - 1 : i](isUndo);
+			}
+		});
+	}
 
 	abstract function saveSetting(category: SettingCategory, key: String, value: Dynamic) : Void;
 	abstract function getSetting(category: SettingCategory, key: String) : Null<Dynamic>;

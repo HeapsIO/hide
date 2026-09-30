@@ -452,11 +452,13 @@ class Element {
 	}
 
 	final function resetWithUndo() {
-		@:privateAccess root.prepareUndoPoint();
+		root.editor.beginMultiUndo();
 
 		reset();
 
+		// reset values are broadcasted as temporary edits, commit them in the multi undo
 		@:privateAccess root.finishUndoPoint();
+		root.editor.finishMultiUndo();
 	}
 
 	/**
@@ -520,7 +522,7 @@ class Element {
 		if (data == null)
 			return;
 
-		@:privateAccess root.prepareUndoPoint();
+		root.editor.beginMultiUndo();
 
 		switch (Type.typeof(data)) {
 			case TObject, TClass(String):
@@ -538,7 +540,9 @@ class Element {
 				}
 		}
 
+		// pasted values are broadcasted as temporary edits, commit them in the multi undo
 		@:privateAccess root.finishUndoPoint();
+		root.editor.finishMultiUndo();
 		root.editor.rebuildInspector();
 	}
 

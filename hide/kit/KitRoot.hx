@@ -68,6 +68,9 @@ class KitRoot #if !macro extends Element #end {
 	}
 
 	override function change(params: hide.kit.Element.ChangeParams) : Void {
+		// merge the undo steps recorded by all the edited prefabs (in multi edit) in a single step
+		editor.beginMultiUndo();
+
 		if (params.recordUndo) {
 			prepareUndoPoint();
 		}
@@ -79,6 +82,8 @@ class KitRoot #if !macro extends Element #end {
 		if (!params.isTemporaryEdit && params.recordUndo) {
 			finishUndoPoint(params.sideEffects);
 		}
+
+		editor.finishMultiUndo();
 	}
 
 	/**
@@ -95,6 +100,10 @@ class KitRoot #if !macro extends Element #end {
 	}
 
 	function finishUndoPoint(?customSideEffect: (isUndo: Bool) -> Void) {
+		// no change was recorded since the last finishUndoPoint
+		if (prefabUndoPoint == null)
+			return;
+
 		var sideEffects : Array<(isUndo:Bool) -> Void> = [];
 		createUndoStep(sideEffects);
 

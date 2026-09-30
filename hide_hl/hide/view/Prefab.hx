@@ -2784,7 +2784,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 		throw "implement";
 	}
 
-	public function recordUndo(callback: (isUndo: Bool) -> Void ) : Void {
+	function recordUndoImpl(callback: (isUndo: Bool) -> Void ) : Void {
 		editor.findParent(HuiView).undo.record(callback, true);
 	}
 

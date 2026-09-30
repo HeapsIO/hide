@@ -217,7 +217,7 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 		this.ctx = ctx;
 	}
 
-	public function recordUndo(cb: (isUndo:Bool) -> Void) {
+	function recordUndoImpl(cb: (isUndo:Bool) -> Void) {
 		if (parent != null)
 			throw "Side effect in a multi edit context";
 		ctx.undo.change(Custom(cb));
