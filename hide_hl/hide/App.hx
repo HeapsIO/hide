@@ -9,11 +9,12 @@ class App extends hxd.App {
 	public var ide : hide.Ide;
 	static public var DEBUG = false;
 	static public var fs : hxd.fs.EmbedFileSystem;
-	static public var background = false;
 
 	var fpsGraph : h3d.impl.FpsGraph;
 	public var lastUpdateTime: Float = 0.0;
 	var currentUpdateTime: Float = 0.0;
+	var background : Null<Bool> = null;
+	var thumbnail : Bool;
 
 	var defered : Array<Void -> Void> = [];
 
@@ -153,11 +154,12 @@ class App extends hxd.App {
 		}
 	}
 
-	static function main() {
-		if (hide.ThumbnailGeneratorApp.tryStart())
+	override function new() {
+		var thumbnail = hide.ThumbnailGeneratorApp.tryStart();
+		if (thumbnail)
 			return;
 		DEBUG = #if hl hl.Api.hasDebugger() #else false #end;
-		background = Sys.args().indexOf("--background") != -1;
+		background = background ?? (Sys.args().indexOf("--background") != -1);
 
 		#if renderdoc
 		if( !hxd.tools.RenderDoc.init() )
@@ -180,10 +182,10 @@ class App extends hxd.App {
 			});
 		}
 		#end
-		#if shiro
-		shiro.Hide.init();
-		#end
+		super();
+	}
 
+	static function main() {
 		new App();
 	}
 
