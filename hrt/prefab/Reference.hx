@@ -193,9 +193,6 @@ class Reference extends Object3D {
 		return refInstance;
 	}
 
-	/**
-		Load the prefab at `source` and apply `overrides` to it. Does not modify any Reference state
-	**/
 	public static function loadReference(source: String, editMode: EditMode, overrides: Dynamic) : LoadedReference {
 		var res = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab();
 		var loaded : LoadedReference = { prefab: null, version: res.reloadedVersion };

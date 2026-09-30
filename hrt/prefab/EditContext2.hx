@@ -164,14 +164,14 @@ abstract class EditContext2 {
 	/**
 		All the undo steps recorded until the matching finishMultiUndo will be merged in a single undo step
 	**/
-	public function beginMultiUndo() : Void {
+	function beginMultiUndo() : Void {
 		var top = getTopContext();
 		top.multiUndoDepth++;
 		if (top.multiUndo == null)
 			top.multiUndo = [];
 	}
 
-	public function finishMultiUndo() : Void {
+	function finishMultiUndo() : Void {
 		var top = getTopContext();
 		top.multiUndoDepth--;
 		if (top.multiUndoDepth > 0)
