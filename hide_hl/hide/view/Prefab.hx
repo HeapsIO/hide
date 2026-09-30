@@ -2102,6 +2102,10 @@ class Prefab extends HuiView<{path: String}> {
 		if (rebuildQueue != null && rebuildQueue.exists(prefab))
 			return;
 
+		// Ignore prefabs that are not displayed by this editor (like the multi edit inspector prefab copy)
+		if (!isEditorPrefab(prefab))
+			return;
+
 		var instant = false;
 		if (rebuildQueue == null) {
 			beginRebuild();
@@ -2116,6 +2120,17 @@ class Prefab extends HuiView<{path: String}> {
 		if (instant) {
 			endRebuild();
 		}
+	}
+
+	/** Returns true if prefab is part of the edited prefab or of the render profile, following references **/
+	function isEditorPrefab(prefab: hrt.prefab.Prefab) : Bool {
+		function getRoot(p: hrt.prefab.Prefab) {
+			while ((p.parent ?? p.shared.parentPrefab) != null)
+				p = p.parent ?? p.shared.parentPrefab;
+			return p;
+		}
+		var root = getRoot(prefab);
+		return root == this.prefab || (sceneEditor.renderProfile != null && root == getRoot(sceneEditor.renderProfile));
 	}
 
 	function checkWantRebuild(target: hrt.prefab.Prefab, original: hrt.prefab.Prefab) {
