@@ -51,6 +51,24 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onPrefabChange(p, pname);
 	}
 
+	override function setupGizmo() {
+		super.setupGizmo();
+
+		if (selectedPrefabs == null)
+			return;
+
+		var onMove = gizmo.onMove;
+		gizmo.onMove = (offsetPosition, offsetRotation, offsetScale) -> {
+			onMove(offsetPosition, offsetRotation, offsetScale);
+			parent.forceTick = true;
+		};
+		var onFinishMove = gizmo.onFinishMove;
+		gizmo.onFinishMove = () -> {
+			onFinishMove();
+			parent.forceTick = true;
+		};
+	}
+
 	override function update(dt) {
 		super.update(dt);
 		parent.onUpdate(dt);
