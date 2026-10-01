@@ -2937,7 +2937,7 @@ class SceneEditor {
 			var all = sceneData.flatten(PrefabElement, null);
 			var list = @:privateAccess view.getDisplayState("hideList");
 			if(list != null) {
-				var m = [for(i in (list:Array<Dynamic>)) i => true];
+				var m = [for(i in (list:Array<Dynamic>)) if (i != "") i => true];
 				for(p in all) {
 					// Prevent root from being hidden sometimes
 					if (p == sceneData)
@@ -4999,7 +4999,7 @@ class SceneEditor {
 	}
 
 	function saveDisplayState() {
-		var state = [for (h in hideList.keys()) h.getAbsPath(true, true)];
+		var state = [for (h in hideList.keys()) { var p = h.getAbsPath(true, true); if (p != "") p; }];
 		@:privateAccess view.saveDisplayState("hideList", state);
 	}
 
