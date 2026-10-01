@@ -94,6 +94,7 @@ class KitRoot #if !macro extends Element #end {
 			editor.resetRebuilds();
 			prefabUndoPoint = hrt.prefab.Diff.deepCopy(prefab.save());
 			for (childProperties in editedPrefabsProperties) {
+				childProperties.editor.resetRebuilds();
 				childProperties.prefabUndoPoint = hrt.prefab.Diff.deepCopy(childProperties.prefab.save());
 			}
 		}
@@ -111,11 +112,16 @@ class KitRoot #if !macro extends Element #end {
 			childProperties.createUndoStep(sideEffects);
 		}
 
-		for (prefab in editor.requestedPrefabRebuilds) {
-			sideEffects.push((_) -> editor.rebuildPrefab(prefab));
+		// in multi edit, the edited prefabs rebuild requests are tracked by their own edit context
+		var treeRebuild = false;
+		for (ctx in [editor].concat([for (childProperties in editedPrefabsProperties) childProperties.editor])) {
+			for (prefab in ctx.requestedPrefabRebuilds) {
+				sideEffects.push((_) -> editor.rebuildPrefab(prefab));
+			}
+			treeRebuild = treeRebuild || ctx.requestedTreeRebuild;
 		}
 
-		if (editor.requestedTreeRebuild) {
+		if (treeRebuild) {
 			sideEffects.push((_) -> editor.rebuildTree(null));
 		}
 
