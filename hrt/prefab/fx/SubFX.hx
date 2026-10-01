@@ -85,9 +85,9 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
 		ctx.build(
 			<category("Event")>
-				<slider field={time}/>
+				<slider field={time} defaultValue={0.0}/>
 				<checkbox field={loop}/>
-				<slider field={speed}/>
+				<slider field={speed} min={0.01} defaultValue={1.0}/>
 			</category>
 		);
 		super.edit2(ctx);

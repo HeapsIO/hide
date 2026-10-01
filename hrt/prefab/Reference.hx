@@ -14,7 +14,9 @@ enum EditMode {
 typedef LoadedReference = {
 	prefab: Prefab,
 	version: Int,
+	#if (editor || editor_hl)
 	?originalSource: Dynamic,
+	#end
 };
 
 @:prefabIcon(HuiRes.ui.icons.prefab.reference)
@@ -35,23 +37,14 @@ class Reference extends Object3D {
 	**/
 	public var overrides : Dynamic = null;
 
+	#if (editor || editor_hl)
 	/**
 		Copy of the original data to use as a reference on save for overrides
 	**/
 	public var originalSource : Dynamic;
 
-	#if (editor || editor_hl)
 	var wasMade : Bool = false;
 	var firstLoaded : Bool = false;
-	#end
-
-	#if editor
-	override function set_source(newSource:String):String {
-		if (newSource != source) {
-			resetRefInstance();
-		}
-		return source = newSource;
-	}
 	#end
 
 	override function save() {
@@ -103,15 +96,9 @@ class Reference extends Object3D {
 
 		#if (editor || editor_hl)
 		// Don't load a source that is already being loaded by one of our parents, to avoid infinite loops on cyclic references
-		if (!firstLoaded) {
-			var p : Prefab = this;
-			while (p != null) {
-				if (p.shared.currentPath == source) {
-					firstLoaded = true;
-					return;
-				}
-				p = p.shared.parentPrefab;
-			}
+		if (!firstLoaded && isSourceInParents()) {
+			firstLoaded = true;
+			return;
 		}
 		#end
 
@@ -129,6 +116,35 @@ class Reference extends Object3D {
 		}
 		#end
 	}
+
+	#if (editor || editor_hl)
+	/** Returns true if source is the file of this reference or of one of its parents **/
+	function isSourceInParents() : Bool {
+		var p : Prefab = this;
+		while (p != null) {
+			if (p.shared.currentPath == source)
+				return true;
+			p = p.shared.parentPrefab;
+		}
+		return false;
+	}
+
+	/**
+		Set the source of a newly created reference and load its refInstance.
+		Must only be used when creating a Reference, not to modify it after the fact : changes
+		to an existing reference source must go through the inspector so they can be undone.
+		Throws if the refInstance is already loaded.
+	**/
+	public function editorInit(source: String) {
+		if (refInstance != null)
+			throw 'editorInit called on ${getAbsPath()} which already has a refInstance';
+
+		this.source = source;
+		firstLoaded = true;
+		if (!isSourceInParents())
+			setRefInstance(loadReference(source, editMode, overrides));
+	}
+	#end
 
 	override function copy(obj: Prefab) {
 		super.copy(obj);
@@ -175,6 +191,7 @@ class Reference extends Object3D {
 	#end
 
 	function computeDiffFromSource() : Dynamic {
+		#if (editor || editor_hl)
 		var orig = originalSource;
 		var ref = refInstance?.serialize() ?? null;
 		var diff = hrt.prefab.Diff.diffPrefab(orig, ref);
@@ -184,6 +201,9 @@ class Reference extends Object3D {
 			case Set(v):
 				return hrt.prefab.Diff.deepCopy(v);
 		}
+		#else
+		return null;
+		#end
 	}
 
 	/**
@@ -242,9 +262,10 @@ class Reference extends Object3D {
 			sh.parentPrefab = this;
 
 			#if (editor || editor_hl)
-			if (editMode == Override) {
+			// Keep the original data in editable modes, so overrides can be computed when moving between Edit and Override mode
+			// (moving from or to None always reloads the reference)
+			if (editMode != None)
 				loaded.originalSource = @:privateAccess res.loadData();
-			}
 
 			// Don't use the cached prefab in editor, as it can't have a parentPrefab
 			var refInstanceData = @:privateAccess res.loadData();
@@ -286,7 +307,9 @@ class Reference extends Object3D {
 
 		refInstance = loaded?.prefab;
 		refInstanceVersion = loaded?.version ?? -1;
+		#if (editor || editor_hl)
 		originalSource = loaded?.originalSource;
+		#end
 
 		if (refInstance != null)
 			refInstance.shared.parentPrefab = this;
@@ -296,7 +319,11 @@ class Reference extends Object3D {
 		Return the current refInstance state of this reference, to be restored later with setRefInstance
 	**/
 	public function saveRefInstance() : LoadedReference {
-		return { prefab: refInstance, version: refInstanceVersion, originalSource: originalSource };
+		var saved : LoadedReference = { prefab: refInstance, version: refInstanceVersion };
+		#if (editor || editor_hl)
+		saved.originalSource = originalSource;
+		#end
+		return saved;
 	}
 
 	override function makeInstance() {
@@ -431,10 +458,9 @@ class Reference extends Object3D {
 			<category("Reference")>
 				<file type="prefab" field={source} id="fileSource" no-undo/>
 				<select field={editMode} id="editModeSelect" no-undo default-value={None}/>
-				<text("Warning : Edit mode enabled while there are override on this reference. Saving will cause the overrides to be applied to the original reference !") if(overrides != null && editMode == Edit)/>
+				<text("Warning : This reference loading failed") if(refInstance == null)/>
 			</category>
 		);
-
 
 		@:privateAccess fileSource.onFieldChange = (_) -> {
 
@@ -482,14 +508,13 @@ class Reference extends Object3D {
 			var newEditMode = editModeSelect.value;
 
 			var overrides = null;
+			var newRef = oldRef;
 			// Keep overrides if we move between Edit mode and Override Mode
-			if (oldEditMode != None && newEditMode != None)
-				overrides = computeDiffFromSource();
+			if (oldEditMode  == None || newEditMode == None)
+				newRef = loadReference(source, newEditMode, null);
 
 			// Todo : when moving to None, alert user that changes / overrides will be lost
 			// but we need an api in ctx to prompt the user for a choice
-
-			var newRef = loadReference(source, newEditMode, overrides);
 
 			if (newRef == null && source != null) {
 				ctx.quickError('Couldn\'t load $source from disk, aborting edit mode changes');
@@ -510,37 +535,39 @@ class Reference extends Object3D {
 
 		super.edit2(ctx);
 
-		var hasOverrides = computeDiffFromSource() != null;
+		if (editMode == Override) {
+			var hasOverrides = computeDiffFromSource() != null;
 
-		ctx.build(
-			<category("Overrides")>
-				<text(hasOverrides ? "This reference has overrides" : "No Overrides")/>
-				<button("Clear Overrides") id="btnClearOverrides" disabled={!hasOverrides}/>
-			</category>
-		);
+			ctx.build(
+				<category("Overrides")>
+					<text(hasOverrides ? "This reference has overrides" : "No Overrides")/>
+					<button("Clear Overrides") id="btnClearOverrides" disabled={!hasOverrides}/>
+				</category>
+			);
 
-		// The kit undo only saves/loads the reference data, which doesn't restore the refInstance, so we record our own undo
-		btnClearOverrides.noUndo = true;
-		btnClearOverrides.onClick = () -> {
-			var oldRef = saveRefInstance();
-			var oldOverrides = overrides;
-			var newRef = loadReference(source, editMode, null);
+			// The kit undo only saves/loads the reference data, which doesn't restore the refInstance, so we record our own undo
+			btnClearOverrides.noUndo = true;
+			btnClearOverrides.onClick = () -> {
+				var oldRef = saveRefInstance();
+				var oldOverrides = overrides;
+				var newRef = loadReference(source, editMode, null);
 
-			if (newRef == null && source != null) {
-				ctx.quickError('Couldn\'t reload $source from disk, aborting override changes');
-				ctx.rebuildInspector();
-				return;
-			}
+				if (newRef == null && source != null) {
+					ctx.quickError('Couldn\'t reload $source from disk, aborting override changes');
+					ctx.rebuildInspector();
+					return;
+				}
 
-			function exec(isUndo: Bool) {
-				setRefInstance(isUndo ? oldRef : newRef);
-				overrides = isUndo ? oldOverrides : null;
-				ctx.rebuildPrefab(this);
-				ctx.rebuildInspector();
-			}
-			exec(false);
-			ctx.recordUndo(exec);
-		};
+				function exec(isUndo: Bool) {
+					setRefInstance(isUndo ? oldRef : newRef);
+					overrides = isUndo ? oldOverrides : null;
+					ctx.rebuildPrefab(this);
+					ctx.rebuildInspector();
+				}
+				exec(false);
+				ctx.recordUndo(exec);
+			};
+		}
 
 	}
 

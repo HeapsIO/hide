@@ -2840,7 +2840,7 @@ class SceneEditor {
 			renderPropsRoot.shared.customMake = customMake;
 			renderPropsRoot.editMode = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) ? Edit : None;
 			renderPropsRoot.name = "Render Props";
-			renderPropsRoot.source = path;
+			renderPropsRoot.editorInit(path);
 
 			@:privateAccess renderPropsRoot.shared.root2d = renderPropsRoot.shared.current2d = root2d;
 			@:privateAccess renderPropsRoot.shared.root3d = renderPropsRoot.shared.current3d = root3d;
@@ -4375,7 +4375,7 @@ class SceneEditor {
 			var ptype = hrt.prefab.Prefab.getPrefabType(f.path);
 			if (ptype != null) {
 				var ref = new hrt.prefab.Reference(null, sceneData.shared);
-				ref.source = ide.makeRelative(f.path);
+				ref.editorInit(ide.makeRelative(f.path));
 				ref.make();
 
 				if (ref.refInstance != null) {
@@ -4529,7 +4529,7 @@ class SceneEditor {
 				} else {
 					new hrt.prefab.Reference(null, null);
 				}
-				ref.source = relative;
+				ref.editorInit(relative);
 
 				prefab = ref;
 			}
@@ -4553,7 +4553,7 @@ class SceneEditor {
 		parent.addChildAt(prefab, index);
 
 		var ref = Std.downcast(prefab, Reference);
-		if (ref != null && (Reference.checkCycle(ref, try ref.loadReference(ref.source, ref.editMode, null)?.prefab catch (e) null) || ref.source == @:privateAccess view.state.path) ) {
+		if (ref != null && (Reference.checkCycle(ref, ref.refInstance) || ref.source == @:privateAccess view.state.path) ) {
 			parent.removeChild(ref);
 			hide.Ide.inst.quickError('Reference to $relative is creating a cycle. The reference creation was aborted.');
 			return null;
@@ -5801,8 +5801,13 @@ class SceneEditor {
 				function make(?sourcePath) {
 					var p = Type.createInstance(prefabInfo.prefabClass, [parent]);
 					//p.proto = new hrt.prefab.ProtoPrefab(p, sourcePath);
-					if(sourcePath != null)
-						p.source = sourcePath;
+					if(sourcePath != null) {
+						var ref = Std.downcast(p, hrt.prefab.Reference);
+						if (ref != null)
+							ref.editorInit(sourcePath);
+						else
+							p.source = sourcePath;
+					}
 					if( objectName != null)
 						p.name = objectName;
 					else
