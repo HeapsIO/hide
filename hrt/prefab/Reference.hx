@@ -444,14 +444,6 @@ class Reference extends Object3D {
 			refInstance.dispose();
 	}
 
-	function resetRefInstance() {
-		#if (editor || editor_hl)
-		editorRemoveObjects();
-		#end
-
-		refInstance = null;
-	}
-
 	override function edit2(ctx: hrt.prefab.EditContext2) {
 
 		ctx.build(
@@ -656,99 +648,6 @@ class Reference extends Object3D {
 
 		refInstance = Prefab.createFromDynamic(pristineData, new ContextShared(source, true));
 		refInstance.shared.parentPrefab = this;
-	}
-
-	override function edit( ctx : hide.prefab.EditContext ) {
-		var element = new hide.Element('
-			<div class="group" name="Reference">
-			<dl>
-				<dt>Reference</dt><dd><input type="fileselect" extensions="prefab l3d fx" field="source"/></dd>
-				<dt>Edit</dt><dd><select field="editMode" class="monSelector"></select></dd>
-				<p class="warning">Warning : Edit mode enabled while there are override on this reference. Saving will cause the overrides to be applied to the original reference !</p>
-			</dl>
-			</div>');
-
-
-		var warning = element.find(".warning");
-
-		function updateProps() {
-			var input = element.find("input");
-			var found = resolve() != null;
-			input.toggleClass("error", !found);
-			warning.toggle(overrides != null && editMode == Edit);
-		}
-		updateProps();
-
-		var oldSource = source;
-
-		var props = ctx.properties.add(element, this, function(pname) {
-			ctx.onChange(this, pname);
-			if(pname == "source" || pname == "editMode") {
-				var newRef = try loadReference(source, editMode, overrides).prefab catch (e) null;
-				var cycle = checkCycle(this, newRef);
-
-				if (cycle) {
-					hide.Ide.inst.quickError('Reference to $source would create a cycle. The reference change was aborted.');
-					source = null;
-					ctx.rebuildProperties();
-					return;
-				}
-				updateProps();
-				if(!ctx.properties.isTempChange) {
-					if (pname == "source") {
-						if(this.name == new haxe.io.Path(oldSource).file){
-							this.name = new haxe.io.Path(source).file;
-							ctx.refreshTree();
-						}
-						ctx.rebuildPrefab(this);
-					}
-					else {
-						ctx.rebuildPrefab(this);
-						ctx.refreshTree();
-					}
-				}
-			}
-		});
-
-		super.edit(ctx);
-
-		var over = new hide.Element('
-			<div class="group" name="Overrides">
-				<p class="override-infos"></p>
-				<dl style="height: 100px;">
-					<dt></dt><dd><fancy-button><span class="label">Clear Overrides</span></fancy-button></dd>
-				</dl>
-			</div>
-		');
-
-		var overInfos = over.find(".override-infos");
-		function refreshOverrideInfos() {
-			if (computeDiffFromSource() == null) {
-				overInfos.text("No overrides");
-			}
-			else {
-				overInfos.text("This reference has overrides");
-			}
-		}
-		refreshOverrideInfos();
-
-		over.find("fancy-button").click((_) -> {
-			var old = overrides;
-			this.overrides = null;
-			var refresh = () -> {
-				if (originalSource != null) {
-					@:privateAccess shared.editor.removeInstance(refInstance, false);
-					originalSource = null;
-					refInstance = null;
-					ctx.rebuildPrefab(this);
-					refreshOverrideInfos();
-				}
-			};
-			@:privateAccess ctx.properties.undo.change(Field(this, "overrides", old), refresh);
-			refresh();
-			ctx.rebuildPrefab(this);
-		});
-		ctx.properties.add(over);
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
