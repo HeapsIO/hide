@@ -132,7 +132,6 @@ class CloudShadow extends RendererFX {
 
 		var c = new CloudShadow(null, null);
 
-		c.instance = c1.instance;
 		c.opacity = c1.opacity;
 		c.scale = c1.scale;
 		c.speed = c1.speed;
@@ -146,15 +145,15 @@ class CloudShadow extends RendererFX {
 			amount : c1.distort.amount
 		}
 		c.makeInstance();
+		var cloudTex : h3d.mat.Texture = null;
 		if (texturePath != null) {
-			c.dlwc.clouds?.dispose();
-			c.dlwc.clouds = new h3d.mat.Texture(c1.dlwc.clouds.width, c1.dlwc.clouds.height, [Target], c1.dlwc.clouds.format);
+			cloudTex = new h3d.mat.Texture(c1.dlwc.clouds.width, c1.dlwc.clouds.height, [Target], c1.dlwc.clouds.format);
+			cloudTex.wrap = Repeat;
+			c.dlwc.clouds = cloudTex;
 		}
-		if( c.dlwc.clouds != null )
-			c.dlwc.clouds.wrap = Repeat;
-		c.dlwc.distort?.dispose();
-		c.dlwc.distort = new h3d.mat.Texture(c1.dlwc.distort.width, c1.dlwc.distort.height, [Target], c1.dlwc.distort.format);
-		if( c.dlwc.distort != null ) c.dlwc.distort.wrap = Repeat;
+		var distortTex = new h3d.mat.Texture(c1.dlwc.distort.width, c1.dlwc.distort.height, [Target], c1.dlwc.distort.format);
+		distortTex.wrap = Repeat;
+		c.dlwc.distort = distortTex;
 
 		return { effect : cast c, setFactor : (f : Float) -> {
 			c.opacity = hxd.Math.lerp(c1.opacity, c2.opacity, f);
@@ -171,6 +170,9 @@ class CloudShadow extends RendererFX {
 				angle : hxd.Math.lerp(c1.distort.angle, c2.distort.angle, f),
 				amount : hxd.Math.lerp(c1.distort.amount, c2.distort.amount, f)
 			}
+		}, dispose : () -> {
+			cloudTex?.dispose();
+			distortTex?.dispose();
 		} };
 	}
 
