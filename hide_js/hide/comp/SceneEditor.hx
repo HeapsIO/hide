@@ -4531,7 +4531,7 @@ class SceneEditor {
 		parent.addChildAt(prefab, index);
 
 		var ref = Std.downcast(prefab, Reference);
-		if (ref != null && (ref.hasCycle() || ref.source == @:privateAccess view.state.path) ) {
+		if (ref != null && (Reference.checkCycle(ref, try ref.loadReference(ref.source, ref.editMode, null)?.prefab catch (e) null) || ref.source == @:privateAccess view.state.path) ) {
 			parent.removeChild(ref);
 			hide.Ide.inst.quickError('Reference to $relative is creating a cycle. The reference creation was aborted.');
 			return null;

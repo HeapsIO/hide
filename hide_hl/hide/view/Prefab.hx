@@ -630,12 +630,18 @@ class Prefab extends HuiView<{path: String}> {
 		var prefab : hrt.prefab.Object3D;
 		if (StringTools.endsWith(path, ".fbx")) {
 			prefab = new hrt.prefab.Model(null, new hrt.prefab.ContextShared());
-		} else if (StringTools.endsWith(path, ".fx")) {
-			prefab = new hrt.prefab.fx.SubFX(null, new hrt.prefab.ContextShared());
-		} else {
-			prefab = new hrt.prefab.Reference(null, new hrt.prefab.ContextShared());
+			prefab.source = path;
+			return prefab;
 		}
-		prefab.source = path;
+
+		// references only load their refInstance in load(). The shared path allows load() to detect reference cycles
+		var shared = new hrt.prefab.ContextShared(this.prefab?.shared.currentPath);
+		if (StringTools.endsWith(path, ".fx")) {
+			prefab = new hrt.prefab.fx.SubFX(null, shared);
+		} else {
+			prefab = new hrt.prefab.Reference(null, shared);
+		}
+		@:privateAccess prefab.load({type: prefab.type, source: path});
 		return prefab;
 	}
 
