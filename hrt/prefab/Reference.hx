@@ -35,7 +35,7 @@ class Reference extends Object3D {
 		and the original prefab data. Use the format defined by
 		hrt.prefab.Diff.diffPrefab
 	**/
-	@:s public var overrides : Dynamic = null;
+	public var overrides : Dynamic = null;
 
 	/**
 		Copy of the original data to use as a reference on save for overrides
@@ -56,15 +56,15 @@ class Reference extends Object3D {
 	#end
 
 	override function save() {
+		var obj : Dynamic = super.save();
+
 		#if (editor || editor_hl)
 		if (editMode == Override && refInstance != null) {
-			this.overrides = computeDiffFromSource();
-		} else if (editMode == Edit && refInstance != null) {
-			this.overrides = null;
+			var diff = computeDiffFromSource();
+			if (diff != null)
+				obj.overrides = diff;
 		}
 		#end
-
-		var obj : Dynamic = super.save();
 
 		#if editor
 		if( editMode == Edit && refInstance != null ) {
