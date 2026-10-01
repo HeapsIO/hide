@@ -458,36 +458,46 @@ class Model extends HuiView<{path: String}> {
 	}
 
 	function bindTimeline(t : Timeline) {
-		var anims = hide.Ide.inst.listAnims(Ide.inst.getRelPath(state.path));
-		if (anims.length <= 0 || t == null || hide.Ide.inst.getActiveView() != this)
+		if (t == null || hide.Ide.inst.getActiveView() != this)
 			return;
 
+		t.clear();
 		t.useYAxis = false;
-		t.unit = Timeline.Unit.FRAME;
+		t.unit = Timeline.Unit.Frame;
 
-		t.getContent = () -> {
-			var animSel = new HuiSelect();
-			animSel.items = [for (a in anims) { label: a.substring(a.lastIndexOf("/") + 1, a.lastIndexOf(".")), value: a }];
-			animSel.items.insert(0, { label: "None", value: "none"});
-			animSel.value = null;
+		var anims = hide.Ide.inst.listAnims(Ide.inst.getRelPath(state.path));
+		if (anims.length <= 0)
+			return;
 
-			if (obj.currentAnimation != null)
-				animSel.value = obj.currentAnimation.resourcePath;
-			else
-				animSel.value = "none";
+		var animTrack = new HuiElement();
+		new HuiText("Animation :", animTrack);
+		t.addTrack("AnimTrack", animTrack);
 
-			animSel.onValueChanged = () -> {
-				if (animSel.value == "none") {
-					obj.stopAnimation();
-					return;
-				}
-
-				var anim = @:privateAccess hrt.prefab.Cache.get().modelCache.loadAnimation(hxd.res.Loader.currentInstance.load(animSel.value).toModel());
-				obj.playAnimation(anim);
-			};
-
-			return animSel;
+		function addAnimClip() {
+			if (obj.currentAnimation == null)
+				return;
+			var path = obj.currentAnimation.resourcePath;
+			t.addClip(haxe.io.Path.withoutDirectory(haxe.io.Path.withoutExtension(path)), 0, obj.currentAnimation.getDuration(), "AnimTrack");
 		}
+
+		var animSel = new HuiSelect(animTrack);
+		animSel.items = [for (a in anims) { label: haxe.io.Path.withoutDirectory(haxe.io.Path.withoutExtension(a)), value: a }];
+		animSel.items.insert(0, { label: "None", value: "none"});
+		animSel.value = obj.currentAnimation?.resourcePath ?? "none";
+		addAnimClip();
+
+		animSel.onValueChanged = () -> {
+			t.clear(Timeline.ClearFlag.RightPanel);
+
+			if (animSel.value == "none") {
+				obj.stopAnimation();
+				return;
+			}
+
+			var anim = @:privateAccess hrt.prefab.Cache.get().modelCache.loadAnimation(hxd.res.Loader.currentInstance.load(animSel.value).toModel());
+			obj.playAnimation(anim);
+			addAnimClip();
+		};
 
 		t.getTime = () -> {
 			return obj.currentAnimation != null ? (obj.currentAnimation.frame / obj.currentAnimation.frameCount) * obj.currentAnimation.getDuration() : 0.;

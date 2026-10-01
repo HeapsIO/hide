@@ -1,4 +1,6 @@
 timeline {
+	@track-height: 30;
+
 	#right-panel {
 		layout: stack;
 
@@ -54,22 +56,66 @@ timeline {
 		}
 
 		#grid {
+			layout: stack;
 			fill-width: true;
 			fill-height: true;
 			overflow: hidden;
 
+			#content {
+				layout: stack;
+				fill-width: true;
+				fill-height: true;
+				overflow: hidden;
+			}
+
 			> hui-text {
 				position: absolute;
 			}
+		}
 
-			// background-type: hui;
-			// > hui-background {
-			// 	background: green;
-			// }
+		.hui-clip {
+			position: absolute;
+			height: @track-height;
+			padding: 10;
+			overflow: hidden;
+
+			background-type: hui;
+			> hui-background {
+				background: @color-gray-6;
+				border-radius: 4;
+				alpha: 0.5;
+			}
+
+			hui-text {
+				valign: middle;
+			}
 		}
 	}
 
 	#left-panel {
 		layout: vertical;
+
+		.hui-track {
+			height: @track-height;
+			fill-width: true;
+			margin-left: 20;
+			margin-top: 55;
+			padding: 5;
+			background-type: hui;
+			> hui-background {
+				background: @color-gray-3;
+				border-radius: 4 0 0 4;
+			}
+
+			hui-text {
+				valign: middle;
+				margin-right: 5;
+			}
+
+			hui-select {
+				auto-size: 1;
+				fill-width: false;
+			}
+		}
 	}
 }

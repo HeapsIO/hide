@@ -2,9 +2,29 @@ package hide.view;
 import hrt.ui.*;
 
 enum Unit {
-	SECOND;
-	FRAME;
-	TIMECODE;
+	Second;
+	Frame;
+	Timecode;
+}
+
+enum ClearFlag {
+	Full;
+	LeftPanel;
+	RightPanel;
+}
+
+typedef Track = {
+	name : String,
+	content : HuiElement,
+	?element : HuiElement
+}
+
+typedef Clip = {
+	name : String,
+	start : Float,
+	end : Float,
+	?track : Track,
+	?element : HuiElement
 }
 
 class GridShader extends hxsl.Shader {
@@ -65,7 +85,9 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 					<hui-element class="vertical">
 						<hui-element id="timer-track"></hui-element>
 						<hui-element id="event-track"></hui-element>
-						<hui-element id="grid"></hui-element>
+						<hui-element id="grid">
+							<hui-element id="content"></hui-element>
+						</hui-element>
 					</hui-element>
 					<hui-element id="playhead">
 						<hui-element id="head">
@@ -89,8 +111,11 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 	static final MAX_ZOOM = 1e4;
 	static final ZOOM_SPEED = 1.1;
 
-	public var unit : Unit = Unit.SECOND;
+	public var unit : Unit = Unit.Second;
 	public var useYAxis : Bool = true;
+
+	var tracks : Array<Track> = [];
+	var clips : Array<Clip> = [];
 
 	var gridShader : GridShader = null;
 	var zoom = new h2d.col.Point(1, 1);
@@ -192,6 +217,55 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		needRefresh = true;
 	}
 
+	public function clear(flag : ClearFlag = ClearFlag.Full) {
+		if (flag.match(ClearFlag.Full) || flag.match(ClearFlag.LeftPanel)) {
+			leftPanel.removeChildren();
+			for (c in clips)
+				c.track = null;
+			tracks = [];
+		}
+
+		if (flag.match(ClearFlag.Full) || flag.match(ClearFlag.RightPanel)) {
+			content.removeChildren();
+			clips = [];
+		}
+
+		if (flag.match(ClearFlag.Full)) {
+			getTime = () -> 0.;
+			setTime = (_) -> {};
+			isPaused = () -> false;
+			setPaused = (_) -> {};
+		}
+
+		refresh();
+	}
+
+	public function getTrack(name: String) {
+		for (t in tracks) {
+			if (t.name == name) {
+				return t;
+			}
+		}
+		return null;
+	}
+
+	public function addTrack(name: String, e : HuiElement) {
+		tracks.push({ name: name, content: e });
+	}
+
+	public function addClip(name : String, start: Float, end : Float, ?track : String) {
+		var c : Clip = { name: name, start: start, end: end };
+		if (track != null)
+			c.track = getTrack(track);
+		clips.push(c);
+		refresh();
+	}
+
+	public function addMarker(t: Float, name : String) {
+		//TODO
+	}
+
+
 	override function update(dt: Float) {
 		super.update(dt);
 
@@ -264,11 +338,6 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 	}
 
 	function refreshInternal() {
-		leftPanel.removeChildren();
-		var c = getContent();
-		if (c != null)
-			leftPanel.addChild(getContent());
-
 		for (l in labels)
 			l.remove();
 		labels.resize(0);
@@ -315,6 +384,30 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		gridShader.stepSpacing = new h3d.Vector(sx(hstep) - sx(0), sy(0) - sy(vstep), 0);
 		gridShader.useYAxis = useYAxis;
 
+		for (t in tracks) {
+			if (t.element == null) {
+				t.element = new HuiElement(leftPanel);
+				t.element.dom.addClass("hui-track");
+				t.element.addChild(t.content);
+			}
+		}
+
+		for (c in clips) {
+			if (c.element == null) {
+				c.element = new HuiElement(content);
+				c.element.dom.addClass("hui-clip");
+				new HuiText(c.name, c.element);
+			}
+
+			var width = Std.int(sx(c.end) - sx(c.start));
+			c.element.setWidth(width);
+
+			var y = 0.;
+			if (c.track != null)
+				y = content.globalToLocal(c.track.element.localToGlobal(new h2d.col.Point(0, 0))).y;
+			c.element.setPosition(sx(c.start), y);
+		}
+
 		needRefresh = false;
 	}
 
@@ -322,7 +415,6 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 	public dynamic function setTime(t : Float) {};
 	public dynamic function isPaused() : Bool { return false; };
 	public dynamic function setPaused(v : Bool) {};
-	public dynamic function getContent() : HuiElement { return null; };
 
 	static var _ = HuiView.register("timeline", Timeline);
 }
