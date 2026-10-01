@@ -221,7 +221,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			lightAccumulation = accumulateLights(lightAccumulation, LIGHT_DIR, dirShadowCount, dirLightCount, MAX_DIR_SHADOW_COUNT);
 
 			// Cascade shadows
-			if ( MAX_CASCADE_COUNT > 0 ) {
+			if ( HAS_CASCADE ) {
 				var c = evaluateCascadeLight();
 				if ( dot(c, c) > 1e-6 )
 					c *= evaluateCascadeShadow();
