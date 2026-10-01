@@ -44,7 +44,6 @@ class Reference extends Object3D {
 	public var originalSource : Dynamic;
 
 	var wasMade : Bool = false;
-	var firstLoaded : Bool = false;
 	#end
 
 	override function save() {
@@ -61,16 +60,18 @@ class Reference extends Object3D {
 					obj.overrides = diff;
 			}
 		}
-		#end
 
+		// hide_hl saves the Edit mode references itself in its save process
 		#if editor
-		if( editMode == Edit && refInstance != null ) {
+		if( !shared.isTempLoadSave() && editMode == Edit && refInstance != null ) {
 			var sheditor = Std.downcast(shared, hide.prefab.ContextShared);
 			if( sheditor.editor != null ) sheditor.editor.watchIgnoreChanges(source);
 
 			var s = refInstance.serialize();
 			sys.io.File.saveContent(hide.Ide.inst.getPath(source), hide.Ide.inst.toJSON(s));
 		}
+		#end
+
 		#end
 
 		return obj;
@@ -84,20 +85,17 @@ class Reference extends Object3D {
 
 		super.load(obj);
 
-		#if (editor || editor_hl)
-		if (!firstLoaded)
-		#end
+		// References with overrides in their file are always in Override mode. Temporary loads (like undo/redo) keep
+		// the overrides and edit mode handled by the editor
+		if (!shared.isTempLoadSave()) {
 			overrides = obj.overrides;
-
-		// References with overrides are always in Override mode
-		if (overrides != null) {
-			editMode = Override;
+			if (overrides != null)
+				editMode = Override;
 		}
 
 		#if (editor || editor_hl)
 		// Don't load a source that is already being loaded by one of our parents, to avoid infinite loops on cyclic references
-		if (!firstLoaded && isSourceInParents()) {
-			firstLoaded = true;
+		if (!shared.isTempLoadSave() && isSourceInParents()) {
 			return;
 		}
 		#end
@@ -110,9 +108,8 @@ class Reference extends Object3D {
 
 		// Only set the refInstance if it's the initial editor load, otherwise refInstance must stay
 		// as either null or the already loaded refInstance
-		if (!firstLoaded) {
+		if (!shared.isTempLoadSave()) {
 			setRefInstance(loadReference(source, editMode, overrides));
-			firstLoaded = true;
 		}
 		#end
 	}
@@ -140,7 +137,6 @@ class Reference extends Object3D {
 			throw 'editorInit called on ${getAbsPath()} which already has a refInstance';
 
 		this.source = source;
-		firstLoaded = true;
 		if (!isSourceInParents())
 			setRefInstance(loadReference(source, editMode, overrides));
 	}
@@ -152,7 +148,6 @@ class Reference extends Object3D {
 
 		#if (editor || editor_hl)
 		originalSource = otherRef.originalSource;
-		firstLoaded = otherRef.firstLoaded;
 		#end
 
 		overrides = otherRef.overrides;
@@ -499,7 +494,9 @@ class Reference extends Object3D {
 			var oldEditMode = editMode;
 			var newEditMode = editModeSelect.value;
 
-			var overrides = null;
+			var oldOverrides = overrides;
+			// Overrides are lost when moving to None mode
+			var newOverrides = newEditMode == None ? null : overrides;
 			var newRef = oldRef;
 			// Keep overrides if we move between Edit mode and Override Mode
 			if (oldEditMode  == None || newEditMode == None)
@@ -516,6 +513,7 @@ class Reference extends Object3D {
 
 			function exec(isUndo) {
 				editMode = isUndo ? oldEditMode : newEditMode;
+				overrides = isUndo ? oldOverrides : newOverrides;
 				setRefInstance(isUndo ? oldRef : newRef);
 				ctx.rebuildPrefab(this);
 				ctx.rebuildTree(this);

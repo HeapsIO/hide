@@ -38,6 +38,29 @@ class ContextShared {
 	**/
 	public var isInstance(default, null) : Bool = false;
 
+	#if (editor || editor_hl)
+	/**
+		Set to true by editors while they save/load prefabs for other purposes than loading/saving the prefab file
+		(like undo/redo serialisation). Only read on the topmost shared, see isTempLoadSave()
+	**/
+	public var editorTempLoadSave : Bool = false;
+	#end
+
+	/**
+		Returns true when an editor saves/loads prefabs for temporary purposes (like undo/redo serialisation),
+		false when they are saved/loaded as part of the prefab file. Always false in game.
+	**/
+	public inline function isTempLoadSave() : Bool {
+		#if (editor || editor_hl)
+		var sh = this;
+		while (sh.parentPrefab != null)
+			sh = sh.parentPrefab.shared;
+		return sh.editorTempLoadSave;
+		#else
+		return false;
+		#end
+	}
+
 	var bakedData : Map<String, haxe.io.Bytes>;
 
 	public function new( ?path : String, ?root2d: h2d.Object = null, ?root3d: h3d.scene.Object = null, isInstance: Bool = true) {
