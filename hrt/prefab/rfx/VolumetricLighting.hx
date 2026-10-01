@@ -244,7 +244,8 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			if( CLUSTERED ) {
 				var cluster = clusterIndex();
 				clusterCounts = clusterData[cluster];
-				clusterStart = cluster + 1;
+				var spotStart = cluster + 1 + (clusterCounts & 0xFF);
+				clusterStart = spotStart;
 			}
 
 			lightAccumulation = accumulateLights(lightAccumulation, LIGHT_DIR, dirShadowCount, dirLightCount, MAX_DIR_SHADOW_COUNT);
