@@ -4058,27 +4058,49 @@ class SceneEditor {
 
 			if( elts.length > 0 ) {
 				var commonClass = hrt.tools.ClassUtils.getCommonClassInstance(elts, hrt.prefab.Prefab);
-				var parentClass = Type.getSuperClass(commonClass);
-				var hasNewInspector = false;
-
-				if (parentClass != null) {
-					if (Reflect.field(Type.createEmptyInstance(commonClass), "edit2") != Reflect.field(Type.createEmptyInstance(parentClass), "edit2")) {
-						hasNewInspector = true;
+				// Returns the most derived class in cl's hierarchy that defines the method `name`
+				function getDefiningClass(cl: Class<Dynamic>, name: String) : Class<Dynamic> {
+					var method = Reflect.field(Type.createEmptyInstance(cl), name);
+					var parent = Type.getSuperClass(cl);
+					while (parent != null && Reflect.field(Type.createEmptyInstance(parent), name) == method) {
+						cl = parent;
+						parent = Type.getSuperClass(cl);
 					}
+					return cl;
 				}
+
+				function isSameOrSubClass(cl: Class<Dynamic>, parent: Class<Dynamic>) : Bool {
+					while (cl != null) {
+						if (cl == parent)
+							return true;
+						cl = Type.getSuperClass(cl);
+					}
+					return false;
+				}
+
+				var edit2Class = getDefiningClass(commonClass, "edit2");
+				var editClass = getDefiningClass(commonClass, "edit");
+
+				// edit2 is at least as specific as edit : the new inspector covers everything the old one shows
+				var hasNewInspector = edit2Class != hrt.prefab.Prefab && isSameOrSubClass(edit2Class, editClass);
+
+				// edit() was dropped in favor of edit2() somewhere in the hierarchy : the old inspector would be incomplete
+				var forceNewInspector = hasNewInspector && edit2Class != editClass;
 
 				var preferEdit2List = Ide.inst.currentConfig.get("sceneeditor.preferEdit2") ?? [];
 				var preferEdit2 = preferEdit2List.contains(Type.getClassName(commonClass));
 
 				var allowNewInspector = false;
-				if (preferEdit2) {
+				if (forceNewInspector) {
+					allowNewInspector = true;
+				} else if (preferEdit2) {
 					allowNewInspector = !Ide.inst.currentConfig.get("sceneeditor.oldInspector", false);
 				} else {
 					allowNewInspector = Ide.inst.currentConfig.get("sceneeditor.newInspector", false);
 				}
 
 				var toggle = null;
-				if (hasNewInspector) {
+				if (hasNewInspector && !forceNewInspector) {
 					var label = preferEdit2 ? "Use old inspector" : "Use new inspector";
 					toggle = new Element('<div class="new-editor-prompt-toggle"><label for="new-edit-toggle">$label</label><input name="new-edit-toggle" type="checkbox"></input></div>');
 					var checkbox : js.html.InputElement = cast toggle.find("input").get(0);
@@ -4100,7 +4122,7 @@ class SceneEditor {
 				if (hasNewInspector && allowNewInspector) {
 					properties.element.removeClass("hide-properties");
 					properties.element.removeClass("props");
-					toggle.addClass("margin");
+					toggle?.addClass("margin");
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
 					var isMultiEdit = selectedPrefabs.length > 1;
 					if (isMultiEdit) {
