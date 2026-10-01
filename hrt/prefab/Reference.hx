@@ -445,7 +445,7 @@ class Reference extends Object3D {
 			<category("Reference")>
 				<file type="prefab" field={source} id="fileSource" no-undo/>
 				<select field={editMode} id="editModeSelect" no-undo default-value={None}/>
-				<text("Warning : This reference loading failed") if(refInstance == null)/>
+				<text("Warning : This reference loading failed") if(refInstance == null && !ctx.root.isMultiEdit)/>
 			</category>
 		);
 
