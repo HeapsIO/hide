@@ -2267,6 +2267,7 @@ class Prefab extends HuiView<{path: String}> {
 		hrt.shader.ParticleFade,
 		hrt.shader.ParticleColorLife,
 		hrt.shader.ParticleColorRandom,
+		hrt.shader.ParticleRandomMesh,
 		hrt.shader.MaskColorAlpha,
 		hrt.shader.Spinner,
 		hrt.shader.SDF,
