@@ -3058,7 +3058,7 @@ class SceneEditor {
 		var int = elt.makeInteractive();
 		if( int != null ) {
 			initInteractive(elt,cast int);
-			if( isLocked(elt) ) toggleInteractive(elt, false);
+			if( elt.isLocked() ) toggleInteractive(elt, false);
 		}
 		var ref = Std.downcast(elt,Reference);
 	}
@@ -4190,7 +4190,7 @@ class SceneEditor {
 			curEdit = edit;
 			showGizmo = false;
 			for( e in elts )
-				if( !isLocked(e) ) {
+				if( !e.isLocked() ) {
 					showGizmo = true;
 					break;
 				}
@@ -4893,7 +4893,7 @@ class SceneEditor {
 
 			if (!visible || isHidden(prefab))
 				return;
-			if (!isLocked(prefab)) {
+			if (!prefab.isLocked()) {
 				if (interactives.get(prefab) != null) ret.push(prefab)
 				else if (interactives2d.get(prefab) != null) ret.push(prefab);
 			}
@@ -4997,14 +4997,6 @@ class SceneEditor {
 		return hideList.exists(e);
 	}
 
-	public function isLocked(e: PrefabElement) {
-		while( e != null ) {
-			if( e.locked ) return true;
-			e = e.parent;
-		}
-		return false;
-	}
-
 	function saveDisplayState() {
 		var state = [for (h in hideList.keys()) { var p = h.getAbsPath(true, true); if (p != "") p; }];
 		@:privateAccess view.saveDisplayState("hideList", state);
@@ -5039,7 +5031,7 @@ class SceneEditor {
 			for( c in o.all()) {
 				applySceneStyle(c);
 				refreshTreeStyle(c, All);
-				toggleInteractive(c,!isLocked(c));
+				toggleInteractive(c,!c.isLocked());
 			}
 		}
 		if (enableUndo) {

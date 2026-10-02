@@ -2491,33 +2491,33 @@ class Prefab extends HuiView<{path: String}> {
 					movedPush = true;
 				}
 
-				// if (boxSelectStart?.distance(inline new h2d.col.Point(e.relX, e.relY)) > 5.0) {
-				// 	boxSelectEnd ??= new h2d.col.Point();
-				// 	boxSelectEnd.set(e.relX, e.relY);
-				// }
+				if (boxSelectStart?.distance(inline new h2d.col.Point(e.relX, e.relY)) > 5.0) {
+					boxSelectEnd ??= new h2d.col.Point();
+					boxSelectEnd.set(e.relX, e.relY);
+				}
 			case EPush:
 				pushing = true;
 				movedPush = false;
 
-				// if (e.button == 0) {
+				if (e.button == 0) {
 
-				// 	boxSelectStart = new h2d.col.Point(e.relX, e.relY);
+					boxSelectStart = new h2d.col.Point(e.relX, e.relY);
 
-				// 	getScene().startCapture((e) -> {
-				// 		var oldX = e.relX;
-				// 		var oldY = e.relY;
-				// 		e.relX -= sceneEditor.absX;
-				// 		e.relY -= sceneEditor.absY;
-				// 		onSceneEvent(e);
-				// 		e.relX = oldX;
-				// 		e.relY = oldY;
-				// 	} , () -> {
-				// 		pushing = false;
-				// 		boxSelectEnd = null;
-				// 		boxSelectStart = null;
-				// 	});
-				// 	e.propagate = false;
-				// }
+					getScene().startCapture((e) -> {
+						var oldX = e.relX;
+						var oldY = e.relY;
+						e.relX -= sceneEditor.absX;
+						e.relY -= sceneEditor.absY;
+						onSceneEvent(e);
+						e.relX = oldX;
+						e.relY = oldY;
+					} , () -> {
+						pushing = false;
+						boxSelectEnd = null;
+						boxSelectStart = null;
+					});
+					e.propagate = false;
+				}
 			case ERelease:
 				if (e.button == 0 && pushing) {
 
@@ -2557,14 +2557,14 @@ class Prefab extends HuiView<{path: String}> {
 						var collides = sceneEditor.scene.s3d.getEventTargetsInFrustum(frustumShape);
 						for (i in collides) {
 							var p = prefabLookup.get(i.parent);
-							if (p != null && !p.locked)
+							if (p != null && !p.isLocked())
 								newSelection.push(p);
 						}
 						#else
 						var all = prefab.all();
 						for (prefab in all) {
 							var obj3d = prefab.to(hrt.prefab.Object3D);
-							if (obj3d == null)
+							if (obj3d == null || obj3d.isLocked())
 								continue;
 
 							var absPos = obj3d.getAbsPos(true);
@@ -2592,7 +2592,7 @@ class Prefab extends HuiView<{path: String}> {
 						var newSelection : Array<hrt.prefab.Prefab> = [];
 						for (o in objs) {
 							var p = prefabLookup.get(o.object);
-							if (p == null || p.locked)
+							if (p == null || p.isLocked())
 								continue;
 							if (!prefabs.contains(p))
 								prefabs.push(p);

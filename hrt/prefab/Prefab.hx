@@ -633,6 +633,15 @@ class Prefab {
 		return false;
 	}
 
+	public function isLocked() {
+		var p = this;
+		while( p != null ) {
+			if( p.locked ) return true;
+			p = p.parent;
+		}
+		return false;
+	}
+
 	/**
 		Returns the default display name for this prefab
 		Required outside of -D editor for the usage of hide as library
