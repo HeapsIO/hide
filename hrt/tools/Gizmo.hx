@@ -89,11 +89,13 @@ class Gizmo extends h3d.scene.Object {
 		return isLocalTransform = v;
 	}
 
+	public var isDragged(default, null) : Bool = false;
 	public var onStartMove : Handle -> Void;
 	// offsetPosition & offsetRotation are in absolute coordinates
 	// offsetScale is in local coordinate
 	public var onMove : (offsetPosition: h3d.Vector, offsetRotation: h3d.Quat, offsetScale: h3d.Vector) -> Void;
 	public var onFinishMove : Void -> Void;
+	public var onCancelMove : Void -> Void;
 
 	var window(get, never) : hxd.Window;
 	function get_window() return @:privateAccess getScene().window;
@@ -108,10 +110,8 @@ class Gizmo extends h3d.scene.Object {
 		return v;
 	}
 
-	var gizmo: h3d.scene.Object;
-	var updateFunc: Float -> Void;
+	var gizmo : h3d.scene.Object;
 	var rotateAxisShader : RotateAxisShader = new RotateAxisShader();
-	var moving : Bool;
 	var objects : Array<h3d.scene.Object> = [];
 	var initialAbsPos : h3d.Matrix;
 	var initialRay : h3d.col.Ray;
@@ -146,9 +146,6 @@ class Gizmo extends h3d.scene.Object {
 		}
 
 		gizmo.setScale(scale);
-
-		if (updateFunc != null)
-			updateFunc(dt);
 	}
 
 
@@ -255,24 +252,23 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 
-	function startMove(handle: Handle, duplicating: Bool = false) {
-		if (!moving) {
-			initialAbsPos = this.getAbsPos().clone();
-			if (onStartMove != null)
-				onStartMove(handle);
+	function startMove(handle: Handle) {
+		initialAbsPos = this.getAbsPos().clone();
+		if (onStartMove != null)
+			onStartMove(handle);
 
-			initialMousePos = new h2d.col.Point(mouseX, mouseY);
-			var scene = getScene();
-			initialRay = scene.camera.rayFromScreen(mouseX, mouseY, scene.scenePosition?.width ?? -1, scene.scenePosition?.height ?? -1);
-		}
+		if (mode == Scale)
+			mouseLock = true;
 
-		moving = true;
+		initialMousePos = new h2d.col.Point(mouseX, mouseY);
+		var scene = getScene();
+		initialRay = scene.camera.rayFromScreen(mouseX, mouseY, scene.scenePosition?.width ?? -1, scene.scenePosition?.height ?? -1);
+		isDragged = true;
 	}
 
 	function move(handle: Handle) {
 		if (onMove != null) {
 			var initialPosition = initialAbsPos.getPosition();
-			var initialScale = initialAbsPos.getScale();
 			var initialRotation = new h3d.Quat();
 			initialRotation.initRotateMatrix(initialAbsPos);
 			var scene = getScene();
@@ -376,19 +372,25 @@ class Gizmo extends h3d.scene.Object {
 
 			onMove(deltaPosition, deltaRotation, deltaScale);
 		}
-
-		if (K.isPressed(K.ESCAPE) || !K.isDown(K.MOUSE_LEFT)) {
-			finishMove(handle);
-		}
 	}
 
-	function finishMove(handle: Handle) {
+	function endMove() {
 		mouseLock = false;
-		updateFunc = null;
-		if(onFinishMove != null)
+		isDragged = false;
+		@:privateAccess getScene()?.events?.stopCapture();
+	}
+
+	function finishMove() {
+		endMove();
+		if (onFinishMove != null)
 			onFinishMove();
-		posChanged = true;
-		moving = false;
+	}
+
+	function cancelMove() {
+		endMove();
+		setTransform(initialAbsPos);
+		if (onCancelMove != null)
+			onCancelMove();
 	}
 
 
@@ -433,27 +435,33 @@ class Gizmo extends h3d.scene.Object {
 				updateHighlight();
 			}
 			interactive.onPush = function(e) {
-				e.propagate = false;
-				var startPt = new h2d.col.Point(mouseX, mouseY);
-				updateFunc = function(dt) {
-					var mousePt = new h2d.col.Point(mouseX, mouseY);
-					if (mousePt.distance(startPt) > 5) {
-						var handle : Handle = null;
-						if (axis == 0)
-							handle = mode == Rotation ? XRing : isPlane ? YZPlane : XArrow;
-						else if (axis == 1)
-							handle = mode == Rotation ? YRing : isPlane ? XZPlane : YArrow;
-						else if (axis == 2)
-							handle = mode == Rotation ? ZRing : isPlane ? XYPlane : ZArrow;
-						else
-							handle = Center;
-						if (!moving)
-							startMove(handle);
-						else
-							move(handle);
-					}
-				}
-				e.propagate = false;
+				if (e.button != hxd.Key.MOUSE_LEFT || isDragged)
+					return;
+
+				var handle : Handle = null;
+				if (axis == 0)
+					handle = mode == Rotation ? XRing : isPlane ? YZPlane : XArrow;
+				else if (axis == 1)
+					handle = mode == Rotation ? YRing : isPlane ? XZPlane : YArrow;
+				else if (axis == 2)
+					handle = mode == Rotation ? ZRing : isPlane ? XYPlane : ZArrow;
+				else
+					handle = Center;
+
+				startMove(handle);
+				@:privateAccess getScene().events.startCapture((e) -> {
+					if (e.kind == EMove)
+						move(handle);
+					if (e.kind == ERelease && e.button == K.MOUSE_LEFT)
+						finishMove();
+					if (e.kind == EKeyDown && e.keyCode == K.ESCAPE)
+						cancelMove();
+					e.propagate = false;
+				}, () -> {
+					if (!isDragged)
+						return;
+					cancelMove();
+				});
 			}
 		}
 

@@ -451,6 +451,7 @@ class Prefab extends HuiView<{path: String}> {
 			gizmoOffset.set(gizmoOrigin.tx - gizmoOffset.x, gizmoOrigin.ty - gizmoOffset.y, gizmoOrigin.tz - gizmoOffset.z);
 
 			var keepTransform = keepChildTransform;
+			initialTransform.clear();
 			for (o in obj3ds) {
 				initialTransform.set(o, o.getTransform());
 
@@ -500,14 +501,13 @@ class Prefab extends HuiView<{path: String}> {
 				if (offsetScale != null)
 					trs.prependScale(offsetScale.x, offsetScale.y, offsetScale.z);
 
-				var childAbsPos : Array<h3d.Matrix> = [];
+				var childAbsPos = new Map<hrt.prefab.Object3D, h3d.Matrix>();
 				var keepTransform = keepChildTransform;
 				if (keepTransform) {
 					for (child in obj3d.children) {
 						var c3d = child.to(hrt.prefab.Object3D);
-						if (c3d != null) {
-							childAbsPos.push(c3d.getAbsPos(true) ?? h3d.Matrix.I());
-						}
+						if (c3d != null)
+							childAbsPos.set(c3d, c3d.getAbsPos(true) ?? h3d.Matrix.I());
 					}
 				}
 
@@ -524,7 +524,7 @@ class Prefab extends HuiView<{path: String}> {
 						for (i => child in obj3d.children) {
 							var c3d = child.to(hrt.prefab.Object3D);
 							if (c3d != null) {
-								var childPos = childAbsPos[i];
+								var childPos = childAbsPos.get(c3d);
 								childPos.multiply(childPos, absInv);
 								c3d.setTransform(childPos);
 								c3d.applyTransform();
@@ -581,6 +581,13 @@ class Prefab extends HuiView<{path: String}> {
 				gizmo.moveToObjects(objs);
 			}, true);
 		};
+		gizmo.onCancelMove = () -> {
+			for (k in initialTransform.keys()) {
+				k.setTransform(initialTransform.get(k));
+				k.applyTransform();
+			}
+			sceneEditor?.inspectorRoot?.refreshFields();
+		}
 
 		buildToolbar();
 	}
@@ -729,7 +736,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		graphicsOverlay.clear();
 
-		if (@:privateAccess !gizmo?.moving)
+		if (!gizmo?.isDragged)
 			moveGizmoToPrefabs([for (p in selectedPrefabs.keys()) p]);
 
 		if (boxSelectStart != null && boxSelectEnd != null) {
@@ -2484,33 +2491,33 @@ class Prefab extends HuiView<{path: String}> {
 					movedPush = true;
 				}
 
-				if (boxSelectStart?.distance(inline new h2d.col.Point(e.relX, e.relY)) > 5.0) {
-					boxSelectEnd ??= new h2d.col.Point();
-					boxSelectEnd.set(e.relX, e.relY);
-				}
+				// if (boxSelectStart?.distance(inline new h2d.col.Point(e.relX, e.relY)) > 5.0) {
+				// 	boxSelectEnd ??= new h2d.col.Point();
+				// 	boxSelectEnd.set(e.relX, e.relY);
+				// }
 			case EPush:
 				pushing = true;
 				movedPush = false;
 
-				if (e.button == 0) {
+				// if (e.button == 0) {
 
-					boxSelectStart = new h2d.col.Point(e.relX, e.relY);
+				// 	boxSelectStart = new h2d.col.Point(e.relX, e.relY);
 
-					getScene().startCapture((e) -> {
-						var oldX = e.relX;
-						var oldY = e.relY;
-						e.relX -= sceneEditor.absX;
-						e.relY -= sceneEditor.absY;
-						onSceneEvent(e);
-						e.relX = oldX;
-						e.relY = oldY;
-					} , () -> {
-						pushing = false;
-						boxSelectEnd = null;
-						boxSelectStart = null;
-					});
-					e.propagate = false;
-				}
+				// 	getScene().startCapture((e) -> {
+				// 		var oldX = e.relX;
+				// 		var oldY = e.relY;
+				// 		e.relX -= sceneEditor.absX;
+				// 		e.relY -= sceneEditor.absY;
+				// 		onSceneEvent(e);
+				// 		e.relX = oldX;
+				// 		e.relY = oldY;
+				// 	} , () -> {
+				// 		pushing = false;
+				// 		boxSelectEnd = null;
+				// 		boxSelectStart = null;
+				// 	});
+				// 	e.propagate = false;
+				// }
 			case ERelease:
 				if (e.button == 0 && pushing) {
 

@@ -3279,6 +3279,7 @@ class SceneEditor {
 					continue;
 				obj3ds.push(o);
 			}
+			initialTransform.clear();
 			for (o in obj3ds) {
 				initialTransform.set(o, o.getTransform().clone());
 				initialAbs.set(o, o.getAbsPos(true).clone());
@@ -3333,7 +3334,6 @@ class SceneEditor {
 					restoreChildTransform(obj3d, localTransform.get(obj3d).clone());
 			}
 		};
-
 		gizmo.onFinishMove = () -> {
 			var prevTransforms = [];
 			var newTransforms = [];
@@ -3358,6 +3358,13 @@ class SceneEditor {
 				refreshProps();
 			}));
 		};
+		gizmo.onCancelMove = () -> {
+			for (k in initialTransform.keys()) {
+				k.setTransform(initialTransform.get(k));
+				k.applyTransform();
+			}
+			refreshProps();
+		}
 
 		gizmo2d.onStartMove = function(mode) {
 			var objects2d = [for(o in selectedPrefabs) {
@@ -5082,9 +5089,8 @@ class SceneEditor {
 		if( isDuplicating )
 			return;
 		isDuplicating = true;
-		if( @:privateAccess gizmo.moving ) {
-			@:privateAccess gizmo.finishMove(null);
-		}
+		if( gizmo.isDragged )
+			@:privateAccess gizmo.finishMove();
 		var undoes = [];
 		var newElements = [];
 		var lastElem = elements[elements.length-1];
@@ -5656,7 +5662,7 @@ class SceneEditor {
 			@:privateAccess view.saveDisplayState("Camera2D", save);
 		}
 		if(gizmo != null) {
-			if(@:privateAccess !gizmo.moving) {
+			if(!gizmo.isDragged) {
 				moveGizmoToSelection();
 			}
 			gizmo.isLocalTransform = localTransform;

@@ -15,7 +15,6 @@ class HuiInputBox extends HuiElement {
 	function get_disabled() { return !textInput.canEdit; }
 	function set_disabled(v) {
 		textInput.canEdit = !v;
-		trace(textInput.canEdit);
 		return v;
 	}
 

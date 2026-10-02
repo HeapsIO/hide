@@ -175,7 +175,6 @@ class App extends hxd.App {
 		hxd.System.createWindow = () -> {
 			var iconPath = 'hide_hl/res/${hrt.ui.HuiRes.hide.entry.path}';
 			iconPath = StringTools.replace(iconPath, "/", "\\");
-			trace(iconPath);
 			dx.Window.setDefaultIcon(dx.Icon.loadIcon(@:privateAccess iconPath.bytes, -1, -1));
 			new hxd.Window("HideHL", 1600, 900, {
 				background: background

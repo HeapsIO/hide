@@ -144,7 +144,6 @@ class Ide extends hide.tools.IdeData {
 
 		if (hide.Ide.inst.isProjectValid()) {
 			hrt.tools.FileManager.inst.init();
-			trace("set project " + dir);
 			hxd.res.Loader.currentInstance?.dispose();
 			hxd.res.Loader.currentInstance = new hxd.res.Loader(new hxd.fs.LocalFileSystem(resourceDir, null));
 			loadDatabase(true);
