@@ -136,7 +136,7 @@ class Macros {
 								default:
 							}
 
-							var shaderExpr = new hxsl.MacroParser().parseExpr(expr);
+							var shaderExpr = hxsl.Macros.makeParser().parseExpr(expr);
 							var name = Std.string(c);
 
 							var check = new hxsl.Checker();
@@ -198,7 +198,7 @@ class Macros {
 			var c = c.get();
 			for( m in c.meta.get() )
 				if( m.name == ":src" )
-					return new hxsl.MacroParser().parseExpr(m.params[0]);
+					return hxsl.Macros.makeParser().parseExpr(m.params[0]);
 		default:
 		}
 		throw path + " is not a shader";

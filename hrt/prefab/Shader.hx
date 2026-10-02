@@ -117,6 +117,12 @@ class Shader extends Prefab {
 	}
 
 	function setShaderParam( shader:hxsl.Shader, v : hxsl.Ast.TVar, value : Dynamic ) {
+		// enum params are stored as their index (PropsEditor) or constructor name (hide.kit)
+		var en = hxsl.Ast.Tools.getEnum(v);
+		if( en != null ) {
+			var e = Type.resolveEnum(en.path);
+			value = Std.isOfType(value, String) ? Type.createEnum(e, value) : Type.createEnumIndex(e, value);
+		}
 		Reflect.setProperty(shader, v.name, value);
 	}
 
@@ -315,6 +321,9 @@ class Shader extends Prefab {
 				case Range(rmin, rmax): min = rmin; max = rmax;
 				default:
 				}
+		var en = hxsl.Ast.Tools.getEnum(v);
+		if( en != null )
+			return PChoice(en.constructors);
 		return switch( v.type ) {
 		case TInt:
 			PInt(min == null ? null : Std.int(min), max == null ? null : Std.int(max));

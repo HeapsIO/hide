@@ -3,7 +3,6 @@ package hrt.prefab;
 class DynamicShader extends Shader {
 
 	@:c var shaderDef : {> hrt.prefab.Cache.ShaderDef, ?sclass : Class<hxsl.Shader>, ?isShaderGraph : Bool } = { shader : null, inits : null };
-	@:s var isInstance : Bool = false;
 	var template : DynamicShader;
 
 	public function new(parent,  shared: ContextShared) {
@@ -11,7 +10,7 @@ class DynamicShader extends Shader {
 	}
 
 	override function setShaderParam(shader:hxsl.Shader, v:hxsl.Ast.TVar, value:Dynamic) {
-		if( isInstance && !shaderDef.isShaderGraph ) {
+		if( shaderDef.sclass != null ) {
 			super.setShaderParam(shader,v,value);
 			return;
 		}
@@ -32,7 +31,7 @@ class DynamicShader extends Shader {
 	override function makeShader() {
 		if( getShaderDefinition() == null )
 			return null;
-		var concrete = isInstance && !shaderDef.isShaderGraph;
+		var concrete = shaderDef.sclass != null;
 
 		#if !editor
 		// Optim: all copies of the same DynamicShader template
@@ -109,6 +108,42 @@ class DynamicShader extends Shader {
 		return cl;
 	}
 
+	static function getClassShader( cl : Class<hxsl.Shader> ) : hxsl.SharedShader {
+		var shared : hxsl.SharedShader = (cl:Dynamic)._SHADER;
+		if( shared == null ) {
+			@:privateAccess Type.createEmptyInstance(cl).initialize();
+			shared = (cl:Dynamic)._SHADER;
+		}
+		return shared;
+	}
+
+	// default values declared in a compiled shader, in the same format as the ones parsed from source
+	static function getClassInits( cl : Class<hxsl.Shader>, shader : hxsl.SharedShader ) {
+		var inst = Type.createInstance(cl, []);
+		var inits = [];
+		for( v in shader.data.vars ) {
+			if( v.kind != Param )
+				continue;
+			var value : Dynamic = Reflect.field(inst, v.name + "__"); // enums are stored as Int
+			value = switch( v.type ) {
+			case TBool, TInt, TFloat: value;
+			case TVec(n, VFloat) if( value != null ): ([value.x, value.y, value.z, value.w] : Array<Float>).slice(0, n);
+			default: null;
+			}
+			if( value != null )
+				inits.push({ variable : v, value : value });
+		}
+		return inits;
+	}
+
+	/**
+		Use the compiled shader class when it exists : faster, typed getShader() from code, and needed for enum params.
+		Otherwise the shader is loaded from source as a hxsl.DynamicShader. Override to keep some shaders dynamic.
+	**/
+	function isInstance() : Bool {
+		return loadShaderClass(true) != null;
+	}
+
 	public function loadShaderDef() {
 		if(shaderDef.shader == null && source != null) {
 			fixSourcePath();
@@ -127,15 +162,10 @@ class DynamicShader extends Shader {
 				});
 				#end
 			}
-			else if( isInstance && !shaderDef.isShaderGraph ) {
+			else if( isInstance() ) {
 				shaderDef.sclass = loadShaderClass();
-				var shared : hxsl.SharedShader = (shaderDef.sclass:Dynamic)._SHADER;
-				if( shared == null ) {
-					@:privateAccess Type.createEmptyInstance(shaderDef.sclass).initialize();
-					shared = (shaderDef.sclass:Dynamic)._SHADER;
-				}
-				shaderDef.shader = shared;
-				shaderDef.inits = [];
+				shaderDef.shader = getClassShader(shaderDef.sclass);
+				shaderDef.inits = getClassInits(shaderDef.sclass, shaderDef.shader);
 			} else {
 				var path = source;
 				if(StringTools.endsWith(path, ".hx")) path = path.substr(0, -3);
@@ -205,12 +235,6 @@ class DynamicShader extends Shader {
 		}
 
 		super.edit2(ctx);
-
-		if( (isInstance && !shaderDef.isShaderGraph) || loadShaderClass(true) != null ) {
-			ctx.build(
-				<checkbox field={isInstance}/>
-			);
-		}
 	}
 
 	#if editor
@@ -253,13 +277,6 @@ class DynamicShader extends Shader {
 		}
 
 		super.edit(ectx);
-
-		if( (isInstance && !shaderDef.isShaderGraph) || loadShaderClass(true) != null ) {
-			ectx.properties.add(hide.comp.PropsEditor.makePropsList([{
-				name : "isInstance",
-				t : PBool,
-			}]), this);
-		}
 	}
 	#end
 
