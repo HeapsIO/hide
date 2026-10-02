@@ -4,6 +4,7 @@ package hrt.prefab;
 typedef ContextShared = hide.prefab.ContextShared;
 @:allow(hide.view.Prefab)
 @:allow(hide.view.FXEditor)
+@:allow(hide.view.Model)
 @:allow(hide.kit.Element)
 @:allow(hide.kit.KitRoot)
 class ContextSharedBase {

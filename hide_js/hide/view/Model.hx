@@ -492,8 +492,10 @@ class Model extends FileView {
 		var needRefresh = false;
 
 		// Save render props
-		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
-			sceneEditor.renderPropsRoot.save();
+		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null) {
+			var renderProps = sceneEditor.renderPropsRoot;
+			renderProps.shared.editorDiscSaveScope(() -> @:privateAccess renderProps.save());
+		}
 
 		// Save model props
 		var dynamicJointScope = this.sceneEditor.properties.element.find("#scope").val();
