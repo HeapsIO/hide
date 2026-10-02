@@ -14,10 +14,11 @@ class ParticleRandomMesh extends hxsl.Shader {
 	static var SRC = {
 		@:import hrt.shader.BaseEmitter;
 
-		// Direction along which the cells are laid out
 		@const @param var axis : ParticleRandomMeshAxis = PosX;
 		@range(1, 32) @param var cellCount : Int = 4;
 		@range(0, 10) @param var cellSize : Float = 1.0;
+		/** Cells start at the pivot instead of being centered around it, move them back to center */
+		@const @param var recenter : Bool = false;
 
 		function vertex() {
 			var s = (axis == NegX || axis == NegY || axis == NegZ) ? -1.0 : 1.0;
@@ -26,11 +27,12 @@ class ParticleRandomMesh extends hxsl.Shader {
 			var cell = min(floor(particleRandom * count), count - 1.0);
 
 			var pos = relativePosition * meshToModel.mat3x4();
-			var local = dot(pos, dir) - cell * cellSize;
-			if (abs(local) > cellSize * 0.5)
+			var start = recenter ? cell * cellSize : (cell - 0.5) * cellSize;
+			var local = dot(pos, dir) - start;
+			if (local < 0.0 || local > cellSize)
 				pos = vec3(0.0);
 			else
-				pos -= dir * (cell * cellSize);
+				pos -= dir * (start + cellSize * 0.5);
 			relativePosition = pos * modelToMesh.mat3x4();
 		}
 	};
