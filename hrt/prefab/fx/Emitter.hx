@@ -81,6 +81,7 @@ class InstanceDef {
 	var acceleration: Value;
 	var worldAcceleration: Value;
 	var localOffset: Value;
+	var pivot: Value;
 	var scale: Value;
 	var scaleOverTime: Value;
 	var stretch: Value;
@@ -298,6 +299,14 @@ class ParticleInstance {
 		v.scale3(evaluator.getFast(idx, def.scaleOverTime, emitter.curTime));
 		localMat.initScale(v.x, v.y, v.z);
 
+
+		// PIVOT
+		if(def.pivot != VZero) {
+			evaluator.getFastVec(idx, def.pivot, t, v);
+			localMat.tx = v.x;
+			localMat.ty = v.y;
+			localMat.tz = v.z;
+		}
 
 		// ROTATION
 		if(def.rotation != VZero) {
@@ -1809,6 +1818,8 @@ class Emitter extends Object3D {
 	public var instStretchVelocity : Null<Float>;
 	@:instParam({ t: PVec(3, 0, 360), def: [0., 0., 0.], disp: "Rotation", group: "Particle Transform" })
 	public var instRotation : Array<Float>;
+	@:instParam({ t: PVec(3, -1, 1), def: [0., 0., 0.], disp: "Pivot", group: "Particle Transform" })
+	public var instPivot : Array<Float>;
 	@:instParam({ t: PVec(3, -10, 10), def: [0., 0., 0.], disp: "Offset", group: "Particle Transform" })
 	public var instOffset : Array<Float>;
 
@@ -1885,7 +1896,7 @@ class Emitter extends Object3D {
 					return VRandomBetweenCurves(randIdx++, ca, cb);
 				}
 				else {
-					if (pname.indexOf("Rotation") >= 0 || pname.indexOf("Offset") >= 0)
+					if (pname.indexOf("Rotation") >= 0 || pname.indexOf("Offset") >= 0 || pname.indexOf("Pivot") >= 0)
 						return Evaluator.vAdd(Evaluator.vAdd(xVal, randVal), xCurve.makeVal());
 					else
 						return Evaluator.vMult(Evaluator.vAdd(xVal, randVal), xCurve.makeVal());
@@ -1925,6 +1936,7 @@ class Emitter extends Object3D {
 		d.stretch = param(instStretch);
 		d.stretchVelocity = param(instStretchVelocity);
 		d.rotation = param(instRotation);
+		d.pivot = param(instPivot);
 		emitterObj.instDef = d;
 		emitterObj.particleTemplate = template;
 
