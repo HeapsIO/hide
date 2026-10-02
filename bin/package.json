@@ -9,7 +9,7 @@
 	},
 	"main" : "app.html",
 	"chromium-args":"--enable-spell-checking --disable-features=AllowSoftwareGLFallbackDueToCrashes",
-	"js-flags": "--expose-gc",
+	"js-flags": "--expose-gc --no-efficiency-mode",
 	"dependencies": {
 		"mongodb": "^3.2.2"
 	},
