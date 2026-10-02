@@ -716,7 +716,7 @@ class HuiGridSettingsPopup extends HuiPopup {
 					gridSize.value = undo ? prevValue : newValue;
 				}
 
-				editor.undo.record(exec, false);
+				editor.prefabUndo.recordPrefabs(exec, false, []);
 				exec(false);
 			}
 		};
@@ -732,7 +732,7 @@ class HuiGridSettingsPopup extends HuiPopup {
 					rotationStep.value = undo ? prevValue : newValue;
 				}
 
-				editor.undo.record(exec, false);
+				editor.prefabUndo.recordPrefabs(exec, false, []);
 				exec(false);
 			}
 		};
@@ -748,7 +748,7 @@ class HuiGridSettingsPopup extends HuiPopup {
 					scaleStep.value = undo ? prevValue : newValue;
 				}
 
-				editor.undo.record(exec, false);
+				editor.prefabUndo.recordPrefabs(exec, false, []);
 				exec(false);
 			}
 		}

@@ -123,10 +123,10 @@ class Prefab extends HuiView<{path: String}> {
 			}
 		});
 
-		registerCommand(hrt.ui.HuiCommands.cut, View, () -> getView().undo.run(actionCutToClipboard(), true));
+		registerCommand(hrt.ui.HuiCommands.cut, View, () -> { var modified = withParents(getSelectionOrdered()); prefabUndo.runPrefabs(actionCutToClipboard(), true, modified); });
 		registerCommand(hrt.ui.HuiCommands.copy, View, () -> copySelectionToClipboard());
-		registerCommand(hrt.ui.HuiCommands.duplicate, View, () -> getView().undo.run(actionDuplicateSelection(), true));
-		registerCommand(hrt.ui.HuiCommands.paste, View, () -> getView().undo.run(actionPasteFromClipboard(), true));
+		registerCommand(hrt.ui.HuiCommands.duplicate, View, () -> prefabUndo.runPrefabs(actionDuplicateSelection(), true, [for (p in getSelectionOrdered()) p.parent]));
+		registerCommand(hrt.ui.HuiCommands.paste, View, () -> { var targets = getSelectionOrdered(); prefabUndo.runPrefabs(actionPasteFromClipboard(), true, targets.length > 0 ? targets : [prefab]); });
 
 		registerCommand(hrt.ui.HuiCommands.delete, View, commandDelete);
 		registerCommand(editorHideCommand, View, () -> {
@@ -266,7 +266,7 @@ class Prefab extends HuiView<{path: String}> {
 							index = reparentTo.children.indexOf(target) + 1;
 						case Inside:
 					}
-					getView().undo.run(actionReparentPrefabs(prefabs, reparentTo, index), true);
+					prefabUndo.runPrefabs(actionReparentPrefabs(prefabs, reparentTo, index), true, withParents(prefabs, reparentTo));
 				} else if (op.type == HuiFileBrowser.fileDragOp) {
 					var pathAbs = getDropPath(op);
 
@@ -301,7 +301,7 @@ class Prefab extends HuiView<{path: String}> {
 						select(isUndo);
 					};
 
-					getView().undo.run(action, true);
+					prefabUndo.runPrefabs(action, true, [parent]);
 				}
 			}
 		}
@@ -559,7 +559,16 @@ class Prefab extends HuiView<{path: String}> {
 				}
 			}
 
-			getView().undo.record((isUndo) -> {
+			var modified : Array<hrt.prefab.Prefab> = [];
+			for (o in modifiedObj3ds) {
+				modified.push(o);
+				if (keepTransform)
+					for (child in o.children)
+						if (child.to(hrt.prefab.Object3D) != null)
+							modified.push(child);
+			}
+
+			prefabUndo.recordPrefabs((isUndo) -> {
 				var objs = [];
 				var transformIdx = 0;
 				for (o in modifiedObj3ds) {
@@ -579,7 +588,7 @@ class Prefab extends HuiView<{path: String}> {
 					}
 				}
 				gizmo.moveToObjects(objs);
-			}, true);
+			}, true, modified);
 		};
 		gizmo.onCancelMove = () -> {
 			for (k in initialTransform.keys()) {
@@ -650,7 +659,8 @@ class Prefab extends HuiView<{path: String}> {
 		if (currentEditContext?.foregroundEditorTool?.onDeleteCommand())
 			return;
 
-		getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true);
+		var toRemove = [for (p => _ in selectedPrefabs) p];
+		prefabUndo.runPrefabs(actionRemovePrefabs(toRemove), true, withParents(toRemove));
 	}
 
 	function sceneDragOver(op: HuiDragOp) {
@@ -735,7 +745,7 @@ class Prefab extends HuiView<{path: String}> {
 			select(isUndo);
 		};
 
-		getView().undo.run(action, true);
+		prefabUndo.runPrefabs(action, true, [parent]);
 	}
 
 	override function update(dt:Float) {
@@ -1026,11 +1036,35 @@ class Prefab extends HuiView<{path: String}> {
 		];
 	}
 
+	/** Undo stack of this editor, which tracks the prefabs modified by each action **/
+	public var prefabUndo(get, never) : PrefabUndo;
+	inline function get_prefabUndo() return (cast undo : PrefabUndo);
+
+	override function createUndo() : hrt.tools.Undo {
+		return new PrefabUndo();
+	}
+
+	/** Returns prefabs, their current parents and newParent : the prefabs modified when moving prefabs to newParent **/
+	function withParents(prefabs: Array<hrt.prefab.Prefab>, ?newParent: hrt.prefab.Prefab) : Array<hrt.prefab.Prefab> {
+		var list = [];
+		function add(p: hrt.prefab.Prefab) {
+			if (p != null && !list.contains(p))
+				list.push(p);
+		}
+		for (p in prefabs) {
+			add(p);
+			add(p.parent);
+		}
+		add(newParent);
+		return list;
+	}
+
 	public function setPrefab(newPrefab: hrt.prefab.Prefab, recordUndo: Bool) {
 
 		var action = actionSetPrefab(newPrefab);
 
 		if (recordUndo) {
+			// replaces the whole prefab tree, the modified prefabs are unknown
 			undo.run(action, true);
 			undo.markClean();
 		} else {
@@ -1331,7 +1365,7 @@ class Prefab extends HuiView<{path: String}> {
 			actionReparentPrefab(group, groupParent, index),
 			actionReparentPrefabs(selection, group, 0),
 		]);
-		getView().undo.run(action, true);
+		prefabUndo.runPrefabs(action, true, withParents(selection, groupParent).concat([group]));
 	}
 
 	function setSelection(selection: Array<hrt.prefab.Prefab>, flags: SelectionFlags, force: Bool = false) {
@@ -1379,7 +1413,7 @@ class Prefab extends HuiView<{path: String}> {
 		}
 
 		if (!flags.has(NoRecordUndo)) {
-			getView().undo.record((isUndo) -> setSelection(isUndo ? oldSelection : selection, NoRecordUndo), false);
+			prefabUndo.recordPrefabs((isUndo) -> setSelection(isUndo ? oldSelection : selection, NoRecordUndo), false, []);
 		}
 
 		refreshInspector();
@@ -1529,7 +1563,7 @@ class Prefab extends HuiView<{path: String}> {
 			sceneEditor.tree.rebuild();
 		}
 
-		undo.run(apply, false);
+		prefabUndo.runPrefabs(apply, false, []);
 	}
 
 	public function setEnable(prefabs : Array<hrt.prefab.Prefab>, isEnable: Bool) {
@@ -1542,12 +1576,12 @@ class Prefab extends HuiView<{path: String}> {
 			inspectorHeader.refresh();
 		}
 		apply(true);
-		undo.record((undo) -> {
+		prefabUndo.recordPrefabs((undo) -> {
 			if (undo)
 				apply(false);
 			else
 				apply(true);
-		}, true);
+		}, true, prefabs);
 	}
 
 	public function setEditorOnly(prefabs : Array<hrt.prefab.Prefab>, isEditorOnly: Bool) {
@@ -1559,12 +1593,12 @@ class Prefab extends HuiView<{path: String}> {
 			}
 		}
 		apply(true);
-		undo.record((undo) -> {
+		prefabUndo.recordPrefabs((undo) -> {
 			if (undo)
 				apply(false);
 			else
 				apply(true);
-		}, true);
+		}, true, prefabs);
 	}
 
 	public function setInGameOnly(prefabs : Array<hrt.prefab.Prefab>, isInGameOnly: Bool) {
@@ -1576,12 +1610,12 @@ class Prefab extends HuiView<{path: String}> {
 			}
 		}
 		apply(true);
-		undo.record((undo) -> {
+		prefabUndo.recordPrefabs((undo) -> {
 			if (undo)
 				apply(false);
 			else
 				apply(true);
-		}, true);
+		}, true, prefabs);
 	}
 
 	public function setLock(prefabs : Array<hrt.prefab.Prefab>, isLocked: Bool) {
@@ -1595,7 +1629,7 @@ class Prefab extends HuiView<{path: String}> {
 			sceneEditor.tree.rebuild();
 		}
 		apply(false);
-		undo.record(apply, true);
+		prefabUndo.recordPrefabs(apply, true, prefabs);
 	}
 
 	function getTagMenu(prefabs: Array<hrt.prefab.Prefab>) : Array<hrt.ui.HuiMenu.MenuItem> {
@@ -1667,7 +1701,7 @@ class Prefab extends HuiView<{path: String}> {
 			}
 		}
 		exec(false);
-		undo.record(exec, true);
+		prefabUndo.recordPrefabs(exec, true, prefabs);
 	}
 
 
@@ -1992,7 +2026,7 @@ class Prefab extends HuiView<{path: String}> {
 	function renamePrefab(target: hrt.prefab.Prefab) {
 		sceneEditor.tree.rename(target, (newName: String) -> {
 			if (newName != "" && newName != null) {
-				getView().undo.run(actionRenamePrefab(target, newName), true);
+				prefabUndo.runPrefabs(actionRenamePrefab(target, newName), true, [target]);
 			}
 		});
 	}
@@ -2402,7 +2436,7 @@ class Prefab extends HuiView<{path: String}> {
 					var shader = newPrefabByName("shader");
 					shader.name = name;
 					shader.source = path;
-					getView().undo.run(actionAddSelectPrefab(parentElt, parentElt.children.length, shader), true);
+					prefabUndo.runPrefabs(actionAddSelectPrefab(parentElt, parentElt.children.length, shader), true, [parentElt]);
 				}
 			}
 		}
@@ -2471,7 +2505,7 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	function createPrefabMenu(parent: hrt.prefab.Prefab, ?onNew: (prefab: hrt.prefab.Prefab) -> Void) : Array<hrt.ui.HuiMenu.MenuItem> {
-		var callback = (cl) -> getView().undo.run(actionCreatePrefab(parent, parent.children.length, cl, onNew), true);
+		var callback = (cl) -> prefabUndo.runPrefabs(actionCreatePrefab(parent, parent.children.length, cl, onNew), true, [parent]);
 
 		var lines: Array<hrt.ui.HuiMenu.MenuItem> = [];
 
@@ -2646,7 +2680,7 @@ class Prefab extends HuiView<{path: String}> {
 							}
 						}
 
-						undo.run(actionMakeSelection(newSelection), false);
+						prefabUndo.runPrefabs(actionMakeSelection(newSelection), false, []);
 					} else {
 						// Standard click selection
 
@@ -2848,8 +2882,8 @@ class EditContext extends hrt.prefab.EditContext2 {
 		throw "implement";
 	}
 
-	function recordUndoImpl(callback: (isUndo: Bool) -> Void ) : Void {
-		editor.findParent(HuiView).undo.record(callback, true);
+	function recordUndoImpl(callback: (isUndo: Bool) -> Void, prefabs: Null<Array<hrt.prefab.Prefab>>) : Void {
+		editor.prefabUndo.recordPrefabs(callback, true, prefabs);
 	}
 
 	function saveSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String, value: Dynamic) : Void {

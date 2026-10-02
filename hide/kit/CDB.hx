@@ -94,7 +94,7 @@ class CDB extends Element {
 				}
 			}
 			#elseif hui
-			new hrt.ui.HuiCdbInspector(curType, prefab.props, cdbCategory.nativeContent);
+			new hrt.ui.HuiCdbInspector(curType, prefab.props, prefab, cdbCategory.nativeContent);
 			#end
 		}
 	}

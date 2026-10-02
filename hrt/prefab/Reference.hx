@@ -486,7 +486,7 @@ class Reference extends Object3D {
 				ctx.rebuildInspector();
 			};
 			exec(false);
-			ctx.recordUndo(exec);
+			ctx.recordUndo(exec, [this]);
 		}
 
 		@:privateAccess editModeSelect.onFieldChange = (_) -> {
@@ -520,7 +520,7 @@ class Reference extends Object3D {
 				ctx.rebuildInspector();
 			};
 			exec(false);
-			ctx.recordUndo(exec);
+			ctx.recordUndo(exec, [this]);
 		}
 
 		super.edit2(ctx);
@@ -555,7 +555,7 @@ class Reference extends Object3D {
 					ctx.rebuildInspector();
 				}
 				exec(false);
-				ctx.recordUndo(exec);
+				ctx.recordUndo(exec, [this]);
 			};
 		}
 

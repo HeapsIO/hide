@@ -39,7 +39,7 @@ class HuiPrefabInspectorHeader extends HuiElement {
 				nameEl.text = isUndo ? oldName : newName;
 			}
 			apply(false);
-			view.undo.record(apply, true);
+			view.prefabUndo.recordPrefabs(apply, true, prefabs);
 		}
 	}
 

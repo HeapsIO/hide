@@ -4,7 +4,7 @@ package hrt.ui;
 
 class HuiView<T> extends HuiElement {
 	var state : T;
-	public var undo(default, never): hrt.tools.Undo = new hrt.tools.Undo();
+	public var undo(default, null): hrt.tools.Undo;
 
 	var hasUnsavedChanges(default, set): Bool = false;
 	var toolbar : HuiToolbar;
@@ -25,6 +25,7 @@ class HuiView<T> extends HuiElement {
 
 	function new(state: Dynamic, ?parent: h2d.Object) {
 		super(parent);
+		undo = createUndo();
 		initComponent();
 
 		this.state = cast state ?? {};
@@ -35,6 +36,13 @@ class HuiView<T> extends HuiElement {
 
 		registerCommand(HuiCommands.undo, FocusedView, () -> undo.undo());
 		registerCommand(HuiCommands.redo, FocusedView, () -> undo.redo());
+	}
+
+	/**
+		Override this to use a custom undo stack in this view
+	**/
+	function createUndo() : hrt.tools.Undo {
+		return new hrt.tools.Undo();
 	}
 
 	function saveState() {

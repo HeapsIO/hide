@@ -3,7 +3,7 @@ package hrt.tools;
 typedef Action = (isUndo: Bool) -> Void;
 
 class Undo {
-	var stack : Array<{action: Action, hasDataChanges: Bool}> = [];
+	var stack : Array<{action: Action, hasDataChanges: Bool, info: Any}> = [];
 	var currentAction : Int = -1;
 	var lastSaveUndo: Any = null;
 
@@ -17,28 +17,42 @@ class Undo {
 		lastSaveUndo = null;
 	}
 
-	public function record(action: Action, hasDataChanges: Bool) {
+	/**
+		Record an action that has already been applied. `info` is an optional payload describing the action,
+		passed back to onStep each time the action is recorded, undone or redone
+	**/
+	public function record(action: Action, hasDataChanges: Bool, ?info: Any) {
 		stack.splice(currentAction+1, stack.length);
-		stack.push({action: action, hasDataChanges: hasDataChanges});
+		stack.push({action: action, hasDataChanges: hasDataChanges, info: info});
 		currentAction = stack.length-1;
+		onStep(info, false);
 		onAfterChange();
 	}
 
-	public function run(action: Action, hasDataChanges: Bool) {
+	public function run(action: Action, hasDataChanges: Bool, ?info: Any) {
 		if (action == null)
 			return;
 		action(false);
-		record(action, hasDataChanges);
+		record(action, hasDataChanges, info);
 	}
 
 	public dynamic function onAfterChange() {
 
 	}
 
+	/**
+		Called after an action has been recorded, undone or redone, with the info it was recorded with
+	**/
+	public dynamic function onStep(info: Null<Any>, isUndo: Bool) {
+
+	}
+
 	public function undo() {
 		if (canUndo()) {
-			stack[currentAction].action(true);
+			var entry = stack[currentAction];
+			entry.action(true);
 			currentAction--;
+			onStep(entry.info, true);
 			onAfterChange();
 		}
 	}
@@ -50,7 +64,9 @@ class Undo {
 	public function redo() {
 		if (canRedo()) {
 			currentAction++;
-			stack[currentAction].action(false);
+			var entry = stack[currentAction];
+			entry.action(false);
+			onStep(entry.info, false);
 			onAfterChange();
 		}
 	}
