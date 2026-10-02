@@ -74,6 +74,8 @@ class Prefab extends HuiView<{path: String}> {
 		super(_state, parent);
 		initComponent();
 
+		prefabUndo.onPrefabsRecorded = propagateEditReferences;
+
 		graphicsOverlay = new h2d.Graphics(sceneEditor.scene);
 		var props = sceneEditor.scene.getProperties(graphicsOverlay);
 		props.isAbsolute = true;
@@ -1057,6 +1059,61 @@ class Prefab extends HuiView<{path: String}> {
 		}
 		add(newParent);
 		return list;
+	}
+
+	/**
+		When a recorded action modified the content of references in Edit mode, update the other references
+		to the same files in the scene, in the same undo step
+	**/
+	function propagateEditReferences(prefabs: Null<Array<hrt.prefab.Prefab>>) {
+		// unknown changes (like reloading the whole prefab) are not propagated
+		if (prefabs == null || this.prefab == null)
+			return;
+
+		// Edit mode references whose refInstance contains a modified prefab
+		var editedRefs : Array<hrt.prefab.Reference> = [];
+		for (p in prefabs) {
+			var ref = Std.downcast(p.shared.parentPrefab, hrt.prefab.Reference);
+			if (ref != null && ref.editMode == Edit && ref.refInstance != null && !editedRefs.contains(ref))
+				editedRefs.push(ref);
+		}
+		if (editedRefs.length == 0)
+			return;
+
+		var allRefs : Array<hrt.prefab.Reference> = [];
+		function collect(p: hrt.prefab.Prefab) {
+			var ref = Std.downcast(p, hrt.prefab.Reference);
+			if (ref != null)
+				allRefs.push(ref);
+			for (c in p.children)
+				collect(c);
+			if (ref?.refInstance != null)
+				collect(ref.refInstance);
+		}
+		collect(this.prefab);
+
+		var actions : Array<hrt.tools.Undo.Action> = [];
+		var syncedRefs : Array<hrt.prefab.Reference> = [];
+		for (edited in editedRefs) {
+			for (other in allRefs) {
+				if (other == edited || other.source != edited.source || other.refInstance == null || editedRefs.contains(other) || syncedRefs.contains(other))
+					continue;
+				actions.push(other.editorSyncSourceAction(edited.refInstance));
+				syncedRefs.push(other);
+			}
+		}
+		if (actions.length == 0)
+			return;
+
+		prefabUndo.mergeWithLast((isUndo) -> {
+			beginRebuild();
+			for (i in 0...actions.length)
+				actions[isUndo ? actions.length - i - 1 : i](isUndo);
+			for (ref in syncedRefs)
+				queueRebuild(ref);
+			endRebuild();
+			sceneEditor.tree.rebuild();
+		});
 	}
 
 	public function setPrefab(newPrefab: hrt.prefab.Prefab, recordUndo: Bool) {

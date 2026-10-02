@@ -321,6 +321,33 @@ class Reference extends Object3D {
 		return saved;
 	}
 
+	#if (editor || editor_hl)
+	/**
+		Returns an undo action that replaces the refInstance with a copy of `sourceInstance`, the edited content of
+		the same source file (from another reference in Edit mode). In Override mode, the overrides of this reference are kept.
+		Must be recorded in an undo/redo step.
+	**/
+	public function editorSyncSourceAction(sourceInstance: Prefab) : (isUndo: Bool) -> Void {
+		var oldRef = saveRefInstance();
+
+		var sh = new ContextShared(source, null, null, true);
+		sh.parentPrefab = this;
+
+		var newRef : LoadedReference = { prefab: null, version: refInstanceVersion };
+		// the edited content will be the content of the file once saved
+		if (editMode != None)
+			newRef.originalSource = sourceInstance.serialize();
+
+		var data : Dynamic = sourceInstance.serialize();
+		var localOverrides = editMode == Override ? computeDiffFromSource() : null;
+		if (localOverrides != null)
+			data = hrt.prefab.Diff.apply(data, localOverrides);
+		newRef.prefab = Prefab.createFromDynamic(data, null, sh);
+
+		return (isUndo) -> setRefInstance(isUndo ? oldRef : newRef);
+	}
+	#end
+
 	override function makeInstance() {
 		if( source == null )
 			return;

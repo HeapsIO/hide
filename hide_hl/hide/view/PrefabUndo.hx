@@ -8,6 +8,14 @@ class PrefabUndo extends hrt.tools.Undo {
 	public function new() {
 		super();
 		onStep = (info, isUndo) -> onPrefabsChanged(cast info, isUndo);
+		onRecord = (info) -> onPrefabsRecorded(cast info);
+	}
+
+	/**
+		Called once when a new action is recorded (not on undo/redo). mergeWithLast can be called from here
+		to apply the side effects of the action in the same undo step.
+	**/
+	public dynamic function onPrefabsRecorded(prefabs: Null<Array<hrt.prefab.Prefab>>) {
 	}
 
 	/**

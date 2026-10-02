@@ -146,9 +146,16 @@ abstract class EditContext2 {
 
 	/**
 		Record an undo step. If called between beginMultiUndo/finishMultiUndo, the step is merged with the others in a single undo step.
-		`prefabs` lists the prefabs modified by the step, leave it null if unknown.
+		`prefabs` lists the prefabs modified by the step. If null, the edited prefabs are assumed to be modified.
 	**/
 	public final function recordUndo(callback: (isUndo: Bool) -> Void, ?prefabs: Array<Prefab>) : Void {
+		#if domkit
+		if (prefabs == null && root != null) {
+			// in multi edit, the root prefab is a temporary copy, the edited prefabs are the child properties ones
+			prefabs = root.editedPrefabsProperties.length > 0 ? [for (childProperties in root.editedPrefabsProperties) @:privateAccess childProperties.prefab] : [@:privateAccess root.prefab];
+		}
+		#end
+
 		var top = getTopContext();
 		if (top.multiUndo != null) {
 			top.multiUndo.push({callback: callback, prefabs: prefabs});
