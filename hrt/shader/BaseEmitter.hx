@@ -12,6 +12,9 @@ class BaseEmitter extends hxsl.Shader {
 
 		@param var emitPosition : Vec3;
 
+		@param var meshTransform : Mat4;
+		@param var meshTransformInverse : Mat4;
+
 		@const @param var billboardMode : Bool;
 
 
@@ -20,12 +23,16 @@ class BaseEmitter extends hxsl.Shader {
 		var particleLifeTime : Float;
 		var particleLife : Float;
 		var emitterPosition : Vec3;
+		var meshToModel : Mat4;
+		var modelToMesh : Mat4;
 
 		function __init__() {
 			particleRandom = random;
 			particleLifeTime = lifeTime;
 			particleLife = life;
 			emitterPosition = emitPosition;
+			meshToModel = meshTransform;
+			modelToMesh = meshTransformInverse;
 		}
 
 		function vertex() {

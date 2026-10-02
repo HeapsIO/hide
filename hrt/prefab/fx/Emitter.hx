@@ -544,6 +544,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var maxCount = 20;
 	public var sortMode : SortMode = None;
 	public var followRotation = false;
+	public var applyMeshTransform = false;
 	public var startSpeed: Value;
 	public var startWorldSpeed: Value;
 
@@ -602,6 +603,7 @@ class EmitterObject extends h3d.scene.Object {
 	var orbitToEmitter = new h3d.Matrix();
 	var orbitFromEmitter = new h3d.Matrix();
 	var baseEmitMat : h3d.Matrix;
+	var meshTransform = new h3d.Matrix();
 	var randomValues : Array<Float>;
 	var randSlots : Int;
 
@@ -653,12 +655,11 @@ class EmitterObject extends h3d.scene.Object {
 			batch.remove();
 
 		baseEmitMat = null;
+		meshTransform.identity();
 		var meshPrimitive : h3d.prim.MeshPrimitive = null;
 		var meshMaterial : h3d.mat.Material = null;
 		if (particleTemplate != null) {
 			baseEmitMat = particleTemplate.getTransform();
-			if(baseEmitMat.isIdentityEpsilon(0.01))
-				baseEmitMat = null;
 
 			var empty3d = new h3d.scene.Object();
 			var clone = particleTemplate.clone(new hrt.prefab.ContextShared(empty3d));
@@ -681,10 +682,18 @@ class EmitterObject extends h3d.scene.Object {
 			if (mesh != null) {
 				meshPrimitive = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
 				meshMaterial = mesh.material;
+				var absPos = mesh.getAbsPos();
+				tmpMat.initInverse(baseEmitMat);
+				meshTransform.multiply(absPos, tmpMat);
+				if (applyMeshTransform)
+					baseEmitMat.load(absPos);
 				mesh.remove();
 			}
 
 			empty3d.remove();
+
+			if(baseEmitMat.isIdentityEpsilon(0.01))
+				baseEmitMat = null;
 		}
 
 		if (meshPrimitive == null ) {
@@ -743,6 +752,8 @@ class EmitterObject extends h3d.scene.Object {
 			}
 
 			baseEmitterShader = new hrt.shader.BaseEmitter();
+			baseEmitterShader.meshTransform.load(meshTransform);
+			baseEmitterShader.meshTransformInverse.initInverse(meshTransform);
 			batch.material.mainPass.addShader(baseEmitterShader);
 
 			if(useRandomColor) {
@@ -1675,6 +1686,8 @@ class Emitter extends Object3D {
 	public var particleScaling : ParticleScaling = ParticleScaling.Parent;
 	@:param({ t: PBool, disp: "Follow rotation", group: "Properties" })
 	public var followRotation : Bool = false;
+	@:param({ t: PBool, disp: "Apply mesh transform", group: "Properties" })
+	public var applyMeshTransform : Bool = false;
 	@:param({ t: PBool, disp: "Enable Sort", group: "Properties" })
 	public var enableSort : Bool = true;
 	@:param({ t: PEnum(SortMode), disp: "Sort mode", group: "Properties" })
@@ -1794,6 +1807,11 @@ class Emitter extends Object3D {
 	public var instRotation : Array<Float>;
 	@:instParam({ t: PVec(3, -10, 10), def: [0., 0., 0.], disp: "Offset", group: "Particle Transform" })
 	public var instOffset : Array<Float>;
+
+	public function new(parent, shared: ContextShared) {
+		super(parent, shared);
+		applyMeshTransform = true;  // old emitters stay false, new ones true by default
+	}
 
 	override function save() {
 		var data = super.save();
@@ -1940,6 +1958,7 @@ class Emitter extends Object3D {
 		emitterObj.emitRateChangeDelay 	= 	emitRateChangeDelay;
 		emitterObj.emitShape 			= 	emitShape;
 		emitterObj.followRotation 		= 	followRotation;
+		emitterObj.applyMeshTransform 	= 	applyMeshTransform;
 		// EMIT SHAPE
 		emitterObj.emitAngle 			= 	param(emitAngle);
 		emitterObj.emitRad1 			= 	emitRad1;
