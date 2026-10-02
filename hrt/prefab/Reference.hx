@@ -41,7 +41,7 @@ class Reference extends Object3D {
 	/**
 		Copy of the original data to use as a reference on save for overrides
 	**/
-	public var originalSource : Dynamic;
+	var originalSource : Dynamic;
 
 	var wasMade : Bool = false;
 	#end
@@ -101,7 +101,7 @@ class Reference extends Object3D {
 		#end
 
 		#if !(editor ||editor_hl)
-		if (source != null && shouldBeInstanciated() && hxd.res.Loader.currentInstance?.exists(source)) {
+		if (source != null && hxd.res.Loader.currentInstance?.exists(source)) {
 			initRefInstance();
 		}
 		#else
@@ -213,11 +213,6 @@ class Reference extends Object3D {
 		resolve();
 	}
 
-	@:deprecated("Use resolve() instead")
-	inline function resolveRef() : Prefab {
-		return resolve();
-	}
-
 	/**
 		Try to resolve refInstance if it's not loaded.
 		Loads the prefab referenced by `source`, apply overrides to it if applicable and store it in refInstance and returns it.
@@ -227,8 +222,7 @@ class Reference extends Object3D {
 		#if (editor || editor_hl)
 		// never try to load refInstance automatically if it's null in editor
 		return refInstance;
-		#end
-
+		#else
 		if (source == null)
 			return null;
 
@@ -238,9 +232,10 @@ class Reference extends Object3D {
 		setRefInstance(loadReference(source, editMode, overrides));
 
 		return refInstance;
+		#end
 	}
 
-	public function loadReference(source: String, editMode: EditMode, overrides: Dynamic) : LoadedReference {
+	function loadReference(source: String, editMode: EditMode, overrides: Dynamic) : LoadedReference {
 		#if (editor || editor_hl)
 		try {
 		#end
@@ -313,7 +308,7 @@ class Reference extends Object3D {
 	/**
 		Return the current refInstance state of this reference, to be restored later with setRefInstance
 	**/
-	public function saveRefInstance() : LoadedReference {
+	function saveRefInstance() : LoadedReference {
 		var saved : LoadedReference = { prefab: refInstance, version: refInstanceVersion };
 		#if (editor || editor_hl)
 		saved.originalSource = originalSource;
@@ -355,13 +350,11 @@ class Reference extends Object3D {
 		#if editor_hl
 		if (!hxd.res.Loader.currentInstance.exists(source)) {
 			throw 'Source prefab `${source}` does not exist';
-			return;
 		}
 
 		// refInstance is only loaded with the reference, a null refInstance means the reference is broken (cycle or load error)
 		if (refInstance == null) {
 			throw 'Source prefab `${source}` couldn\'t be loaded or creates a reference cycle';
-			return;
 		}
 		#end
 
@@ -489,6 +482,8 @@ class Reference extends Object3D {
 
 			var oldRef = saveRefInstance();
 			var newRef = loadReference(newSource, editMode, null);
+
+			// Todo : prompt the user that changing the source will loose the edits/overrides in place
 
 			if (newRef == null && newSource != null) {
 				ctx.quickError('Couldn\'t load $newSource, source is not changed');
@@ -641,38 +636,6 @@ class Reference extends Object3D {
 		if (refInstance != null) {
 			refInstance.setEditor(sceneEditor, scene);
 		}
-	}
-
-	/**
-		Updates the original reference data to be equal to `data`.
-		If the ref is an override, the override will be kept as is
-	**/
-	function setRef(data: Dynamic) {
-		if (data == null)
-			throw "Null data";
-
-		if (refInstance == null)
-			return;
-
-		var currentSerialization = refInstance.serialize();
-		var pristineData = hrt.prefab.Diff.deepCopy(data);
-
-		// we might have unsaved changes
-		if (editMode == Override) {
-			switch(hrt.prefab.Diff.diffPrefab(originalSource, currentSerialization)) {
-				case Skip:
-				case Set(diff):
-					pristineData = hrt.prefab.Diff.apply(pristineData, diff);
-			}
-		}
-		else if (overrides != null) {
-			pristineData = hrt.prefab.Diff.apply(pristineData, hrt.prefab.Diff.deepCopy(overrides));
-		}
-
-		originalSource = hrt.prefab.Diff.deepCopy(data);
-
-		refInstance = Prefab.createFromDynamic(pristineData, new ContextShared(source, true));
-		refInstance.shared.parentPrefab = this;
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
