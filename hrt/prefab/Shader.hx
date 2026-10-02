@@ -117,12 +117,9 @@ class Shader extends Prefab {
 	}
 
 	function setShaderParam( shader:hxsl.Shader, v : hxsl.Ast.TVar, value : Dynamic ) {
-		// enum params are stored as their index (PropsEditor) or constructor name (hide.kit)
 		var en = hxsl.Ast.Tools.getEnum(v);
-		if( en != null ) {
-			var e = Type.resolveEnum(en.path);
-			value = Std.isOfType(value, String) ? Type.createEnum(e, value) : Type.createEnumIndex(e, value);
-		}
+		if( en != null )
+			value = Type.createEnum(Type.resolveEnum(en.path), value);
 		Reflect.setProperty(shader, v.name, value);
 	}
 

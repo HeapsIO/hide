@@ -124,8 +124,9 @@ class DynamicShader extends Shader {
 		for( v in shader.data.vars ) {
 			if( v.kind != Param )
 				continue;
-			var value : Dynamic = Reflect.field(inst, v.name + "__"); // enums are stored as Int
+			var value : Dynamic = Reflect.getProperty(inst, v.name);
 			value = switch( v.type ) {
+			case TInt if( hxsl.Ast.Tools.getEnum(v) != null ): Type.enumConstructor(value);
 			case TBool, TInt, TFloat: value;
 			case TVec(n, VFloat) if( value != null ): ([value.x, value.y, value.z, value.w] : Array<Float>).slice(0, n);
 			default: null;
