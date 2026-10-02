@@ -63,7 +63,7 @@ class Reference extends Object3D {
 
 		// hide_hl saves the Edit mode references itself in its save process
 		#if editor
-		if( !shared.isTempLoadSave() && editMode == Edit && refInstance != null ) {
+		if( !shared.isTempSave() && editMode == Edit && refInstance != null ) {
 			var sheditor = Std.downcast(shared, hide.prefab.ContextShared);
 			if( sheditor.editor != null ) sheditor.editor.watchIgnoreChanges(source);
 
@@ -87,7 +87,7 @@ class Reference extends Object3D {
 
 		// References with overrides in their file are always in Override mode. Temporary loads (like undo/redo) keep
 		// the overrides and edit mode handled by the editor
-		if (!shared.isTempLoadSave()) {
+		if (!shared.isTempLoad()) {
 			overrides = obj.overrides;
 			if (overrides != null)
 				editMode = Override;
@@ -95,7 +95,7 @@ class Reference extends Object3D {
 
 		#if (editor || editor_hl)
 		// Don't load a source that is already being loaded by one of our parents, to avoid infinite loops on cyclic references
-		if (!shared.isTempLoadSave() && isSourceInParents()) {
+		if (!shared.isTempLoad() && isSourceInParents()) {
 			return;
 		}
 		#end
@@ -108,7 +108,7 @@ class Reference extends Object3D {
 
 		// Only set the refInstance if it's the initial editor load, otherwise refInstance must stay
 		// as either null or the already loaded refInstance
-		if (!shared.isTempLoadSave()) {
+		if (!shared.isTempLoad()) {
 			setRefInstance(loadReference(source, editMode, overrides));
 		}
 		#end

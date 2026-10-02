@@ -2,8 +2,15 @@ package hrt.prefab;
 
 #if editor
 typedef ContextShared = hide.prefab.ContextShared;
+@:allow(hide.view.Prefab)
+@:allow(hide.view.FXEditor)
+@:allow(hide.kit.Element)
+@:allow(hide.kit.KitRoot)
 class ContextSharedBase {
 #else
+@:allow(hide.view.Prefab)
+@:allow(hide.kit.Element)
+@:allow(hide.kit.KitRoot)
 class ContextShared {
 #end
 	public var root2d(default, null) : h2d.Object;
@@ -40,22 +47,58 @@ class ContextShared {
 
 	#if (editor || editor_hl)
 	/**
-		Set to true by editors while they save/load prefabs for other purposes than loading/saving the prefab file
-		(like undo/redo serialisation). Only read on the topmost shared, see isTempLoadSave()
+		Set to true by editors while they load prefabs for other purposes than loading the prefab file
+		(like undo/redo). Only read on the topmost shared, see isTempLoad()
 	**/
-	public var editorTempLoadSave : Bool = false;
+	var editorTempLoad : Bool = false;
+
+	/**
+		True by default : any save in the editor is temporary, except while the prefab file is saved to disc (see editorDiscSaveScope).
+		Only read on the topmost shared, see isTempSave()
+	**/
+	var editorTempSave : Bool = true;
+
+	/** Runs `f` (that saves prefabs of this shared) as a save of the prefab file to disc, see isTempSave() **/
+	function editorDiscSaveScope(f: () -> Dynamic) : Dynamic {
+		var sh = getTopShared();
+		var prev = sh.editorTempSave;
+		sh.editorTempSave = false;
+		var result = try f() catch (e) {
+			sh.editorTempSave = prev;
+			throw e;
+		}
+		sh.editorTempSave = prev;
+		return result;
+	}
+
+	/** Returns the shared of the topmost prefab, following parent references **/
+	function getTopShared() : ContextShared {
+		var sh : ContextShared = cast this;
+		while (sh.parentPrefab != null)
+			sh = sh.parentPrefab.shared;
+		return sh;
+	}
 	#end
 
 	/**
-		Returns true when an editor saves/loads prefabs for temporary purposes (like undo/redo serialisation),
-		false when they are saved/loaded as part of the prefab file. Always false in game.
+		Returns true when an editor loads prefabs for temporary purposes (like undo/redo), false when they are
+		loaded as part of the prefab file. Always false in game.
 	**/
-	public inline function isTempLoadSave() : Bool {
+	public inline function isTempLoad() : Bool {
 		#if (editor || editor_hl)
-		var sh = this;
-		while (sh.parentPrefab != null)
-			sh = sh.parentPrefab.shared;
-		return sh.editorTempLoadSave;
+		return getTopShared().editorTempLoad;
+		#else
+		return false;
+		#end
+	}
+
+	/**
+		Returns true when an editor saves prefabs for any other purpose than saving the prefab file to disc
+		(like undo/redo, copy/paste...). Always false in game.
+	**/
+	public inline function isTempSave() : Bool {
+		#if (editor || editor_hl)
+		return getTopShared().editorTempSave;
 		#else
 		return false;
 		#end

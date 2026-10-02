@@ -144,48 +144,28 @@ class KitRoot #if !macro extends Element #end {
 	}
 
 	/**
-		Call save() on prefab with editorTempLoadSave set to true on its topmost shared, so it knows it's not saved as part of the file
+		Call save() on prefab for an undo snapshot : saves are temporary by default in the editor (see ContextShared.isTempSave)
 	**/
 	static function editorSave(prefab: hrt.prefab.Prefab) : Dynamic {
-		#if (editor || editor_hl)
-		var sh = getTopShared(prefab);
-		sh.editorTempLoadSave = true;
-		var data = try @:privateAccess prefab.save() catch (e) {
-			sh.editorTempLoadSave = false;
-			throw e;
-		}
-		sh.editorTempLoadSave = false;
-		return data;
-		#else
 		return @:privateAccess prefab.save();
-		#end
 	}
 
 	/**
-		Call load() on prefab with editorTempLoadSave set to true on its topmost shared, so it knows it's not loaded from the file
+		Call load() on prefab with editorTempLoad set to true on its topmost shared, so it knows it's not loaded from the file
 	**/
 	static function editorLoad(prefab: hrt.prefab.Prefab, data: Dynamic) : Void {
 		#if (editor || editor_hl)
-		var sh = getTopShared(prefab);
-		sh.editorTempLoadSave = true;
+		var sh = prefab.shared.getTopShared();
+		sh.editorTempLoad = true;
 		try @:privateAccess prefab.load(data) catch (e) {
-			sh.editorTempLoadSave = false;
+			sh.editorTempLoad = false;
 			throw e;
 		}
-		sh.editorTempLoadSave = false;
+		sh.editorTempLoad = false;
 		#else
 		@:privateAccess prefab.load(data);
 		#end
 	}
-
-	#if (editor || editor_hl)
-	static function getTopShared(prefab: hrt.prefab.Prefab) : hrt.prefab.ContextShared {
-		var sh = prefab.shared;
-		while (sh.parentPrefab != null)
-			sh = sh.parentPrefab.shared;
-		return sh;
-	}
-	#end
 
 	function createUndoStep(sideEffects : Array<(isUndo:Bool) -> Void>) : Void {
 		var before = prefabUndoPoint;

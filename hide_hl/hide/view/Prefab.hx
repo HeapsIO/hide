@@ -934,7 +934,7 @@ class Prefab extends HuiView<{path: String}> {
 		content.push({label: "View in Resources", click: () -> Ide.inst.showFileInResources(state.path)});
 		content.push({isSeparator: true});
 		content.push({label: "Debug dump", click: () -> {
-			var ser = tempSerialize(prefab);
+			var ser = @:privateAccess prefab.serialize();
 			trace(haxe.Json.stringify(ser, "\t"));
 		}});
 	}
@@ -1775,7 +1775,7 @@ class Prefab extends HuiView<{path: String}> {
 		var path = prefab.shared.parentPrefab != null ? prefab.shared.parentPrefab.source : prefab.shared.currentPath;
 
 		try {
-			var data = prefab.serialize();
+			var data = discSerialize(prefab);
 			var realPath = hide.Ide.inst.getPath(path);
 			var text = hide.Ide.inst.toJSON(data);
 			ignoreReload = true;
@@ -1859,7 +1859,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		var isMultiEdit = prefabs.length > 1;
 		var editPrefab : hrt.prefab.Prefab = if (isMultiEdit) {
-			var data = haxe.Json.parse(haxe.Json.stringify(tempSave(prefabs[0])));
+			var data = haxe.Json.parse(haxe.Json.stringify(prefabs[0].save()));
 			var p = Type.createInstance(commonClass, [null, new hrt.prefab.ContextShared(prefabs[0].shared.currentPath)]);
 			tempLoad(p, data);
 			p;
@@ -1952,48 +1952,23 @@ class Prefab extends HuiView<{path: String}> {
 	function copySelectionToClipboard() {
 		var selection = getSelectionOrdered();
 		selection = getRoots(selection);
-		hxd.System.setClipboardText(hide.Ide.inst.toJSON([for (p in selection) tempSerialize(p)]));
+		hxd.System.setClipboardText(hide.Ide.inst.toJSON([for (p in selection) p.serialize()]));
 	}
 
-	// Temporary save/load/serialize, for calls that are not part of the prefab file save/load (see ContextShared.isTempLoadSave)
-
+	/** Load for other purposes than loading the prefab file (see ContextShared.isTempLoad). Saves are temporary by default **/
 	function tempLoad(prefab: hrt.prefab.Prefab, data: Dynamic) : Void {
-		var sh = getTopShared(prefab);
-		sh.editorTempLoadSave = true;
+		var sh = prefab.shared.getTopShared();
+		sh.editorTempLoad = true;
 		try @:privateAccess prefab.load(data) catch (e) {
-			sh.editorTempLoadSave = false;
+			sh.editorTempLoad = false;
 			throw e;
 		}
-		sh.editorTempLoadSave = false;
+		sh.editorTempLoad = false;
 	}
 
-	function tempSave(prefab: hrt.prefab.Prefab) : Dynamic {
-		var sh = getTopShared(prefab);
-		sh.editorTempLoadSave = true;
-		var data = try @:privateAccess prefab.save() catch (e) {
-			sh.editorTempLoadSave = false;
-			throw e;
-		}
-		sh.editorTempLoadSave = false;
-		return data;
-	}
-
-	function tempSerialize(prefab: hrt.prefab.Prefab) : Dynamic {
-		var sh = getTopShared(prefab);
-		sh.editorTempLoadSave = true;
-		var data = try @:privateAccess prefab.serialize() catch (e) {
-			sh.editorTempLoadSave = false;
-			throw e;
-		}
-		sh.editorTempLoadSave = false;
-		return data;
-	}
-
-	static function getTopShared(prefab: hrt.prefab.Prefab) : hrt.prefab.ContextShared {
-		var sh = prefab.shared;
-		while (sh.parentPrefab != null)
-			sh = sh.parentPrefab.shared;
-		return sh;
+	/** Serialize the prefab for a save to disc (see ContextShared.isTempSave) **/
+	function discSerialize(prefab: hrt.prefab.Prefab) : Dynamic {
+		return prefab.shared.editorDiscSaveScope(() -> @:privateAccess prefab.serialize());
 	}
 
 	function actionPasteFromClipboard() : hrt.tools.Undo.Action {
