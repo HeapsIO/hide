@@ -146,6 +146,10 @@ class Gizmo extends h3d.scene.Object {
 		}
 
 		gizmo.setScale(scale);
+
+		var interactable = distToCam > cam.zNear;
+		for (i in interactives)
+			i.visible = interactable;
 	}
 
 
