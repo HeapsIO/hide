@@ -159,16 +159,20 @@ class Reference extends Object3D {
 
 		// Clone the refInstance from the original prefab on copy
 		if (source != null && shouldBeInstanciated()) {
-			#if !(editor || editor_hl)
+			#if !(editor || editor_hl || release)
 			// Reload from scratch the refInstance if the disk version is more recent
-			var newVersion = try hxd.res.Loader.currentInstance.load(source).toPrefab().reloadedVersion catch(e) -1;
-			if (newVersion != otherRef.refInstanceVersion) {
-				otherRef.refInstance = null;
-				otherRef.initRefInstance();
+			var loader = hxd.res.Loader.currentInstance;
+			if (Std.isOfType(loader.fs, hxd.fs.LocalFileSystem)) {
+				var newVersion = try loader.load(source).toPrefab().reloadedVersion catch(e) -1;
+				if (newVersion != otherRef.refInstanceVersion) {
+					otherRef.refInstance = null;
+					otherRef.initRefInstance();
+				}
 			}
 			#end
 
 			if (otherRef.refInstance != null) {
+				refInstanceVersion = otherRef.refInstanceVersion;
 				refInstance = otherRef.refInstance.clone(new ContextShared(source, null, null, true));
 			}
 			if (refInstance != null) {
