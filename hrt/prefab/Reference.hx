@@ -347,11 +347,13 @@ class Reference extends Object3D {
 		sh.parentPrefab = this;
 
 		var newRef : LoadedReference = { prefab: null, version: refInstanceVersion };
+		// serialize() shares untyped fields (like `props`) with sourceInstance, deep copy them so
+		// edits of sourceInstance don't leak into our originalSource and refInstance
 		// the edited content will be the content of the file once saved
 		if (editMode != None)
-			newRef.originalSource = sourceInstance.serialize();
+			newRef.originalSource = hrt.prefab.Diff.deepCopy(sourceInstance.serialize());
 
-		var data : Dynamic = sourceInstance.serialize();
+		var data : Dynamic = hrt.prefab.Diff.deepCopy(sourceInstance.serialize());
 		var localOverrides = editMode == Override ? computeDiffFromSource() : null;
 		if (localOverrides != null)
 			data = hrt.prefab.Diff.apply(data, localOverrides);
