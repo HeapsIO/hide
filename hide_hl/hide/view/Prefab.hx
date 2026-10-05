@@ -61,6 +61,7 @@ class Prefab extends HuiView<{path: String}> {
 	var actualSceneFilters : Map<String, Bool> = [];
 
 	var previewDrag : hrt.prefab.Object3D;
+	var previewDragFailed = false;
 
 	var boxSelectStart : Null<h2d.col.Point> = null;
 	var boxSelectEnd : Null<h2d.col.Point> = null;
@@ -395,6 +396,8 @@ class Prefab extends HuiView<{path: String}> {
 		sceneEditor.scene.onDragOut = sceneDragOut;
 		sceneEditor.scene.onDragOver = sceneDragOver;
 		sceneEditor.scene.onDragEnd = sceneDragEnd;
+		sceneEditor.scene.onAnyDragEnd = sceneDragEnd;
+		sceneEditor.scene.onAnyDragStart = sceneAnyDragStart;
 		sceneEditor.scene.onDrop = sceneDrop;
 
 		gizmo = new hrt.tools.Gizmo(sceneEditor.scene.s3d);
@@ -671,6 +674,10 @@ class Prefab extends HuiView<{path: String}> {
 
 	function sceneDragOver(op: HuiDragOp) {
 		op.acceptDrop = false;
+
+		if (previewDragFailed)
+			return;
+
 		var pathAbs = getDropPath(op);
 
 		if (pathAbs == null)
@@ -681,12 +688,28 @@ class Prefab extends HuiView<{path: String}> {
 		if (path == null)
 			return;
 
-		op.acceptDrop = true;
-
-		if (previewDrag == null) {
+		if (previewDrag == null && !previewDragFailed) {
 			previewDrag = createRefFromPath(path, this.prefab);
+			var previewRef = Std.downcast(previewDrag, hrt.prefab.Reference);
+			if (previewRef != null) {
+				if (previewRef.hasCycle) {
+					Ide.showError("Can't create reference : It would create a cycle");
+					previewDragFailed = true;
+					previewDrag = null;
+					return;
+				}
+				if (previewRef.refInstance == null) {
+					Ide.showError("Can't create reference : The prefab has an error");
+					previewDragFailed = true;
+					previewDrag = null;
+					return;
+				}
+			}
 			tryMake(previewDrag);
+			previewDragFailed = false;
 		}
+
+		op.acceptDrop = true;
 
 		var point = sceneEditor.screenToGround(op.event.relX, op.event.relY);
 		if (point != null) {
@@ -709,6 +732,15 @@ class Prefab extends HuiView<{path: String}> {
 			removePrefabInstance(previewDrag);
 			previewDrag = null;
 		}
+		previewDragFailed = false;
+	}
+
+	function sceneAnyDragStart(op: HuiDragOp) {
+		if (previewDrag != null) {
+			removePrefabInstance(previewDrag);
+			previewDrag = null;
+		}
+		previewDragFailed = false;
 	}
 
 	function sceneDragMove(op: HuiDragOp) {
@@ -716,6 +748,9 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	function sceneDrop(op: HuiDragOp) {
+		if (previewDragFailed)
+			return;
+
 		var pathAbs = getDropPath(op);
 		if (pathAbs == null)
 			return;
