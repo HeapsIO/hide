@@ -170,13 +170,14 @@ class KitRoot #if !macro extends Element #end {
 	function createUndoStep(sideEffects : Array<(isUndo:Bool) -> Void>) : Void {
 		var before = prefabUndoPoint;
 		prefabUndoPoint = null;
-		var after = editorSave(prefab);
+		// save() and load() keep Dynamic fields (like `props`) by reference, copy them so later edits don't alter the undo snapshots
+		var after = hrt.prefab.Diff.deepCopy(editorSave(prefab));
 		if (hrt.prefab.Diff.diff(before, after) != Skip) {
 			sideEffects.push((isUndo) -> {
 				if (isUndo) {
-					editorLoad(prefab, before);
+					editorLoad(prefab, hrt.prefab.Diff.deepCopy(before));
 				} else {
-					editorLoad(prefab, after);
+					editorLoad(prefab, hrt.prefab.Diff.deepCopy(after));
 				}
 				doTry(() -> prefab.updateInstance());
 			});
