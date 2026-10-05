@@ -4519,13 +4519,14 @@ class SceneEditor {
 
 				prefab = root;
 			} else {
+				// The parent shared allows editorInit() to detect reference cycles
 				var ref : hrt.prefab.Reference = if (ptype == "fx") {
-					var fx = new hrt.prefab.fx.SubFX(null, null);
+					var fx = new hrt.prefab.fx.SubFX(null, parent.shared);
 					fx.time = 0;
 					fx.loop = false;
 					fx;
 				} else {
-					new hrt.prefab.Reference(null, null);
+					new hrt.prefab.Reference(null, parent.shared);
 				}
 				ref.editorInit(relative);
 
@@ -4551,7 +4552,7 @@ class SceneEditor {
 		parent.addChildAt(prefab, index);
 
 		var ref = Std.downcast(prefab, Reference);
-		if (ref != null && (Reference.checkCycle(ref, ref.refInstance) || ref.source == @:privateAccess view.state.path) ) {
+		if (ref != null && ref.hasCycle) {
 			parent.removeChild(ref);
 			hide.Ide.inst.quickError('Reference to $relative is creating a cycle. The reference creation was aborted.');
 			return null;

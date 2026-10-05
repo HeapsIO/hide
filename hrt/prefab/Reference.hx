@@ -16,6 +16,8 @@ typedef LoadedReference = {
 	version: Int,
 	#if (editor || editor_hl)
 	?originalSource: Dynamic,
+	/** True if the loaded source, or a reference inside it, creates a reference cycle **/
+	?hasCycle: Bool,
 	#end
 };
 
@@ -42,6 +44,12 @@ class Reference extends Object3D {
 		Copy of the original data to use as a reference on save for overrides
 	**/
 	var originalSource : Dynamic;
+
+	/**
+		True if this reference, or a reference inside its refInstance, creates a reference cycle.
+		The reference closing the cycle has a null refInstance.
+	**/
+	public var hasCycle(default, null) : Bool = false;
 
 	var wasMade : Bool = false;
 	#end
@@ -93,13 +101,6 @@ class Reference extends Object3D {
 				editMode = Override;
 		}
 
-		#if (editor || editor_hl)
-		// Don't load a source that is already being loaded by one of our parents, to avoid infinite loops on cyclic references
-		if (!shared.isTempLoad() && isSourceInParents()) {
-			return;
-		}
-		#end
-
 		#if !(editor ||editor_hl)
 		if (source != null && hxd.res.Loader.currentInstance?.exists(source)) {
 			initRefInstance();
@@ -115,8 +116,8 @@ class Reference extends Object3D {
 	}
 
 	#if (editor || editor_hl)
-	/** Returns true if source is the file of this reference or of one of its parents **/
-	function isSourceInParents() : Bool {
+	/** Returns true if `source` is the file of this reference or of one of its parents **/
+	function isSourceInParents(source: String) : Bool {
 		var p : Prefab = this;
 		while (p != null) {
 			if (p.shared.currentPath == source)
@@ -124,6 +125,10 @@ class Reference extends Object3D {
 			p = p.shared.parentPrefab;
 		}
 		return false;
+	}
+
+	static function containsCycle(prefab: Prefab) : Bool {
+		return prefab?.findRec(Reference, (r) -> r.hasCycle) != null;
 	}
 
 	/**
@@ -137,8 +142,7 @@ class Reference extends Object3D {
 			throw 'editorInit called on ${getAbsPath()} which already has a refInstance';
 
 		this.source = source;
-		if (!isSourceInParents())
-			setRefInstance(loadReference(source, editMode, overrides));
+		setRefInstance(loadReference(source, editMode, overrides));
 	}
 	#end
 
@@ -148,6 +152,7 @@ class Reference extends Object3D {
 
 		#if (editor || editor_hl)
 		originalSource = otherRef.originalSource;
+		hasCycle = otherRef.hasCycle;
 		#end
 
 		overrides = otherRef.overrides;
@@ -244,6 +249,12 @@ class Reference extends Object3D {
 			if (shared.parentPrefab != null && editorOnly)
 				return null;
 
+			#if (editor || editor_hl)
+			// Don't load a source that is already being loaded by one of our parents, to avoid infinite loops on cyclic references
+			if (source != null && isSourceInParents(source))
+				return { prefab: null, version: -1, hasCycle: true };
+			#end
+
 			var res = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab();
 			var loaded : LoadedReference = { prefab: null, version: res.reloadedVersion };
 
@@ -265,6 +276,7 @@ class Reference extends Object3D {
 				refInstanceData = hrt.prefab.Diff.apply(refInstanceData, hrt.prefab.Diff.deepCopy(overrides));
 			}
 			loaded.prefab = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, sh);
+			loaded.hasCycle = containsCycle(loaded.prefab);
 			#else
 			if (overrides != null) {
 				var refInstanceData = @:privateAccess res.loadData();
@@ -299,6 +311,7 @@ class Reference extends Object3D {
 		refInstanceVersion = loaded?.version ?? -1;
 		#if (editor || editor_hl)
 		originalSource = loaded?.originalSource;
+		hasCycle = loaded?.hasCycle ?? false;
 		#end
 
 		if (refInstance != null)
@@ -312,6 +325,7 @@ class Reference extends Object3D {
 		var saved : LoadedReference = { prefab: refInstance, version: refInstanceVersion };
 		#if (editor || editor_hl)
 		saved.originalSource = originalSource;
+		saved.hasCycle = hasCycle;
 		#end
 		return saved;
 	}
@@ -338,6 +352,7 @@ class Reference extends Object3D {
 		if (localOverrides != null)
 			data = hrt.prefab.Diff.apply(data, localOverrides);
 		newRef.prefab = Prefab.createFromDynamic(data, null, sh);
+		newRef.hasCycle = containsCycle(newRef.prefab);
 
 		return (isUndo) -> setRefInstance(isUndo ? oldRef : newRef);
 	}
@@ -485,14 +500,16 @@ class Reference extends Object3D {
 
 			// Todo : prompt the user that changing the source will loose the edits/overrides in place
 
-			if (newRef == null && newSource != null) {
-				ctx.quickError('Couldn\'t load $newSource, source is not changed');
+			#if (editor || editor_hl)
+			if (newRef?.hasCycle == true) {
+				ctx.quickError('Couldn\'t load $newSource, this create a reference cycle');
 				ctx.rebuildInspector();
 				return;
 			}
+			#end
 
-			if (newRef != null && checkCycle(this, newRef.prefab)) {
-				ctx.quickError('Couldn\'t load $newSource, this create a reference cycle');
+			if (newRef == null && newSource != null) {
+				ctx.quickError('Couldn\'t load $newSource, source is not changed');
 				ctx.rebuildInspector();
 				return;
 			}
@@ -588,45 +605,6 @@ class Reference extends Object3D {
 			return null;
 		return super.makeInteractive();
 	}
-
-	/**
-		Returns true if `reference` would have a cycle if `refPrefab` was its refInstance
-	**/
-	public static function checkCycle(reference: Reference, refPrefab: Prefab) : Bool {
-
-		function rec(prefab: Prefab, seenPaths: Map<String, Bool>) : Bool {
-			if (prefab == null)
-				return false;
-
-			var ref = Std.downcast(prefab, Reference);
-			if (ref != null && ref.source != null && ref.shouldBeInstanciated() && !ref.editorOnly) {
-				// the checked reference uses refPrefab instead of its own refInstance
-				var inst = ref == reference ? refPrefab : ref.resolve();
-				var path = ref == reference ? (refPrefab?.shared.currentPath ?? ref.source) : ref.source;
-				if (seenPaths.get(path) == true) {
-					return true;
-				}
-
-				var copy = seenPaths.copy();
-				copy.set(path, true);
-				if (rec(inst, copy))
-					return true;
-			}
-			for (child in prefab.children) {
-				if(rec(child, seenPaths))
-					return true;
-			}
-
-			return false;
-		}
-
-		var baseMap = new Map();
-		if (reference.shared.currentPath != null) {
-			baseMap.set(reference.shared.currentPath, true);
-		}
-		return rec(reference, baseMap);
-	}
-
 
 	#if editor
 
