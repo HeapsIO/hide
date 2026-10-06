@@ -712,26 +712,25 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	function sceneDragOut(op: HuiDragOp) {
-		if (previewDrag != null) {
-			removePrefabInstance(previewDrag);
-			previewDrag = null;
-		}
+		cleanupDrag(true);
 	}
 
 	function sceneDragEnd(op: HuiDragOp) {
-		if (previewDrag != null) {
-			removePrefabInstance(previewDrag);
-			previewDrag = null;
-		}
-		previewDragFailed = false;
+		cleanupDrag(false);
 	}
 
 	function sceneAnyDragStart(op: HuiDragOp) {
+		cleanupDrag(false);
+	}
+
+	function cleanupDrag(temporary: Bool) {
 		if (previewDrag != null) {
 			removePrefabInstance(previewDrag);
 			previewDrag = null;
 		}
-		previewDragFailed = false;
+		if (!temporary) {
+			previewDragFailed = false;
+		}
 	}
 
 	function sceneDragMove(op: HuiDragOp) {
