@@ -59,11 +59,11 @@ class Diff {
 		#end
 	}
 
-	public static function deepCopyJson(v:Dynamic) : Dynamic {
+	static function deepCopyJson(v:Dynamic) : Dynamic {
 		return haxe.Json.parse(haxe.Json.stringify(v));
 	}
 
-	public static function deepCopyNative(v:Dynamic) : Dynamic {
+	static function deepCopyNative(v:Dynamic) : Dynamic {
 		switch (Type.typeof(v)) {
 			case TNull | TInt | TFloat | TBool:
 				return v;
@@ -83,7 +83,7 @@ class Diff {
 	}
 
 	#if hl
-	public static function deepCopyHL(v:Dynamic) : Dynamic {
+	static function deepCopyHL(v:Dynamic) : Dynamic {
 		var t = hl.Type.getDynamic(v);
 		switch (t.kind) {
 			case HVoid | HUI8 | HUI16 | HI32 | HF32 | HF64 | HBool:
