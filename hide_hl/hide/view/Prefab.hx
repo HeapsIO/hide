@@ -126,7 +126,7 @@ class Prefab extends HuiView<{path: String}> {
 			}
 		});
 
-		registerCommand(hrt.ui.HuiCommands.cut, View, () -> { var modified = withParents(getSelectionOrdered()); prefabUndo.runPrefabs(actionCutToClipboard(), true, modified); });
+		registerCommand(hrt.ui.HuiCommands.cut, View, () -> prefabUndo.runPrefabs(actionCutToClipboard(), true, withParents(getSelectionOrdered())));
 		registerCommand(hrt.ui.HuiCommands.copy, View, () -> copySelectionToClipboard());
 		registerCommand(hrt.ui.HuiCommands.duplicate, View, () -> prefabUndo.runPrefabs(actionDuplicateSelection(), true, [for (p in getSelectionOrdered()) p.parent]));
 		registerCommand(hrt.ui.HuiCommands.paste, View, () -> { var targets = getSelectionOrdered(); prefabUndo.runPrefabs(actionPasteFromClipboard(), true, targets.length > 0 ? targets : [prefab]); });
@@ -1127,7 +1127,7 @@ class Prefab extends HuiView<{path: String}> {
 		var syncedRefs : Array<hrt.prefab.Reference> = [];
 		for (edited in editedRefs) {
 			for (other in allRefs) {
-				if (other == edited || other.source != edited.source || other.refInstance == null || editedRefs.contains(other) || syncedRefs.contains(other))
+				if (other.source != edited.source || other.refInstance == null || editedRefs.contains(other) || syncedRefs.contains(other))
 					continue;
 				actions.push(other.editorSyncSourceAction(edited.refInstance));
 				syncedRefs.push(other);

@@ -134,7 +134,7 @@ abstract class EditContext2 {
 	public abstract function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) : h3d.Vector;
 
 	/** Undo steps recorded between beginMultiUndo/finishMultiUndo, only used on the top context **/
-	var multiUndo : Array<{callback: (isUndo: Bool) -> Void, prefabs: Null<Array<Prefab>>}> = null;
+	var multiUndo : Array<{callback: (isUndo: Bool) -> Void, prefabs: Null<Array<Prefab>>}> = [];
 	var multiUndoDepth : Int = 0;
 
 	function getTopContext() : EditContext2 {
@@ -155,7 +155,7 @@ abstract class EditContext2 {
 		#end
 
 		var top = getTopContext();
-		if (top.multiUndo != null) {
+		if (top.multiUndoDepth > 0) {
 			top.multiUndo.push({callback: callback, prefabs: prefabs});
 			return;
 		}
@@ -171,10 +171,7 @@ abstract class EditContext2 {
 		All the undo steps recorded until the matching finishMultiUndo will be merged in a single undo step
 	**/
 	function beginMultiUndo() : Void {
-		var top = getTopContext();
-		top.multiUndoDepth++;
-		if (top.multiUndo == null)
-			top.multiUndo = [];
+		getTopContext().multiUndoDepth++;
 	}
 
 	function finishMultiUndo() : Void {
@@ -183,13 +180,9 @@ abstract class EditContext2 {
 		if (top.multiUndoDepth > 0)
 			return;
 		var actions = top.multiUndo;
-		top.multiUndo = null;
+		top.multiUndo = [];
 		if (actions.length == 0)
 			return;
-		if (actions.length == 1) {
-			top.recordUndoImpl(actions[0].callback, actions[0].prefabs);
-			return;
-		}
 
 		// union of the modified prefabs, unknown if any step is unknown
 		var prefabs = [];

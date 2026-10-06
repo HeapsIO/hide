@@ -12,7 +12,7 @@ enum EditMode {
 }
 
 /** A null prefab means the reference failed to load **/
-typedef LoadedReference = {
+private typedef LoadedReference = {
 	prefab: Prefab,
 	version: Int,
 	#if (editor || editor_hl)
@@ -94,7 +94,7 @@ class Reference extends Object3D {
 
 		super.load(obj);
 
-		#if !(editor ||editor_hl)
+		#if !(editor || editor_hl)
 		if (source != null && hxd.res.Loader.currentInstance?.exists(source)) {
 			initRefInstance();
 		}
@@ -345,20 +345,20 @@ class Reference extends Object3D {
 		var sh = new ContextShared(source, null, null, true);
 		sh.parentPrefab = this;
 
-		var newRef : LoadedReference = { originalSource: null, hasCycle: false, prefab: null, version: refInstanceVersion };
-		// serialize() shares untyped fields (like `props`) with sourceInstance, deep copy them so
-		// edits of sourceInstance don't leak into our originalSource and refInstance
-		// the edited content will be the content of the file once saved
+		// serialize() shares untyped fields (like `props`) with sourceInstance, deep copy them so its edits don't leak in
 		var serializedData = sourceInstance.serialize();
-		if (editMode != None)
-			newRef.originalSource = hrt.prefab.Diff.deepCopy(serializedData);
-
 		var data : Dynamic = hrt.prefab.Diff.deepCopy(serializedData);
 		var localOverrides = editMode == Override ? computeDiffFromSource() : null;
 		if (localOverrides != null)
 			data = hrt.prefab.Diff.apply(data, localOverrides);
-		newRef.prefab = Prefab.createFromDynamic(data, null, sh);
-		newRef.hasCycle = containsCycle(newRef.prefab);
+		var prefab = Prefab.createFromDynamic(data, null, sh);
+
+		var newRef : LoadedReference = {
+			originalSource: editMode != None ? hrt.prefab.Diff.deepCopy(serializedData) : null,
+			hasCycle: containsCycle(prefab),
+			prefab: prefab,
+			version: refInstanceVersion,
+		};
 
 		return (isUndo) -> applyLoadedReference(isUndo ? oldRef : newRef);
 	}
