@@ -191,6 +191,8 @@ typedef Parameter = {
 	?id : Int,
 	?variable : TVar,
 	?internal: Bool,
+	?min : Float,
+	?max : Float,
 	index : Int
 };
 
@@ -289,6 +291,8 @@ class ShaderGraphGenContext {
 				continue;
 			global.defValue = p.defaultValue;
 			global.paramIndex = p.index;
+			if (p.min != null || p.max != null)
+				global.v.qualifiers = [Range(p.min ?? 0.0, p.max ?? 1.0)];
 		}
 
 		return AstTools.makeExpr(TBlock(expressions), TVoid);
@@ -476,7 +480,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		var json = super.save();
 
 		json.parameters = [
-			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal }
+			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal, min : p.min, max : p.max }
 		];
 
 		// Fix parameters index that sometimes get f-ed up for an unknown reason

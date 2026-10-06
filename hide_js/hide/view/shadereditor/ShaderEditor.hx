@@ -844,10 +844,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	function getParameterContent(parameter: Parameter) : Element {
 		var content = new Element('<div class="content" ></div>');
 		var defaultValue = new Element('<div class="values"><span>Default: </span></div>').appendTo(content);
+		var hasRange = parameter.min != null && parameter.max != null;
+		var rangeHtml = '<input type="range" min="${hasRange ? parameter.min : -1}" max="${hasRange ? parameter.max : 1}" />';
 
 		switch(parameter.type) {
 			case TFloat:
-				var parentRange = new Element('<input type="range" min="-1" max="1" />').appendTo(defaultValue);
+				var parentRange = new Element(rangeHtml).appendTo(defaultValue);
 				var range = new hide.comp.Range(null, parentRange);
 				var rangeInput = @:privateAccess range.f;
 
@@ -926,7 +928,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				var saveValue : Array<Float> = null;
 
 				for( i in 0...n ) {
-					var parentRange = new Element('<input type="range" min="-1" max="1" />').appendTo(defaultValue);
+					var parentRange = new Element(rangeHtml).appendTo(defaultValue);
 					var range = new hide.comp.Range(null, parentRange);
 					ranges.push(range);
 					range.value = parameter.defaultValue[i];
@@ -1022,7 +1024,33 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			default:
 		}
 
-		var internal = new Element('<div><input type="checkbox" name="internal" id="internal"></input><label for="internal">Internal</label><div>').appendTo(content).find("#internal");
+		switch(parameter.type) {
+			case TVec(4, VFloat): // color picker
+			case TFloat, TVec(_, VFloat):
+				var rangeEl = new Element('<div class="values"><span>Range: </span><input type="number" placeholder="min" style="width: 60px"/><input type="number" placeholder="max" style="width: 60px"/></div>').appendTo(content);
+				var inputs = rangeEl.find("input");
+				function bind(input: Element, get: () -> Null<Float>, set: Null<Float> -> Void) {
+					input.val(get() == null ? "" : '${get()}');
+					input.on("change", function(e) {
+						var old = get();
+						var str : String = input.val();
+						var curr : Null<Float> = str == "" ? null : Std.parseFloat(str);
+						function exec(isUndo : Bool) {
+							var v = isUndo ? old : curr;
+							set(v);
+							requestRecompile();
+							parametersList.refresh();
+						}
+						exec(false);
+						undo.change(Custom(exec));
+					});
+				}
+				bind(inputs.eq(0), () -> parameter.min, (v) -> parameter.min = v);
+				bind(inputs.eq(1), () -> parameter.max, (v) -> parameter.max = v);
+			default:
+		}
+
+		var internal =new Element('<div><input type="checkbox" name="internal" id="internal"></input><label for="internal">Internal</label><div>').appendTo(content).find("#internal");
 		internal.prop("checked", parameter.internal ?? false);
 
 		internal.on('change', function(e) {

@@ -334,7 +334,7 @@ class Shader extends Prefab {
 			if ((n == 3 || n == 4) && !StringTools.startsWith(v.name.toLowerCase(), "vec")) {
 				PColor;
 			}
-			else PVec(n);
+			else PVec(n, min, max);
 		default:
 			PUnsupported(hxsl.Ast.Tools.toString(v.type));
 		}
