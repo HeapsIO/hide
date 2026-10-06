@@ -11,13 +11,14 @@ enum EditMode {
 	Override;
 }
 
+/** A null prefab means the reference failed to load **/
 typedef LoadedReference = {
 	prefab: Prefab,
 	version: Int,
 	#if (editor || editor_hl)
-	?originalSource: Dynamic,
+	originalSource: Dynamic,
 	/** True if the loaded source, or a reference inside it, creates a reference cycle **/
-	?hasCycle: Bool,
+	hasCycle: Bool,
 	#end
 };
 
@@ -108,7 +109,7 @@ class Reference extends Object3D {
 			if (overrides != null)
 				editMode = Override;
 
-			applyLoadedReference(loadReference(source, editMode, overrides));
+			resolveInternal();
 		}
 		#end
 	}
@@ -129,7 +130,7 @@ class Reference extends Object3D {
 			throw 'editorInit called on ${getAbsPath()} which already has a refInstance';
 
 		this.source = source;
-		applyLoadedReference(loadReference(source, editMode, overrides));
+		resolveInternal();
 	}
 	#end
 
@@ -225,81 +226,86 @@ class Reference extends Object3D {
 		if (refInstance != null)
 			return refInstance;
 
-		applyLoadedReference(loadReference(source, editMode, overrides));
+		resolveInternal();
 
 		return refInstance;
 		#end
 	}
 
+	/**
+		Loads the prefab referenced by `source` with this reference editMode and overrides, and replace refInstance with it
+	**/
+	function resolveInternal() : Void {
+		inline applyLoadedReference(inline loadReference(source, editMode, overrides));
+	}
+
 	function loadReference(source: String, editMode: EditMode, overrides: Dynamic) : LoadedReference {
+		// Single struct declaration and single return, so it can be inlined in resolveInternal
+		var loaded : LoadedReference = { #if (editor || editor_hl) originalSource: null, hasCycle: false, #end prefab: null, version: -1 };
 		#if (editor || editor_hl)
 		try {
 		#end
 			// Don't load editorOnly references if we are already inside a reference
 			// to avoid cyclic loops
-			if (shared.parentPrefab != null && editorOnly)
-				return null;
+			var canLoad = shared.parentPrefab == null || !editorOnly;
 
 			#if (editor || editor_hl)
-			// Returns true if `source` is the file of this reference or of one of its parents
-			function isSourceInParents(source: String) : Bool {
-				var p : Prefab = this;
-				while (p != null) {
-					if (p.shared.currentPath == source)
-						return true;
-					p = p.shared.parentPrefab;
-				}
-				return false;
-			}
-
 			// Don't load a source that is already being loaded by one of our parents, to avoid infinite loops on cyclic references
-			if (source != null && isSourceInParents(source))
-				return { prefab: null, version: -1, hasCycle: true };
-			#end
-
-			var res = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab();
-			var loaded : LoadedReference = { prefab: null, version: res.reloadedVersion };
-
-			// parentPrefab must be set before the prefab is created, so the references inside it can detect cycles while loading
-			var sh = new ContextShared(source, null, null, true);
-			sh.parentPrefab = this;
-
-			#if (editor || editor_hl)
-			// Keep the original data in editable modes, so overrides can be computed when moving between Edit and Override mode
-			// (moving from or to None always reloads the reference)
-			if (editMode != None)
-				loaded.originalSource = @:privateAccess res.loadData();
-
-			// Don't use the cached prefab in editor, as it can't have a parentPrefab
-			var useData = true;
-			#else
-			var useData = overrides != null;
-			#end
-
-			if (useData) {
-				var refInstanceData = @:privateAccess res.loadData();
-				if (overrides != null) {
-					// Diff.apply takes ownership of the diff, and the refInstance can be resolved again multiple times
-					// (e.g. when copy() reloads a newer version from disk), so we need to keep overrides intact
-					refInstanceData = hrt.prefab.Diff.apply(refInstanceData, hrt.prefab.Diff.deepCopy(overrides));
+			var p : Prefab = this;
+			while (canLoad && source != null && p != null) {
+				if (p.shared.currentPath == source) {
+					loaded.hasCycle = true;
+					canLoad = false;
 				}
-				loaded.prefab = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, sh);
-			} else {
-				// Don't clone the refInstance if we are the original prefab
-				// Temp disabled until we figure out how to manage how to handle the prefab api that uses followRef on cached prefabs
-				loaded.prefab = res.load().clone();
+				p = p.shared.parentPrefab;
 			}
-
-			#if (editor || editor_hl)
-			loaded.hasCycle = containsCycle(loaded.prefab);
 			#end
 
-			return loaded;
+			if (canLoad) {
+				var res = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab();
+				loaded.version = res.reloadedVersion;
+
+				// parentPrefab must be set before the prefab is created, so the references inside it can detect cycles while loading
+				var sh = new ContextShared(source, null, null, true);
+				sh.parentPrefab = this;
+
+				#if (editor || editor_hl)
+				// Keep the original data in editable modes, so overrides can be computed when moving between Edit and Override mode
+				// (moving from or to None always reloads the reference)
+				if (editMode != None)
+					loaded.originalSource = @:privateAccess res.loadData();
+
+				// Don't use the cached prefab in editor, as it can't have a parentPrefab
+				var useData = true;
+				#else
+				var useData = overrides != null;
+				#end
+
+				if (useData) {
+					var refInstanceData = @:privateAccess res.loadData();
+					if (overrides != null) {
+						// Diff.apply takes ownership of the diff, and the refInstance can be resolved again multiple times
+						// (e.g. when copy() reloads a newer version from disk), so we need to keep overrides intact
+						refInstanceData = hrt.prefab.Diff.apply(refInstanceData, hrt.prefab.Diff.deepCopy(overrides));
+					}
+					loaded.prefab = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, sh);
+				} else {
+					// Don't clone the refInstance if we are the original prefab
+					// Temp disabled until we figure out how to manage how to handle the prefab api that uses followRef on cached prefabs
+					loaded.prefab = res.load().clone();
+				}
+
+				#if (editor || editor_hl)
+				loaded.hasCycle = containsCycle(loaded.prefab);
+				#end
+			}
 		#if (editor || editor_hl)
 		} catch (e) {
-			return null;
+			loaded.prefab = null;
+			loaded.originalSource = null;
 		}
 		#end
+		return loaded;
 	}
 
 	/**
@@ -309,11 +315,11 @@ class Reference extends Object3D {
 	function applyLoadedReference(loaded: LoadedReference) {
 		refInstance?.editorRemoveObjects();
 
-		refInstance = loaded?.prefab;
-		refInstanceVersion = loaded?.version ?? -1;
+		refInstance = loaded.prefab;
+		refInstanceVersion = loaded.version;
 		#if (editor || editor_hl)
-		originalSource = loaded?.originalSource;
-		hasCycle = loaded?.hasCycle ?? false;
+		originalSource = loaded.originalSource;
+		hasCycle = loaded.hasCycle;
 		#end
 
 		if (refInstance != null)
@@ -324,12 +330,7 @@ class Reference extends Object3D {
 		Return the current refInstance state of this reference, to be restored later with applyLoadedReference
 	**/
 	function getLoadedReference() : LoadedReference {
-		var saved : LoadedReference = { prefab: refInstance, version: refInstanceVersion };
-		#if (editor || editor_hl)
-		saved.originalSource = originalSource;
-		saved.hasCycle = hasCycle;
-		#end
-		return saved;
+		return { #if (editor || editor_hl) originalSource: originalSource, hasCycle: hasCycle, #end prefab: refInstance, version: refInstanceVersion };
 	}
 
 	#if (editor || editor_hl)
@@ -344,7 +345,7 @@ class Reference extends Object3D {
 		var sh = new ContextShared(source, null, null, true);
 		sh.parentPrefab = this;
 
-		var newRef : LoadedReference = { prefab: null, version: refInstanceVersion };
+		var newRef : LoadedReference = { originalSource: null, hasCycle: false, prefab: null, version: refInstanceVersion };
 		// serialize() shares untyped fields (like `props`) with sourceInstance, deep copy them so
 		// edits of sourceInstance don't leak into our originalSource and refInstance
 		// the edited content will be the content of the file once saved
@@ -493,8 +494,8 @@ class Reference extends Object3D {
 
 		// Shows an error and returns true if `newRef` failed to load `source` or creates a reference cycle
 		function checkRefErrors(newRef: LoadedReference, source: String, message: String) : Bool {
-			var hasCycle = #if (editor || editor_hl) newRef?.hasCycle == true #else false #end;
-			if (!hasCycle && (newRef != null || source == null))
+			var hasCycle = #if (editor || editor_hl) newRef.hasCycle #else false #end;
+			if (!hasCycle && (newRef.prefab != null || source == null))
 				return false;
 			ctx.quickError(hasCycle ? 'Couldn\'t load $source, this create a reference cycle' : message);
 			ctx.rebuildInspector();
@@ -550,7 +551,7 @@ class Reference extends Object3D {
 			// Todo : when moving to None, alert user that changes / overrides will be lost
 			// but we need an api in ctx to prompt the user for a choice
 
-			if (checkRefErrors(newRef, source, 'Couldn\'t load $source from disk, aborting edit mode changes'))
+			if (newRef != oldRef && checkRefErrors(newRef, source, 'Couldn\'t load $source from disk, aborting edit mode changes'))
 				return;
 
 			function exec(isUndo) {
