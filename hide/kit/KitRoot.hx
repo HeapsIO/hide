@@ -114,11 +114,11 @@ class KitRoot #if !macro extends Element #end {
 
 		// in multi edit, the edited prefabs rebuild requests are tracked by their own edit context
 		var treeRebuild = false;
-		for (ctx in [editor].concat([for (childProperties in editedPrefabsProperties) childProperties.editor])) {
-			for (prefab in ctx.requestedPrefabRebuilds) {
+		for (kit in [this].concat(editedPrefabsProperties)) {
+			for (prefab in kit.editor.requestedPrefabRebuilds) {
 				sideEffects.push((_) -> editor.rebuildPrefab(prefab));
 			}
-			treeRebuild = treeRebuild || ctx.requestedTreeRebuild;
+			treeRebuild = treeRebuild || kit.editor.requestedTreeRebuild;
 		}
 
 		if (treeRebuild) {
