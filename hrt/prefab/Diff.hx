@@ -52,8 +52,90 @@ class Diff {
 	}
 
 	public static function deepCopy(v:Dynamic) : Dynamic {
+		#if hl
+		return deepCopyHL(v);
+		#else
+		return deepCopyNative(v);
+		#end
+	}
+
+	static function deepCopyJson(v:Dynamic) : Dynamic {
 		return haxe.Json.parse(haxe.Json.stringify(v));
 	}
+
+	static function deepCopyNative(v:Dynamic) : Dynamic {
+		switch (Type.typeof(v)) {
+			case TNull | TInt | TFloat | TBool:
+				return v;
+			case TObject:
+				var copy = {};
+				for (f in Reflect.fields(v))
+					Reflect.setField(copy, f, deepCopyNative(Reflect.field(v, f)));
+				return copy;
+			case TClass(String):
+				return v;
+			case TClass(Array):
+				var arr : Array<Dynamic> = v;
+				return [for (e in arr) deepCopyNative(e)];
+			default:
+				return deepCopyJson(v);
+		}
+	}
+
+	#if hl
+	static function deepCopyHL(v:Dynamic) : Dynamic {
+		var t = hl.Type.getDynamic(v);
+		switch (t.kind) {
+			case HVoid | HUI8 | HUI16 | HI32 | HF32 | HF64 | HBool:
+				return v;
+			case HDynObj:
+				return copyObjHL(v);
+			case HVirtual:
+				var inner = hl.Api.getVirtualValue(v);
+				return inner == null ? copyObjHL(v) : deepCopyHL(inner);
+			case HObj:
+				var c : Dynamic = Type.getClass(v);
+				if (c == String)
+					return v;
+				if (c == Array) {
+					var arr : Array<Dynamic> = v;
+					var copy = arr.copy();
+					for (i in 0...copy.length) {
+						var e = copy[i];
+						if (isContainerHL(e))
+							copy[i] = deepCopyHL(e);
+					}
+					return copy;
+				}
+				if (c == Class || c == null)
+					return copyObjHL(v);
+				return deepCopyJson(v);
+			default:
+				return deepCopyJson(v);
+		}
+	}
+
+	static function copyObjHL(v:Dynamic) : Dynamic {
+		var copy = Reflect.copy(v);
+		if (copy == null)
+			return deepCopyJson(v);
+		for (f in @:privateAccess Reflect.getObjectFields(v)) {
+			var h = @:privateAccess f.hash();
+			var e = hl.Api.getField(v, h);
+			if (isContainerHL(e))
+				hl.Api.setField(copy, h, deepCopyHL(e));
+		}
+		return copy;
+	}
+
+	static inline function isContainerHL(e:Dynamic) {
+		return switch (hl.Type.getDynamic(e).kind) {
+			case HVoid | HUI8 | HUI16 | HI32 | HF32 | HF64 | HBool: false;
+			case HObj: (Type.getClass(e) : Dynamic) != String;
+			default: true;
+		}
+	}
+	#end
 
 	/**
 		Returns the difference of two values together

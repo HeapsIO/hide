@@ -5,12 +5,12 @@ class HuiCdbInspector extends HuiElement {
 	static var SRC = <hui-cdb-inspector>
 	</hui-cdb-inspector>
 
-	public function new(type : cdb.Sheet, props: Dynamic, ?parent: h2d.Object) {
+	public function new(type : cdb.Sheet, props: Dynamic, ?prefab: hrt.prefab.Prefab, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 		this.makeInteractive();
 
-		new HuiPropsInspector(@:privateAccess type.sheet, props, this);
+		new HuiPropsInspector(@:privateAccess type.sheet, props, false, prefab, this);
 	}
 }
 
@@ -22,7 +22,10 @@ class HuiPropsInspector extends HuiElement {
 	var props : Dynamic;
 	var sub: Bool;
 
-	public function new(sheet: cdb.Data.SheetData, props: Dynamic, sub: Bool = false, ?parent: h2d.Object) {
+	/** Prefab owning the edited props, reported to the editor undo **/
+	var prefab : hrt.prefab.Prefab;
+
+	public function new(sheet: cdb.Data.SheetData, props: Dynamic, sub: Bool = false, ?prefab: hrt.prefab.Prefab, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 		this.makeInteractive();
@@ -30,6 +33,7 @@ class HuiPropsInspector extends HuiElement {
 		this.sheet = sheet;
 		this.props  = props;
 		this.sub = sub;
+		this.prefab = prefab;
 
 		build();
 	}
@@ -95,7 +99,7 @@ class HuiPropsInspector extends HuiElement {
 					insp = el;
 				case TProperties:
 					var s = @:privateAccess hide.Ide.inst.database.getSheet('${sheet.name}@${fieldName}').sheet;
-					var el = new HuiPropsInspector(s, Reflect.field(props, fieldName), true, field);
+					var el = new HuiPropsInspector(s, Reflect.field(props, fieldName), true, prefab, field);
 					insp = el;
 				default:
 					var el = new HuiElement(field);
@@ -155,7 +159,11 @@ class HuiPropsInspector extends HuiElement {
 		}
 
 		exec(false);
-		getView().undo.record(exec, true);
+		var prefabUndo = Std.downcast(getView().undo, hide.view.PrefabUndo);
+		if (prefabUndo != null && prefab != null)
+			prefabUndo.recordPrefabs(exec, true, [prefab]);
+		else
+			getView().undo.record(exec, true);
 	}
 }
 

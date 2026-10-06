@@ -7,6 +7,9 @@ class Undo {
 	var currentAction : Int = -1;
 	var lastSaveUndo: Any = null;
 
+	/** True while onRecord is called **/
+	var inRecordStep : Bool = false;
+
 	public function new() {
 		reset();
 	}
@@ -17,18 +20,58 @@ class Undo {
 		lastSaveUndo = null;
 	}
 
-	public function record(action: Action, hasDataChanges: Bool) {
+	/**
+		Record an action that has already been applied. `info` is an optional payload describing the action, passed to onRecord
+	**/
+	public function record(action: Action, hasDataChanges: Bool, ?info: Any) {
 		stack.splice(currentAction+1, stack.length);
 		stack.push({action: action, hasDataChanges: hasDataChanges});
 		currentAction = stack.length-1;
+		inRecordStep = true;
+		try onRecord(info) catch (e) {
+			inRecordStep = false;
+			throw e;
+		}
+		inRecordStep = false;
 		onAfterChange();
 	}
 
-	public function run(action: Action, hasDataChanges: Bool) {
+	/**
+		Called once when a new action is recorded (not on undo/redo), before onAfterChange.
+		mergeWithLast can be called from here to apply the side effects of the recorded action in the same undo step.
+	**/
+	public dynamic function onRecord(info: Null<Any>) {
+
+	}
+
+	/**
+		Merge `action` into the action that was just recorded : `action` is applied immediately, and is then
+		undone and redone together with it (redo : recorded action then `action`, undo : `action` then recorded action).
+		Must only be called from onRecord.
+	**/
+	public function mergeWithLast(action: Action) {
+		if (!inRecordStep)
+			throw "mergeWithLast can only be called from onRecord";
+
+		var entry = stack[currentAction];
+		var recorded = entry.action;
+		entry.action = (isUndo) -> {
+			if (isUndo) {
+				action(true);
+				recorded(true);
+			} else {
+				recorded(false);
+				action(false);
+			}
+		};
+		action(false);
+	}
+
+	public function run(action: Action, hasDataChanges: Bool, ?info: Any) {
 		if (action == null)
 			return;
 		action(false);
-		record(action, hasDataChanges);
+		record(action, hasDataChanges, info);
 	}
 
 	public dynamic function onAfterChange() {

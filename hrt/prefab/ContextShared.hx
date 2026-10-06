@@ -2,10 +2,10 @@ package hrt.prefab;
 
 #if editor
 typedef ContextShared = hide.prefab.ContextShared;
-class ContextSharedBase {
-#else
-class ContextShared {
 #end
+
+@:allow(hrt.prefab.Prefab)
+class #if editor ContextSharedBase #else ContextShared #end {
 	public var root2d(default, null) : h2d.Object;
 	public var root3d(default, null) : h3d.scene.Object;
 
@@ -37,6 +37,52 @@ class ContextShared {
 		don't need locals2d/3d like shaders
 	**/
 	public var isInstance(default, null) : Bool = false;
+
+	#if (editor || editor_hl)
+	/**
+		Set to true by editors while they load prefabs for other purposes than loading the prefab file
+		(like undo/redo). Only read on the topmost shared, see isTempLoad()
+	**/
+	var editorTempLoad : Bool = false;
+
+	/**
+		True by default : any save in the editor is temporary, except while the prefab file is saved to disc (see Prefab.editorDiscSerialize).
+		Only read on the topmost shared, see isTempSave()
+	**/
+	var editorTempSave : Bool = true;
+
+	/** Returns the shared of the topmost prefab, following parent references **/
+	function getTopShared() : ContextShared {
+		var sh : ContextShared = cast this;
+		while (sh.parentPrefab != null)
+			sh = sh.parentPrefab.shared;
+		return sh;
+	}
+	#end
+
+	/**
+		Returns true when an editor loads prefabs for temporary purposes (like undo/redo), false when they are
+		loaded as part of the prefab file. Always false in game.
+	**/
+	public inline function isTempLoad() : Bool {
+		#if (editor || editor_hl)
+		return getTopShared().editorTempLoad;
+		#else
+		return false;
+		#end
+	}
+
+	/**
+		Returns true when an editor saves prefabs for any other purpose than saving the prefab file to disc
+		(like undo/redo, copy/paste...). Always false in game.
+	**/
+	public inline function isTempSave() : Bool {
+		#if (editor || editor_hl)
+		return getTopShared().editorTempSave;
+		#else
+		return false;
+		#end
+	}
 
 	var bakedData : Map<String, haxe.io.Bytes>;
 

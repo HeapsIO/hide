@@ -217,10 +217,21 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 		this.ctx = ctx;
 	}
 
-	public function recordUndo(cb: (isUndo:Bool) -> Void) {
+	function recordUndoImpl(cb: (isUndo:Bool) -> Void, prefabs: Null<Array<hrt.prefab.Prefab>>) {
 		if (parent != null)
 			throw "Side effect in a multi edit context";
-		ctx.undo.change(Custom(cb));
+
+		// Notify the scene editor like the old inspector does, so it can sync the references to the modified prefabs
+		function notify() {
+			if (prefabs != null)
+				for (p in prefabs)
+					ctx.scene.editor.onPrefabChange(p);
+		}
+		ctx.undo.change(Custom((isUndo) -> {
+			cb(isUndo);
+			notify();
+		}));
+		notify();
 	}
 
 	public function rebuildInspector() : Void {

@@ -133,7 +133,75 @@ abstract class EditContext2 {
 
 	public abstract function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) : h3d.Vector;
 
-	public abstract function recordUndo(callback: (isUndo: Bool) -> Void ) : Void;
+	/** Undo steps recorded between beginMultiUndo/finishMultiUndo, only used on the top context **/
+	var multiUndo : Array<{callback: (isUndo: Bool) -> Void, prefabs: Null<Array<Prefab>>}> = [];
+	var multiUndoDepth : Int = 0;
+
+	function getTopContext() : EditContext2 {
+		var ctx = this;
+		while (ctx.parent != null)
+			ctx = ctx.parent;
+		return ctx;
+	}
+
+	/**
+		Record an undo step. If called between beginMultiUndo/finishMultiUndo, the step is merged with the others in a single undo step.
+		`prefabs` lists the prefabs modified by the step. If null, the edited prefabs are assumed to be modified.
+	**/
+	public final function recordUndo(callback: (isUndo: Bool) -> Void, ?prefabs: Array<Prefab>) : Void {
+		#if domkit
+		if (prefabs == null && root != null)
+			prefabs = @:privateAccess root.getEditedPrefabs();
+		#end
+
+		var top = getTopContext();
+		if (top.multiUndoDepth > 0) {
+			top.multiUndo.push({callback: callback, prefabs: prefabs});
+			return;
+		}
+		recordUndoImpl(callback, prefabs);
+	}
+
+	/**
+		Implement this to record the undo step in the editor undo stack
+	**/
+	abstract function recordUndoImpl(callback: (isUndo: Bool) -> Void, prefabs: Null<Array<Prefab>>) : Void;
+
+	/**
+		All the undo steps recorded until the matching finishMultiUndo will be merged in a single undo step
+	**/
+	function beginMultiUndo() : Void {
+		getTopContext().multiUndoDepth++;
+	}
+
+	function finishMultiUndo() : Void {
+		var top = getTopContext();
+		top.multiUndoDepth--;
+		if (top.multiUndoDepth > 0)
+			return;
+		var actions = top.multiUndo;
+		top.multiUndo = [];
+		if (actions.length == 0)
+			return;
+
+		// union of the modified prefabs, unknown if any step is unknown
+		var prefabs = [];
+		for (action in actions) {
+			if (action.prefabs == null) {
+				prefabs = null;
+				break;
+			}
+			for (p in action.prefabs)
+				if (!prefabs.contains(p))
+					prefabs.push(p);
+		}
+
+		top.recordUndoImpl((isUndo: Bool) -> {
+			for (i in 0...actions.length) {
+				actions[isUndo ? actions.length - i - 1 : i].callback(isUndo);
+			}
+		}, prefabs);
+	}
 
 	abstract function saveSetting(category: SettingCategory, key: String, value: Dynamic) : Void;
 	abstract function getSetting(category: SettingCategory, key: String) : Null<Dynamic>;

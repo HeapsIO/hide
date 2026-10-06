@@ -61,6 +61,7 @@ class Prefab extends HuiView<{path: String}> {
 	var actualSceneFilters : Map<String, Bool> = [];
 
 	var previewDrag : hrt.prefab.Object3D;
+	var previewDragFailed = false;
 
 	var boxSelectStart : Null<h2d.col.Point> = null;
 	var boxSelectEnd : Null<h2d.col.Point> = null;
@@ -73,6 +74,8 @@ class Prefab extends HuiView<{path: String}> {
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
 		initComponent();
+
+		prefabUndo.onPrefabsRecorded = propagateEditReferences;
 
 		graphicsOverlay = new h2d.Graphics(sceneEditor.scene);
 		var props = sceneEditor.scene.getProperties(graphicsOverlay);
@@ -123,10 +126,10 @@ class Prefab extends HuiView<{path: String}> {
 			}
 		});
 
-		registerCommand(hrt.ui.HuiCommands.cut, View, () -> getView().undo.run(actionCutToClipboard(), true));
+		registerCommand(hrt.ui.HuiCommands.cut, View, () -> prefabUndo.runPrefabs(actionCutToClipboard(), true, withParents(getSelectionOrdered())));
 		registerCommand(hrt.ui.HuiCommands.copy, View, () -> copySelectionToClipboard());
-		registerCommand(hrt.ui.HuiCommands.duplicate, View, () -> getView().undo.run(actionDuplicateSelection(), true));
-		registerCommand(hrt.ui.HuiCommands.paste, View, () -> getView().undo.run(actionPasteFromClipboard(), true));
+		registerCommand(hrt.ui.HuiCommands.duplicate, View, () -> prefabUndo.runPrefabs(actionDuplicateSelection(), true, [for (p in getSelectionOrdered()) p.parent]));
+		registerCommand(hrt.ui.HuiCommands.paste, View, () -> { var targets = getSelectionOrdered(); prefabUndo.runPrefabs(actionPasteFromClipboard(), true, targets.length > 0 ? targets : [prefab]); });
 
 		registerCommand(hrt.ui.HuiCommands.delete, View, commandDelete);
 		registerCommand(editorHideCommand, View, () -> {
@@ -266,7 +269,7 @@ class Prefab extends HuiView<{path: String}> {
 							index = reparentTo.children.indexOf(target) + 1;
 						case Inside:
 					}
-					getView().undo.run(actionReparentPrefabs(prefabs, reparentTo, index), true);
+					prefabUndo.runPrefabs(actionReparentPrefabs(prefabs, reparentTo, index), true, withParents(prefabs, reparentTo));
 				} else if (op.type == HuiFileBrowser.fileDragOp) {
 					var pathAbs = getDropPath(op);
 
@@ -278,10 +281,6 @@ class Prefab extends HuiView<{path: String}> {
 					}
 
 
-					var ref = createRefFromPath(path);
-					ref.name = new haxe.io.Path(path).file;
-
-
 					var parent = target;
 					var index = parent.children.length;
 					if (operation == After || operation == Before) {
@@ -290,6 +289,11 @@ class Prefab extends HuiView<{path: String}> {
 						if (operation == After)
 							index += 1;
 					}
+
+					var ref = createRefFromPath(path, parent);
+					if (ref == null)
+						return;
+					ref.name = new haxe.io.Path(path).file;
 
 					ref.setTransform(parent.to(hrt.prefab.Object3D)?.getRelativeTransform(null, null, false) ?? h3d.Matrix.I());
 
@@ -301,7 +305,7 @@ class Prefab extends HuiView<{path: String}> {
 						select(isUndo);
 					};
 
-					getView().undo.run(action, true);
+					prefabUndo.runPrefabs(action, true, [parent]);
 				}
 			}
 		}
@@ -390,6 +394,8 @@ class Prefab extends HuiView<{path: String}> {
 		sceneEditor.scene.onDragOut = sceneDragOut;
 		sceneEditor.scene.onDragOver = sceneDragOver;
 		sceneEditor.scene.onDragEnd = sceneDragEnd;
+		sceneEditor.scene.onAnyDragEnd = sceneDragEnd;
+		sceneEditor.scene.onAnyDragStart = sceneAnyDragStart;
 		sceneEditor.scene.onDrop = sceneDrop;
 
 		gizmo = new hrt.tools.Gizmo(sceneEditor.scene.s3d);
@@ -559,7 +565,16 @@ class Prefab extends HuiView<{path: String}> {
 				}
 			}
 
-			getView().undo.record((isUndo) -> {
+			var modified : Array<hrt.prefab.Prefab> = [];
+			for (o in modifiedObj3ds) {
+				modified.push(o);
+				if (keepTransform)
+					for (child in o.children)
+						if (child.to(hrt.prefab.Object3D) != null)
+							modified.push(child);
+			}
+
+			prefabUndo.recordPrefabs((isUndo) -> {
 				var objs = [];
 				var transformIdx = 0;
 				for (o in modifiedObj3ds) {
@@ -579,7 +594,7 @@ class Prefab extends HuiView<{path: String}> {
 					}
 				}
 				gizmo.moveToObjects(objs);
-			}, true);
+			}, true, modified);
 		};
 		gizmo.onCancelMove = () -> {
 			for (k in initialTransform.keys()) {
@@ -626,28 +641,46 @@ class Prefab extends HuiView<{path: String}> {
 		return file;
 	}
 
-	function createRefFromPath(path: String) : hrt.prefab.Object3D {
+	/** Returns null and shows an error if the reference creates a cycle or fails to load **/
+	function createRefFromPath(path: String, parent: hrt.prefab.Prefab) : Null<hrt.prefab.Object3D> {
 		var prefab : hrt.prefab.Object3D;
 		if (StringTools.endsWith(path, ".fbx")) {
 			prefab = new hrt.prefab.Model(null, new hrt.prefab.ContextShared());
-		} else if (StringTools.endsWith(path, ".fx")) {
-			prefab = new hrt.prefab.fx.SubFX(null, new hrt.prefab.ContextShared());
-		} else {
-			prefab = new hrt.prefab.Reference(null, new hrt.prefab.ContextShared());
+			prefab.source = path;
+			return prefab;
 		}
-		prefab.source = path;
-		return prefab;
+
+		// The shared path and parentPrefab of the parent allow editorInit() to detect reference cycles
+		var shared = new hrt.prefab.ContextShared(parent?.shared.currentPath);
+		shared.parentPrefab = parent?.shared.parentPrefab;
+		var ref : hrt.prefab.Reference;
+		if (StringTools.endsWith(path, ".fx")) {
+			ref = new hrt.prefab.fx.SubFX(null, shared);
+		} else {
+			ref = new hrt.prefab.Reference(null, shared);
+		}
+		ref.editorInit(path);
+		if (ref.hasCycle || ref.refInstance == null) {
+			Ide.showError('Can\'t create reference to "$path" : ' + (ref.hasCycle ? "It would create a cycle" : "The prefab has an error"));
+			return null;
+		}
+		return ref;
 	}
 
 	function commandDelete() {
 		if (currentEditContext?.foregroundEditorTool?.onDeleteCommand())
 			return;
 
-		getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true);
+		var toRemove = [for (p => _ in selectedPrefabs) p];
+		prefabUndo.runPrefabs(actionRemovePrefabs(toRemove), true, withParents(toRemove));
 	}
 
 	function sceneDragOver(op: HuiDragOp) {
 		op.acceptDrop = false;
+
+		if (previewDragFailed)
+			return;
+
 		var pathAbs = getDropPath(op);
 
 		if (pathAbs == null)
@@ -658,12 +691,16 @@ class Prefab extends HuiView<{path: String}> {
 		if (path == null)
 			return;
 
-		op.acceptDrop = true;
-
 		if (previewDrag == null) {
-			previewDrag = createRefFromPath(path);
+			previewDrag = createRefFromPath(path, this.prefab);
+			if (previewDrag == null) {
+				previewDragFailed = true;
+				return;
+			}
 			tryMake(previewDrag);
 		}
+
+		op.acceptDrop = true;
 
 		var point = sceneEditor.screenToGround(op.event.relX, op.event.relY);
 		if (point != null) {
@@ -675,16 +712,24 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	function sceneDragOut(op: HuiDragOp) {
+		cleanupDrag(true);
+	}
+
+	function sceneDragEnd(op: HuiDragOp) {
+		cleanupDrag(false);
+	}
+
+	function sceneAnyDragStart(op: HuiDragOp) {
+		cleanupDrag(false);
+	}
+
+	function cleanupDrag(temporary: Bool) {
 		if (previewDrag != null) {
 			removePrefabInstance(previewDrag);
 			previewDrag = null;
 		}
-	}
-
-	function sceneDragEnd(op: HuiDragOp) {
-		if (previewDrag != null) {
-			removePrefabInstance(previewDrag);
-			previewDrag = null;
+		if (!temporary) {
+			previewDragFailed = false;
 		}
 	}
 
@@ -693,6 +738,9 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	function sceneDrop(op: HuiDragOp) {
+		if (previewDragFailed)
+			return;
+
 		var pathAbs = getDropPath(op);
 		if (pathAbs == null)
 			return;
@@ -711,7 +759,9 @@ class Prefab extends HuiView<{path: String}> {
 		}
 
 		var parent = this.prefab;
-		var ref = createRefFromPath(path);
+		var ref = createRefFromPath(path, parent);
+		if (ref == null)
+			return;
 
 		ref.name = new haxe.io.Path(path).file;
 
@@ -728,7 +778,7 @@ class Prefab extends HuiView<{path: String}> {
 			select(isUndo);
 		};
 
-		getView().undo.run(action, true);
+		prefabUndo.runPrefabs(action, true, [parent]);
 	}
 
 	override function update(dt:Float) {
@@ -1019,11 +1069,90 @@ class Prefab extends HuiView<{path: String}> {
 		];
 	}
 
+	/** Undo stack of this editor, which tracks the prefabs modified by each action **/
+	public var prefabUndo(get, never) : PrefabUndo;
+	inline function get_prefabUndo() return (cast undo : PrefabUndo);
+
+	override function createUndo() : hrt.tools.Undo {
+		return new PrefabUndo();
+	}
+
+	/** Returns prefabs, their current parents and newParent : the prefabs modified when moving prefabs to newParent **/
+	function withParents(prefabs: Array<hrt.prefab.Prefab>, ?newParent: hrt.prefab.Prefab) : Array<hrt.prefab.Prefab> {
+		var list = [];
+		function add(p: hrt.prefab.Prefab) {
+			if (p != null && !list.contains(p))
+				list.push(p);
+		}
+		for (p in prefabs) {
+			add(p);
+			add(p.parent);
+		}
+		add(newParent);
+		return list;
+	}
+
+	/**
+		When a recorded action modified the content of references in Edit mode, update the other references
+		to the same files in the scene, in the same undo step
+	**/
+	function propagateEditReferences(prefabs: Null<Array<hrt.prefab.Prefab>>) {
+		// unknown changes (like reloading the whole prefab) are not propagated
+		if (prefabs == null || this.prefab == null)
+			return;
+
+		// Edit mode references whose refInstance contains a modified prefab
+		var editedRefs : Array<hrt.prefab.Reference> = [];
+		for (p in prefabs) {
+			var ref = Std.downcast(p.shared.parentPrefab, hrt.prefab.Reference);
+			if (ref != null && ref.editMode == Edit && ref.refInstance != null && !editedRefs.contains(ref))
+				editedRefs.push(ref);
+		}
+		if (editedRefs.length == 0)
+			return;
+
+		var allRefs : Array<hrt.prefab.Reference> = [];
+		function collect(p: hrt.prefab.Prefab) {
+			var ref = Std.downcast(p, hrt.prefab.Reference);
+			if (ref != null)
+				allRefs.push(ref);
+			for (c in p.children)
+				collect(c);
+			if (ref?.refInstance != null)
+				collect(ref.refInstance);
+		}
+		collect(this.prefab);
+
+		var actions : Array<hrt.tools.Undo.Action> = [];
+		var syncedRefs : Array<hrt.prefab.Reference> = [];
+		for (edited in editedRefs) {
+			for (other in allRefs) {
+				if (other.source != edited.source || other.refInstance == null || editedRefs.contains(other) || syncedRefs.contains(other))
+					continue;
+				actions.push(other.editorSyncSourceAction(edited.refInstance));
+				syncedRefs.push(other);
+			}
+		}
+		if (actions.length == 0)
+			return;
+
+		prefabUndo.mergeWithLast((isUndo) -> {
+			beginRebuild();
+			for (i in 0...actions.length)
+				actions[isUndo ? actions.length - i - 1 : i](isUndo);
+			for (ref in syncedRefs)
+				queueRebuild(ref);
+			endRebuild();
+			sceneEditor.tree.rebuild();
+		});
+	}
+
 	public function setPrefab(newPrefab: hrt.prefab.Prefab, recordUndo: Bool) {
 
 		var action = actionSetPrefab(newPrefab);
 
 		if (recordUndo) {
+			// replaces the whole prefab tree, the modified prefabs are unknown
 			undo.run(action, true);
 			undo.markClean();
 		} else {
@@ -1324,7 +1453,7 @@ class Prefab extends HuiView<{path: String}> {
 			actionReparentPrefab(group, groupParent, index),
 			actionReparentPrefabs(selection, group, 0),
 		]);
-		getView().undo.run(action, true);
+		prefabUndo.runPrefabs(action, true, withParents(selection, groupParent).concat([group]));
 	}
 
 	function setSelection(selection: Array<hrt.prefab.Prefab>, flags: SelectionFlags, force: Bool = false) {
@@ -1372,7 +1501,7 @@ class Prefab extends HuiView<{path: String}> {
 		}
 
 		if (!flags.has(NoRecordUndo)) {
-			getView().undo.record((isUndo) -> setSelection(isUndo ? oldSelection : selection, NoRecordUndo), false);
+			prefabUndo.recordPrefabs((isUndo) -> setSelection(isUndo ? oldSelection : selection, NoRecordUndo), false, []);
 		}
 
 		refreshInspector();
@@ -1522,7 +1651,7 @@ class Prefab extends HuiView<{path: String}> {
 			sceneEditor.tree.rebuild();
 		}
 
-		undo.run(apply, false);
+		prefabUndo.runPrefabs(apply, false, []);
 	}
 
 	public function setEnable(prefabs : Array<hrt.prefab.Prefab>, isEnable: Bool) {
@@ -1535,12 +1664,12 @@ class Prefab extends HuiView<{path: String}> {
 			inspectorHeader.refresh();
 		}
 		apply(true);
-		undo.record((undo) -> {
+		prefabUndo.recordPrefabs((undo) -> {
 			if (undo)
 				apply(false);
 			else
 				apply(true);
-		}, true);
+		}, true, prefabs);
 	}
 
 	public function setEditorOnly(prefabs : Array<hrt.prefab.Prefab>, isEditorOnly: Bool) {
@@ -1552,12 +1681,12 @@ class Prefab extends HuiView<{path: String}> {
 			}
 		}
 		apply(true);
-		undo.record((undo) -> {
+		prefabUndo.recordPrefabs((undo) -> {
 			if (undo)
 				apply(false);
 			else
 				apply(true);
-		}, true);
+		}, true, prefabs);
 	}
 
 	public function setInGameOnly(prefabs : Array<hrt.prefab.Prefab>, isInGameOnly: Bool) {
@@ -1569,12 +1698,12 @@ class Prefab extends HuiView<{path: String}> {
 			}
 		}
 		apply(true);
-		undo.record((undo) -> {
+		prefabUndo.recordPrefabs((undo) -> {
 			if (undo)
 				apply(false);
 			else
 				apply(true);
-		}, true);
+		}, true, prefabs);
 	}
 
 	public function setLock(prefabs : Array<hrt.prefab.Prefab>, isLocked: Bool) {
@@ -1588,7 +1717,7 @@ class Prefab extends HuiView<{path: String}> {
 			sceneEditor.tree.rebuild();
 		}
 		apply(false);
-		undo.record(apply, true);
+		prefabUndo.recordPrefabs(apply, true, prefabs);
 	}
 
 	function getTagMenu(prefabs: Array<hrt.prefab.Prefab>) : Array<hrt.ui.HuiMenu.MenuItem> {
@@ -1660,7 +1789,7 @@ class Prefab extends HuiView<{path: String}> {
 			}
 		}
 		exec(false);
-		undo.record(exec, true);
+		prefabUndo.recordPrefabs(exec, true, prefabs);
 	}
 
 
@@ -1677,7 +1806,7 @@ class Prefab extends HuiView<{path: String}> {
 		var path = prefab.shared.parentPrefab != null ? prefab.shared.parentPrefab.source : prefab.shared.currentPath;
 
 		try {
-			var data = prefab.serialize();
+			var data = prefab.editorDiscSerialize();
 			var realPath = hide.Ide.inst.getPath(path);
 			var text = hide.Ide.inst.toJSON(data);
 			ignoreReload = true;
@@ -1761,8 +1890,9 @@ class Prefab extends HuiView<{path: String}> {
 
 		var isMultiEdit = prefabs.length > 1;
 		var editPrefab : hrt.prefab.Prefab = if (isMultiEdit) {
+			var data = hrt.prefab.Diff.deepCopy(prefabs[0].save());
 			var p = Type.createInstance(commonClass, [null, new hrt.prefab.ContextShared(prefabs[0].shared.currentPath)]);
-			p.load(haxe.Json.parse(haxe.Json.stringify(prefabs[0].save())));
+			p.editorTempLoad(data);
 			p;
 		} else {
 			prefabs[0];
@@ -1943,7 +2073,7 @@ class Prefab extends HuiView<{path: String}> {
 	function renamePrefab(target: hrt.prefab.Prefab) {
 		sceneEditor.tree.rename(target, (newName: String) -> {
 			if (newName != "" && newName != null) {
-				getView().undo.run(actionRenamePrefab(target, newName), true);
+				prefabUndo.runPrefabs(actionRenamePrefab(target, newName), true, [target]);
 			}
 		});
 	}
@@ -2102,6 +2232,10 @@ class Prefab extends HuiView<{path: String}> {
 		if (rebuildQueue != null && rebuildQueue.exists(prefab))
 			return;
 
+		// Ignore prefabs that are not displayed by this editor (like the multi edit inspector prefab copy)
+		if (!isEditorPrefab(prefab))
+			return;
+
 		var instant = false;
 		if (rebuildQueue == null) {
 			beginRebuild();
@@ -2116,6 +2250,20 @@ class Prefab extends HuiView<{path: String}> {
 		if (instant) {
 			endRebuild();
 		}
+	}
+
+	/** Returns true if prefab is part of the edited prefab or of the render profile, following references **/
+	function isEditorPrefab(prefab: hrt.prefab.Prefab) : Bool {
+		function getRoot(p: hrt.prefab.Prefab) {
+			var parent = p.parent ?? p.shared.parentPrefab;
+			while (parent != null) {
+				p = parent;
+				parent = p.parent ?? p.shared.parentPrefab;
+			}
+			return p;
+		}
+		var root = getRoot(prefab);
+		return root == this.prefab || (sceneEditor.renderProfile != null && root == getRoot(sceneEditor.renderProfile));
 	}
 
 	function checkWantRebuild(target: hrt.prefab.Prefab, original: hrt.prefab.Prefab) {
@@ -2338,7 +2486,7 @@ class Prefab extends HuiView<{path: String}> {
 					var shader = newPrefabByName("shader");
 					shader.name = name;
 					shader.source = path;
-					getView().undo.run(actionAddSelectPrefab(parentElt, parentElt.children.length, shader), true);
+					prefabUndo.runPrefabs(actionAddSelectPrefab(parentElt, parentElt.children.length, shader), true, [parentElt]);
 				}
 			}
 		}
@@ -2407,7 +2555,7 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	function createPrefabMenu(parent: hrt.prefab.Prefab, ?onNew: (prefab: hrt.prefab.Prefab) -> Void) : Array<hrt.ui.HuiMenu.MenuItem> {
-		var callback = (cl) -> getView().undo.run(actionCreatePrefab(parent, parent.children.length, cl, onNew), true);
+		var callback = (cl) -> prefabUndo.runPrefabs(actionCreatePrefab(parent, parent.children.length, cl, onNew), true, [parent]);
 
 		var lines: Array<hrt.ui.HuiMenu.MenuItem> = [];
 
@@ -2582,7 +2730,7 @@ class Prefab extends HuiView<{path: String}> {
 							}
 						}
 
-						undo.run(actionMakeSelection(newSelection), false);
+						prefabUndo.runPrefabs(actionMakeSelection(newSelection), false, []);
 					} else {
 						// Standard click selection
 
@@ -2784,8 +2932,8 @@ class EditContext extends hrt.prefab.EditContext2 {
 		throw "implement";
 	}
 
-	public function recordUndo(callback: (isUndo: Bool) -> Void ) : Void {
-		editor.findParent(HuiView).undo.record(callback, true);
+	function recordUndoImpl(callback: (isUndo: Bool) -> Void, prefabs: Null<Array<hrt.prefab.Prefab>>) : Void {
+		editor.prefabUndo.recordPrefabs(callback, true, prefabs);
 	}
 
 	function saveSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String, value: Dynamic) : Void {

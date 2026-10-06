@@ -50,7 +50,7 @@ class Unknown extends Prefab {
 						return v;
 					default:
 						// Fallback hard data copy
-						return haxe.Json.parse(haxe.Json.stringify(v));
+						return hrt.prefab.Diff.deepCopy(v);
 				}
 			default:
 				return v;

@@ -121,7 +121,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		if(type == "fx") {
 			var relative = ide.makeRelative(path);
 			var ref = new hrt.prefab.fx.SubFX(parent, null);
-			ref.source = relative;
+			ref.editorInit(relative);
 			ref.name = new haxe.io.Path(relative).file;
 			return ref;
 		}
@@ -370,10 +370,9 @@ class FXEditor extends hide.view.FileView {
 			return;
 
 		// Save render props
-		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
-			sceneEditor.renderPropsRoot.save();
+		sceneEditor.saveRenderProps();
 
-		@:privateAccess var content = ide.toJSON(cast(data, hrt.prefab.Prefab).serialize());
+		@:privateAccess var content = ide.toJSON(cast(data, hrt.prefab.Prefab).editorDiscSerialize());
 		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
 			haxe.Timer.delay(saveBackup.bind(content), 0);

@@ -68,6 +68,9 @@ class KitRoot #if !macro extends Element #end {
 	}
 
 	override function change(params: hide.kit.Element.ChangeParams) : Void {
+		// merge the undo steps recorded by all the edited prefabs (in multi edit) in a single step
+		editor.beginMultiUndo();
+
 		if (params.recordUndo) {
 			prepareUndoPoint();
 		}
@@ -79,6 +82,8 @@ class KitRoot #if !macro extends Element #end {
 		if (!params.isTemporaryEdit && params.recordUndo) {
 			finishUndoPoint(params.sideEffects);
 		}
+
+		editor.finishMultiUndo();
 	}
 
 	/**
@@ -89,12 +94,17 @@ class KitRoot #if !macro extends Element #end {
 			editor.resetRebuilds();
 			prefabUndoPoint = hrt.prefab.Diff.deepCopy(prefab.save());
 			for (childProperties in editedPrefabsProperties) {
+				childProperties.editor.resetRebuilds();
 				childProperties.prefabUndoPoint = hrt.prefab.Diff.deepCopy(childProperties.prefab.save());
 			}
 		}
 	}
 
 	function finishUndoPoint(?customSideEffect: (isUndo: Bool) -> Void) {
+		// no change was recorded since the last finishUndoPoint
+		if (prefabUndoPoint == null)
+			return;
+
 		var sideEffects : Array<(isUndo:Bool) -> Void> = [];
 		createUndoStep(sideEffects);
 
@@ -102,11 +112,16 @@ class KitRoot #if !macro extends Element #end {
 			childProperties.createUndoStep(sideEffects);
 		}
 
-		for (prefab in editor.requestedPrefabRebuilds) {
-			sideEffects.push((_) -> editor.rebuildPrefab(prefab));
+		// in multi edit, the edited prefabs rebuild requests are tracked by their own edit context
+		var treeRebuild = false;
+		for (kit in [this].concat(editedPrefabsProperties)) {
+			for (prefab in kit.editor.requestedPrefabRebuilds) {
+				sideEffects.push((_) -> editor.rebuildPrefab(prefab));
+			}
+			treeRebuild = treeRebuild || kit.editor.requestedTreeRebuild;
 		}
 
-		if (editor.requestedTreeRebuild) {
+		if (treeRebuild) {
 			sideEffects.push((_) -> editor.rebuildTree(null));
 		}
 
@@ -120,23 +135,30 @@ class KitRoot #if !macro extends Element #end {
 					sideEffect(isUndo);
 				}
 				editor.rebuildInspector();
-			});
+			}, getEditedPrefabs());
 		}
 
 
 	}
 
+	function getEditedPrefabs() : Array<hrt.prefab.Prefab> {
+		// in multi edit, the root prefab is a temporary copy, the edited prefabs are the child properties ones
+		return editedPrefabsProperties.length > 0 ? [for (childProperties in editedPrefabsProperties) childProperties.prefab] : [prefab];
+	}
+
 	function createUndoStep(sideEffects : Array<(isUndo:Bool) -> Void>) : Void {
 		var before = prefabUndoPoint;
 		prefabUndoPoint = null;
-		var after = prefab.save();
+		// save() and load() keep Dynamic fields (like `props`) by reference, copy them so later edits don't alter the undo snapshots
+		var after = hrt.prefab.Diff.deepCopy(prefab.save());
 		if (hrt.prefab.Diff.diff(before, after) != Skip) {
 			sideEffects.push((isUndo) -> {
-				if (isUndo) {
-					prefab.load(before);
-				} else {
-					prefab.load(after);
-				}
+				var data = hrt.prefab.Diff.deepCopy(isUndo ? before : after);
+				#if (editor || editor_hl)
+				prefab.editorTempLoad(data);
+				#else
+				prefab.load(data);
+				#end
 				doTry(() -> prefab.updateInstance());
 			});
 		}

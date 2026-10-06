@@ -2812,6 +2812,14 @@ class SceneEditor {
 		return null;
 	}
 
+	@:allow(hide.view.FXEditor)
+	@:allow(hide.view.Model)
+	@:allow(hide.view.Prefab)
+	function saveRenderProps() {
+		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && renderPropsRoot != null)
+			renderPropsRoot.editorDiscSerialize();
+	}
+
 	function refreshDefaultRenderProps(){
 		var path = getRenderPropsPath();
 
@@ -2840,7 +2848,7 @@ class SceneEditor {
 			renderPropsRoot.shared.customMake = customMake;
 			renderPropsRoot.editMode = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) ? Edit : None;
 			renderPropsRoot.name = "Render Props";
-			renderPropsRoot.source = path;
+			renderPropsRoot.editorInit(path);
 
 			@:privateAccess renderPropsRoot.shared.root2d = renderPropsRoot.shared.current2d = root2d;
 			@:privateAccess renderPropsRoot.shared.root3d = renderPropsRoot.shared.current3d = root3d;
@@ -3634,13 +3642,11 @@ class SceneEditor {
 			var path = modifiedRef.source;
 
 			var others = sceneData.findAll(Reference, (r) -> r.source == path && r != modifiedRef && r.refInstance != null, true);
-			@:privateAccess
 			if (others.length > 0) {
-				var data = modifiedRef.refInstance.serialize();
 				beginRebuild();
 				for (ref in others) {
 					removeInstance(ref.refInstance, false);
-					@:privateAccess ref.setRef(data);
+					ref.editorSyncSourceAction(modifiedRef.refInstance)(false);
 					queueRebuild(ref);
 				}
 				endRebuild();
@@ -4058,27 +4064,41 @@ class SceneEditor {
 
 			if( elts.length > 0 ) {
 				var commonClass = hrt.tools.ClassUtils.getCommonClassInstance(elts, hrt.prefab.Prefab);
-				var parentClass = Type.getSuperClass(commonClass);
-				var hasNewInspector = false;
-
-				if (parentClass != null) {
-					if (Reflect.field(Type.createEmptyInstance(commonClass), "edit2") != Reflect.field(Type.createEmptyInstance(parentClass), "edit2")) {
-						hasNewInspector = true;
+				// Returns the most derived class in cl's hierarchy that defines the method `name`
+				function getDefiningClass(cl: Class<Dynamic>, name: String) : Class<Dynamic> {
+					var method = Reflect.field(Type.createEmptyInstance(cl), name);
+					var parent = Type.getSuperClass(cl);
+					while (parent != null && Reflect.field(Type.createEmptyInstance(parent), name) == method) {
+						cl = parent;
+						parent = Type.getSuperClass(cl);
 					}
+					return cl;
 				}
+
+				var edit2Class = getDefiningClass(commonClass, "edit2");
+				var editClass = getDefiningClass(commonClass, "edit");
+
+				// edit2 is at least as specific as edit : the new inspector covers everything the old one shows
+				// (an instance of edit2Class is an editClass when edit2Class is editClass or one of its subclasses)
+				var hasNewInspector = edit2Class != hrt.prefab.Prefab && Std.isOfType(Type.createEmptyInstance(edit2Class), editClass);
+
+				// edit() was dropped in favor of edit2() somewhere in the hierarchy : the old inspector would be incomplete
+				var forceNewInspector = hasNewInspector && edit2Class != editClass;
 
 				var preferEdit2List = Ide.inst.currentConfig.get("sceneeditor.preferEdit2") ?? [];
 				var preferEdit2 = preferEdit2List.contains(Type.getClassName(commonClass));
 
 				var allowNewInspector = false;
-				if (preferEdit2) {
+				if (forceNewInspector) {
+					allowNewInspector = true;
+				} else if (preferEdit2) {
 					allowNewInspector = !Ide.inst.currentConfig.get("sceneeditor.oldInspector", false);
 				} else {
 					allowNewInspector = Ide.inst.currentConfig.get("sceneeditor.newInspector", false);
 				}
 
 				var toggle = null;
-				if (hasNewInspector) {
+				if (hasNewInspector && !forceNewInspector) {
 					var label = preferEdit2 ? "Use old inspector" : "Use new inspector";
 					toggle = new Element('<div class="new-editor-prompt-toggle"><label for="new-edit-toggle">$label</label><input name="new-edit-toggle" type="checkbox"></input></div>');
 					var checkbox : js.html.InputElement = cast toggle.find("input").get(0);
@@ -4100,7 +4120,7 @@ class SceneEditor {
 				if (hasNewInspector && allowNewInspector) {
 					properties.element.removeClass("hide-properties");
 					properties.element.removeClass("props");
-					toggle.addClass("margin");
+					toggle?.addClass("margin");
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
 					var isMultiEdit = selectedPrefabs.length > 1;
 					if (isMultiEdit) {
@@ -4353,7 +4373,7 @@ class SceneEditor {
 			var ptype = hrt.prefab.Prefab.getPrefabType(f.path);
 			if (ptype != null) {
 				var ref = new hrt.prefab.Reference(null, sceneData.shared);
-				ref.source = ide.makeRelative(f.path);
+				ref.editorInit(ide.makeRelative(f.path));
 				ref.make();
 
 				if (ref.refInstance != null) {
@@ -4499,15 +4519,16 @@ class SceneEditor {
 
 				prefab = root;
 			} else {
+				// The parent shared allows editorInit() to detect reference cycles
 				var ref : hrt.prefab.Reference = if (ptype == "fx") {
-					var fx = new hrt.prefab.fx.SubFX(null, null);
+					var fx = new hrt.prefab.fx.SubFX(null, parent.shared);
 					fx.time = 0;
 					fx.loop = false;
 					fx;
 				} else {
-					new hrt.prefab.Reference(null, null);
+					new hrt.prefab.Reference(null, parent.shared);
 				}
-				ref.source = relative;
+				ref.editorInit(relative);
 
 				prefab = ref;
 			}
@@ -4531,7 +4552,7 @@ class SceneEditor {
 		parent.addChildAt(prefab, index);
 
 		var ref = Std.downcast(prefab, Reference);
-		if (ref != null && (ref.hasCycle() || ref.source == @:privateAccess view.state.path) ) {
+		if (ref != null && ref.hasCycle) {
 			parent.removeChild(ref);
 			hide.Ide.inst.quickError('Reference to $relative is creating a cycle. The reference creation was aborted.');
 			return null;
@@ -5779,8 +5800,13 @@ class SceneEditor {
 				function make(?sourcePath) {
 					var p = Type.createInstance(prefabInfo.prefabClass, [parent]);
 					//p.proto = new hrt.prefab.ProtoPrefab(p, sourcePath);
-					if(sourcePath != null)
-						p.source = sourcePath;
+					if(sourcePath != null) {
+						var ref = Std.downcast(p, hrt.prefab.Reference);
+						if (ref != null)
+							ref.editorInit(sourcePath);
+						else
+							p.source = sourcePath;
+					}
 					if( objectName != null)
 						p.name = objectName;
 					else

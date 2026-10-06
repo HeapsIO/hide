@@ -58,7 +58,7 @@ class Gradient extends Widget<hrt.impl.Gradient.GradientData> {
 	}
 
 	function getDefaultFallback() : hrt.impl.Gradient.GradientData {
-		return haxe.Json.parse(haxe.Json.stringify(hrt.impl.Gradient.getDefaultGradientData()));
+		return hrt.prefab.Diff.deepCopy(hrt.impl.Gradient.getDefaultGradientData());
 	}
 
 	function stringToValue(str:String) : Null<hrt.impl.Gradient.GradientData> {

@@ -11,12 +11,23 @@ enum EditMode {
 	Override;
 }
 
+/** A null prefab means the reference failed to load **/
+private typedef LoadedReference = {
+	prefab: Prefab,
+	version: Int,
+	#if (editor || editor_hl)
+	originalSource: Dynamic,
+	/** True if the loaded source, or a reference inside it, creates a reference cycle **/
+	hasCycle: Bool,
+	#end
+};
+
 @:prefabIcon(HuiRes.ui.icons.prefab.reference)
 class Reference extends Object3D {
 	/**
 		The referenced prefab loaded by this reference
 	**/
-	public var refInstance : Prefab;
+	public var refInstance(default, null) : Prefab;
 	var refInstanceVersion : Int = -1;
 
 	/**
@@ -25,47 +36,67 @@ class Reference extends Object3D {
 	@:s public var editMode : EditMode = None;
 
 	/**
-		List of all the properties that differs between this reference
-		and the original prefab data. Use the format defined by
-		hrt.prefab.Diff.diffPrefab
+		Holds the original override to apply when loading a reference from disk
 	**/
-	@:s public var overrides : Dynamic = null;
+	public var overrides : Dynamic = null;
 
+	#if (editor || editor_hl)
 	/**
 		Copy of the original data to use as a reference on save for overrides
 	**/
-	public var originalSource : Dynamic;
+	var originalSource : Dynamic;
 
-	#if (editor || editor_hl)
+	/**
+		True if this reference, or a reference inside its refInstance, creates a reference cycle.
+		The reference closing the cycle has a null refInstance.
+	**/
+	public var hasCycle(default, null) : Bool = false;
+
 	var wasMade : Bool = false;
+
+	/**
+		True once the refInstance load was attempted, either by load(), copy(), editorInit() or makeInstance()
+	**/
+	var refLoadAttempted : Bool = false;
 	#end
 
-	override function set_source(newSource:String):String {
-		if (newSource != source) {
-			resetRefInstance();
-		}
+	#if !(editor || editor_hl)
+	override function set_source(newSource: String) : String {
+		if (newSource != source)
+			refInstance = null;
 		return source = newSource;
 	}
+	#end
 
 	override function save() {
-		#if (editor || editor_hl)
-		if (editMode == Override && refInstance != null) {
-			this.overrides = computeDiffFromSource();
-		} else if (editMode == Edit && refInstance != null) {
-			this.overrides = null;
-		}
-		#end
-
 		var obj : Dynamic = super.save();
 
+		#if (editor || editor_hl)
+		if (editMode == Override) {
+			// don't loose overrides if refInstance failed to load
+			if (refInstance == null) {
+				obj.overrides = overrides;
+			} else {
+				var diff = computeDiffFromSource();
+				if (diff != null)
+					obj.overrides = diff;
+			}
+		}
+
+		// hide_hl saves the Edit mode references itself in its save process
 		#if editor
-		if( editMode == Edit && refInstance != null ) {
+		if( !shared.isTempSave() && editMode == Edit && refInstance != null ) {
 			var sheditor = Std.downcast(shared, hide.prefab.ContextShared);
 			if( sheditor.editor != null ) sheditor.editor.watchIgnoreChanges(source);
 
 			var s = refInstance.serialize();
 			sys.io.File.saveContent(hide.Ide.inst.getPath(source), hide.Ide.inst.toJSON(s));
 		}
+		#end
+
+		#else
+		if (overrides != null)
+			obj.overrides = overrides;
 		#end
 
 		return obj;
@@ -80,36 +111,76 @@ class Reference extends Object3D {
 		super.load(obj);
 
 		#if !(editor || editor_hl)
-		if (source != null && shouldBeInstanciated() && hxd.res.Loader.currentInstance?.exists(source)) {
+		overrides = obj.overrides;
+		if (source != null && hxd.res.Loader.currentInstance?.exists(source)) {
 			initRefInstance();
 		}
-		#end
+		#else
+		refLoadAttempted = true;
 
+		// Only set the refInstance if it's the initial editor load, otherwise refInstance must stay
+		// as either null or the already loaded refInstance
+		if (!shared.isTempLoad()) {
+			// References with overrides in their file are always in Override mode. Temporary loads (like undo/redo) keep
+			// the overrides and edit mode handled by the editor
+			overrides = obj.overrides;
+			if (overrides != null)
+				editMode = Override;
+
+			resolveInternal();
+		}
+		#end
 	}
+
+	#if (editor || editor_hl)
+	static function containsCycle(prefab: Prefab) : Bool {
+		return prefab?.findRec(Reference, (r) -> r.hasCycle) != null;
+	}
+
+	/**
+		Set the source of a newly created reference and load its refInstance.
+		Must only be used when creating a Reference, not to modify it after the fact : changes
+		to an existing reference source must go through the inspector so they can be undone.
+		Throws if the refInstance is already loaded.
+	**/
+	public function editorInit(source: String) {
+		if (refInstance != null)
+			throw 'editorInit called on ${getAbsPath()} which already has a refInstance';
+
+		this.source = source;
+		refLoadAttempted = true;
+		resolveInternal();
+	}
+	#end
 
 	override function copy(obj: Prefab) {
 		super.copy(obj);
 		var otherRef : Reference = cast obj;
 
 		#if (editor || editor_hl)
-		try {
-			originalSource = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
-		} catch (e) {
-
-		}
+		originalSource = otherRef.originalSource;
+		hasCycle = otherRef.hasCycle;
+		refLoadAttempted = otherRef.refLoadAttempted;
 		#end
+
+		overrides = otherRef.overrides;
 
 		// Clone the refInstance from the original prefab on copy
 		if (source != null && shouldBeInstanciated()) {
-			#if !editor_hl
-			var newVersion = try hxd.res.Loader.currentInstance.load(source).toPrefab().reloadedVersion catch(e) -1;
-			if (newVersion != otherRef.refInstanceVersion) {
-				otherRef.refInstance = null;
-				otherRef.initRefInstance();
+			#if !(editor || editor_hl || release)
+			// Reload from scratch the refInstance if the disk version is more recent
+			var loader = hxd.res.Loader.currentInstance;
+			if (Std.isOfType(loader.fs, hxd.fs.LocalFileSystem)) {
+				var newVersion = try loader.load(source).toPrefab().reloadedVersion catch(e) -1;
+				if (newVersion != otherRef.refInstanceVersion) {
+					otherRef.refInstance = null;
+					otherRef.initRefInstance();
+				}
 			}
 			#end
 
 			if (otherRef.refInstance != null) {
+				refInstanceVersion = otherRef.refInstanceVersion;
 				refInstance = otherRef.refInstance.clone(new ContextShared(source, null, null, true));
 			}
 			if (refInstance != null) {
@@ -132,6 +203,7 @@ class Reference extends Object3D {
 	#end
 
 	function computeDiffFromSource() : Dynamic {
+		#if (editor || editor_hl)
 		var orig = originalSource;
 		var ref = refInstance?.serialize() ?? null;
 		var diff = hrt.prefab.Diff.diffPrefab(orig, ref);
@@ -141,117 +213,209 @@ class Reference extends Object3D {
 			case Set(v):
 				return hrt.prefab.Diff.deepCopy(v);
 		}
-	}
-
-	function initRefInstance() {
-		var shouldLoad = refInstance == null && source != null;
-		shouldLoad = shouldLoad && shouldBeInstanciated();
-
-		#if (editor || editor_hl)
-		if (hasCycle())
-			shouldLoad = false;
+		#else
+		return null;
 		#end
-
-		if (shouldLoad) {
-			resolve();
-		}
 	}
 
-	@:deprecated("Use resolve() instead")
-	inline function resolveRef() : Prefab {
-		return resolve();
+	#if !(editor || editor_hl)
+	/**
+		Loads the refInstance if it need to be init for the make process
+	**/
+	function initRefInstance() {
+		if (!shouldBeInstanciated())
+			return;
+
+		resolve();
 	}
+	#end
 
 	/**
+		Try to resolve refInstance if it's not loaded.
 		Loads the prefab referenced by `source`, apply overrides to it if applicable and store it in refInstance and returns it.
+		If the prefab load process fails, refInstance is null
 	**/
 	public function resolve() : Prefab {
+		#if (editor || editor_hl)
+		// never try to load refInstance automatically if it's null in editor
+		return refInstance;
+		#else
+		if (source == null)
+			return null;
+
 		if (refInstance != null)
 			return refInstance;
 
-		if (shared.parentPrefab != null && editorOnly)
-			return null;
+		resolveInternal();
 
+		return refInstance;
+		#end
+	}
+
+	/**
+		Loads the prefab referenced by `source` with this reference editMode and overrides, and replace refInstance with it
+	**/
+	function resolveInternal() : Void {
+		inline applyLoadedReference(inline loadReference(source, editMode, overrides));
+	}
+
+	function loadReference(source: String, editMode: EditMode, overrides: Dynamic) : LoadedReference {
+		// Single struct declaration and single return, so it can be inlined in resolveInternal
+		var loaded : LoadedReference = { #if (editor || editor_hl) originalSource: null, hasCycle: false, #end prefab: null, version: -1 };
 		#if (editor || editor_hl)
 		try {
 		#end
-			var res = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab();
+			// Don't load editorOnly references if we are already inside a reference
+			// to avoid cyclic loops
+			var canLoad = shared.parentPrefab == null || !editorOnly;
 
 			#if (editor || editor_hl)
-			if (editMode == Override) {
-				originalSource = @:privateAccess res.loadData();
+			// Don't load a source that is already being loaded by one of our parents, to avoid infinite loops on cyclic references
+			var p : Prefab = this;
+			while (canLoad && source != null && p != null) {
+				if (p.shared.currentPath == source) {
+					loaded.hasCycle = true;
+					canLoad = false;
+				}
+				p = p.shared.parentPrefab;
 			}
 			#end
 
-			if (overrides != null) {
-				var refInstanceData = @:privateAccess res.loadData();
+			if (canLoad) {
+				var res = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab();
+				loaded.version = res.reloadedVersion;
 
-				// Diff.apply takes ownership of the diff. In game, each Reference has its own overrides object
-				// (prefabs are created from a deep copy of their data), but in editor the refInstance can be
-				// resolved again multiple times, so we need to keep overrides intact
-				var overridesToApply = overrides;
+				// parentPrefab must be set before the prefab is created, so the references inside it can detect cycles while loading
+				var sh = new ContextShared(source, null, null, true);
+				sh.parentPrefab = this;
+
 				#if (editor || editor_hl)
-				overridesToApply = hrt.prefab.Diff.deepCopy(overridesToApply);
+				// Keep the original data in editable modes, so overrides can be computed when moving between Edit and Override mode
+				// (moving from or to None always reloads the reference)
+				if (editMode != None)
+					loaded.originalSource = @:privateAccess res.loadData();
+
+				// Don't use the cached prefab in editor, as it can't have a parentPrefab
+				var useData = true;
+				#else
+				var useData = overrides != null;
 				#end
-				refInstanceData = hrt.prefab.Diff.apply(refInstanceData, overridesToApply);
-				refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
-			} else {
-				// Don't clone the refInstance if we are the original prefab
-				if (!shared.isInstance && false /**Temp disabled until we figure out how to manage how to handle the prefab api that uses followRef on cached prefabs**/) {
-					refInstance = res.load();
+
+				if (useData) {
+					var refInstanceData = @:privateAccess res.loadData();
+					if (overrides != null) {
+						// Diff.apply takes ownership of the diff, and the refInstance can be resolved again multiple times
+						// (e.g. when copy() reloads a newer version from disk), so we need to keep overrides intact
+						refInstanceData = hrt.prefab.Diff.apply(refInstanceData, hrt.prefab.Diff.deepCopy(overrides));
+					}
+					loaded.prefab = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, sh);
 				} else {
-					refInstance = res.load().clone();
+					// Don't clone the refInstance if we are the original prefab
+					// Temp disabled until we figure out how to manage how to handle the prefab api that uses followRef on cached prefabs
+					loaded.prefab = res.load().clone();
 				}
+
+				#if (editor || editor_hl)
+				loaded.hasCycle = containsCycle(loaded.prefab);
+				#end
 			}
-
-			refInstanceVersion = res.reloadedVersion;
-
-			refInstance.shared.parentPrefab = this;
-
 		#if (editor || editor_hl)
 		} catch (e) {
-			return null;
+			loaded.prefab = null;
+			loaded.originalSource = null;
 		}
 		#end
-
-		return refInstance;
+		return loaded;
 	}
+
+	/**
+		Replace the refInstance of this reference with `loaded`, removing the objects of the previous refInstance.
+		Must only be called while loading the reference or inside an undo/redo step
+	**/
+	function applyLoadedReference(loaded: LoadedReference) {
+		refInstance?.editorRemoveObjects();
+
+		refInstance = loaded.prefab;
+		refInstanceVersion = loaded.version;
+		#if (editor || editor_hl)
+		originalSource = loaded.originalSource;
+		hasCycle = loaded.hasCycle;
+		#end
+
+		if (refInstance != null)
+			refInstance.shared.parentPrefab = this;
+	}
+
+	/**
+		Return the current refInstance state of this reference, to be restored later with applyLoadedReference
+	**/
+	function getLoadedReference() : LoadedReference {
+		return { #if (editor || editor_hl) originalSource: originalSource, hasCycle: hasCycle, #end prefab: refInstance, version: refInstanceVersion };
+	}
+
+	#if (editor || editor_hl)
+	/**
+		Returns an undo action that replaces the refInstance with a copy of `sourceInstance`, the edited content of
+		the same source file (from another reference in Edit mode). In Override mode, the overrides of this reference are kept.
+		Must be recorded in an undo/redo step.
+	**/
+	public function editorSyncSourceAction(sourceInstance: Prefab) : (isUndo: Bool) -> Void {
+		var oldRef = getLoadedReference();
+
+		var sh = new ContextShared(source, null, null, true);
+		sh.parentPrefab = this;
+
+		// serialize() shares untyped fields (like `props`) with sourceInstance, deep copy them so its edits don't leak in
+		var serializedData = sourceInstance.serialize();
+		var data : Dynamic = hrt.prefab.Diff.deepCopy(serializedData);
+		var localOverrides = editMode == Override ? computeDiffFromSource() : null;
+		if (localOverrides != null)
+			data = hrt.prefab.Diff.apply(data, localOverrides);
+		var prefab = Prefab.createFromDynamic(data, null, sh);
+
+		var newRef : LoadedReference = {
+			originalSource: editMode != None ? hrt.prefab.Diff.deepCopy(serializedData) : null,
+			hasCycle: containsCycle(prefab),
+			prefab: prefab,
+			version: refInstanceVersion,
+		};
+
+		return (isUndo) -> applyLoadedReference(isUndo ? oldRef : newRef);
+	}
+	#end
 
 	override function makeInstance() {
 		if( source == null )
 			return;
 
-		#if editor_hl
-		if (hasCycle()) {
-			throw 'Cyclic reference';
-			return;
+		#if (editor || editor_hl)
+		// References created in code (source set manually) are not loaded through load()
+		if (!refLoadAttempted) {
+			refLoadAttempted = true;
+			resolveInternal();
 		}
+		#end
 
+		#if editor_hl
 		if (!hxd.res.Loader.currentInstance.exists(source)) {
 			throw 'Source prefab `${source}` does not exist';
-			return;
 		}
+
+		// refInstance is only loaded with the reference, a null refInstance means the reference is broken (cycle or load error)
+		if (refInstance == null) {
+			throw 'Source prefab `${source}` couldn\'t be loaded or creates a reference cycle';
+		}
+		#end
+
+		#if !(editor || editor_hl)
+		// Retro compatibility for references created in code, where source is set after the reference was created
+		initRefInstance();
 		#end
 
 		#if (editor || editor_hl)
 		// The refInstance is kept between makes in Edit/Override mode, the editor must remove its objects before remaking it
 		if (wasMade && refInstance != null)
 			throw 'Reference ${getAbsPath()} is made again but its refInstance objects were not removed by the editor';
-		#end
-
-		// in the case source has changed since the last load (can happen when creating references manually)
-		if (refInstance?.shared.currentPath != source) {
-			initRefInstance();
-			if (refInstance == null)
-				return;
-			refInstance = refInstance.clone();
-		}
-		#if editor
-		if (hasCycle()) {
-			hide.Ide.inst.quickError('Reference ${getAbsPath()} to $source is creating a cycle. Please fix the reference.');
-			refInstance = null;
-			return;
-		}
 		#end
 
 		var refLocal3d : h3d.scene.Object = null;
@@ -295,23 +459,6 @@ class Reference extends Object3D {
 		#if (editor || editor_hl)
 		wasMade = true;
 		#end
-	}
-
-	override function editorRemoveInstanceObjects() {
-		super.editorRemoveInstanceObjects();
-
-		// Keep the refInstance when it can be edited, so unsaved changes are not lost on rebuild
-		if (editMode != None)
-			return;
-
-		// Clean cache to force proper ref reloading
-		@:privateAccess if (source != null) {
-			var cachedPrefab = Std.downcast(hxd.res.Loader.currentInstance.cache.get(source), hrt.prefab.Resource);
-			if (cachedPrefab != null) {
-				cachedPrefab.prefab = null;
-			}
-		}
-		refInstance = null;
 	}
 
 	#if (editor || editor_hl)
@@ -363,70 +510,114 @@ class Reference extends Object3D {
 			refInstance.dispose();
 	}
 
-	function resetRefInstance() {
-		#if (editor || editor_hl)
-		editorRemoveObjects();
-		#end
-
-		refInstance = null;
-	}
-
 	override function edit2(ctx: hrt.prefab.EditContext2) {
 
 		ctx.build(
 			<category("Reference")>
-				<file type="prefab" field={source} id="fileSource"/>
-				<select field={editMode} id="editModeSelect"/>
-				<text("Warning : Edit mode enabled while there are override on this reference. Saving will cause the overrides to be applied to the original reference !") if(overrides != null && editMode == Edit)/>
+				<file type="prefab" field={source} id="fileSource" no-undo/>
+				<select field={editMode} id="editModeSelect" no-undo default-value={None}/>
+				<text("Warning : This reference loading failed") if(refInstance == null && !ctx.root.isMultiEdit)/>
 			</category>
 		);
 
-		var oldSource = source;
-
-		fileSource.onValueChange = (_) -> {
-			if(this.name == new haxe.io.Path(oldSource).file){
-				this.name = new haxe.io.Path(source).file;
-				ctx.rebuildTree(this);
-				oldSource = source;
-			}
-			ctx.rebuildPrefab(this);
-		}
-
-		editModeSelect.onValueChange = (_) -> {
-			ctx.rebuildPrefab(this);
-			ctx.rebuildTree(this);
+		// Shows an error and returns true if `newRef` failed to load `source` or creates a reference cycle
+		function checkRefErrors(newRef: LoadedReference, source: String, message: String) : Bool {
+			var hasCycle = #if (editor || editor_hl) newRef.hasCycle #else false #end;
+			if (!hasCycle && (newRef.prefab != null || source == null))
+				return false;
+			ctx.quickError(hasCycle ? 'Couldn\'t load $source, this create a reference cycle' : message);
 			ctx.rebuildInspector();
+			return true;
 		}
 
-		super.edit2(ctx);
-
-		var hasOverrides = computeDiffFromSource() != null;
-
-		ctx.build(
-			<category("Overrides")>
-				<text(hasOverrides ? "This reference has overrides" : "No Overrides")/>
-				<button("Clear Overrides") id="btnClearOverrides" disabled={!hasOverrides}/>
-			</category>
-		);
-
-		// The kit undo only saves/loads the reference data, which doesn't restore the refInstance, so we record our own undo
-		btnClearOverrides.noUndo = true;
-		btnClearOverrides.onClick = () -> {
-			var oldRef = refInstance;
-			var oldOverrides = overrides;
-			overrides = null;
-			refInstance = null;
-			var newRef = resolve();
-
+		// Replaces refInstance with `newRef` and applies `setFields`, as an undoable change
+		function recordRefChange(newRef: LoadedReference, setFields: (isUndo: Bool) -> Void) {
+			var oldRef = getLoadedReference();
 			function exec(isUndo: Bool) {
-				refInstance = isUndo ? oldRef : newRef;
-				overrides = isUndo ? oldOverrides : null;
+				setFields(isUndo);
+				applyLoadedReference(isUndo ? oldRef : newRef);
 				ctx.rebuildPrefab(this);
 				ctx.rebuildInspector();
 			}
 			exec(false);
-			ctx.recordUndo(exec);
-		};
+			ctx.recordUndo(exec, [this]);
+		}
+
+		@:privateAccess fileSource.onFieldChange = (_) -> {
+
+			var oldSource = source;
+			var newSource = fileSource.value;
+
+			var oldName = this.name;
+			var newName = this.name;
+			if(oldName == new haxe.io.Path(oldSource).file){
+				newName = new haxe.io.Path(newSource).file;
+			}
+
+			var newRef = loadReference(newSource, editMode, null);
+
+			// Todo : prompt the user that changing the source will loose the edits/overrides in place
+
+			if (checkRefErrors(newRef, newSource, 'Couldn\'t load $newSource, source is not changed'))
+				return;
+
+			recordRefChange(newRef, (isUndo) -> {
+				if (oldName != newName) {
+					this.name = isUndo ? oldName : newName;
+					ctx.rebuildTree(this);
+				}
+				source = isUndo ? oldSource : newSource;
+			});
+		}
+
+		@:privateAccess editModeSelect.onFieldChange = (_) -> {
+			var oldEditMode = editMode;
+			var newEditMode = editModeSelect.value;
+
+			var oldOverrides = overrides;
+			// Overrides are lost when moving to None mode
+			var newOverrides = newEditMode == None ? null : overrides;
+			// Keep overrides if we move between Edit mode and Override Mode
+			var reload = oldEditMode == None || newEditMode == None;
+			var newRef = reload ? loadReference(source, newEditMode, null) : getLoadedReference();
+
+			// Todo : when moving to None, alert user that changes / overrides will be lost
+			// but we need an api in ctx to prompt the user for a choice
+
+			if (reload && checkRefErrors(newRef, source, 'Couldn\'t load $source from disk, aborting edit mode changes'))
+				return;
+
+			recordRefChange(newRef, (isUndo) -> {
+				editMode = isUndo ? oldEditMode : newEditMode;
+				overrides = isUndo ? oldOverrides : newOverrides;
+				ctx.rebuildTree(this);
+			});
+		}
+
+		super.edit2(ctx);
+
+		if (editMode == Override) {
+			var hasOverrides = computeDiffFromSource() != null;
+
+			ctx.build(
+				<category("Overrides")>
+					<text(hasOverrides ? "This reference has overrides" : "No Overrides")/>
+					<button("Clear Overrides") id="btnClearOverrides" disabled={!hasOverrides}/>
+				</category>
+			);
+
+			// The kit undo only saves/loads the reference data, which doesn't restore the refInstance, so we record our own undo
+			btnClearOverrides.noUndo = true;
+			btnClearOverrides.onClick = () -> {
+				var oldOverrides = overrides;
+				var newRef = loadReference(source, editMode, null);
+
+				if (checkRefErrors(newRef, source, 'Couldn\'t reload $source from disk, aborting override changes'))
+					return;
+
+				recordRefChange(newRef, (isUndo) -> overrides = isUndo ? oldOverrides : null);
+			};
+		}
 
 	}
 
@@ -436,43 +627,6 @@ class Reference extends Object3D {
 		return super.makeInteractive();
 	}
 
-	/**
-		Returns true if this reference has a cycle,
-		meaning that references depends on each other
-	**/
-	public function hasCycle() : Bool {
-
-		function rec(prefab: Prefab, seenPaths: Map<String, Bool>) : Bool {
-			if (prefab == null)
-				return false;
-
-			var ref = Std.downcast(prefab, Reference);
-			if (ref != null && ref.source != null && ref.shouldBeInstanciated() && !ref.editorOnly) {
-				if (seenPaths.get(ref.source) == true) {
-					return true;
-				}
-
-				var copy = seenPaths.copy();
-				copy.set(ref.source, true);
-				if (rec(ref.resolve(), copy))
-					return true;
-			}
-			for (child in prefab.children) {
-				if(rec(child, seenPaths))
-					return true;
-			}
-
-			return false;
-		}
-
-		var baseMap = new Map();
-		if (this.shared.currentPath != null) {
-			baseMap.set(this.shared.currentPath, true);
-		}
-		return rec(this, baseMap);
-	}
-
-
 	#if editor
 
 	override function setEditorChildren(sceneEditor:hide.comp.SceneEditor, scene: hide.comp.Scene) {
@@ -481,133 +635,6 @@ class Reference extends Object3D {
 		if (refInstance != null) {
 			refInstance.setEditor(sceneEditor, scene);
 		}
-	}
-
-	/**
-		Updates the original reference data to be equal to `data`.
-		If the ref is an override, the override will be kept as is
-	**/
-	function setRef(data: Dynamic) {
-		if (data == null)
-			throw "Null data";
-
-		if (refInstance == null)
-			return;
-
-		var currentSerialization = refInstance.serialize();
-		var pristineData = hrt.prefab.Diff.deepCopy(data);
-
-		// we might have unsaved changes
-		if (editMode == Override) {
-			switch(hrt.prefab.Diff.diffPrefab(originalSource, currentSerialization)) {
-				case Skip:
-				case Set(diff):
-					pristineData = hrt.prefab.Diff.apply(pristineData, diff);
-			}
-		}
-		else if (overrides != null) {
-			pristineData = hrt.prefab.Diff.apply(pristineData, hrt.prefab.Diff.deepCopy(overrides));
-		}
-
-		originalSource = hrt.prefab.Diff.deepCopy(data);
-
-		refInstance = Prefab.createFromDynamic(pristineData, new ContextShared(source, true));
-		refInstance.shared.parentPrefab = this;
-	}
-
-	override function edit( ctx : hide.prefab.EditContext ) {
-		var element = new hide.Element('
-			<div class="group" name="Reference">
-			<dl>
-				<dt>Reference</dt><dd><input type="fileselect" extensions="prefab l3d fx" field="source"/></dd>
-				<dt>Edit</dt><dd><select field="editMode" class="monSelector"></select></dd>
-				<p class="warning">Warning : Edit mode enabled while there are override on this reference. Saving will cause the overrides to be applied to the original reference !</p>
-			</dl>
-			</div>');
-
-
-		var warning = element.find(".warning");
-
-		function updateProps() {
-			var input = element.find("input");
-			var found = resolve() != null;
-			input.toggleClass("error", !found);
-			warning.toggle(overrides != null && editMode == Edit);
-		}
-		updateProps();
-
-		var oldSource = source;
-
-		var props = ctx.properties.add(element, this, function(pname) {
-			ctx.onChange(this, pname);
-			if(pname == "source" || pname == "editMode") {
-				var oldRefInst = refInstance;
-				refInstance = null; // force resolve to return the new referenced prefab for hasCycle();
-				var cycle = hasCycle();
-				refInstance = oldRefInst;
-
-				if (cycle) {
-					hide.Ide.inst.quickError('Reference to $source would create a cycle. The reference change was aborted.');
-					source = null;
-					ctx.rebuildProperties();
-					return;
-				}
-				updateProps();
-				if(!ctx.properties.isTempChange) {
-					if (pname == "source") {
-						if(this.name == new haxe.io.Path(oldSource).file){
-							this.name = new haxe.io.Path(source).file;
-							ctx.refreshTree();
-						}
-						ctx.rebuildPrefab(this);
-					}
-					else {
-						ctx.rebuildPrefab(this);
-						ctx.refreshTree();
-					}
-				}
-			}
-		});
-
-		super.edit(ctx);
-
-		var over = new hide.Element('
-			<div class="group" name="Overrides">
-				<p class="override-infos"></p>
-				<dl style="height: 100px;">
-					<dt></dt><dd><fancy-button><span class="label">Clear Overrides</span></fancy-button></dd>
-				</dl>
-			</div>
-		');
-
-		var overInfos = over.find(".override-infos");
-		function refreshOverrideInfos() {
-			if (computeDiffFromSource() == null) {
-				overInfos.text("No overrides");
-			}
-			else {
-				overInfos.text("This reference has overrides");
-			}
-		}
-		refreshOverrideInfos();
-
-		over.find("fancy-button").click((_) -> {
-			var old = overrides;
-			this.overrides = null;
-			var refresh = () -> {
-				if (originalSource != null) {
-					@:privateAccess shared.editor.removeInstance(refInstance, false);
-					originalSource = null;
-					refInstance = null;
-					ctx.rebuildPrefab(this);
-					refreshOverrideInfos();
-				}
-			};
-			@:privateAccess ctx.properties.undo.change(Field(this, "overrides", old), refresh);
-			refresh();
-			ctx.rebuildPrefab(this);
-		});
-		ctx.properties.add(over);
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {

@@ -643,7 +643,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		}
 		currentRenderProps = new hrt.prefab.Reference(null, new hide.prefab.ContextShared(null, new h3d.scene.Object(s3d)));
 		currentRenderProps.shared.scene = this;
-		currentRenderProps.source = path;
+		currentRenderProps.editorInit(path);
 
 		currentRenderProps.make();
 

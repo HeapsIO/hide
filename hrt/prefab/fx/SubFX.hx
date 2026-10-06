@@ -85,30 +85,15 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
 		ctx.build(
 			<category("Event")>
-				<slider field={time}/>
+				<slider field={time} defaultValue={0.0}/>
 				<checkbox field={loop}/>
-				<slider field={speed}/>
+				<slider field={speed} min={0.01} defaultValue={1.0}/>
 			</category>
 		);
 		super.edit2(ctx);
 	}
 
 	#if editor
-
-	override function edit( ctx : hide.prefab.EditContext ) {
-		var props = ctx.properties.add(new hide.Element('
-			<div class="group" name="Event">
-				<dl>
-					<dt>Time</dt><dd><input type="number" value="0" field="time"/></dd>
-					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
-					<dt>Speed</dt><dd><input type="number" value="1" min="0.01" field="speed"/></dd>
-				</dl>
-			</div>
-		'),this, function(pname) {
-			ctx.onChange(this, pname);
-		});
-		super.edit(ctx);
-	}
 
 	public function getDisplayInfo(ctx:hide.prefab.EditContext) {
 		var ref = Std.downcast(resolve(), FX);

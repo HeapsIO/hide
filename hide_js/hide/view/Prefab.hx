@@ -614,7 +614,7 @@ class Prefab extends hide.view.FileView {
 			}
 
 
-			var data = data.children[0].serialize();
+			var data = data.children[0].editorDiscSerialize();
 
 
 			@:privateAccess hide.view.RemoteConsoleView.rcmd?.sendCommand("remotePrefab", {kind: hrt.impl.RemoteConsole.RemotePrefabActionKind.Update, data: data, id: (state:Dynamic).remoteId}, (result: {data: String}) -> {
@@ -629,13 +629,12 @@ class Prefab extends hide.view.FileView {
 		}
 
 		// Save render props
-		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
-			sceneEditor.renderPropsRoot.save();
+		sceneEditor.saveRenderProps();
 
 		var backup = [];
 		cleanupPrefabCdb(data, backup);
 
-		@:privateAccess var content = ide.toJSON(data.serialize());
+		@:privateAccess var content = ide.toJSON(data.editorDiscSerialize());
 
 		hide.comp.cdb.Editor.restoreOptionals(backup);
 
