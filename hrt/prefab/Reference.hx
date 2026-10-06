@@ -273,27 +273,27 @@ class Reference extends Object3D {
 				loaded.originalSource = @:privateAccess res.loadData();
 
 			// Don't use the cached prefab in editor, as it can't have a parentPrefab
-			var refInstanceData = @:privateAccess res.loadData();
-			if (overrides != null) {
-				// Diff.apply takes ownership of the diff, and the refInstance can be resolved again multiple times
-				// so we need to keep overrides intact
-				refInstanceData = hrt.prefab.Diff.apply(refInstanceData, hrt.prefab.Diff.deepCopy(overrides));
-			}
-			loaded.prefab = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, sh);
-			loaded.hasCycle = containsCycle(loaded.prefab);
+			var useData = true;
 			#else
-			if (overrides != null) {
-				var refInstanceData = @:privateAccess res.loadData();
+			var useData = overrides != null;
+			#end
 
-				// Diff.apply takes ownership of the diff, and the refInstance can be resolved again multiple times
-				// (e.g. when copy() reloads a newer version from disk), so we need to keep overrides intact
-				refInstanceData = hrt.prefab.Diff.apply(refInstanceData, hrt.prefab.Diff.deepCopy(overrides));
+			if (useData) {
+				var refInstanceData = @:privateAccess res.loadData();
+				if (overrides != null) {
+					// Diff.apply takes ownership of the diff, and the refInstance can be resolved again multiple times
+					// (e.g. when copy() reloads a newer version from disk), so we need to keep overrides intact
+					refInstanceData = hrt.prefab.Diff.apply(refInstanceData, hrt.prefab.Diff.deepCopy(overrides));
+				}
 				loaded.prefab = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, sh);
 			} else {
 				// Don't clone the refInstance if we are the original prefab
 				// Temp disabled until we figure out how to manage how to handle the prefab api that uses followRef on cached prefabs
 				loaded.prefab = res.load().clone();
 			}
+
+			#if (editor || editor_hl)
+			loaded.hasCycle = containsCycle(loaded.prefab);
 			#end
 
 			return loaded;
