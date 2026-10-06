@@ -53,6 +53,19 @@ class Reference extends Object3D {
 	public var hasCycle(default, null) : Bool = false;
 
 	var wasMade : Bool = false;
+
+	/**
+		True once the refInstance load was attempted, either by load(), copy(), editorInit() or makeInstance()
+	**/
+	var refLoadAttempted : Bool = false;
+	#end
+
+	#if !(editor || editor_hl)
+	override function set_source(newSource: String) : String {
+		if (newSource != source)
+			refInstance = null;
+		return source = newSource;
+	}
 	#end
 
 	override function save() {
@@ -103,6 +116,7 @@ class Reference extends Object3D {
 			initRefInstance();
 		}
 		#else
+		refLoadAttempted = true;
 
 		// Only set the refInstance if it's the initial editor load, otherwise refInstance must stay
 		// as either null or the already loaded refInstance
@@ -134,6 +148,7 @@ class Reference extends Object3D {
 			throw 'editorInit called on ${getAbsPath()} which already has a refInstance';
 
 		this.source = source;
+		refLoadAttempted = true;
 		resolveInternal();
 	}
 	#end
@@ -145,6 +160,7 @@ class Reference extends Object3D {
 		#if (editor || editor_hl)
 		originalSource = otherRef.originalSource;
 		hasCycle = otherRef.hasCycle;
+		refLoadAttempted = otherRef.refLoadAttempted;
 		#end
 
 		overrides = otherRef.overrides;
@@ -371,6 +387,14 @@ class Reference extends Object3D {
 	override function makeInstance() {
 		if( source == null )
 			return;
+
+		#if (editor || editor_hl)
+		// References created in code (source set manually) are not loaded through load()
+		if (!refLoadAttempted) {
+			refLoadAttempted = true;
+			resolveInternal();
+		}
+		#end
 
 		#if editor_hl
 		if (!hxd.res.Loader.currentInstance.exists(source)) {
