@@ -502,6 +502,19 @@ class Reference extends Object3D {
 			return true;
 		}
 
+		// Replaces refInstance with `newRef` and applies `setFields`, as an undoable change
+		function recordRefChange(newRef: LoadedReference, setFields: (isUndo: Bool) -> Void) {
+			var oldRef = getLoadedReference();
+			function exec(isUndo: Bool) {
+				setFields(isUndo);
+				applyLoadedReference(isUndo ? oldRef : newRef);
+				ctx.rebuildPrefab(this);
+				ctx.rebuildInspector();
+			}
+			exec(false);
+			ctx.recordUndo(exec, [this]);
+		}
+
 		@:privateAccess fileSource.onFieldChange = (_) -> {
 
 			var oldSource = source;
@@ -513,7 +526,6 @@ class Reference extends Object3D {
 				newName = new haxe.io.Path(newSource).file;
 			}
 
-			var oldRef = getLoadedReference();
 			var newRef = loadReference(newSource, editMode, null);
 
 			// Todo : prompt the user that changing the source will loose the edits/overrides in place
@@ -521,49 +533,37 @@ class Reference extends Object3D {
 			if (checkRefErrors(newRef, newSource, 'Couldn\'t load $newSource, source is not changed'))
 				return;
 
-			function exec(isUndo) {
+			recordRefChange(newRef, (isUndo) -> {
 				if (oldName != newName) {
 					this.name = isUndo ? oldName : newName;
 					ctx.rebuildTree(this);
 				}
 				source = isUndo ? oldSource : newSource;
-				applyLoadedReference(isUndo ? oldRef : newRef);
-				ctx.rebuildPrefab(this);
-				ctx.rebuildInspector();
-			};
-			exec(false);
-			ctx.recordUndo(exec, [this]);
+			});
 		}
 
 		@:privateAccess editModeSelect.onFieldChange = (_) -> {
-			var oldRef = getLoadedReference();
 			var oldEditMode = editMode;
 			var newEditMode = editModeSelect.value;
 
 			var oldOverrides = overrides;
 			// Overrides are lost when moving to None mode
 			var newOverrides = newEditMode == None ? null : overrides;
-			var newRef = oldRef;
 			// Keep overrides if we move between Edit mode and Override Mode
-			if (oldEditMode  == None || newEditMode == None)
-				newRef = loadReference(source, newEditMode, null);
+			var reload = oldEditMode == None || newEditMode == None;
+			var newRef = reload ? loadReference(source, newEditMode, null) : getLoadedReference();
 
 			// Todo : when moving to None, alert user that changes / overrides will be lost
 			// but we need an api in ctx to prompt the user for a choice
 
-			if (newRef != oldRef && checkRefErrors(newRef, source, 'Couldn\'t load $source from disk, aborting edit mode changes'))
+			if (reload && checkRefErrors(newRef, source, 'Couldn\'t load $source from disk, aborting edit mode changes'))
 				return;
 
-			function exec(isUndo) {
+			recordRefChange(newRef, (isUndo) -> {
 				editMode = isUndo ? oldEditMode : newEditMode;
 				overrides = isUndo ? oldOverrides : newOverrides;
-				applyLoadedReference(isUndo ? oldRef : newRef);
-				ctx.rebuildPrefab(this);
 				ctx.rebuildTree(this);
-				ctx.rebuildInspector();
-			};
-			exec(false);
-			ctx.recordUndo(exec, [this]);
+			});
 		}
 
 		super.edit2(ctx);
@@ -581,21 +581,13 @@ class Reference extends Object3D {
 			// The kit undo only saves/loads the reference data, which doesn't restore the refInstance, so we record our own undo
 			btnClearOverrides.noUndo = true;
 			btnClearOverrides.onClick = () -> {
-				var oldRef = getLoadedReference();
 				var oldOverrides = overrides;
 				var newRef = loadReference(source, editMode, null);
 
 				if (checkRefErrors(newRef, source, 'Couldn\'t reload $source from disk, aborting override changes'))
 					return;
 
-				function exec(isUndo: Bool) {
-					applyLoadedReference(isUndo ? oldRef : newRef);
-					overrides = isUndo ? oldOverrides : null;
-					ctx.rebuildPrefab(this);
-					ctx.rebuildInspector();
-				}
-				exec(false);
-				ctx.recordUndo(exec, [this]);
+				recordRefChange(newRef, (isUndo) -> overrides = isUndo ? oldOverrides : null);
 			};
 		}
 
