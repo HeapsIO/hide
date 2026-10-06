@@ -1890,7 +1890,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		var isMultiEdit = prefabs.length > 1;
 		var editPrefab : hrt.prefab.Prefab = if (isMultiEdit) {
-			var data = haxe.Json.parse(haxe.Json.stringify(prefabs[0].save()));
+			var data = hrt.prefab.Diff.deepCopy(prefabs[0].save());
 			var p = Type.createInstance(commonClass, [null, new hrt.prefab.ContextShared(prefabs[0].shared.currentPath)]);
 			p.editorTempLoad(data);
 			p;

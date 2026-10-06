@@ -133,7 +133,7 @@ class RenderProps extends Object3D {
 		var props = getProps(renderer);
 		var needSet = false;
 		if( props == null ) {
-			props = haxe.Json.parse(haxe.Json.stringify(renderer.props));
+			props = hrt.prefab.Diff.deepCopy(renderer.props);
 			needSet = true;
 		}
 

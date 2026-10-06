@@ -183,7 +183,7 @@ abstract class Widget<ValueType> extends Element {
 					case TEnum(_):
 						childInput.value = value;
 					default:
-						childInput.value = haxe.Json.parse(haxe.Json.stringify(value));
+						childInput.value = hrt.prefab.Diff.deepCopy(value);
 				}
 
 				childInput.onFieldChange(isTemporaryEdit);
