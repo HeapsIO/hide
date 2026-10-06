@@ -134,9 +134,22 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function chooseProject() {
-		hxd.File.browse((select) -> {
-			setProject(select.fileName);
-		}, {isFolder: true});
+		chooseFileAsync({isFolder: true}, (path) -> {
+			if (path != null)
+				setProject(path);
+		});
+	}
+
+	/**
+		Opens a file or folder dialog without blocking the main loop.
+		`onSelect` is called on the main thread with the chosen path, or `null` if the dialog was cancelled.
+	**/
+	public function chooseFileAsync(opts: hl.UI.FileOptions, onSelect: Null<String> -> Void, save = false) {
+		var events = sys.thread.Thread.current().events;
+		sys.thread.Thread.create(() -> {
+			var path = save ? hl.UI.saveFile(opts) : hl.UI.loadFile(opts);
+			events.run(() -> onSelect(path));
+		});
 	}
 
 	override function setProject(dir:String) {
