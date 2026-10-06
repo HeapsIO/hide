@@ -93,14 +93,6 @@ class Reference extends Object3D {
 
 		super.load(obj);
 
-		// References with overrides in their file are always in Override mode. Temporary loads (like undo/redo) keep
-		// the overrides and edit mode handled by the editor
-		if (!shared.isTempLoad()) {
-			overrides = obj.overrides;
-			if (overrides != null)
-				editMode = Override;
-		}
-
 		#if !(editor ||editor_hl)
 		if (source != null && hxd.res.Loader.currentInstance?.exists(source)) {
 			initRefInstance();
@@ -110,6 +102,12 @@ class Reference extends Object3D {
 		// Only set the refInstance if it's the initial editor load, otherwise refInstance must stay
 		// as either null or the already loaded refInstance
 		if (!shared.isTempLoad()) {
+			// References with overrides in their file are always in Override mode. Temporary loads (like undo/redo) keep
+			// the overrides and edit mode handled by the editor
+			overrides = obj.overrides;
+			if (overrides != null)
+				editMode = Override;
+
 			setRefInstance(loadReference(source, editMode, overrides));
 		}
 		#end
@@ -350,10 +348,11 @@ class Reference extends Object3D {
 		// serialize() shares untyped fields (like `props`) with sourceInstance, deep copy them so
 		// edits of sourceInstance don't leak into our originalSource and refInstance
 		// the edited content will be the content of the file once saved
+		var serializedData = sourceInstance.serialize();
 		if (editMode != None)
-			newRef.originalSource = hrt.prefab.Diff.deepCopy(sourceInstance.serialize());
+			newRef.originalSource = hrt.prefab.Diff.deepCopy(serializedData);
 
-		var data : Dynamic = hrt.prefab.Diff.deepCopy(sourceInstance.serialize());
+		var data : Dynamic = hrt.prefab.Diff.deepCopy(serializedData);
 		var localOverrides = editMode == Override ? computeDiffFromSource() : null;
 		if (localOverrides != null)
 			data = hrt.prefab.Diff.apply(data, localOverrides);
@@ -492,6 +491,16 @@ class Reference extends Object3D {
 			</category>
 		);
 
+		// Shows an error and returns true if `newRef` failed to load `source` or creates a reference cycle
+		function checkRefErrors(newRef: LoadedReference, source: String, message: String) : Bool {
+			var hasCycle = #if (editor || editor_hl) newRef?.hasCycle == true #else false #end;
+			if (!hasCycle && (newRef != null || source == null))
+				return false;
+			ctx.quickError(hasCycle ? 'Couldn\'t load $source, this create a reference cycle' : message);
+			ctx.rebuildInspector();
+			return true;
+		}
+
 		@:privateAccess fileSource.onFieldChange = (_) -> {
 
 			var oldSource = source;
@@ -508,19 +517,8 @@ class Reference extends Object3D {
 
 			// Todo : prompt the user that changing the source will loose the edits/overrides in place
 
-			#if (editor || editor_hl)
-			if (newRef?.hasCycle == true) {
-				ctx.quickError('Couldn\'t load $newSource, this create a reference cycle');
-				ctx.rebuildInspector();
+			if (checkRefErrors(newRef, newSource, 'Couldn\'t load $newSource, source is not changed'))
 				return;
-			}
-			#end
-
-			if (newRef == null && newSource != null) {
-				ctx.quickError('Couldn\'t load $newSource, source is not changed');
-				ctx.rebuildInspector();
-				return;
-			}
 
 			function exec(isUndo) {
 				if (oldName != newName) {
@@ -552,11 +550,8 @@ class Reference extends Object3D {
 			// Todo : when moving to None, alert user that changes / overrides will be lost
 			// but we need an api in ctx to prompt the user for a choice
 
-			if (newRef == null && source != null) {
-				ctx.quickError('Couldn\'t load $source from disk, aborting edit mode changes');
-				ctx.rebuildInspector();
+			if (checkRefErrors(newRef, source, 'Couldn\'t load $source from disk, aborting edit mode changes'))
 				return;
-			}
 
 			function exec(isUndo) {
 				editMode = isUndo ? oldEditMode : newEditMode;
@@ -589,11 +584,8 @@ class Reference extends Object3D {
 				var oldOverrides = overrides;
 				var newRef = loadReference(source, editMode, null);
 
-				if (newRef == null && source != null) {
-					ctx.quickError('Couldn\'t reload $source from disk, aborting override changes');
-					ctx.rebuildInspector();
+				if (checkRefErrors(newRef, source, 'Couldn\'t reload $source from disk, aborting override changes'))
 					return;
-				}
 
 				function exec(isUndo: Bool) {
 					setRefInstance(isUndo ? oldRef : newRef);
