@@ -4067,20 +4067,12 @@ class SceneEditor {
 					return cl;
 				}
 
-				function isSameOrSubClass(cl: Class<Dynamic>, parent: Class<Dynamic>) : Bool {
-					while (cl != null) {
-						if (cl == parent)
-							return true;
-						cl = Type.getSuperClass(cl);
-					}
-					return false;
-				}
-
 				var edit2Class = getDefiningClass(commonClass, "edit2");
 				var editClass = getDefiningClass(commonClass, "edit");
 
 				// edit2 is at least as specific as edit : the new inspector covers everything the old one shows
-				var hasNewInspector = edit2Class != hrt.prefab.Prefab && isSameOrSubClass(edit2Class, editClass);
+				// (an instance of edit2Class is an editClass when edit2Class is editClass or one of its subclasses)
+				var hasNewInspector = edit2Class != hrt.prefab.Prefab && Std.isOfType(Type.createEmptyInstance(edit2Class), editClass);
 
 				// edit() was dropped in favor of edit2() somewhere in the hierarchy : the old inspector would be incomplete
 				var forceNewInspector = hasNewInspector && edit2Class != editClass;
