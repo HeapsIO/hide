@@ -81,6 +81,9 @@ class Reference extends Object3D {
 		}
 		#end
 
+		#else
+		if (overrides != null)
+			obj.overrides = overrides;
 		#end
 
 		return obj;
@@ -95,6 +98,7 @@ class Reference extends Object3D {
 		super.load(obj);
 
 		#if !(editor || editor_hl)
+		overrides = obj.overrides;
 		if (source != null && hxd.res.Loader.currentInstance?.exists(source)) {
 			initRefInstance();
 		}
