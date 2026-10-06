@@ -2260,8 +2260,11 @@ class Prefab extends HuiView<{path: String}> {
 	/** Returns true if prefab is part of the edited prefab or of the render profile, following references **/
 	function isEditorPrefab(prefab: hrt.prefab.Prefab) : Bool {
 		function getRoot(p: hrt.prefab.Prefab) {
-			while ((p.parent ?? p.shared.parentPrefab) != null)
-				p = p.parent ?? p.shared.parentPrefab;
+			var parent = p.parent ?? p.shared.parentPrefab;
+			while (parent != null) {
+				p = parent;
+				parent = p.parent ?? p.shared.parentPrefab;
+			}
 			return p;
 		}
 		var root = getRoot(prefab);
