@@ -291,10 +291,8 @@ class Prefab extends HuiView<{path: String}> {
 					}
 
 					var ref = createRefFromPath(path, parent);
-					if (Std.downcast(ref, hrt.prefab.Reference)?.hasCycle == true) {
-						Ide.showError('Reference to "$path" is creating a cycle. The reference creation was aborted.');
+					if (ref == null)
 						return;
-					}
 					ref.name = new haxe.io.Path(path).file;
 
 					ref.setTransform(parent.to(hrt.prefab.Object3D)?.getRelativeTransform(null, null, false) ?? h3d.Matrix.I());
@@ -643,7 +641,8 @@ class Prefab extends HuiView<{path: String}> {
 		return file;
 	}
 
-	function createRefFromPath(path: String, parent: hrt.prefab.Prefab) : hrt.prefab.Object3D {
+	/** Returns null and shows an error if the reference creates a cycle or fails to load **/
+	function createRefFromPath(path: String, parent: hrt.prefab.Prefab) : Null<hrt.prefab.Object3D> {
 		var prefab : hrt.prefab.Object3D;
 		if (StringTools.endsWith(path, ".fbx")) {
 			prefab = new hrt.prefab.Model(null, new hrt.prefab.ContextShared());
@@ -661,6 +660,10 @@ class Prefab extends HuiView<{path: String}> {
 			ref = new hrt.prefab.Reference(null, shared);
 		}
 		ref.editorInit(path);
+		if (ref.hasCycle || ref.refInstance == null) {
+			Ide.showError('Can\'t create reference to "$path" : ' + (ref.hasCycle ? "It would create a cycle" : "The prefab has an error"));
+			return null;
+		}
 		return ref;
 	}
 
@@ -690,20 +693,9 @@ class Prefab extends HuiView<{path: String}> {
 
 		if (previewDrag == null) {
 			previewDrag = createRefFromPath(path, this.prefab);
-			var previewRef = Std.downcast(previewDrag, hrt.prefab.Reference);
-			if (previewRef != null) {
-				if (previewRef.hasCycle) {
-					Ide.showError("Can't create reference : It would create a cycle");
-					previewDragFailed = true;
-					previewDrag = null;
-					return;
-				}
-				if (previewRef.refInstance == null) {
-					Ide.showError("Can't create reference : The prefab has an error");
-					previewDragFailed = true;
-					previewDrag = null;
-					return;
-				}
+			if (previewDrag == null) {
+				previewDragFailed = true;
+				return;
 			}
 			tryMake(previewDrag);
 		}
@@ -769,10 +761,8 @@ class Prefab extends HuiView<{path: String}> {
 
 		var parent = this.prefab;
 		var ref = createRefFromPath(path, parent);
-		if (Std.downcast(ref, hrt.prefab.Reference)?.hasCycle == true) {
-			Ide.showError('Reference to "$path" is creating a cycle. The reference creation was aborted.');
+		if (ref == null)
 			return;
-		}
 
 		ref.name = new haxe.io.Path(path).file;
 
