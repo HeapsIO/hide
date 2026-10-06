@@ -370,13 +370,9 @@ class FXEditor extends hide.view.FileView {
 			return;
 
 		// Save render props
-		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null) {
-			var renderProps = sceneEditor.renderPropsRoot;
-			renderProps.shared.editorDiscSaveScope(() -> renderProps.save());
-		}
+		sceneEditor.saveRenderProps();
 
-		var prefab : hrt.prefab.Prefab = cast data;
-		@:privateAccess var content = ide.toJSON(prefab.shared.editorDiscSaveScope(() -> prefab.serialize()));
+		@:privateAccess var content = ide.toJSON(cast(data, hrt.prefab.Prefab).editorDiscSerialize());
 		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
 			haxe.Timer.delay(saveBackup.bind(content), 0);

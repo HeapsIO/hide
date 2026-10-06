@@ -150,10 +150,8 @@ abstract class EditContext2 {
 	**/
 	public final function recordUndo(callback: (isUndo: Bool) -> Void, ?prefabs: Array<Prefab>) : Void {
 		#if domkit
-		if (prefabs == null && root != null) {
-			// in multi edit, the root prefab is a temporary copy, the edited prefabs are the child properties ones
-			prefabs = root.editedPrefabsProperties.length > 0 ? [for (childProperties in root.editedPrefabsProperties) @:privateAccess childProperties.prefab] : [@:privateAccess root.prefab];
-		}
+		if (prefabs == null && root != null)
+			prefabs = @:privateAccess root.getEditedPrefabs();
 		#end
 
 		var top = getTopContext();

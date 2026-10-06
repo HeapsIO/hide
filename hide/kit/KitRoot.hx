@@ -130,17 +130,20 @@ class KitRoot #if !macro extends Element #end {
 		}
 
 		if (sideEffects.length > 0) {
-			// in multi edit, the root prefab is a temporary copy, the edited prefabs are the child properties ones
-			var modifiedPrefabs = editedPrefabsProperties.length > 0 ? [for (childProperties in editedPrefabsProperties) childProperties.prefab] : [prefab];
 			editor.recordUndo((isUndo: Bool) -> {
 				for (sideEffect in sideEffects) {
 					sideEffect(isUndo);
 				}
 				editor.rebuildInspector();
-			}, modifiedPrefabs);
+			}, getEditedPrefabs());
 		}
 
 
+	}
+
+	function getEditedPrefabs() : Array<hrt.prefab.Prefab> {
+		// in multi edit, the root prefab is a temporary copy, the edited prefabs are the child properties ones
+		return editedPrefabsProperties.length > 0 ? [for (childProperties in editedPrefabsProperties) childProperties.prefab] : [prefab];
 	}
 
 	function createUndoStep(sideEffects : Array<(isUndo:Bool) -> Void>) : Void {

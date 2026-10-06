@@ -1806,7 +1806,7 @@ class Prefab extends HuiView<{path: String}> {
 		var path = prefab.shared.parentPrefab != null ? prefab.shared.parentPrefab.source : prefab.shared.currentPath;
 
 		try {
-			var data = discSerialize(prefab);
+			var data = prefab.editorDiscSerialize();
 			var realPath = hide.Ide.inst.getPath(path);
 			var text = hide.Ide.inst.toJSON(data);
 			ignoreReload = true;
@@ -1984,11 +1984,6 @@ class Prefab extends HuiView<{path: String}> {
 		var selection = getSelectionOrdered();
 		selection = getRoots(selection);
 		hxd.System.setClipboardText(hide.Ide.inst.toJSON([for (p in selection) p.serialize()]));
-	}
-
-	/** Serialize the prefab for a save to disc (see ContextShared.isTempSave) **/
-	function discSerialize(prefab: hrt.prefab.Prefab) : Dynamic {
-		return prefab.shared.editorDiscSaveScope(() -> prefab.serialize());
 	}
 
 	function actionPasteFromClipboard() : hrt.tools.Undo.Action {

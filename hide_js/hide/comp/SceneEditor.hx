@@ -2812,6 +2812,14 @@ class SceneEditor {
 		return null;
 	}
 
+	@:allow(hide.view.FXEditor)
+	@:allow(hide.view.Model)
+	@:allow(hide.view.Prefab)
+	function saveRenderProps() {
+		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && renderPropsRoot != null)
+			renderPropsRoot.editorDiscSerialize();
+	}
+
 	function refreshDefaultRenderProps(){
 		var path = getRenderPropsPath();
 

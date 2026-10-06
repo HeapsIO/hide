@@ -910,6 +910,21 @@ class Prefab {
 		}
 		sh.editorTempLoad = prev;
 	}
+
+	/**
+		Call serialize() to save the prefab file to disc, see ContextShared.isTempSave()
+	**/
+	function editorDiscSerialize() : Dynamic {
+		var sh = shared.getTopShared();
+		var prev = sh.editorTempSave;
+		sh.editorTempSave = false;
+		var result = try serialize() catch (e) {
+			sh.editorTempSave = prev;
+			throw e;
+		}
+		sh.editorTempSave = prev;
+		return result;
+	}
 	#end
 
 	/**

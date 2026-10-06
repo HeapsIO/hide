@@ -4,9 +4,6 @@ package hrt.prefab;
 typedef ContextShared = hide.prefab.ContextShared;
 #end
 
-@:allow(hide.view.Prefab)
-@:allow(hide.view.FXEditor)
-@:allow(hide.view.Model)
 @:allow(hrt.prefab.Prefab)
 class #if editor ContextSharedBase #else ContextShared #end {
 	public var root2d(default, null) : h2d.Object;
@@ -49,23 +46,10 @@ class #if editor ContextSharedBase #else ContextShared #end {
 	var editorTempLoad : Bool = false;
 
 	/**
-		True by default : any save in the editor is temporary, except while the prefab file is saved to disc (see editorDiscSaveScope).
+		True by default : any save in the editor is temporary, except while the prefab file is saved to disc (see Prefab.editorDiscSerialize).
 		Only read on the topmost shared, see isTempSave()
 	**/
 	var editorTempSave : Bool = true;
-
-	/** Runs `f` (that saves prefabs of this shared) as a save of the prefab file to disc, see isTempSave() **/
-	function editorDiscSaveScope(f: () -> Dynamic) : Dynamic {
-		var sh = getTopShared();
-		var prev = sh.editorTempSave;
-		sh.editorTempSave = false;
-		var result = try f() catch (e) {
-			sh.editorTempSave = prev;
-			throw e;
-		}
-		sh.editorTempSave = prev;
-		return result;
-	}
 
 	/** Returns the shared of the topmost prefab, following parent references **/
 	function getTopShared() : ContextShared {
