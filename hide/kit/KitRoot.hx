@@ -143,23 +143,6 @@ class KitRoot #if !macro extends Element #end {
 
 	}
 
-	/**
-		Call load() on prefab with editorTempLoad set to true on its topmost shared, so it knows it's not loaded from the file
-	**/
-	static function editorLoad(prefab: hrt.prefab.Prefab, data: Dynamic) : Void {
-		#if (editor || editor_hl)
-		var sh = prefab.shared.getTopShared();
-		sh.editorTempLoad = true;
-		try prefab.load(data) catch (e) {
-			sh.editorTempLoad = false;
-			throw e;
-		}
-		sh.editorTempLoad = false;
-		#else
-		prefab.load(data);
-		#end
-	}
-
 	function createUndoStep(sideEffects : Array<(isUndo:Bool) -> Void>) : Void {
 		var before = prefabUndoPoint;
 		prefabUndoPoint = null;
@@ -167,11 +150,12 @@ class KitRoot #if !macro extends Element #end {
 		var after = hrt.prefab.Diff.deepCopy(prefab.save());
 		if (hrt.prefab.Diff.diff(before, after) != Skip) {
 			sideEffects.push((isUndo) -> {
-				if (isUndo) {
-					editorLoad(prefab, hrt.prefab.Diff.deepCopy(before));
-				} else {
-					editorLoad(prefab, hrt.prefab.Diff.deepCopy(after));
-				}
+				var data = hrt.prefab.Diff.deepCopy(isUndo ? before : after);
+				#if (editor || editor_hl)
+				prefab.editorTempLoad(data);
+				#else
+				prefab.load(data);
+				#end
 				doTry(() -> prefab.updateInstance());
 			});
 		}

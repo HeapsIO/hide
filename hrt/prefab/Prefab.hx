@@ -890,10 +890,27 @@ class Prefab {
 
 	/**
 		Copy all the properties in data to this prefab object. This is not recursive. Done when loading the json data of the prefab.
+		In the editor, this function is only allowed to have side effects (like loading data from the disk) when shared.isTempLoad() == false
 	**/
 	function load(data : Dynamic) : Void {
 		this.copyFromDynamic(data);
 	}
+
+	#if (editor || editor_hl)
+	/**
+		Call load() for other purposes than loading the prefab file (like undo/redo), see ContextShared.isTempLoad()
+	**/
+	function editorTempLoad(data : Dynamic) : Void {
+		var sh = shared.getTopShared();
+		var prev = sh.editorTempLoad;
+		sh.editorTempLoad = true;
+		try load(data) catch (e) {
+			sh.editorTempLoad = prev;
+			throw e;
+		}
+		sh.editorTempLoad = prev;
+	}
+	#end
 
 	/**
 		Copy all the properties in Prefab to this prefab object. Done when cloning an existing prefab.
@@ -904,6 +921,7 @@ class Prefab {
 
 	/**
 		Save all the properties to the given dynamic object. This is not recursive. Returns the updated dynamic object.
+		In the editor, this function is only allowed to have side effects (like saving data to the disk) when shared.isTempSave() == false
 	**/
 	function save() : Dynamic {
 		var obj : Dynamic = {};

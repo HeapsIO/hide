@@ -1903,7 +1903,7 @@ class Prefab extends HuiView<{path: String}> {
 		var editPrefab : hrt.prefab.Prefab = if (isMultiEdit) {
 			var data = haxe.Json.parse(haxe.Json.stringify(prefabs[0].save()));
 			var p = Type.createInstance(commonClass, [null, new hrt.prefab.ContextShared(prefabs[0].shared.currentPath)]);
-			tempLoad(p, data);
+			p.editorTempLoad(data);
 			p;
 		} else {
 			prefabs[0];
@@ -1995,17 +1995,6 @@ class Prefab extends HuiView<{path: String}> {
 		var selection = getSelectionOrdered();
 		selection = getRoots(selection);
 		hxd.System.setClipboardText(hide.Ide.inst.toJSON([for (p in selection) p.serialize()]));
-	}
-
-	/** Load for other purposes than loading the prefab file (see ContextShared.isTempLoad). Saves are temporary by default **/
-	function tempLoad(prefab: hrt.prefab.Prefab, data: Dynamic) : Void {
-		var sh = prefab.shared.getTopShared();
-		sh.editorTempLoad = true;
-		try prefab.load(data) catch (e) {
-			sh.editorTempLoad = false;
-			throw e;
-		}
-		sh.editorTempLoad = false;
 	}
 
 	/** Serialize the prefab for a save to disc (see ContextShared.isTempSave) **/

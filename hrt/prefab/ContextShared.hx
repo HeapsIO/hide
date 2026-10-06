@@ -2,16 +2,13 @@ package hrt.prefab;
 
 #if editor
 typedef ContextShared = hide.prefab.ContextShared;
+#end
+
 @:allow(hide.view.Prefab)
 @:allow(hide.view.FXEditor)
 @:allow(hide.view.Model)
-@:allow(hide.kit.KitRoot)
-class ContextSharedBase {
-#else
-@:allow(hide.view.Prefab)
-@:allow(hide.kit.KitRoot)
-class ContextShared {
-#end
+@:allow(hrt.prefab.Prefab)
+class #if editor ContextSharedBase #else ContextShared #end {
 	public var root2d(default, null) : h2d.Object;
 	public var root3d(default, null) : h3d.scene.Object;
 
