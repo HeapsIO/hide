@@ -210,17 +210,17 @@ class Reference extends Object3D {
 		#end
 	}
 
+	#if !(editor || editor_hl)
 	/**
 		Loads the refInstance if it need to be init for the make process
 	**/
 	function initRefInstance() {
-		#if !(editor || editor_hl)
 		if (!shouldBeInstanciated())
 			return;
-		#end
 
 		resolve();
 	}
+	#end
 
 	/**
 		Try to resolve refInstance if it's not loaded.
@@ -379,8 +379,10 @@ class Reference extends Object3D {
 		}
 		#end
 
+		#if !(editor || editor_hl)
 		// Retro compatibility for references created in code, where source is set after the reference was created
 		initRefInstance();
+		#end
 
 		#if (editor || editor_hl)
 		// The refInstance is kept between makes in Edit/Override mode, the editor must remove its objects before remaking it

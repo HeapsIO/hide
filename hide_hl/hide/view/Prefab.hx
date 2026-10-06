@@ -688,7 +688,7 @@ class Prefab extends HuiView<{path: String}> {
 		if (path == null)
 			return;
 
-		if (previewDrag == null && !previewDragFailed) {
+		if (previewDrag == null) {
 			previewDrag = createRefFromPath(path, this.prefab);
 			var previewRef = Std.downcast(previewDrag, hrt.prefab.Reference);
 			if (previewRef != null) {
@@ -706,7 +706,6 @@ class Prefab extends HuiView<{path: String}> {
 				}
 			}
 			tryMake(previewDrag);
-			previewDragFailed = false;
 		}
 
 		op.acceptDrop = true;
@@ -2002,7 +2001,7 @@ class Prefab extends HuiView<{path: String}> {
 	function tempLoad(prefab: hrt.prefab.Prefab, data: Dynamic) : Void {
 		var sh = prefab.shared.getTopShared();
 		sh.editorTempLoad = true;
-		try @:privateAccess prefab.load(data) catch (e) {
+		try prefab.load(data) catch (e) {
 			sh.editorTempLoad = false;
 			throw e;
 		}
@@ -2011,7 +2010,7 @@ class Prefab extends HuiView<{path: String}> {
 
 	/** Serialize the prefab for a save to disc (see ContextShared.isTempSave) **/
 	function discSerialize(prefab: hrt.prefab.Prefab) : Dynamic {
-		return prefab.shared.editorDiscSaveScope(() -> @:privateAccess prefab.serialize());
+		return prefab.shared.editorDiscSaveScope(() -> prefab.serialize());
 	}
 
 	function actionPasteFromClipboard() : hrt.tools.Undo.Action {

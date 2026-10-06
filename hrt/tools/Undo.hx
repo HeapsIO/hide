@@ -3,7 +3,7 @@ package hrt.tools;
 typedef Action = (isUndo: Bool) -> Void;
 
 class Undo {
-	var stack : Array<{action: Action, hasDataChanges: Bool, info: Any}> = [];
+	var stack : Array<{action: Action, hasDataChanges: Bool}> = [];
 	var currentAction : Int = -1;
 	var lastSaveUndo: Any = null;
 
@@ -21,12 +21,11 @@ class Undo {
 	}
 
 	/**
-		Record an action that has already been applied. `info` is an optional payload describing the action,
-		passed back to onStep each time the action is recorded, undone or redone
+		Record an action that has already been applied. `info` is an optional payload describing the action, passed to onRecord
 	**/
 	public function record(action: Action, hasDataChanges: Bool, ?info: Any) {
 		stack.splice(currentAction+1, stack.length);
-		stack.push({action: action, hasDataChanges: hasDataChanges, info: info});
+		stack.push({action: action, hasDataChanges: hasDataChanges});
 		currentAction = stack.length-1;
 		inRecordStep = true;
 		try onRecord(info) catch (e) {
@@ -34,12 +33,11 @@ class Undo {
 			throw e;
 		}
 		inRecordStep = false;
-		onStep(info, false);
 		onAfterChange();
 	}
 
 	/**
-		Called once when a new action is recorded (not on undo/redo), before onStep and onAfterChange.
+		Called once when a new action is recorded (not on undo/redo), before onAfterChange.
 		mergeWithLast can be called from here to apply the side effects of the recorded action in the same undo step.
 	**/
 	public dynamic function onRecord(info: Null<Any>) {
@@ -80,19 +78,10 @@ class Undo {
 
 	}
 
-	/**
-		Called after an action has been recorded, undone or redone, with the info it was recorded with
-	**/
-	public dynamic function onStep(info: Null<Any>, isUndo: Bool) {
-
-	}
-
 	public function undo() {
 		if (canUndo()) {
-			var entry = stack[currentAction];
-			entry.action(true);
+			stack[currentAction].action(true);
 			currentAction--;
-			onStep(entry.info, true);
 			onAfterChange();
 		}
 	}
@@ -104,9 +93,7 @@ class Undo {
 	public function redo() {
 		if (canRedo()) {
 			currentAction++;
-			var entry = stack[currentAction];
-			entry.action(false);
-			onStep(entry.info, false);
+			stack[currentAction].action(false);
 			onAfterChange();
 		}
 	}

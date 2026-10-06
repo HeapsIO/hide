@@ -92,10 +92,10 @@ class KitRoot #if !macro extends Element #end {
 	function prepareUndoPoint() : Void {
 		if (prefabUndoPoint == null) {
 			editor.resetRebuilds();
-			prefabUndoPoint = hrt.prefab.Diff.deepCopy(editorSave(prefab));
+			prefabUndoPoint = hrt.prefab.Diff.deepCopy(prefab.save());
 			for (childProperties in editedPrefabsProperties) {
 				childProperties.editor.resetRebuilds();
-				childProperties.prefabUndoPoint = hrt.prefab.Diff.deepCopy(editorSave(childProperties.prefab));
+				childProperties.prefabUndoPoint = hrt.prefab.Diff.deepCopy(childProperties.prefab.save());
 			}
 		}
 	}
@@ -144,26 +144,19 @@ class KitRoot #if !macro extends Element #end {
 	}
 
 	/**
-		Call save() on prefab for an undo snapshot : saves are temporary by default in the editor (see ContextShared.isTempSave)
-	**/
-	static function editorSave(prefab: hrt.prefab.Prefab) : Dynamic {
-		return @:privateAccess prefab.save();
-	}
-
-	/**
 		Call load() on prefab with editorTempLoad set to true on its topmost shared, so it knows it's not loaded from the file
 	**/
 	static function editorLoad(prefab: hrt.prefab.Prefab, data: Dynamic) : Void {
 		#if (editor || editor_hl)
 		var sh = prefab.shared.getTopShared();
 		sh.editorTempLoad = true;
-		try @:privateAccess prefab.load(data) catch (e) {
+		try prefab.load(data) catch (e) {
 			sh.editorTempLoad = false;
 			throw e;
 		}
 		sh.editorTempLoad = false;
 		#else
-		@:privateAccess prefab.load(data);
+		prefab.load(data);
 		#end
 	}
 
@@ -171,7 +164,7 @@ class KitRoot #if !macro extends Element #end {
 		var before = prefabUndoPoint;
 		prefabUndoPoint = null;
 		// save() and load() keep Dynamic fields (like `props`) by reference, copy them so later edits don't alter the undo snapshots
-		var after = hrt.prefab.Diff.deepCopy(editorSave(prefab));
+		var after = hrt.prefab.Diff.deepCopy(prefab.save());
 		if (hrt.prefab.Diff.diff(before, after) != Skip) {
 			sideEffects.push((isUndo) -> {
 				if (isUndo) {

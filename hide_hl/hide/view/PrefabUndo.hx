@@ -7,7 +7,6 @@ class PrefabUndo extends hrt.tools.Undo {
 
 	public function new() {
 		super();
-		onStep = (info, isUndo) -> onPrefabsChanged(cast info, isUndo);
 		onRecord = (info) -> onPrefabsRecorded(cast info);
 	}
 
@@ -28,12 +27,5 @@ class PrefabUndo extends hrt.tools.Undo {
 
 	public function runPrefabs(action: hrt.tools.Undo.Action, hasDataChanges: Bool, prefabs: Array<hrt.prefab.Prefab>) {
 		run(action, hasDataChanges, prefabs);
-	}
-
-	/**
-		Called after an action has been recorded, undone or redone. `prefabs` is null if the action
-		didn't specify which prefabs it modified (any prefab may have changed)
-	**/
-	public dynamic function onPrefabsChanged(prefabs: Null<Array<hrt.prefab.Prefab>>, isUndo: Bool) {
 	}
 }

@@ -494,7 +494,7 @@ class Model extends FileView {
 		// Save render props
 		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null) {
 			var renderProps = sceneEditor.renderPropsRoot;
-			renderProps.shared.editorDiscSaveScope(() -> @:privateAccess renderProps.save());
+			renderProps.shared.editorDiscSaveScope(() -> renderProps.save());
 		}
 
 		// Save model props
