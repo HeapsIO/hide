@@ -66,6 +66,12 @@ class PrefabSpray extends Spray {
 			var elt = new hide.Element('<option value="$path">${extractItemName(path)}</option>');
 			elt.contextmenu(function(e) {
 				e.preventDefault();
+				function setSource(prefab: hrt.prefab.Object3D, source: String) {
+					prefab.source = source;
+					var ref = Std.downcast(prefab, hrt.prefab.Reference);
+					if (ref != null)
+						@:privateAccess ref.resolveInternal();
+				}
 				hide.comp.ContextMenu.createFromEvent(cast e, [
 					{ label : "Swap Prefab", click : function() hide.Ide.inst.chooseFile(["prefab", "l3d"] , function (newPath) {
 						removeSourcePath(elt.val());
@@ -73,7 +79,7 @@ class PrefabSpray extends Spray {
 						for (child in children) {
 							var prefab = child.to(hrt.prefab.Object3D);
 							if (prefab != null && prefab.source == elt.val()) {
-								prefab.source = newPath;
+								setSource(prefab, newPath);
 							}
 						}
 						elt.val(newPath);
@@ -86,7 +92,7 @@ class PrefabSpray extends Spray {
 								for (child in children) {
 									var prefab = child.to(hrt.prefab.Object3D);
 									if (prefab != null && prefab.source == elt.val()) {
-										prefab.source = path;
+										setSource(prefab, path);
 									}
 								}
 								elt.val(path);
@@ -99,7 +105,7 @@ class PrefabSpray extends Spray {
 								for (child in children) {
 									var prefab = child.to(hrt.prefab.Object3D);
 									if (prefab != null && prefab.source == elt.val()) {
-										prefab.source = newPath;
+										setSource(prefab, newPath);
 									}
 								}
 								elt.val(newPath);
