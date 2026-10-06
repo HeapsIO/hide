@@ -108,23 +108,12 @@ class Reference extends Object3D {
 			if (overrides != null)
 				editMode = Override;
 
-			setRefInstance(loadReference(source, editMode, overrides));
+			applyLoadedReference(loadReference(source, editMode, overrides));
 		}
 		#end
 	}
 
 	#if (editor || editor_hl)
-	/** Returns true if `source` is the file of this reference or of one of its parents **/
-	function isSourceInParents(source: String) : Bool {
-		var p : Prefab = this;
-		while (p != null) {
-			if (p.shared.currentPath == source)
-				return true;
-			p = p.shared.parentPrefab;
-		}
-		return false;
-	}
-
 	static function containsCycle(prefab: Prefab) : Bool {
 		return prefab?.findRec(Reference, (r) -> r.hasCycle) != null;
 	}
@@ -140,7 +129,7 @@ class Reference extends Object3D {
 			throw 'editorInit called on ${getAbsPath()} which already has a refInstance';
 
 		this.source = source;
-		setRefInstance(loadReference(source, editMode, overrides));
+		applyLoadedReference(loadReference(source, editMode, overrides));
 	}
 	#end
 
@@ -236,7 +225,7 @@ class Reference extends Object3D {
 		if (refInstance != null)
 			return refInstance;
 
-		setRefInstance(loadReference(source, editMode, overrides));
+		applyLoadedReference(loadReference(source, editMode, overrides));
 
 		return refInstance;
 		#end
@@ -252,6 +241,17 @@ class Reference extends Object3D {
 				return null;
 
 			#if (editor || editor_hl)
+			// Returns true if `source` is the file of this reference or of one of its parents
+			function isSourceInParents(source: String) : Bool {
+				var p : Prefab = this;
+				while (p != null) {
+					if (p.shared.currentPath == source)
+						return true;
+					p = p.shared.parentPrefab;
+				}
+				return false;
+			}
+
 			// Don't load a source that is already being loaded by one of our parents, to avoid infinite loops on cyclic references
 			if (source != null && isSourceInParents(source))
 				return { prefab: null, version: -1, hasCycle: true };
@@ -306,7 +306,7 @@ class Reference extends Object3D {
 		Replace the refInstance of this reference with `loaded`, removing the objects of the previous refInstance.
 		Must only be called while loading the reference or inside an undo/redo step
 	**/
-	function setRefInstance(loaded: LoadedReference) {
+	function applyLoadedReference(loaded: LoadedReference) {
 		refInstance?.editorRemoveObjects();
 
 		refInstance = loaded?.prefab;
@@ -321,9 +321,9 @@ class Reference extends Object3D {
 	}
 
 	/**
-		Return the current refInstance state of this reference, to be restored later with setRefInstance
+		Return the current refInstance state of this reference, to be restored later with applyLoadedReference
 	**/
-	function saveRefInstance() : LoadedReference {
+	function getLoadedReference() : LoadedReference {
 		var saved : LoadedReference = { prefab: refInstance, version: refInstanceVersion };
 		#if (editor || editor_hl)
 		saved.originalSource = originalSource;
@@ -339,7 +339,7 @@ class Reference extends Object3D {
 		Must be recorded in an undo/redo step.
 	**/
 	public function editorSyncSourceAction(sourceInstance: Prefab) : (isUndo: Bool) -> Void {
-		var oldRef = saveRefInstance();
+		var oldRef = getLoadedReference();
 
 		var sh = new ContextShared(source, null, null, true);
 		sh.parentPrefab = this;
@@ -359,7 +359,7 @@ class Reference extends Object3D {
 		newRef.prefab = Prefab.createFromDynamic(data, null, sh);
 		newRef.hasCycle = containsCycle(newRef.prefab);
 
-		return (isUndo) -> setRefInstance(isUndo ? oldRef : newRef);
+		return (isUndo) -> applyLoadedReference(isUndo ? oldRef : newRef);
 	}
 	#end
 
@@ -512,7 +512,7 @@ class Reference extends Object3D {
 				newName = new haxe.io.Path(newSource).file;
 			}
 
-			var oldRef = saveRefInstance();
+			var oldRef = getLoadedReference();
 			var newRef = loadReference(newSource, editMode, null);
 
 			// Todo : prompt the user that changing the source will loose the edits/overrides in place
@@ -526,7 +526,7 @@ class Reference extends Object3D {
 					ctx.rebuildTree(this);
 				}
 				source = isUndo ? oldSource : newSource;
-				setRefInstance(isUndo ? oldRef : newRef);
+				applyLoadedReference(isUndo ? oldRef : newRef);
 				ctx.rebuildPrefab(this);
 				ctx.rebuildInspector();
 			};
@@ -535,7 +535,7 @@ class Reference extends Object3D {
 		}
 
 		@:privateAccess editModeSelect.onFieldChange = (_) -> {
-			var oldRef = saveRefInstance();
+			var oldRef = getLoadedReference();
 			var oldEditMode = editMode;
 			var newEditMode = editModeSelect.value;
 
@@ -556,7 +556,7 @@ class Reference extends Object3D {
 			function exec(isUndo) {
 				editMode = isUndo ? oldEditMode : newEditMode;
 				overrides = isUndo ? oldOverrides : newOverrides;
-				setRefInstance(isUndo ? oldRef : newRef);
+				applyLoadedReference(isUndo ? oldRef : newRef);
 				ctx.rebuildPrefab(this);
 				ctx.rebuildTree(this);
 				ctx.rebuildInspector();
@@ -580,7 +580,7 @@ class Reference extends Object3D {
 			// The kit undo only saves/loads the reference data, which doesn't restore the refInstance, so we record our own undo
 			btnClearOverrides.noUndo = true;
 			btnClearOverrides.onClick = () -> {
-				var oldRef = saveRefInstance();
+				var oldRef = getLoadedReference();
 				var oldOverrides = overrides;
 				var newRef = loadReference(source, editMode, null);
 
@@ -588,7 +588,7 @@ class Reference extends Object3D {
 					return;
 
 				function exec(isUndo: Bool) {
-					setRefInstance(isUndo ? oldRef : newRef);
+					applyLoadedReference(isUndo ? oldRef : newRef);
 					overrides = isUndo ? oldOverrides : null;
 					ctx.rebuildPrefab(this);
 					ctx.rebuildInspector();
