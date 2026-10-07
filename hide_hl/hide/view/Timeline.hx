@@ -96,9 +96,7 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 						</hui-element>
 					</hui-element>
 					<hui-element id="playhead">
-						<hui-element id="head">
-							<hui-text("0.4") id="time"/>
-						</hui-element>
+						<hui-text("0.4") id="time"/>
 						<hui-element id="body"></hui-element>
 					</hui-element>
 				</hui-element>
@@ -326,7 +324,7 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		var decimals = hxd.Math.imax(0, Math.ceil(-Math.log(hstep) / Math.log(10) - 1e-6));
 		var f = Math.pow(10, decimals);
 		time.text = '${Math.round(t * f) / f}';
-		playhead.setPosition(sx(t) - (playhead.calculatedWidth / 2), (timerTrack.calculatedHeight / 2) - (head.calculatedHeight / 2));
+		playhead.setPosition(sx(t) - (playhead.calculatedWidth / 2), (timerTrack.calculatedHeight / 2) - (time.calculatedHeight / 2));
 
 		if (needRefresh)
 			refreshInternal();
@@ -436,9 +434,8 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 
 		for (c in clips) {
 			if (c.element == null) {
-				c.element = new HuiElement(content);
+				c.element = new HuiText(c.name, content);
 				c.element.dom.addClass("hui-clip");
-				new HuiText(c.name, c.element);
 			}
 
 			var width = Std.int(sx(frameToTime(c.end)) - sx(frameToTime(c.start)));

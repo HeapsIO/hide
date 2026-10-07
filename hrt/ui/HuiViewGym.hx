@@ -747,15 +747,15 @@ class GymSearch extends HuiElement {
 		searchBox.onChange = (tmp) -> searchFiles();
 
 		results.generateItem = (i:Dynamic) -> {
-			var e = new HuiElement();
+			var e : HuiElement;
 
 			if (i is String) {
-				new HuiText(i, e);
+				e = new HuiText(i);
 			} else {
 				var str = allFiles[i.pos];
 				var lastCharPos: Int = i.lastCharPos;
 				var split = str.substr(0, lastCharPos-searchBox.text.length+1) + "<h>" + str.substr(lastCharPos-searchBox.text.length+1, searchBox.text.length) + "</h>" + str.substr(lastCharPos+1);
-				new HuiText('$split (${i.distance})', e);
+				e = new HuiText('$split (${i.distance})');
 			}
 
 			return e;
@@ -884,8 +884,8 @@ class GymHuiDragAndDrop extends HuiElement {
 	static var SRC =
 		<gym-hui-drag-and-drop>
 
-			<hui-element id="draggable"><hui-text("drag me") id="draggable-text"/></hui-element>
-			<hui-element id="dropTarget1"><hui-text("drop on me") id="drop-target-text"/></hui-element>
+			<hui-text("drag me") id="draggable"/>
+			<hui-text("drop on me") id="dropTarget1"/>
 
 		</gym-hui-drag-and-drop>
 
@@ -897,12 +897,12 @@ class GymHuiDragAndDrop extends HuiElement {
 			var op = draggable.startDrag("gym-drag", "hello world");
 			op.setPreviewText("hello world");
 			draggable.dom.addClass("dragged");
-			draggableText.text = "dragged";
+			draggable.text = "dragged";
 		}
 
 		draggable.onDragEnd = (op) -> {
 			draggable.dom.removeClass("dragged");
-			draggableText.text = "drag me";
+			draggable.text = "drag me";
 		}
 
 		dropTarget1.onAnyDragStart = (op) -> {
@@ -919,16 +919,16 @@ class GymHuiDragAndDrop extends HuiElement {
 
 		dropTarget1.onDragOver = (op) -> {
 			dropTarget1.dom.addClass("drag-over");
-			dropTargetText.text = "dragging over";
+			dropTarget1.text = "dragging over";
 		}
 
 		dropTarget1.onDragMove = (op) -> {
-			dropTargetText.text = 'over ${op.event.relX}, ${op.event.relY}';
+			dropTarget1.text = 'over ${op.event.relX}, ${op.event.relY}';
 		}
 
 		dropTarget1.onDragOut = (op) -> {
 			dropTarget1.dom.removeClass("drag-over");
-			dropTargetText.text = "drop on me";
+			dropTarget1.text = "drop on me";
 		}
 
 		dropTarget1.onDrop = (op) -> {

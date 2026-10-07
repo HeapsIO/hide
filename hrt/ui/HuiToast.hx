@@ -15,9 +15,7 @@ class HuiToast extends HuiElement {
 			<hui-element id="icon-container">
 				<hui-element id="icon"/>
 			</hui-element>
-			<hui-element id="text-container">
-				<hui-text("") id="text"/>
-			</hui-element>
+			<hui-text("") id="text"/>
 		</hui-toast>
 
 	var timer : Float;
@@ -65,10 +63,10 @@ class HuiToast extends HuiElement {
 			remove();
 		}
 
-		if (textContainer.huiBg != null) {
-			textContainer.huiBg.background = 0xFFFFFF;
+		if (text.huiBg != null) {
+			text.huiBg.background = 0xFFFFFF;
 			// makes the toast flash when spawned
-			textContainer.huiBg.backgroundAlpha = hxd.Math.pow(1.0 - hxd.Math.clamp(startTimer - timer),3.0) * 0.4;
+			text.huiBg.backgroundAlpha = hxd.Math.pow(1.0 - hxd.Math.clamp(startTimer - timer),3.0) * 0.4;
 		}
 	}
 }

@@ -1338,9 +1338,7 @@ class HuiFileBrowserNoResultWidget extends HuiElement {
 					<hui-button public id="clear-search-btn"><hui-text("Clear search")/></hui-button>
 				</hui-element>
 			</hui-element>
-			<hui-element id="for-empty">
-				<hui-text("Empty Folder")/>
-			</hui-element>
+			<hui-text("Empty Folder") id="for-empty"/>
 
 		</hui-file-browser-no-result-widget>
 }

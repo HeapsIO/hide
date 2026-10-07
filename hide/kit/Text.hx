@@ -31,10 +31,9 @@ class Text extends Element {
 		setupPropLine(null, text, false);
 		refreshText();
 		#elseif hui
-		var container = new hrt.ui.HuiElement();
-		container.dom.addClass("kit-text");
-		text = new hrt.ui.HuiText(container);
-		setupPropLine(null, container, false);
+		text = new hrt.ui.HuiText();
+		text.dom.addClass("kit-text");
+		setupPropLine(null, text, false);
 		refreshText();
 		#end
 		Element.setNativeColor(text, color);

@@ -8,7 +8,7 @@ typedef HuiSelectOption = {
 #if hui
 class HuiSelect extends HuiElement {
 	static var SRC = <hui-select>
-		<hui-element id="value-text-container"><hui-text id="value-text"/></hui-element>
+		<hui-text id="value-text"/>
 		<hui-icon(HuiRes.ui.icons.drop_down)/>
 	</hui-select>
 

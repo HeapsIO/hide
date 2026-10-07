@@ -499,10 +499,9 @@ class HuiShapeEditor extends HuiElement {
 		shapeList.removeChildren();
 
 		for (idx => s in shapes) {
-			var shapeEl = new HuiElement(shapeList);
+			var shapeEl = new HuiText(s.getName(), shapeList);
 			shapeEl.dom.addClass("shape-list-entry");
 			shapeEl.dom.toggleClass("selected", idx == selectedShapeIdx);
-			new HuiText(s.getName(), shapeEl);
 
 			shapeEl.onClick = (e) -> {
 				if (selectedShapeIdx == idx) {

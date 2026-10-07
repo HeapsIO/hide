@@ -191,8 +191,7 @@ class HuiTabViewContainer extends HuiTabContainer {
 				}
 			}
 		}
-		var error = new HuiElement(content);
-		var errorText = new HuiText('Missing HuiView for type ${data.type}', error);
+		new HuiText('Missing HuiView for type ${data.type}', content);
 		return null;
 	}
 }

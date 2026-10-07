@@ -29,11 +29,9 @@ class HuiErrorDisplay extends HuiPopup {
 	}
 
 	function generateItem(e: haxe.CallStack.StackItem) {
-		var elem = new HuiElement();
 		var b = new StringBuf();
 		@:privateAccess haxe.CallStack.itemToString(b, e);
-		var text = new HuiText(b.toString(), elem);
-		return elem;
+		return new HuiText(b.toString());
 	}
 
 	public function addButton(title: String, click: Void -> Void) {

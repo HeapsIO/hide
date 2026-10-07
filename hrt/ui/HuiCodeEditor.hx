@@ -169,9 +169,7 @@ class HuiCodeEditorInternal extends h2d.TextInput implements h2d.domkit.Object {
 			if( !StringTools.startsWith(c.name,compFilter) )
 				continue;
 			tip.tips.push(domkit.Component.build(
-				<hui-element class="c">
-					<hui-text class="name" text={c.name}/>
-				</hui-element>
+				<hui-text class="c name" text={c.name}/>
 			, tip));
 			lastCompletion.push(c);
 		}

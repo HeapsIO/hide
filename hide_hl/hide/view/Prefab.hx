@@ -2973,9 +2973,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 class HuiPrefabInspectorError extends HuiElement {
 	static var SRC =
 		<hui-prefab-inspector-error>
-			<hui-element id="error-text-container">
-				<hui-text public id="error-text"/>
-			</hui-element>
+			<hui-text public id="error-text"/>
 			<hui-button public id="button">
 				<hui-text("Stack Trace")/>
 			</hui-button>

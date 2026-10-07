@@ -14,7 +14,7 @@ typedef ForwardConfig = {
 	var ?whitelistMeta : Array<String>;
 	/** Forwarded member name => name in the host class, ignoring `prefix`. **/
 	var ?renames : Map<String, String>;
-	/** Also forward public methods, as function vars (writable for dynamic methods). **/
+	/** Also forward public non-generic methods, as function vars (writable for dynamic methods). **/
 	var ?functions : Bool;
 	/** Metadata copied from forwarded members (e.g. ":p"). **/
 	var ?copyMeta : Array<String>;
@@ -36,6 +36,7 @@ class Macros {
 	/**
 		Build macro. Every member var annotated with `@:forwardDecls` exposes the public vars (and optionally methods)
 		of its class as public members of the host class, forwarding to it. Members already declared by the host are not forwarded.
+		Generic methods are not supported and are ignored.
 		Takes an optional `ForwardConfig`, e.g. `@:forwardDecls({ prefix: "foo", whitelistMeta: [":s"] })`.
 	**/
 	public static function forward() : Array<Field> {
@@ -90,6 +91,8 @@ class Macros {
 				switch( cf.kind ) {
 					case FVar(AccNo | AccNever, AccNo | AccNever | AccCtor), FMethod(MethMacro): return;
 					case FMethod(_) if( cfg.functions != true ): return;
+					// a function var can't have type parameters
+					case FMethod(_) if( cf.params.length > 0 ): return;
 					default:
 				}
 				if( !cf.isPublic || seen.exists(field) || (cfg.whitelistMeta != null && !Lambda.exists(cfg.whitelistMeta, cf.meta.has)) )

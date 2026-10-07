@@ -19,7 +19,7 @@ class HuiGradientEditor extends HuiPopup {
 
 					<hui-element id="v-layout">
 						<hui-element class="edit-line">
-							<hui-element class="label"><hui-text("Position") /></hui-element>
+							<hui-text("Position") class="label"/>
 							<hui-slider min={0.0} max={1.0} decimals={3} id="stop-position"/>
 						</hui-element>
 

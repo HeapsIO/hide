@@ -8,19 +8,13 @@ timeline {
 			position: absolute;
 			layout: vertical;
 
-			#head {
-				padding: 4 7 4 7;
+			#time {
+				padding: 2 7 4 7;
 				min-width: 31;
 				background-type: hui;
-				> hui-background {
-					border-radius: 4;
-					background: @color-blue;
-				}
-
-				#time {
-					align: middle middle;
-					margin-top: -2;
-				}
+				background-border-radius: 4;
+				background-style: @color-blue;
+				content-align: middle middle;
 			}
 
 			#body {
@@ -72,10 +66,7 @@ timeline {
 			background-style: @color-gray-6;
 			background-border-radius: 4;
 			background-alpha: 0.5;
-
-			hui-text {
-				valign: middle;
-			}
+			content-valign: middle;
 		}
 
 		.hui-marker {

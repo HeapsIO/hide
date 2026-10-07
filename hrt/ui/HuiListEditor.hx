@@ -7,7 +7,7 @@ class HuiListEditor<ListItem> extends HuiElement {
 		<hui-list-editor>
 			<hui-line id="header">
 				<hui-element class="kit-label first"><hui-element id="caret"/><hui-text("label") id="label" public/></hui-element>
-				<hui-element id="info-container"><hui-text("") id="infos"/></hui-element>
+				<hui-text("") id="infos"/>
 				<hui-button id="add-button" class="medium-square" tip={"Add one line to the list"}><hui-icon(HuiRes.ui.icons.add)/></hui-button>
 				<hui-button id="clear-button" class="medium-square" tip={"Remove all the lines from the list"}><hui-icon(HuiRes.ui.icons.clear)/></hui-button>
 			</hui-line>

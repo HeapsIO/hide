@@ -57,8 +57,7 @@ class HuiPropsInspector extends HuiElement {
 			var field = new HuiElement(this);
 			field.dom.addClass("horizontal");
 
-			var label = new HuiElement(field);
-			new HuiText(c.name, label);
+			var label = new HuiText(c.name, field);
 			label.dom.addClass("label");
 
 			var insp : HuiElement = null;
@@ -102,8 +101,7 @@ class HuiPropsInspector extends HuiElement {
 					var el = new HuiPropsInspector(s, Reflect.field(props, fieldName), true, prefab, field);
 					insp = el;
 				default:
-					var el = new HuiElement(field);
-					new HuiText("inspector isn't supported for this value", el);
+					var el = new HuiText("inspector isn't supported for this value", field);
 					insp = el;
 			}
 
