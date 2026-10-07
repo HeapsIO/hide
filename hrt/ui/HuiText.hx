@@ -2,10 +2,7 @@ package hrt.ui;
 
 #if hui
 
-/**
-	Don't use directly, use HuiInputBox instead
-**/
-class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
+class HuiTextInternal extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
 	/**
 		Load a font by a string id instread of a path, allows for automatic font changes based on
 		dpi and the breakAll feature
@@ -13,7 +10,7 @@ class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
 	@:p public var baseFont(default, set) : String;
 
 	/** Allow breaking lines on every character. Need a baseFont **/
-	@:p public var breakAll(default, set) : Bool = false;
+	@:p public var breakAll(default, set) : Bool;
 
 	function set_baseFont(v : String) {
 		if (v != "none") {
@@ -46,7 +43,52 @@ class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
 	}
 
 	override function loadFont(name: String) : h2d.Font {
-		return loadFontStatic(name, breakAll);
+		return HuiText.loadFontStatic(name, breakAll);
+	}
+}
+
+/**
+	Don't use directly, use HuiInputBox instead
+**/
+class HuiText extends HuiElement {
+	// maxWidth and lineBreak already exist in h2d.Flow
+	@:forwardDecls({ functions: true, forwardDepth: h2d.Text, renames: ["maxWidth" => "textMaxWidth", "lineBreak" => "textLineBreak"], copyMeta: [":p"] })
+	var internal : HuiTextInternal;
+
+	// h2d.domkit.BaseComponents.TextComp properties, as hui-text inherits the flow component
+	@:p(font) public var font(get, set) : h2d.Font;
+	@:p public var letterSpacing(get, set) : Float;
+	@:p public var lineSpacing(get, set) : Float;
+	@:p public var wordBreak(get, set) : Bool;
+	@:p public var textLineBreak(get, set) : Bool;
+	@:p public var textAlign(get, set) : h2d.Text.Align;
+	@:p(textShadow) var textShadow(get, set) : { dx : Float, dy : Float, color : Int, alpha : Float };
+	@:p(color) var color(get, set) : Null<Int>;
+
+	inline function get_font() return internal.font;
+	inline function set_font(v) return internal.font = v ?? hxd.res.DefaultFont.get();
+	inline function get_letterSpacing() return internal.letterSpacing;
+	inline function set_letterSpacing(v) return internal.letterSpacing = v;
+	inline function get_lineSpacing() return internal.lineSpacing;
+	inline function set_lineSpacing(v) return internal.lineSpacing = v;
+	inline function get_wordBreak() return internal.wordBreak;
+	inline function set_wordBreak(v) return internal.wordBreak = v;
+	inline function get_textLineBreak() return internal.lineBreak;
+	inline function set_textLineBreak(v) return internal.lineBreak = v;
+	inline function get_textAlign() return internal.textAlign;
+	inline function set_textAlign(v) return internal.textAlign = v ?? Left;
+	inline function get_textShadow() return internal.dropShadow;
+	inline function set_textShadow(v) return internal.dropShadow = v;
+	inline function get_color() : Null<Int> return internal.textColor;
+	inline function set_color(v : Null<Int>) {
+		internal.textColor = v ?? -1;
+		return v;
+	}
+
+	public function new(?text: String, ?parent: h2d.Object) {
+		super(parent);
+		internal = new HuiTextInternal(text, this);
+		initComponent();
 	}
 
 	public static function loadFontStatic(name: String, breakAll: Bool) : h2d.Font {
