@@ -5302,9 +5302,14 @@ class SceneEditor {
 	function reparentImpl(prefabs: Array<PrefabElement>, toPrefab: PrefabElement, index: Int) : Bool -> Void {
 		var effects = [];
 		trace(prefabs, toPrefab);
-		for(i => prefab in prefabs) {
+		var offset = 0;
+		for(prefab in prefabs) {
 			var prevParent = prefab.parent;
 			var prevIndex = prevParent.children.indexOf(prefab);
+			var newIndex = index + offset;
+			if (prevParent == toPrefab && prevIndex < index)
+				offset--; // fix offset
+			offset++;
 			for (p in prefab.flatten(null, null))
 				p.shared = toPrefab.shared;
 			var obj3d = prefab.to(Object3D);
@@ -5335,7 +5340,6 @@ class SceneEditor {
 
 			effects.push(function(undo) {
 				if( undo ) {
-					prefab.remove(); // ensure prevIndex target the correct slot
 					prevParent.addChildAt(prefab, prevIndex);
 
 					checkWantRebuild(toPrefab, prefab);
@@ -5344,7 +5348,11 @@ class SceneEditor {
 					if (obj2d != null && prevTransform2d != null)
 						obj2d.setTransformMatrix(prevTransform2d);
 				} else {
-					toPrefab.addChildAt(prefab, index + i);
+					// index in the state left by previous effects, which undo runs in reverse
+					prevIndex = prevParent.children.indexOf(prefab);
+					if (prevParent == toPrefab && prevIndex > newIndex)
+						prevIndex++;
+					toPrefab.addChildAt(prefab, newIndex);
 					checkWantRebuild(prevParent, prefab);
 					if(obj3d != null && newTransform != null)
 						obj3d.loadTransform(newTransform);
@@ -5361,8 +5369,8 @@ class SceneEditor {
 			beginRebuild();
 
 
-			for (effect in effects) {
-				effect(undo);
+			for (i in 0...effects.length) {
+				effects[undo ? effects.length - 1 - i : i](undo);
 			}
 
 			for (prefab in prefabs) {
