@@ -9,7 +9,7 @@ typedef RegisteredCommand = {
 };
 
 @:parser(hrt.ui.CssParser)
-class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
+class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end implements hrt.tools.Macros.ForwardDecls {
 	static var SRC =
 		<hui-element>
 		</hui-element>
@@ -72,6 +72,8 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	public var onChildrenChanged : Void -> Void = emtpyFuncVoidVoid;
 
+	// background-* css properties can be applied before background-type, so the background is built on demand
+	@:forwardDecls({ prefix: "background", whitelistMeta: [":p"], renames: ["background" => "backgroundStyle"], copyMeta: [":p", ":t"] })
 	public var huiBg(get, never) : HuiBackground;
 	public var parentElement(get, never): HuiElement;
 	public var childElements(get, never): Array<HuiElement>;
@@ -92,19 +94,19 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (backgroundType == v)
 			return v;
 		backgroundType = v;
-		var prevTile = backgroundTile;
-		var built = false;
-		if (background != null) {
+		if (v == "hui") {
+			if (background == null)
+				buildBackground(null);
+		} else if (background != null) {
 			background.remove();
 			background = null;  // Needed, see addChildAt
-			if (prevTile != null) {
-				backgroundTile = prevTile;
-				built = true;
-			}
 		}
-		if (v == "hui" && !built)
-			buildBackground(backgroundTile);
 		return v;
+	}
+
+	// background is managed by backgroundType only
+	override function set_backgroundTile(t) {
+		return backgroundTile = t;
 	}
 
 	function set_saveDisplayKey(v: String) : String {
@@ -189,7 +191,11 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		}
 	}
 
-	function get_huiBg() : HuiBackground {return Std.downcast(background, HuiBackground);};
+	function get_huiBg() : HuiBackground {
+		if (background == null)
+			backgroundType = "hui";
+		return Std.downcast(background, HuiBackground);
+	}
 	function get_parentElement() : HuiElement {return Std.downcast(parent, HuiElement);};
 	function get_childElements() : Array<HuiElement> {return cast children.filter((e) -> Std.downcast(e, HuiElement) != null);};
 
@@ -328,14 +334,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	}
 
 	override function makeBackground(tile): h2d.ScaleGrid {
-		switch (backgroundType) {
-			case "hui":
-				var b = HuiBackground.newPooled();
-				b.dom = domkit.Properties.create("hui-background", b);
-				return b;
-			default:
-				return super.makeBackground(tile);
-		}
+		var b = HuiBackground.newPooled();
+		b.dom = domkit.Properties.create("hui-background", b);
+		return b;
 	}
 
 	override function makeScrollBar() {

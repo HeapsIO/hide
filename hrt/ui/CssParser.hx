@@ -51,7 +51,7 @@ class CssParser extends h2d.domkit.BaseComponents.CustomParser {
 
 	function parseBgType(value : CssValue) {
 		return switch(value) {
-		case VIdent("none") | VIdent("default"):
+		case VIdent("none"):
 			null;
 		case VIdent("hui"): "hui";
 		default:
