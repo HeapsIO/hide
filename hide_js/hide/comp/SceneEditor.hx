@@ -3742,6 +3742,10 @@ class SceneEditor {
 
 	public function addElements(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true, enableUndo = true) {
 		beginRebuild();
+
+		elts = elts.copy();
+		var parents = [for (e in elts) e.parent];
+
 		for (e in elts) {
 			makePrefab(e);
 			if (e.parent != null && doRefresh)
@@ -3769,8 +3773,8 @@ class SceneEditor {
 			else {
 
 				beginRebuild();
-				for (e in elts) {
-					e.parent.addChild(e);
+				for (i => e in elts) {
+					parents[i].addChild(e);
 					makePrefab(e);
 					if (e.parent != null && doRefresh)
 						onPrefabChange(e.parent, "children");
