@@ -18,16 +18,12 @@ hui-file-picker {
 	}
 
 	background-type: hui;
-	> hui-background {
-		background: @widget-bg;
-		border-radius: @base-corner-radius;
-		outline: 1 @widget-border;
-	}
+	background-style: @widget-bg;
+	background-border-radius: @base-corner-radius;
+	background-outline: 1 @widget-border;
 
 	&:hover {
-		> hui-background {
-			background: @color-over;
-		}
+		background-style: @color-over;
 	}
 
 	&.unset {

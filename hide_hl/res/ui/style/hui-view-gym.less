@@ -20,9 +20,7 @@ hui-view-gym {
 		overflow: scroll;
 
 		background-type: hui;
-		> hui-background {
-			background: @bg-panel-lvl2;
-		}
+		background-style: @bg-panel-lvl2;
 
 		&.horizontal {
 			layout: horizontal;
@@ -51,57 +49,45 @@ gym-widgets {
 	}
 
 	.example-1 {
-		> hui-background {
-			background: green;
-			border-radius: 2 4 6 16;
-			shadow: 2px 2px 0.5 0 rgba(255,0,0,0.5);
-		}
+		background-style: green;
+		background-border-radius: 2 4 6 16;
+		background-shadow: 2px 2px 0.5 0 rgba(255,0,0,0.5);
 	}
 
 	.example-2 {
-		> hui-background {
-			background: green;
-			outline: 1 white;
-			border-radius: 2 4 6 16;
-			shadow: 2px 2px 0.5 0 rgba(255,0,0,0.5);
-		}
+		background-style: green;
+		background-outline: 1 white;
+		background-border-radius: 2 4 6 16;
+		background-shadow: 2px 2px 0.5 0 rgba(255,0,0,0.5);
 	}
 
 	.example-3 {
-		> hui-background {
-			background: green;
-			outline: 1 white;
-			border-radius: 2 4 6 16;
-			shadow: 2px 2px 2px -10 rgba(255,0,0,0.5);
-			outline-offset: 1;
-		}
+		background-style: green;
+		background-outline: 1 white;
+		background-border-radius: 2 4 6 16;
+		background-shadow: 2px 2px 2px -10 rgba(255,0,0,0.5);
+		background-outline-offset: 1;
 	}
 
 	.example-4 {
-		> hui-background {
-			background: green;
-			outline: 1 white;
-			border-radius: 2 4 6 16;
-			shadow: 2px 2px 0px rgba(255,0,0,0.5);
-			outline-offset: -2;
-		}
+		background-style: green;
+		background-outline: 1 white;
+		background-border-radius: 2 4 6 16;
+		background-shadow: 2px 2px 0px rgba(255,0,0,0.5);
+		background-outline-offset: -2;
 	}
 
 	.example-5 {
-		> hui-background {
-			background: white;
-			//outline: 1 #F0F;
-			border-radius: 2 4 6 16;
-			shadow: inset 0 0 10 0 rgba(0,0,0,1.0);
-			outline-offset: -2;
-			debug: false;
-		}
+		background-style: white;
+		//outline: 1 #F0F;
+		background-border-radius: 2 4 6 16;
+		background-shadow: inset 0 0 10 0 rgba(0,0,0,1.0);
+		background-outline-offset: -2;
+		background-debug: false;
 	}
 
 	#commands-first {
-		> hui-background {
-			background: @color-gray-3;
-		}
+		background-style: @color-gray-3;
 
 		padding: 8;
 
@@ -110,9 +96,7 @@ gym-widgets {
 	}
 
 	#commands-second {
-		> hui-background {
-			background: @color-gray-5;
-		}
+		background-style: @color-gray-5;
 
 		padding: 8;
 		min-width: 200;
@@ -136,25 +120,19 @@ gym-widgets {
 gym-layouts {
 	.first {
 		layout: vertical;
-		> hui-background {
-			background: green;
-		}
+		background-style: green;
 
 		> .first-fixed {
 			height: 32;
 			fill-width: 1;
-			> hui-background {
-				background: red;
-			}
+			background-style: red;
 		}
 		> .first-dynamic {
 			fill-height: 1;
 			auto-size-height: 1;
 			fill-width: 1;
 
-			> hui-background {
-				background: blue;
-			}
+			background-style: blue;
 
 			> .first-content {
 				layout: vertical;
@@ -167,9 +145,7 @@ gym-layouts {
 
 	.root {
 		padding: 2;
-		> hui-background {
-			outline: 1 blue;
-		}
+		background-outline: 1 blue;
 	}
 
 	.container {
@@ -179,9 +155,7 @@ gym-layouts {
 		padding-right: 10;
 		spacing: 2;
 		overflow: scroll;
-		> hui-background {
-			outline: 2 red;
-		}
+		background-outline: 2 red;
 
 		hui-element {
 			tip: "hihi";
@@ -195,17 +169,13 @@ gym-layouts {
 			padding: 4;
 			spacing: 2;
 			fill-width: true;
-			> hui-background {
-				outline: 2 green;
-			}
+			background-outline: 2 green;
 
 			.fixed {
 				fill-height: true;
 				width: 50;
 
-				> hui-background {
-					outline: 2 purple;
-				}
+				background-outline: 2 purple;
 			}
 
 			.grow {
@@ -217,9 +187,7 @@ gym-layouts {
 
 				spacing: 2;
 
-				> hui-background {
-					outline: 1 yellow;
-				}
+				background-outline: 1 yellow;
 			}
 		}
 
@@ -238,9 +206,7 @@ gym-search {
 		height: 300;
 		layout: vertical;
 		overflow: scroll;
-		> hui-background {
-			background: @color-gray-3;
-		}
+		background-style: @color-gray-3;
 	}
 }
 
@@ -253,41 +219,33 @@ gym-hui-background {
 
 	overflow: scroll;
 
-	> hui-background {
-		background: white;
-	}
+	background-style: white;
 
 	> hui-element {
 		width: 128;
 		height: 128;
 
-		> hui-background {
-			outline: 1 black;
+		background-outline: 1 black;
 
-			background: white;
-			border-radius: 0 2 8 32;
-		}
+		background-style: white;
+		background-border-radius: 0 2 8 32;
 	}
 
 	.btn-1 {
 		width: 64;
 		height: 64;
 
-		> hui-background {
-			border-radius: 0 2 8 8;
+		background-border-radius: 0 2 8 8;
 
-			background: #999;
-			shadow: 2 2 5 rgba(0,0,0,0.5);
+		background-style: #999;
+		background-shadow: 2 2 5 rgba(0,0,0,0.5);
 
-			filter: brightness(0.50);
-		}
+		background-filter: brightness(0.50);
 
 		&:hover {
-			> hui-background {
-				shadow: 2 2 0 16 rgba(255,0,0,1.0);
+			background-shadow: 2 2 0 16 rgba(255,0,0,1.0);
 
-				filter: brightness(0.50);
-			}
+			background-filter: brightness(0.50);
 
 			filter: brightness(-0.1);
 
@@ -295,44 +253,32 @@ gym-hui-background {
 	}
 
 	.example-1 {
-		> hui-background {
-			shadow: 2 2 5 rgba(0,0,0,0.5);
-		}
+		background-shadow: 2 2 5 rgba(0,0,0,0.5);
 	}
 
 	.example-2 {
-		> hui-background {
-			shadow: inset 0 0 5 rgba(0,0,0,1.0);
-		}
+		background-shadow: inset 0 0 5 rgba(0,0,0,1.0);
 	}
 
 	.example-3 {
-		> hui-background {
-			shadow: inset 0 0 5 5 rgba(0,0,0,0.7);
-		}
+		background-shadow: inset 0 0 5 5 rgba(0,0,0,0.7);
 	}
 
 	.example-4 {
-		> hui-background {
-			border-radius: 4;
-			shadow: inset 0 0 5 -100 2 rgba(0,0,0,0.7);
-		}
+		background-border-radius: 4;
+		background-shadow: inset 0 0 5 -100 2 rgba(0,0,0,0.7);
 	}
 
 	.example-5 {
-		> hui-background {
-			outline: 1 black;
-			border-radius: 4;
-			shadow: inset 0 -100 5 2 -98 rgba(0,0,0,0.7);
-		}
+		background-outline: 1 black;
+		background-border-radius: 4;
+		background-shadow: inset 0 -100 5 2 -98 rgba(0,0,0,0.7);
 	}
 
 	.example-6 {
-		> hui-background {
-			outline: 1 black;
-			border-radius: 4;
-			shadow: inset 0 -100 5 -98 rgba(0,0,0,0.7);
-		}
+		background-outline: 1 black;
+		background-border-radius: 4;
+		background-shadow: inset 0 -100 5 -98 rgba(0,0,0,0.7);
 	}
 }
 
@@ -352,12 +298,12 @@ gym-icons {
 gym-hui-sdf {
 	margin: 8;
 
-	> hui-element > hui-background {
-		image: "ui/icons/prefab/file2.sdf.png" fit;
-		image-is-sdf: true;
-		background: #333;
-		image-color: white;
-		image-sdf-range: 8;
+	> hui-element {
+		background-image: "ui/icons/prefab/file2.sdf.png" fit;
+		background-image-is-sdf: true;
+		background-style: #333;
+		background-image-color: white;
+		background-image-sdf-range: 8;
 	}
 
 	.example-sdf-1 {
@@ -393,18 +339,14 @@ gym-hui-drag-and-drop {
 			halign: middle;
 		}
 
-		> hui-background {
-			outline: 1 black;
-			border-radius: 4;
-			background: #999;
-		}
+		background-outline: 1 black;
+		background-border-radius: 4;
+		background-style: #999;
 
 		&.dragged {
-			> hui-background {
-				outline: 1 black;
-				border-radius: 4;
-				background: #333;
-			}
+			background-outline: 1 black;
+			background-border-radius: 4;
+			background-style: #333;
 		}
 	}
 
@@ -419,24 +361,18 @@ gym-hui-drag-and-drop {
 			halign: middle;
 		}
 
-		> hui-background {
-			outline: 1 black;
-			border-radius: 4;
-			background: #999;
-		}
+		background-outline: 1 black;
+		background-border-radius: 4;
+		background-style: #999;
 
 		&.can-drop {
-			> hui-background {
-				outline: 2 green;
-				border-radius: 4;
-			}
+			background-outline: 2 green;
+			background-border-radius: 4;
 		}
 
 		&.drag-over {
-			> hui-background {
-				outline: 2 red;
-				border-radius: 4;
-			}
+			background-outline: 2 red;
+			background-border-radius: 4;
 		}
 	}
 }

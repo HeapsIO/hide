@@ -9,21 +9,17 @@ hui-slider {
 	cursor: ew-resize;
 
 	background-type: hui;
-	> hui-background {
-		background: @widget-bg;
-		border-radius: @base-corner-radius;
-		outline: 1 @widget-border;
-	}
+	background-style: @widget-bg;
+	background-border-radius: @base-corner-radius;
+	background-outline: 1 @widget-border;
 
 	> #fillBar {
 		height: @widget-base-height;
 
 		background-type: hui;
-		> hui-background {
-			background: @color-accent;
-			border-radius: @base-corner-radius;
-			outline: 1 @color-accent;
-		}
+		background-style: @color-accent;
+		background-border-radius: @base-corner-radius;
+		background-outline: 1 @color-accent;
 	}
 
 	> #valueText {
@@ -37,9 +33,5 @@ hui-slider {
 		text-align: left;
 		margin-left: 10;
 		valign: middle;
-		> hui-background {
-			outline-alpha: 0;
-			background-alpha: 0;
-		}
 	}
 }

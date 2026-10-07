@@ -17,30 +17,12 @@ hui-base {
 		margin-top: -8;
 		margin-left: -4;
 
-		> hui-background {
-			background: @popup-bg-darker;
-			outline: 1 @popup-border;
-			border-radius: @base-corner-radius;
+		background-style: @popup-bg-darker;
+		background-outline: 1 @popup-border;
+		background-border-radius: @base-corner-radius;
 
-			shadow: 2 2 4 rgba(0,0,0,0.7);
-		}
+		background-shadow: 2 2 4 rgba(0,0,0,0.7);
 	}
-
-	// debug focus
-	// hui-tree:focus {
-	// 	> hui-background {
-	// 		outline: 2 #FF00FF !important;
-	// 		background: rgba(255,0,0,0.1) !important;
-	// 	}
-	// }
-
-	// hui-virtual-grid:focus {
-	// 	> hui-background {
-	// 		outline: 2 #FF00FF !important;
-	// 		background: rgba(255,0,0,0.1) !important;
-	// 	}
-	// }
-
 
 	.popup * {
 		propagate: true;

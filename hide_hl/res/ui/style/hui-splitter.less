@@ -11,9 +11,7 @@ hui-splitter {
 			width: 1;
 			halign: middle;
 
-			>hui-background {
-				background: @splitter-color;
-			}
+			background-style: @splitter-color;
 		}
 	}
 
@@ -24,20 +22,14 @@ hui-splitter {
 
 			fill-width: 1;
 			height: 1;
-			>hui-background {
-				background: @splitter-color;
-			}
+			background-style: @splitter-color;
 		}
 	}
 
-	> hui-background {
-		//background: @splitter-color;
-		border-radius: 2;
-	}
+	//background: @splitter-color;
+	background-border-radius: 2;
 
 	&:hover {
-		> hui-background {
-			background: @splitter-hover;
-		}
+		background-style: @splitter-hover;
 	}
 }

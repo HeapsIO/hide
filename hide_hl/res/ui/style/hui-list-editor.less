@@ -13,11 +13,9 @@ hui-list-editor {
 			halign: left !important;
 			width: 20;
 			height: 20;
-			> hui-background {
-				image: "ui/icons/drop_down.sdf.png" fit;
-				image-angle: 1.57079632679489661923;
-				transition: image-angle 0.07 ease-in-out;
-			}
+			background-image: "ui/icons/drop_down.sdf.png" fit;
+			background-image-angle: 1.57079632679489661923;
+			transition: background-image-angle 0.07 ease-in-out;
 		}
 
 		#infos {
@@ -32,9 +30,7 @@ hui-list-editor {
 		}
 
 		&:hover {
-			> hui-background {
-				background: @color-over;
-			}
+			background-style: @color-over;
 		}
 	}
 
@@ -49,8 +45,8 @@ hui-list-editor {
 	}
 
 	&.open {
-		> #header #caret > hui-background {
-			image-angle: 0;
+		> #header #caret {
+			background-image-angle: 0;
 		}
 
 		#content {
@@ -78,11 +74,9 @@ hui-list-editor-line {
 			halign: left !important;
 			width: 20;
 			height: 20;
-			> hui-background {
-				image: "ui/icons/drop_down.sdf.png" fit;
-				image-angle: 1.57079632679489661923;
-				transition: image-angle 0.07 ease-in-out;
-			}
+			background-image: "ui/icons/drop_down.sdf.png" fit;
+			background-image-angle: 1.57079632679489661923;
+			transition: background-image-angle 0.07 ease-in-out;
 		}
 	}
 
@@ -100,17 +94,15 @@ hui-list-editor-line {
 	}
 
 	&.open {
-		> #header #caret > hui-background {
-			image-angle: 0;
+		> #header #caret {
+			background-image-angle: 0;
 		}
 
 		> #body-content {
 			visible: true;
 			padding-bottom: 2;
-			> hui-background {
-				outline: 1 #444;
-				outline-thickness: 0 0 1 0;
-			}
+			background-outline: 1 #444;
+			background-outline-thickness: 0 0 1 0;
 		}
 	}
 

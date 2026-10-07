@@ -7,9 +7,7 @@ hui-view {
 	style-events: false;
 
 	background-type: hui;
-	> hui-background {
-		background: @bg-panel-lvl1;
-	}
+	background-style: @bg-panel-lvl1;
 
 	> hui-element {
 		auto-size: 1;
@@ -53,8 +51,6 @@ hui-view {
 			padding-bottom: 4;
 		}
 
-		> hui-background {
-			background: @color-red;
-		}
+		background-style: @color-red;
 	}
 }

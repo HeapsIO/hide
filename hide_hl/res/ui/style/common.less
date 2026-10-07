@@ -95,15 +95,11 @@
 
 
 	&:hover {
-		> hui-background {
-			background: @color-over;
-		}
+		background-style: @color-over;
 	}
 
 	&:active {
-		> hui-background {
-			background: @color-over-lighter;
-		}
+		background-style: @color-over-lighter;
 		offset-y: 1;
 
 	}
@@ -113,57 +109,45 @@
 
 .button-border() {
 	.button();
-	> hui-background {
-		border-radius: @base-corner-radius;
-		outline: 1 @widget-border;
-	}
+	background-border-radius: @base-corner-radius;
+	background-outline: 1 @widget-border;
 
 	&:hover {
-		> hui-background {
-			outline: 1 @widget-border-lighter;
-		}
+		background-outline: 1 @widget-border-lighter;
 	}
 }
 
 .button-shadow() {
-	> hui-background {
-		shadow: 0 1 0 0 0 rgba(0,0,0,0.5);
-	}
+	background-shadow: 0 1 0 0 0 rgba(0,0,0,0.5);
 
 	&:active {
-		> hui-background {
-			background: @color-over-lighter;
-			shadow: 0 1 2 0 0 rgba(0,0,0,1.0);
-			shadow-inset: true;
-		}
+		background-style: @color-over-lighter;
+		background-shadow: 0 1 2 0 0 rgba(0,0,0,1.0);
+		background-shadow-inset: true;
 	}
 }
 
 
 .hover-select() {
 	&.selected {
-		> hui-background {
-			background: @color-select;
-		}
+		background-style: @color-select;
 
-		&:hover > hui-background {
-			background: @color-hover;
+		&:hover {
+			background-style: @color-hover;
 		}
 	}
 
-	&:hover > hui-background {
-		background: @tree-hover;
+	&:hover {
+		background-style: @tree-hover;
 	}
 }
 
 .hover-select-focus() {
 	&.selected {
-		> hui-background {
-			background: @color-select-focus;
-		}
+		background-style: @color-select-focus;
 
-		&:hover > hui-background {
-			background: @color-hover-focus;
+		&:hover {
+			background-style: @color-hover-focus;
 		}
 	}
 }

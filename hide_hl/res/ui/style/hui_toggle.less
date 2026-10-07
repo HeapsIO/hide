@@ -5,10 +5,8 @@ hui-toggle {
 	.button();
 
 	background-type: hui;
-	> hui-background {
-		border-radius: @base-corner-radius;
-		outline: 1 @widget-border;
-	}
+	background-border-radius: @base-corner-radius;
+	background-outline: 1 @widget-border;
 
 	hui-element {
 		valign: middle;
@@ -26,14 +24,10 @@ hui-toggle {
 	}
 
 	&.quiet {
-		> hui-background {
-			outline: none;
-		}
+		background-outline: none;
 	}
 
 	&.toggled {
-		> hui-background {
-			background: @color-blue;
-		}
+		background-style: @color-blue;
 	}
 }

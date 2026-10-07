@@ -15,9 +15,7 @@ hui-code-tip {
 
 	min-width: 200;
 
-	> hui-background {
-		background: @color-gray-5;
-	}
+	background-style: @color-gray-5;
 
 
 	.c {
@@ -29,9 +27,7 @@ hui-code-tip {
 		base-font: "code";
 	}
 	.sel {
-		> hui-background {
-			background: @color-accent;
-		}
+		background-style: @color-accent;
 	}
 }
 
@@ -44,8 +40,6 @@ hui-code-editor {
 
 	overflow: scroll;
 
-	> hui-background {
-		border-radius: 4;
-		outline: 1 @widget-border;
-	}
+	background-border-radius: 4;
+	background-outline: 1 @widget-border;
 }

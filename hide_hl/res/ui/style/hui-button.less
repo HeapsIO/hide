@@ -6,11 +6,9 @@ hui-button {
 	.button-shadow();
 
 	background-type: hui;
-	> hui-background {
-		border-radius: @base-corner-radius;
-		outline: 1 @widget-border;
-		background: #333;
-	}
+	background-border-radius: @base-corner-radius;
+	background-outline: 1 @widget-border;
+	background-style: #333;
 
 	hui-element {
 		valign: middle;
@@ -48,8 +46,6 @@ hui-button {
 	}
 
 	&.quiet {
-		> hui-background {
-			outline: none;
-		}
+		background-outline: none;
 	}
 }

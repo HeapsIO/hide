@@ -5,10 +5,8 @@ hui-toolbar {
 	padding: 2;
 
 	background-type: hui;
-	>hui-background {
-		background: @color-gray-3;
-		outline: 1 @popup-border;
-	}
+	background-style: @color-gray-3;
+	background-outline: 1 @popup-border;
 
 	hui-icon {
 		width: 20;
@@ -31,14 +29,10 @@ hui-toolbar {
 		min-height: @button-size;
 
 		&.disabled {
-			> hui-background {
-				outline-color: @color-gray-5;
-			}
+			background-outline-color: @color-gray-5;
 
 			hui-icon {
-				> hui-background {
-					image-color: @text-disabled;
-				}
+				background-image-color: @text-disabled;
 			}
 		}
 	}
@@ -57,9 +51,7 @@ hui-toolbar {
 		width: 150;
 		fill-width: false;
 		background-type: hui;
-		> hui-background {
-			border-radius: @base-corner-radius !important;
-		}
+		background-border-radius: @base-corner-radius !important;
 	}
 
 	>hui-element {
@@ -79,28 +71,22 @@ hui-toolbar {
 
 	.group-start {
 		margin-right: 0px;
-		> hui-background {
-			border-radius: @base-corner-radius 0 0 @base-corner-radius;
-			outline: 1 @widget-border;
-		}
+		background-border-radius: @base-corner-radius 0 0 @base-corner-radius;
+		background-outline: 1 @widget-border;
 	}
 
 	.group {
 		margin-left: -1px;
 		margin-right: 0px;
-		> hui-background {
-			border-radius: 0;
-			outline: 1 @widget-border;
-		}
+		background-border-radius: 0;
+		background-outline: 1 @widget-border;
 	}
 
 	.group-end {
 		margin-left: -1px;
 		margin-right: 5px;
-		> hui-background {
-			border-radius: 0 @base-corner-radius @base-corner-radius 0;
-			outline: 1 @widget-border;
-		}
+		background-border-radius: 0 @base-corner-radius @base-corner-radius 0;
+		background-outline: 1 @widget-border;
 	}
 
 	> .spacer {

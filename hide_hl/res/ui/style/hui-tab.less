@@ -20,32 +20,22 @@ hui-tab {
 		height: 16;
 
 		background-type: hui;
-		> hui-background {
-			image: "ui/icons/close.sdf.png" fit;
-		}
+		background-image: "ui/icons/close.sdf.png" fit;
 	}
 
-	> hui-background {
-		background: @tab-tab-bg;
+	background-style: @tab-tab-bg;
 
-		border-radius: 4 4 0 0;
-	}
+	background-border-radius: 4 4 0 0;
 
 	&:hover {
-		> hui-background {
-			background: lighten(@tab-tab-bg, @light-hover);
-		}
+		background-style: lighten(@tab-tab-bg, @light-hover);
 	}
 
 	&.active {
-		> hui-background {
-			background: @tab-tab-active-bg;
-		}
+		background-style: @tab-tab-active-bg;
 
 		&:hover {
-			> hui-background {
-				background: lighten(@tab-tab-active-bg, @light-hover);
-			}
+			background-style: lighten(@tab-tab-active-bg, @light-hover);
 		}
 
 		>#title {
@@ -54,15 +44,11 @@ hui-tab {
 	}
 
 	&.dragged {
-		> hui-background {
-			background: @tab-tab-dragged-bg !important;
-		}
+		background-style: @tab-tab-dragged-bg !important;
 	}
 
 	&.dropTarget {
-		> hui-background {
-			outline: 2 @color-blue;
-			outline-color: @color-blue !important;
-		}
+		background-outline: 2 @color-blue;
+		background-outline-color: @color-blue !important;
 	}
 }

@@ -5,11 +5,9 @@ hui-gradient-box {
 
 	.button-border();
 
-	> hui-background {
-		outline: 1 @widget-border;
-		background: @widget-bg;
-		border-radius: @base-corner-radius;
-	}
+	background-outline: 1 @widget-border;
+	background-style: @widget-bg;
+	background-border-radius: @base-corner-radius;
 
 	>#gradient-display {
 		position: absolute;

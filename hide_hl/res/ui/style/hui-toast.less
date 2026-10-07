@@ -7,43 +7,37 @@ hui-toast {
 
 	background-type: hui;
 
-	> hui-background {
-		background: @popup-bg;
-		border-radius: 3;
-		shadow: @popup-shadow;
-		outline: 1 @popup-border;
-	}
+	background-style: @popup-bg;
+	background-border-radius: 3;
+	background-shadow: @popup-shadow;
+	background-outline: 1 @popup-border;
 
 	&:hover {
-		> hui-background {
-			background: lighten(@popup-bg, @light-hover);
-		}
+		background-style: lighten(@popup-bg, @light-hover);
 	}
 
 
 	&.info {
-		>#icon-container > hui-background { background: @color-info;}
+		>#icon-container { background-style: @color-info;}
 
-		>#icon-container > #icon > hui-background { image: "ui/icons/info.sdf.png" fit; }
+		>#icon-container > #icon { background-image: "ui/icons/info.sdf.png" fit; }
 	}
 
 	&.warning {
-		>#icon-container > hui-background { background: @color-warning;}
-		>#icon-container > #icon > hui-background { image: "ui/icons/warning.sdf.png" fit; image-color: #000;}
+		>#icon-container { background-style: @color-warning;}
+		>#icon-container > #icon { background-image: "ui/icons/warning.sdf.png" fit; background-image-color: #000;}
 	}
 
 	&.error {
-		>#icon-container > hui-background { background: @color-error;}
-		>#icon-container > #icon > hui-background { image: "ui/icons/error.sdf.png" fit; image-color: #000;}
+		>#icon-container { background-style: @color-error;}
+		>#icon-container > #icon { background-image: "ui/icons/error.sdf.png" fit; background-image-color: #000;}
 	}
 
 	>#icon-container {
 		padding: 2;
 		background-type: hui;
 
-		> hui-background {
-			border-radius: 3 0 0 3;
-		}
+		background-border-radius: 3 0 0 3;
 		auto-size-height: 1;
 		fill-height: 1;
 		> #icon {
@@ -51,9 +45,7 @@ hui-toast {
 			height: 16;
 			background-type: hui;
 
-			> hui-background {
-				image-color: #FFF;
-			}
+			background-image-color: #FFF;
 
 			valign: middle;
 		}

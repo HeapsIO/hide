@@ -75,6 +75,8 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end impl
 	// background-* css properties can be applied before background-type, so the background is built on demand
 	@:forwardDecls({ prefix: "background", whitelistMeta: [":p"], renames: ["background" => "backgroundStyle"], copyMeta: [":p", ":t"] })
 	public var huiBg(get, never) : HuiBackground;
+	@:p var backgroundAlpha(default, set) : Float = 1;
+	@:p(filter) var backgroundFilter(never, set) : h2d.filter.Filter;
 	public var parentElement(get, never): HuiElement;
 	public var childElements(get, never): Array<HuiElement>;
 	public var uiBase(get, never) : HuiBase;
@@ -190,6 +192,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end impl
 			onLoadState();
 		}
 	}
+
+	function set_backgroundAlpha(v) { return backgroundAlpha = huiBg.alpha = v; }
+	function set_backgroundFilter(v) { return huiBg.filter = v; }
 
 	function get_huiBg() : HuiBackground {
 		if (background == null)

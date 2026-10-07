@@ -10,12 +10,10 @@ hui-error-display {
 	layout: vertical;
 	padding: 8;
 
-	> hui-background {
-		outline: 1 @popup-border;
-		background: @popup-bg-darker;
-		shadow: 2 2 5 rgba(0,0,0,0.5);
-		border-radius: @base-corner-radius;
-	}
+	background-outline: 1 @popup-border;
+	background-style: @popup-bg-darker;
+	background-shadow: 2 2 5 rgba(0,0,0,0.5);
+	background-border-radius: @base-corner-radius;
 
 	#stack-trace {
 		overflow: scroll;

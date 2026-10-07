@@ -8,18 +8,14 @@ hui-checkbox {
 	cursor: button;
 
 	background-type: hui;
-	> hui-background {
-		border-radius: @base-corner-radius;
-		outline: 1 @widget-border;
-	}
+	background-border-radius: @base-corner-radius;
+	background-outline: 1 @widget-border;
 
 	>#icon {
 		fill-width: true;
 		fill-height: true;
 		cursor: button;
 		background-type: hui;
-		> hui-background {
-			image: "ui/icons/tick.sdf.png" fit;
-		}
+		background-image: "ui/icons/tick.sdf.png" fit;
 	}
 }

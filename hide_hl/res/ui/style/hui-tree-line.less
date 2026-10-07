@@ -8,17 +8,13 @@ hui-tree-line {
 	cursor: button;
 
 	&.edit-mode {
-		>hui-background {
-			outline: 3 @color-blue;
-			outline-thickness: 0 1 0 0;
-		}
+		background-outline: 3 @color-blue;
+		background-outline-thickness: 0 1 0 0;
 	}
 
 	&.override-mode {
-		>hui-background {
-			outline: 3 @color-peach;
-			outline-thickness: 0 1 0 0;
-		}
+		background-outline: 3 @color-peach;
+		background-outline-thickness: 0 1 0 0;
 	}
 
 	spacing: 2;
@@ -60,18 +56,13 @@ hui-tree-line {
 		margin-right: -4;
 		width: 16;
 		height: 16;
-		> hui-background {
-			image: none;
-			image-angle: 0;
-			transition: image-angle 0.07 ease-in-out;
-			image-color: @color-foreground-muted;
-
-		}
+		background-image: none;
+		background-image-angle: 0;
+		transition: background-image-angle 0.07 ease-in-out;
+		background-image-color: @color-foreground-muted;
 
 		&:hover {
-			> hui-background {
-				image-color: @color-foreground;
-			}
+			background-image-color: @color-foreground;
 		}
 
 		propagate-events: true;
@@ -95,9 +86,7 @@ hui-tree-line {
 
 	> #icon {
 		background-type: hui;
-		>hui-background {
-			image-color: @color-foreground;
-		}
+		background-image-color: @color-foreground;
 
 		width: 16;
 		height: 16;
@@ -125,14 +114,14 @@ hui-tree-line {
 	}
 
 	&.open {
-		> #caret > hui-background {
-			image-angle: -1.57079632679489661923;
+		> #caret {
+			background-image-angle: -1.57079632679489661923;
 		}
 	}
 
 	&.selected {
-		> #caret > hui-background {
-			image-color: @color-foreground;
+		> #caret {
+			background-image-color: @color-foreground;
 		}
 	}
 
@@ -140,54 +129,42 @@ hui-tree-line {
 
 	&.children {
 		> #caret {
-			> hui-background {
-				image: "ui/icons/chevron_right.sdf.png" fit;
-			}
+			background-image: "ui/icons/chevron_right.sdf.png" fit;
 		}
 	}
 
 	&.keyboard-selected {
-		> hui-background {
-			outline: 1 @color-gray-6;
-		}
+		background-outline: 1 @color-gray-6;
 	}
 
 	&.drag-selected {
-		> hui-background {
-			outline: 1 @color-gray-6;
-		}
+		background-outline: 1 @color-gray-6;
 	}
 
 	> #drop-indicator {
 		position: absolute;
 
-		> hui-background {
-			outline: 0 #5e98f5;
-		}
+		background-outline: 0 #5e98f5;
 	}
 
-	&.drop-inside > #drop-indicator > hui-background {
-		outline-thickness: 1;
+	&.drop-inside > #drop-indicator {
+		background-outline-thickness: 1;
 	}
 
-	&.drop-before > #drop-indicator > hui-background {
-		outline-thickness: 1 0 0 0;
+	&.drop-before > #drop-indicator {
+		background-outline-thickness: 1 0 0 0;
 	}
 
-	&.drop-after > #drop-indicator > hui-background {
-		outline-thickness: 0 0 1 0;
+	&.drop-after > #drop-indicator {
+		background-outline-thickness: 0 0 1 0;
 	}
 
 	&.disable {
 		> #caret {
-			>hui-background {
-				image-color :@color-red;
-			}
+			background-image-color :@color-red;
 		}
 		>#icon {
-			>hui-background {
-				image-color :@color-red;
-			}
+			background-image-color :@color-red;
 		}
 		>#title {
 			color: @color-red;
@@ -196,14 +173,10 @@ hui-tree-line {
 
 	&.editor-only {
 		> #caret {
-			>hui-background {
-				image-color :@color-blue;
-			}
+			background-image-color :@color-blue;
 		}
 		>#icon {
-			>hui-background {
-				image-color :@color-blue;
-			}
+			background-image-color :@color-blue;
 		}
 		>#title {
 			color: @color-blue;
@@ -212,14 +185,10 @@ hui-tree-line {
 
 	&.ingame-only {
 		> #caret {
-			>hui-background {
-				image-color : @color-yellow;
-			}
+			background-image-color : @color-yellow;
 		}
 		>#icon {
-			>hui-background {
-				image-color : @color-yellow;
-			}
+			background-image-color : @color-yellow;
 		}
 		>#title {
 			color: @color-yellow;

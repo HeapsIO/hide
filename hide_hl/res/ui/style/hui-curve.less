@@ -2,9 +2,7 @@ hui-key-popup {
 	padding: 5;
 
 	background-type: hui;
-	>hui-background {
-		outline: 1 @popup-border;
-	}
+	background-outline: 1 @popup-border;
 
 	.horizontal {
 		width: 40px;
@@ -36,16 +34,12 @@ hui-curve-box {
 	height: @widget-base-height;
 
 	background-type: hui;
-	> hui-background {
-		background: @widget-bg;
-		border-radius: @base-corner-radius;
-		outline: 1 @widget-border;
-	}
+	background-style: @widget-bg;
+	background-border-radius: @base-corner-radius;
+	background-outline: 1 @widget-border;
 
 	&:hover {
-		> hui-background {
-			background: lighten(@widget-bg, @light-hover);
-		}
+		background-style: lighten(@widget-bg, @light-hover);
 	}
 }
 
@@ -56,11 +50,9 @@ hui-curve-editor {
 	overflow: hidden;
 
 	background-type: hui;
-	> hui-background {
-		background: @widget-bg;
-		border-radius: @base-corner-radius;
-		outline: 1 @widget-border;
-	}
+	background-style: @widget-bg;
+	background-border-radius: @base-corner-radius;
+	background-outline: 1 @widget-border;
 
 	hui-text {
 		position: absolute;
@@ -75,10 +67,8 @@ hui-curve-editor {
 	.selection-rectangle {
 		position: absolute;
 		background-type: hui;
-		> hui-background {
-			background: rgb(201, 201, 201);
-			alpha: 0.2;
-		}
+		background-style: rgb(201, 201, 201);
+		background-alpha: 0.2;
 
 		&:hover {
 			cursor: ew-resize;
@@ -88,10 +78,8 @@ hui-curve-editor {
 	.selection-bounds {
 		position: absolute;
 		background-type: hui;
-		> hui-background {
-			background: rgb(112, 140, 190);
-			alpha: 0.2;
-		}
+		background-style: rgb(112, 140, 190);
+		background-alpha: 0.2;
 
 		&:hover {
 			cursor: ew-resize;

@@ -18,17 +18,12 @@ hui-tree {
 			height: 20;
 		}
 
-		> hui-background {
-			background: @color-gray-2;
-			shadow: 2px 2px 4px rgba(0,0,0,0.3);
-
-		}
+		background-style: @color-gray-2;
+		background-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 	}
 
 	background-type: hui;
-	> hui-background {
-		background: @tree-bg;
-	}
+	background-style: @tree-bg;
 
 	> #wrapper {
 		auto-size-height: 1;
@@ -51,13 +46,9 @@ hui-tree-line {
 	background-type: hui;
 	fill-width: 1;
 	margin-right: 24;
-	> hui-background {
-		background: @tree-bg;
-	}
+	background-style: @tree-bg;
 
 	&:hover {
-		> hui-background {
-			background: @tree-hover;
-		}
+		background-style: @tree-hover;
 	}
 }

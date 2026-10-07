@@ -54,32 +54,24 @@ hui-menu-item {
 	cursor: button;
 
 	&:hover {
-		> hui-background {
-			background: @color-over;
-		}
+		background-style: @color-over;
 	}
 
 	&:active {
-		> hui-background {
-			background: @color-over-lighter;
-		}
+		background-style: @color-over-lighter;
 	}
 
 	&.keyboard-focused {
-		> hui-background {
-			outline: 1 @color-over-lighter;
-			border-radius: 3;
-		}
+		background-outline: 1 @color-over-lighter;
+		background-border-radius: 3;
 	}
 
 	>#icon {
 		min-width: @item-height;
 		min-height: @item-height;
 		background-type: hui;
-		> hui-background {
-			image-color: #FFFFFF;
-			//background: #FF00FF;
-		}
+		background-image-color: #FFFFFF;
+		//background: #FF00FF;
 	}
 
 	>#content {
@@ -112,10 +104,8 @@ hui-menu-item {
 		min-width: @item-height;
 		min-height: @item-height;
 		background-type: hui;
-		> hui-background {
-			image: "ui/icons/chevron_right.sdf.png" fit;
-			image-color: @color-foreground;
-		}
+		background-image: "ui/icons/chevron_right.sdf.png" fit;
+		background-image-color: @color-foreground;
 	}
 
 	&.separator {
@@ -124,9 +114,7 @@ hui-menu-item {
 		cursor: default;
 
 		&:hover {
-			> hui-background {
-				background: rgba(0,0,0,0);
-			}
+			background-style: rgba(0,0,0,0);
 		}
 
 		>#content {
@@ -145,9 +133,7 @@ hui-menu-item {
 			padding-left: 4;
 
 			background-type: hui;
-			> hui-background {
-				background: @popup-bg;
-			}
+			background-style: @popup-bg;
 		}
 
 		>#icon {
@@ -155,9 +141,7 @@ hui-menu-item {
 			auto-size-width: 1;
 			fill-width: 1;
 			height: 1;
-			> hui-background {
-				background: #555;
-			}
+			background-style: #555;
 
 			margin-bottom: 8;
 		}

@@ -12,10 +12,8 @@ timeline {
 				padding: 4 7 4 7;
 				min-width: 31;
 				background-type: hui;
-				> hui-background {
-					border-radius: 4;
-					background: #426dae;
-				}
+				background-border-radius: 4;
+				background-style: #426dae;
 
 				#time {
 					align: middle middle;
@@ -27,9 +25,7 @@ timeline {
 				halign: middle;
 				width: 3;
 				background-type: hui;
-				> hui-background {
-					background: #426dae;
-				}
+				background-style: #426dae;
 			}
 		}
 
@@ -37,9 +33,7 @@ timeline {
 			fill-width: true;
 			height: 20;
 			background-type: hui;
-			> hui-background {
-				background: @color-gray-5;
-			}
+			background-style: @color-gray-5;
 
 			> hui-text {
 				position: absolute;
@@ -50,9 +44,7 @@ timeline {
 			fill-width: true;
 			height: 30;
 			background-type: hui;
-			> hui-background {
-				background: @color-gray-6;
-			}
+			background-style: @color-gray-6;
 		}
 
 		#grid {
@@ -80,11 +72,9 @@ timeline {
 			overflow: hidden;
 
 			background-type: hui;
-			> hui-background {
-				background: @color-gray-6;
-				border-radius: 4;
-				alpha: 0.5;
-			}
+			background-style: @color-gray-6;
+			background-border-radius: 4;
+			background-alpha: 0.5;
 
 			hui-text {
 				valign: middle;
@@ -102,10 +92,8 @@ timeline {
 			margin-top: 55;
 			padding: 5;
 			background-type: hui;
-			> hui-background {
-				background: @color-gray-3;
-				border-radius: 4 0 0 4;
-			}
+			background-style: @color-gray-3;
+			background-border-radius: 4 0 0 4;
 
 			hui-text {
 				valign: middle;

@@ -11,26 +11,20 @@ hui-drop-overlay {
 
 	visible: false;
 
-	> hui-background {
-		border-radius: 4;
-		outline: 1 red;
-	}
+	background-border-radius: 4;
+	background-outline: 1 red;
 
 	&.accept-drop-any {
 		visible: true;
 
-		> hui-background {
-			border-radius: 4;
-			outline: 1 green;
-		}
+		background-border-radius: 4;
+		background-outline: 1 green;
 	}
 
 	&.accept-drop {
 		visible: true;
 
-		> hui-background {
-			border-radius: 4;
-			outline: 2 white;
-		}
+		background-border-radius: 4;
+		background-outline: 2 white;
 	}
 }

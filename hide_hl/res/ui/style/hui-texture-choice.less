@@ -6,9 +6,7 @@ hui-texture-choice {
 
 		>#file-picker, >#gradient-box {
 			propagate-events: true;
-			> hui-background {
-				border-radius:  @base-corner-radius 0 0 @base-corner-radius;
-			}
+			background-border-radius:  @base-corner-radius 0 0 @base-corner-radius;
 		}
 	}
 
@@ -29,8 +27,6 @@ hui-texture-choice {
 
 		.button-border();
 
-		> hui-background {
-			border-radius: 0 @base-corner-radius @base-corner-radius 0;
-		}
+		background-border-radius: 0 @base-corner-radius @base-corner-radius 0;
 	}
 }

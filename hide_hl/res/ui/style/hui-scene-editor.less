@@ -68,9 +68,7 @@ hui-scene-editor {
 			fill-height: 1;
 			padding-right: 1;
 
-			> hui-background {
-				background: rgb(10,10,10);
-			}
+			background-style: rgb(10,10,10);
 
 			> #root {
 				fill-width: true;
@@ -142,17 +140,15 @@ hui-scene-editor {
 					height: 16;
 
 					background-type: hui;
-					> hui-background {
-						image: "ui/icons/link_break.sdf.png" fit;
-						image-color: @color-foreground-muted;
+					background-image: "ui/icons/link_break.sdf.png" fit;
+					background-image-color: @color-foreground-muted;
+
+					&:hover {
+						background-image-color: @color-foreground;
 					}
 
-					&:hover > hui-background {
-						image-color: @color-foreground;
-					}
-
-					&.locked > hui-background {
-						image: "ui/icons/link.sdf.png" fit;
+					&.locked {
+						background-image: "ui/icons/link.sdf.png" fit;
 					}
 				}
 			}

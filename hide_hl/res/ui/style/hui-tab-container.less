@@ -11,9 +11,7 @@ hui-tab-container {
 		auto-size: 1;
 	}
 
-	> hui-background {
-		background: @bg-panel-lvl1;
-	}
+	background-style: @bg-panel-lvl1;
 
 	> #tab-bar {
 		fill-width: 1;
@@ -38,18 +36,14 @@ hui-tab-container {
 
 		background-type: hui;
 
-		> hui-background {
-			background: @tab-bar-bg;
-		}
+		background-style: @tab-bar-bg;
 
 		> #tab-bar-more {
 			width: 16;
 			height: 16;
 			background-type: hui;
 
-			> hui-background {
-				image: "ui/icons/drop_down.sdf.png" fit;
-			}
+			background-image: "ui/icons/drop_down.sdf.png" fit;
 		}
 	}
 

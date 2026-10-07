@@ -8,11 +8,9 @@ hui-input-box {
 	padding-right: 0;
 
 	background-type: hui;
-	> hui-background {
-		background: @widget-bg;
-		border-radius: @base-corner-radius;
-		outline: 1 @widget-border;
-	}
+	background-style: @widget-bg;
+	background-border-radius: @base-corner-radius;
+	background-outline: 1 @widget-border;
 
 	#input-wrapper {
 		overflow: hidden;
@@ -43,7 +41,7 @@ hui-input-box {
 
 	&.search > #icon {
 		visible: true;
-		> hui-background {image: "ui/icons/search.sdf.png" fit;}
+		background-image: "ui/icons/search.sdf.png" fit;
 	}
 
 }
