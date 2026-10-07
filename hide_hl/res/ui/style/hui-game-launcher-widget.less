@@ -1,0 +1,55 @@
+hui-game-launcher-widget {
+	valign: middle;
+	spacing: 2;
+
+	hui-button {
+		min-height: 16;
+		min-width: 16;
+		height: 16;
+		padding: 0 4 0 4;
+		background-style: rgba(0,0,0,0);
+		background-shadow: none;
+		background-border-radius: 2;
+		.button();
+
+		hui-icon {
+			valign: middle;
+			width: 14;
+			height: 14;
+		}
+	}
+
+	#play-btn {
+		hui-icon {
+			background-image-color: @color-green;
+		}
+	}
+
+	#target-btn {
+		spacing: 2;
+
+		hui-text {
+			valign: middle;
+		}
+	}
+
+	&.compiling {
+		#play-btn {
+			background-style: @color-gray-6;
+
+			hui-icon {
+				background-image-color: @color-yellow;
+			}
+		}
+	}
+
+	&.running {
+		#play-btn {
+			background-style: @color-blue;
+
+			hui-icon {
+				background-image-color: @color-foreground;
+			}
+		}
+	}
+}

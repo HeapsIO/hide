@@ -33,6 +33,8 @@ class HuiMainLayout extends HuiElement {
 					])>
 					<hui-text("Debug")/>
 				</hui-button-menu>
+
+				<hui-game-launcher-widget if (hide.Ide.inst.isProjectValid())/>
 			</hui-element>
 
 			<hui-element public id="main-panel">
