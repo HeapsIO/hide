@@ -464,6 +464,7 @@ class Model extends HuiView<{path: String}> {
 		t.clear();
 		t.useYAxis = false;
 		t.unit = Timeline.Unit.Frame;
+		t.framerate = obj.currentAnimation?.sampling ?? 60.;
 
 		var anims = hide.Ide.inst.listAnims(Ide.inst.getRelPath(state.path));
 		if (anims.length <= 0)
@@ -477,7 +478,16 @@ class Model extends HuiView<{path: String}> {
 			if (obj.currentAnimation == null)
 				return;
 			var path = obj.currentAnimation.resourcePath;
-			t.addClip(haxe.io.Path.withoutDirectory(haxe.io.Path.withoutExtension(path)), 0, obj.currentAnimation.getDuration(), "AnimTrack");
+			t.addClip(haxe.io.Path.withoutDirectory(haxe.io.Path.withoutExtension(path)), 0, obj.currentAnimation.frameCount, "AnimTrack");
+		}
+
+		function addAnimEvents() {
+			if (obj.currentAnimation == null)
+				return;
+			var evts = obj.currentAnimation.events ?? [];
+			for (idx in 0...evts.length)
+				for (ev in evts[idx] ?? [])
+					t.addMarker(ev.name, idx, "AnimTrack");
 		}
 
 		var animSel = new HuiSelect(animTrack);
@@ -485,6 +495,7 @@ class Model extends HuiView<{path: String}> {
 		animSel.items.insert(0, { label: "None", value: "none"});
 		animSel.value = obj.currentAnimation?.resourcePath ?? "none";
 		addAnimClip();
+		addAnimEvents();
 
 		animSel.onValueChanged = () -> {
 			t.clear(Timeline.ClearFlag.RightPanel);
@@ -496,8 +507,92 @@ class Model extends HuiView<{path: String}> {
 
 			var anim = @:privateAccess hrt.prefab.Cache.get().modelCache.loadAnimation(hxd.res.Loader.currentInstance.load(animSel.value).toModel());
 			obj.playAnimation(anim);
+			t.framerate = obj.currentAnimation?.sampling ?? 60.;
 			addAnimClip();
+			addAnimEvents();
 		};
+
+		t.onSave = () -> { save(); }
+		t.onDelete = (markers : Array<hide.view.Timeline.Marker>) -> {
+			for (m in markers) {
+				t.removeMarker(m.name, m.frame);
+				obj.currentAnimation.removeEvent(m.frame, m.name);
+			}
+
+			undo.record((isUndo) -> {
+				if (isUndo) {
+					for (m in markers) {
+						t.addMarker(m.name, m.frame, "AnimTrack");
+						obj.currentAnimation.addEvent(m.frame, m.name);
+					}
+				}
+				else {
+					for (m in markers) {
+						t.removeMarker(m.name, m.frame);
+						obj.currentAnimation.removeEvent(m.frame, m.name);
+					}
+				}
+			}, true);
+		}
+		t.onChange = (oldMarker : hide.view.Timeline.Marker, newMarker : hide.view.Timeline.Marker) -> {
+			if (oldMarker.frame == newMarker.frame && oldMarker.name == newMarker.name)
+				return;
+
+			function moveEvent(fromFrame : Int, fromName : String, toFrame : Int, toName : String) {
+				var anim = obj.currentAnimation;
+				var e = anim.getEvent(fromFrame, fromName);
+				if (e == null)
+					return;
+				anim.events[fromFrame].remove(e);
+				if (anim.events[fromFrame].length == 0)
+					anim.events[fromFrame] = null;
+				if (anim.events[toFrame] == null)
+					anim.events[toFrame] = [];
+				anim.events[toFrame].push(e);
+				e.frame = toFrame;
+				e.name = toName;
+			}
+
+			moveEvent(oldMarker.frame, oldMarker.name, newMarker.frame, newMarker.name);
+
+			undo.record((isUndo) -> {
+				var from = isUndo ? newMarker : oldMarker;
+				var to = isUndo ? oldMarker : newMarker;
+				moveEvent(from.frame, from.name, to.frame, to.name);
+				t.removeMarker(from.name, from.frame);
+				t.addMarker(to.name, to.frame, "AnimTrack");
+			}, true);
+		}
+		t.onUndo = () -> { undo.undo(); }
+		t.onRedo = () -> { undo.redo(); }
+
+		t.contextMenu = () -> {
+			if (obj.currentAnimation == null)
+				return [];
+
+			var scene = t.getScene();
+			var px = @:privateAccess t.px(t.grid.globalToLocal(new h2d.col.Point(scene.mouseX, scene.mouseY)).x);
+			if (px < 0 || px >= obj.currentAnimation.getDuration())
+				return [];
+
+			return [{ label: "Add Event", click: () -> {
+				var name = "NewEvent";
+				var f = t.timeToFrame(px);
+				obj.currentAnimation.addEvent(f, name);
+
+				t.addMarker(name, f, "AnimTrack");
+				undo.record((isUndo) -> {
+					if (isUndo) {
+						obj.currentAnimation.removeEvent(f, name);
+						t.removeMarker(name, f);
+					}
+					else {
+						obj.currentAnimation.addEvent(f, name);
+						t.addMarker(name, f, "AnimTrack");
+					}
+				}, true);
+			} }];
+		}
 
 		t.getTime = () -> {
 			return obj.currentAnimation != null ? (obj.currentAnimation.frame / obj.currentAnimation.frameCount) * obj.currentAnimation.getDuration() : 0.;
@@ -523,6 +618,23 @@ class Model extends HuiView<{path: String}> {
 		}
 
 		t.refresh();
+	}
+
+	function getAnimationProps() {
+		var propsPath = getAnimationPropsPath();
+		var hideData : h3d.prim.ModelCache.HideProps;
+		hideData = { animations : {} };
+		if (sys.FileSystem.exists(propsPath))
+			hideData = haxe.Json.parse(sys.io.File.getContent(propsPath));
+		return hideData;
+	}
+
+	function getAnimationPropsPath() {
+		var path = hide.Ide.inst.config.current.get("hmd.savePropsByAnimation", true) ? obj.currentAnimation.resourcePath : state.path;
+		var parts = path.split(".");
+		parts.pop();
+		parts.push("props");
+		return hide.Ide.inst.getPath(parts.join("."));
 	}
 
 	function getSelectedObjects() : Array<h3d.scene.Object> {
@@ -595,6 +707,27 @@ class Model extends HuiView<{path: String}> {
 				Reflect.deleteField((mat.props:Dynamic), "__refMode");
 			}
 			h3d.mat.MaterialSetup.current.saveMaterialProps(mat, defaultProps);
+		}
+
+		// Save current anim data
+		if (obj.currentAnimation != null) {
+			var events : Array<h3d.anim.Animation.Event> = [];
+			if (obj.currentAnimation.events != null) {
+				for (idx in 0 ... obj.currentAnimation.events.length) {
+					if (obj.currentAnimation.events[idx] == null)
+						continue;
+					for (e in obj.currentAnimation.events[idx])
+						events.push(e);
+				}
+			}
+
+			var hideData = getAnimationProps();
+			hideData.animations ??= {};
+			hideData.animations.set(obj.currentAnimation.resourcePath.split("/").pop(), { events : events } );
+
+			var bytes = new haxe.io.BytesOutput();
+			bytes.writeString(hide.Ide.inst.toJSON(hideData));
+			hxd.File.saveBytes(getAnimationPropsPath(), bytes.getBytes());
 		}
 	}
 

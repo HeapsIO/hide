@@ -21,8 +21,15 @@ typedef Track = {
 
 typedef Clip = {
 	name : String,
-	start : Float,
-	end : Float,
+	start : Int,
+	end : Int,
+	?track : Track,
+	?element : HuiElement
+}
+
+typedef Marker = {
+	name : String,
+	frame : Int,
 	?track : Track,
 	?element : HuiElement
 }
@@ -84,7 +91,6 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 				<hui-element id="right-panel">
 					<hui-element class="vertical">
 						<hui-element id="timer-track"></hui-element>
-						<hui-element id="event-track"></hui-element>
 						<hui-element id="grid">
 							<hui-element id="content"></hui-element>
 						</hui-element>
@@ -113,27 +119,42 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 
 	public var unit : Unit = Unit.Second;
 	public var useYAxis : Bool = true;
+	public var framerate : Float = 60.;
 
 	var tracks : Array<Track> = [];
 	var clips : Array<Clip> = [];
+	var markers : Array<Marker> = [];
+	var needRefresh = true;
+	var selection : Array<Marker> = [];
 
 	var gridShader : GridShader = null;
 	var zoom = new h2d.col.Point(1, 1);
 	var pan = new h2d.col.Point(0, 0);
 	var onPanDrag : (e : hxd.Event) -> Void;
 	var labels = [];
-	var needRefresh = true;
 	var hstep = MIN_STEP;
 	var vstep = MIN_STEP;
 
-	inline function sx(px : Float) { return px * calculatedWidth * zoom.x + pan.x; }
+	public inline function frameToTime(f : Int) { return f / framerate; }
+	public inline function timeToFrame(t : Float) { return hxd.Math.round(t * framerate); }
+	inline function sx(px : Float) { return px * grid.calculatedWidth * zoom.x + pan.x; }
 	inline function sy(py : Float) { return grid.calculatedHeight - (py * grid.calculatedHeight * zoom.y + pan.y); }
-	inline function px(sx : Float) { return (sx - pan.x) / (calculatedWidth * zoom.x); }
+	inline function px(sx : Float) { return (sx - pan.x) / (grid.calculatedWidth * zoom.x); }
 	inline function py(sy : Float) { return (grid.calculatedHeight - sy - pan.y) / (grid.calculatedHeight * zoom.y); }
 
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
 		initComponent();
+
+		registerCommand(HuiCommands.save, FocusedView, () -> { onSave();});
+		registerCommand(HuiCommands.delete, FocusedView, () -> {
+			if (selection.length == 0) return;
+			onDelete([ for (m in selection) { name: m.name, frame: m.frame }]);
+			selection = [];
+		});
+		registerCommand(HuiCommands.undo, View, () -> { onUndo(); });
+		registerCommand(HuiCommands.redo, View, () -> { onRedo(); });
+		registerCommand(HuiCommands.selectAll, FocusedView, () -> { selection = markers; });
 
 		gridShader = new GridShader();
 		gridShader.lineColor = h3d.Vector.fromColor(GRID_COLOR);
@@ -164,7 +185,7 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 			if (useYAxis && !hxd.Key.isDown(hxd.Key.CTRL))
 				zoom.y = hxd.Math.clamp(zoom.y * factor, MIN_ZOOM, MAX_ZOOM);
 
-			pan.x = mouse.x - mouseX * calculatedWidth * zoom.x;
+			pan.x = mouse.x - mouseX * grid.calculatedWidth * zoom.x;
 			if (useYAxis)
 				pan.y = grid.calculatedHeight - mouse.y - mouseY * grid.calculatedHeight * zoom.y;
 			refresh();
@@ -189,6 +210,19 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 					default:
 				}
 			});
+		}
+
+		grid.onClick = (e) -> {
+			switch (e.button) {
+				case hxd.Key.MOUSE_LEFT:
+					selection = [];
+				case hxd.Key.MOUSE_RIGHT:
+					var options = contextMenu();
+					if (options == null || options.length == 0)
+						return;
+					uiBase.contextMenu(options);
+				default:
+			}
 		}
 
 		timerTrack.onPush = (e : hxd.Event) -> {
@@ -228,6 +262,8 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		if (flag.match(ClearFlag.Full) || flag.match(ClearFlag.RightPanel)) {
 			content.removeChildren();
 			clips = [];
+			markers = [];
+			selection = [];
 		}
 
 		if (flag.match(ClearFlag.Full)) {
@@ -253,7 +289,7 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		tracks.push({ name: name, content: e });
 	}
 
-	public function addClip(name : String, start: Float, end : Float, ?track : String) {
+	public function addClip(name : String, start : Int, end : Int, ?track : String) {
 		var c : Clip = { name: name, start: start, end: end };
 		if (track != null)
 			c.track = getTrack(track);
@@ -261,10 +297,27 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		refresh();
 	}
 
-	public function addMarker(t: Float, name : String) {
-		//TODO
+	public function addMarker(name : String, frame: Int, ?track : String) {
+		var m : Marker = { name: name, frame: frame };
+		if (track != null)
+			m.track = getTrack(track);
+		markers.push(m);
+		refresh();
 	}
 
+	public function removeMarker(name : String, frame: Int) {
+		var idx = markers.length - 1;
+		while (idx >= 0) {
+			var m = markers[idx];
+			if (m.name == name && m.frame == frame) {
+				markers.remove(m);
+				m.element?.remove();
+				selection.remove(m);
+				return;
+			}
+			idx--;
+		}
+	}
 
 	override function update(dt: Float) {
 		super.update(dt);
@@ -316,17 +369,6 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		widgets.push(forwardBtn);
 
 		return widgets;
-	}
-
-	override function getContextMenuContent(content:Array<hrt.ui.HuiMenu.MenuItem>) {
-		// content.push({label: "Refresh", click: () -> fileBrowser.markRefresh()});
-		// content.push({label: "Layout", menu: [
-		// 		{label: "File Tree", click: updateMode.bind(FileTree)},
-		// 		{label: "Galery", click: updateMode.bind(Gallery)},
-		// 		{label: "Horizontal", click: updateMode.bind(Horizontal)},
-		// 		{label: "Vertical", click: updateMode.bind(Vertical)},
-		// 	]
-		// });
 	}
 
 	function getStep(range : Float) : Float {
@@ -399,22 +441,113 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 				new HuiText(c.name, c.element);
 			}
 
-			var width = Std.int(sx(c.end) - sx(c.start));
+			var width = Std.int(sx(frameToTime(c.end)) - sx(frameToTime(c.start)));
 			c.element.setWidth(width);
 
 			var y = 0.;
 			if (c.track != null)
 				y = content.globalToLocal(c.track.element.localToGlobal(new h2d.col.Point(0, 0))).y;
-			c.element.setPosition(sx(c.start), y);
+			c.element.setPosition(sx(frameToTime(c.start)), y);
+		}
+
+		function placeMarker(m : Marker) {
+			var y = 0.;
+			if (m.track != null)
+				y = content.globalToLocal(m.track.element.localToGlobal(new h2d.col.Point(0, 0))).y;
+			m.element.setPosition(sx(frameToTime(m.frame)) - (m.element.calculatedWidth / 2), y);
+		}
+
+		for (m in markers) {
+			if (m.element == null) {
+				m.element = new HuiElement(content);
+				m.element.dom.addClass("hui-marker");
+				m.element.onAfterReflow = () -> placeMarker(m);
+				new HuiIcon(HuiRes.ui.icons.diamond, m.element);
+				var labelContainer = new HuiElement(m.element);
+				labelContainer.dom.addClass("label-container");
+				var label = new HuiText(m.name, labelContainer);
+				var input = new HuiTextInput(m.name, null, labelContainer);
+				input.text = m.name;
+				input.visible = false;
+				input.onFocusLost = (e : hxd.Event) -> {
+					label.visible = true;
+					label.text = input.text;
+					input.visible = false;
+					var oldMarker = Reflect.copy(m);
+					m.name = input.text;
+					onChange(oldMarker, Reflect.copy(m));
+				}
+
+				m.element.onPush = (e : hxd.Event) -> {
+					var scene = getScene();
+					var oldM = Reflect.copy(m);
+					scene.startCapture((e : hxd.Event) -> {
+						switch (e.kind) {
+							case ERelease, EReleaseOutside:
+								scene.stopCapture();
+								var newM = Reflect.copy(m);
+								onChange(oldM, newM);
+							case EMove:
+								if (m.track != null) {
+									var min = 0;
+									var max = 0;
+									for (c in clips) {
+										if (c.track == m.track) {
+											min = c.start;
+											max = c.end - 1;
+											break;
+										}
+									}
+									m.frame = hxd.Math.iclamp(timeToFrame(px(content.globalToLocal(new h2d.col.Point(scene.mouseX, scene.mouseY)).x)), min, max);
+								}
+								else {
+									m.frame = hxd.Math.imax(timeToFrame(px(content.globalToLocal(new h2d.col.Point(scene.mouseX, scene.mouseY)).x)), 0);
+								}
+							default:
+						}
+					});
+
+					e.propagate = false;
+				}
+
+				m.element.onClick = (e : hxd.Event) -> {
+					if (hxd.Key.isDown(hxd.Key.CTRL) || hxd.Key.isDown(hxd.Key.SHIFT)) {
+						if (selection.contains(m))
+							selection.remove(m);
+						else
+							selection.push(m);
+					}
+					else
+						selection = [m];
+
+					e.propagate = false;
+				}
+
+				m.element.onDoubleClick = (e : hxd.Event) -> {
+					label.visible = false;
+					input.visible = true;
+					input.focus();
+				}
+			}
+
+			m.element.dom.toggleClass("selected", selection.contains(m));
+			placeMarker(m);
 		}
 
 		needRefresh = false;
 	}
 
+	public dynamic function contextMenu() : Array<hrt.ui.HuiMenu.MenuItem> { return []; };
 	public dynamic function getTime() : Float { return 0.; };
 	public dynamic function setTime(t : Float) {};
 	public dynamic function isPaused() : Bool { return false; };
 	public dynamic function setPaused(v : Bool) {};
+
+	public dynamic function onSave() { };
+	public dynamic function onDelete(markers : Array<Marker>) { };
+	public dynamic function onChange(oldMarker : Marker, newMarker : Marker) { };
+	public dynamic function onUndo() { };
+	public dynamic function onRedo() { };
 
 	static var _ = HuiView.register("timeline", Timeline);
 }

@@ -12,8 +12,10 @@ timeline {
 				padding: 4 7 4 7;
 				min-width: 31;
 				background-type: hui;
-				background-border-radius: 4;
-				background-style: #426dae;
+				> hui-background {
+					border-radius: 4;
+					background: @color-blue;
+				}
 
 				#time {
 					align: middle middle;
@@ -25,7 +27,9 @@ timeline {
 				halign: middle;
 				width: 3;
 				background-type: hui;
-				background-style: #426dae;
+				> hui-background {
+					background: @color-blue;
+				}
 			}
 		}
 
@@ -38,13 +42,6 @@ timeline {
 			> hui-text {
 				position: absolute;
 			}
-		}
-
-		#event-track {
-			fill-width: true;
-			height: 30;
-			background-type: hui;
-			background-style: @color-gray-6;
 		}
 
 		#grid {
@@ -80,6 +77,46 @@ timeline {
 				valign: middle;
 			}
 		}
+
+		.hui-marker {
+			layout: vertical;
+			position: absolute;
+			overflow: hidden;
+			hui-icon {
+				halign: middle;
+				>hui-background {
+					image-color : @color-gray-7;
+				}
+			}
+
+			.label-container {
+				padding: 5;
+				background-type: hui;
+				> hui-background {
+					background: @color-gray-7;
+					border-radius: 4;
+				}
+
+				hui-text {
+					halign: middle;
+				}
+			}
+
+			&.selected {
+				hui-icon {
+					halign: middle;
+					>hui-background {
+						image-color : @color-blue;
+					}
+				}
+
+				.label-container {
+					> hui-background {
+						background: @color-blue;
+					}
+				}
+			}
+		}
 	}
 
 	#left-panel {
@@ -89,7 +126,7 @@ timeline {
 			height: @track-height;
 			fill-width: true;
 			margin-left: 20;
-			margin-top: 55;
+			margin-top: 25;
 			padding: 5;
 			background-type: hui;
 			background-style: @color-gray-3;
