@@ -116,6 +116,13 @@ class Light extends Object3D {
 		zNear = 0.02;
 	}
 
+	function syncCascadeParams() {
+		params.resize(cascadeNbr);
+		for ( i in 0...params.length )
+			if ( params[i] == null )
+				params[i] = { depthBias : 1.0, slopeBias : 3.0 };
+	}
+
 	override function save() : Dynamic {
 		var obj : Dynamic = super.save();
 		if( shadows.mode != None ) {
@@ -234,10 +241,7 @@ class Light extends Object3D {
 						cs.debugShader = debugShader;
 						cs.blur.radius = 0.0;
 						cs.mode = shadows.mode == None ? None : Dynamic;
-						params.resize(cascadeNbr);
-						for ( i in 0...params.length )
-							if ( params[i] == null )
-								params[i] = { depthBias : 1.0, slopeBias : 3.0 };
+						syncCascadeParams();
 						cs.params = params;
 						cs.highPrecision = highPrecision;
 					} else {
@@ -417,6 +421,7 @@ class Light extends Object3D {
 		);
 
 		if (params.length > 0) {
+			syncCascadeParams();
 			for (n in 0...cascadeNbr) {
 				var cascadeLabel = 'Cascade ${n}';
 				cascadeParams.build(
@@ -895,7 +900,7 @@ class Light extends Object3D {
 		if ( cascade && shadows.mode != None ) {
 			ctx.properties.add(cascadeGroup,this,function(pname) {
 				ctx.onChange(this,pname);
-				params.resize(cascadeNbr);
+				syncCascadeParams();
 				if( pname == "cascadeNbr" ) ctx.rebuildProperties();
 			});
 		}
