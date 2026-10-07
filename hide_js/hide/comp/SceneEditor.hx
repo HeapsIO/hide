@@ -1123,7 +1123,7 @@ class SceneEditor {
 			}
 		});
 		view.keys.register("sceneeditor.isolate", {name: "Isolate", category: "Scene"}, function() {	isolate(selectedPrefabs); });
-		view.keys.register("sceneeditor.showAll", {name: "Show all", category: "Scene"}, function() {	setVisible(selectedPrefabs, true); });
+		view.keys.register("sceneeditor.showAll", {name: "Show all", category: "Scene"}, function() {	showAll(selectedPrefabs); });
 		view.keys.register("sceneeditor.selectParent", {name: "Select Parent", category: "Scene"}, function() {
 			if(selectedPrefabs.length > 0) {
 				var p = selectedPrefabs[0].parent;
@@ -5028,19 +5028,26 @@ class SceneEditor {
 	}
 
 	public function setVisible(elements : Array<PrefabElement>, visible: Bool) {
+		var prefabHidden : Map<hrt.prefab.Prefab, Bool> = [];
+		for(o in elements) {
+			prefabHidden.set(o, hideList.get(o) ?? false);
+		}
+
 		function exec(undo : Bool) {
-			for(o in elements) {
-				for(c in o.flatten(hrt.prefab.Prefab)) {
-					if (visible)
-						undo ? hideList.set(o, true) : hideList.remove(c);
-					else
-						undo ?  hideList.remove(c) : hideList.set(o, true);
-					applySceneStyle(c);
-					refreshTreeStyle(c, All);
-					if (Std.downcast(c, hrt.prefab.RenderProps) != null)
-						queueRefreshRenderProps();
+			for (prefab => wasHidden in prefabHidden) {
+				var newVisibility = undo ? !wasHidden : visible;
+				if (newVisibility) {
+					hideList.remove(prefab);
+				} else {
+					hideList.set(prefab, true);
 				}
+				applySceneStyle(prefab);
+				refreshTreeStyle(prefab, All);
+				if (Std.downcast(prefab, hrt.prefab.RenderProps) != null)
+					queueRefreshRenderProps();
 			}
+			sceneTree.queueRefresh();
+			renderPropsTree.queueRefresh();
 			saveDisplayState();
 		}
 
@@ -5095,6 +5102,13 @@ class SceneEditor {
 			hideSiblings(e);
 		}
 		setVisible(toHide, false);
+	}
+
+	function showAll(elts : Array<PrefabElement>) {
+		var all = [];
+		for (e in elts)
+			e.flatten(null, all);
+		setVisible(all, true);
 	}
 
 	var isDuplicating = false;
