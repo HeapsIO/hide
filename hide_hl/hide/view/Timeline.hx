@@ -135,6 +135,7 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 
 	public inline function frameToTime(f : Int) { return f / framerate; }
 	public inline function timeToFrame(t : Float) { return hxd.Math.round(t * framerate); }
+	inline function unitScale() { return unit == Second ? 1. : framerate; }
 	inline function sx(px : Float) { return px * grid.calculatedWidth * zoom.x + pan.x; }
 	inline function sy(py : Float) { return grid.calculatedHeight - (py * grid.calculatedHeight * zoom.y + pan.y); }
 	inline function px(sx : Float) { return (sx - pan.x) / (grid.calculatedWidth * zoom.x); }
@@ -321,9 +322,10 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		super.update(dt);
 
 		var t = getTime();
-		var decimals = hxd.Math.imax(0, Math.ceil(-Math.log(hstep) / Math.log(10) - 1e-6));
+		var s = unitScale();
+		var decimals = hxd.Math.imax(0, Math.ceil(-Math.log(hstep * s) / Math.log(10) - 1e-6));
 		var f = Math.pow(10, decimals);
-		time.text = '${Math.round(t * f) / f}';
+		time.text = '${Math.round(t * s * f) / f}';
 		playhead.setPosition(sx(t) - (playhead.calculatedWidth / 2), (timerTrack.calculatedHeight / 2) - (time.calculatedHeight / 2));
 
 		if (needRefresh)
@@ -366,11 +368,25 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		new HuiIcon(HuiRes.ui.icons.fast_forward, forwardBtn);
 		widgets.push(forwardBtn);
 
+		var settingsBtn = new HuiButton();
+		settingsBtn.onClick = (e) -> {
+			uiBase.openMenu([
+				{ label: "Units", menu: [
+					{ label: "Frames", radio: () -> unit == Unit.Frame, click: () -> { unit = Unit.Frame; } },
+					{ label: "Seconds", radio: () -> unit == Unit.Second, click: () -> { unit = Unit.Second; } },
+					{ label: "Timecodes", radio: () -> unit == Unit.Timecode, enabled: false, click: () -> { unit = Unit.Timecode; } },
+				]}
+			], {}, {object: Element(settingsBtn), directionX: StartInside, directionY: EndOutside});
+		};
+		settingsBtn.dom.addClass("end");
+		new HuiIcon(HuiRes.ui.icons.settings, settingsBtn);
+		widgets.push(settingsBtn);
+
 		return widgets;
 	}
 
-	function getStep(range : Float) : Float {
-		var step = MIN_STEP;
+	function getStep(range : Float, minStep : Float) : Float {
+		var step = minStep;
 		var i = 0;
 		while (range / step > MAX_LABELS)
 			step *= (i++ % 3 == 1) ? 2.5 : 2;
@@ -385,14 +401,15 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		var minX = px(0);
 		var maxX = px(rightPanel.calculatedWidth);
 
-		hstep = getStep(maxX - minX);
+		var s = unitScale();
+		hstep = getStep((maxX - minX) * s, unit == Second ? MIN_STEP : 1.) / s;
 		var minS = Math.floor(minX / hstep);
 		var maxS = Math.ceil(maxX / hstep);
 
 		for (i in minS...(maxS+1)) {
 			var ix = i * hstep;
 
-			var label = new HuiText('${hxd.Math.fmt(ix)}', timerTrack);
+			var label = new HuiText('${hxd.Math.fmt(ix * s)}', timerTrack);
 			label.setPosition(sx(ix) - (label.textWidth / 2), (timerTrack.calculatedHeight / 2) - (label.textHeight / 2));
 			labels.push(label);
 		}
@@ -401,7 +418,7 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 			var minY = py(grid.calculatedHeight);
 			var maxY = py(0);
 
-			vstep = getStep(maxY - minY);
+			vstep = getStep(maxY - minY, MIN_STEP);
 			minS = Math.floor(minY / vstep);
 			maxS = Math.ceil(maxY / vstep);
 
