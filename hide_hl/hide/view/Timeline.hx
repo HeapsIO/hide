@@ -115,6 +115,8 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 	static final MAX_ZOOM = 1e4;
 	static final ZOOM_SPEED = 1.1;
 
+	static var togglePause = new hrt.ui.HuiCommands.HuiCommand("Toggle pause", {key: hxd.Key.SPACE});
+
 	public var unit : Unit = Unit.Second;
 	public var useYAxis : Bool = true;
 	public var framerate : Float = 60.;
@@ -132,6 +134,8 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 	var labels = [];
 	var hstep = MIN_STEP;
 	var vstep = MIN_STEP;
+	var playBtnIcon : HuiIcon;
+	var playBtnPaused : Null<Bool>;
 
 	public inline function frameToTime(f : Int) { return f / framerate; }
 	public inline function timeToFrame(t : Float) { return hxd.Math.round(t * framerate); }
@@ -154,6 +158,7 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		registerCommand(HuiCommands.undo, View, () -> { onUndo(); });
 		registerCommand(HuiCommands.redo, View, () -> { onRedo(); });
 		registerCommand(HuiCommands.selectAll, FocusedView, () -> { selection = markers; });
+		registerCommand(togglePause, FocusedView, () -> { setPaused(!isPaused()); });
 
 		gridShader = new GridShader();
 		gridShader.lineColor = h3d.Vector.fromColor(GRID_COLOR);
@@ -328,6 +333,12 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		time.text = '${Math.round(t * s * f) / f}';
 		playhead.setPosition(sx(t) - (playhead.calculatedWidth / 2), (timerTrack.calculatedHeight / 2) - (time.calculatedHeight / 2));
 
+		var paused = isPaused();
+		if (paused != playBtnPaused) {
+			playBtnPaused = paused;
+			playBtnIcon.setIcon(paused ? HuiRes.ui.icons.play : HuiRes.ui.icons.pause);
+		}
+
 		if (needRefresh)
 			refreshInternal();
 	}
@@ -340,30 +351,41 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		var widgets : Array<HuiElement> = super.getToolbarWidgets();
 
 		var rewindBtn = new HuiButton();
+		rewindBtn.onClick = (e) -> {
+			setTime(0.);
+		}
 		rewindBtn.dom.addClass("group-start");
 		new HuiIcon(HuiRes.ui.icons.fast_rewind, rewindBtn);
 		widgets.push(rewindBtn);
 
 		var previousBtn = new HuiButton();
+		previousBtn.onClick = (e) -> {
+			setTime(hxd.Math.max(getTime() - frameToTime(1), 0));
+		}
 		previousBtn.dom.addClass("group");
 		new HuiIcon(HuiRes.ui.icons.skip_previous, previousBtn);
 		widgets.push(previousBtn);
 
 		var playBtn = new HuiButton();
 		playBtn.dom.addClass("group");
-		var playBtnIcon = new HuiIcon(isPaused() ? HuiRes.ui.icons.play : HuiRes.ui.icons.pause, playBtn);
+		playBtnIcon = new HuiIcon(isPaused() ? HuiRes.ui.icons.play : HuiRes.ui.icons.pause, playBtn);
 		widgets.push(playBtn);
 		playBtn.onClick = (e) -> {
 			setPaused(!isPaused());
-			playBtnIcon.setIcon(isPaused() ? HuiRes.ui.icons.play : HuiRes.ui.icons.pause);
 		}
 
 		var nextBtn = new HuiButton();
+		nextBtn.onClick = (e) -> {
+			setTime(hxd.Math.min(getTime() + frameToTime(1), frameToTime(getMaxFrame())));
+		}
 		nextBtn.dom.addClass("group");
 		new HuiIcon(HuiRes.ui.icons.skip_next, nextBtn);
 		widgets.push(nextBtn);
 
 		var forwardBtn = new HuiButton();
+		forwardBtn.onClick = (e) -> {
+			setTime(frameToTime(getMaxFrame()));
+		}
 		forwardBtn.dom.addClass("group-end");
 		new HuiIcon(HuiRes.ui.icons.fast_forward, forwardBtn);
 		widgets.push(forwardBtn);
@@ -383,6 +405,15 @@ class Timeline extends HuiView<{path: String, mode: hrt.ui.HuiFileBrowser.Browse
 		widgets.push(settingsBtn);
 
 		return widgets;
+	}
+
+	function getMaxFrame() {
+		var max = 0;
+		for (c in clips) {
+			if (c.track != null && c.end - 1 > max)
+				max = c.end - 1;
+		}
+		return max;
 	}
 
 	function getStep(range : Float, minStep : Float) : Float {
