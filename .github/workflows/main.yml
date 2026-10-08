@@ -41,6 +41,12 @@ jobs:
         path: |
           bin/*.js
           bin/*.js.map
+    - name: Build HL
+      if: matrix.haxe-version == 'latest'
+      run: |
+        haxelib git hldx https://github.com/HaxeFoundation/hashlink master libs/directx
+        haxelib git hlphysics https://github.com/HeapsIO/hlphysics
+        haxe hide_hl.hxml
     - name: Test - Build sample
       run: |
         haxelib dev hide .
