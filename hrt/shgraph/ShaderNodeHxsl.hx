@@ -64,6 +64,7 @@ class CustomSerializer extends hxsl.Serializer {
 				case 14: Flat;
 				case 15: NoVar;
 				case 16: Enum(readString(), readArr(readString));
+				case 17: Category(readString());
 				default: throw "assert";
 				}
 				v.qualifiers.push(q);

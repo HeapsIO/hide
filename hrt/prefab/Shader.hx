@@ -289,11 +289,41 @@ class Shader extends Prefab {
 
 		properties.build(<checkbox field={recursiveApply} onValueChange={refresh}/>);
 
-		var props = getEditProps(shaderDef);
-		ctx.build(
-			<category("Shader") id="shaderCat"/>
-		);
-		shaderCat.buildPropsList(props, this.props);
+		function getCategory(name: String) : String {
+			for (v in shaderDef.data.vars) {
+				if (v.name != name || v.qualifiers == null)
+					continue;
+				for (q in v.qualifiers)
+					switch (q) {
+					case Category(n): return n;
+					default:
+					}
+			}
+			return null;
+		}
+
+		var categories = new Map<String, hide.kit.Category>();
+		var rest = [];
+		for (p in getEditProps(shaderDef)) {
+			var name = getCategory(p.name);
+			if (name == null) {
+				rest.push(p);
+				continue;
+			}
+			var cat = categories.get(name);
+			if (cat == null) {
+				cat = new hide.kit.Category(ctx.root, name, name);
+				categories.set(name, cat);
+			}
+			cat.buildProp(p, this.props);
+		}
+
+		if (rest.length > 0) {
+			ctx.build(
+				<category("Shader") id="shaderCat"/>
+			);
+			shaderCat.buildPropsList(rest, this.props);
+		}
 	}
 
 	function getEditProps(shaderDef: hxsl.SharedShader) : Array<hrt.prefab.Props.PropDef> {
