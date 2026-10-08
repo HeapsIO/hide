@@ -16,6 +16,9 @@ class App extends hxd.App {
 	var background : Null<Bool> = null;
 	var thumbnail : Bool;
 
+	var autoProfiler: hide.tools.AutoProfiler;
+	var autoProfilerStatus: Bool = false;
+
 	var defered : Array<Void -> Void> = [];
 
 	override public function init() {
@@ -67,6 +70,13 @@ class App extends hxd.App {
 	}
 
 	override public function update(dt: Float) {
+		if (autoProfiler != null) {
+			if (!autoProfilerStatus) {
+				autoProfiler.start();
+				autoProfilerStatus = true;
+			}
+			autoProfiler.beginFrame();
+		}
 		if (defered.length > 0) {
 			var copy = defered.copy();
 			defered = [];
@@ -161,8 +171,13 @@ class App extends hxd.App {
 		var thumbnail = hide.ThumbnailGeneratorApp.tryStart();
 		if (thumbnail)
 			return;
+		var args = Sys.args();
 		DEBUG = #if hl hl.Api.hasDebugger() #else false #end;
-		background = background ?? (Sys.args().indexOf("--background") != -1);
+		background = background ?? (args.indexOf("--background") != -1);
+
+		if (args.indexOf("--autoprofile") != -1) {
+			autoProfiler = new hide.tools.AutoProfiler();
+		}
 
 		#if renderdoc
 		if( !hxd.tools.RenderDoc.init() )
@@ -183,6 +198,9 @@ class App extends hxd.App {
 				background: background
 			});
 		}
+		h3d.impl.DX12Driver.ENABLE_PSO_CONFIG_CACHE = true;
+		h3d.impl.DX12Driver.PSO_CONFIG_CACHE_PATH = h3d.impl.DX12Driver.PSO_CONFIG_CACHE_OUTPUT_PATH = "bin_hl/psoconfig.dx12";
+		h3d.impl.Driver.setShaderCache(new h3d.impl.ShaderCache("bin_hl/shadercache.dx12", Binary));
 		#end
 		super();
 	}

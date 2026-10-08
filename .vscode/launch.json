@@ -54,10 +54,22 @@
 			"webRoot": "${workspaceFolder}/bin",
         },
         {
-            "name": "HashLink",
+            "name": "hide_hl",
             "request": "launch",
             "type": "hl",
             "cwd": "${workspaceFolder}",
+			"port": 7779,
+            "preLaunchTask": {
+                "type": "haxe",
+                "args": "active configuration"
+            }
+        },
+        {
+            "name": "hide_hl --autoprofile",
+            "request": "launch",
+            "type": "hl",
+            "cwd": "${workspaceFolder}",
+			"args": ["--autoprofile"],
 			"port": 7779,
             "preLaunchTask": {
                 "type": "haxe",
