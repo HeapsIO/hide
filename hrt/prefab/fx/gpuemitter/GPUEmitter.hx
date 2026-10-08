@@ -26,6 +26,7 @@ typedef Data = {
 	var minSize : Float;
 	var startSpeed : Float;
 	var trs : h3d.Matrix;
+	var meshTransform : h3d.Matrix; // trs without the template transform
 	var mode : Mode;
 	var cameraModeDistance : Float;
 	var align : Align;
@@ -69,7 +70,7 @@ class GPUEmitter extends Object3D {
 	override function makeObject(parent3d : h3d.scene.Object) {
 		var obj = super.makeObject(parent3d);
 
-		inline function getData(trs : h3d.Matrix) : Data {
+		inline function getData(trs : h3d.Matrix, meshTransform : h3d.Matrix) : Data {
 			return {
 				rate : rate,
 				maxCount : maxCount,
@@ -79,6 +80,7 @@ class GPUEmitter extends Object3D {
 				maxSize : maxSize,
 				startSpeed : startSpeed,
 				trs : trs,
+				meshTransform : meshTransform,
 				infinite : infinite,
 				mode : mode,
 				cameraModeDistance : cameraModeDistance,
@@ -90,6 +92,12 @@ class GPUEmitter extends Object3D {
 		}
 
 		for (t in getTemplates()) {
+			var invTemplate = new h3d.Matrix();
+			var o3d = Std.downcast(t.prefab, Object3D);
+			if (o3d != null)
+				invTemplate.initInverse(o3d.getTransform());
+			else
+				invTemplate.identity();
 			for (mesh in t.meshes) {
 				var multimat = Std.downcast(mesh, h3d.scene.MultiMaterial);
 				var materials : Array<h3d.mat.Material>;
@@ -97,7 +105,10 @@ class GPUEmitter extends Object3D {
 					materials = [mesh.material];
 				else
 					materials = multimat.materials;
-				var emitter = new GPUEmitterObject(getData(mesh.getAbsPos().clone()), cast(mesh.primitive, h3d.prim.MeshPrimitive), materials, obj);
+				var absPos = mesh.getAbsPos();
+				var meshTransform = new h3d.Matrix();
+				meshTransform.multiply(absPos, invTemplate);
+				var emitter = new GPUEmitterObject(getData(absPos.clone(), meshTransform), cast(mesh.primitive, h3d.prim.MeshPrimitive), materials, obj);
 				t.emitters.push(emitter);
 				mesh.visible = false;
 				mesh.ignoreCollide = true;

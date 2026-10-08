@@ -21,6 +21,12 @@ class ParticleShader extends hxsl.Shader {
 		@flat var particleRandom : Float;
 		@flat var particleColor : Vec4;
 
+		// Transform of the particle mesh inside its model, same as hrt.shader.BaseEmitter
+		@param var meshTransform : Mat4;
+		@param var meshTransformInverse : Mat4;
+		var meshToModel : Mat4;
+		var modelToMesh : Mat4;
+
 		var transformedPosition : Vec3;
 		function __init__vertex() {
 			{
@@ -29,6 +35,8 @@ class ParticleShader extends hxsl.Shader {
 				particleRandom = particleBuffer[instanceID].random;
 				particleColor = unpackIntColor(floatBitsToInt(particleBuffer[instanceID].color));
 			}
+			meshToModel = meshTransform;
+			modelToMesh = meshTransformInverse;
 			transformedPosition = transformedPosition * absPos.mat3x4();
 		}
 
@@ -85,6 +93,8 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		if ( materials != null )
 			this.materials = materials;
 		particleShader = new ParticleShader();
+		particleShader.meshTransform.load(this.data.meshTransform);
+		particleShader.meshTransformInverse.initInverse(this.data.meshTransform);
 		applyTransformShader = new h3d.shader.ApplyTransformShader();
 		applyTransformShader.invTransform.load(this.data.trs.getInverse());
 		applyTransformShader.transform.load(this.data.trs);
