@@ -16,6 +16,10 @@ build Inter-Regular-cv05-cv08-tnum-20pt
 
 build Inter-Regular-cv05-cv08-tnum-13pt
 build Inter-Regular-cv05-cv08-tnum-26pt
+build Inter-Regular-cv05-cv08-tnum-28pt
+build Inter-Regular-cv05-cv08-tnum-56pt
+build Inter-Regular-cv05-cv08-tnum-36pt
+build Inter-Regular-cv05-cv08-tnum-72pt
 build Inter-Italic-cv05-cv08-tnum-13pt
 build Inter-Italic-cv05-cv08-tnum-26pt
 
