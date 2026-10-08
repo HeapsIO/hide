@@ -214,9 +214,6 @@ class HuiMenu extends HuiPopup {
 			submenu.onCloseListeners.push(() -> {
 				submenu = null;
 			});
-
-			// fix scrollbar
-			submenu.itemsContainer.scrollBar?.reflow();
 		}
 	}
 
