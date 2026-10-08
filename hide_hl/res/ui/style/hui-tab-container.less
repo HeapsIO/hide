@@ -15,7 +15,7 @@ hui-tab-container {
 
 	> #tab-bar {
 		fill-width: 1;
-		height: 16;
+		height: 18;
 
 		padding-top: 1;
 		padding-left: 1;
@@ -53,5 +53,19 @@ hui-tab-container {
 		auto-size: 1;
 		fill-width: 1;
 		fill-height: 1;
+	}
+
+	&.bottom-tabs {
+		reverse: true;
+
+		> #tab-bar > #tab-bar-content > hui-tab {
+			background-border-radius: 0 0 4 4;
+		}
+	}
+
+	&.multiline {
+		> #tab-bar {
+			multiline: true;
+		}
 	}
 }

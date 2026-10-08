@@ -178,14 +178,20 @@ class HuiTabContainer extends HuiElement {
 
 		currentTabs = cast tabBarContent.childElements;
 
+		var multiline = dom.hasClass("multiline");
+
 		for (tab in currentTabs) {
 			var tab : HuiTab = cast tab;
 
 			tab.dom.toggleClass("active", tab.targetElement == activeTabElement);
-			tab.reflow();
+			if (!multiline) {
+				tab.reflow();
 
-			cumulativeWidth += tab.calculatedWidth;
-			tab.visible = cumulativeWidth < tabBarContent.calculatedWidth;
+				cumulativeWidth += tab.calculatedWidth;
+				tab.visible = cumulativeWidth < tabBarContent.calculatedWidth;
+			} else {
+				tab.visible = true;
+			}
 		}
 
 		var invisibles : Array<HuiTab> = cast currentTabs.filter((e) -> !e.visible);
