@@ -18,13 +18,13 @@ class HuiCdbTable extends HuiElement {
 			<hui-virtual-list id="list"/>
 		</hui-cdb-table>
 
-	public function new(?parent) {
+	public function new(sheet: cdb.Sheet, ?parent) {
 		super(parent);
 		initComponent();
 		list.setItems(visibleList);
 		list.generateItem = cast generateLine;
 
-		openSheet(try hide.Ide.inst.database.getSheet("main") ?? null catch(e) null);
+		openSheet(sheet);
 		onAfterReflow = afterReflow;
 
 	}
