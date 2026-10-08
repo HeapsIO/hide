@@ -291,6 +291,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				}
 				if (varId == -1)
 					throw "missing variable id";
+				if (shaderGraph.getParameter(varId).isCategory)
+					return;
 				inst.parameterId = varId;
 				addNode(inst);
 				return;
@@ -450,6 +452,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			{ label : "Vec3", click : () -> createParameter(HxslType.TVec(3, VFloat)) },
 			{ label : "Color", click : () -> createParameter(HxslType.TVec(4, VFloat)) },
 			{ label : "Texture", click : () -> createParameter(HxslType.TSampler(T2D,false)) },
+			{ label : "Category", click : () -> createParameter(null, true) },
 		];
 
 		var createParameter = rightPannel.find(".createParameter");
@@ -478,15 +481,21 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		parametersList.setItemName = renameParameter;
 		parametersList.getItemContent = getParameterContent;
 		parametersList.customizeHeader = (p:Parameter, header:Element) -> {
-			var type = switch(p.type) {
-				case TBool: "Bool";
-				case TFloat: "Number";
-				case TVec(4, VFloat): "Color";
-				case TVec(1, VFloat): "Float";
-				case TVec(n, VFloat): "Vec " + n;
-				case TSampler(_): "Texture";
-				default: "Unknown Type";
-			};
+			var type = "";
+			if (p.isCategory) {
+				type = "Category";
+				header.addClass("sg-category");
+			} else {
+				type = switch(p.type) {
+					case TBool: "Bool";
+					case TFloat: "Number";
+					case TVec(4, VFloat): "Color";
+					case TVec(1, VFloat): "Float";
+					case TVec(n, VFloat): "Vec " + n;
+					case TSampler(_): "Texture";
+					default: "Unknown Type";
+				};
+			}
 			header.find("input").after(new Element('<div class="type">$type</div>'));
 		}
 
@@ -827,7 +836,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		var oldName = item.name;
 		function exec(isUndo: Bool) {
 			item.name = !isUndo ? name : oldName;
-			item.variable.name = item.name;
+			if (!item.isCategory)
+				item.variable.name = item.name;
 			for (node in currentGraph.nodes) {
 				var param = Std.downcast(node, ShaderParam);
 				if (param == null)
@@ -842,6 +852,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	function getParameterContent(parameter: Parameter) : Element {
+		if (parameter.isCategory)
+			return null;
 		var content = new Element('<div class="content" ></div>');
 		var defaultValue = new Element('<div class="values"><span>Default: </span></div>').appendTo(content);
 		var hasRange = parameter.min != null && parameter.max != null;
@@ -1167,13 +1179,18 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		undo.change(Custom(exec));
 	}
 
-	function createParameter(type : HxslType) {
+	function createParameter(type : HxslType, isCategory = false) {
 		@:privateAccess var paramShaderID : Int = shaderGraph.current_param_id++;
 		@:privateAccess
 		function exec(isUndo:Bool) {
 			if (!isUndo) {
-				var name = "Param_" + paramShaderID;
-				shaderGraph.parametersAvailable.set(paramShaderID, {id: paramShaderID, name : name, type : type, defaultValue : null, variable : shaderGraph.generateParameter(name, type), index : shaderGraph.parametersAvailable.count()});
+				var index = shaderGraph.parametersAvailable.count();
+				if (isCategory) {
+					shaderGraph.parametersAvailable.set(paramShaderID, {id: paramShaderID, name : "Category_" + paramShaderID, type : null, defaultValue : null, isCategory : true, index : index});
+				} else {
+					var name = "Param_" + paramShaderID;
+					shaderGraph.parametersAvailable.set(paramShaderID, {id: paramShaderID, name : name, type : type, defaultValue : null, variable : shaderGraph.generateParameter(name, type), index : index});
+				}
 			} else {
 				shaderGraph.parametersAvailable.remove(paramShaderID);
 			}

@@ -193,7 +193,7 @@ typedef Parameter = {
 	?internal: Bool,
 	?min : Float,
 	?max : Float,
-	?category : String,
+	?isCategory : Bool,
 	index : Int
 };
 
@@ -286,19 +286,23 @@ class ShaderGraphGenContext {
 			expressions.push(ifExpr);
 		}
 
-		for (id => p in graph.parent.parametersAvailable) {
+		var params = [for (p in graph.parent.parametersAvailable) p];
+		params.sort((a, b) -> a.index - b.index);
+		var category : String = null;
+		for (p in params) {
+			if (p.isCategory) {
+				category = p.name;
+				continue;
+			}
 			var global = genContext.globalVars.get(p.name);
 			if (global == null)
 				continue;
 			global.defValue = p.defaultValue;
 			global.paramIndex = p.index;
-			var qualifiers = [];
 			if (p.min != null || p.max != null)
-				qualifiers.push(Range(p.min ?? 0.0, p.max ?? 1.0));
-			if (p.category != null)
-				qualifiers.push(Category(p.category));
-			if (qualifiers.length > 0)
-				global.v.qualifiers = qualifiers;
+				global.v.qualifiers = [Range(p.min ?? 0.0, p.max ?? 1.0)];
+			if (category != null)
+				(global.v.qualifiers ??= []).push(Category(category));
 		}
 
 		return AstTools.makeExpr(TBlock(expressions), TVoid);
@@ -486,7 +490,9 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		var json = super.save();
 
 		json.parameters = [
-			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal, min : p.min, max : p.max, category : p.category }
+			for (p in parametersAvailable)
+				p.isCategory ? ({ id : p.id, name : p.name, isCategory : true, index : p.index } : Dynamic) :
+				{ id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal, min : p.min, max : p.max }
 		];
 
 		// Fix parameters index that sometimes get f-ed up for an unknown reason
@@ -777,7 +783,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		#end
 		for (i => p in parameters) {
 			var typeString : Array<Dynamic> = Reflect.field(p, "type");
-			if (Std.isOfType(typeString, Array)) {
+			if (!p.isCategory && Std.isOfType(typeString, Array)) {
 				typeString[1] = typeString[1] ?? "";
 				var enumParamsString = typeString[1].split(",");
 
@@ -798,7 +804,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 						throw "Couldn't unserialize type " + typeString[0];
 				}
 			}
-			p.variable = generateParameter(p.name, p.type);
+			if (!p.isCategory)
+				p.variable = generateParameter(p.name, p.type);
 
 			#if editor
 			p.index = i; // make sure indices have no gaps
@@ -819,7 +826,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 					}
 				}
 				p.name = newName;
-				p.variable = generateParameter(newName, p.type);
+				if (!p.isCategory)
+					p.variable = generateParameter(newName, p.type);
 				return true;
 			}
 		}
