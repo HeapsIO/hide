@@ -23,6 +23,7 @@ class HuiCdbTable extends HuiElement {
 		initComponent();
 		list.setItems(visibleList);
 		list.generateItem = cast generateLine;
+		list.refreshItem = cast refreshItem;
 
 		openSheet(sheet);
 		onAfterReflow = afterReflow;
@@ -47,6 +48,10 @@ class HuiCdbTable extends HuiElement {
 		computeCellSizes();
 
 		headerLine.resizeCells(cellSizes);
+	}
+
+	function refreshItem(item: VisibleEntry, line: HuiTableLine) {
+		line.resizeCells(cellSizes);
 	}
 
 	function generateLine(entry: VisibleEntry) : HuiElement {
@@ -121,7 +126,6 @@ class HuiCdbTable extends HuiElement {
 		}
 
 		var prop = innerWidth / total;
-		trace(innerWidth);
 		for (i => _ in cellSizes) {
 			cellSizes[i] = hxd.Math.floor(cellSizes[i] * prop);
 		}
