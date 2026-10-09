@@ -289,7 +289,7 @@ class ScriptChecker {
 				case TBool: TBool;
 				case TDynamic: TDynamic;
 				case TRef(other): TInst(cdefs.get(other),[]);
-				case TCustom(_), TImage, TLayer(_), TTileLayer, TTilePos, TGradient, TCurve: null;
+				case TCustom(_), TImage, TLayer(_), TTileLayer, TTilePos, TGradient, TCurve, TFormula: null;
 				case TList, TProperties, TPolymorph:
 					var subName = c.structRef != null ? c.structRef : s.name+"@"+c.name;
 					var t = TInst(cdefs.get(subName),[]);

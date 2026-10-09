@@ -59,6 +59,7 @@ class ModalColumnForm extends Modal {
 				<option value="tilelayer">Tile Layer</option>
 				<option value="gradient">Gradient</option>
 				<option value="curve">Curve</option>
+				<option value="formula">Formula</option>
 				<option value="custom">Custom Type</option>
 				<option value="structref">Structure Reference</option>
 				<option value="guid">GUID</option>
@@ -479,6 +480,8 @@ class ModalColumnForm extends Modal {
 			TPolymorph;
 		case "guid":
 			TGuid;
+		case "formula":
+			TFormula;
 		default:
 			return null;
 		}

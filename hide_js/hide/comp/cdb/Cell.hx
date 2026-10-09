@@ -1,6 +1,7 @@
 package hide.comp.cdb;
 
 import hxd.Key in K;
+import cdb.FormulaEngine.FormulaType;
 using hide.tools.Extensions;
 
 class Cell {
@@ -20,6 +21,8 @@ class Cell {
 	public var value(get, never) : Dynamic;
 	public var table(get, never) : Table;
 	var blurOff = false;
+	var formulaCompose : Void -> String;
+	var formulaDrop : Element;
 	public var inEdit = false;
 	var dropdown : Element.HTMLElement = null;
 
@@ -464,7 +467,7 @@ class Cell {
 		return fullScope;
 	}
 
-	function valueHtml( c : cdb.Data.Column, v : Dynamic, sheet : cdb.Sheet, obj : Dynamic, scope : Array<{ s : cdb.Sheet, obj : Dynamic }> ) : {str: String, containsHtml: Bool} {
+	function valueHtml( c : cdb.Data.Column, v : Dynamic, sheet : cdb.Sheet, obj : Dynamic, scope : Array<{ s : cdb.Sheet, obj : Dynamic }>, ?fscope : cdb.FormulaEngine.FormulaScope ) : {str: String, containsHtml: Bool} {
 
 		inline function val(s:Dynamic) {
 			return {str: Std.string(s), containsHtml:false};
@@ -498,6 +501,17 @@ class Cell {
 			v == "" ? val(" ") : html('<div class="script">${colorizeScript(c,v,line.getRootLine().getId())}</div>');
 		case TString, TLayer(_), TGuid:
 			v == "" ? val(" ") : html(spacesToNBSP(StringTools.htmlEscape(v).split("\n").join("<br/>")));
+		case TFormula:
+			if( fscope == null && (obj == line.obj || obj == Reflect.field(line.obj, column.name)) )
+				fscope = getFormulaScope();
+			var err = cdb.FormulaEngine.getError(v, fscope);
+			if( err != null )
+				html('<span class="error" title="${StringTools.htmlEscape(err)}">${StringTools.htmlEscape(v)}</span>');
+			else {
+				var f = cdb.FormulaEngine.split(v);
+				var body = StringTools.htmlEscape(f.body);
+				body == StringTools.htmlEscape(v) ? val(v) : html('<span class="minor">(${StringTools.htmlEscape(cdb.FormulaEngine.argsToString(f.args))}) =&gt;</span> $body');
+			}
 		case TRef(sname):
 			if( v == "" )
 				html('<span class="error">#MISSING</span>');
@@ -527,13 +541,15 @@ class Cell {
 			var out : Array<String> = [];
 			scope.push({ s : sheet, obj : obj });
 			var isHtml = false;
+			var idCol = Lambda.find(ps.columns, c -> c.type == TId);
 			for( v in a ) {
 				var vals = [];
 				for( c in ps.columns ) {
 					if(c.type == TString && c.kind == Script)
 						continue;
 					if( !canViewSubColumn(ps, c) ) continue;
-					var h = valueHtml(c, Reflect.field(v, c.name), ps, v, scope);
+					var fs = idCol != null && c.type.match(TFormula | TPolymorph) ? cdb.FormulaEngine.listScope(a, idCol.name, c, c.type == TPolymorph ? ps.getSub(c).columns : null, Reflect.field(v, idCol.name)) : null;
+					var h = valueHtml(c, Reflect.field(v, c.name), ps, v, scope, fs);
 					if( h.str != "" && h.str != " " )
 					{
 						isHtml = isHtml || h.containsHtml;
@@ -562,7 +578,7 @@ class Cell {
 				var pval = Reflect.field(v, pc.name);
 				if( pval == null ) continue;
 				if( !canViewSubColumn(ps, pc) ) continue;
-				var r = valueHtml(pc, pval, ps, v, scope);
+				var r = valueHtml(pc, pval, ps, v, scope, fscope);
 				scope.pop();
 				return r;
 			}
@@ -969,6 +985,8 @@ class Cell {
 		switch( column.type ) {
 		case TString if( column.kind == Script ):
 			open();
+		case TFormula:
+			editFormula();
 		case TInt, TFloat, TString, TId, TDynamic, TGuid:
 			var val = value;
 			var str = value == null ? "" : Std.isOfType(value, String) ? value : editor.base.valToString(column.type, val, false);
@@ -1490,6 +1508,380 @@ class Cell {
 			table.toggleList(this, immediate);
 	}
 
+	// keeps the test values per "sheet@column" and argument name for the session
+	static var formulaTestValues = new Map<String, Dynamic>();
+
+	function getFormulaScope() : cdb.FormulaEngine.FormulaScope {
+		var t : Table = table, col = column, obj = line.obj;
+		var sub = Std.downcast(t, SubTable);
+		// formula edited inside a polymorph : the rows are the ones of the table holding the polymorph
+		if( sub != null && sub.cell.column.type == TPolymorph ) {
+			t = sub.cell.table;
+			col = sub.cell.column;
+			obj = sub.cell.line.obj;
+			sub = Std.downcast(t, SubTable);
+		}
+		if( sub != null && @:privateAccess sub.getTarget().col.type != TList )
+			return null;
+		var sheet = t.getRealSheet();
+		var idCol = Lambda.find(sheet.columns, c -> c.type == TId);
+		if( idCol == null )
+			return null;
+		var variants = col.type == TPolymorph ? sheet.getSub(col).columns : null;
+		return cdb.FormulaEngine.listScope(t.sheet.lines, idCol.name, col, variants, Reflect.field(obj, idCol.name));
+	}
+
+	function removeFormulaDrop() {
+		if( formulaDrop != null ) {
+			formulaDrop.remove();
+			formulaDrop = null;
+		}
+		elementHtml.classList.remove("formula-edited");
+	}
+
+	function editFormula() {
+		var scope = getFormulaScope();
+		var split = cdb.FormulaEngine.split(value);
+		var args : Array<cdb.FormulaEngine.FormulaArg> = [for( a in split.args ) { name : a.name, type : a.type }];
+		var key = table.getRealSheet().name + "@" + editColumn.name;
+		var values : Dynamic = formulaTestValues.get(key);
+		if( values == null ) {
+			values = {};
+			formulaTestValues.set(key, values);
+		}
+
+		// edited in a row inserted under the line, laid out like the props of a SubTable (cells are too small)
+		removeFormulaDrop();
+		formulaDrop = new Element('<tr class="props formula-drop">');
+		var group;
+		if( editor.displayMode == AllProperties && table.parent == null ) {
+			group = new Element('<td>').attr("colspan", "2").appendTo(formulaDrop);
+		} else {
+			if( table.displayMode == Properties )
+				new Element('<td>').addClass("sublist-pad-" + table.nestedIndex).appendTo(formulaDrop);
+			var count = columnIndex + 1;
+			if( count < 3 && table.columns.length >= 8 )
+				count += 2;
+			group = new Element('<td>').attr("colspan", "" + (count + 1)).appendTo(formulaDrop);
+			var remain = table.columns.length - count;
+			if( remain > 0 )
+				new Element('<td>').attr("colspan", "" + remain).appendTo(formulaDrop);
+		}
+		group.addClass("edit");
+		formulaDrop.insertAfter(line.element);
+		var container = group.get(0);
+		elementHtml.classList.add("formula-edited");
+		var root = new Element('<div class="formula-edit"></div>');
+		var argsDiv = new Element('<div class="args"></div>').appendTo(root);
+		var exprDiv = new Element('<div class="expr"><span class="arrow">=&gt;</span></div>').appendTo(root);
+		var input = new Element("<div contenteditable='true' tabindex='1' class='custom-text-edit code'></div>").appendTo(exprDiv);
+		var result = new Element('<div class="result"></div>').appendTo(root);
+		var menuOpen = false;
+		input.get(0).innerText = spacesToNBSP(split.body);
+		container.appendChild(root.get(0));
+
+		inline function getBody() return StringTools.trim(nBSPtoSpaces(input.get(0).innerText).split("\n").join(" "));
+
+		formulaCompose = function() {
+			var body = getBody();
+			return body == "" ? "" : cdb.FormulaEngine.makeCode(args, body);
+		}
+
+		function commit() {
+			input.off();
+			closeEdit();
+		}
+		function cancel() {
+			formulaCompose = null;
+			removeFormulaDrop();
+			inEdit = false;
+			refresh();
+			focus();
+			table.editor.element.focus();
+		}
+
+		function evaluate() {
+			var obj : Dynamic = {};
+			for( a in args ) {
+				var v : Dynamic = Reflect.field(values, a.name);
+				Reflect.setField(obj, a.name, switch( a.type ) {
+				case FBool: v == true;
+				case FInt: v == null ? 0 : Std.int(v);
+				case FFloat: v == null ? 0. : (v : Float);
+				});
+			}
+			var body = getBody();
+			if( body == "" ) {
+				result.removeClass("error").text("");
+				return;
+			}
+			try {
+				var f = cdb.FormulaEngine.compile(cdb.FormulaEngine.makeCode(args, body), scope);
+				result.removeClass("error").text("→ " + f.call(obj) + " : " + cdb.FormulaEngine.typeName(f.type));
+			} catch( e : cdb.FormulaEngine.FormulaError ) {
+				result.addClass("error").text(e.msg);
+			} catch( e : Dynamic ) {
+				result.addClass("error").text(Std.string(e));
+			}
+		}
+
+		function stopKeys( field : Element ) {
+			field.keydown(function(e) {
+				switch( e.keyCode ) {
+				case K.ENTER: commit(); e.preventDefault();
+				case K.ESCAPE: cancel();
+				default:
+				}
+				e.stopPropagation();
+			});
+			field.keypress(function(e) e.stopPropagation());
+		}
+
+		var rebuild : Void -> Void = null;
+		function removeArg( a : cdb.FormulaEngine.FormulaArg ) {
+			args.remove(a);
+			rebuild();
+			evaluate();
+			input.focus();
+		}
+		function setType( a : cdb.FormulaEngine.FormulaArg, t : FormulaType ) {
+			a.type = t;
+			rebuild();
+			evaluate();
+		}
+		function makeTag( a : cdb.FormulaEngine.FormulaArg ) {
+			var typeName = cdb.FormulaEngine.typeName(a.type);
+			var tag = new Element('<span class="tag t-${typeName.toLowerCase()}" title="Right click to change the type"></span>').appendTo(argsDiv);
+			var name = new Element('<input type="text" class="name" spellcheck="false"/>').val(a.name).attr("size", Std.int(Math.max(2, a.name.length))).appendTo(tag);
+			new Element('<span class="type"></span>').text(typeName).appendTo(tag);
+			new Element('<span class="eq">=</span>').appendTo(tag);
+			var cur : Dynamic = Reflect.field(values, a.name);
+			var test = switch( a.type ) {
+			case FBool:
+				new Element('<input type="checkbox" class="test" title="Test value"/>').prop("checked", cur == true);
+			case FInt, FFloat:
+				new Element('<input type="number" class="test" title="Test value" placeholder="0"/>').attr("step", a.type == FInt ? "1" : "any").val(cur == null ? "" : "" + cur);
+			}
+			test.appendTo(tag);
+			var del = new Element('<span class="remove" title="Remove argument">&times;</span>').appendTo(tag);
+
+			name.on("input", function(_) {
+				a.name = StringTools.trim(name.val());
+				name.attr("size", Std.int(Math.max(2, name.val().length)));
+				evaluate();
+			});
+			test.on("input change", function(_) {
+				Reflect.setField(values, a.name, a.type == FBool ? test.is(":checked") : { var f = Std.parseFloat(test.val()); Math.isNaN(f) ? null : f; });
+				evaluate();
+			});
+			del.click(function(_) removeArg(a));
+			tag.contextmenu(function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+				menuOpen = true;
+				var items : Array<hrt.ui.HuiMenu.MenuItem> = [for( t in [FFloat, FInt, FBool] ) { label : cdb.FormulaEngine.typeName(t), checked : a.type == t, click : () -> setType(a, t) }];
+				items.push({ label : "", isSeparator : true });
+				items.push({ label : "Remove", click : () -> removeArg(a) });
+				var menu = ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, items);
+				menu.onClose = function() {
+					menuOpen = false;
+					if( inEdit ) input.focus();
+				};
+			});
+			stopKeys(name);
+			stopKeys(test);
+		}
+		var rebuilding = false;
+		rebuild = function() {
+			rebuilding = true;
+			argsDiv.empty();
+			for( a in args ) makeTag(a);
+			var add = new Element('<span class="tag add" title="Add argument">+</span>').appendTo(argsDiv);
+			add.click(function(_) {
+				var name = cdb.FormulaEngine.DEFAULT_ARG, n = 1;
+				while( Lambda.exists(args, a -> a.name == name) )
+					name = cdb.FormulaEngine.DEFAULT_ARG + (++n);
+				args.push({ name : name, type : FFloat });
+				rebuild();
+				evaluate();
+				argsDiv.find("input.name").last().focus().select();
+			});
+			rebuilding = false;
+			if( inEdit && !root.get(0).contains(js.Browser.document.activeElement) )
+				input.focus();
+		}
+
+		input.keypress(function(e) e.stopPropagation());
+		input.dblclick(function(e) e.stopPropagation());
+		input.get(0).addEventListener("paste", function(e : Dynamic) {
+			e.preventDefault();
+			var text : String = e.clipboardData.getData('text/plain');
+			js.Browser.document.execCommand("insertText", false, text.split("\n").join(" "));
+		});
+		var completion = new Element('<div class="completion"></div>').appendTo(root).hide();
+		var compItems : Array<{ name : String, isFunction : Bool }> = [];
+		var compIndex = 0;
+		var compPrefix = "";
+		function getPrefix() : String {
+			var sel = js.Browser.window.getSelection();
+			if( sel.rangeCount == 0 || !input.get(0).contains(sel.anchorNode) ) return null;
+			var r = js.Browser.document.createRange();
+			r.setStart(input.get(0), 0);
+			r.setEnd(sel.anchorNode, sel.anchorOffset);
+			var before = nBSPtoSpaces((r : Dynamic).toString());
+			var reg = ~/[A-Za-z_][A-Za-z0-9_]*$/;
+			return reg.match(before) ? reg.matched(0) : "";
+		}
+		function hideCompletion() {
+			completion.hide();
+			compItems = [];
+		}
+		function selectItem( i : Int ) {
+			compIndex = i;
+			completion.children().removeClass("selected");
+			completion.children().eq(i).addClass("selected");
+		}
+		function accept( i : Int ) {
+			var item = compItems[i];
+			hideCompletion();
+			if( item == null ) return;
+			var sel : Dynamic = js.Browser.window.getSelection();
+			for( _ in 0...compPrefix.length ) sel.modify("extend", "backward", "character");
+			js.Browser.document.execCommand("insertText", false, item.name + (item.isFunction ? "(" : ""));
+			evaluate();
+		}
+		function showCompletion( force : Bool ) {
+			var prefix = getPrefix();
+			if( prefix == null || (prefix == "" && !force) ) {
+				hideCompletion();
+				return;
+			}
+			compPrefix = prefix;
+			var lp = prefix.toLowerCase();
+			completion.empty();
+			compItems = [];
+			function add( name : String, info : String, doc : String, isFunction : Bool ) {
+				if( !StringTools.startsWith(name.toLowerCase(), lp) || (name == prefix && !isFunction) ) return;
+				var idx = compItems.length;
+				compItems.push({ name : name, isFunction : isFunction });
+				var item = new Element('<div class="item"><span class="name"></span> <span class="info"></span></div>').appendTo(completion);
+				item.find(".name").text(name);
+				item.find(".info").text(info);
+				if( doc != null ) item.attr("title", doc);
+				item.mousedown(function(e) {
+					e.preventDefault();
+					e.stopPropagation();
+					accept(idx);
+				});
+			}
+			for( a in args )
+				add(a.name, cdb.FormulaEngine.typeName(a.type), "argument", false);
+			if( scope != null ) {
+				var names = [for( k in scope.keys() ) k];
+				names.sort(Reflect.compare);
+				for( n in names ) {
+					var d = cdb.FormulaEngine.describeRef(n, scope);
+					add(n, d.info, d.isFunction ? "formula of this list" : "value of this list", d.isFunction);
+				}
+			}
+			for( c in cdb.FormulaEngine.FormulaCall.createAll() ) {
+				var d = cdb.FormulaEngine.callDoc(c);
+				add(cdb.FormulaEngine.callName(c), d.signature.substr(d.signature.indexOf("(")), d.doc, true);
+			}
+			for( b in ["true", "false"] )
+				add(b, "Bool", null, false);
+			if( compItems.length == 0 ) {
+				hideCompletion();
+				return;
+			}
+			completion.show();
+			selectItem(0);
+		}
+		input.on("input", function(_) showCompletion(false));
+		input.on("blur", function(_) hideCompletion());
+
+		input.keydown(function(e) {
+			if( compItems.length > 0 ) {
+				switch( e.keyCode ) {
+				case K.UP:
+					selectItem((compIndex + compItems.length - 1) % compItems.length);
+					e.preventDefault(); e.stopPropagation(); return;
+				case K.DOWN:
+					selectItem((compIndex + 1) % compItems.length);
+					e.preventDefault(); e.stopPropagation(); return;
+				case K.ENTER, K.TAB:
+					accept(compIndex);
+					e.preventDefault(); e.stopPropagation(); return;
+				case K.ESCAPE:
+					hideCompletion();
+					e.preventDefault(); e.stopPropagation(); return;
+				default:
+				}
+			}
+			if( e.keyCode == K.SPACE && e.ctrlKey ) {
+				showCompletion(true);
+				e.preventDefault();
+				e.stopPropagation();
+				return;
+			}
+			switch( e.keyCode ) {
+			case K.ESCAPE:
+				cancel();
+			case K.ENTER:
+				commit();
+				e.preventDefault();
+			case K.UP, K.DOWN:
+				commit();
+				return;
+			case K.TAB:
+				commit();
+				e.preventDefault();
+				editor.cursor.move(e.shiftKey ? -1 : 1, 0, false, false, false, true);
+				var c = editor.cursor.getCell();
+				if( c != this && c != null )
+					c.edit();
+			}
+			e.stopPropagation();
+		});
+		input.on("input", function(_) evaluate());
+
+		root.on("focusout", function(e) {
+			var next : js.html.Node = (e : Dynamic).relatedTarget;
+			if( next != null && root.get(0).contains(next) )
+				return;
+			// removing the focused tag on rebuild also triggers a focusout : decide once the focus is settled
+			if( rebuilding || menuOpen )
+				return;
+			haxe.Timer.delay(function() {
+				if( !inEdit || blurOff || menuOpen )
+					return;
+				var active = js.Browser.document.activeElement;
+				if( active != null && root.get(0).contains(active) )
+					return;
+				commit();
+			}, 0);
+		});
+		root.mousedown(function(e) {
+			var t : js.html.Element = cast e.target;
+			if( !(t.tagName == "INPUT" || input.get(0).contains(t)) )
+				e.preventDefault();
+			e.stopPropagation();
+		});
+		root.click(function(e) e.stopPropagation());
+		root.dblclick(function(e) e.stopPropagation());
+
+		rebuild();
+		evaluate();
+		input.focus();
+		#if js
+		var range = js.Browser.document.createRange();
+		range.selectNodeContents(input.get(0));
+		var sel = js.Browser.window.getSelection();
+		sel.removeAllRanges();
+		sel.addRange(range);
+		#end
+	}
+
 	public function setErrorMessage( msg : String ) {
 		var prevError = new Element(elementHtml).find("div.error");
 		if (prevError != null)
@@ -1573,6 +1965,11 @@ class Cell {
 				return v;
 			case TFloat:
 				return interpValue(str);
+			case TFormula:
+				var v = StringTools.trim(trimNonBreakableSpaces(newValue).split("\n").join(" ").split("\r").join(""));
+				if( v == "" )
+					return column.opt ? null : editor.base.getDefault(column, false, table.sheet);
+				return v;
 
 			case TDynamic:
 				newValue = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) null;
@@ -1655,6 +2052,11 @@ class Cell {
 		inEdit = false;
 		var input = new Element(elementHtml).find("div[contenteditable]").get(0);
 		var text : String = input?.innerText;
+		if( formulaCompose != null ) {
+			text = formulaCompose();
+			formulaCompose = null;
+			removeFormulaDrop();
+		}
 		if (text != null) {
 			text = nBSPtoSpaces(text);
 			setRawValue(text);

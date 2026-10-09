@@ -222,9 +222,97 @@
 				max-width : 200px;
 				padding : 2px;
 			}
+			&> div.formula-edit {
+				min-width : 240px;
+				padding : 3px;
+				.args {
+					display : flex;
+					flex-wrap : wrap;
+					gap : 3px;
+					margin-bottom : 3px;
+				}
+				.tag {
+					display : inline-flex;
+					align-items : center;
+					gap : 3px;
+					padding : 1px 5px;
+					border-radius : 9px;
+					background-color : #3a3f47;
+					border : 1px solid #555b66;
+					font-size : 11px;
+					white-space : nowrap;
+					input {
+						background : transparent;
+						border : none;
+						color : #ddd;
+						padding : 0px;
+						font-size : 11px;
+					}
+					input.name { font-weight : bold; }
+					input.test[type=number] { width : 42px; border-bottom : 1px dotted #777; }
+					.type { color : #9ab; }
+					.eq { color : #777; }
+					.remove { color : #888; cursor : pointer; &:hover { color : #e66; } }
+					&.t-int { border-color : #5a6b8a; .type { color : #8af; } }
+					&.t-bool { border-color : #8a6b5a; .type { color : #fa8; } }
+					&.add { cursor : pointer; color : #aaa; border-style : dashed; background : transparent; &:hover { color : #fff; } }
+				}
+				.expr {
+					display : flex;
+					align-items : center;
+					gap : 4px;
+					.arrow { color : #888; font-family : monospace; }
+					.code {
+						flex : 1;
+						font-family : monospace;
+						background-color : #1b1d21;
+						border : 1px solid #555b66;
+						border-radius : 2px;
+						padding : 2px 4px;
+						&:focus { border-color : #4a8fd8; outline : none; }
+					}
+				}
+				.result {
+					margin-top : 2px;
+					font-size : 11px;
+					color : #8c8;
+					&:empty { display : none; }
+					&.error { color : #e66; }
+				}
+				.completion {
+					position : absolute;
+					z-index : @cdb-error-layer;
+					background-color : #222;
+					border : 1px solid #555;
+					max-height : 200px;
+					overflow-y : auto;
+					min-width : 200px;
+					.item {
+						padding : 1px 4px;
+						cursor : pointer;
+						white-space : nowrap;
+						.info { color : #888; }
+						&.selected { background-color : #345; }
+					}
+				}
+			}
 		}
 		td.edit_long {
 			padding-bottom : 0px;
+		}
+		td.formula-edited {
+			outline : 1px solid #4a8fd8;
+			outline-offset : -1px;
+		}
+		tr.formula-drop > td.edit {
+			padding : 2px 0px 4px 0px;
+			&> div.formula-edit {
+				text-align : left;
+				min-width : 360px;
+				padding : 4px 6px;
+				background-color : #222;
+				border : 1px solid #444;
+			}
 		}
 
 		tr.filtered, tr.hidden, tr.sep-hidden {

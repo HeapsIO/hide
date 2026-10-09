@@ -198,8 +198,143 @@
   max-width: 200px;
   padding: 2px;
 }
+.cdb .cdb-sheet td.edit > div.formula-edit {
+  min-width: 240px;
+  padding: 3px;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .args {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 3px;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 5px;
+  border-radius: 9px;
+  background-color: #3a3f47;
+  border: 1px solid #555b66;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag input {
+  background: transparent;
+  border: none;
+  color: #ddd;
+  padding: 0px;
+  font-size: 11px;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag input.name {
+  font-weight: bold;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag input.test[type=number] {
+  width: 42px;
+  border-bottom: 1px dotted #777;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag .type {
+  color: #9ab;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag .eq {
+  color: #777;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag .remove {
+  color: #888;
+  cursor: pointer;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag .remove:hover {
+  color: #e66;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag.t-int {
+  border-color: #5a6b8a;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag.t-int .type {
+  color: #8af;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag.t-bool {
+  border-color: #8a6b5a;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag.t-bool .type {
+  color: #fa8;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag.add {
+  cursor: pointer;
+  color: #aaa;
+  border-style: dashed;
+  background: transparent;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .tag.add:hover {
+  color: #fff;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .expr {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .expr .arrow {
+  color: #888;
+  font-family: monospace;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .expr .code {
+  flex: 1;
+  font-family: monospace;
+  background-color: #1b1d21;
+  border: 1px solid #555b66;
+  border-radius: 2px;
+  padding: 2px 4px;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .expr .code:focus {
+  border-color: #4a8fd8;
+  outline: none;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .result {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #8c8;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .result:empty {
+  display: none;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .result.error {
+  color: #e66;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .completion {
+  position: absolute;
+  z-index: 300;
+  background-color: #222;
+  border: 1px solid #555;
+  max-height: 200px;
+  overflow-y: auto;
+  min-width: 200px;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .completion .item {
+  padding: 1px 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .completion .item .info {
+  color: #888;
+}
+.cdb .cdb-sheet td.edit > div.formula-edit .completion .item.selected {
+  background-color: #345;
+}
 .cdb .cdb-sheet td.edit_long {
   padding-bottom: 0px;
+}
+.cdb .cdb-sheet td.formula-edited {
+  outline: 1px solid #4a8fd8;
+  outline-offset: -1px;
+}
+.cdb .cdb-sheet tr.formula-drop > td.edit {
+  padding: 2px 0px 4px 0px;
+}
+.cdb .cdb-sheet tr.formula-drop > td.edit > div.formula-edit {
+  text-align: left;
+  min-width: 360px;
+  padding: 4px 6px;
+  background-color: #222;
+  border: 1px solid #444;
 }
 .cdb .cdb-sheet tr.filtered,
 .cdb .cdb-sheet tr.hidden,
