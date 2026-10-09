@@ -29,15 +29,25 @@ hui-cdb-table {
 
 }
 
+@border-color: @color-gray-3;
+
 hui-table-line {
 	layout: vertical;
 
 	> #cells {
-		background-outline: 1 gray;
+		background-outline: 1 @border-color;
 		background-outline-thickness: 0 0 1 0;
+		background-style: @color-gray-1;
 		// auto-size-height on the cells requires the cells height to be constrained
 		max-height: 100000;
+		margin-bottom: -1;
 	}
+}
+
+hui-table-end {
+	background-outline: 1 @border-color;
+	margin-bottom: -1;
+	background-outline-thickness: 0 0 1 0;
 }
 
 hui-table-cell {
@@ -46,6 +56,9 @@ hui-table-cell {
 	// fill the height of the tallest cell of the line. overflow must stay expand, the width clipping is done in HuiTableCell
 	fill-height: 1;
 	auto-size-height: 1;
+
+	background-outline: 1 @border-color;
+	background-outline-thickness: 0 0 0 1;
 }
 
 
