@@ -125,7 +125,10 @@ class Undo {
 		lastSaveUndo = getCurrentUndo();
 	}
 
-	public static function actionFromActions(actions: Array<Action>) : Action {
+	public static function actionFromActions(actions: Array<Action>) : Null<Action> {
+		actions = [for (a in actions) if (a != null) a];
+		if (actions.length == 0)
+			return null;
 		return (isUndo) -> {
 			for (i in 0...actions.length) {
 				var index = isUndo ? actions.length - i - 1 : i;
