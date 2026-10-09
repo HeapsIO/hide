@@ -162,18 +162,9 @@ class HuiCdbTable extends HuiElement {
 		if (path.sheets[0] != table.sheet)
 			return null;
 
-		// follow the opened sub tables down to the cell's table
 		var last = path.path.length - 1;
-		for (i in 0...last - 1) {
-			var sub = Std.downcast(table.getLine(path.indexes[i])?.subEditor, HuiCdbTable);
-			if (sub == null)
-				return null;
-			var p = sub.sheet.parent;
-			if (p.sheet.columns[p.column].name != path.cols[i + 1])
-				return null;
-			table = sub;
-		}
-
+		if (last != 1)
+			return null;
 		for (i => c in table.sheet.columns)
 			if (c.name == path.cols[last])
 				return table.getCell(path.indexes[last - 1], i);
@@ -411,7 +402,6 @@ class HuiTableLine extends HuiElement {
 	var lineData: Dynamic;
 	var lineId: Int;
 	var lineNoCell: HuiTableCellText;
-	var subEditor: HuiElement;
 
 	static var SRC =
 		<hui-table-line>
@@ -450,22 +440,6 @@ class HuiTableLine extends HuiElement {
 		super.onRemove();
 		pool?.push(this);
 	}
-
-	function openSubEditor(cell: HuiTableCell) {
-		if (subEditor != null)
-			closeSubEditor();
-		subEditor = cell.getEditor();
-		if (subEditor != null)
-			addChild(subEditor);
-	}
-
-	function closeSubEditor() {
-		onSubEditorClosed();
-		subEditor?.remove();
-		subEditor = null;
-	}
-
-	dynamic function onSubEditorClosed() {}
 
 	function getVisibleEntry() : VisibleEntry {
 		return table.visibleList[lineId];
@@ -584,18 +558,6 @@ class HuiTableCell extends HuiElement {
 		return true;
 	}
 
-	function hasEditor() : Bool {
-		return false;
-	}
-
-	function getEditor() : HuiElement {
-		return null;
-	}
-
-	function openEditor() {
-		line.openSubEditor(this);
-	}
-
 	function edit() {
 		editing = true;
 		dom.addClass("edit");
@@ -672,37 +634,7 @@ class HuiTableCellList extends HuiTableCell {
 	public function new(column: cdb.Data.Column, ?parent) {
 		super(column, parent);
 		initComponent();
-	}
-
-	override function edit() {
-		if (editing) {
-			line.closeSubEditor();
-			return;
-		}
-		super.edit();
-		openEditor();
-		line.onSubEditorClosed = finishEdit;
-	}
-
-	override function getEditor() : HuiElement {
-		var sheet = line.table.sheet;
-		var sub = sheet.getSub(column);
-		var lines : Array<Dynamic> = Reflect.field(line.lineData, column.name);
-		if (lines == null) {
-			lines = [];
-			Reflect.setField(line.lineData, column.name, lines);
-		}
-		// lines are shared with the parent line, so edits apply to the database
-		var subSheet = new cdb.Sheet(sheet.base, {
-			name: sub.name,
-			columns: sub.columns,
-			props: sub.props,
-			lines: lines,
-			separators: [],
-		}, sheet.getPath() + "@" + column.name + ":" + line.lineId, {sheet: sheet, column: sheet.columns.indexOf(column), line: line.lineId});
-		var table = new HuiCdbTable(subSheet, line.table.root);
-		table.dom.addClass("sub");
-		return table;
+		readOnly = true;
 	}
 
 	override function refreshData() {
