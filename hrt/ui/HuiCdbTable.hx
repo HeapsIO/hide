@@ -4,6 +4,8 @@ package hrt.ui;
 
 import cdb.Sheet.ObjectPath;
 
+typedef SheetEntry = {path: ObjectPath, lines: Array<ObjectPath>, cellSizes: Array<Int>};
+
 @:structInit
 class HuiTableSelectionRect {
 	public var x: Int;
@@ -21,11 +23,10 @@ class HuiCdbTable extends HuiElement {
 
 	var visibleList : Array<ObjectPath> = [];
 	/**
-		Visible sheets and the paths of their lines, by parent line path. The root sheet uses null and is always present.
+		Visible sheets, the paths of their lines and their cell sizes, by parent line path. The root sheet uses null and is always present.
 		Keys match by reference : use the line paths returned by getSheetPaths, not an equivalent copy.
 	**/
-	var openSheets: Map<ObjectPath, {path: ObjectPath, lines: Array<ObjectPath>}> = [];
-	var cellSizes: Array<Int> = [];
+	var openSheets: Map<ObjectPath, SheetEntry> = [];
 	var linePool: Array<HuiTableLine> = [];
 	var selectionRects: Array<HuiTableSelectionRect> = [];
 	var selectionRectsElements: Array<HuiCdbSelection> = [];
@@ -42,6 +43,9 @@ class HuiCdbTable extends HuiElement {
 	static var selectLeftCmd = new HuiCommands.HuiCommand("Select Left", {shift: true, key: hxd.Key.LEFT});
 	static var selectRightCmd = new HuiCommands.HuiCommand("Select Right", {shift: true, key: hxd.Key.RIGHT});
 	static var editCmd = new HuiCommands.HuiCommand("Edit", {key: hxd.Key.ENTER});
+
+	/** Left margin of the lines per sub sheet depth **/
+	static final DEPTH_MARGIN = 8;
 
 	static var SRC =
 		<hui-cdb-table>
@@ -92,9 +96,7 @@ class HuiCdbTable extends HuiElement {
 		if (sheet == null)
 			return;
 
-		computeCellSizes();
 		buildHeader();
-		refreshVisible();
 	}
 
 	public function setCursor(col: Int, line: Int) {
@@ -221,9 +223,10 @@ class HuiCdbTable extends HuiElement {
 		if (sheet == null)
 			return;
 
-		computeCellSizes();
+		for (entry in openSheets)
+			computeCellSizes(entry);
 
-		headerLine.resizeCells(cellSizes);
+		headerLine.resizeCells();
 	}
 
 	override function sync(ctx: h2d.RenderContext) {
@@ -236,18 +239,21 @@ class HuiCdbTable extends HuiElement {
 	function refreshItem(item: ObjectPath, line: HuiTableLine) {
 		if (line.lineId != getLineId(item) || line.lineData != item.obj)
 			line.setLine(item);
-		line.resizeCells(cellSizes);
+		line.resizeCells();
 	}
 
 	function generateLine(entry: ObjectPath) : HuiElement {
-		var line = linePool.pop();
+		// pooled lines have the cells of their sheet
+		var sheet = entry.sheets[entry.sheets.length - 1];
+		var line = Lambda.find(linePool, (l) -> l.path.sheets[l.path.sheets.length - 1] == sheet);
+		linePool.remove(line);
 
 		if (line == null) {
 			line = new HuiTableLine(this, entry);
 			line.pool = linePool;
 		}
 		line.setLine(entry);
-		line.resizeCells(cellSizes);
+		line.resizeCells();
 
 		line.onPush = (e) -> {
 			if (e.button == hxd.Key.MOUSE_RIGHT) {
@@ -356,11 +362,15 @@ class HuiCdbTable extends HuiElement {
 			cell.readOnly = true;
 		}
 
-		headerLine.resizeCells(cellSizes);
+		headerLine.resizeCells();
 	}
 
-	function computeCellSizes() {
+	function computeCellSizes(entry: SheetEntry) {
+		var cellSizes = entry.cellSizes;
 		cellSizes.resize(0);
+		var sheet = getTableSheet(entry.path);
+		if (sheet == null)
+			return;
 		var total = 0;
 		cellSizes.push(20);
 		total += 20;
@@ -370,7 +380,8 @@ class HuiCdbTable extends HuiElement {
 			total += size;
 		}
 
-		var prop = innerWidth / total;
+		// lines have the same depth as their lines array
+		var prop = (innerWidth - DEPTH_MARGIN * (entry.path.path.length - 1)) / total;
 		for (i => _ in cellSizes) {
 			cellSizes[i] = hxd.Math.floor(cellSizes[i] * prop);
 		}
@@ -378,7 +389,35 @@ class HuiCdbTable extends HuiElement {
 
 	/** `linePath` must be the instance returned by getSheetPaths, openSheets keys match by reference **/
 	function openSubSheet(linePath: ObjectPath, tablePath: ObjectPath) {
-		openSheets.set(linePath, {path: tablePath, lines: []});
+		var entry : SheetEntry = {path: tablePath, lines: [], cellSizes: []};
+		computeCellSizes(entry);
+		openSheets.set(linePath, entry);
+		refreshVisible();
+	}
+
+	/** Also closes the sheets opened under its lines **/
+	function closeSubSheet(linePath: ObjectPath) {
+		function close(linePath: ObjectPath) {
+			var entry = openSheets.get(linePath);
+			if (entry == null)
+				return;
+			openSheets.remove(linePath);
+			for (l in entry.lines)
+				close(l);
+		}
+		close(linePath);
+		refreshVisible();
+	}
+
+	/** The sheet of the lines array at the end of `tablePath`, null for an empty path **/
+	function getTableSheet(tablePath: ObjectPath) : cdb.Sheet {
+		// a sheet path ends with its lines array : the root sheet lines (no column) or a list column of the parent line
+		var last = tablePath.path.length - 1;
+		var s = tablePath.sheets[last];
+		var col = tablePath.cols[last];
+		if (col != null)
+			s = s.getSub(Lambda.find(s.columns, (c) -> c.name == col));
+		return s;
 	}
 
 	/**
@@ -391,13 +430,8 @@ class HuiCdbTable extends HuiElement {
 			throw "Sheet not open";
 		var path = entry.path;
 		var paths = entry.lines;
-
-		// a sheet path ends with its lines array : the root sheet lines (no column) or a list column of the parent line
-		var last = path.path.length - 1;
-		var s = path.sheets[last];
-		var col = path.cols[last];
-		if (col != null)
-			s = s.getSub(Lambda.find(s.columns, (c) -> c.name == col));
+		var s = getTableSheet(path);
+		var col = path.cols[path.cols.length - 1];
 		var lines : Array<Dynamic> = path.obj ?? [];
 
 		paths.resize(lines.length);
@@ -443,6 +477,8 @@ class HuiTableLine extends HuiElement {
 	var table: HuiCdbTable;
 	/** Path to the line object **/
 	var path: ObjectPath;
+	/** Key of the sheet holding the line in table.openSheets **/
+	var parentPath: ObjectPath;
 	var pool: Array<HuiTableLine>;
 	var lineData: Dynamic;
 	var lineId: Int;
@@ -492,7 +528,9 @@ class HuiTableLine extends HuiElement {
 		return cast cells.childElements[col + 1];
 	}
 
-	public function resizeCells(sizes: Array<Int>) {
+	/** Uses the cell sizes of the sheet holding the line **/
+	public function resizeCells() {
+		var sizes = table.openSheets.get(parentPath).cellSizes;
 		for (i => element in cells.childElements) {
 			element.setWidth(sizes[i]);
 		}
@@ -500,6 +538,9 @@ class HuiTableLine extends HuiElement {
 
 	public function setLine(path: ObjectPath) {
 		this.path = path;
+		var p = path.copy();
+		p.pop();
+		parentPath = table.getLivePath(p);
 		lineId = HuiCdbTable.getLineId(path);
 		lineData = path.obj;
 		refreshData();
@@ -507,6 +548,7 @@ class HuiTableLine extends HuiElement {
 
 	function refreshData() {
 		lineNoCell.text.text = Std.string(lineId + 1);
+		dom.setAttribute("margin-left", VInt(HuiCdbTable.DEPTH_MARGIN * (path.path.length - 1)));
 		for (element in cells.childElements) {
 			(cast element : HuiTableCell).refreshData();
 		}
@@ -677,7 +719,20 @@ class HuiTableCellList extends HuiTableCell {
 	public function new(column: cdb.Data.Column, ?parent) {
 		super(column, parent);
 		initComponent();
-		readOnly = true;
+	}
+
+	override function edit() {
+		if (editing) {
+			finishEdit();
+			return;
+		}
+		super.edit();
+		line.table.openSubSheet(line.path, getObjectPath());
+	}
+
+	override function finishEdit() {
+		super.finishEdit();
+		line.table.closeSubSheet(line.path);
 	}
 
 	override function refreshData() {
