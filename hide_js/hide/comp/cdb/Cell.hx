@@ -504,14 +504,13 @@ class Cell {
 		case TFormula:
 			if( fscope == null && (obj == line.obj || obj == Reflect.field(line.obj, column.name)) )
 				fscope = getFormulaScope();
+			// only the expression, the arguments are shown when editing
 			var err = cdb.FormulaEngine.getError(v, fscope);
+			var body = cdb.FormulaEngine.split(v).body;
 			if( err != null )
-				html('<span class="error" title="${StringTools.htmlEscape(err)}">${StringTools.htmlEscape(v)}</span>');
-			else {
-				var f = cdb.FormulaEngine.split(v);
-				var body = StringTools.htmlEscape(f.body);
-				body == StringTools.htmlEscape(v) ? val(v) : html('<span class="minor">(${StringTools.htmlEscape(cdb.FormulaEngine.argsToString(f.args))}) =&gt;</span> $body');
-			}
+				html('<span class="error" title="${StringTools.htmlEscape(err)}">${StringTools.htmlEscape(body)}</span>');
+			else
+				val(body);
 		case TRef(sname):
 			if( v == "" )
 				html('<span class="error">#MISSING</span>');
