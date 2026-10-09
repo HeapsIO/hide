@@ -2,7 +2,7 @@ package hrt.ui;
 
 #if hui
 
-typedef VisibleEntry = cdb.Sheet.ObjectPath;
+import cdb.Sheet.ObjectPath;
 
 @:structInit
 class HuiTableSelectionRect {
@@ -18,17 +18,13 @@ class HuiTableSelectionRect {
 @:access(hrt.ui.HuiTableCell)
 class HuiCdbTable extends HuiElement {
 	var sheet: cdb.Sheet;
-	/** Topmost HuiCdbTable, this one if not a sub table **/
-	var root: HuiCdbTable;
 
-	var visibleList : Array<VisibleEntry> = [];
-	/** Path to the lines array of the displayed sheet **/
-	var sheetPath: cdb.Sheet.ObjectPath;
+	var visibleList : Array<ObjectPath> = [];
 	/**
 		Visible sheets and the paths of their lines, by parent line path. The root sheet uses null and is always present.
 		Keys match by reference : use the line paths returned by getSheetPaths, not an equivalent copy.
 	**/
-	var openSheets: Map<cdb.Sheet.ObjectPath, {path: cdb.Sheet.ObjectPath, lines: Array<cdb.Sheet.ObjectPath>}> = [];
+	var openSheets: Map<ObjectPath, {path: ObjectPath, lines: Array<ObjectPath>}> = [];
 	var cellSizes: Array<Int> = [];
 	var linePool: Array<HuiTableLine> = [];
 	var selectionRects: Array<HuiTableSelectionRect> = [];
@@ -53,9 +49,8 @@ class HuiCdbTable extends HuiElement {
 			<hui-virtual-list id="list"/>
 		</hui-cdb-table>
 
-	public function new(sheet: cdb.Sheet, ?root: HuiCdbTable, ?parent) {
+	public function new(sheet: cdb.Sheet, ?parent) {
 		super(parent);
-		this.root = root ?? this;
 		initComponent();
 		list.setItems(visibleList);
 		list.generateItem = cast generateLine;
@@ -81,7 +76,8 @@ class HuiCdbTable extends HuiElement {
 
 	public function openSheet(sheet: cdb.Sheet) {
 		this.sheet = sheet;
-		sheetPath = new cdb.Sheet.ObjectPath();
+		// path to the lines array of the root sheet
+		var sheetPath = new ObjectPath();
 		if (sheet != null)
 			sheetPath.push(sheet.lines, -1, sheet, null);
 
@@ -153,35 +149,24 @@ class HuiCdbTable extends HuiElement {
 	}
 
 	/** `linePath` must be the instance from visibleList, list items match by reference **/
-	function getLine(linePath: cdb.Sheet.ObjectPath) : HuiTableLine {
+	function getLine(linePath: ObjectPath) : HuiTableLine {
 		return cast list.tryGetElement(linePath);
 	}
 
-	function getCell(linePath: cdb.Sheet.ObjectPath, col: Int) : HuiTableCell {
+	function getCell(linePath: ObjectPath, col: Int) : HuiTableCell {
 		return getLine(linePath)?.getCell(col);
 	}
 
-	function getCellFromObjectPath(path: cdb.Sheet.ObjectPath) : Null<HuiTableCell> {
-		// paths start at the root sheet
-		var table = this;
-		while (table.sheet.parent != null) {
-			var p = table.parent;
-			while (p != null && !(p is HuiCdbTable))
-				p = p.parent;
-			if (p == null)
+	/** The line path instance from openSheets matching the line path `path`, null if its sheet isn't open **/
+	function getLivePath(path: ObjectPath) : Null<ObjectPath> {
+		var live : ObjectPath = null;
+		for (i in 0...path.path.length) {
+			var entry = openSheets.get(live);
+			live = entry?.lines[path.indexes[i]];
+			if (live == null || live.cols[i] != path.cols[i])
 				return null;
-			table = cast p;
 		}
-		if (path.sheets[0] != table.sheet)
-			return null;
-
-		var last = path.path.length - 1;
-		if (last != 1)
-			return null;
-		for (i => c in table.sheet.columns)
-			if (c.name == path.cols[last])
-				return table.getCell(table.visibleList[path.indexes[last - 1]], i);
-		return null;
+		return live;
 	}
 
 	function updateCursor() {
@@ -248,13 +233,13 @@ class HuiCdbTable extends HuiElement {
 		updateRects();
 	}
 
-	function refreshItem(item: VisibleEntry, line: HuiTableLine) {
+	function refreshItem(item: ObjectPath, line: HuiTableLine) {
 		if (line.lineId != getLineId(item) || line.lineData != item.obj)
 			line.setLine(item);
 		line.resizeCells(cellSizes);
 	}
 
-	function generateLine(entry: VisibleEntry) : HuiElement {
+	function generateLine(entry: ObjectPath) : HuiElement {
 		var line = linePool.pop();
 
 		if (line == null) {
@@ -294,9 +279,7 @@ class HuiCdbTable extends HuiElement {
 		}
 	}
 
-	function setDataAction(path: cdb.Sheet.ObjectPath, newData: Dynamic) : hrt.tools.Undo.Action {
-		if (this != root)
-			return root.setDataAction(path, newData);
+	function setDataAction(path: ObjectPath, newData: Dynamic) : hrt.tools.Undo.Action {
 		var oldData = path.obj;
 		if (hrt.prefab.Diff.diff(oldData, newData) == Skip)
 			return null;
@@ -315,30 +298,25 @@ class HuiCdbTable extends HuiElement {
 				Reflect.field(parent, path.cols[last])[path.indexes[last]] = value;
 			else
 				Reflect.setField(parent, path.cols[last], value);
-			getCellFromObjectPath(path)?.refreshData();
+
+			// refresh the cell of the line holding the last level, if displayed
+			var linePath = path.copy();
+			linePath.pop();
+			var live = getLivePath(linePath);
+			if (live != null)
+				for (i => c in path.sheets[last].columns)
+					if (c.name == path.cols[last])
+						getCell(live, i)?.refreshData();
 		}
 	}
 
-	static inline function getLineId(path: cdb.Sheet.ObjectPath) : Int {
+	static inline function getLineId(path: ObjectPath) : Int {
 		return path.indexes[path.indexes.length - 1];
 	}
 
-	function getLineObjectPath(lineId: Int) : cdb.Sheet.ObjectPath {
-		var path = new cdb.Sheet.ObjectPath();
-		// push the lines from the root sheet down to this one, each level stored in its parent's list column
-		function pushLine(s: cdb.Sheet, lineId: Int) {
-			var p = s.parent;
-			if (p != null)
-				pushLine(p.sheet, p.line);
-			path.push(s.lines[lineId], lineId, s, p != null ? p.sheet.columns[p.column].name : null);
-		}
-		pushLine(sheet, lineId);
-		return path;
-	}
-
-	function getCellObjectPath(lineId: Int, column: cdb.Data.Column) : cdb.Sheet.ObjectPath {
-		var path = getLineObjectPath(lineId);
-		path.push(Reflect.field(sheet.lines[lineId], column.name), -1, sheet, column.name);
+	function getCellObjectPath(linePath: ObjectPath, column: cdb.Data.Column) : ObjectPath {
+		var path = linePath.copy();
+		path.push(Reflect.field(linePath.obj, column.name), -1, linePath.sheets[linePath.sheets.length - 1], column.name);
 		return path;
 	}
 
@@ -355,7 +333,7 @@ class HuiCdbTable extends HuiElement {
 			for (lineId in r.y...r.y + r.h)
 				for (col in r.x...r.x + r.w) {
 					var column = sheet.columns[col];
-					actions.push(setDataAction(getCellObjectPath(lineId, column), getDefault(column)));
+					actions.push(setDataAction(getCellObjectPath(visibleList[lineId], column), getDefault(column)));
 				}
 		getView().undo.run(hrt.tools.Undo.actionFromActions(actions), true);
 	}
@@ -399,7 +377,7 @@ class HuiCdbTable extends HuiElement {
 	}
 
 	/** `linePath` must be the instance returned by getSheetPaths, openSheets keys match by reference **/
-	function openSubSheet(linePath: cdb.Sheet.ObjectPath, tablePath: cdb.Sheet.ObjectPath) {
+	function openSubSheet(linePath: ObjectPath, tablePath: ObjectPath) {
 		openSheets.set(linePath, {path: tablePath, lines: []});
 	}
 
@@ -407,7 +385,7 @@ class HuiCdbTable extends HuiElement {
 		Paths of the lines of the sheet opened under `linePath` (null for the root sheet).
 		The paths are reused, they are the list keys of the displayed lines.
 	**/
-	function getSheetPaths(linePath: cdb.Sheet.ObjectPath) : Array<cdb.Sheet.ObjectPath> {
+	function getSheetPaths(linePath: ObjectPath) : Array<ObjectPath> {
 		var entry = openSheets.get(linePath);
 		if (entry == null)
 			throw "Sheet not open";
@@ -443,7 +421,7 @@ class HuiCdbTable extends HuiElement {
 	function refreshVisible() {
 		visibleList.resize(0);
 		// opened sub sheets are displayed right after their parent line
-		function pushLines(linePath: cdb.Sheet.ObjectPath) {
+		function pushLines(linePath: ObjectPath) {
 			for (l in getSheetPaths(linePath)) {
 				visibleList.push(l);
 				if (openSheets.exists(l))
@@ -464,7 +442,7 @@ class HuiCdbTable extends HuiElement {
 class HuiTableLine extends HuiElement {
 	var table: HuiCdbTable;
 	/** Path to the line object **/
-	var path: cdb.Sheet.ObjectPath;
+	var path: ObjectPath;
 	var pool: Array<HuiTableLine>;
 	var lineData: Dynamic;
 	var lineId: Int;
@@ -475,7 +453,7 @@ class HuiTableLine extends HuiElement {
 			<hui-element id="cells"/>
 		</hui-table-line>
 
-	public function new(table: HuiCdbTable, path: cdb.Sheet.ObjectPath, ?parent) {
+	public function new(table: HuiCdbTable, path: ObjectPath, ?parent) {
 		super(parent);
 		initComponent();
 		this.table = table;
@@ -509,10 +487,6 @@ class HuiTableLine extends HuiElement {
 		pool?.push(this);
 	}
 
-	function getVisibleEntry() : VisibleEntry {
-		return table.visibleList[lineId];
-	}
-
 	function getCell(col: Int) : HuiTableCell {
 		// skip line number cell
 		return cast cells.childElements[col + 1];
@@ -524,7 +498,7 @@ class HuiTableLine extends HuiElement {
 		}
 	}
 
-	public function setLine(path: cdb.Sheet.ObjectPath) {
+	public function setLine(path: ObjectPath) {
 		this.path = path;
 		lineId = HuiCdbTable.getLineId(path);
 		lineData = path.obj;
@@ -592,8 +566,8 @@ class HuiTableCell extends HuiElement {
 		h2d.Mask.unmask(ctx);
 	}
 
-	function getObjectPath() : cdb.Sheet.ObjectPath {
-		return line.table.getCellObjectPath(line.lineId, column);
+	function getObjectPath() : ObjectPath {
+		return line.table.getCellObjectPath(line.path, column);
 	}
 
 	function onCellPush(e: hxd.Event) {
@@ -631,7 +605,7 @@ class HuiTableCell extends HuiElement {
 		editing = true;
 		dom.addClass("edit");
 		// keep the line while scrolled out, so the edit isn't lost
-		line.table.list.setKeepLine(line.getVisibleEntry(), true);
+		line.table.list.setKeepLine(line.path, true);
 	}
 
 	function commit() {
@@ -641,7 +615,7 @@ class HuiTableCell extends HuiElement {
 	function finishEdit() {
 		editing = false;
 		dom.removeClass("edit");
-		line.table.list.setKeepLine(line.getVisibleEntry(), false);
+		line.table.list.setKeepLine(line.path, false);
 	}
 
 	function refreshData() {}
