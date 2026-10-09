@@ -22,15 +22,15 @@ class DevTools extends hide.ui.View<{ profileFilePath : String }> {
 			if( openCalled || !blankLoaded || !devtoolsLoaded )
 				return;
 			openCalled = true;
-			showDevTools(blank, true, devtools);
+			attachDevTools(blank, devtools);
 			// wait for devTools ready
 			haxe.Timer.delay(() -> openProfile(), 500);
 		}
-		blank.addEventListener("contentload", function() {
+		blank.addEventListener("dom-ready", function() {
 			blankLoaded = true;
 			tryOpen();
 		});
-		devtools.addEventListener("contentload", function() {
+		devtools.addEventListener("dom-ready", function() {
 			devtoolsLoaded = true;
 			tryOpen();
 		});
@@ -42,7 +42,7 @@ class DevTools extends hide.ui.View<{ profileFilePath : String }> {
 		var menu = super.buildTabMenu();
 		menu.push({isSeparator: true});
 		menu.push({label: "Debug", click: () -> {
-			showDevTools(devtools, true);
+			electron.Ipc.call("devtools.open", getWebContentsId(devtools));
 		}});
 		return menu;
 	}
@@ -71,12 +71,16 @@ setTimeout(function() {
 
 	}
 
-	inline function showDevTools( webview : Element.HTMLElement, show : Bool, ?container : Element.HTMLElement ) {
-		js.Syntax.code("{0}.showDevTools({1}, {2});", webview, show, container);
+	inline function getWebContentsId( webview : Element.HTMLElement ) : Int {
+		return (cast webview).getWebContentsId();
+	}
+
+	function attachDevTools( webview : Element.HTMLElement, container : Element.HTMLElement ) {
+		electron.Ipc.call("devtools.attach", getWebContentsId(webview), getWebContentsId(container));
 	}
 
 	inline function unsafeExecuteScript( script : String ) {
-		js.Syntax.code("{0}.executeScript({ code: {1}, mainWorld: false });", devtools, script);
+		(cast devtools).executeJavaScript(script);
 	}
 
 	override function getTitle() {

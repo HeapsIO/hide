@@ -87,11 +87,11 @@ class ThumbnailGenerator {
 
 	function new() {
 		if (Ide.inst.ideConfig.filebrowserDebugShowWindow) {
-			nw.Window.get().show(true);
+			electron.Window.get().show(true);
 		} else {
-			untyped nw.Window.get().hide();
+			electron.Window.get().hide();
 		}
-		nw.Window.get().resizeTo(128,128);
+		electron.Window.get().resizeTo(128,128);
 
 		bufferedData = haxe.io.Bytes.alloc(maxBufferSize);
 
@@ -100,7 +100,7 @@ class ThumbnailGenerator {
 
 		// Destroy the generator if any error occurs
 		socket.onError = (msg) -> {
-			nw.Window.get().close(true);
+			electron.Window.get().close(true);
 		}
 
 		var handler = new MessageHandler(socket, handleCommand);

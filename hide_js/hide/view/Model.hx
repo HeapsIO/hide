@@ -433,7 +433,7 @@ class Model extends FileView {
 
 
 		sceneEditor.view.keys.register("view.refresh", function() rebuild());
-		sceneEditor.view.keys.register("view.refreshApp", function() untyped chrome.runtime.reload());
+		sceneEditor.view.keys.register("view.refreshApp", function() js.Browser.location.reload());
 
 		sceneEditor.view.keys.register("sceneeditor.radialViewModes", {name: "Radial view modes", category: "Scene"}, function() {
 			var renderer = Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer);

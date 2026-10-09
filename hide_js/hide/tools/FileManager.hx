@@ -398,11 +398,11 @@ class FileManager {
 
 		windowManager = null;
 
-		untyped nw.Window.getAll((win:nw.Window) -> {
+		for (win in electron.Window.getAll()) {
 			if (win.title == "HideThumbnailGenerator") {
 				win.close(true);
 			}
-		});
+		}
 	}
 
 	function init() {
@@ -849,7 +849,7 @@ enum RenderWindowState {
 @:access(hide.tools.FileManager)
 class RenderWindowManager {
 	var state : RenderWindowState = Pending;
-	var generatorWindow : nw.Window;
+	var generatorWindow : electron.Window;
 
 	function new() {
 		state = Pending;
@@ -857,15 +857,12 @@ class RenderWindowManager {
 		// the generator socket is properly initialised
 		untyped js.Browser.window.requestIdleCallback(() -> {
 			state = Ready;
-			nw.Window.open('app.html?thumbnail=true', cast {
-					new_instance: true,
-					show: false,
-					title: "HideThumbnailGenerator"
-				}, (win: nw.Window) -> {
-					generatorWindow = win;
-				win.on("close", () -> {
-					hide.Tools.FileManager.cleanupGenerator();
-				});
+			generatorWindow = electron.Window.open('app.html?thumbnail=true', {
+				show: false,
+				title: "HideThumbnailGenerator"
+			});
+			generatorWindow.on("closed", () -> {
+				FileManager.inst.cleanupGenerator();
 			});
 		}, {timeout: 1000});
 	}

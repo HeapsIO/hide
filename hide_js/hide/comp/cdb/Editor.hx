@@ -676,8 +676,8 @@ class Editor extends Component {
 		}
 
 		ide.setClipboardMultiple([
-			{ type: nw.Clipboard.ClipboardType.Text, data: plainText },
-			{ type: nw.Clipboard.ClipboardType.Rtf, data: rtfText }
+			{ type: electron.Clipboard.ClipboardType.Text, data: plainText },
+			{ type: electron.Clipboard.ClipboardType.Rtf, data: rtfText }
 		]);
 	}
 
@@ -685,7 +685,7 @@ class Editor extends Component {
 		if (this.cursor.table == null)
 			return;
 
-		var cdbDataText = ide.getClipboard(nw.Clipboard.ClipboardType.Rtf);
+		var cdbDataText = ide.getClipboard(electron.Clipboard.ClipboardType.Rtf);
 		if (cdbDataText.indexOf(CLIPBOARD_PREFIX) >= 0)
 			cdbDataText = StringTools.replace(cdbDataText, CLIPBOARD_PREFIX, "");
 		else
@@ -789,7 +789,7 @@ class Editor extends Component {
 				return null;
 			}
 
-			var plainText = ide.getClipboard(nw.Clipboard.ClipboardType.Text);
+			var plainText = ide.getClipboard(electron.Clipboard.ClipboardType.Text);
 
 			beginChanges();
 			for (c in targetCells) {

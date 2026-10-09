@@ -21,3 +21,5 @@ shaders/
 api.xml
 bin_hl/
 *.dump
+/bin/electron
+/bin/main.js

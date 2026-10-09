@@ -13,6 +13,14 @@
 <link rel="stylesheet" type="text/css" href="libs/spectrum.css"/>
 <link rel="stylesheet" data-name="vs/editor/editor.main" href="libs/monaco/min/vs/editor/editor.main.css">
 
+<script>
+	// Electron defines a global "module" : hide it so jQuery, goldenlayout and monaco
+	// register themselves as browser globals instead of CommonJS / node modules
+	var nodeModule = window.module;
+	window.module = undefined;
+	// hide.js overrides the global Reflect with the Haxe one
+	var nativeReflect = Reflect;
+</script>
 <script src="libs/jquery-3.2.1.js"></script>
 <script src="libs/jquery.ui.position.js"></script>
 <script src="libs/goldenlayout.js"></script>
@@ -35,16 +43,6 @@
 	}
 
 	var thumbnail = getQueryVariable("thumbnail");
-	if (!thumbnail) {
-		var win = nw.Window.get();
-		win.on('close', function() {
-			chrome.app.window.getAll().forEach(win => {
-				win.close(true);
-			});
-			nw.App.closeAllWindows();
-			nw.App.quit();
-		});
-	}
 
 </script>
 
@@ -57,7 +55,15 @@
 	var nodeRequire = require;
 	monaco = {};
 </script>
+<script>
+	// prevent monaco loader from detecting Electron : it would load modules with node vm instead of script tags
+	var nodeProcess = window.process;
+	window.process = undefined;
+</script>
 <script src="libs/monaco/min/vs/loader.js"></script>
+<script>
+	window.process = nodeProcess;
+</script>
 <script>
 	var amdRequire = require;
 	require = nodeRequire;
@@ -151,7 +157,7 @@
 	if (!thumbnail) {
 		// fix for monaco
 		var _R = Reflect;
-		Reflect = global.Reflect;
+		Reflect = nativeReflect;
 		for( f in _R )
 			Reflect[f] = _R[f];
 
@@ -187,7 +193,7 @@
 	{
 		// destroy self if we are in thumbnail generation mode
 		if (thumbnail)
-			nw.Window.get().close(true);
+			require('electron').ipcRenderer.sendSync('hide-sync', 'win.close', null, true);
 
 		if (timer != 0)
 			clearTimeout(timer);
