@@ -89,6 +89,7 @@ class HuiCdbTable extends HuiElement {
 	public function setCursor(col: Int, line: Int) {
 		cursorCol = col;
 		cursorLine = line;
+		list.scrollToIndex(line);
 		updateCursor();
 	}
 
@@ -110,6 +111,7 @@ class HuiCdbTable extends HuiElement {
 		r.y = hxd.Math.imin(cursorLine, line);
 		r.w = hxd.Math.iabs(col - cursorCol) + 1;
 		r.h = hxd.Math.iabs(line - cursorLine) + 1;
+		list.scrollToIndex(line);
 	}
 
 	function editCursorCell() {
@@ -217,6 +219,9 @@ class HuiCdbTable extends HuiElement {
 	}
 
 	function refreshItem(item: VisibleEntry, line: HuiTableLine) {
+		var lineData = sheet.lines[item.lineId];
+		if (line.lineId != item.lineId || line.lineData != lineData)
+			line.setLine(item.lineId, lineData);
 		line.resizeCells(cellSizes);
 	}
 
@@ -351,15 +356,16 @@ class HuiCdbTable extends HuiElement {
 	}
 
 	function refreshVisible() {
-		visibleList.resize(0);
-
-		if (sheet != null) {
-			for (i in 0...sheet.lines.length) {
-				visibleList.push({lineId: i});
-			}
+		// reuse the entries, they are the list keys of the displayed lines
+		visibleList.resize(sheet != null ? sheet.lines.length : 0);
+		for (i in 0...visibleList.length) {
+			if (visibleList[i] == null)
+				visibleList[i] = {lineId: i};
+			visibleList[i].lineId = i;
 		}
 
-		list.refresh();
+		// drops the keep lines of the removed entries
+		list.setItems(visibleList);
 	}
 
 
@@ -426,6 +432,10 @@ class HuiTableLine extends HuiElement {
 	}
 
 	dynamic function onSubEditorClosed() {}
+
+	function getVisibleEntry() : VisibleEntry {
+		return table.visibleList[lineId];
+	}
 
 	function getCell(col: Int) : HuiTableCell {
 		// skip line number cell
@@ -555,6 +565,8 @@ class HuiTableCell extends HuiElement {
 	function edit() {
 		editing = true;
 		dom.addClass("edit");
+		// keep the line while scrolled out, so the edit isn't lost
+		line.table.list.setKeepLine(line.getVisibleEntry(), true);
 	}
 
 	function commit() {
@@ -564,6 +576,7 @@ class HuiTableCell extends HuiElement {
 	function finishEdit() {
 		editing = false;
 		dom.removeClass("edit");
+		line.table.list.setKeepLine(line.getVisibleEntry(), false);
 	}
 
 	function refreshData() {}
