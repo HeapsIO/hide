@@ -325,6 +325,13 @@ class HuiVirtualList<T> extends HuiElement {
 				line.element.reflow();
 			}
 
+			// draw upper elements above lower ones
+			for (i in 0...layoutLines.length) {
+				var element = layoutLines[layoutLines.length - 1 - i].element;
+				if (itemContainer.getChildIndex(element) != i)
+					itemContainer.addChildAt(element, i);
+			}
+
 			var maxVisible = layoutLines[layoutLines.length-1].index;
 			for (i => line in layoutLines) {
 				if (line.element.y <= 0 && line.element.y + line.element.calculatedHeight > 0) {
