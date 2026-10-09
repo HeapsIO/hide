@@ -72,6 +72,7 @@ class HuiCdbTable extends HuiElement {
 		registerCommand(leftCmd, ElementAndChildren, moveCursor.bind(0, -1));
 		registerCommand(rightCmd, ElementAndChildren, moveCursor.bind(0, 1));
 		registerCommand(editCmd, ElementAndChildren, editCursorCell);
+		registerCommand(HuiCommands.escape, ElementAndChildren, escapeCursorCell);
 	}
 
 	public function openSheet(sheet: cdb.Sheet) {
@@ -161,8 +162,23 @@ class HuiCdbTable extends HuiElement {
 	function editCursorCell() {
 		var vline = getCursorVLine();
 		var cell = vline != null ? getCell(vline, getCursorCol()) : null;
-		if (cell != null && !cell.readOnly && !cell.editing)
-			cell.edit();
+		// edit toggles the sub sheet of list cells
+		if (cell == null || cell.readOnly || (cell.editing && !(cell is HuiTableCellList)))
+			return;
+		cell.edit();
+
+		// move to the first cell of the opened sub sheet
+		if (!(cell is HuiTableCellList) || !cell.editing)
+			return;
+		var first = Lambda.find(openSheets.get(vline).lines, (l) -> l.kind == Line);
+		if (first != null)
+			setCursor(getCellObjectPath(first.path, first.path.sheets[first.path.sheets.length - 1].columns[0]));
+	}
+
+	function escapeCursorCell() {
+		var vline = getCursorVLine();
+		var cell = vline != null ? getCell(vline, getCursorCol()) : null;
+		cell?.onEscape();
 	}
 
 	/** `vline` must be the instance from visibleList, list items match by reference **/
@@ -612,6 +628,24 @@ class HuiTableCell extends HuiElement {
 			return false;
 		commit();
 		return true;
+	}
+
+	/** Escape pressed with the cell under the cursor **/
+	function onEscape() {
+		if (editing) {
+			finishEdit();
+			return;
+		}
+		// close the sub sheet holding the line from its list cell
+		var parent = line.vline?.parent;
+		if (parent == null)
+			return;
+		var path = line.table.openSheets.get(parent).path;
+		var last = path.path.length - 1;
+		for (i => c in path.sheets[last].columns)
+			if (c.name == path.cols[last])
+				line.table.getCell(parent, i)?.finishEdit();
+		line.table.setCursor(path.copy());
 	}
 
 	function edit() {
