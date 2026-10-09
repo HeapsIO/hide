@@ -38,6 +38,7 @@ class HuiCdbTable extends HuiElement {
 	static var selectDownCmd = new HuiCommands.HuiCommand("Select Down", {shift: true, key: hxd.Key.DOWN});
 	static var selectLeftCmd = new HuiCommands.HuiCommand("Select Left", {shift: true, key: hxd.Key.LEFT});
 	static var selectRightCmd = new HuiCommands.HuiCommand("Select Right", {shift: true, key: hxd.Key.RIGHT});
+	static var editCmd = new HuiCommands.HuiCommand("Edit", {key: hxd.Key.ENTER});
 
 	static var SRC =
 		<hui-cdb-table>
@@ -67,6 +68,7 @@ class HuiCdbTable extends HuiElement {
 		registerCommand(selectDownCmd, ElementAndChildren, moveSelectionCorner.bind(1, 0));
 		registerCommand(selectLeftCmd, ElementAndChildren, moveSelectionCorner.bind(0, -1));
 		registerCommand(selectRightCmd, ElementAndChildren, moveSelectionCorner.bind(0, 1));
+		registerCommand(editCmd, ElementAndChildren, editCursorCell);
 	}
 
 	public function openSheet(sheet: cdb.Sheet) {
@@ -108,6 +110,12 @@ class HuiCdbTable extends HuiElement {
 		r.y = hxd.Math.imin(cursorLine, line);
 		r.w = hxd.Math.iabs(col - cursorCol) + 1;
 		r.h = hxd.Math.iabs(line - cursorLine) + 1;
+	}
+
+	function editCursorCell() {
+		var cell = getCell(cursorLine, cursorCol);
+		if (cell != null && !cell.readOnly && !cell.editing)
+			cell.edit();
 	}
 
 	function rectSelectTo(line: Int, col: Int) {
@@ -365,11 +373,11 @@ class HuiTableLine extends HuiElement {
 	var lineData: Dynamic;
 	var lineId: Int;
 	var lineNoCell: HuiTableCellText;
+	var subEditor: HuiElement;
 
 	static var SRC =
 		<hui-table-line>
 			<hui-element id="cells"/>
-			<hui-element id="sub-editor"/>
 		</hui-table-line>
 
 	public function new(table: HuiCdbTable, ?parent) {
@@ -402,6 +410,22 @@ class HuiTableLine extends HuiElement {
 		super.onRemove();
 		pool?.push(this);
 	}
+
+	function openSubEditor(cell: HuiTableCell) {
+		if (subEditor != null)
+			closeSubEditor();
+		subEditor = cell.getEditor();
+		if (subEditor != null)
+			addChild(subEditor);
+	}
+
+	function closeSubEditor() {
+		onSubEditorClosed();
+		subEditor?.remove();
+		subEditor = null;
+	}
+
+	dynamic function onSubEditorClosed() {}
 
 	function getCell(col: Int) : HuiTableCell {
 		// skip line number cell
@@ -522,6 +546,10 @@ class HuiTableCell extends HuiElement {
 
 	function getEditor() : HuiElement {
 		return null;
+	}
+
+	function openEditor() {
+		line.openSubEditor(this);
 	}
 
 	function edit() {
