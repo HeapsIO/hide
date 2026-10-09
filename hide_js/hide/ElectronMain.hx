@@ -129,6 +129,10 @@ class ElectronMain {
 		if( cwd == null ) cwd = js.Node.process.cwd();
 		var out = [];
 		for( a in argv.slice(1) ) {
+			if( StringTools.startsWith(a, "--project-dir=") || a == "--default-config" ) {
+				out.push(a);
+				continue;
+			}
 			if( StringTools.startsWith(a, "--") ) continue;
 			var abs = js.node.Path.resolve(cwd, a);
 			if( abs == appPath || abs == mainFile ) continue;
