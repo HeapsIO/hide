@@ -17,6 +17,11 @@
 	// Electron defines a global "module" : hide it so jQuery, goldenlayout and monaco
 	// register themselves as browser globals instead of CommonJS / node modules
 	var nodeModule = window.module;
+	// DirectX 12 addon used by hide.js when built with -D dx12 (hide_dx12.hxml, see hide_js/libs/jsdx/native/build.bat)
+	(function() {
+		var dx12Path = require("path").join(__dirname, "jsdx", "dx12.node");
+		if( require("fs").existsSync(dx12Path) ) globalThis.__dx12 = require(dx12Path);
+	})();
 	window.module = undefined;
 	// hide.js overrides the global Reflect with the Haxe one
 	var nativeReflect = Reflect;

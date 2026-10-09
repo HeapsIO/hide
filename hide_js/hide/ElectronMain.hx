@@ -56,6 +56,9 @@ class ElectronMain {
 		App.setPath("userData", js.node.Path.join(App.getPath("appData"), appName));
 		App.commandLine.appendSwitch("js-flags", "--expose-gc --no-efficiency-mode");
 		App.commandLine.appendSwitch("disable-features", "AllowSoftwareGLFallbackDueToCrashes");
+		// DirectX 12 (jsdx) : Chromium must use the same GPU as the dx12 addon, shared textures can not cross adapters
+		App.commandLine.appendSwitch("force_high_performance_gpu");
+		App.commandLine.appendSwitch("ignore-gpu-blocklist");
 
 		if( !App.requestSingleInstanceLock() ) {
 			App.quit();

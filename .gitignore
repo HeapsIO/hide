@@ -23,3 +23,6 @@ bin_hl/
 *.dump
 /bin/electron
 /bin/main.js
+/bin/jsdx
+/hide_js/libs/jsdx/node_modules
+/hide_js/libs/jsdx/build
