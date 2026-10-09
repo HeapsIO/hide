@@ -116,7 +116,7 @@ class Ide extends hide.tools.IdeData {
 		inst = this;
 		window = electron.Window.get();
 		var cwd = Sys.getCwd();
-		for( a in nw.App.argv ) {
+		for( a in electron.App.argv ) {
 			var pre = "--project-dir=";
 			if( StringTools.startsWith(a, pre) )
 				projectOverride = a.substr(pre.length);
