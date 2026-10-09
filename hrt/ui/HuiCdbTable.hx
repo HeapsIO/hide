@@ -48,6 +48,8 @@ class HuiCdbTable extends HuiElement {
 
 		openSheet(sheet);
 		onAfterReflow = afterReflow;
+
+		registerCommand(HuiCommands.delete, ElementAndChildren, clearSelectedCells);
 	}
 
 	public function openSheet(sheet: cdb.Sheet) {
@@ -216,6 +218,8 @@ class HuiCdbTable extends HuiElement {
 
 	function setDataAction(path: cdb.Sheet.ObjectPath, newData: Dynamic) : hrt.tools.Undo.Action {
 		var oldData = path.obj;
+		if (hrt.prefab.Diff.diff(oldData, newData) == Skip)
+			return null;
 		var last = path.path.length - 1;
 		return (isUndo) -> {
 			// fetch the parent of the last level from the database
@@ -234,6 +238,33 @@ class HuiCdbTable extends HuiElement {
 			getCellFromObjectPath(path)?.refreshData();
 			refreshVisible();
 		}
+	}
+
+	function getCellObjectPath(lineId: Int, column: cdb.Data.Column) : cdb.Sheet.ObjectPath {
+		var lineData = sheet.lines[lineId];
+		var path = new cdb.Sheet.ObjectPath();
+		// TODO : handle subtables
+		path.push(lineData, lineId, sheet, null);
+		path.push(Reflect.field(lineData, column.name), -1, sheet, column.name);
+		return path;
+	}
+
+	function clearSelectedCells() {
+		var rects : Array<HuiTableSelectionRect> = selectionRects;
+		if (rects.length == 0) {
+			if (cursorCol < 0 || cursorLine < 0)
+				return;
+			rects = [{x: cursorCol, y: cursorLine, w: 1, h: 1}];
+		}
+
+		var actions = [];
+		for (r in rects)
+			for (lineId in r.y...r.y + r.h)
+				for (col in r.x...r.x + r.w) {
+					var column = sheet.columns[col];
+					actions.push(setDataAction(getCellObjectPath(lineId, column), getDefault(column)));
+				}
+		getView().undo.run(hrt.tools.Undo.actionFromActions(actions), true);
 	}
 
 	/** Value of a new or cleared cell. Null for optional columns **/
@@ -375,11 +406,7 @@ class HuiTableCell extends HuiElement {
 	inline function get_line() return (cast parent : HuiTableLine);
 
 	function getObjectPath() : cdb.Sheet.ObjectPath {
-		var path = new cdb.Sheet.ObjectPath();
-		// TODO : handle subtables
-		path.push(line.lineData, line.lineId, line.table.sheet, null);
-		path.push(Reflect.field(line.lineData, column.name), -1, line.table.sheet, column.name);
-		return path;
+		return line.table.getCellObjectPath(line.lineId, column);
 	}
 
 	function onCellPush(e: hxd.Event) {
