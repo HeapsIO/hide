@@ -35,3 +35,18 @@ hui-cdb-cursor {
 	position: absolute;
 	background-outline: 3 @color-blue;
 }
+
+hui-table-cell-text {
+	> #input {
+		visible: false;
+	}
+
+	&.edit {
+		> #text {
+			visible: false;
+		}
+		> #input {
+			visible: true;
+		}
+	}
+}

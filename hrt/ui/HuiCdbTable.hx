@@ -17,6 +17,7 @@ class HuiTableSelectionRect {
 @:access(hrt.ui.HuiTableLine)
 @:access(hrt.ui.HuiTableCellText)
 @:access(hrt.ui.HuiBackground)
+@:access(hrt.ui.HuiTableCell)
 class HuiCdbTable extends HuiElement {
 	var sheet: cdb.Sheet;
 
@@ -24,8 +25,9 @@ class HuiCdbTable extends HuiElement {
 	var cellSizes: Array<Int> = [];
 	var linePool: Array<HuiTableLine> = [];
 	var selectionRects: Array<HuiTableSelectionRect> = [];
-	var cursorCol = -1;
-	var cursorLine = -1;
+	var selectionRectsElements: Array<HuiCdbSelection> = [];
+	var cursorCol = 0;
+	var cursorLine = 0;
 	var cursorElement: HuiCdbCursor;
 
 	static var SRC =
@@ -69,6 +71,23 @@ class HuiCdbTable extends HuiElement {
 		updateCursor();
 	}
 
+	function rectSelectTo(line: Int, col: Int) {
+		// replace the rect anchored on the cursor
+		for (r in selectionRects.copy()) {
+			var onCol = cursorCol == r.x || cursorCol == r.x + r.w - 1;
+			var onLine = cursorLine == r.y || cursorLine == r.y + r.h - 1;
+			if (onCol && onLine)
+				selectionRects.remove(r);
+		}
+
+		selectionRects.push({
+			x: hxd.Math.imin(cursorCol, col),
+			y: hxd.Math.imin(cursorLine, line),
+			w: hxd.Math.iabs(col - cursorCol) + 1,
+			h: hxd.Math.iabs(line - cursorLine) + 1,
+		});
+	}
+
 	function getLine(lineId: Int) : HuiTableLine {
 		return cast list.tryGetElement(visibleList[lineId]);
 	}
@@ -77,19 +96,61 @@ class HuiCdbTable extends HuiElement {
 		return getLine(lineId)?.getCell(col);
 	}
 
+	function getCellFromObjectPath(path: cdb.Sheet.ObjectPath) : Null<HuiTableCell> {
+		if (path.sheets[0] != sheet)
+			return null;
+		for (i => c in sheet.columns)
+			if (c.name == path.cols[1])
+				return getCell(path.indexes[0], i);
+		return null;
+	}
+
 	function updateCursor() {
 		var cell = cursorCol != -1 && cursorLine != -1 ? getCell(cursorLine, cursorCol) : null;
 		cursorElement.visible = cell != null;
 		if (cell == null)
 			return;
 
-		var t = cursorElement.huiBg._outlineThickness;
+		surroundCells(cursorElement, cell, cell);
+	}
 
-		var pos = globalToLocal(cell.localToGlobal());
-		cursorElement.x = pos.x - t.w;
-		cursorElement.y = pos.y - t.x;
-		cursorElement.setWidth(Std.int(cell.calculatedWidth + t.w + t.y));
-		cursorElement.setHeight(Std.int(cell.calculatedHeight + t.x + t.z));
+	function updateRects() {
+		while (selectionRectsElements.length < selectionRects.length)
+			selectionRectsElements.push(new HuiCdbSelection(this));
+		while (selectionRectsElements.length > selectionRects.length)
+			selectionRectsElements.pop().remove();
+
+		for (i => r in selectionRects) {
+			var element = selectionRectsElements[i];
+
+			// only the displayed lines of the rect
+			var first : HuiTableLine = null;
+			var last : HuiTableLine = null;
+			for (lineId in r.y...r.y + r.h) {
+				var line = getLine(lineId);
+				if (line == null)
+					continue;
+				if (first == null)
+					first = line;
+				last = line;
+			}
+
+			element.visible = first != null;
+			if (first != null)
+				surroundCells(element, first.getCell(r.x), last.getCell(r.x + r.w - 1));
+		}
+	}
+
+	// place element around the cells from topLeft to bottomRight, outset by its outline thickness (top, right, bottom, left)
+	function surroundCells(element: HuiElement, topLeft: HuiTableCell, bottomRight: HuiTableCell) {
+		var t = element.huiBg._outlineThickness;
+
+		var min = globalToLocal(topLeft.localToGlobal());
+		var max = globalToLocal(bottomRight.localToGlobal(new h2d.col.Point(bottomRight.calculatedWidth, bottomRight.calculatedHeight)));
+		element.x = min.x - t.w;
+		element.y = min.y - t.x;
+		element.setWidth(Std.int(max.x - min.x + t.w + t.y));
+		element.setHeight(Std.int(max.y - min.y + t.x + t.z));
 	}
 
 	function afterReflow() {
@@ -105,6 +166,7 @@ class HuiCdbTable extends HuiElement {
 		super.sync(ctx);
 		// after the list sync, so the cells have been laid out
 		updateCursor();
+		updateRects();
 	}
 
 	function refreshItem(item: VisibleEntry, line: HuiTableLine) {
@@ -122,7 +184,7 @@ class HuiCdbTable extends HuiElement {
 		line.setLine(entry.lineId, lineData);
 		line.resizeCells(cellSizes);
 
-		line.onClick = (e) -> {
+		line.onPush = (e) -> {
 			if (e.button == hxd.Key.MOUSE_RIGHT) {
 				uiBase.contextMenu([
 					{
@@ -152,6 +214,33 @@ class HuiCdbTable extends HuiElement {
 		}
 	}
 
+	function setDataAction(path: cdb.Sheet.ObjectPath, newData: Dynamic) : hrt.tools.Undo.Action {
+		var oldData = path.obj;
+		var last = path.path.length - 1;
+		return (isUndo) -> {
+			// fetch the parent of the last level from the database
+			var parent : Dynamic = null;
+			for (i in 0...last) {
+				var v : Dynamic = i == 0 ? path.sheets[0].lines : Reflect.field(parent, path.cols[i]);
+				parent = path.indexes[i] >= 0 ? v[path.indexes[i]] : v;
+			}
+			var value = isUndo ? oldData : newData;
+			if (last == 0)
+				path.sheets[0].lines[path.indexes[0]] = value;
+			else if (path.indexes[last] >= 0)
+				Reflect.field(parent, path.cols[last])[path.indexes[last]] = value;
+			else
+				Reflect.setField(parent, path.cols[last], value);
+			getCellFromObjectPath(path)?.refreshData();
+			refreshVisible();
+		}
+	}
+
+	/** Value of a new or cleared cell. Null for optional columns **/
+	function getDefault(column: cdb.Data.Column) : Dynamic {
+		return sheet.base.getDefault(column, false, sheet);
+	}
+
 	function buildHeader() {
 		headerLine.removeChildElements();
 		headerLine.addChild(headerLine.lineNoCell);
@@ -160,8 +249,9 @@ class HuiCdbTable extends HuiElement {
 			return;
 
 		for (column in sheet.columns) {
-			var cell = new HuiTableCellText(column.name, headerLine);
+			var cell = new HuiTableCellText(column, headerLine);
 			cell.text.text = column.name;
+			cell.readOnly = true;
 		}
 
 		headerLine.resizeCells(cellSizes);
@@ -213,6 +303,7 @@ class HuiTableLine extends HuiElement {
 		initComponent();
 		this.table = table;
 		lineNoCell = new HuiTableCellText(null, this);
+		lineNoCell.readOnly = true;
 
 		if (table.sheet == null)
 			return;
@@ -220,9 +311,9 @@ class HuiTableLine extends HuiElement {
 		for (column in table.sheet.columns) {
 			switch (column.type) {
 				case TId, TString:
-					new HuiTableCellText(column.name, this);
+					new HuiTableCellText(column, this);
 				default:
-					var cell = new HuiTableCellText(column.name, this);
+					var cell = new HuiTableCellText(column, this);
 					cell.readOnly = true;
 			}
 		}
@@ -264,48 +355,119 @@ class HuiTableLine extends HuiElement {
 }
 
 @:access(hrt.ui.HuiTableLine)
+@:access(hrt.ui.HuiCdbTable)
 class HuiTableCell extends HuiElement {
-	var column: String;
+	var column: cdb.Data.Column;
 	var readOnly = false;
 	var line(get, never): HuiTableLine;
 
-	public function new(column: String, ?parent) {
+	public function new(column: cdb.Data.Column, ?parent) {
 		super(parent);
 		initComponent();
 		this.column = column;
 
 		propagateEvents = true;
-		onClick = onCellClick;
+		onPush = onCellPush;
+		onDoubleClick = onCellDoubleClick;
+		onKeyDown = (e) -> onCellKeyDown(e);
 	}
 
 	inline function get_line() return (cast parent : HuiTableLine);
 
-	function onCellClick(e: hxd.Event) {
+	function getObjectPath() : cdb.Sheet.ObjectPath {
+		var path = new cdb.Sheet.ObjectPath();
+		// TODO : handle subtables
+		path.push(line.lineData, line.lineId, line.table.sheet, null);
+		path.push(Reflect.field(line.lineData, column.name), -1, line.table.sheet, column.name);
+		return path;
+	}
+
+	function onCellPush(e: hxd.Event) {
 		// ignore line number and header cells
 		if (column == null || line.lineData == null)
 			return;
-		line.table.setCursor(line.childElements.indexOf(this) - 1, line.lineId);
+		var col = line.childElements.indexOf(this) - 1;
+		if (hxd.Key.isDown(hxd.Key.SHIFT))
+			line.table.rectSelectTo(line.lineId, col);
+		else {
+			line.table.selectionRects.resize(0);
+			line.table.setCursor(col, line.lineId);
+		}
+	}
+
+	function onCellDoubleClick(e: hxd.Event) {
+		if (readOnly)
+			return;
+		edit();
+	}
+
+	/** Returns true if the key was handled **/
+	function onCellKeyDown(e: hxd.Event) : Bool {
+		if (hxd.Key.isDown(hxd.Key.SHIFT) || hxd.Key.isDown(hxd.Key.CTRL) || hxd.Key.isDown(hxd.Key.ALT))
+			return false;
+		if (e.keyCode != hxd.Key.ENTER && e.keyCode != hxd.Key.TAB)
+			return false;
+		commit();
+		return true;
+	}
+
+	function edit() {
+		dom.addClass("edit");
+	}
+
+	function commit() {
+		finishEdit();
+	}
+
+	function finishEdit() {
+		dom.removeClass("edit");
 	}
 
 	function refreshData() {}
 }
 
 @:access(hrt.ui.HuiTableLine)
+@:access(hrt.ui.HuiCdbTable)
 class HuiTableCellText extends HuiTableCell {
 	static var SRC =
 		<hui-table-cell-text>
 			<hui-text id="text"/>
+			<hui-text-input id="input"/>
 		</hui-table-cell-text>
 
-	public function new(column: String, ?parent) {
+	public function new(column: cdb.Data.Column, ?parent) {
 		super(column, parent);
 		initComponent();
+		input.onFocusLost = (e) -> finishEdit();
+		// the input has focus while editing, so the cell doesn't receive its keys
+		input.onKeyDown = (e) -> input.preventDefault = onCellKeyDown(e);
+	}
+
+	override function edit() {
+		super.edit();
+		input.text = text.text;
+		input.focus();
+		var len = input.getTextLength();
+		input.cursorIndex = len;
+		input.selectionRange = {start: 0, length: len};
+	}
+
+	override function commit() {
+		getView().undo.run(line.table.setDataAction(getObjectPath(), input.text), true);
+		super.commit();
 	}
 
 	override function refreshData() {
 		if (column == null)
 			return;
-		text.text = haxe.Json.stringify(Reflect.getProperty(line.lineData, column));
+		var dataText : Dynamic = Reflect.getProperty(line.lineData, column.name);
+		if (dataText is String) {
+			text.text = dataText;
+		} else {
+			if (!readOnly)
+				throw "Can't use CellText for non string data that are not read only";
+			text.text = haxe.Json.stringify(dataText);
+		}
 	}
 }
 
