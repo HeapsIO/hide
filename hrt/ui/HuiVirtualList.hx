@@ -19,6 +19,7 @@ class HuiVirtualList<T> extends HuiElement {
 
 	var items : Array<T> = [];
 	var elements : Map<{}, HuiElement> = [];
+	var keepLines : Map<{}, Bool> = [];
 
 	var needRefresh = true;
 	var scrollIndex : Int = 0;
@@ -62,6 +63,17 @@ class HuiVirtualList<T> extends HuiElement {
 	}
 
 	public function refresh() {
+		needRefresh = true;
+	}
+
+	/**
+		When enabled, the element of `item` is moved out of view instead of removed when it goes out of view.
+	**/
+	public function setKeepLine(item: T, enable: Bool) {
+		if (enable)
+			keepLines.set(cast item, true);
+		else
+			keepLines.remove(cast item);
 		needRefresh = true;
 	}
 
@@ -324,6 +336,11 @@ class HuiVirtualList<T> extends HuiElement {
 		}
 
 		for (item => old in oldElements) {
+			if (keepLines.exists(item)) {
+				// not visible = false, heaps would blur the focused interactive
+				old.y = -100000;
+				continue;
+			}
 			old.remove();
 			elements.remove(cast item);
 			onItemRemoved(cast item);
@@ -340,6 +357,9 @@ class HuiVirtualList<T> extends HuiElement {
 
 	public function setItems(items: Array<T>) : Void {
 		this.items = items;
+		for (item in keepLines.keys())
+			if (!items.contains(cast item))
+				keepLines.remove(item);
 		needRefresh = true;
 		scrollIndex = hxd.Math.iclamp(scrollIndex, 0, items.length-1);
 	}
