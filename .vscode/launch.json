@@ -4,54 +4,56 @@
     // Pour plus d'informations, visitez : https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        // Electron main process (ElectronMain.hx), used by the "Launch" compounds below
         {
-            "type": "nwjs",
+            "type": "node",
             "request": "launch",
-            "name": "Launch HIDE",
-            "nwjsVersion": "any",
-            "webRoot": "${workspaceFolder}/bin",
-            "env": {"HIDE_DEBUG":"1"},
-            "preLaunchTask": "Build",
-			"reloadAfterAttached": false
-		},
-        {
-            "type": "nwjs",
-            "request": "launch",
-            "name": "Launch HIDE (Enable logging)",
-            "nwjsVersion": "any",
-            "webRoot": "${workspaceFolder}/bin",
-            "env": {"HIDE_DEBUG":"1"},
-            "runtimeArgs": ["--enable-logging", "--log-file=${workspaceFolder}/chrome_debug.log"],
-            "preLaunchTask": "Build",
-            "reloadAfterAttached": false
+            "name": "HIDE main process",
+            "cwd": "${workspaceFolder}/bin",
+            "runtimeExecutable": "${workspaceFolder}/bin/electron/electron.exe",
+            "args": [".", "--remote-debugging-port=9222"],
+            "env": {"HIDE_DEBUG":"1", "ELECTRON_RUN_AS_NODE": null},
+            "outputCapture": "std",
+            "sourceMaps": true,
+            "presentation": { "hidden": true }
         },
         {
-            "type": "nwjs",
+            "type": "node",
             "request": "launch",
-            "name": "Launch CDB",
-            "nwjsVersion": "any",
-            "webRoot": "${workspaceFolder}/bin",
-            "env": {"HIDE_DEBUG":"1","HIDE_START_CDB":"1"},
-            "preLaunchTask": "Build"
+            "name": "CDB main process",
+            "cwd": "${workspaceFolder}/bin",
+            "runtimeExecutable": "${workspaceFolder}/bin/electron/electron.exe",
+            "args": [".", "--remote-debugging-port=9222", "--cdb"],
+            "env": {"HIDE_DEBUG":"1", "ELECTRON_RUN_AS_NODE": null},
+            "outputCapture": "std",
+            "sourceMaps": true,
+            "presentation": { "hidden": true }
         },
+        // Editor (hide.js), waits for the window started by the main process
+        {
+            "type": "chrome",
+            "request": "attach",
+            "name": "HIDE editor",
+            "address": "127.0.0.1",
+            "port": 9222,
+            "timeout": 60000,
+            "urlFilter": "*app.html",
+            "sourceMaps": true,
+            "webRoot": "${workspaceFolder}/bin",
+            "presentation": { "hidden": true }
+        },
+        // Attach to an already running HIDE (started with hide.cmd)
         {
             "type": "chrome",
             "request": "attach",
             "name": "Attach to HIDE",
             "address": "127.0.0.1",
             "port": 9222,
+            "urlFilter": "*app.html",
+            "sourceMaps": true,
             "webRoot": "${workspaceFolder}/bin",
-            "preLaunchTask": "Build"
-        },
-        {
-            "type": "chrome",
-            "request": "attach",
-            "name": "Attach to HIDE (chrome)",
-            "address": "127.0.0.1",
-            "port": 9222,
-            "preLaunchTask": "Build",
-			"sourceMaps": true,
-			"webRoot": "${workspaceFolder}/bin",
+            "preLaunchTask": "Build hide",
+            "presentation": { "group": "1_hide", "order": 3 }
         },
         {
             "name": "hide_hl",
@@ -59,10 +61,8 @@
             "type": "hl",
             "cwd": "${workspaceFolder}",
 			"port": 7779,
-            "preLaunchTask": {
-                "type": "haxe",
-                "args": "active configuration"
-            }
+            "preLaunchTask": "Build hide_hl",
+            "presentation": { "group": "2_hl", "order": 1 }
         },
         {
             "name": "hide_hl --autoprofile",
@@ -71,10 +71,25 @@
             "cwd": "${workspaceFolder}",
 			"args": ["--autoprofile"],
 			"port": 7779,
-            "preLaunchTask": {
-                "type": "haxe",
-                "args": "active configuration"
-            }
+            "preLaunchTask": "Build hide_hl",
+            "presentation": { "group": "2_hl", "order": 2 }
+        }
+    ],
+    // build first, then start Electron and debug both the main process and the editor
+    "compounds": [
+        {
+            "name": "Launch HIDE",
+            "configurations": ["HIDE main process", "HIDE editor"],
+            "preLaunchTask": "Build hide",
+            "stopAll": true,
+            "presentation": { "group": "1_hide", "order": 1 }
+        },
+        {
+            "name": "Launch CDB",
+            "configurations": ["CDB main process", "HIDE editor"],
+            "preLaunchTask": "Build hide",
+            "stopAll": true,
+            "presentation": { "group": "1_hide", "order": 2 }
         }
     ]
 }

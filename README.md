@@ -37,18 +37,18 @@ haxelib git hashlink https://github.com/HaxeFoundation/hashlink master other/hax
 #### 2. Build Heaps IDE
 - Clone this repo
 - Run `haxe hide.hxml`
-- This will create hide.js in the bin folder
+- This will create hide.js (editor) and main.js (Electron main process) in the bin folder
 - If there are errors when compiling, make sure you are using the latest libraries from git
 
-#### 3. Install NWJS
-- Download and copy [NWJS](https://nwjs.io/) SDK into the `/bin/nwjs` directory
-- On OSX, copy all files from `bin` into the `bin/nwjs.app/Contents/Resources/app.nw` folder
+#### 3. Install Electron
+- Download the [Electron](https://github.com/electron/electron/releases) release zip for your platform (`electron-vXX-<platform>-x64.zip`) and unzip it into the `/bin/electron` directory
+- On OSX, copy all files from `bin` into the `Electron.app/Contents/Resources/app` folder
 
 ## Running
 
-- Windows: Run `hide.cmd`
-- Linux: Run `nwjs/nw .` (don't miss the trailing space and dot)
-- OSX: Open the NWJS application
+- Windows: Run `hide.cmd` (or `cdb.cmd` for CastleDB)
+- Linux: Run `electron/electron .` from the `bin` directory (add `--cdb` for CastleDB)
+- OSX: Open the Electron application
 
 ## Configuration
 

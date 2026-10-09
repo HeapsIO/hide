@@ -282,11 +282,10 @@ class Gym extends hide.ui.View<{}> {
 					}
 				});
 
-				nw.Window.open('app.html?thumbnail=true', {new_instance: true}, (win: nw.Window) -> {
-					win.on("close", () -> {
-						sock.close();
-						sock = null;
-					});
+				var win = electron.Window.open('app.html?thumbnail=true');
+				win.on("closed", () -> {
+					sock.close();
+					sock = null;
 				});
 			}
 
