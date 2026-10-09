@@ -15,10 +15,14 @@ hui-cdb-table {
 }
 
 hui-table-line {
-	background-outline: 1 gray;
-	background-outline-thickness: 0 0 1 0;
-	// auto-size-height on the cells requires the line height to be constrained
-	max-height: 100000;
+	layout: vertical;
+
+	> #cells {
+		background-outline: 1 gray;
+		background-outline-thickness: 0 0 1 0;
+		// auto-size-height on the cells requires the cells height to be constrained
+		max-height: 100000;
+	}
 }
 
 hui-table-cell {

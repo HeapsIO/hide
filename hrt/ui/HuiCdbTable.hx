@@ -30,6 +30,15 @@ class HuiCdbTable extends HuiElement {
 	var cursorLine = 0;
 	var cursorElement: HuiCdbCursor;
 
+	static var upCmd = new HuiCommands.HuiCommand("Cursor Up", {key: hxd.Key.UP});
+	static var downCmd = new HuiCommands.HuiCommand("Cursor Down", {key: hxd.Key.DOWN});
+	static var leftCmd = new HuiCommands.HuiCommand("Cursor Left", {key: hxd.Key.LEFT});
+	static var rightCmd = new HuiCommands.HuiCommand("Cursor Right", {key: hxd.Key.RIGHT});
+	static var selectUpCmd = new HuiCommands.HuiCommand("Select Up", {shift: true, key: hxd.Key.UP});
+	static var selectDownCmd = new HuiCommands.HuiCommand("Select Down", {shift: true, key: hxd.Key.DOWN});
+	static var selectLeftCmd = new HuiCommands.HuiCommand("Select Left", {shift: true, key: hxd.Key.LEFT});
+	static var selectRightCmd = new HuiCommands.HuiCommand("Select Right", {shift: true, key: hxd.Key.RIGHT});
+
 	static var SRC =
 		<hui-cdb-table>
 			<hui-table-line(this) id="headerLine"/>
@@ -50,6 +59,14 @@ class HuiCdbTable extends HuiElement {
 		onAfterReflow = afterReflow;
 
 		registerCommand(HuiCommands.delete, ElementAndChildren, clearSelectedCells);
+		registerCommand(upCmd, ElementAndChildren, moveCursor.bind(-1, 0));
+		registerCommand(downCmd, ElementAndChildren, moveCursor.bind(1, 0));
+		registerCommand(leftCmd, ElementAndChildren, moveCursor.bind(0, -1));
+		registerCommand(rightCmd, ElementAndChildren, moveCursor.bind(0, 1));
+		registerCommand(selectUpCmd, ElementAndChildren, moveSelectionCorner.bind(-1, 0));
+		registerCommand(selectDownCmd, ElementAndChildren, moveSelectionCorner.bind(1, 0));
+		registerCommand(selectLeftCmd, ElementAndChildren, moveSelectionCorner.bind(0, -1));
+		registerCommand(selectRightCmd, ElementAndChildren, moveSelectionCorner.bind(0, 1));
 	}
 
 	public function openSheet(sheet: cdb.Sheet) {
@@ -71,6 +88,26 @@ class HuiCdbTable extends HuiElement {
 		cursorCol = col;
 		cursorLine = line;
 		updateCursor();
+	}
+
+	function moveCursor(dLine: Int, dCol: Int) {
+		selectionRects.resize(0);
+		setCursor(hxd.Math.iclamp(cursorCol + dCol, 0, sheet.columns.length - 1), hxd.Math.iclamp(cursorLine + dLine, 0, sheet.lines.length - 1));
+	}
+
+	/** Move the corner opposite to the cursor of the last selection rect **/
+	function moveSelectionCorner(dLine: Int, dCol: Int) {
+		var r = selectionRects[selectionRects.length - 1];
+		if (r == null || (cursorCol != r.x && cursorCol != r.x + r.w - 1) || (cursorLine != r.y && cursorLine != r.y + r.h - 1)) {
+			r = {x: cursorCol, y: cursorLine, w: 1, h: 1};
+			selectionRects.push(r);
+		}
+		var col = hxd.Math.iclamp((cursorCol == r.x ? r.x + r.w - 1 : r.x) + dCol, 0, sheet.columns.length - 1);
+		var line = hxd.Math.iclamp((cursorLine == r.y ? r.y + r.h - 1 : r.y) + dLine, 0, sheet.lines.length - 1);
+		r.x = hxd.Math.imin(cursorCol, col);
+		r.y = hxd.Math.imin(cursorLine, line);
+		r.w = hxd.Math.iabs(col - cursorCol) + 1;
+		r.h = hxd.Math.iabs(line - cursorLine) + 1;
 	}
 
 	function rectSelectTo(line: Int, col: Int) {
@@ -273,14 +310,14 @@ class HuiCdbTable extends HuiElement {
 	}
 
 	function buildHeader() {
-		headerLine.removeChildElements();
-		headerLine.addChild(headerLine.lineNoCell);
+		headerLine.cells.removeChildElements();
+		headerLine.cells.addChild(headerLine.lineNoCell);
 
 		if (sheet == null)
 			return;
 
 		for (column in sheet.columns) {
-			var cell = new HuiTableCellText(column, headerLine);
+			var cell = new HuiTableCellText(column, headerLine.cells);
 			cell.text.text = column.name;
 			cell.readOnly = true;
 		}
@@ -329,11 +366,17 @@ class HuiTableLine extends HuiElement {
 	var lineId: Int;
 	var lineNoCell: HuiTableCellText;
 
+	static var SRC =
+		<hui-table-line>
+			<hui-element id="cells"/>
+			<hui-element id="sub-editor"/>
+		</hui-table-line>
+
 	public function new(table: HuiCdbTable, ?parent) {
 		super(parent);
 		initComponent();
 		this.table = table;
-		lineNoCell = new HuiTableCellText(null, this);
+		lineNoCell = new HuiTableCellText(null, cells);
 		lineNoCell.readOnly = true;
 
 		if (table.sheet == null)
@@ -342,9 +385,9 @@ class HuiTableLine extends HuiElement {
 		for (column in table.sheet.columns) {
 			switch (column.type) {
 				case TId, TString:
-					new HuiTableCellText(column, this);
+					new HuiTableCellText(column, cells);
 				default:
-					var cell = new HuiTableCellText(column, this);
+					var cell = new HuiTableCellText(column, cells);
 					cell.readOnly = true;
 			}
 		}
@@ -362,11 +405,11 @@ class HuiTableLine extends HuiElement {
 
 	function getCell(col: Int) : HuiTableCell {
 		// skip line number cell
-		return cast childElements[col + 1];
+		return cast cells.childElements[col + 1];
 	}
 
 	public function resizeCells(sizes: Array<Int>) {
-		for (i => element in childElements) {
+		for (i => element in cells.childElements) {
 			element.setWidth(sizes[i]);
 		}
 	}
@@ -379,7 +422,7 @@ class HuiTableLine extends HuiElement {
 
 	function refreshData() {
 		lineNoCell.text.text = Std.string(lineId + 1);
-		for (element in childElements) {
+		for (element in cells.childElements) {
 			(cast element : HuiTableCell).refreshData();
 		}
 	}
@@ -390,6 +433,7 @@ class HuiTableLine extends HuiElement {
 class HuiTableCell extends HuiElement {
 	var column: cdb.Data.Column;
 	var readOnly = false;
+	var editing = false;
 	var line(get, never): HuiTableLine;
 
 	public function new(column: cdb.Data.Column, ?parent) {
@@ -403,7 +447,7 @@ class HuiTableCell extends HuiElement {
 		onKeyDown = (e) -> onCellKeyDown(e);
 	}
 
-	inline function get_line() return (cast parent : HuiTableLine);
+	inline function get_line() return (cast parent.parent : HuiTableLine);
 
 	/*
 		Cells fill the height of the tallest cell of their line (fill-height + auto-size-height). This requires
@@ -445,7 +489,7 @@ class HuiTableCell extends HuiElement {
 		// ignore line number and header cells
 		if (column == null || line.lineData == null)
 			return;
-		var col = line.childElements.indexOf(this) - 1;
+		var col = line.cells.childElements.indexOf(this) - 1;
 		if (hxd.Key.isDown(hxd.Key.SHIFT))
 			line.table.rectSelectTo(line.lineId, col);
 		else {
@@ -462,6 +506,8 @@ class HuiTableCell extends HuiElement {
 
 	/** Returns true if the key was handled **/
 	function onCellKeyDown(e: hxd.Event) : Bool {
+		if (!editing)
+			return false;
 		if (hxd.Key.isDown(hxd.Key.SHIFT) || hxd.Key.isDown(hxd.Key.CTRL) || hxd.Key.isDown(hxd.Key.ALT))
 			return false;
 		if (e.keyCode != hxd.Key.ENTER && e.keyCode != hxd.Key.TAB)
@@ -470,7 +516,16 @@ class HuiTableCell extends HuiElement {
 		return true;
 	}
 
+	function hasEditor() : Bool {
+		return false;
+	}
+
+	function getEditor() : HuiElement {
+		return null;
+	}
+
 	function edit() {
+		editing = true;
 		dom.addClass("edit");
 	}
 
@@ -479,6 +534,7 @@ class HuiTableCell extends HuiElement {
 	}
 
 	function finishEdit() {
+		editing = false;
 		dom.removeClass("edit");
 	}
 
