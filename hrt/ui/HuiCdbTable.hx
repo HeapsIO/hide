@@ -243,11 +243,13 @@ class HuiCdbTable extends HuiElement {
 		updateCursor();
 	}
 
-	function refreshItem(item: VirtualLine, line: HuiTableLine) {
-		line.resizeCells();
+	function refreshItem(item: VirtualLine, line: HuiElement) {
+		Std.downcast(line, HuiTableLine)?.resizeCells();
 	}
 
 	function generateLine(entry: VirtualLine) : HuiElement {
+		if (entry.kind == TableEnd)
+			return new HuiTableEnd(entry);
 		if (entry.kind == Header) {
 			var line = new HuiTableLine(this, entry);
 			line.setLine(entry);
@@ -407,8 +409,9 @@ class HuiCdbTable extends HuiElement {
 		var col = path.cols[path.cols.length - 1];
 		var lines : Array<Dynamic> = path.obj ?? [];
 
-		// sub sheets start with a header line, the root header is outside of the list
+		// sub sheets start with a header line and end with a table end line, the root header is outside of the list
 		var header = vline == null ? 0 : 1;
+		var tableEnd = header == 1 ? vlines.pop() : null;
 		vlines.resize(lines.length + header);
 		if (header == 1 && vlines[0] == null) {
 			var p = path.copy();
@@ -430,6 +433,8 @@ class HuiCdbTable extends HuiElement {
 			p.path[p.path.length - 1] = l;
 			p.indexes[p.indexes.length - 1] = i;
 		}
+		if (header == 1)
+			vlines.push(tableEnd ?? {path: path.copy(), kind: TableEnd, parent: vline});
 		return vlines;
 	}
 
@@ -710,6 +715,21 @@ class HuiTableCellText extends HuiTableCell {
 				throw "Can't use CellText for non string data that are not read only";
 			text.text = haxe.Json.stringify(dataText);
 		}
+	}
+}
+
+/** Empty line at the end of a sub table **/
+class HuiTableEnd extends HuiElement {
+	var vline: VirtualLine;
+
+	static var SRC =
+		<hui-table-end>
+		</hui-table-end>
+
+	public function new(vline: VirtualLine, ?parent) {
+		super(parent);
+		initComponent();
+		this.vline = vline;
 	}
 }
 
