@@ -405,6 +405,38 @@ class HuiTableCell extends HuiElement {
 
 	inline function get_line() return (cast parent : HuiTableLine);
 
+	/*
+		Cells fill the height of the tallest cell of their line (fill-height + auto-size-height). This requires
+		overflow expand : during the first layout pass, auto-size constrains each cell to the height of the previous
+		cells (starting at 0), and overflow hidden would use that constraint as a max size, collapsing the line.
+		With expand however, content wider than the column grows the cell, so we clamp the width after the layout and
+		clip the content in drawRec, like overflow hidden does.
+	*/
+	override function reflow() {
+		super.reflow();
+		if (maxWidth == null || calculatedWidth <= maxWidth)
+			return;
+		calculatedWidth = maxWidth;
+		// sized by h2d.Flow.reflow before the clamp. The mask doesn't clip interactives
+		if (interactive != null)
+			interactive.width = calculatedWidth;
+		if (background != null)
+			background.width = calculatedWidth;
+	}
+
+	override function drawRec(ctx: h2d.RenderContext) {
+		// the mask uses the absolute position, refresh it like h2d.Flow does for overflow hidden
+		if (posChanged) {
+			calcAbsPos();
+			for (c in children)
+				c.posChanged = true;
+			posChanged = false;
+		}
+		h2d.Mask.maskWith(ctx, this, flowCeil(calculatedWidth), flowCeil(calculatedHeight));
+		super.drawRec(ctx);
+		h2d.Mask.unmask(ctx);
+	}
+
 	function getObjectPath() : cdb.Sheet.ObjectPath {
 		return line.table.getCellObjectPath(line.lineId, column);
 	}
