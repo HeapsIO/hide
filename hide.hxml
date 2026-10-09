@@ -24,3 +24,15 @@ cdb.ConstLoader
 
 
 #-D shader_debug_dump
+
+--next
+
+# Electron main process
+-cp hide_js
+-cp hide_js/libs
+-lib hxnodejs
+-main hide.ElectronMain
+-js bin/main.js
+-dce full
+-D js-es=6
+-debug

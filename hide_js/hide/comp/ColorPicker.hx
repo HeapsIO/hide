@@ -4,7 +4,7 @@ import hrt.impl.ColorSpace;
 import h2d.Slider;
 import js.html.InputElement;
 import js.jquery.Event;
-import nw.Clipboard;
+import electron.Clipboard;
 import js.html.PointerEvent;
 import h3d.Vector4;
 import js.Browser;
@@ -243,7 +243,7 @@ class ColorPicker extends Popup {
 		copyButton = new Element("<div class='button2' title='Copy'>");
 		copyButton.append(new Element("<div class='icon ico ico-copy'>"));
 		copyButton.on("click", function(e) {
-			Clipboard.get().set(colorCode.val());
+			Clipboard.set(colorCode.val());
 		});
 		group.append(copyButton);
 
@@ -251,7 +251,7 @@ class ColorPicker extends Popup {
 		pasteButton = new Element("<div class='button2' title='Paste'>");
 		pasteButton.append(new Element("<div class='icon ico ico-paste'>"));
 		pasteButton.on("click", function(e) {
-			var value = Clipboard.get().get();
+			var value = Clipboard.get();
 			colorCode.val(value).change();
 		});
 		group.append(pasteButton);

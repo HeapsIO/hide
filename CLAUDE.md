@@ -1,0 +1,18 @@
+# HIDE
+
+## Architecture
+
+- HIDE runs on Electron. The main process is Haxe code (`hide_js/hide/ElectronMain.hx`, built into `bin/main.js` by the second part of `hide.hxml` (after `--next`)); the renderer is `bin/app.html` + `bin/hide.js`.
+- Renderer code talks to the main process only through the wrappers in `hide_js/libs/electron/` (`electron.Ipc`, `electron.Window`, `electron.Clipboard`, ...). Main process externs are in `hide_js/libs/electron/main/`.
+- Keep main process code in Haxe, not hand-written JS.
+- `haxe hide.hxml` builds both `bin/hide.js` and `bin/main.js`. The Electron runtime is unpacked in `bin/electron/`.
+
+## Running the editor for tests
+
+- When launching HIDE yourself to test something, ALWAYS set `HIDE_TEST=1`. In this mode:
+  - `alert` / `confirm` / `prompt` popups are replaced by console logs (`bin/test-preload.js`), so no blocking exception popup is shown to the user;
+  - windows are shown without activation and never focused / maximized, so they stay in the background behind the user's windows.
+- Unset `ELECTRON_RUN_AS_NODE` (set by VSCode), and use `--enable-logging=stderr` to get the renderer console in the output:
+  `cd bin && env -u ELECTRON_RUN_AS_NODE HIDE_TEST=1 ./electron/electron.exe --enable-logging=stderr --remote-debugging-port=9223 . > log.txt 2>&1`
+- With `--remote-debugging-port`, expressions can be evaluated in the page through the DevTools protocol (`http://127.0.0.1:9223/json/list` then `Runtime.evaluate`), e.g. `hide.Ide.inst.views.length`.
+- Kill leftover instances (`taskkill /F /IM electron.exe`) before relaunching: the app is single instance.

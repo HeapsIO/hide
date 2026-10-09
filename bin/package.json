@@ -1,26 +1,8 @@
 {
 	"name" : "hide",
-	"window" : {
-		"title" : "HIDE",
-		"icon" : "res/hide.png",
-		"width" : 800,
-		"height" : 600,
-		"show" : true
-	},
-	"main" : "app.html",
-	"chromium-args":"--enable-spell-checking --disable-features=AllowSoftwareGLFallbackDueToCrashes",
-	"js-flags": "--expose-gc --no-efficiency-mode",
+	"productName" : "HIDE",
+	"main" : "main.js",
 	"dependencies": {
 		"mongodb": "^3.2.2"
-	},
-	"webview": {
-		"partitions": [
-			{
-				"name": "trusted",
-				"accessible_resources": [
-					"<all_urls>"
-				]
-			}
-		]
 	}
 }

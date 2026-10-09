@@ -33,6 +33,7 @@ class Plugin {
 		"cdb",
 		"format",
 		"domkit",
+		"electron",
 
 		"HxOverrides",
 		"Math",

@@ -37,8 +37,7 @@ class Ide extends hide.tools.IdeData {
 	public var gamePad(default,null) : hxd.Pad;
 	public var localStorage(get,never) : js.html.Storage;
 
-	var window : nw.Window;
-	var saveMenu : nw.Menu;
+	var window : electron.Window;
 	var layout : golden.Layout;
 
 	var currentLayout : { name : String, state : LayoutState };
@@ -50,7 +49,7 @@ class Ide extends hide.tools.IdeData {
 	var lastClosedTabStates : Array<Dynamic> = [];
 
 	var renderers : Array<h3d.mat.MaterialSetup>;
-	var subView : { component : String, state : Dynamic, events : {} };
+	var subView : { component : String, state : Dynamic };
 	var scripts : Map<String,Array<Void->Void>> = new Map();
 	var hasReloaded = false;
 	public var thumbnailMode : Bool = false;
@@ -62,21 +61,19 @@ class Ide extends hide.tools.IdeData {
 	var goldenContainer : hide.Element;
 	var statusIcons : hide.Element;
 
-	var breakShortcut : Dynamic;
-
 	public var show3DIcons = true;
 	public var show3DIconsCategory : Map<hrt.impl.EditorTools.IconCategory, Bool> = new Map();
 
 	static var firstInit = true;
 
-	var customMenus : Array<nw.MenuItem> = [];
-
-	var filePickerElement : hide.Element;
+	var customMenus : Array<electron.MenuItem> = [];
 
 	function new() {
 		super();
 		initPad();
-		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || nw.App.manifest.name == "CDB";
+		hxd.System.getClipboardText = () -> electron.Clipboard.get(Text);
+		hxd.System.setClipboardText = (text) -> { electron.Clipboard.set(text, Text); return true; };
+		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || electron.App.name == "CDB";
 		isDebugger = Sys.getEnv("HIDE_DEBUG") == "1";
 
 		var thumb = StringTools.contains(js.Browser.window.location.href, "thumbnail");
@@ -99,6 +96,10 @@ class Ide extends hide.tools.IdeData {
 		return js.Browser.window.localStorage;
 	}
 
+	override function getAppDataPath() {
+		return electron.App.dataPath;
+	}
+
 	function initPad() {
 		gamePad = hxd.Pad.createDummy();
 		hxd.Pad.wait((p) -> gamePad = p);
@@ -110,7 +111,7 @@ class Ide extends hide.tools.IdeData {
 
 	function startup() {
 		inst = this;
-		window = nw.Window.get();
+		window = electron.Window.get();
 		var cwd = Sys.getCwd();
 		for( a in nw.App.argv ) {
 			var pre = "--project-dir=";
@@ -121,8 +122,6 @@ class Ide extends hide.tools.IdeData {
 		}
 		initConfig(cwd);
 		var current = currentProject;
-		if( StringTools.endsWith(cwd,"package.nw") && sys.FileSystem.exists(cwd.substr(0,-10)+"res") )
-			cwd = cwd.substr(0,-11);
 		if( current == "" ) cwd;
 
 		var args = js.Browser.document.URL.split("?")[1];
@@ -135,15 +134,14 @@ class Ide extends hide.tools.IdeData {
 			}
 			var sub = vars.get("subView");
 			if( sub != null ) {
-				var obj = untyped global.sharedRefs.get(Std.parseInt(vars.get("sid")));
-				subView = { component : sub, state : obj.state, events : obj.events };
+				var state = electron.App.getShared(Std.parseInt(vars.get("sid")));
+				subView = { component : sub, state : state };
 			}
 		}
 
-		nw.Screen.Init();
 		var xMax = 1;
 		var yMax = 1;
-		for( s in nw.Screen.screens ) {
+		for( s in electron.Screen.screens ) {
 			if( s.work_area.x + s.work_area.width > xMax )
 				xMax = s.work_area.x + s.work_area.width;
 			if( s.work_area.y + s.work_area.height > yMax )
@@ -153,7 +151,7 @@ class Ide extends hide.tools.IdeData {
 			var wp : WindowPos = globalState.get("windowPos");
 			if( wp != null ) {
 				if( wp.w > 400 && wp.h > 300 )
-					window.resizeBy(wp.w - Std.int(window.window.outerWidth), wp.h - Std.int(window.window.outerHeight));
+					window.resizeTo(wp.w, wp.h);
 				if( wp.x >= 0 && wp.y >= 0 && wp.x < xMax && wp.y < yMax)
 					window.moveTo(wp.x, wp.y);
 				if( wp.max ) {
@@ -180,11 +178,11 @@ class Ide extends hide.tools.IdeData {
 			return;
 		}
 
-		window.window.document.addEventListener("mousedown", function(e) {
+		js.Browser.document.addEventListener("mousedown", function(e) {
 			mouseX = e.x;
 			mouseY = e.y;
 		});
-		window.window.document.addEventListener("mousemove", function(e) {
+		js.Browser.document.addEventListener("mousemove", function(e) {
 			mouseX = e.x;
 			mouseY = e.y;
 		});
@@ -214,45 +212,19 @@ class Ide extends hide.tools.IdeData {
 		window.on("blur", function() { if( h3d.Engine.getCurrent() != null && !hasReloaded ) hxd.Key.initialize(); });
 
 		// handle commandline parameters
-		function onOpen(cmd: String) {
-			var dyncmd: Dynamic = cmd;
-			if (Type.typeof(dyncmd).match(TClass(Array))) {
-				var arr: Array<String> = dyncmd;
-				cmd = arr[arr.length - 1];
-			}
-			var protocols = ["hide://", "cdb://"];
-			for (p in protocols) {
-				var uriIndex = cmd.indexOf(p);
-				if (uriIndex >= 0) {
-					var uri = cmd.substr(uriIndex);
-					if (!StringTools.contains(uri, " ")) {
-						hide.view.RemoteConsoleView.onOpenUri(uri);
-					}
-				}
-			}
-			haxe.Timer.delay(() -> trace("on open", cmd), 500);
-			nw.App.on("open", onOpen);
+		electron.App.onOpen(function(args) {
 			if( hasReloaded ) return;
-			~/"([^"]+)"/g.map(cmd, function(r) {
-				var file = r.matched(1);
-				if( sys.FileSystem.exists(file) ) openFile(file);
-				return "";
-			});
-		}
-		nw.App.on("open", onOpen);
-
-		var body = window.window.document.body;
-		window.on("focus", function() {
-			// handle cancel on type=file
-
-			if (filePickerElement != null && filePickerElement.data("allownull") != null) {
-				haxe.Timer.delay(() -> {
-					if (filePickerElement != null) {
-						filePickerElement.change();
-					}
-				}, 100);
+			for( arg in args ) {
+				if( StringTools.startsWith(arg, "hide://") || StringTools.startsWith(arg, "cdb://") ) {
+					hide.view.RemoteConsoleView.onOpenUri(arg);
+					continue;
+				}
+				if( sys.FileSystem.exists(arg) ) openFile(arg);
 			}
+		});
 
+		var body = js.Browser.document.body;
+		window.on("focus", function() {
 			if(fileExists(databaseFile) && getFileText(databaseFile) != lastDBContent) {
 				if(js.Browser.window.confirm(databaseFile + " has changed outside of Hide. Do you want to reload?")) {
 					loadDatabase(true);
@@ -286,7 +258,7 @@ class Ide extends hide.tools.IdeData {
 		body.ondrop = function(e:js.html.DragEvent) {
 			if(!dragFunc(true, e)) {
 				for( f in e.dataTransfer.files )
-					openFile(Reflect.field(f,"path"));
+					openFile(electron.App.getPathForFile(f));
 				e.preventDefault();
 			}
 			return false;
@@ -310,8 +282,6 @@ class Ide extends hide.tools.IdeData {
 		});
 
 		hrt.impl.EditorTools.setupIconCategories();
-
-		untyped chrome.settingsPrivate.setPref('spellcheck.dictionaries', ["en-US","fr-FR"], "null", ()->{});
 
 		refreshFont();
 	}
@@ -367,10 +337,10 @@ class Ide extends hide.tools.IdeData {
 		var wp : WindowPos = globalState.get("windowPos", { x : 0, y : 0, w : 0, h : 0, max : false });
 		wp.max = maximized;
 		if( !maximized ) {
-			wp.x = window.x;
-			wp.y = window.y;
-			wp.w = Std.int(window.window.outerWidth);
-			wp.h = Std.int(window.window.outerHeight);
+			ideConfig.windowPos.x = window.x;
+			ideConfig.windowPos.y = window.y;
+			ideConfig.windowPos.w = window.width;
+			ideConfig.windowPos.h = window.height;
 		}
 		if( subView == null )
 			globalState.set("windowPos", wp);
@@ -575,17 +545,7 @@ class Ide extends hide.tools.IdeData {
 		// register a global shortcut that break in the debugger
 		// on Alt+F1. Usefull to debug UI elements that are temporary
 		// Note : the debugger window must be open for this to work
-		{
-			var option = {
-				key: "Alt+F1",
-				active: () -> {
-					js.Lib.debug();
-				}
-			};
-
-			breakShortcut = js.Syntax.construct("nw.Shortcut", option);
-			untyped nw.App.registerGlobalHotKey(breakShortcut);
-		}
+		electron.App.registerGlobalShortcut("Alt+F1", () -> js.Lib.debug());
 
 		var waitCount = 0;
 		function waitInit() {
@@ -625,7 +585,7 @@ class Ide extends hide.tools.IdeData {
 			}
 			if( firstInit ) {
 				firstInit = false;
-				for( file in nw.App.argv ) {
+				for( file in electron.App.argv ) {
 					if( !sys.FileSystem.exists(file) ) continue;
 					openFile(file);
 				}
@@ -649,14 +609,11 @@ class Ide extends hide.tools.IdeData {
 		if (b) {
 			fullscreen = true;
 			window.maximize();
-			saveMenu = window.menu;
-			window.menu = null;
 			window.enterFullscreen();
 		} else {
-			window.menu = saveMenu;
 			window.leaveFullscreen();
 
-			// NWJS bug: changing fullscreen triggers spurious "restore" events
+			// changing fullscreen triggers spurious "restore" events
 			haxe.Timer.delay(function() {
 				fullscreen = false;
 				if(maximized)
@@ -692,16 +649,16 @@ class Ide extends hide.tools.IdeData {
 	}
 
 
-	public function setClipboard( data : String, type: nw.Clipboard.ClipboardType = Text ) {
-		nw.Clipboard.get().set([{data: data, type: type }]);
+	public function setClipboard( data : String, type: electron.Clipboard.ClipboardType = Text ) {
+		electron.Clipboard.set(data, type);
 	}
 
-	public function setClipboardMultiple( datas: Array<nw.Clipboard.ClipboardData> ) {
-		nw.Clipboard.get().set(datas);
+	public function setClipboardMultiple( datas: Array<electron.Clipboard.ClipboardData> ) {
+		electron.Clipboard.setMultiple(datas);
 	}
 
-	public function getClipboard(type: nw.Clipboard.ClipboardType = Text) {
-		return nw.Clipboard.get().get(type);
+	public function getClipboard(type: electron.Clipboard.ClipboardType = Text) {
+		return electron.Clipboard.get(type);
 	}
 
 
@@ -959,7 +916,7 @@ class Ide extends hide.tools.IdeData {
 	public function reload() {
 		hasReloaded = true;
 		fileWatcher.dispose();
-		untyped nw.App.unregisterGlobalHotKey(breakShortcut);
+		electron.App.unregisterGlobalShortcut("Alt+F1");
 		hide.tools.FileManager.onBeforeReload();
 		hide.view.RemoteConsoleView.onBeforeReload();
 		js.Browser.location.reload();
@@ -1006,62 +963,34 @@ class Ide extends hide.tools.IdeData {
 	} = null) {
 		options = options ?? {};
 
-		function callback() {
-			if (filePickerElement != null)
-				filePickerElement.remove();
+		var defaultPath = null;
+		if (options.workingDir != null && options.workingDir != "#MISSING")
+			defaultPath = getPath(options.workingDir);
+		if (options.saveAs != null)
+			defaultPath = defaultPath == null ? options.saveAs : defaultPath + "/" + options.saveAs;
+		if (defaultPath != null && isWindows)
+			defaultPath = defaultPath.split("/").join("\\");
 
-			var args : Array<String> = [];
-
-			if (options.allowNull == true)
-				args.push("data-allownull='true'");
-			if (options.saveAs != null)
-				args.push('nwsaveas="${options.saveAs}"');
-			if (options.exts != null)
-				args.push('accept="${[for( e in options.exts ) "."+e].join(",")}"');
-			if (options.onlyDirectory == true)
-				args.push("nwdirectory");
-			if (options.multiple == true)
-				args.push('multiple="multiple"');
-			if (options.workingDir != null && options.workingDir != "#MISSING") {
-				var pathArray = getPath(options.workingDir).split("/");
-				var c = isWindows ? "\\" : "/";
-				var workingDirPath = pathArray.join(c);
-				args.push('nwworkingdir="$workingDirPath"');
+		function onResult(files: Array<String>) {
+			if (files == null) {
+				if (options.allowNull) onSelect(null);
+				return;
 			}
-
-			var argsString = args.join(" ");
-
-			var buildString = '<input type="file" style="visibility:hidden; position:fixed; top:0px;" value="" $argsString/>';
-
-			filePickerElement = new Element(buildString).appendTo(window.window.document.body);
-
-			filePickerElement.change(function(_) {
-				var file = filePickerElement.val();
-				filePickerElement.remove();
-				filePickerElement = null;
-				if( file == "" && !options.allowNull ) return;
-				if (file == "") {
-					onSelect(null);
-				} else {
-					var files = file.split(";");
-					if (options.isAbsolute != true) {
-						for (i => file in files) {
-							files[i] = makeRelative(file);
-						}
-					}
-					onSelect(files);
-				}
-			});
-
-			filePickerElement.click();
+			if (options.isAbsolute != true)
+				files = [for (f in files) makeRelative(f)];
+			onSelect(files);
 		}
 
-		if (options.allowNull) {
-			haxe.Timer.delay(callback, 100);
-		}
-		else {
-			callback();
-		}
+		var dialogOptions : electron.Dialog.FileDialogOptions = {
+			defaultPath: defaultPath,
+			exts: options.exts,
+			directory: options.onlyDirectory == true,
+			multiple: options.multiple == true,
+		};
+		if (options.saveAs != null)
+			electron.Dialog.saveFile(dialogOptions, (file) -> onResult(file == null ? null : [file]));
+		else
+			electron.Dialog.openFiles(dialogOptions, onResult);
 	}
 
 	/**
@@ -1462,7 +1391,7 @@ class Ide extends hide.tools.IdeData {
 		js.node.ChildProcess.exec(c, function(e:js.node.ChildProcess.ChildProcessExecError,_,_) callb(e == null ? null : e.message));
 	}
 
-	public function addCustomMenu(item: nw.MenuItem) {
+	public function addCustomMenu(item: electron.MenuItem) {
 		customMenus.push(item);
 	}
 
@@ -1503,14 +1432,14 @@ class Ide extends hide.tools.IdeData {
 			initMenu();
 		});
 		menu.find(".project .exit").click(function(_) {
-			Sys.exit(0);
+			electron.App.quit();
 		});
 		menu.find(".project .clear-local").click(function(_) {
 			js.Browser.window.localStorage.clear();
-			nw.App.clearCache();
+			electron.App.clearCache();
 			try sys.FileSystem.deleteFile(userDataPath + "/preferences.json") catch( e : Dynamic ) {};
 			try sys.FileSystem.deleteFile(userDataPath + "/editorState.json") catch( e : Dynamic ) {};
-			untyped chrome.runtime.reload();
+			js.Browser.location.reload();
 		});
 		menu.find(".build-files").click(function(_) {
 			hrt.impl.BuildTools.buildAllFiles(resourceDir + "/", function(percent, currentFile) {
@@ -1853,20 +1782,26 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function openSubView<T>( component : Class<hide.ui.View<T>>, state : T, events : {} ) {
-		var sharedRefs : Map<Int,Dynamic> = untyped global.sharedRefs;
-		if( sharedRefs == null ) {
-			sharedRefs = new Map();
-			untyped global.sharedRefs = sharedRefs;
+		// state is sent to the sub window, events are called back through IPC
+		if( subViewEvents == null ) {
+			subViewEvents = [];
+			electron.Window.onOpenerCall(function(name, param) {
+				for( events in subViewEvents ) {
+					var f = Reflect.field(events, name);
+					if( f != null ) Reflect.callMethod(events, f, [param]);
+				}
+			});
 		}
-		var id = 0;
-		while( sharedRefs.exists(id) ) id++;
-		sharedRefs.set(id,{ state : state, events : events });
+		if( subViewEvents.indexOf(events) < 0 ) subViewEvents.push(events);
+		var id = electron.App.setShared(state);
 		var compName = Type.getClassName(component);
-		nw.Window.open("app.html?subView="+compName+"&sid="+id,{ id : compName });
+		electron.Window.open("app.html?subView="+compName+"&sid="+id);
 	}
 
+	var subViewEvents : Array<{}>;
+
 	public function callParentView( name : String, param : Dynamic ) {
-		if( subView != null ) Reflect.callMethod(subView.events,Reflect.field(subView.events,name),[param]);
+		if( subView != null ) electron.Window.callOpener(name, param);
 	}
 
 	public function closeInspector() {
@@ -2015,7 +1950,7 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function ask( text : String, ?defaultValue = "" ) {
-		return js.Browser.window.prompt(text, defaultValue);
+		return electron.Dialog.prompt(text, defaultValue);
 	}
 
 	var delayedSvnStatusCallbacks : Array<(files : Array<String>) -> Void> = null;
