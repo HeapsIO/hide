@@ -20,14 +20,6 @@ typedef VirtualLine = {
 
 typedef SheetEntry = {path: ObjectPath, lines: Array<VirtualLine>, cellSizes: Array<Int>};
 
-@:structInit
-class HuiTableSelectionRect {
-	public var x: Int;
-	public var y: Int;
-	public var h: Int;
-	public var w: Int;
-}
-
 @:access(hrt.ui.HuiTableLine)
 @:access(hrt.ui.HuiTableCellText)
 @:access(hrt.ui.HuiBackground)
@@ -42,20 +34,14 @@ class HuiCdbTable extends HuiElement {
 	**/
 	var openSheets: Map<VirtualLine, SheetEntry> = [];
 	var linePool: Array<HuiTableLine> = [];
-	var selectionRects: Array<HuiTableSelectionRect> = [];
-	var selectionRectsElements: Array<HuiCdbSelection> = [];
-	var cursorCol = 0;
-	var cursorLine = 0;
+	/** Path of the cell under the cursor **/
+	var cursor: ObjectPath;
 	var cursorElement: HuiCdbCursor;
 
 	static var upCmd = new HuiCommands.HuiCommand("Cursor Up", {key: hxd.Key.UP});
 	static var downCmd = new HuiCommands.HuiCommand("Cursor Down", {key: hxd.Key.DOWN});
 	static var leftCmd = new HuiCommands.HuiCommand("Cursor Left", {key: hxd.Key.LEFT});
 	static var rightCmd = new HuiCommands.HuiCommand("Cursor Right", {key: hxd.Key.RIGHT});
-	static var selectUpCmd = new HuiCommands.HuiCommand("Select Up", {shift: true, key: hxd.Key.UP});
-	static var selectDownCmd = new HuiCommands.HuiCommand("Select Down", {shift: true, key: hxd.Key.DOWN});
-	static var selectLeftCmd = new HuiCommands.HuiCommand("Select Left", {shift: true, key: hxd.Key.LEFT});
-	static var selectRightCmd = new HuiCommands.HuiCommand("Select Right", {shift: true, key: hxd.Key.RIGHT});
 	static var editCmd = new HuiCommands.HuiCommand("Edit", {key: hxd.Key.ENTER});
 
 	/** Left margin of the lines per sub sheet depth **/
@@ -80,15 +66,11 @@ class HuiCdbTable extends HuiElement {
 		openSheet(sheet);
 		onAfterReflow = afterReflow;
 
-		registerCommand(HuiCommands.delete, ElementAndChildren, clearSelectedCells);
+		registerCommand(HuiCommands.delete, ElementAndChildren, clearCursorCell);
 		registerCommand(upCmd, ElementAndChildren, moveCursor.bind(-1, 0));
 		registerCommand(downCmd, ElementAndChildren, moveCursor.bind(1, 0));
 		registerCommand(leftCmd, ElementAndChildren, moveCursor.bind(0, -1));
 		registerCommand(rightCmd, ElementAndChildren, moveCursor.bind(0, 1));
-		registerCommand(selectUpCmd, ElementAndChildren, moveSelectionCorner.bind(-1, 0));
-		registerCommand(selectDownCmd, ElementAndChildren, moveSelectionCorner.bind(1, 0));
-		registerCommand(selectLeftCmd, ElementAndChildren, moveSelectionCorner.bind(0, -1));
-		registerCommand(selectRightCmd, ElementAndChildren, moveSelectionCorner.bind(0, 1));
 		registerCommand(editCmd, ElementAndChildren, editCursorCell);
 	}
 
@@ -113,55 +95,74 @@ class HuiCdbTable extends HuiElement {
 		buildHeader();
 	}
 
-	public function setCursor(col: Int, line: Int) {
-		cursorCol = col;
-		cursorLine = line;
-		list.scrollToIndex(line);
+	/** `path` is the path of a cell, as returned by getCellObjectPath **/
+	public function setCursor(path: ObjectPath) {
+		cursor = path;
+		var line = getCursorLine();
+		if (line != -1)
+			list.scrollToIndex(line);
 		updateCursor();
 	}
 
-	function moveCursor(dLine: Int, dCol: Int) {
-		selectionRects.resize(0);
-		setCursor(hxd.Math.iclamp(cursorCol + dCol, 0, sheet.columns.length - 1), hxd.Math.iclamp(cursorLine + dLine, 0, sheet.lines.length - 1));
+	/** The line holding the cursor, null if its sheet isn't open **/
+	function getCursorVLine() : Null<VirtualLine> {
+		return cursor == null ? null : getLiveLine(cursor, cursor.path.length - 1);
 	}
 
-	/** Move the corner opposite to the cursor of the last selection rect **/
-	function moveSelectionCorner(dLine: Int, dCol: Int) {
-		var r = selectionRects[selectionRects.length - 1];
-		if (r == null || (cursorCol != r.x && cursorCol != r.x + r.w - 1) || (cursorLine != r.y && cursorLine != r.y + r.h - 1)) {
-			r = {x: cursorCol, y: cursorLine, w: 1, h: 1};
-			selectionRects.push(r);
+	/** Index in visibleList of the line holding the cursor, -1 if not displayed **/
+	function getCursorLine() : Int {
+		return visibleList.indexOf(getCursorVLine());
+	}
+
+	/** Index of the cursor column in the sheet of its line, -1 without cursor **/
+	function getCursorCol() : Int {
+		if (cursor == null)
+			return -1;
+		var last = cursor.path.length - 1;
+		for (i => c in cursor.sheets[last].columns)
+			if (c.name == cursor.cols[last])
+				return i;
+		return -1;
+	}
+
+	function moveCursor(dLine: Int, dCol: Int) {
+		var vline = getCursorVLine() ?? visibleList[0];
+		if (vline == null)
+			return;
+		var col = hxd.Math.imax(getCursorCol(), 0) + dCol;
+		var entry = openSheets.get(vline.parent);
+		var firstLine = (lines: Array<VirtualLine>) -> Lambda.find(lines, (l) -> l.kind == Line);
+
+		var sub = openSheets.get(vline);
+		var subFirst = sub != null ? firstLine(sub.lines) : null;
+		if (dLine > 0 && subFirst != null && sub.path.cols[sub.path.cols.length - 1] == cursor?.cols[cursor.cols.length - 1]) {
+			// enter the sub table opened by the cursor cell
+			vline = subFirst;
+			col = 0;
+		} else if (dLine < 0 && vline.parent != null && firstLine(entry.lines) == vline) {
+			// back to the list cell of the sub table
+			setCursor(entry.path.copy());
+			return;
+		} else {
+			// stay in the table, skip the lines without cells
+			var lines = entry.lines;
+			var next = lines.indexOf(vline) + dLine;
+			while (dLine != 0 && next >= 0 && next < lines.length && lines[next].kind != Line)
+				next += dLine;
+			if (next >= 0 && next < lines.length)
+				vline = lines[next];
 		}
-		var col = hxd.Math.iclamp((cursorCol == r.x ? r.x + r.w - 1 : r.x) + dCol, 0, sheet.columns.length - 1);
-		var line = hxd.Math.iclamp((cursorLine == r.y ? r.y + r.h - 1 : r.y) + dLine, 0, sheet.lines.length - 1);
-		r.x = hxd.Math.imin(cursorCol, col);
-		r.y = hxd.Math.imin(cursorLine, line);
-		r.w = hxd.Math.iabs(col - cursorCol) + 1;
-		r.h = hxd.Math.iabs(line - cursorLine) + 1;
-		list.scrollToIndex(line);
+
+		var columns = vline.path.sheets[vline.path.sheets.length - 1].columns;
+		col = hxd.Math.iclamp(col, 0, columns.length - 1);
+		setCursor(getCellObjectPath(vline.path, columns[col]));
 	}
 
 	function editCursorCell() {
-		var cell = getCell(visibleList[cursorLine], cursorCol);
+		var vline = getCursorVLine();
+		var cell = vline != null ? getCell(vline, getCursorCol()) : null;
 		if (cell != null && !cell.readOnly && !cell.editing)
 			cell.edit();
-	}
-
-	function rectSelectTo(line: Int, col: Int) {
-		// replace the rect anchored on the cursor
-		for (r in selectionRects.copy()) {
-			var onCol = cursorCol == r.x || cursorCol == r.x + r.w - 1;
-			var onLine = cursorLine == r.y || cursorLine == r.y + r.h - 1;
-			if (onCol && onLine)
-				selectionRects.remove(r);
-		}
-
-		selectionRects.push({
-			x: hxd.Math.imin(cursorCol, col),
-			y: hxd.Math.imin(cursorLine, line),
-			w: hxd.Math.iabs(col - cursorCol) + 1,
-			h: hxd.Math.iabs(line - cursorLine) + 1,
-		});
 	}
 
 	/** `vline` must be the instance from visibleList, list items match by reference **/
@@ -174,9 +175,10 @@ class HuiCdbTable extends HuiElement {
 	}
 
 	/** The line instance from openSheets matching the line path `path`, null if its sheet isn't open **/
-	function getLiveLine(path: ObjectPath) : Null<VirtualLine> {
+	function getLiveLine(path: ObjectPath, ?depth: Int) : Null<VirtualLine> {
 		var live : VirtualLine = null;
-		for (i in 0...path.path.length) {
+		// only the first `depth` levels of path, all by default
+		for (i in 0...(depth ?? path.path.length)) {
 			var entry = openSheets.get(live);
 			// sub sheet lines start with their header
 			var header = live == null ? 0 : 1;
@@ -188,39 +190,13 @@ class HuiCdbTable extends HuiElement {
 	}
 
 	function updateCursor() {
-		var cell = cursorCol != -1 && cursorLine != -1 ? getCell(visibleList[cursorLine], cursorCol) : null;
+		var vline = getCursorVLine();
+		var cell = vline != null ? getCell(vline, getCursorCol()) : null;
 		cursorElement.visible = cell != null;
 		if (cell == null)
 			return;
 
 		surroundCells(cursorElement, cell, cell);
-	}
-
-	function updateRects() {
-		while (selectionRectsElements.length < selectionRects.length)
-			selectionRectsElements.push(new HuiCdbSelection(this));
-		while (selectionRectsElements.length > selectionRects.length)
-			selectionRectsElements.pop().remove();
-
-		for (i => r in selectionRects) {
-			var element = selectionRectsElements[i];
-
-			// only the displayed lines of the rect
-			var first : HuiTableLine = null;
-			var last : HuiTableLine = null;
-			for (lineId in r.y...r.y + r.h) {
-				var line = getLine(visibleList[lineId]);
-				if (line == null)
-					continue;
-				if (first == null)
-					first = line;
-				last = line;
-			}
-
-			element.visible = first != null;
-			if (first != null)
-				surroundCells(element, first.getCell(r.x), last.getCell(r.x + r.w - 1));
-		}
 	}
 
 	// place element around the cells from topLeft to bottomRight, outset by its outline thickness (top, right, bottom, left)
@@ -249,7 +225,6 @@ class HuiCdbTable extends HuiElement {
 		super.sync(ctx);
 		// after the list sync, so the cells have been laid out
 		updateCursor();
-		updateRects();
 	}
 
 	function refreshItem(item: VirtualLine, line: HuiTableLine) {
@@ -315,25 +290,15 @@ class HuiCdbTable extends HuiElement {
 		return path;
 	}
 
-	function clearSelectedCells() {
-		var rects : Array<HuiTableSelectionRect> = selectionRects;
-		if (rects.length == 0) {
-			if (cursorCol < 0 || cursorLine < 0)
-				return;
-			rects = [{x: cursorCol, y: cursorLine, w: 1, h: 1}];
-		}
-
-		var actions = [];
-		for (r in rects)
-			for (lineId in r.y...r.y + r.h) {
-				if (visibleList[lineId].kind != Line)
-					continue;
-				for (col in r.x...r.x + r.w) {
-					var column = sheet.columns[col];
-					actions.push(setDataAction(getCellObjectPath(visibleList[lineId].path, column), getDefault(column)));
-				}
-			}
-		getView().undo.run(hrt.tools.Undo.actionFromActions(actions), true);
+	function clearCursorCell() {
+		var vline = getCursorVLine();
+		if (vline == null)
+			return;
+		var column = vline.path.sheets[vline.path.sheets.length - 1].columns[getCursorCol()];
+		// rebuilt from the line, the cursor holds the cell value of when it was set
+		var action = setDataAction(getCellObjectPath(vline.path, column), getDefault(column));
+		if (action != null)
+			getView().undo.run(action, true);
 	}
 
 	/** Value of a new or cleared cell. Null for optional columns **/
@@ -628,13 +593,7 @@ class HuiTableCell extends HuiElement {
 		// ignore line number and header cells
 		if (column == null || line.vline?.kind != Line)
 			return;
-		var col = line.cells.childElements.indexOf(this) - 1;
-		if (hxd.Key.isDown(hxd.Key.SHIFT))
-			line.table.rectSelectTo(line.lineId, col);
-		else {
-			line.table.selectionRects.resize(0);
-			line.table.setCursor(col, line.lineId);
-		}
+		line.table.setCursor(getObjectPath());
 	}
 
 	function onCellDoubleClick(e: hxd.Event) {
@@ -756,17 +715,6 @@ class HuiTableCellList extends HuiTableCell {
 		}
 		var lines : Array<Dynamic> = Reflect.field(line.lineData, column.name);
 		text.text = "[" + (lines?.length ?? 0) + "]";
-	}
-}
-
-class HuiCdbSelection extends HuiElement {
-	static var SRC =
-		<hui-cdb-selection>
-		</hui-cdb-selection>
-
-	public function new(?parent) {
-		super(parent);
-		initComponent();
 	}
 }
 
