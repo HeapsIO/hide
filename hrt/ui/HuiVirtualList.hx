@@ -27,6 +27,8 @@ class HuiVirtualList<T> extends HuiElement {
 	var prevScrollIndex : Int = -1;
 	var prevItemPixelScroll : Int = 0;
 	var scrollRequest : ScrollRequest = null;
+	var canScrollUp = false;
+	var canScrollDown = false;
 
 	var customScrollbar: HuiElement;
 	var customScrollbarCursor: HuiElement;
@@ -149,6 +151,8 @@ class HuiVirtualList<T> extends HuiElement {
 	}
 
 	function wheel(e: hxd.Event) {
+		if (e.wheelDelta > 0 ? !canScrollDown : !canScrollUp)
+			return;
 		itemPixelScroll += Std.int(e.wheelDelta* 25.0) ;
 
 		needRefresh = true;
@@ -209,6 +213,8 @@ class HuiVirtualList<T> extends HuiElement {
 		// with max-height but no min-height, the list grows with its items up to max-height
 		var autoHeight = minHeight == null && maxHeight != null;
 		var fitHeight = 0;
+		canScrollUp = false;
+		canScrollDown = false;
 
 		if (items.length > 0) {
 			scrollIndex = hxd.Math.iclamp(scrollIndex, 0, items.length-1);
@@ -302,6 +308,9 @@ class HuiVirtualList<T> extends HuiElement {
 					finalOffset = minY - (startY + topOffset);
 				}
 			}
+
+			canScrollUp = topIndex >= 0 || topY() < minY;
+			canScrollDown = botIndex < items.length || botY() > maxY - afterScroll;
 
 			if (autoHeight)
 				fitHeight = topIndex < 0 && botIndex >= items.length ? hxd.Math.imin(Std.int(botOffset - topOffset), maxHeight) : maxHeight;
