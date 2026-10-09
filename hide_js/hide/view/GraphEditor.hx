@@ -92,6 +92,8 @@ class GraphEditor extends hide.comp.Component {
 	var edgeCreationMode : EdgeState = None;
 	// Edge clicked by the user, only detached once the pointer moves so double clicks can be detected
 	var pendingEdgeDrag : {output: Int, input: Int, clientX: Float, clientY: Float, pointerId: Int} = null;
+	// True when the edge being created comes from an existing edge, so dropping it in the void deletes it
+	var edgeCreationFromExisting = false;
 	static final EDGE_DRAG_THRESHOLD = 4.0;
 	var lastCurveX : Float = 0;
 	var lastCurveY : Float = 0;
@@ -238,7 +240,7 @@ class GraphEditor extends hide.comp.Component {
 
 				// Stop rectangle selection
 				if (edgeCreationInput != null || edgeCreationOutput != null) {
-					if (edgeCreationInput != null && edgeCreationOutput != null) {
+					if ((edgeCreationInput != null && edgeCreationOutput != null) || edgeCreationFromExisting) {
 						finalizeUserCreateEdge();
 						e.stopPropagation();
 						return;
@@ -1084,6 +1086,7 @@ class GraphEditor extends hide.comp.Component {
 		pendingEdgeDrag = null;
 
 		opEdge(drag.output, drag.input, false, currentUndoBuffer);
+		edgeCreationFromExisting = true;
 
 		heapsScene.get(0).setPointerCapture(drag.pointerId);
 
@@ -1113,7 +1116,13 @@ class GraphEditor extends hide.comp.Component {
 
 		// Center the reroute pins on the click position
 		var box = boxes[node.id];
-		opMove(box, x - @:privateAccess box.width / 2, y - box.getNodeHeight(0), currentUndoBuffer);
+		var newX = x - @:privateAccess box.width / 2;
+		var newY = y - box.getNodeHeight(0);
+		if (snapToGrid) {
+			newX = hxd.Math.round(newX / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+			newY = hxd.Math.round(newY / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+		}
+		opMove(box, newX, newY, currentUndoBuffer);
 
 		opEdge(output, packIO(node.id, 0), true, currentUndoBuffer);
 		opEdge(packIO(node.id, 0), input, true, currentUndoBuffer);
@@ -1134,6 +1143,7 @@ class GraphEditor extends hide.comp.Component {
 		edgeCreationCurve?.remove();
 		edgeCreationCurve = null;
 		edgeCreationMode = None;
+		edgeCreationFromExisting = false;
 	}
 
 	static var tmpPoint = new h2d.col.Point();
@@ -1239,8 +1249,18 @@ class GraphEditor extends hide.comp.Component {
 					e.stopPropagation();
 					cancelAll();
 					heapsScene.get(0).setPointerCapture(e.pointerId);
-					edgeCreationInput = packIO(box.node.id, inputId);
-					edgeCreationMode = FromInput;
+					var input = packIO(box.node.id, inputId);
+					var output = outputsToInputs.getLeft(input);
+					if (output != null) {
+						// Drag the existing edge from its output
+						opEdge(output, input, false, currentUndoBuffer);
+						edgeCreationFromExisting = true;
+						edgeCreationOutput = output;
+						edgeCreationMode = FromOutput;
+					} else {
+						edgeCreationInput = input;
+						edgeCreationMode = FromInput;
+					}
 				}
 			});
 		}
@@ -1682,7 +1702,14 @@ class GraphEditor extends hide.comp.Component {
 
 			curveHitbox.on("pointerdown", function(e) {
 
-				if (e.button == 0) {
+				if (e.button == 0 && e.ctrlKey) {
+					pendingEdgeDrag = null;
+					opEdge(packedOutput, packedInput, false, currentUndoBuffer);
+					commitUndo();
+					e.preventDefault();
+					e.stopPropagation();
+				}
+				else if (e.button == 0) {
 					pendingEdgeDrag = {output: packedOutput, input: packedInput, clientX: e.clientX, clientY: e.clientY, pointerId: e.pointerId};
 
 					e.preventDefault();
