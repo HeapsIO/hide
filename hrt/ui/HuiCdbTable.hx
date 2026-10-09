@@ -20,6 +20,8 @@ class HuiTableSelectionRect {
 @:access(hrt.ui.HuiTableCell)
 class HuiCdbTable extends HuiElement {
 	var sheet: cdb.Sheet;
+	/** Topmost HuiCdbTable, this one if not a sub table **/
+	var root: HuiCdbTable;
 
 	var visibleList : Array<VisibleEntry> = [];
 	var cellSizes: Array<Int> = [];
@@ -46,8 +48,9 @@ class HuiCdbTable extends HuiElement {
 			<hui-virtual-list id="list"/>
 		</hui-cdb-table>
 
-	public function new(sheet: cdb.Sheet, ?parent) {
+	public function new(sheet: cdb.Sheet, ?root: HuiCdbTable, ?parent) {
 		super(parent);
+		this.root = root ?? this;
 		initComponent();
 		list.setItems(visibleList);
 		list.generateItem = cast generateLine;
@@ -146,11 +149,34 @@ class HuiCdbTable extends HuiElement {
 	}
 
 	function getCellFromObjectPath(path: cdb.Sheet.ObjectPath) : Null<HuiTableCell> {
-		if (path.sheets[0] != sheet)
+		// paths start at the root sheet
+		var table = this;
+		while (table.sheet.parent != null) {
+			var p = table.parent;
+			while (p != null && !(p is HuiCdbTable))
+				p = p.parent;
+			if (p == null)
+				return null;
+			table = cast p;
+		}
+		if (path.sheets[0] != table.sheet)
 			return null;
-		for (i => c in sheet.columns)
-			if (c.name == path.cols[1])
-				return getCell(path.indexes[0], i);
+
+		// follow the opened sub tables down to the cell's table
+		var last = path.path.length - 1;
+		for (i in 0...last - 1) {
+			var sub = Std.downcast(table.getLine(path.indexes[i])?.subEditor, HuiCdbTable);
+			if (sub == null)
+				return null;
+			var p = sub.sheet.parent;
+			if (p.sheet.columns[p.column].name != path.cols[i + 1])
+				return null;
+			table = sub;
+		}
+
+		for (i => c in table.sheet.columns)
+			if (c.name == path.cols[last])
+				return table.getCell(path.indexes[last - 1], i);
 		return null;
 	}
 
@@ -267,6 +293,8 @@ class HuiCdbTable extends HuiElement {
 	}
 
 	function setDataAction(path: cdb.Sheet.ObjectPath, newData: Dynamic) : hrt.tools.Undo.Action {
+		if (this != root)
+			return root.setDataAction(path, newData);
 		var oldData = path.obj;
 		if (hrt.prefab.Diff.diff(oldData, newData) == Skip)
 			return null;
@@ -286,16 +314,20 @@ class HuiCdbTable extends HuiElement {
 			else
 				Reflect.setField(parent, path.cols[last], value);
 			getCellFromObjectPath(path)?.refreshData();
-			refreshVisible();
 		}
 	}
 
 	function getCellObjectPath(lineId: Int, column: cdb.Data.Column) : cdb.Sheet.ObjectPath {
-		var lineData = sheet.lines[lineId];
 		var path = new cdb.Sheet.ObjectPath();
-		// TODO : handle subtables
-		path.push(lineData, lineId, sheet, null);
-		path.push(Reflect.field(lineData, column.name), -1, sheet, column.name);
+		// push the lines from the root sheet down to this one, each level stored in its parent's list column
+		function pushLine(s: cdb.Sheet, lineId: Int) {
+			var p = s.parent;
+			if (p != null)
+				pushLine(p.sheet, p.line);
+			path.push(s.lines[lineId], lineId, s, p != null ? p.sheet.columns[p.column].name : null);
+		}
+		pushLine(sheet, lineId);
+		path.push(Reflect.field(sheet.lines[lineId], column.name), -1, sheet, column.name);
 		return path;
 	}
 
@@ -400,6 +432,8 @@ class HuiTableLine extends HuiElement {
 			switch (column.type) {
 				case TId, TString:
 					new HuiTableCellText(column, cells);
+				case TList:
+					new HuiTableCellList(column, cells);
 				default:
 					var cell = new HuiTableCellText(column, cells);
 					cell.readOnly = true;
@@ -624,6 +658,56 @@ class HuiTableCellText extends HuiTableCell {
 				throw "Can't use CellText for non string data that are not read only";
 			text.text = haxe.Json.stringify(dataText);
 		}
+	}
+}
+
+@:access(hrt.ui.HuiTableLine)
+@:access(hrt.ui.HuiCdbTable)
+class HuiTableCellList extends HuiTableCell {
+	static var SRC =
+		<hui-table-cell-list>
+			<hui-text id="text"/>
+		</hui-table-cell-list>
+
+	public function new(column: cdb.Data.Column, ?parent) {
+		super(column, parent);
+		initComponent();
+	}
+
+	override function edit() {
+		if (editing) {
+			line.closeSubEditor();
+			return;
+		}
+		super.edit();
+		openEditor();
+		line.onSubEditorClosed = finishEdit;
+	}
+
+	override function getEditor() : HuiElement {
+		var sheet = line.table.sheet;
+		var sub = sheet.getSub(column);
+		var lines : Array<Dynamic> = Reflect.field(line.lineData, column.name);
+		if (lines == null) {
+			lines = [];
+			Reflect.setField(line.lineData, column.name, lines);
+		}
+		// lines are shared with the parent line, so edits apply to the database
+		var subSheet = new cdb.Sheet(sheet.base, {
+			name: sub.name,
+			columns: sub.columns,
+			props: sub.props,
+			lines: lines,
+			separators: [],
+		}, sheet.getPath() + "@" + column.name + ":" + line.lineId, {sheet: sheet, column: sheet.columns.indexOf(column), line: line.lineId});
+		var table = new HuiCdbTable(subSheet, line.table.root);
+		table.dom.addClass("sub");
+		return table;
+	}
+
+	override function refreshData() {
+		var lines : Array<Dynamic> = Reflect.field(line.lineData, column.name);
+		text.text = "[" + (lines?.length ?? 0) + "]";
 	}
 }
 
