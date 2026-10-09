@@ -4,8 +4,19 @@ package hrt.ui;
 
 import cdb.Sheet.ObjectPath;
 
+enum VirtualLineKind {
+	Line;
+	Header;
+	TableEnd;
+}
+
 /** A displayed line of the table **/
-typedef VirtualLine = {path: ObjectPath};
+typedef VirtualLine = {
+	path: ObjectPath,
+	kind: VirtualLineKind,
+	/** Key of the sheet holding the line in openSheets **/
+	parent: VirtualLine,
+};
 
 typedef SheetEntry = {path: ObjectPath, lines: Array<VirtualLine>, cellSizes: Array<Int>};
 
@@ -167,7 +178,9 @@ class HuiCdbTable extends HuiElement {
 		var live : VirtualLine = null;
 		for (i in 0...path.path.length) {
 			var entry = openSheets.get(live);
-			live = entry?.lines[path.indexes[i]];
+			// sub sheet lines start with their header
+			var header = live == null ? 0 : 1;
+			live = entry?.lines[path.indexes[i] + header];
 			if (live == null || live.path.cols[i] != path.cols[i])
 				return null;
 		}
@@ -240,52 +253,25 @@ class HuiCdbTable extends HuiElement {
 	}
 
 	function refreshItem(item: VirtualLine, line: HuiTableLine) {
-		if (line.lineId != getLineId(item.path) || line.lineData != item.path.obj)
-			line.setLine(item);
 		line.resizeCells();
 	}
 
 	function generateLine(entry: VirtualLine) : HuiElement {
+		if (entry.kind == Header) {
+			var line = new HuiTableLine(this, entry);
+			line.setLine(entry);
+			return line;
+		}
+
 		// pooled lines have the cells of their sheet
 		var sheet = entry.path.sheets[entry.path.sheets.length - 1];
 		var line = Lambda.find(linePool, (l) -> l.vline.path.sheets[l.vline.path.sheets.length - 1] == sheet);
 		linePool.remove(line);
 
-		if (line == null) {
+		if (line == null)
 			line = new HuiTableLine(this, entry);
-			line.pool = linePool;
-		}
 		line.setLine(entry);
-		line.resizeCells();
-
-		line.onPush = (e) -> {
-			if (e.button == hxd.Key.MOUSE_RIGHT) {
-				uiBase.contextMenu([
-					{
-						label: "Delete",
-						click: () -> {
-							getView().undo.run(actionDeleteLine(getLineId(entry.path)), true);
-						}
-					}
-				]);
-			}
-		};
 		return line;
-	}
-
-	function actionDeleteLine(lineId: Int) : hrt.tools.Undo.Action {
-		var data = sheet.lines[lineId];
-		return (isUndo) -> {
-			if (!isUndo) {
-				sheet.deleteLine(lineId);
-			} else {
-				var newLine = sheet.newLine(lineId-1);
-				for (f in Reflect.fields(data)) {
-					Reflect.setField(newLine, f, Reflect.field(data, f));
-				}
-			}
-			refreshVisible();
-		}
 	}
 
 	function setDataAction(path: ObjectPath, newData: Dynamic) : hrt.tools.Undo.Action {
@@ -339,11 +325,14 @@ class HuiCdbTable extends HuiElement {
 
 		var actions = [];
 		for (r in rects)
-			for (lineId in r.y...r.y + r.h)
+			for (lineId in r.y...r.y + r.h) {
+				if (visibleList[lineId].kind != Line)
+					continue;
 				for (col in r.x...r.x + r.w) {
 					var column = sheet.columns[col];
 					actions.push(setDataAction(getCellObjectPath(visibleList[lineId].path, column), getDefault(column)));
 				}
+			}
 		getView().undo.run(hrt.tools.Undo.actionFromActions(actions), true);
 	}
 
@@ -437,18 +426,26 @@ class HuiCdbTable extends HuiElement {
 		var col = path.cols[path.cols.length - 1];
 		var lines : Array<Dynamic> = path.obj ?? [];
 
-		vlines.resize(lines.length);
+		// sub sheets start with a header line, the root header is outside of the list
+		var header = vline == null ? 0 : 1;
+		vlines.resize(lines.length + header);
+		if (header == 1 && vlines[0] == null) {
+			var p = path.copy();
+			p.pop();
+			p.push(null, -1, s, col);
+			vlines[0] = {path: p, kind: Header, parent: vline};
+		}
 		for (i => l in lines) {
-			if (vlines[i] == null) {
+			if (vlines[i + header] == null) {
 				var p = path.copy();
 				// the line replaces the lines array level
 				p.pop();
 				p.push(l, i, s, col);
-				vlines[i] = {path: p};
+				vlines[i + header] = {path: p, kind: Line, parent: vline};
 				continue;
 			}
 			// only the last level differs between the lines of a sheet
-			var p = vlines[i].path;
+			var p = vlines[i + header].path;
 			p.path[p.path.length - 1] = l;
 			p.indexes[p.indexes.length - 1] = i;
 		}
@@ -479,11 +476,8 @@ class HuiCdbTable extends HuiElement {
 class HuiTableLine extends HuiElement {
 	var table: HuiCdbTable;
 	var vline: VirtualLine;
-	/** Key of the sheet holding the line in table.openSheets **/
-	var parentLine: VirtualLine;
-	var pool: Array<HuiTableLine>;
-	var lineData: Dynamic;
-	var lineId: Int;
+	var lineData(get, never): Dynamic;
+	var lineId(get, never): Int;
 	var lineNoCell: HuiTableCellText;
 
 	static var SRC =
@@ -504,6 +498,12 @@ class HuiTableLine extends HuiElement {
 
 		var path = vline.path;
 		for (column in path.sheets[path.sheets.length - 1].columns) {
+			if (vline.kind == Header) {
+				var cell = new HuiTableCellText(column, cells);
+				cell.text.text = column.name;
+				cell.readOnly = true;
+				continue;
+			}
 			switch (column.type) {
 				case TId, TString:
 					new HuiTableCellText(column, cells);
@@ -518,12 +518,19 @@ class HuiTableLine extends HuiElement {
 
 	override function onAdd() {
 		super.onAdd();
-		pool?.remove(this);
+		if (isPooled())
+			table.linePool.remove(this);
 	}
 
 	override function onRemove() {
 		super.onRemove();
-		pool?.push(this);
+		if (isPooled())
+			table.linePool.push(this);
+	}
+
+	/** Header lines are rebuilt each time **/
+	inline function isPooled() {
+		return vline?.kind == Line;
 	}
 
 	function getCell(col: Int) : HuiTableCell {
@@ -533,7 +540,7 @@ class HuiTableLine extends HuiElement {
 
 	/** Uses the cell sizes of the sheet holding the line **/
 	public function resizeCells() {
-		var sizes = table.openSheets.get(parentLine).cellSizes;
+		var sizes = table.openSheets.get(vline?.parent).cellSizes;
 		for (i => element in cells.childElements) {
 			element.setWidth(sizes[i]);
 		}
@@ -541,17 +548,19 @@ class HuiTableLine extends HuiElement {
 
 	public function setLine(vline: VirtualLine) {
 		this.vline = vline;
-		var p = vline.path.copy();
-		p.pop();
-		parentLine = table.getLiveLine(p);
-		lineId = HuiCdbTable.getLineId(vline.path);
-		lineData = vline.path.obj;
 		refreshData();
+		resizeCells();
 	}
 
+	inline function get_lineData() return vline.path.obj;
+	inline function get_lineId() return HuiCdbTable.getLineId(vline.path);
+
 	function refreshData() {
-		lineNoCell.text.text = Std.string(lineId + 1);
 		dom.setAttribute("margin-left", VInt(HuiCdbTable.DEPTH_MARGIN * (vline.path.path.length - 1)));
+		// header cells have no data
+		if (vline.kind != Line)
+			return;
+		lineNoCell.text.text = Std.string(lineId + 1);
 		for (element in cells.childElements) {
 			(cast element : HuiTableCell).refreshData();
 		}
@@ -617,7 +626,7 @@ class HuiTableCell extends HuiElement {
 
 	function onCellPush(e: hxd.Event) {
 		// ignore line number and header cells
-		if (column == null || line.lineData == null)
+		if (column == null || line.vline?.kind != Line)
 			return;
 		var col = line.cells.childElements.indexOf(this) - 1;
 		if (hxd.Key.isDown(hxd.Key.SHIFT))
@@ -731,14 +740,20 @@ class HuiTableCellList extends HuiTableCell {
 		}
 		super.edit();
 		line.table.openSubSheet(line.vline, getObjectPath());
+		refreshData();
 	}
 
 	override function finishEdit() {
 		super.finishEdit();
 		line.table.closeSubSheet(line.vline);
+		refreshData();
 	}
 
 	override function refreshData() {
+		if (editing) {
+			text.text = "...";
+			return;
+		}
 		var lines : Array<Dynamic> = Reflect.field(line.lineData, column.name);
 		text.text = "[" + (lines?.length ?? 0) + "]";
 	}
