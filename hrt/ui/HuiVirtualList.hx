@@ -366,6 +366,14 @@ class HuiVirtualList<T> extends HuiElement {
 		var item = generateItem(item);
 		var container = new HuiElement();
 		container.addChild(item);
+		var height = hxd.Math.NaN;
+		container.onAfterReflow = () -> {
+			if (container.calculatedHeight != height) {
+				if (!Math.isNaN(height))
+					needRefresh = true;
+				height = container.calculatedHeight;
+			}
+		};
 		return container;
 	}
 
