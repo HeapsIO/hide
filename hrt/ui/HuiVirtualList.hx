@@ -206,6 +206,10 @@ class HuiVirtualList<T> extends HuiElement {
 
 		var oldElements = elements.copy();
 
+		// with max-height but no min-height, the list grows with its items up to max-height
+		var autoHeight = minHeight == null && maxHeight != null;
+		var fitHeight = 0;
+
 		if (items.length > 0) {
 			scrollIndex = hxd.Math.iclamp(scrollIndex, 0, items.length-1);
 
@@ -241,7 +245,7 @@ class HuiVirtualList<T> extends HuiElement {
 
 
 			var minY = 0;
-			var maxY = calculatedHeight;
+			var maxY = autoHeight ? maxHeight : calculatedHeight;
 
 			var currentItem = genItem(scrollIndex, false);
 
@@ -299,6 +303,9 @@ class HuiVirtualList<T> extends HuiElement {
 				}
 			}
 
+			if (autoHeight)
+				fitHeight = topIndex < 0 && botIndex >= items.length ? hxd.Math.imin(Std.int(botOffset - topOffset), maxHeight) : maxHeight;
+
 			if (finalOffset != 0) {
 				for (line in layoutLines) {
 					line.element.y += finalOffset;
@@ -333,6 +340,13 @@ class HuiVirtualList<T> extends HuiElement {
 			customScrollbarCursor.setHeight(height);
 
 			customScrollbar.visible = scrollbarMin > 0 || scrollbarMax < scrollBarHeight;
+		}
+
+		var containerHeight : Null<Int> = autoHeight ? fitHeight : null;
+		if (itemContainer.minHeight != containerHeight) {
+			itemContainer.minHeight = containerHeight;
+			needReflow = true;
+			onContentChanged();
 		}
 
 		for (item => old in oldElements) {
