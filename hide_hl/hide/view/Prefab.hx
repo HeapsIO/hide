@@ -1174,6 +1174,9 @@ class Prefab extends HuiView<{path: String}> {
 				this.prefab = null;
 			}
 
+			#if hlphysics
+			@:privateAccess sceneEditor.scene.s3d.shapeCache?.clear();
+			#end
 
 			this.prefab = prefab;
 
