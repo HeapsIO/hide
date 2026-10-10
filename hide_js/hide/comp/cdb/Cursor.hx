@@ -121,15 +121,12 @@ class Cursor {
 			}
 		}
 
-		// Take care of current filter
+		// Skip the lines which are not displayed (filtered, in a collapsed group)
 		if (line == null) return;
-		if( line != null && dy != 0 ) {
-			var allLines = line.element.parent().children("tr").not(".separator");
-			var lines = allLines.not(".filtered").not(".hidden");
-			var index = lines.index(line.element);
-			var targetLine = lines.get(hxd.Math.imax(index + dy,0));
-			if( targetLine == null || targetLine == line.element.get(0) ) return;
-			dy = allLines.index(new Element(targetLine)) - allLines.index(line.element);
+		if( dy != 0 ) {
+			var target = line.table.moveDisplayed(line.index, dy);
+			if( target < 0 || target == line.index ) return;
+			dy = target - line.index;
 		}
 
 		var minX = table.displayMode == Table ? -1 : 0;
@@ -217,7 +214,10 @@ class Cursor {
 	}
 
 
-	public function update() {
+	/**
+		Shows the cursor and the selection on the cells which are in the DOM, and focuses the cursor cell if `focus` is set.
+	**/
+	public function update( focus = true ) {
 		hide();
 
 		var line = getLine();
@@ -227,13 +227,13 @@ class Cursor {
 		var cursorEl = x < 0 ? line.element.find(".start").get(0) : line.cells[x]?.elementHtml;
 		if (cursorEl != null) {
 			markNode(cursorEl, "cursorView");
-			cursorEl.focus();
+			if( focus ) cursorEl.focus();
 		}
 
 		// Update selection visual
 		if (selection != null) {
 			for (sel in selection) {
-				var selectedCells = getCellsFromSelection(sel);
+				var selectedCells = getCellsFromSelection(sel, false);
 				if (selectedCells != null) {
 					for (c in selectedCells) {
 						if (c == null) continue;
@@ -387,29 +387,30 @@ class Cursor {
 		return array;
 	}
 
-	public function getCellsFromSelection(sel : Selection) {
+	/**
+		The cells of a selection. Their lines are created if they are not, unless `create` is false :
+		then only the cells of the created lines are returned.
+	**/
+	public function getCellsFromSelection(sel : Selection, create = true) {
 		if (sel == null || sel.y1 >= table.lines.length || sel.y2 >= table.lines.length)
 			return null;
 
 		var cells = [];
-		if (sel.x1 == -1) {
-			for (y in sel.y1...(sel.y2 + 1)) {
-				var line = table.lines[y];
-				if (line.filtered)
-					continue;
-				for (x in 0...(line.cells.length)) {
+		for (y in sel.y1...(sel.y2 + 1)) {
+			var line = table.lines[y];
+			if (line.filtered)
+				continue;
+			if (create)
+				line.create();
+			else if (!line.created)
+				continue;
+			if (sel.x1 == -1) {
+				for (x in 0...(line.cells.length))
 					cells.push(line.cells[x]);
-				}
 			}
-		}
-		else {
-			for (y in sel.y1...(sel.y2 + 1)) {
-				var line = table.lines[y];
-				if (line.filtered)
-					continue;
-				for (x in sel.x1...(sel.x2 + 1)) {
+			else {
+				for (x in sel.x1...(sel.x2 + 1))
 					cells.push(line.cells[x]);
-				}
 			}
 		}
 
@@ -455,13 +456,17 @@ class Cursor {
 
 	public function getCell() {
 		var line = getLine();
-		if( line == null ) return null;
+		if( line == null || x < 0 ) return null;
+		line.create();
 		return line.cells[x];
 	}
 
 	public function scrollIntoView() {
-		var c = getCell();
+		@:privateAccess editor.pendingScroll = null;
 		var l = getLine();
+		if (l != null)
+			l.table.revealRow(l);
+		var c = getCell();
 		if (c != null)
 			untyped c.elementHtml.scrollIntoViewIfNeeded();
 		else if (l != null)

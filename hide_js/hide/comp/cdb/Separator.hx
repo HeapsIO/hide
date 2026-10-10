@@ -8,12 +8,13 @@ class Separator extends Component {
 	public var data : cdb.Data.Separator;
 	public var parent : Separator;
 	public var subs : Array<Separator> = [];
+	public var row(default, null) : Table.Row;
 
 	var visible(get, null) : Bool; // Is the separator visible (i.e. parent separators aren't collapsed )
 	var filtered : Bool = false;
 	var expanded : Bool = true;
 
-	public function new(root : Element, table: Table, data : cdb.Data.Separator) {
+	public function new(table: Table, data : cdb.Data.Separator) {
 		this.table = table;
 		this.data = data;
 
@@ -24,7 +25,8 @@ class Separator extends Component {
 			</td>
 		</tr>');
 
-		super(root, e);
+		super(null, e);
+		row = new Table.Row(null, this);
 
 		var toggleBtn = e.find("a");
 		var content = e.find("span");
@@ -107,12 +109,10 @@ class Separator extends Component {
 				},
 				{ label : "", isSeparator : true },
 				{ label : "Expand All", click : function() {
-					for (s in table.separators)
-						s.expand();
+					table.lockRows(() -> for (s in table.separators) s.expand());
 				}},
 				{ label : "Collapse All", click : function() {
-					for (s in table.separators)
-						s.collapse();
+					table.lockRows(() -> for (s in table.separators) s.collapse());
 				}},
 				{ label : "", isSeparator : true },
 				{ label : "Expand Children", click : function() {
@@ -121,7 +121,7 @@ class Separator extends Component {
 						for (sub in s.subs)
 							sub.expand();
 					}
-					rec(this);
+					table.lockRows(() -> rec(this));
 				}},
 				{ label : "Collapse Children", click : function() {
 					function rec(s : Separator) {
@@ -129,7 +129,7 @@ class Separator extends Component {
 						for (sub in s.subs)
 							sub.collapse();
 					}
-					rec(this);
+					table.lockRows(() -> rec(this));
 				}},
 				{ label : "Collapse Others", click : function() {
 					var ignoreList = [this];
@@ -139,9 +139,7 @@ class Separator extends Component {
 						parent = parent.parent;
 					}
 
-					for (s in table.separators)
-						if (!ignoreList.contains(s))
-							s.collapse();
+					table.lockRows(() -> for (s in table.separators) if (!ignoreList.contains(s)) s.collapse());
 				}},
 				{ label : "", isSeparator : true },
 				{ label : "Remove", enabled : !table.sheet.props.hide, click : function() {
@@ -191,6 +189,7 @@ class Separator extends Component {
 
 				var l = getLines();
 				if( l.length > 0 ) {
+					l[0].create();
 					if( l[0].cells.length > 0 )
 						l[0].cells[0].focus();
 				}
@@ -226,18 +225,6 @@ class Separator extends Component {
 		content.text(data.title == null ? "" : data.title+(expanded ? "" : " ("+getLineCountRec(this)+")"));
 		content.attr("title", getSeparatorKey());
 		element.toggleClass("sep-hidden", !visible);
-
-		var lines = getLines();
-		for (l in lines) {
-			var visible = getLinesVisiblity();
-			if (!visible || @:privateAccess l.filtered) {
-				l.hide();
-				continue;
-			}
-
-			if (visible && (l.element == null || l.element.get(0).classList.contains("hidden")))
-				l.create();
-		}
 
 		element.attr("level", data.level == null ? 0 : data.level);
 		element.get(0).style.setProperty("--level", data.level == null ? "0" : ""+data.level);
@@ -282,6 +269,7 @@ class Separator extends Component {
 		table.editor.separatorsState.set(getSeparatorKey(), expanded);
 		table.editor.saveSeparatorState();
 		refresh();
+		table.refreshRows();
 	}
 
 
@@ -302,6 +290,21 @@ class Separator extends Component {
 		while (res[0].parent != null)
 			res.insert(0, res[0].parent);
 		return res;
+	}
+
+	public function isDisplayed() {
+		return visible;
+	}
+
+	// the separator or one of its parents is collapsed
+	public function isCollapsed() {
+		var s = this;
+		while (s != null) {
+			if (!s.expanded)
+				return true;
+			s = s.parent;
+		}
+		return false;
 	}
 
 	public function getLinesVisiblity() {

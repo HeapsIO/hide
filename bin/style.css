@@ -216,7 +216,13 @@ textarea:hover,
   overflow-y: auto;
   width: 100%;
 }
+.hide-dropdown > .dropdown-cont .options .options-sizer {
+  position: relative;
+}
 .hide-dropdown > .dropdown-cont .options .dropdown-option {
+  position: absolute;
+  left: 0;
+  right: 0;
   z-index: 900;
   display: flex;
   align-items: center;

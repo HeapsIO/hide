@@ -81,6 +81,8 @@
 
 .cdb {
 	height: 100%;
+	// the virtual table keeps its rows in place itself (Table.render)
+	overflow-anchor: none;
 	//background-color : black;
 
 	&:focus {
@@ -317,6 +319,12 @@
 
 		tr.filtered, tr.hidden, tr.sep-hidden {
 			display : none;
+		}
+
+		// replaces the rows which are out of the view (virtual table)
+		tr.cdb-spacer > td {
+			padding : 0;
+			border : none;
 		}
 
 		tr.clickable {
