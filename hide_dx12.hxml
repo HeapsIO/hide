@@ -1,5 +1,0 @@
-# HIDE with the DirectX 12 driver (jsdx), requires bin/jsdx/dx12.node (see hide_js/libs/jsdx/native/build.bat)
--D dx12
---remap hl:hlemu
---macro hlemu.Macros.init(["dx", "h3d.impl"])
-hide.hxml

@@ -20,11 +20,22 @@ static FARPROC WINAPI loadExeHook( unsigned int event, DelayLoadInfo *info ) {
 }
 decltype(__pfnDliNotifyHook2) __pfnDliNotifyHook2 = loadExeHook;
 
-// ---- swapchain emulation
+// the pages of the renderer process share the addon : they use the same device
+
+static dx_driver *js_create( HWND window, DriverInitFlag flags, uchar *dev_desc ) {
+	if( static_driver && static_driver->device && static_driver->device->GetDeviceRemovedReason() == S_OK )
+		return static_driver;
+	return HL_NAME(create)(window, flags, dev_desc);
+}
+
+static hl_shim::Register js_reg_create("create", hl_shim::wrap<&js_create>());
+
+// ---- swapchain emulation : one per command queue (driver), selected by resize / present
 
 #define JS_MAX_BUFFERS 8
 
-static struct {
+struct js_swapchain {
+	ID3D12Device *device; // a queue address can be reused
 	int count;
 	int index;
 	int presented;
@@ -33,27 +44,46 @@ static struct {
 	HANDLE handles[JS_MAX_BUFFERS];
 	ID3D12Fence *fence;
 	UINT64 fenceValue;
-	HANDLE event;
-} js_swap = {};
+};
 
-static void js_release_buffers() {
-	for( int i = 0; i < js_swap.count; i++ ) {
-		if( js_swap.buffers[i] ) js_swap.buffers[i]->Release();
-		if( js_swap.handles[i] ) CloseHandle(js_swap.handles[i]);
-		js_swap.buffers[i] = NULL;
-		js_swap.handles[i] = NULL;
+static std::map<ID3D12CommandQueue*, js_swapchain> js_swaps;
+static js_swapchain *js_cur = NULL;
+static HANDLE js_event = NULL;
+
+static void js_release_buffers( js_swapchain *sc ) {
+	for( int i = 0; i < sc->count; i++ ) {
+		if( sc->buffers[i] ) sc->buffers[i]->Release();
+		if( sc->handles[i] ) CloseHandle(sc->handles[i]);
+		sc->buffers[i] = NULL;
+		sc->handles[i] = NULL;
 	}
-	js_swap.count = 0;
+	sc->count = 0;
+}
+
+static js_swapchain *js_select( ID3D12CommandQueue *q ) {
+	js_swapchain *sc = &js_swaps[q];
+	if( sc->device != static_driver->device ) {
+		js_release_buffers(sc);
+		if( sc->fence ) sc->fence->Release();
+		*sc = {};
+		sc->device = static_driver->device;
+		sc->presented = -1;
+		CHKERR(sc->device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&sc->fence)));
+	}
+	js_cur = sc;
+	return sc;
+}
+
+static js_swapchain *js_current() {
+	if( js_cur == NULL ) hl_error("no swapchain");
+	return js_cur;
 }
 
 static void js_resize( ID3D12CommandQueue *directQueue, int width, int height, int buffer_count, DXGI_FORMAT format ) {
 	dx_driver *drv = static_driver;
+	js_swapchain *sc = js_select(directQueue);
 	if( buffer_count > JS_MAX_BUFFERS ) hl_error("too many back buffers");
-	js_release_buffers();
-	if( !js_swap.fence ) {
-		CHKERR(drv->device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&js_swap.fence)));
-		js_swap.event = CreateEvent(NULL, FALSE, FALSE, NULL);
-	}
+	js_release_buffers(sc);
 	D3D12_HEAP_PROPERTIES heap = {};
 	heap.Type = D3D12_HEAP_TYPE_DEFAULT;
 	D3D12_RESOURCE_DESC desc = {};
@@ -68,37 +98,41 @@ static void js_resize( ID3D12CommandQueue *directQueue, int width, int height, i
 	// by Chromium's D3D11 device without a cross-API barrier
 	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
 	for( int i = 0; i < buffer_count; i++ ) {
-		CHKERR(drv->device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_SHARED, &desc, D3D12_RESOURCE_STATE_COMMON, NULL, IID_PPV_ARGS(&js_swap.buffers[i])));
-		CHKERR(drv->device->CreateSharedHandle(js_swap.buffers[i], NULL, GENERIC_ALL, NULL, &js_swap.handles[i]));
-		js_swap.buffers[i]->SetName(L"JS_BACKBUFFER");
+		CHKERR(drv->device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_SHARED, &desc, D3D12_RESOURCE_STATE_COMMON, NULL, IID_PPV_ARGS(&sc->buffers[i])));
+		CHKERR(drv->device->CreateSharedHandle(sc->buffers[i], NULL, GENERIC_ALL, NULL, &sc->handles[i]));
+		sc->buffers[i]->SetName(L"JS_BACKBUFFER");
 	}
-	js_swap.count = buffer_count;
-	js_swap.index = 0;
-	js_swap.presented = -1;
+	sc->count = buffer_count;
+	sc->index = 0;
+	sc->presented = -1;
 }
 
 // like IDXGISwapChain::GetBuffer, the caller owns a reference
 static ID3D12Resource *js_get_back_buffer( int index ) {
-	if( index < 0 || index >= js_swap.count ) return NULL;
-	js_swap.buffers[index]->AddRef();
-	return js_swap.buffers[index];
+	js_swapchain *sc = js_current();
+	if( index < 0 || index >= sc->count ) return NULL;
+	sc->buffers[index]->AddRef();
+	return sc->buffers[index];
 }
 
 static int js_get_current_back_buffer_index() {
-	return js_swap.index;
+	return js_current()->index;
 }
 
 // No shared fence with Chromium: wait for the GPU so that the page can display the
 // buffer as soon as present returns.
 static void js_command_queue_present( ID3D12CommandQueue *q, bool vsync ) {
-	CHKERR(q->Signal(js_swap.fence, ++js_swap.fenceValue));
-	if( js_swap.fence->GetCompletedValue() < js_swap.fenceValue ) {
-		js_swap.fence->SetEventOnCompletion(js_swap.fenceValue, js_swap.event);
-		WaitForSingleObject(js_swap.event, INFINITE);
+	js_swapchain *sc = js_select(q);
+	if( !js_event ) js_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+	CHKERR(q->Signal(sc->fence, ++sc->fenceValue));
+	if( sc->fence->GetCompletedValue() < sc->fenceValue ) {
+		sc->fence->SetEventOnCompletion(sc->fenceValue, js_event);
+		WaitForSingleObject(js_event, INFINITE);
 	}
-	js_swap.presented = js_swap.index;
-	js_swap.presentCount++;
-	js_swap.index = (js_swap.index + 1) % js_swap.count;
+	if( sc->count == 0 ) return;
+	sc->presented = sc->index;
+	sc->presentCount++;
+	sc->index = (sc->index + 1) % sc->count;
 }
 
 static hl_shim::Register js_reg_resize("resize", hl_shim::wrap<&js_resize>());
@@ -108,10 +142,10 @@ static hl_shim::Register js_reg_command_queue_present("command_queue_present", h
 
 // ---- page access to the back buffers
 
-static int js_back_buffer_count() { return js_swap.count; }
-static HANDLE js_back_buffer_handle( int index ) { return index >= 0 && index < js_swap.count ? js_swap.handles[index] : NULL; }
-static int js_presented_buffer() { return js_swap.presented; }
-static int js_present_count() { return js_swap.presentCount; }
+static int js_back_buffer_count() { return js_current()->count; }
+static HANDLE js_back_buffer_handle( int index ) { js_swapchain *sc = js_current(); return index >= 0 && index < sc->count ? sc->handles[index] : NULL; }
+static int js_presented_buffer() { return js_current()->presented; }
+static int js_present_count() { return js_current()->presentCount; }
 
 // The high performance GPU (as Chromium takes it with force_high_performance_gpu) : its index in
 // list_devices (the hardware adapters in the order of DXGI), -1 when it is unknown. The page passes

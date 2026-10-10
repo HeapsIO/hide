@@ -77,16 +77,10 @@ class Plugin {
 
 		var hidePath = getLibraryPath("hide");
 
-		var path = if (Context.defined("js")) {
-			hidePath+"/common.hxml";
-		} else if (Context.defined("hl")) {
-			hidePath+"/common-hl.hxml";
-		}
-		else {
+		if( !Context.defined("js") && !Context.defined("hl") )
 			Context.fatalError("Hide plugin only support js or hl targets", Context.currentPos());
-		}
 
-		for( f in sys.io.File.getContent(path).split("\n") ) {
+		for( f in sys.io.File.getContent(hidePath+"/common.hxml").split("\n") ) {
 			var f = StringTools.trim(f);
 			if( f == "" ) continue;
 			var pl = f.split(" ");
@@ -94,11 +88,6 @@ class Plugin {
 			switch( pl[0] ) {
 			case "-lib":
 				if( value == "heaps" ) continue;
-				if( value == "hxnodejs" ) {
-					// should be set with -cp or will conflict with macro code
-					if( !Context.defined("hxnodejs") ) Context.error("Please add -lib hxnodejs", Context.currentPos());
-					continue;
-				}
 				if ( value == "domkit" ) {
 					// should be set with -lib or will conflict with macro code
 					if (!Context.defined("domkit")) {
@@ -118,6 +107,17 @@ class Plugin {
 			default:
 			}
 		}
+
+		if( Context.defined("js") ) {
+			// should be set with -cp or will conflict with macro code
+			if( !Context.defined("hxnodejs") ) Context.error("Please add -lib hxnodejs", Context.currentPos());
+			for( d in ["js-classic", "js-unflatten", "editor", "multidriver"] )
+				C.define(d, "1");
+			C.addClassPath(hidePath+"/hide_js");
+			C.addClassPath(hidePath+"/hide_js/libs");
+		} else
+			C.addClassPath(hidePath+"/hide_hl");
+
 		for( e in EXCLUDES )
 			C.exclude(e);
 	}

@@ -3539,7 +3539,7 @@ class SceneEditor {
 	}
 
 	public function setWireframe(val = true) {
-		var engine = h3d.Engine.getCurrent();
+		var engine = scene.engine;
 		if( engine.driver.hasFeature(Wireframe) ) {
 			for( m in scene.s3d.getMaterials() ) {
 				if ( m.name == "$collider" )

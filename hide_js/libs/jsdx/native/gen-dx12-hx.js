@@ -113,7 +113,7 @@ rep(`	public static function create( win : Window, flags : DriverInitFlags, ?dev
 		var name = hl.Bytes.ofUcs2(deviceName);
 		var d = dxCreate(null, flags, name);
 		if( name != null ) name.free();
-		dx.Display.init(win);
+		dx.Display.init();
 		return d;
 	}`);
 
