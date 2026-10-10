@@ -181,7 +181,7 @@ class Cell {
 				];
 		case TInt, TFloat:
 			function setF( f : Formulas.Formula ) {
-				editor.beginChanges();
+				line.beginChanges();
 				editor.formulas.set(this, f);
 				line.evaluate();
 				editor.endChanges();
@@ -228,7 +228,7 @@ class Cell {
 					}
 					Reflect.setField(obj, pc.name, newVal);
 				}
-				editor.beginChanges();
+				line.beginChanges();
 				editor.changeObject(line, column, column.opt && pc == null ? null : obj);
 				editor.endChanges();
 				refresh();
@@ -303,7 +303,7 @@ class Cell {
 		}
 		#end
 		currentValue = Reflect.field(editObject, editColumn.name);
-		@:privateAccess line.searchText = null;
+		editor.searchTexts.delete(line.obj);
 
 		blurOff = true;
 		var html = valueHtml(column, Reflect.field(line.obj, column.name), line.table.getRealSheet(), line.obj, []);
@@ -2012,7 +2012,7 @@ class Cell {
 			focus();
 		case TTilePos:
 			// if we change a file that has moved, change it for all instances having the same file
-			editor.beginChanges();
+			table.beginChanges();
 			var change = false;
 			var oldV : cdb.Types.TilePos = currentValue;
 			var newV : cdb.Types.TilePos = newValue;
@@ -2039,9 +2039,12 @@ class Cell {
 	public function setValue( value : Dynamic ) {
 		var pe = getPolyEdit();
 		if( pe != null ) {
+			// the undo keeps the line before the change of the variant
+			line.beginChanges(editor.getCellMergeKey(line, column));
 			Reflect.setField(pe.obj, pe.col.name, value);
 			currentValue = value;
 			editor.changeObject(line, column, pe.obj);
+			editor.endChanges();
 			return;
 		}
 		currentValue = value;
@@ -2069,6 +2072,9 @@ class Cell {
 	}
 
 	public function editCustomType(typeName : String, ctValue : Dynamic, col : cdb.Data.Column, parentEl : Element, rightAnchor: Float, topAnchor : Float, depth : Int = 0) {
+		// edited in a copy : the value of the line changes once applied (the undo keeps it before)
+		if( depth == 0 && ctValue != null )
+			ctValue = haxe.Json.parse(haxe.Json.stringify(ctValue));
 		var customType = editor.base.getCustomType(typeName);
 
 		parentEl.empty();

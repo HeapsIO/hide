@@ -18,7 +18,6 @@ class Line extends Component {
 	// the cells are created (the line can be out of the DOM, see Table.render)
 	public var created(default, null) : Bool = false;
 	var headCreated = false;
-	var searchText : String;
 
 	public function new(table, columns, index, root) {
 		super(null,root);
@@ -117,14 +116,20 @@ class Line extends Component {
 		The text of the line, as displayed, for the search.
 	**/
 	public function getSearchText() : String {
-		if( searchText == null ) {
+		// the lines of properties share their object
+		if( table.displayMode != Table )
+			return element.get(0).textContent;
+		var cache = table.editor.searchTexts;
+		var text = cache.get(obj);
+		if( text == null ) {
 			var wasCreated = created;
 			create();
-			searchText = element.get(0).textContent;
+			text = element.get(0).textContent;
+			cache.set(obj, text);
 			if( !wasCreated && !row.attached )
 				removeCells();
 		}
-		return searchText;
+		return text;
 	}
 
 	public function syncClasses() {
@@ -134,6 +139,19 @@ class Line extends Component {
 
 	function syncLocClass() {
 		element.get(0).classList.toggle("locIgnored", Reflect.hasField(obj,cdb.Lang.IGNORE_EXPORT_FIELD));
+	}
+
+	/**
+		Call before modifying the line (or its sub lines), instead of `editor.beginChanges` : the undo only copies its root line.
+	**/
+	public function beginChanges( ?merge : String ) {
+		@:privateAccess table.editor.beginScope(getUndoScope(), merge);
+	}
+
+	// what a change of the line modifies : its root line
+	function getUndoScope() : Undo.UndoScope {
+		var root = getRootLine();
+		return Line(root.table.sheet, root.obj);
 	}
 
 	public function getGroupID() {
@@ -191,6 +209,10 @@ class Line extends Component {
 		Validates the line and updates the error and warning counts of its table, without touching the DOM.
 	**/
 	public function updateStatus() {
+		setStatus(table.editor.formulas.validateLine(table.getRealSheet(), index));
+	}
+
+	public function setStatus( status : Formulas.ValidationResult ) {
 		if (table.errors.get(this) != null) {
 			table.errors.remove(this);
 			table.errorCount--;
@@ -200,7 +222,7 @@ class Line extends Component {
 			table.warningCount--;
 		}
 
-		status = table.editor.formulas.validateLine(table.getRealSheet(), index);
+		this.status = status;
 		switch( status ) {
 			case null:
 			case Error(_):

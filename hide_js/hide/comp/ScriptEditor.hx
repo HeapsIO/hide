@@ -15,8 +15,10 @@ typedef GlobalsDef = haxe.DynamicAccess<{
 
 class ScriptCache {
 
+	// the result of the check of a script (true : error), by signature of the code and its context
 	var content : Map<String,Bool> = [];
 	var configSign : String;
+	var saveTimer : haxe.Timer;
 	public var files : Array<String>;
 	public var apiHash : String;
 	public var types : hscript.Checker.CheckerTypes;
@@ -28,9 +30,10 @@ class ScriptCache {
 		this.configSign = sign;
 		var key = hide.Ide.inst.localStorage.getItem("script_cache_key");
 		if( key == configSign ) {
-			var values = hide.Ide.inst.localStorage.getItem("script_cache_val").split(";");
-			for( v in values )
-				content.set(v,true);
+			for( v in (hide.Ide.inst.localStorage.getItem("script_cache_ok") ?? "").split(";") )
+				if( v != "" ) content.set(v,false);
+			for( v in (hide.Ide.inst.localStorage.getItem("script_cache_val") ?? "").split(";") )
+				if( v != "" ) content.set(v,true);
 		}
 	}
 
@@ -63,13 +66,24 @@ class ScriptCache {
 	public function setResult( hash : String, b : Bool ) {
 		if( content.get(hash) == b ) return;
 		content.set(hash, b);
-		var all = [];
-		for( key => b in content ) {
-			if( b )
-				all.push(key);
-		}
+		// written once for the checks of a refresh
+		if( saveTimer == null )
+			saveTimer = haxe.Timer.delay(save, 1000);
+	}
+
+	static inline var MAX_SAVED = 20000;
+
+	function save() {
+		saveTimer = null;
+		var errors = [], ok = [];
+		for( key => b in content )
+			(b ? errors : ok).push(key);
+		// the most recent ones
+		if( ok.length > MAX_SAVED ) ok = ok.slice(ok.length - MAX_SAVED);
+		if( errors.length > MAX_SAVED ) errors = errors.slice(errors.length - MAX_SAVED);
 		hide.Ide.inst.localStorage.setItem("script_cache_key", configSign);
-		hide.Ide.inst.localStorage.setItem("script_cache_val", all.join(";"));
+		hide.Ide.inst.localStorage.setItem("script_cache_val", errors.join(";"));
+		hide.Ide.inst.localStorage.setItem("script_cache_ok", ok.join(";"));
 	}
 
 	static var CONFIG_HASH = null;

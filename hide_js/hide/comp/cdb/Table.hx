@@ -363,7 +363,11 @@ class Table extends Component {
 		virtual = sheet.parent == null;
 		#end
 		if( virtual ) loadHeights();
-		editor.formulas.validateBatch(() -> for( l in lines ) l.updateStatus());
+		if( virtual ) {
+			var status = editor.getSheetStatus(sheet);
+			for( l in lines ) l.setStatus(status[l.index]);
+		} else
+			editor.formulas.validateBatch(() -> for( l in lines ) l.updateStatus());
 
 		refreshLinesStatus();
 
@@ -894,6 +898,29 @@ class Table extends Component {
 		}
 	}
 
+	/**
+		Call before modifying the lines of the table, instead of `editor.beginChanges` : the undo only copies the sheet
+		(the parent line for a sub table).
+	**/
+	public function beginChanges() {
+		@:privateAccess editor.beginScope(getUndoScope(false));
+	}
+
+	/**
+		Call before inserting, removing or moving lines or separators of the table : the undo keeps their positions.
+		The content of the other lines must not change.
+	**/
+	public function beginLinesChanges() {
+		@:privateAccess editor.beginScope(getUndoScope(true));
+	}
+
+	function getUndoScope( linesOnly : Bool ) : Undo.UndoScope {
+		var sub = Std.downcast(this, SubTable);
+		if( sub != null )
+			return @:privateAccess sub.cell.line.getUndoScope();
+		return linesOnly ? Lines(sheet) : Sheet(sheet);
+	}
+
 	public function getScope() : Array<{ s : cdb.Sheet, obj : Dynamic }> {
 		var scope = [];
 		var table = this;
@@ -1009,7 +1036,7 @@ class Table extends Component {
 		for( c in sheet.columns )
 			if( c.name == p ) {
 				var val = editor.base.getDefault(c, true, sheet);
-				editor.beginChanges();
+				beginChanges();
 				Reflect.setField(props, c.name, val);
 				editor.endChanges();
 				refresh();
@@ -1024,7 +1051,7 @@ class Table extends Component {
 	}
 
 	public function sortBy(col: cdb.Data.Column) {
-		editor.beginChanges();
+		beginLinesChanges();
 		var group : Array<Dynamic> = [];
 		var startIndex = 0;
 		function sort() {
@@ -1115,8 +1142,9 @@ class Table extends Component {
 			});
 			return;
 		}
-		editor.beginChanges();
-		sheet.newLine(index);
+		beginLinesChanges();
+		var obj = sheet.newLine(index);
+		editor.formulas.evaluateLine(getRealSheet(), obj);
 		editor.endChanges();
 		refresh();
 	}
@@ -1134,7 +1162,7 @@ class Table extends Component {
 		}
 		var toUpdate : Array<Line> = [for (lIdx in start...end) this.lines[lIdx]];
 
-		editor.beginChanges();
+		beginLinesChanges();
 		lines.sort((a, b) -> { return (a.index - b.index) * delta * -1; });
 
 		var range = { min: 100000, max: 0 };
@@ -1199,7 +1227,7 @@ class Table extends Component {
 		if( !canInsert() || displayMode != Table )
 			return;
 		var srcObj = sheet.lines[index];
-		editor.beginChanges();
+		beginLinesChanges();
 		var obj = sheet.newLine(index);
 		for(colId => c in columns ) {
 			var val = Reflect.field(srcObj, c.name);
@@ -1216,6 +1244,7 @@ class Table extends Component {
 				}
 			}
 		}
+		editor.formulas.evaluateLine(getRealSheet(), obj);
 		editor.endChanges();
 		refresh();
 		getRealSheet().sync();

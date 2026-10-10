@@ -185,6 +185,17 @@ class CdbTable extends hide.ui.View<{}> {
 		haxe.Timer.delay(() -> editor.cursor.update(), 1); // scroll
 	}
 
+	#if js
+	override function onRebuild() {
+		// the tabs are rebuilt (a sheet added, renamed, moved...) : the editor keeps its undo
+		var undoElts = @:privateAccess editor.undo.undoElts.copy();
+		var redoElts = @:privateAccess editor.undo.redoElts.copy();
+		super.onRebuild();
+		@:privateAccess editor.undo.undoElts = undoElts;
+		@:privateAccess editor.undo.redoElts = redoElts;
+	}
+	#end
+
 	function syncTabs() {
 		if( getTabCache() != tabCache || editor.getCurrentSheet() != currentSheet ) {
 			currentSheet = editor.getCurrentSheet();

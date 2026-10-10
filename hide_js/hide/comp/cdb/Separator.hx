@@ -77,7 +77,7 @@ class Separator extends Component {
 							label : p == null ? "(None)" : [for ( i in 0...(level + 1)) ""].join("  ")+p.data.title,
 							checked : p == this.parent,
 							click : function() {
-								table.editor.beginChanges();
+								table.beginLinesChanges();
 
 								var sepExpand : Array<Bool> = [];
 								for (i => _ in table.sheet.separators) {
@@ -143,7 +143,7 @@ class Separator extends Component {
 				}},
 				{ label : "", isSeparator : true },
 				{ label : "Remove", enabled : !table.sheet.props.hide, click : function() {
-					table.editor.beginChanges();
+					table.beginLinesChanges();
 					table.sheet.separators.splice(@:privateAccess table.separators.indexOf(this), 1);
 					table.editor.endChanges();
 					table.editor.refresh();
@@ -169,7 +169,7 @@ class Separator extends Component {
 				var prevTitle = data.title;
 				e.getThis().remove();
 
-				table.editor.beginChanges();
+				table.beginLinesChanges();
 				if( newTitle == "" ) newTitle = null;
 				if( newTitle == null )
 					Reflect.deleteField(data, "title");
