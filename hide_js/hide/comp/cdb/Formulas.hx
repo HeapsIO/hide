@@ -89,7 +89,14 @@ class Formulas {
 		Editor.refreshAll();
 	}
 
-	public function evaluateAll( ?sheet : cdb.Sheet ) {
+	/**
+		Evaluates the formulas of a new line of a sheet.
+	**/
+	public function evaluateLine( sheet : cdb.Sheet, obj : Dynamic ) {
+		evaluateAll(sheet, obj);
+	}
+
+	public function evaluateAll( ?sheet : cdb.Sheet, ?onlyObj : Dynamic ) {
 		if( !enable )
 			return;
 		currentMap = new Map();
@@ -103,7 +110,7 @@ class Formulas {
 					var def = Editor.getColumnProps(c).formula;
 					columns.push({ name : c.name, def : def, opt : c.opt });
 				}
-			for( o in s.getLines() ) {
+			for( o in (onlyObj != null ? [onlyObj] : s.getLines()) ) {
 				var omapped : Dynamic = null;
 				for( c in columns ) {
 					var fname : String = Reflect.field(o,c.name+"__f");

@@ -15,7 +15,6 @@ typedef UndoSheet = {
 }
 
 typedef UndoState = {
-	var data : Any;
 	var sheet : String;
 	var separatorsState: Map<String, Bool>;
 	var cursor : Cursor.CursorState;
@@ -65,8 +64,15 @@ class Editor extends Component {
 	var displayMode : Table.DisplayMode;
 	var changesDepth : Int = 0;
 	var api : EditorApi;
-	var undoState : Array<UndoState> = [];
-	var currentValue : Any;
+	var history : Undo;
+	// incremented when the data changes : the caches below are valid for a version
+	var dataVersion = 0;
+	// the texts of the lines for the search, by line object
+	var searchTexts = new js.lib.WeakMap<String>();
+	// the validation of the lines of the sheets (formulas.hx), by sheet name
+	var statusCache : Map<String, { version : Int, status : Array<Formulas.ValidationResult> }> = [];
+	// the version of the data when the formulas of a sheet were evaluated, by sheet name
+	var evaluatedVersion : Map<String, Int> = [];
 	var cdbTable : hide.view.CdbTable;
 	var separatorsState : Map<String, Bool> = [];
 	// the measured heights of the rows of the virtual tables, by sheet path
@@ -96,7 +102,8 @@ class Editor extends Component {
 		this.config = config;
 		this.cdbTable = cdbTable;
 		view = cast this.config.get("cdb.view");
-		undo = new hide.ui.UndoHistory(40);
+		undo = new hide.ui.UndoHistory(300);
+		history = new Undo(this);
 	}
 
 	public function getCurrentSheet() {
@@ -208,7 +215,6 @@ class Editor extends Component {
 
 		if( displayMode == null ) displayMode = Table;
 		DataFiles.load();
-		if( currentValue == null ) currentValue = api.copy();
 		refresh();
 
 		pendingScroll = getDisplayState("scroll") ?? 0;
@@ -765,7 +771,7 @@ class Editor extends Component {
 
 			var plainText = ide.getClipboard(electron.Clipboard.ClipboardType.Text);
 
-			beginChanges();
+			cursor.table.beginChanges();
 			for (c in targetCells) {
 				var col = c.column;
 				if (!c.table.canEditColumn(col.name) || isPasteImmutable(col))
@@ -779,8 +785,9 @@ class Editor extends Component {
 				toRefresh.push(c);
 			}
 
-			endChanges();
+			// the formulas are evaluated in the change
 			refresh();
+			endChanges();
 			return;
 		}
 
@@ -834,7 +841,7 @@ class Editor extends Component {
 
 		// Manage pasting one value into several cells
 		if (data.length == 1) {
-			beginChanges();
+			cursor.table.beginChanges();
 
 			// We copied one cell
 			if (schema.length == 1) {
@@ -871,13 +878,13 @@ class Editor extends Component {
 				}
 			}
 
-			endChanges();
 			refresh();
+			endChanges();
 			return;
 		}
 
 
-		beginChanges();
+		cursor.table.beginChanges();
 		var curPosY = Std.int(Math.max(0, cursor.y));
 		var curPosX = Std.int(Math.max(0, cursor.x));
 		for (d in data) {
@@ -919,7 +926,7 @@ class Editor extends Component {
 		if( cursor.selection == null )
 			return;
 
-		beginChanges();
+		if( cursor.x < 0 ) cursor.table.beginLinesChanges() else cursor.table.beginChanges();
 		cursor.selection.sort((el1, el2) -> { return el1.y1 == el2.y1 ? 0 : el1.y1 < el2.y1 ? 1 : -1; });
 		for (s in cursor.selection)
 			delete(s.x1, s.x2, s.y1, s.y2);
@@ -943,7 +950,7 @@ class Editor extends Component {
 
 		var needRefresh = false;
 		var modifiedLines = [];
-		beginChanges();
+		if( cursor.x < 0 ) cursor.table.beginLinesChanges() else cursor.table.beginChanges();
 		if( cursor.x < 0 ) {
 			// delete lines
 			var y = y2;
@@ -1014,7 +1021,7 @@ class Editor extends Component {
 	}
 
 	public function changeObject( line : Line, column : cdb.Data.Column, value : Dynamic ) {
-		beginChanges();
+		line.beginChanges(getCellMergeKey(line, column));
 		var prev = Reflect.field(line.obj, column.name);
 		if( value == null ) {
 			formulas.setForValue(line.obj, line.table.sheet, column, null);
@@ -1028,21 +1035,34 @@ class Editor extends Component {
 		endChanges();
 	}
 
+	// the successive changes of a cell are one undo
+	public function getCellMergeKey( line : Line, column : cdb.Data.Column ) {
+		return line.table.sheet.getPath() + "#" + line.index + "#" + column.name;
+	}
+
 	/**
 		Call before modifying the database, allow to group several changes together.
 		Allow recursion, only last endChanges() will trigger db save and undo point creation.
+		The undo keeps a copy of the whole database : use `Line.beginChanges`, `Table.beginChanges` or `Table.beginLinesChanges`
+		instead when the changes are limited to them. Use `structure` for the changes of columns or sheets.
 	**/
 	public function beginChanges( ?structure : Bool ) {
-		if (undoState.length >= @:privateAccess undo.maxHistoryCount)
-			undoState.pop();
+		beginScope(All);
+	}
+
+	/**
+		Call before modifying what `scope` covers (it must be called BEFORE : the undo copies it then).
+		The changes with the same `merge` key in a row are a single undo.
+	**/
+	function beginScope( scope : Undo.UndoScope, ?merge : String ) {
 		if( changesDepth == 0 )
-			undoState.unshift(getState());
+			history.begin(getState(), merge);
+		history.add(scope);
 		changesDepth++;
 	}
 
 	function getState() : UndoState {
 		return {
-			data : currentValue,
 			sheet : getCurrentSheet(),
 			separatorsState: separatorsState.copy(),
 			cursor : cursor.getState(),
@@ -1113,36 +1133,54 @@ class Editor extends Component {
 		changesDepth--;
 		if( changesDepth != 0 ) return;
 
-		var newValue = api.copy();
-		if( newValue == currentValue )
+		if( !history.end() )
 			return;
-		var state = undoState[0];
-		var newSheet = getCurrentSheet();
-		var newSaparatorsState = separatorsState;
-		currentValue = newValue;
+		dataChanged();
 		save();
-		undo.change(Custom(function(undo) {
-			var currentSheet;
-			if( undo ) {
-				undoState.shift();
-				currentValue = state.data;
-				currentSheet = state.sheet;
-				separatorsState = state.separatorsState;
-			} else {
-				undoState.unshift(state);
-				currentValue = newValue;
-				currentSheet = newSheet;
-				separatorsState = newSaparatorsState;
-			}
-			api.load(currentValue);
+	}
+
+	function dataChanged() {
+		dataVersion++;
+		searchTexts = new js.lib.WeakMap();
+	}
+
+	/**
+		The validation of the lines of a sheet, kept until the data changes.
+	**/
+	public function getSheetStatus( sheet : cdb.Sheet ) : Array<Formulas.ValidationResult> {
+		var c = statusCache.get(sheet.name);
+		if( c != null && c.version == dataVersion && c.status.length == sheet.lines.length )
+			return c.status;
+		var status = [];
+		formulas.validateBatch(() -> for( i in 0...sheet.lines.length ) status.push(formulas.validateLine(sheet, i)));
+		statusCache.set(sheet.name, { version : dataVersion, status : status });
+		return status;
+	}
+
+	/**
+		Instead of `endChanges` for the first level of changes : restores the data as it was before them, without undo.
+	**/
+	public function cancelChanges() {
+		changesDepth--;
+		if( changesDepth != 0 ) throw "cancelChanges must end the first level of changes";
+		history.cancel();
+	}
+
+	// the data was changed by an undo or a redo
+	function onUndoApplied( sheet : String, sepState : Map<String,Bool>, state : UndoState, reloaded : Bool ) {
+		separatorsState = sepState;
+		dataChanged();
+		// the data is restored as it was, formulas included
+		for( s in base.sheets )
+			evaluatedVersion.set(s.name, dataVersion);
+		if( reloaded )
 			DataFiles.save(true); // save reloaded data
-			element.removeClass("is-cdb-editor");
-			refreshAll();
-			element.addClass("is-cdb-editor");
-			syncSheet(currentSheet);
-			refresh(state);
-			save();
-		}));
+		element.removeClass("is-cdb-editor");
+		refreshAll(false, reloaded);
+		element.addClass("is-cdb-editor");
+		syncSheet(sheet);
+		refresh(state);
+		save();
 	}
 
 	static var runningHooks = false;
@@ -1242,16 +1280,18 @@ class Editor extends Component {
 			DataFiles.load();
 		inRefreshAll = true;
 		for( e in editors ) {
+			e.dataChanged();
 			e.syncSheet(Ide.inst.database);
 			e.refresh();
 			// prevent undo over input changes
 			if( eraseUndo ) {
-				e.currentValue = e.api.copy();
 				e.undo.clear();
-				e.undoState = [];
+				e.history.clear();
 			}
 		}
 		inRefreshAll = false;
+		for( v in Ide.inst.getViews(hide.view.CdbCustomTypes) )
+			v.onDatabaseChanged();
 	}
 
 	public function getCursorId(?sheet, ?childOnly = false): String {
@@ -1666,7 +1706,11 @@ class Editor extends Component {
 
 		formulas = new Formulas(this);
 		formulas.enable = ide.ideConfig.enableDBFormulas;
-		formulas.evaluateAll(currentSheet.realSheet);
+		// the formulas give the same values while the data does not change
+		if( evaluatedVersion.get(currentSheet.name) != dataVersion ) {
+			formulas.evaluateAll(currentSheet.realSheet);
+			evaluatedVersion.set(currentSheet.name, dataVersion);
+		}
 
 		var content = new Element("<table>");
 		tables = [];
@@ -2181,7 +2225,7 @@ class Editor extends Component {
 				label : "Delete",
 				click : function () {
 					if( table.displayMode == Properties ) {
-						beginChanges();
+						cell.line.beginChanges();
 						changeObject(cell.line, col, base.getDefault(col,sheet));
 					} else {
 						beginChanges(true);
@@ -2199,14 +2243,14 @@ class Editor extends Component {
 			switch( col.type ) {
 			case TString, TRef(_):
 				menu.push({ label : "Display Name", click : function() {
-					beginChanges();
+					table.beginChanges();
 					props.displayColumn = (props.displayColumn == col.name ? null : col.name);
 					endChanges();
 					refresh();
 				}, checked: props.displayColumn == col.name });
 			case TTilePos:
 				menu.push({ label : "Display Icon", click : function() {
-					beginChanges();
+					table.beginChanges();
 					props.displayIcon = (props.displayIcon == col.name ? null : col.name);
 					endChanges();
 					refresh();
@@ -2396,7 +2440,7 @@ class Editor extends Component {
 				focus();
 			}, keys : config.get("key.duplicate") },
 			{ label : "Delete", click : function() {
-				beginChanges();
+				line.table.beginChanges();
 				if (cursor.selection == null) {
 					line.table.sheet.deleteLine(line.index);
 					line.table.refresh();
@@ -2409,7 +2453,7 @@ class Editor extends Component {
 				endChanges();
 			} },
 			{ label : "Separator", enabled : !sheet.props.hide, checked : sepIndex >= 0, click : function() {
-				beginChanges();
+				line.table.beginLinesChanges();
 				if( sepIndex >= 0 ) {
 					sheet.separators.splice(sepIndex, 1);
 				} else {
@@ -2438,7 +2482,7 @@ class Editor extends Component {
 				label : "Export Localized Texts",
 				checked : !Reflect.hasField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD),
 				click : function() {
-					beginChanges();
+					line.table.beginChanges();
 					var selectedLines = cursor.getSelectedLines();
 					for (line in selectedLines) {
 						if( Reflect.hasField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD) )
@@ -2546,8 +2590,10 @@ class Editor extends Component {
 	public function createDBSheet( ?index : Int ) {
 		var value = ide.ask("Sheet name");
 		if( value == "" || value == null ) return null;
+		beginChanges(true);
 		var s = ide.database.createSheet(value);
 		if( s == null ) {
+			endChanges();
 			ide.error("Name already exists");
 			return null;
 		}
@@ -2562,7 +2608,7 @@ class Editor extends Component {
 			props.index = index + 1;
 			sheets[idx].props.editor = props;
 		}
-		ide.saveDatabase();
+		endChanges();
 		refreshAll();
 		return s;
 	}
@@ -2623,35 +2669,31 @@ class Editor extends Component {
 		if( sheet.props.dataFiles == null )
 			content = content.concat([
 				{ label : "Add Index", checked : sheet.props.hasIndex, click : function() {
-					beginChanges();
+					if( !sheet.props.hasIndex && Lambda.exists(sheet.columns, c -> c.name == "index") ) {
+						ide.error("Column 'index' already exists");
+						return;
+					}
+					beginChanges(true);
 					if( sheet.props.hasIndex ) {
 						for( o in sheet.getLines() )
 							Reflect.deleteField(o, "index");
 						sheet.props.hasIndex = false;
-					} else {
-						for( c in sheet.columns )
-							if( c.name == "index" ) {
-								ide.error("Column 'index' already exists");
-								return;
-							}
+					} else
 						sheet.props.hasIndex = true;
-					}
 					endChanges();
 				}},
 				{ label : "Add Group", checked : sheet.props.hasGroup, click : function() {
-					beginChanges();
+					if( !sheet.props.hasGroup && Lambda.exists(sheet.columns, c -> c.name == "group") ) {
+						ide.error("Column 'group' already exists");
+						return;
+					}
+					beginChanges(true);
 					if( sheet.props.hasGroup ) {
 						for( o in sheet.getLines() )
 							Reflect.deleteField(o, "group");
 						sheet.props.hasGroup = false;
-					} else {
-						for( c in sheet.columns )
-							if( c.name == "group" ) {
-								ide.error("Column 'group' already exists");
-								return;
-							}
+					} else
 						sheet.props.hasGroup = true;
-					}
 					endChanges();
 				}},
 			]);
