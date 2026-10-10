@@ -21,6 +21,22 @@ class Table extends Component {
 	var separators : Array<Separator>;
 	var previewDrop : Element;
 
+	// the rows of the main table are virtual : only the ones in the view are in the DOM
+	var virtual = false;
+	var tbody : Element;
+	var rows : Array<Row> = [];
+	var attached : Array<Row> = [];
+	var materialized : Array<Line> = [];
+	var spacers : Array<js.html.Element> = [];
+	var rowsLock = 0;
+	var rowsDirty = false;
+	var renderPending = false;
+	var lineHeight = 24.;
+	var sepHeight = 26.;
+	var bodyObserver : hide.comp.ResizeObserver;
+	// the sheet path, kept : the sheet is no longer valid once the database is reloaded (undo)
+	var heightsKey : String;
+
 	public var nestedIndex : Int = 0;
 
 	var resizeObserver : hide.comp.ResizeObserver;
@@ -99,10 +115,22 @@ class Table extends Component {
 
 	public function dispose() {
 		editor.tables.remove(this);
+		renderPending = false;
+		#if js
+		if( resizeObserver != null ) resizeObserver.disconnect();
+		if( bodyObserver != null ) bodyObserver.disconnect();
+		#end
 	}
 
 	public function refresh() {
+		// emptied, the table loses the scroll position : it is restored once the rows are back
+		var scroll = virtual ? editor.element.get(0) : null;
+		var scrollTop = scroll?.scrollTop;
+		saveHeights();
 		element.empty();
+		rows = [];
+		attached = [];
+		spacers = [];
 		columns = view == null || view.show == null ? sheet.columns : [for( c in sheet.columns ) if( view.show.indexOf(c.name) >= 0 ) c];
 		if( !editor.showGUIDs ) {
 			var cols = null;
@@ -119,6 +147,42 @@ class Table extends Component {
 		case Properties, AllProperties:
 			refreshProperties();
 		}
+		if( scroll != null && virtual )
+			restoreScroll(scrollTop);
+	}
+
+	/**
+		Keeps the measured heights of the rows (by index) for the next table of the same sheet, so that it is laid out like this one.
+	**/
+	function saveHeights() {
+		if( !virtual || lines == null || separators == null ) return;
+		editor.rowHeights.set(heightsKey, {
+			lines : [for( l in lines ) l.row.height],
+			seps : [for( s in separators ) s.row.height],
+			line : lineHeight,
+			sep : sepHeight,
+		});
+	}
+
+	function loadHeights() {
+		heightsKey = sheet.getPath();
+		var h = editor.rowHeights.get(heightsKey);
+		if( h == null ) return;
+		lineHeight = h.line;
+		sepHeight = h.sep;
+		for( i => l in lines )
+			if( i < h.lines.length ) l.row.height = h.lines[i];
+		for( i => s in separators )
+			if( i < h.seps.length ) s.row.height = h.seps[i];
+	}
+
+	public function restoreScroll( scrollTop : Int ) {
+		#if js
+		var scroll = editor.element.get(0);
+		if( scroll.scrollTop == scrollTop ) return;
+		scroll.scrollTop = scrollTop;
+		render();
+		#end
 	}
 
 	function setupTableElement() {
@@ -215,101 +279,10 @@ class Table extends Component {
 				return;
 			});
 		}
-		lines = [for( index in 0...sheet.lines.length ) {
-			var l = J("<tr>");
-			var head = J("<td>").addClass("start").text("" + index);
-			head.appendTo(l);
-			var line = new Line(this, columns, index, l);
-			head.contextmenu(function(e) {
-				editor.popupLine(line);
-				e.preventDefault();
-				return;
-			});
-			l.click(function(e) {
-				if( e.which == 3 ) {
-					e.preventDefault();
-					return;
-				}
-				editor.cursor.clickLine(line, e.shiftKey, e.ctrlKey);
-			});
-			#if js
 
-			var headEl = head.get(0);
-			headEl.draggable = true;
-			headEl.ondragstart = function(e:js.html.DragEvent) {
-				if (editor.cursor.getCell() != null && editor.cursor.getCell().inEdit) {
-					e.preventDefault();
-					return;
-				}
-				ide.registerUpdate(updateDragScroll);
-				currentDragIndex = line.index;
-				e.dataTransfer.setData(reorderLineKey, Std.string(line.index));
-				e.dataTransfer.effectAllowed = "move";
-				e.dataTransfer.setDragImage(l.get(0), 0, 0);
-				previewDrop.show();
-			}
-
-			headEl.ondrag = function(e:js.html.DragEvent) {
-				if (hxd.Key.isDown(hxd.Key.ESCAPE)) {
-					e.dataTransfer.dropEffect = "none";
-					e.preventDefault();
-				}
-
-				var pickedLine = getPickedLine(e);
-				if (pickedLine != null) {
-					var lineEl = editor.getLine(line.table.sheet, pickedLine.index).element;
-					previewDrop.css("top",'${lineEl.position().top}px');
-				}
-			}
-
-			var dragOver = function(e:js.html.DragEvent) {
-				if (!e.dataTransfer.types.contains(reorderLineKey)) {
-					return;
-				}
-
-				if (currentDragIndex < 0)
-					return;
-
-				ide.mouseX = e.clientX;
-				ide.mouseY = e.clientY;
-
-				e.preventDefault();
-				e.stopPropagation();
-
-				previewDrop.css("top",'${line.index > currentDragIndex ? l.position().top + l.height() : l.position().top}px');
-			}
-
-			var lineEl = l.get(0);
-			lineEl.ondragover = dragOver;
-			lineEl.ondragenter = dragOver;
-
-			lineEl.ondrop = function(e:js.html.DragEvent) {
-				if (currentDragIndex < 0)
-					return;
-
-				if (!e.dataTransfer.types.contains(reorderLineKey)) {
-					return;
-				}
-				e.preventDefault();
-				e.stopPropagation();
-
-				var selection = editor.cursor.getSelectedAreaIncludingLine(line.table.lines[currentDragIndex]);
-				if (selection != null) {
-					moveLinesTo(editor.cursor.getLinesFromSelection(selection), line.index);
-					return;
-				}
-
-				line.table.moveLinesTo([line.table.lines[currentDragIndex]], line.index);
-			}
-
-			headEl.ondragend = function(e:js.html.DragEvent) {
-				ide.unregisterUpdate(updateDragScroll);
-				previewDrop.hide();
-				currentDragIndex = -1;
-			}
-			#end
-			line;
-		}];
+		// the cells of the lines are created when they are displayed, see render()
+		lines = [for( index in 0...sheet.lines.length ) new Line(this, columns, index, J("<tr>"))];
+		materialized = [];
 
 		var colCount = columns.length;
 
@@ -342,7 +315,7 @@ class Table extends Component {
 
 		element.append(cols);
 
-		var tbody = J("<tbody>");
+		tbody = J("<tbody>");
 
 		var sepIndex = -1;
 		var sepNext = sheet.separators[++sepIndex];
@@ -350,7 +323,7 @@ class Table extends Component {
 		for( i in 0...lines.length ) {
 			// Create the separator of this index if there is one
 			while( sepNext != null && sepNext.index == i ) {
-				var sep = new Separator(tbody, this, sepNext);
+				var sep = new Separator(this, sepNext);
 
 				// Create children relation between separators
 				var prevSep = separators[separators.length - 1];
@@ -381,23 +354,23 @@ class Table extends Component {
 				}
 
 				separators.push(sep);
-				sep.element.appendTo(tbody);
 				sepNext = sheet.separators[++sepIndex];
 			}
 
-			// Create lines
-			var parentSep = separators.length > 0 ? separators[separators.length - 1] : null;
-			var line = lines[i];
-			line.create();
-			if (parentSep != null && !parentSep.getLinesVisiblity())
-				line.hide();
-			tbody.append(line.element);
+			lines[i].separator = separators[separators.length - 1];
 		}
+		#if js
+		virtual = sheet.parent == null;
+		#end
+		if( virtual ) loadHeights();
+		editor.formulas.validateBatch(() -> for( l in lines ) l.updateStatus());
 
 		refreshLinesStatus();
 
-		for (s in separators)
-			s.refresh(false);
+		lockRows(function() {
+			for (s in separators)
+				s.refresh(false);
+		});
 
 		element.append(tbody);
 
@@ -427,10 +400,469 @@ class Table extends Component {
 			if (resizeObserver != null) {
 				resizeObserver.disconnect();
 			}
-			resizeObserver = new hide.comp.ResizeObserver((_,_) -> setupTableElement());
+			resizeObserver = new hide.comp.ResizeObserver((_,_) -> {
+				setupTableElement();
+				scheduleRender();
+			});
 			resizeObserver.observe(editor.element.parent().get(0));
+
+			// a sub table opened or closed, an image loaded... : the rows around the view change
+			if( bodyObserver != null )
+				bodyObserver.disconnect();
+			bodyObserver = new hide.comp.ResizeObserver((_,_) -> scheduleRender());
+			bodyObserver.observe(tbody.get(0));
 		}
 		#end
+
+		refreshRows();
+	}
+
+	function createLineHead( line : Line ) {
+		var l = line.element;
+		var head = J("<td>").addClass("start").text("" + line.index);
+		l.prepend(head);
+		head.contextmenu(function(e) {
+			editor.popupLine(line);
+			e.preventDefault();
+			return;
+		});
+		l.click(function(e) {
+			if( e.which == 3 ) {
+				e.preventDefault();
+				return;
+			}
+			editor.cursor.clickLine(line, e.shiftKey, e.ctrlKey);
+		});
+		#if js
+
+		var headEl = head.get(0);
+		headEl.draggable = true;
+		headEl.ondragstart = function(e:js.html.DragEvent) {
+			if (editor.cursor.getCell() != null && editor.cursor.getCell().inEdit) {
+				e.preventDefault();
+				return;
+			}
+			ide.registerUpdate(updateDragScroll);
+			currentDragIndex = line.index;
+			e.dataTransfer.setData(reorderLineKey, Std.string(line.index));
+			e.dataTransfer.effectAllowed = "move";
+			e.dataTransfer.setDragImage(l.get(0), 0, 0);
+			previewDrop.show();
+		}
+
+		headEl.ondrag = function(e:js.html.DragEvent) {
+			if (hxd.Key.isDown(hxd.Key.ESCAPE)) {
+				e.dataTransfer.dropEffect = "none";
+				e.preventDefault();
+			}
+
+			var pickedLine = getPickedLine(e);
+			if (pickedLine != null) {
+				var lineEl = editor.getLine(line.table.sheet, pickedLine.index).element;
+				previewDrop.css("top",'${lineEl.position().top}px');
+			}
+		}
+
+		var dragOver = function(e:js.html.DragEvent) {
+			if (!e.dataTransfer.types.contains(reorderLineKey)) {
+				return;
+			}
+
+			if (currentDragIndex < 0)
+				return;
+
+			ide.mouseX = e.clientX;
+			ide.mouseY = e.clientY;
+
+			e.preventDefault();
+			e.stopPropagation();
+
+			previewDrop.css("top",'${line.index > currentDragIndex ? l.position().top + l.height() : l.position().top}px');
+		}
+
+		var lineEl = l.get(0);
+		lineEl.ondragover = dragOver;
+		lineEl.ondragenter = dragOver;
+
+		lineEl.ondrop = function(e:js.html.DragEvent) {
+			if (currentDragIndex < 0)
+				return;
+
+			if (!e.dataTransfer.types.contains(reorderLineKey)) {
+				return;
+			}
+			e.preventDefault();
+			e.stopPropagation();
+
+			var selection = editor.cursor.getSelectedAreaIncludingLine(line.table.lines[currentDragIndex]);
+			if (selection != null) {
+				moveLinesTo(editor.cursor.getLinesFromSelection(selection), line.index);
+				return;
+			}
+
+			line.table.moveLinesTo([line.table.lines[currentDragIndex]], line.index);
+		}
+
+		headEl.ondragend = function(e:js.html.DragEvent) {
+			ide.unregisterUpdate(updateDragScroll);
+			previewDrop.hide();
+			currentDragIndex = -1;
+		}
+		#end
+	}
+
+	function onLineCreated( line : Line ) {
+		materialized.push(line);
+		// created out of the view (copy, paste...) : its cells are removed by the next render
+		if( !line.row.attached )
+			scheduleRender();
+	}
+
+	/**
+		Rebuilds the list of the displayed rows (lines and separators) after a change of filter or of group state, then renders them.
+	**/
+	public function refreshRows() {
+		if( lines == null || separators == null || displayMode != Table )
+			return;
+		if( rowsLock > 0 ) {
+			rowsDirty = true;
+			return;
+		}
+		for( r in rows )
+			r.index = -1;
+		rows = [];
+		var sepIndex = 0;
+		for( l in lines ) {
+			while( sepIndex < separators.length && separators[sepIndex].data.index == l.index ) {
+				var s = separators[sepIndex++];
+				if( s.isDisplayed() ) {
+					s.row.index = rows.length;
+					rows.push(s.row);
+				}
+			}
+			l.displayed = !l.filtered && (l.separator == null || l.separator.getLinesVisiblity()) && !l.isForbidden();
+			if( l.displayed ) {
+				l.row.index = rows.length;
+				rows.push(l.row);
+			}
+		}
+		render();
+	}
+
+	/**
+		Groups the changes of displayed rows made by `f` into a single refreshRows().
+	**/
+	public function lockRows( f : Void -> Void ) {
+		rowsLock++;
+		f();
+		rowsLock--;
+		if( rowsLock == 0 && rowsDirty ) {
+			rowsDirty = false;
+			refreshRows();
+		}
+	}
+
+	public function scheduleRender() {
+		#if js
+		if( renderPending || !virtual ) return;
+		renderPending = true;
+		js.Browser.window.requestAnimationFrame((_) -> if( renderPending ) render());
+		#end
+	}
+
+	inline function rowHeight( r : Row ) {
+		return r.height >= 0 ? r.height : r.line != null ? lineHeight : sepHeight;
+	}
+
+	// the rows which stay in the DOM out of the view
+	function isPinned( r : Row ) {
+		var l = r.line;
+		if( l == null ) return false;
+		if( l.subTable != null ) return true;
+		for( c in l.cells )
+			if( c.inEdit ) return true;
+		return false;
+	}
+
+	/**
+		Puts in the DOM the rows which are in the view (with a margin around it) and the pinned rows (an open sub table,
+		a cell in edition) ; the other rows are replaced by spacers of the same height.
+		A table which is not virtual has all its rows in the DOM.
+	**/
+	public function render() {
+		renderPending = false;
+		if( rows == null || tbody == null ) return;
+		#if js
+		var body = tbody.get(0);
+		var scroll = editor.element.get(0);
+		// out of the document, the rows can not be measured : the body observer renders them once it is in
+		if( virtual && !body.isConnected ) return;
+		var attachedNew = false;
+
+		// the view stays on the row at its top, at the same distance : the heights of the rows above it can change
+		// (measured, or a new estimate for the rows never shown)
+		var viewH = scroll.clientHeight;
+		var bodyTop = 0.;
+		var anchor : Row = null;
+		var anchorOffset = 0.;
+		if( virtual ) {
+			bodyTop = body.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop;
+			var viewTop = scroll.scrollTop - bodyTop;
+			var y = 0.;
+			for( r in rows ) {
+				var h = rowHeight(r);
+				if( y + h > viewTop ) {
+					anchor = r;
+					anchorOffset = viewTop - y;
+					break;
+				}
+				y += h;
+			}
+		}
+
+		for( pass in 0...4 ) {
+			var top = Math.NEGATIVE_INFINITY, bottom = Math.POSITIVE_INFINITY;
+			if( virtual ) {
+				top = anchor == null ? scroll.scrollTop - bodyTop : getRowY(anchor) + anchorOffset;
+				bottom = top + viewH;
+				var margin = Math.max(viewH * 0.5, 300);
+				top -= margin;
+				bottom += margin;
+			}
+
+			// the rows to show
+			var want = [];
+			var y = 0.;
+			var first = -1;
+			for( r in rows ) {
+				var h = rowHeight(r);
+				var w = y + h > top && y < bottom;
+				if( w && first < 0 ) first = r.index;
+				want.push(w || isPinned(r));
+				y += h;
+			}
+			// the group of the first row stays, so that its title sticks at the top of the view
+			var i = first - 1;
+			while( i >= 0 ) {
+				if( rows[i].sep != null ) {
+					want[i] = true;
+					break;
+				}
+				i--;
+			}
+
+			// remove the rows which are no longer shown
+			for( r in attached.copy() )
+				if( r.index < 0 || !want[r.index] )
+					detachRow(r);
+			for( s in spacers )
+				if( s.parentNode != null ) s.parentNode.removeChild(s);
+			for( l in materialized.copy() )
+				if( !l.row.attached )
+					l.removeCells();
+
+			// insert the rows in order, and the spacers between them
+			var cur = body.firstChild;
+			var gap = 0.;
+			var spacerCount = 0;
+			var shown : Array<Row> = [];
+			for( r in rows ) {
+				if( !want[r.index] ) {
+					gap += rowHeight(r);
+					continue;
+				}
+				if( gap > 0 ) {
+					body.insertBefore(getSpacer(spacerCount++, gap), cur);
+					shown.push(null);
+					gap = 0;
+				}
+				var e = r.getElement();
+				if( !r.attached ) {
+					r.attached = true;
+					attached.push(r);
+					attachedNew = true;
+					if( r.line != null ) r.line.create();
+					body.insertBefore(e, cur);
+				} else if( e != cur ) {
+					// the elements inserted after the row (sub table...) move with it
+					var extra = [];
+					var n = e.nextSibling;
+					while( n != null && !isRowElement(n) ) {
+						extra.push(n);
+						n = n.nextSibling;
+					}
+					body.insertBefore(e, cur);
+					for( x in extra ) body.insertBefore(x, cur);
+				} else {
+					cur = e.nextSibling;
+					while( cur != null && !isRowElement(cur) )
+						cur = cur.nextSibling;
+				}
+				shown.push(r);
+			}
+			if( gap > 0 ) {
+				body.insertBefore(getSpacer(spacerCount++, gap), cur);
+				shown.push(null);
+			}
+
+			if( !virtual ) break;
+
+			// measure the rows : their heights give the heights of the spacers
+			var changed = false;
+			var spacerIndex = 0;
+			var tops = [for( r in shown ) r == null ? spacers[spacerIndex++].offsetTop : r.getElement().offsetTop];
+			var end = body.offsetTop + body.offsetHeight;
+			for( k => r in shown ) {
+				if( r == null ) continue;
+				var h = (k + 1 < tops.length ? tops[k + 1] : end) - tops[k];
+				if( h <= 0 || Math.abs(h - r.height) <= 0.5 ) continue;
+				changed = true;
+				r.height = h;
+				if( r.sep != null )
+					sepHeight = h;
+			}
+			if( !changed ) break;
+
+			// the lines which were never shown have the average height of the measured ones
+			var sum = 0., count = 0;
+			for( r in rows )
+				if( r.line != null && r.height >= 0 && r.line.subTable == null ) {
+					sum += r.height;
+					count++;
+				}
+			if( count > 0 )
+				lineHeight = sum / count;
+		}
+
+		if( anchor != null ) {
+			var want = bodyTop + getRowY(anchor) + anchorOffset;
+			if( Math.abs(scroll.scrollTop - want) >= 1 )
+				scroll.scrollTop = Math.round(want);
+		}
+		if( attachedNew && editor.cursor.table != null )
+			editor.cursor.update(false);
+		#end
+	}
+
+	function detachRow( r : Row ) {
+		attached.remove(r);
+		if( r.line != null ) {
+			r.line.unrender();
+			return;
+		}
+		var e = r.getElement();
+		if( e.parentNode != null ) e.parentNode.removeChild(e);
+		r.attached = false;
+	}
+
+	static function isRowElement( n : js.html.Node ) {
+		return (n : Dynamic).__cdbRow == true || (n : Dynamic).__cdbSpacer == true;
+	}
+
+	function getSpacer( index : Int, height : Float ) {
+		var s = spacers[index];
+		if( s == null ) {
+			s = js.Browser.document.createTableRowElement();
+			(s : Dynamic).__cdbSpacer = true;
+			s.className = "cdb-spacer";
+			var td = js.Browser.document.createTableCellElement();
+			td.colSpan = columns.length + 1;
+			s.appendChild(td);
+			spacers[index] = s;
+		}
+		(cast s.firstChild : js.html.Element).style.height = height + "px";
+		return s;
+	}
+
+	// the position of a displayed row in the body of the table
+	function getRowY( row : Row ) {
+		var y = 0.;
+		for( r in rows ) {
+			if( r == row ) break;
+			y += rowHeight(r);
+		}
+		return y;
+	}
+
+	// the position of a displayed row in the content of the scroll
+	function getRowTop( row : Row ) {
+		var scroll = editor.element.get(0);
+		return tbody.get(0).getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop + getRowY(row);
+	}
+
+	/**
+		Scrolls the view to a line of the table which is out of the DOM, and renders it.
+	**/
+	public function revealRow( line : Line ) {
+		#if js
+		if( !virtual || line.row.index < 0 || line.row.attached ) return;
+		var scroll = editor.element.get(0);
+		scroll.scrollTop = Std.int(getRowTop(line.row) - scroll.clientHeight * 0.5);
+		render();
+		// the row is measured now : center it
+		if( line.row.attached ) {
+			var r = line.element.get(0).getBoundingClientRect();
+			var v = scroll.getBoundingClientRect();
+			scroll.scrollTop += Std.int((r.top + r.height * 0.5) - (v.top + v.height * 0.5));
+			render();
+		}
+		#end
+	}
+
+	/**
+		The first line in the view, and the distance from its top to the top of the view : the position of the view
+		which does not depend on the heights of the rows above.
+	**/
+	public function getViewLine() : { line : Int, offset : Float } {
+		#if js
+		if( !virtual ) return null;
+		var viewTop = editor.element.get(0).getBoundingClientRect().top;
+		var best : Row = null;
+		var bestTop = 0.;
+		for( r in attached ) {
+			if( r.line == null || r.index < 0 ) continue;
+			var b = r.getElement().getBoundingClientRect();
+			if( b.bottom > viewTop && (best == null || b.top < bestTop) ) {
+				best = r;
+				bestTop = b.top;
+			}
+		}
+		return best == null ? null : { line : best.line.index, offset : viewTop - bestTop };
+		#else
+		return null;
+		#end
+	}
+
+	public function scrollToLine( index : Int, offset : Float ) {
+		#if js
+		var l = lines[index];
+		if( !virtual || l == null || l.row.index < 0 ) return;
+		var scroll = editor.element.get(0);
+		scroll.scrollTop = Std.int(getRowTop(l.row) + offset);
+		render();
+		#end
+	}
+
+	/**
+		The index of the displayed line which is `delta` displayed lines away from `index`, the first displayed line when there
+		are not enough before it. When there are not enough after it, the last displayed line if `clamp` is set, -1 otherwise.
+	**/
+	public function moveDisplayed( index : Int, delta : Int, clamp = false ) : Int {
+		var step = delta < 0 ? -1 : 1;
+		var n = delta < 0 ? -delta : delta;
+		var i = index;
+		var found = index;
+		while( n > 0 ) {
+			i += step;
+			if( i < 0 || i >= lines.length ) break;
+			if( lines[i].displayed ) {
+				found = i;
+				n--;
+			}
+		}
+		if( n > 0 && step > 0 && !clamp )
+			return -1;
+		return found;
 	}
 
 	function getPickedLine(e : js.html.DragEvent) {
@@ -795,5 +1227,25 @@ class Table extends Component {
 		@:privateAccess editor.cdbTable.warningCountEl.text(warningCount);
 		@:privateAccess editor.cdbTable.errorCountEl.text(errorCount);
 		@:privateAccess editor.cdbTable.regularCountEl.text(lines.length - (errorCount + warningCount));
+	}
+}
+@:allow(hide.comp.cdb)
+class Row {
+	public var line(default, null) : Line;
+	public var sep(default, null) : Separator;
+	// position in the displayed rows of the table, -1 if not displayed
+	public var index = -1;
+	// measured height, -1 if not measured yet
+	public var height = -1.;
+	public var attached = false;
+
+	public function new( line, sep ) {
+		this.line = line;
+		this.sep = sep;
+		(getElement() : Dynamic).__cdbRow = true;
+	}
+
+	public inline function getElement() : js.html.Element {
+		return (line != null ? line.element : sep.element).get(0);
 	}
 }

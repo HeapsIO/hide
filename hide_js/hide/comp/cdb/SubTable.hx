@@ -61,6 +61,9 @@ class SubTable extends Table {
 		insertedTR.data("parent-cell", cell);
 		insertedTR.data("parent-tr", cell.line.element);
 
+		// the line stays in the DOM while its sub table is open
+		if( !line.row.attached )
+			parent.render();
 		insertedTR.insertAfter(cell.line.element);
 		cell.elementHtml.textContent = "...";
 		cell.elementHtml.classList.add("parent-sub-table");

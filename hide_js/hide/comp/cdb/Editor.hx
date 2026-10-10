@@ -51,6 +51,8 @@ enum FilterFlag {
 typedef FilterFlags = haxe.EnumFlags<FilterFlag>;
 
 @:allow(hide.comp.cdb)
+@:access(hide.comp.cdb.Table)
+@:access(hide.comp.cdb.Separator)
 class Editor extends Component {
 	static var CLIPBOARD_PREFIX = "[CDB_FORMAT]";
 	static var COMPARISON_EXPR_CHARS = ["!=", ">=", "<=", "==", "<", ">"];
@@ -67,6 +69,10 @@ class Editor extends Component {
 	var currentValue : Any;
 	var cdbTable : hide.view.CdbTable;
 	var separatorsState : Map<String, Bool> = [];
+	// the measured heights of the rows of the virtual tables, by sheet path
+	var rowHeights : Map<String, { lines : Array<Float>, seps : Array<Float>, line : Float, sep : Float }> = [];
+	// the scroll of the sheet restored once it is shown, unless the cursor moved the view meanwhile (goto)
+	var pendingScroll : Null<Int>;
 
 	var searchBox : Element;
 	var searchHidden : Bool = true; // Search through hidden categories
@@ -103,7 +109,15 @@ class Editor extends Component {
 		if( parent != null )
 			parent.append(element);
 
-		element.on("scrollend", () -> saveDisplayState("scroll", element.scrollTop()));
+		element.on("scrollend", function() {
+			saveDisplayState("scroll", element.scrollTop());
+			var v = tables[0]?.getViewLine();
+			if( v != null ) saveDisplayState("scrollLine", v);
+		});
+		element.on("scroll", function(_) {
+			for( t in tables )
+				if( t.virtual ) t.render();
+		});
 
 		currentSheet = sheet;
 		saveDisplayKey = "cdb_" + sheet.getPath();
@@ -197,8 +211,17 @@ class Editor extends Component {
 		if( currentValue == null ) currentValue = api.copy();
 		refresh();
 
+		pendingScroll = getDisplayState("scroll") ?? 0;
 		js.Browser.window.requestAnimationFrame((_) -> {
-			element.scrollTop(getDisplayState("scroll") ?? 0);
+			if( pendingScroll != null ) {
+				// the virtual table restores its first line : the heights of the rows above can be estimated
+				var v : { line : Int, offset : Float } = getDisplayState("scrollLine");
+				if( v != null && tables[0] != null && tables[0].virtual )
+					tables[0].scrollToLine(v.line, v.offset);
+				else
+					element.scrollTop(pendingScroll);
+			}
+			pendingScroll = null;
 		});
 	}
 
@@ -240,51 +263,20 @@ class Editor extends Component {
 		case K.TAB:
 			cursor.move( e.shiftKey ? -1 : 1, 0, false, false, true);
 			return true;
-		case K.PGUP:
-			var stickyElHeight = element.find(".separator").height();
-			if (Math.isNaN(stickyElHeight))
-				stickyElHeight = element.find("thead").outerHeight();
-			else
-				stickyElHeight += element.find("thead").outerHeight();
-
-			var lines = element.find("tbody").find(".start");
-			var idx = lines.length - 1;
-			while (idx >= 0) {
-				var b = lines[idx].getBoundingClientRect();
-				if (b.top <= stickyElHeight)
-					break;
-				idx--;
-			}
-
-			cursor.setDefault(cursor.table, cursor.x, idx);
-			lines.get(idx).scrollIntoView({ block: js.html.ScrollLogicalPosition.END });
-
-			// Handle sticky elements
-			element.scrollTop(element.scrollTop() + element.parent().siblings(".tabs-header").outerHeight());
-
-			return true;
-		case K.PGDOWN:
-			var height = element.outerHeight() - (element.find("thead").outerHeight() + element.parent().siblings(".tabs-header").outerHeight());
-			var lines = element.find("tbody").find(".start");
-			var idx = 0;
-			for (el in lines) {
-				var b = el.getBoundingClientRect();
-				if (b.top >= height)
-					break;
-				idx++;
-			}
-
-			if (idx > lines.length - 1)
-				idx = lines.length - 1;
-			lines.get(idx).scrollIntoView(true);
-			cursor.setDefault(cursor.table, cursor.x, idx);
-
-			// Handle sticky elements
-			var sepHeight = element.find(".separator").height();
-			if (Math.isNaN(sepHeight))
-				sepHeight = 0;
-			element.scrollTop(element.scrollTop() - (element.find("thead").height() + sepHeight));
-
+		case K.PGUP, K.PGDOWN:
+			// move the view and the cursor by a page of lines
+			var t = cursor.table;
+			var line = cursor.getLine();
+			if( t == null || line == null )
+				return true;
+			var scroll = element.get(0);
+			var headH = element.find("thead").outerHeight();
+			var pageH = Math.max(scroll.clientHeight - headH, 20);
+			var page = Std.int(Math.max(1, Math.floor(pageH / t.lineHeight) - 1));
+			var up = e.keyCode == K.PGUP;
+			scroll.scrollTop += Std.int(up ? -pageH : pageH);
+			var y = t.moveDisplayed(line.index, up ? -page : page, true);
+			cursor.set(t, cursor.x, y, null, true, true, true);
 			return true;
 		case K.SPACE:
 			e.preventDefault(); // prevent scroll
@@ -305,27 +297,20 @@ class Editor extends Component {
 
 	public function updateFilters() {
 		var table = tables.filter((t) -> t.sheet == currentSheet)[0];
-		if (table.displayMode == AllProperties)
+		if (table == null || table.displayMode != Table)
 			return;
 
+		var seps = table.separators ?? [];
 		if (filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error)) {
-			var seps = @:privateAccess table.separators ?? [];
-			var firstSepIdx = seps.length > 0 ? seps[0].data.index : hxd.Math.POSITIVE_INFINITY;
-
-			for (l in table.lines) {
+			for (l in table.lines)
 				l.filtered = false;
-				if (l.index < firstSepIdx) {
-					l.element.removeClass("filtered");
-					if (l.element.hasClass("hidden"))
-						l.create();
+			table.lockRows(function() {
+				for (s in seps) {
+					s.filtered = false;
+					s.refresh(false);
 				}
-			}
-
-			for (s in seps) {
-				@:privateAccess s.filtered = false;
-				s.refresh(false);
-			}
-
+			});
+			table.refreshRows();
 			return;
 		}
 
@@ -340,44 +325,33 @@ class Editor extends Component {
 		if (filters.length <= 0)
 			searchBox.find("#results").text('No results');
 
-		// Create hidden lines to ensure they are take into account while searching
-		if (searchHidden) {
-			for (l in table.lines) {
-				if (l.element.hasClass("hidden"))
-					l.create();
-			}
-		}
-
 		// Apply filters on lines
 		var results = 0;
-		var seps = @:privateAccess table.separators;
 		var displayedSeps = new Map<Int, Separator>();
 		for (l in table.lines) {
-			var filtered = isLineFilteredBySearch(table, l);
+			// lines in collapsed groups are only searched with searchHidden
+			var filtered = (!searchHidden && filters.length > 0 && l.separator != null && l.separator.isCollapsed()) || isLineFilteredBySearch(table, l);
 			if (!filtered)
 				results++;
 
 			filtered = filtered || isLineFilteredByStatus(l);
-
-			if (filtered) @:privateAccess {
-				l.filtered = true;
-				l.hide();
-			}
-			else {
-				var parentSeps = seps == null ? [] : Separator.getParentSeparators(l.index, seps);
+			l.filtered = filtered;
+			if (!filtered) {
+				var parentSeps = Separator.getParentSeparators(l.index, seps);
 				for (s in parentSeps)
 					displayedSeps.set(s.data.index, s);
 			}
 		}
 
-		if (seps != null) {
+		table.lockRows(function() {
 			for (s in seps) {
-				@:privateAccess s.filtered = displayedSeps.get(s.data.index) == null;
-				if (@:privateAccess !s.filtered)
+				s.filtered = displayedSeps.get(s.data.index) == null;
+				if (!s.filtered)
 					s.reveal();
 				s.refresh(false);
 			}
-		}
+		});
+		table.refreshRows();
 
 		searchBox.find("#results").text(results > 0 ? '$results Results' : 'No results');
 		cursor.update();
@@ -455,7 +429,7 @@ class Editor extends Component {
 		else {
 			isFiltered = function(line: hide.comp.cdb.Line) {
 				function isLineFiltered(line : hide.comp.cdb.Line) {
-					var content = removeAccents(line.element.get(0).textContent);
+					var content = removeAccents(line.getSearchText());
 					for (f in filters)
 						if (content.indexOf(removeAccents(f)) >= 0)
 							return false;
@@ -928,8 +902,11 @@ class Editor extends Component {
 
 				if( c2.type == TList || c2.type == TProperties || c2.type == TPolymorph )
 					shouldFullRefresh = true;
-				if( !shouldFullRefresh )
-					toRefresh.push(cursor.table.lines[curPosY].cells[cid + curPosX]);
+				if( !shouldFullRefresh ) {
+					var line = cursor.table.lines[curPosY];
+					line.create();
+					toRefresh.push(line.cells[cid + curPosX]);
+				}
 			}
 			curPosY++;
 		}
@@ -977,7 +954,7 @@ class Editor extends Component {
 
 			while( y >= y1 && y < cursor.table.lines.length) {
 				var line = cursor.table.lines[y];
-				if(!cursor.table.lines[y].element.hasClass("filtered")) {
+				if(!line.filtered) {
 					sheet.deleteLine(line.index);
 					needRefresh = true;
 				}
@@ -990,8 +967,9 @@ class Editor extends Component {
 			// delete cells
 			for (y in y1...y2+1) {
 				var line = cursor.table.lines[y];
-				if (line.element.hasClass("filtered"))
+				if (line.filtered)
 					continue;
+				line.create();
 				var moveCursor = false;
 				for (x in x1...x2+1) {
 					var c = line.columns[x];
@@ -1022,16 +1000,15 @@ class Editor extends Component {
 			updateFilters();
 		}
 		else {
+			var filterChanged = false;
 			for (l in modifiedLines) {
 				var prevFiltered = l.filtered;
 				l.filtered = isLineFilteredByStatus(l) || isLineFilteredBySearch(l.table, l);
-				if (prevFiltered == l.filtered)
-					continue;
-				if (l.filtered)
-					l.hide();
-				else
-					l.create();
+				if (prevFiltered != l.filtered)
+					filterChanged = true;
 			}
+			if (filterChanged)
+				cursor.table.refreshRows();
 
 		}
 	}
@@ -1096,6 +1073,7 @@ class Editor extends Component {
 				if( s.parent != null ) {
 					var t = openRec(s.parent.sheet);
 					if( t != null && s.parent.line < t.lines.length ) {
+						t.lines[s.parent.line].create();
 						var cell = t.lines[s.parent.line].cells[t.displayMode == Properties || t.displayMode == AllProperties ? 0 : s.parent.column];
 						if (cell == null)
 							return null;
@@ -1678,6 +1656,10 @@ class Editor extends Component {
 
 		base.sync();
 
+		// emptied, the editor loses the scroll position : it is restored once the rows are back
+		var scrollTop = element.get(0).scrollTop;
+		for( t in tables )
+			t.saveHeights();
 		element.empty();
 		if( cursor != null ) cursor.clearMarks();
 		element.addClass('cdb');
@@ -1688,10 +1670,14 @@ class Editor extends Component {
 
 		var content = new Element("<table>");
 		tables = [];
-		new Table(this, currentSheet, content, displayMode);
+		// in the document before its rows are rendered : they are measured
 		content.appendTo(element);
+		new Table(this, currentSheet, content, displayMode);
 
 		setState(state, hasFocus);
+
+		if( tables[0] != null && tables[0].virtual )
+			tables[0].restoreScroll(scrollTop);
 
 		if( cursor.table != null ) {
 			for( t in tables )
@@ -1841,8 +1827,6 @@ class Editor extends Component {
 			var c = cursor.save();
 			focus();
 			cursor.load(c);
-			var hiddenSeps = element.find("table.cdb-sheet > tbody > tr").not(".head").filter(".separator").filter(".sep-hidden").find("a.toggle");
-			hiddenSeps.click();
 			cursor.scrollIntoView();
 		});
 
@@ -1857,11 +1841,6 @@ class Editor extends Component {
 			searchHidden = !searchHidden;
 			searchBox.find(".search-hidden").toggleClass("fa-eye", searchHidden);
 			searchBox.find(".search-hidden").toggleClass("fa-eye-slash", !searchHidden);
-			if (!searchHidden) {
-				var hiddenSeps = element.find("table.cdb-sheet > tbody > tr").not(".head").filter(".separator").filter(".sep-hidden").find("a.toggle");
-				hiddenSeps.click();
-				hiddenSeps.click();
-			}
 			updateFilters();
 		});
 

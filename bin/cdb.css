@@ -56,6 +56,7 @@
 }
 .cdb {
   height: 100%;
+  overflow-anchor: none;
 }
 .cdb:focus {
   outline: none;
@@ -340,6 +341,10 @@
 .cdb .cdb-sheet tr.hidden,
 .cdb .cdb-sheet tr.sep-hidden {
   display: none;
+}
+.cdb .cdb-sheet tr.cdb-spacer > td {
+  padding: 0;
+  border: none;
 }
 .cdb .cdb-sheet tr.clickable {
   cursor: pointer;

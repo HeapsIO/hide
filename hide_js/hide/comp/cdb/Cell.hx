@@ -303,6 +303,7 @@ class Cell {
 		}
 		#end
 		currentValue = Reflect.field(editObject, editColumn.name);
+		@:privateAccess line.searchText = null;
 
 		blurOff = true;
 		var html = valueHtml(column, Reflect.field(line.obj, column.name), line.table.getRealSheet(), line.obj, []);

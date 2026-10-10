@@ -223,7 +223,14 @@ select, input, textarea, .hide-dropdown >.dropdown-cont {
 			max-height: 200px;
 			overflow-y: auto;
 			width: 100%;
+			// the list is virtual : the sizer has the height of all the options, only the ones in the view are in it
+			.options-sizer {
+				position: relative;
+			}
 			.dropdown-option {
+				position: absolute;
+				left: 0;
+				right: 0;
 				z-index: @contextmenu-layer;
 				display : flex;
 				align-items: center;

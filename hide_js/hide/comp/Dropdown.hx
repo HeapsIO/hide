@@ -11,15 +11,28 @@ typedef Choice = {
 	@:optional var searchText: String;
 }
 
+/**
+	A list of choices with a filter. The list is virtual : only the options in its view are in the DOM.
+**/
 class Dropdown extends Component {
+	// index in `visible`
 	var highlightIndex : Null<Int> = null;
 	var optionsCont : Element;
 	public var ignoreIdInSearch : Bool = false; // Search won't filter based on id if this is true
 	public var filterInput : Element;
 	var options : Array<Choice>;
-	var orderedOptions : Array<Choice>;
+	// the options matching the filter, sorted
+	var visible : Array<Choice>;
+	var currentValue : String;
+	var buildIcon : Choice -> Element;
 	var anchor : Element = null;
 	var timer : haxe.Timer;
+	#if js
+	var sizer : js.html.Element;
+	var optionElements : Map<Int, js.html.Element> = new Map();
+	var rendered : Array<js.html.Element> = [];
+	var itemHeight = 30.;
+	#end
 
 
 	public function new( parent, options : Array<Choice>, currentValue: String, ?buildIcon : (Choice) -> Element, detached : Bool = false ) {
@@ -30,60 +43,33 @@ class Dropdown extends Component {
 			</div>
 		</div>');
 		this.options = options;
-		for( i in 0...options.length )
+		this.currentValue = currentValue;
+		this.buildIcon = buildIcon;
+		for( i in 0...options.length ) {
 			options[i].index = i;
-		this.orderedOptions = options.copy();
+			if( options[i].id == currentValue && highlightIndex == null )
+				highlightIndex = i;
+		}
+		this.visible = options.copy();
 		filterInput = root.find("#filter").first();
 		#if js
 		optionsCont = root.find(".options").first();
-		for( oIdx => o in options ) {
-			var el = new Element('<div tabindex="-1" class="dropdown-option">
-				<p class="option-text">${StringTools.htmlEscape(o.text)}</p>
-			</div>');
-			if( buildIcon != null )
-				el.prepend(buildIcon(o));
-			if( o.id == currentValue ) {
-				highlightIndex = oIdx;
-				el.addClass("current-value");
-			}
-			if( o.classes != null ) {
-				for( c in o.classes )
-					el.addClass(c);
-			}
-			if( o.doc != null && o.doc != "" ) {
-				el.attr("title", o.doc);
-				new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(el.find(".option-text"));
-			}
-			el.data("id", o.id);
-			el.data("text", o.text);
-			el.data("searchText", o.searchText);
-			el.data("index", o.index);
-			el.click((_) -> applyValue(o.id));
-			el.mousemove(function(_) {
-				highlightIndex = orderedOptions.indexOf(o);
-				refreshHighlight();
-			});
-			optionsCont.append(el);
-		}
-		function sorter(t1, id1, idx1, t2, id2, idx2, filter: String) {
-			var m1 = getMatchingScore(t1, filter);
-			var m2 = getMatchingScore(t2, filter);
-			if (m1 != m2)
-				return m1 - m2;
-			return idx1 - idx2;
-		}
+		sizer = js.Browser.document.createDivElement();
+		sizer.className = "options-sizer";
+		optionsCont.get(0).appendChild(sizer);
+		optionsCont.on("scroll", (_) -> renderOptions());
 
 		filterInput.on("input", (e : Element.Event) -> {
 			var v = filterInput.val();
 			if (v != null) {
-				for( o in optionsCont.children().elements() ) {
-					var m = matches(o.data("text"), v) || (!ignoreIdInSearch && matches(o.data("id"), v)) || matches(o.data("searchText"), v);
-					o.toggleClass("hidden", !m);
-				}
-				var sortedChildren = optionsCont.children().elements().toArray();
-				sortedChildren.sort((a, b) -> sorter(a.data("text"), a.data("id"), a.data("index"), b.data("text"), b.data("id"), b.data("index"), v));
-				orderedOptions.sort((a, b) -> sorter(a.text, a.id, a.index, b.text, b.id, b.index, v));
-				optionsCont.append(sortedChildren);
+				visible = [for( o in options ) if( matches(o.text, v) || (!ignoreIdInSearch && matches(o.id, v)) || matches(o.searchText, v) ) o];
+				visible.sort((a, b) -> {
+					var m1 = getMatchingScore(a.text, v);
+					var m2 = getMatchingScore(b.text, v);
+					return m1 != m2 ? m1 - m2 : a.index - b.index;
+				});
+				optionsCont.get(0).scrollTop = 0;
+				renderOptions();
 			}
 			resetHighlight();
 		});
@@ -97,7 +83,9 @@ class Dropdown extends Component {
 			if (body.length == 0) body = new Element("body");
 			anchor = parent;
 			super(body, root);
-
+		}
+		renderOptions();
+		if( detached ) {
 			root.width(anchor.get(0).offsetWidth);
 			reflow();
 
@@ -151,6 +139,66 @@ class Dropdown extends Component {
 		element.offset(offset);
 		element.width(popupWidth);
 	}
+
+	function getOptionElement( o : Choice ) {
+		var e = optionElements.get(o.index);
+		if( e != null )
+			return e;
+		var el = new Element('<div tabindex="-1" class="dropdown-option">
+			<p class="option-text">${StringTools.htmlEscape(o.text)}</p>
+		</div>');
+		if( buildIcon != null )
+			el.prepend(buildIcon(o));
+		if( o.id == currentValue )
+			el.addClass("current-value");
+		if( o.classes != null ) {
+			for( c in o.classes )
+				el.addClass(c);
+		}
+		if( o.doc != null && o.doc != "" ) {
+			el.attr("title", o.doc);
+			new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(el.find(".option-text"));
+		}
+		el.click((_) -> applyValue(o.id));
+		el.mousemove(function(_) {
+			var i = visible.indexOf(o);
+			if( i == highlightIndex ) return;
+			highlightIndex = i;
+			refreshHighlight(false);
+		});
+		e = el.get(0);
+		optionElements.set(o.index, e);
+		return e;
+	}
+
+	/**
+		Puts in the DOM the options which are in the view of the list.
+	**/
+	function renderOptions() {
+		var cont = optionsCont.get(0);
+		for( pass in 0...2 ) {
+			sizer.style.height = (visible.length * itemHeight) + "px";
+			var first = Std.int(Math.max(0, Math.floor(cont.scrollTop / itemHeight) - 5));
+			var last = Std.int(Math.min(visible.length, Math.ceil((cont.scrollTop + Math.max(cont.clientHeight, 200)) / itemHeight) + 5));
+			var shown = [];
+			for( i in first...last ) {
+				var e = getOptionElement(visible[i]);
+				e.style.top = (i * itemHeight) + "px";
+				e.classList.toggle("highlighted", i == highlightIndex);
+				if( e.parentNode != sizer )
+					sizer.appendChild(e);
+				shown.push(e);
+			}
+			for( e in rendered )
+				if( shown.indexOf(e) < 0 && e.parentNode != null )
+					e.parentNode.removeChild(e);
+			rendered = shown;
+			// the options have the height of the first one (with its icon)
+			if( shown.length == 0 || shown[0].offsetHeight <= 0 || shown[0].offsetHeight == itemHeight )
+				break;
+			itemHeight = shown[0].offsetHeight;
+		}
+	}
 	#end
 
 	var removed = false;
@@ -165,31 +213,23 @@ class Dropdown extends Component {
 	}
 
 	function resetHighlight() {
-		if( optionsCont.length == 0 ) {
-			highlightIndex = null;
-			return;
-		} else {
-			var i = 0;
-			for( o in optionsCont.children().elements() ) {
-				if ( !o.hasClass("hidden") ) {
-					highlightIndex = i;
-					break;
-				}
-				i++;
-			}
-		}
+		highlightIndex = visible.length == 0 ? null : 0;
 		refreshHighlight();
 	}
 
-	function refreshHighlight() {
-		var i = 0;
-		for( o in optionsCont.children().elements() ) {
-			o.toggleClass("highlighted", i == highlightIndex);
-			i++;
+	function refreshHighlight( scroll = true ) {
+		#if js
+		if( highlightIndex != null && scroll ) {
+			// scroll the list to show the highlighted option
+			var cont = optionsCont.get(0);
+			var top = highlightIndex * itemHeight;
+			if( top < cont.scrollTop )
+				cont.scrollTop = Std.int(top);
+			else if( top + itemHeight > cont.scrollTop + cont.clientHeight )
+				cont.scrollTop = Std.int(top + itemHeight - cont.clientHeight);
 		}
-		if (highlightIndex != null) {
-			untyped optionsCont.children().get(highlightIndex).scrollIntoViewIfNeeded();
-		}
+		renderOptions();
+		#end
 	}
 
 	function getMatchingScore( text : String, filter : String ) {
@@ -215,47 +255,31 @@ class Dropdown extends Component {
 	function onKey( e : Element.Event ) {
 		if( e.altKey )
 			return true;
-		var children = optionsCont.children();
 		switch( e.keyCode ) {
 			case hxd.Key.UP:
-				var i = highlightIndex - 1;
-				while( i >= 0 ) {
-					if( !new Element(children.get(i)).hasClass("hidden") ) {
-						highlightIndex = i;
-						refreshHighlight();
-						break;
-					}
-					i--;
+				if( highlightIndex != null && highlightIndex > 0 ) {
+					highlightIndex--;
+					refreshHighlight();
 				}
 				return false;
 			case hxd.Key.DOWN:
-				var i = highlightIndex + 1;
-				while( i < options.length ) {
-					if( !new Element(children.get(i)).hasClass("hidden") ) {
-						highlightIndex = i;
-						refreshHighlight();
-						break;
-					}
-					i++;
+				if( highlightIndex != null && highlightIndex < visible.length - 1 ) {
+					highlightIndex++;
+					refreshHighlight();
 				}
 				return false;
 			case hxd.Key.PGUP:
 				resetHighlight();
 				return false;
 			case hxd.Key.PGDOWN:
-				var i = options.length - 1;
-				while( i >= 0 ) {
-					if( !new Element(children.get(i)).hasClass("hidden") ) {
-						highlightIndex = i;
-						refreshHighlight();
-						break;
-					}
-					i--;
+				if( visible.length > 0 ) {
+					highlightIndex = visible.length - 1;
+					refreshHighlight();
 				}
 				return false;
 			case hxd.Key.ENTER:
 				if (highlightIndex != null) {
- 					applyValue(orderedOptions[highlightIndex].id);
+					applyValue(visible[highlightIndex].id);
 					return false;
 				}
 			case hxd.Key.ESCAPE:
