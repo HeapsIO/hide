@@ -65,6 +65,7 @@ class Ide extends hide.tools.IdeData {
 		initPad();
 		hxd.System.getClipboardText = () -> electron.Clipboard.get(Text);
 		hxd.System.setClipboardText = (text) -> { electron.Clipboard.set(text, Text); return true; };
+		#if dx12 hide.tools.NativeMeshTools.init(); #end
 		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || electron.App.name == "CDB";
 		isDebugger = Sys.getEnv("HIDE_DEBUG") == "1";
 
