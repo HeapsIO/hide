@@ -55,7 +55,12 @@ class ElectronMain {
 		App.setName(appName);
 		App.setPath("userData", js.node.Path.join(App.getPath("appData"), appName));
 		App.commandLine.appendSwitch("js-flags", "--expose-gc --no-efficiency-mode");
-		App.commandLine.appendSwitch("disable-features", "AllowSoftwareGLFallbackDueToCrashes");
+		// test mode : the windows stay behind the user's ones, they must still render (scroll, animation frames, screenshots)
+		App.commandLine.appendSwitch("disable-features", "AllowSoftwareGLFallbackDueToCrashes" + (testMode ? ",CalculateNativeWinOcclusion" : ""));
+		if( testMode ) {
+			App.commandLine.appendSwitch("disable-renderer-backgrounding");
+			App.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+		}
 		// DirectX 12 (jsdx) : Chromium must use the same GPU as the dx12 addon, shared textures can not cross adapters
 		App.commandLine.appendSwitch("force_high_performance_gpu");
 		App.commandLine.appendSwitch("ignore-gpu-blocklist");
