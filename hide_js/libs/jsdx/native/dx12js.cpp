@@ -357,8 +357,18 @@ static void js_preload_dxil() {
 	LoadLibraryW(path);
 }
 
+// Windows runs the page thread on the efficiency cores when the window is not in the foreground
+// (FBX conversions, shader compilations... more than 1.5x slower) : full speed on the thread loading the addon
+static void js_high_qos() {
+	THREAD_POWER_THROTTLING_STATE s = {};
+	s.Version = THREAD_POWER_THROTTLING_CURRENT_VERSION;
+	s.ControlMask = THREAD_POWER_THROTTLING_EXECUTION_SPEED;
+	SetThreadInformation(GetCurrentThread(), ThreadPowerThrottling, &s, sizeof(s));
+}
+
 NAPI_MODULE_INIT() {
 	js_preload_dxil();
+	js_high_qos();
 	for( auto &p : hl_shim::registry() ) {
 		napi_value f;
 		napi_create_function(env, p.first.c_str(), NAPI_AUTO_LENGTH, p.second, nullptr, &f);
