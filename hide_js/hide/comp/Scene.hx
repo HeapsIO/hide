@@ -245,7 +245,15 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		for( f in listeners )
 			f(dt);
 		onUpdate(dt);
+		#if dx12
+		// the driver is shared by the scenes : resized and presented for each one
+		engine.driver.resize(engine.width, engine.height);
 		engine.render(this);
+		engine.driver.present();
+		@:privateAccess hxd.System.lastPresentTime = @:privateAccess engine.lastTime;
+		#else
+		engine.render(this);
+		#end
 	}
 
 	function sync() {
@@ -326,8 +334,15 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			setCurrent();
 			var bmp : js.html.ImageElement = cast img[0];
 			t.resize(bmp.width, bmp.height);
+			#if dx12
+			var data = new hxd.BitmapData(bmp.width, bmp.height);
+			@:privateAccess data.ctx.drawImage(bmp, 0, 0);
+			engine.driver.uploadTextureBitmap(t, data, 0, 0);
+			data.dispose();
+			#else
 			untyped bmp.ctx = { getImageData : function(_) return bmp, canvas : { width : 0, height : 0 } };
 			engine.driver.uploadTextureBitmap(t, cast bmp, 0, 0);
+			#end
 			t.realloc = onLoaded;
 			t.flags.unset(Loading);
 			@:privateAccess if( t.waitLoads != null ) {

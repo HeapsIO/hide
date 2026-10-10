@@ -1,20 +1,24 @@
 package dx;
 
 /**
-	JS replacement of hldx's dx.Window, as used by the DX12 driver : the window is the
-	page canvas (#webgl, like hxd.Window), where the back buffers are displayed.
+	JS replacement of hldx's dx.Window, as used by the DX12 driver : the window is the canvas of
+	the current hxd.Window, where the back buffers are displayed. The driver is shared by the engines
+	of all the canvas (see h3d.Engine) : it is resized and presented for the engine rendered.
 **/
 class Window {
 
-	static var windows(get, null) : Array<Window>;
+	static var windows : Array<Window> = [new Window()];
 
-	public var canvas(default, null) : js.html.CanvasElement;
+	public var canvas(get, never) : js.html.CanvasElement;
 	public var width(get, never) : Int;
 	public var height(get, never) : Int;
 	public var vsync : Bool = true;
 
-	public function new( canvas : js.html.CanvasElement ) {
-		this.canvas = canvas;
+	function new() {
+	}
+
+	function get_canvas() : js.html.CanvasElement {
+		return @:privateAccess hxd.Window.getInstance().canvas;
 	}
 
 	function get_width() {
@@ -23,14 +27,5 @@ class Window {
 
 	function get_height() {
 		return Math.round(canvas.getBoundingClientRect().height * js.Browser.window.devicePixelRatio);
-	}
-
-	static function get_windows() {
-		if( windows == null ) {
-			var canvas : js.html.CanvasElement = cast js.Browser.document.getElementById("webgl");
-			if( canvas == null ) throw "Missing canvas #webgl";
-			windows = [new Window(canvas)];
-		}
-		return windows;
 	}
 }

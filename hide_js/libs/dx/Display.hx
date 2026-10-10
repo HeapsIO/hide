@@ -3,21 +3,19 @@ package dx;
 /**
 	Displays the emulated swapchain in the page : the back buffers are shared textures
 	created by the addon, imported once with Electron's sharedTexture module and drawn
-	into the window canvas with WebGPU at each present.
+	with WebGPU at each present, into the canvas of the engine rendered (see dx.Window).
 **/
 class Display {
 
-	static var window : Window;
 	static var textures : Array<Dynamic> = [];
+	static var width = 0;
+	static var height = 0;
 	static var device : Dynamic;
-	static var context : Dynamic;
 	static var pipeline : Dynamic;
 	static var sampler : Dynamic;
 	static var format : String;
-	static var pending = false;
 
-	public static function init( win : Window, tries = 5 ) {
-		window = win;
+	public static function init( tries = 5 ) {
 		var gpu : Dynamic = js.Syntax.code("navigator.gpu");
 		if( gpu == null ) {
 			js.Browser.console.error("DX12 display : no WebGPU in this page, nothing is shown");
@@ -27,7 +25,7 @@ class Display {
 		gpu.requestAdapter({ powerPreference : "high-performance" }).then(function( adapter : Dynamic ) {
 			// none while the GPU process (re)starts, after a reload of the page : asked again
 			if( adapter == null ) {
-				if( tries > 1 ) js.Browser.window.setTimeout(() -> init(win, tries - 1), 200);
+				if( tries > 1 ) js.Browser.window.setTimeout(() -> init(tries - 1), 200);
 				else js.Browser.console.error("DX12 display : no WebGPU adapter, nothing is shown");
 				return null;
 			}
@@ -35,9 +33,7 @@ class Display {
 		}).then(function( dev : Dynamic ) {
 			if( dev == null ) return;
 			device = dev;
-			context = window.canvas.getContext("webgpu");
 			format = gpu.getPreferredCanvasFormat();
-			context.configure({ device : device, format : format, alphaMode : "opaque" });
 			var module = device.createShaderModule({ code : "
 				struct V { @builtin(position) pos : vec4f, @location(0) uv : vec2f };
 				@vertex fn vs( @builtin(vertex_index) i : u32 ) -> V {
@@ -74,8 +70,18 @@ class Display {
 				handle : { ntHandle : nodeBuf },
 			}));
 		}
-		window.canvas.width = width;
-		window.canvas.height = height;
+		Display.width = width;
+		Display.height = height;
+	}
+
+	static function getContext( canvas : js.html.CanvasElement ) : Dynamic {
+		var context : Dynamic = (cast canvas).__dxContext;
+		if( context == null ) {
+			context = canvas.getContext("webgpu");
+			context.configure({ device : device, format : format, alphaMode : "opaque" });
+			(cast canvas).__dxContext = context;
+		}
+		return context;
 	}
 
 	/** called after the native present : draws the presented buffer into the canvas **/
@@ -84,6 +90,10 @@ class Display {
 		var index : Int = js.Syntax.code("__dx12.js_presented_buffer()");
 		var tex = textures[index];
 		if( tex == null ) return;
+		var canvas = @:privateAccess Window.windows[0].canvas;
+		if( canvas.width != width ) canvas.width = width;
+		if( canvas.height != height ) canvas.height = height;
+		var context = getContext(canvas);
 		var frame : Dynamic = tex.getVideoFrame();
 		var ext = device.importExternalTexture({ source : frame });
 		var bind = device.createBindGroup({ layout : pipeline.getBindGroupLayout(0), entries : [

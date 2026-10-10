@@ -253,8 +253,11 @@ class ElectronMain {
 		}];
 	}
 
-	static function dialogFilters( exts : Array<String> ) : Dynamic {
-		return exts == null ? null : [{ name : "Files", extensions : exts }, { name : "All Files", extensions : ["*"] }];
+	// Electron rejects null options
+	static function dialogOptions( o : Dynamic, opts : Dynamic ) : Dynamic {
+		if( o.defaultPath != null ) opts.defaultPath = o.defaultPath;
+		if( o.exts != null ) opts.filters = [{ name : "Files", extensions : o.exts }, { name : "All Files", extensions : ["*"] }];
+		return opts;
 	}
 
 	// ---------------- commands
@@ -418,11 +421,11 @@ class ElectronMain {
 		h.set("dialog.open", function(wc, o : Dynamic) {
 			var props = [o.directory ? "openDirectory" : "openFile", "createDirectory"];
 			if( o.multiple ) props.push("multiSelections");
-			return Dialog.showOpenDialog(getWin(wc, null), { defaultPath : o.defaultPath, properties : props, filters : dialogFilters(o.exts) })
+			return Dialog.showOpenDialog(getWin(wc, null), dialogOptions(o, { properties : props }))
 				.then((r) -> r.canceled || r.filePaths.length == 0 ? null : r.filePaths);
 		});
 		h.set("dialog.save", function(wc, o : Dynamic) {
-			return Dialog.showSaveDialog(getWin(wc, null), { defaultPath : o.defaultPath, filters : dialogFilters(o.exts) })
+			return Dialog.showSaveDialog(getWin(wc, null), dialogOptions(o, {}))
 				.then((r) -> r.canceled || r.filePath == null || r.filePath == "" ? null : [r.filePath]);
 		});
 		// window.prompt() is not supported by Electron
