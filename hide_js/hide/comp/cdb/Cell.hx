@@ -478,6 +478,9 @@ class Cell {
 			return {str: Std.string(s), containsHtml:true};
 		}
 
+		// in the preview of a list / props, the icons are 24px (their largest side)
+		var previewIcon : Null<Int> = scope.length > 0 ? 24 : null;
+
 		if( v == null ) {
 			if( c.opt )
 				return val(" ");
@@ -527,7 +530,7 @@ class Cell {
 					id = v;
 				}
 				var i = s.index.get(id);
-				html(i == null ? '<span class="error">#REF($v)</span>' : (i.ico == null ? "" : tileHtml(i.ico,true).str+" ") + StringTools.htmlEscape(i.disp));
+				html(i == null ? '<span class="error">#REF($v)</span>' : (i.ico == null ? "" : tileHtml(i.ico, true, previewIcon).str+" ") + StringTools.htmlEscape(i.disp));
 			}
 		case TBool:
 			val(v?"Y":"N");
@@ -592,7 +595,7 @@ class Cell {
 				var pval = Reflect.field(v, pc.name);
 				if( pval == null && pc.opt ) continue;
 				if( !canViewSubColumn(ps, pc) ) continue;
-				out.push('<div class="label">${pc.name} : <div class="content">${valueHtml(pc, pval, ps, v, scope).str}</div></div>');
+				out.push('<div class="label"><span class="name">${pc.name}</span><div class="content">${valueHtml(pc, pval, ps, v, scope).str}</div></div>');
 			}
 			scope.pop();
 			html(out.join(""));
@@ -662,7 +665,7 @@ class Cell {
 			}
 			return html(innerHtml + ' <input type="submit" value="open" onclick="hide.Ide.inst.openFile(\'$path\')"/>');
 		case TTilePos:
-			return tileHtml(v);
+			return tileHtml(v, false, previewIcon);
 		case TTileLayer:
 			var v : cdb.Types.TileLayer = v;
 			var path = ide.getPath(v.file);
@@ -827,7 +830,8 @@ class Cell {
 		return name;
 	}
 
-	function tileHtml( v : cdb.Types.TilePos, ?isInline ) : {str: String, containsHtml: Bool} {
+	// maxSize : the size of the icon (its largest side), by default 64px max (small ones are zoomed x2)
+	function tileHtml( v : cdb.Types.TilePos, ?isInline, ?maxSize : Int ) : {str: String, containsHtml: Bool} {
 		var path = ide.getPath(v.file);
 		if( !editor.quickExists(path) ) {
 			if( isInline ) return {str: "", containsHtml: false};
@@ -836,7 +840,7 @@ class Cell {
 		var width = v.size * (v.width == null?1:v.width);
 		var height = v.size * (v.height == null?1:v.height);
 		var max = width > height ? width : height;
-		var zoom = max <= 32 ? 2 : 64 / max;
+		var zoom = maxSize != null ? maxSize / max : max <= 32 ? 2 : 64 / max;
 		var inl = isInline ? 'display:inline-block;' : '';
 		#if js
 		var url = ide.getUnCachedUrl(path);
@@ -847,7 +851,7 @@ class Cell {
 		if( zoom > 1 )
 			bg += "image-rendering : pixelated;";
 		var html = '<div
-			class="tile toload"
+			class="tile toload${maxSize != null ? " preview-icon" : ""}"
 			path="$path"
 			zoom="$zoom"
 			style="width : ${Std.int(width * zoom)}px; height : ${Std.int(height * zoom)}px; opacity:0; $bg $inl"

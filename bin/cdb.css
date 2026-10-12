@@ -423,11 +423,6 @@
 .cdb .cdb-sheet td.t_readonly {
   background-color: #333;
 }
-.cdb .cdb-sheet th.t_bool,
-.cdb .cdb-sheet th.t_int,
-.cdb .cdb-sheet th.t_float {
-  width: 6%;
-}
 .cdb .cdb-sheet th.hidden,
 .cdb .cdb-sheet td.hidden {
   width: 1px;
@@ -475,6 +470,9 @@
   display: inline-block;
   vertical-align: middle;
   image-rendering: pixelated;
+}
+.cdb .cdb-sheet .tile.preview-icon {
+  zoom: 1;
 }
 .cdb .cdb-sheet td.t_int,
 .cdb .cdb-sheet td.t_float {
@@ -735,7 +733,13 @@
 .cdb .cdb-sheet .t_properties .cell-root .label,
 .cdb .cdb-sheet .t_polymorph .cell-root .label {
   display: flex;
+  align-items: center;
   gap: 5px;
+}
+.cdb .cdb-sheet .t_properties .cell-root .label > .name,
+.cdb .cdb-sheet .t_polymorph .cell-root .label > .name {
+  color: #888;
+  flex-shrink: 0;
 }
 .cdb .cdb-sheet .t_properties .cell-root .content .color,
 .cdb .cdb-sheet .t_polymorph .cell-root .content .color {
