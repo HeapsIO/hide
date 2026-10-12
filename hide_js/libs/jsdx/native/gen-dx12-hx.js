@@ -37,7 +37,7 @@ rep(`	public function present( vsync : Bool ) {}`, `	public function present( vs
 	@:hlNative("dx12","command_queue_present")
 	function present_native( vsync : Bool ) {}`);
 
-// GPU addresses are JS numbers (exact below 2^53)
+// GPU addresses and descriptor handles : haxe.Int64 (exact), the offset computed in Int64
 rep(`abstract Address(Int64) from Int64 {
 
 	public var value(get,never) : Int64;
@@ -51,22 +51,18 @@ rep(`abstract Address(Int64) from Int64 {
 	public inline function offset( delta : Int ) : Address {
 		return cast this + delta;
 	}
-}`, `abstract Address(hl.I64) {
+}`, `abstract Address(Int64) from Int64 {
 
 	public var value(get,never) : Int64;
 
 	public inline function new( v : Int64 ) {
-		this = hl.I64.ofInt64(v);
+		this = v;
 	}
 
-	inline function get_value() return hl.I64.toInt64(this);
+	inline function get_value() return this;
 
 	public inline function offset( delta : Int ) : Address {
-		return cast ((this : Float) + delta);
-	}
-
-	@:from static inline function fromInt64( v : Int64 ) : Address {
-		return new Address(v);
+		return this + delta;
 	}
 }`);
 

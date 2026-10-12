@@ -197,8 +197,9 @@ static double mem_get_f32( vbyte *p ) { return *(float*)p; }
 static void mem_set_f32( vbyte *p, double v ) { *(float*)p = (float)v; }
 static double mem_get_f64( vbyte *p ) { return *(double*)p; }
 static void mem_set_f64( vbyte *p, double v ) { *(double*)p = v; }
-static int64 mem_get_i64( vbyte *p ) { return *(int64*)p; }
-static void mem_set_i64( vbyte *p, int64 v ) { *(int64*)p = v; }
+// pointers stored in memory (JS numbers, null when 0) : the 64 bits integers are read as two i32
+static vbyte *mem_get_ptr( vbyte *p ) { return *(vbyte**)p; }
+static void mem_set_ptr( vbyte *p, vbyte *v ) { *(vbyte**)p = v; }
 static int mem_ustrlen( uchar *p ) { return ustrlen(p); }
 
 #define MEM_PRIM(name) static hl_shim::Register mem_reg_##name(#name, hl_shim::wrap<&name>());
@@ -216,8 +217,8 @@ MEM_PRIM(mem_get_f32)
 MEM_PRIM(mem_set_f32)
 MEM_PRIM(mem_get_f64)
 MEM_PRIM(mem_set_f64)
-MEM_PRIM(mem_get_i64)
-MEM_PRIM(mem_set_i64)
+MEM_PRIM(mem_get_ptr)
+MEM_PRIM(mem_set_ptr)
 MEM_PRIM(mem_ustrlen)
 
 // mem_address(ArrayBuffer | TypedArray | DataView) : native address of the data.
@@ -318,13 +319,14 @@ static bool js_heap_contains( uintptr_t p, size_t bytes ) {
 }
 
 static napi_value js_copy_descriptors_simple( napi_env env, napi_callback_info info ) {
-	size_t argc = 4;
-	napi_value argv[4];
+	// count, dst (low, high), src (low, high), type
+	size_t argc = 6;
+	napi_value argv[6];
 	napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-	int count = hl_shim::fromJs<int>(env, argv[0]);
-	D3D12_CPU_DESCRIPTOR_HANDLE dst = hl_shim::fromJs<D3D12_CPU_DESCRIPTOR_HANDLE>(env, argv[1]);
-	D3D12_CPU_DESCRIPTOR_HANDLE src = hl_shim::fromJs<D3D12_CPU_DESCRIPTOR_HANDLE>(env, argv[2]);
-	D3D12_DESCRIPTOR_HEAP_TYPE type = hl_shim::fromJs<D3D12_DESCRIPTOR_HEAP_TYPE>(env, argv[3]);
+	int count = hl_shim::arg<int>(env, argv, 0);
+	D3D12_CPU_DESCRIPTOR_HANDLE dst = hl_shim::arg<D3D12_CPU_DESCRIPTOR_HANDLE>(env, argv, 1);
+	D3D12_CPU_DESCRIPTOR_HANDLE src = hl_shim::arg<D3D12_CPU_DESCRIPTOR_HANDLE>(env, argv, 3);
+	D3D12_DESCRIPTOR_HEAP_TYPE type = hl_shim::arg<D3D12_DESCRIPTOR_HEAP_TYPE>(env, argv, 5);
 	size_t bytes = (size_t)count * static_driver->device->GetDescriptorHandleIncrementSize(type);
 	const char *bad = !js_heap_contains(src.ptr, bytes) ? "source" : !js_heap_contains(dst.ptr, bytes) ? "destination" : NULL;
 	if( bad == NULL ) {
