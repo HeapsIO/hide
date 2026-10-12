@@ -28,6 +28,8 @@ class CustomAnimation extends Evaluator {
 	/** This animation will need to keep being updated if setTime was called once **/
 	public var finishSync : Bool = false;
 	public var startedPlaying : Bool = false;
+	/** Under an emitter: the particle whose randoms the values use **/
+	public var particle : Int = 0;
 
 	public function setTime(time: Float) {
 		throw "This method should overrided!";
@@ -94,16 +96,16 @@ class ShaderAnimation extends CustomAnimation {
 			var val : Dynamic;
 			switch(v.type) {
 			case TFloat:
-				var v = getFloat(param.value, time);
+				var v = getFloat(particle, param.value, time);
 				shader.setParamIndexFloatValue(param.idx, v);
 				continue;
-			case TInt: val = hxd.Math.round(getFloat(param.value, time));
-			case TBool: val = getFloat(param.value, time) >= 0.5;
+			case TInt: val = hxd.Math.round(getFloat(particle, param.value, time));
+			case TBool: val = getFloat(particle, param.value, time) >= 0.5;
 			case TVec(4, VFloat):
-				getVector(param.value, time, vector4);
+				getVector(particle, param.value, time, vector4);
 				val = vector4;
 			case TVec(_, VFloat):
-				getVector(param.value, time, vector4);
+				getVector(particle, param.value, time, vector4);
 				vector.set(vector4.x, vector4.y, vector4.z);
 				val = vector;
 			default:
@@ -122,13 +124,13 @@ class ShaderDynAnimation extends ShaderAnimation {
 			var v = param.def;
 			switch(v.type) {
 				case TFloat:
-					var val = getFloat(param.value, time);
+					var val = getFloat(particle, param.value, time);
 					shader.setParamFloatValue(v, val);
 				case TInt:
-					var val = hxd.Math.round(getFloat(param.value, time));
+					var val = hxd.Math.round(getFloat(particle, param.value, time));
 					shader.setParamValue(v, val);
 				case TBool:
-					var val = getFloat(param.value, time) >= 0.5;
+					var val = getFloat(particle, param.value, time) >= 0.5;
 					shader.setParamValue(v, val);
 				case TVec(4, VFloat):
 					var index = shader.getParamIndex(v);
@@ -137,7 +139,7 @@ class ShaderDynAnimation extends ShaderAnimation {
 						vector = new h3d.Vector4();
 						shader.setParamValue(v, vector);
 					}
-					getVector(param.value, time, vector);
+					getVector(particle, param.value, time, vector);
 				case TVec(_, VFloat):
 					var index = shader.getParamIndex(v);
 					var vector = shader.getParamValue(index);
@@ -145,7 +147,7 @@ class ShaderDynAnimation extends ShaderAnimation {
 						vector = new h3d.Vector();
 						shader.setParamValue(v, vector);
 					}
-					getVector(param.value, time, tmpVector4);
+					getVector(particle, param.value, time, tmpVector4);
 					vector.set(tmpVector4.x, tmpVector4.y, tmpVector4.z);
 				default:
 			}
@@ -238,6 +240,60 @@ class BaseFXTools {
 		return ret;
 	}
 
+	/**
+		The params of a shader under an emitter, evaluated over the particle life: the modes of
+		`Shader.particleParams` (see `EmitterParam`), colors excepted, which keep their curves.
+	**/
+	public static function makeParticleShaderParams(shader: hrt.prefab.Shader, shaderDef: hxsl.SharedShader, params: hrt.prefab.fx.EmitterParam.ParamBuilder) : ShaderParams {
+		if(shaderDef == null)
+			return null;
+		var ret : ShaderParams = null;
+		var paramCount = 0;
+		for(v in shaderDef.data.vars) {
+			if(v.kind != Param)
+				continue;
+			paramCount++;
+			var val = switch(v.type) {
+				case TVec(_, VFloat) if(v.name.toLowerCase().indexOf("color") >= 0):
+					var curves = Curve.getCurves(shader, v.name);
+					curves == null || curves.length == 0 ? null : Curve.getColorValue(curves);
+				case TVec(n, VFloat): makeParticleShaderValue(shader, v.name, n, params);
+				case TFloat, TInt, TBool: makeParticleShaderValue(shader, v.name, 1, params);
+				default: null;
+			}
+			if(val == null)
+				continue;
+			if(ret == null) ret = [];
+			ret.push({
+				idx: paramCount - 1,
+				def: v,
+				value: val,
+			});
+		}
+		return ret;
+	}
+
+	/**
+		The value of the param `name` of a shader under an emitter, `dim` its number of components
+		(1 for a float, a vector has at least 3, w is 1 when not given). Null when it is not animated.
+		An unset component takes the value of the shader prop.
+	**/
+	public static function makeParticleShaderValue(shader: hrt.prefab.Shader, name: String, dim: Int, params: hrt.prefab.fx.EmitterParam.ParamBuilder) : Null<Value> {
+		var value = shader.getParticleParam(name);
+		if(value == null)
+			return null;
+		var prop : Dynamic = Reflect.field(shader.props, name);
+		inline function base(i: Int) : Float {
+			var v : Dynamic = dim == 1 ? prop : (Std.isOfType(prop, Array) ? (prop : Array<Dynamic>)[i] : null);
+			return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? v : 0.0;
+		}
+		var key = shader.getAbsPath(true) + "." + name;
+		if(dim == 1)
+			return params.comp(key, value[0], base(0), shader);
+		var c = [for(i in 0...dim) params.comp(key + "." + hrt.prefab.fx.EmitterParam.COMPONENTS[i], value[i], base(i), shader)];
+		return VVector(c[0], c[1], dim > 2 ? c[2] : VZero, dim > 3 ? c[3] : null);
+	}
+
 	public static function makeRendererFXParams(rfxElt: hrt.prefab.rfx.RendererFX) {
 		var classRfx = Type.getClass(cast rfxElt);
 		var originalProps : Array<Dynamic> = @:privateAccess Prefab.getSerializablePropsForClass(classRfx);
@@ -267,17 +323,21 @@ class BaseFXTools {
 	}
 
 	static var emptyParams : Array<String> = [];
-	public static function getCustomAnimations(elt: PrefabElement, anims: Array<CustomAnimation>, ?batch: h3d.scene.MeshBatch) {
+	/**
+		`particleParams`: the shaders are under an emitter, their params are evaluated over the
+		particle life and allocate their random slots there.
+	**/
+	public static function getCustomAnimations(elt: PrefabElement, anims: Array<CustomAnimation>, ?batch: h3d.scene.MeshBatch, ?particleParams: hrt.prefab.fx.EmitterParam.ParamBuilder) {
 		// Init all animations recursively except Emitter ones (called in Emitter)
 		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
 			for(c in elt.children) {
-				getCustomAnimations(c, anims, batch);
+				getCustomAnimations(c, anims, batch, particleParams);
 			}
 		}
 
 		var shader = elt.to(hrt.prefab.Shader);
 		if (shader != null && shader.shader != null && !Std.isOfType(shader.shader, hrt.prefab.fx.gpuemitter.ComputeUtils) ) {
-			var params = makeShaderParams(shader, shader.getShaderDefinition());
+			var params = particleParams != null ? makeParticleShaderParams(shader, shader.getShaderDefinition(), particleParams) : makeShaderParams(shader, shader.getShaderDefinition());
 			var shader = shader.shader;
 
 			if(useAutoPerInstance && batch != null) @:privateAccess {

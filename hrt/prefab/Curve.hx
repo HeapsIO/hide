@@ -110,16 +110,20 @@ class Curve extends Prefab {
 			addKey(0.0, 0.0);
 			addKey(1.0, 1.0);
 		}
-		name = StringTools.replace(name, ".", ":");
-		#if editor
-		if (Std.downcast(parent, Curve) != null) {
-			if (StringTools.startsWith(name, parent.name)) {
-				name = StringTools.replace(name, parent.name + ":", "");
-			}
-		}
-		#else
+		name = loadedName(name, Std.downcast(parent, Curve)?.name);
+		#if !editor
 		bakeValues();
 		#end
+	}
+
+	/** The name a curve named `name` gets on load, under a curve named `parentCurve` if any. **/
+	public static function loadedName(name: String, parentCurve: Null<String>) : String {
+		name = StringTools.replace(name, ".", ":");
+		#if editor
+		if (parentCurve != null && StringTools.startsWith(name, parentCurve))
+			name = StringTools.replace(name, parentCurve + ":", "");
+		#end
+		return name;
 	}
 
 	override function copy(o:Prefab) {
@@ -759,7 +763,8 @@ class Curve extends Prefab {
 		return false;
 	}
 
-	static inline function checkName(a: String, b: String) {
+	/** Curves are found by name, case insensitive **/
+	public static inline function sameName(a: String, b: String) {
 		return a == b || a.toLowerCase() == b.toLowerCase();
 	}
 
@@ -769,7 +774,7 @@ class Curve extends Prefab {
 			#if editor
 			if (parent.shared.editor?.isHidden(c)) continue;
 			#end
-			if(!checkName(c.name, name)) continue;
+			if(!sameName(c.name, name)) continue;
 			var curve = c.to(Curve);
 			if(curve == null) continue;
 			return curve;
@@ -786,7 +791,7 @@ class Curve extends Prefab {
 			#end
 			var idx = c.name.indexOf(":");
 			var curvePrefix = (idx >= 0) ? c.name.substr(0, idx) : c.name;
-			if(!checkName(curvePrefix, prefix))
+			if(!sameName(curvePrefix, prefix))
 				continue;
 			var curve = c.to(Curve);
 			if(curve == null) continue;

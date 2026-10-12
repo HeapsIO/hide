@@ -4,7 +4,7 @@ import hrt.prefab.l3d.Polygon;
 import hrt.prefab.Curve;
 import hrt.prefab.fx.Value;
 import hrt.prefab.fx.Evaluator;
-import hrt.prefab.fx.EmitterMacros.param;
+import hrt.prefab.fx.EmitterParam;
 
 #if editor
 import hide.prefab.HideProps;
@@ -90,6 +90,24 @@ class InstanceDef {
 	var dampen: Value;
 	var maxVelocity : Value;
 	public function new() { }
+}
+
+/** The values an `EmitterObject` is built with, see `Emitter.makeValues`. **/
+@:publicFields
+class EmitterValues {
+	var instDef : InstanceDef;
+	var startSpeed : Value;
+	var startWorldSpeed : Value;
+	var emitRate : Value;
+	var emitRateMin : Value;
+	var emitRateMax : Value;
+	var burstParticleCount : Value;
+	var emitAngle : Value;
+	var lifeTime : Float;
+	var lifeTimeRand : Float;
+	/** Holds the random slots allocated by the values, the particle shaders add theirs **/
+	var builder : ParamBuilder;
+	function new() { }
 }
 
 typedef PartArray = #if (hl_ver >= version("1.14.0")) hl.CArray<ParticleInstance> #else Array<ParticleInstance> #end;
@@ -619,6 +637,8 @@ class EmitterObject extends h3d.scene.Object {
 	var meshTransform = new h3d.Matrix();
 	var randomValues : Array<Float>;
 	var randSlots : Int;
+	/** The param component drawn by each random slot **/
+	var randomKeys : Array<String>;
 
 	public function new(?parent) {
 		super(parent);
@@ -658,9 +678,8 @@ class EmitterObject extends h3d.scene.Object {
 		scene = getScene();
 	}
 
-	function init(randSlots: Int, prefab: Emitter) {
+	function init(params: ParamBuilder, prefab: Emitter) {
 		this.emitterPrefab = prefab;
-		this.randSlots = randSlots;
 
 		updateParentNonEmitter();
 
@@ -752,7 +771,7 @@ class EmitterObject extends h3d.scene.Object {
 			var shaders = findRec(emitterPrefab, hrt.prefab.Shader);
 			for( shader in shaders ) {
 				makeShaderInstance(shader);
-				hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch);
+				hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch, params);
 			}
 
 			// Animated textures animations
@@ -794,8 +813,16 @@ class EmitterObject extends h3d.scene.Object {
 
 		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
 		particlesCount = maxCount;
+		randomKeys = params.slots;
+		randSlots = randomKeys.length;
 		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
 		evaluator = new Evaluator(randomValues, randSlots);
+		// the particle shaders draw their randoms from the emitter
+		if( customAnims != null )
+			for( anim in customAnims ) @:privateAccess {
+				anim.randValues = randomValues;
+				anim.stride = randSlots;
+			}
 
 		var anim = getParentFX();
 		if(anim != null)
@@ -849,6 +876,8 @@ class EmitterObject extends h3d.scene.Object {
 		emitTarget = 0;
 		listHead = null;
 
+		// Slot after slot, in the order the values were built (see ParamBuilder). Keyed draws would
+		// hash the particle and randomKeys[slot] instead, so that editing a param cannot shift the others.
 		if(randomValues != null) {
 			for(i in 0...randomValues.length)
 				randomValues[i] = random.srand();
@@ -1423,8 +1452,9 @@ class EmitterObject extends h3d.scene.Object {
 				return;
 			inline tmpMat.load(p.absPos.toMatrix());
 			batch.worldPosition = tmpMat;
-						for( anim in customAnims ) {
+			for( anim in customAnims ) {
 				var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
+				anim.particle = p.idx;
 				anim.setTime(t);
 			}
 			if( animatedTextureShader != null ){
@@ -1679,10 +1709,6 @@ class EmitterObject extends h3d.scene.Object {
 class Emitter extends Object3D {
 
 	// PROPERTIES
-	@:param({ t: PFloat(0, 10), group: "Properties" })
-	public var lifeTime : Float = 1.0;
-	@:param({ t: PFloat(0, 1), group: "Properties" })
-	public var lifeTimeRand : Float = 0.0;
 	@:param({ t: PEnum(SubEmitterKind), disp: "Sub Kind", group: "Properties" })
 	public var subEmitterKind : SubEmitterKind = SubEmitterKind.SpawnOnDeath;
 	@:param({ t: PFloat(0, 1), disp: "Speed Factor", group: "Properties" })
@@ -1788,44 +1814,57 @@ class Emitter extends Object3D {
 	@:param({ t: PBool, disp: "Show Debug", group: "Debug" })
 	public var viewDebug : Bool = false;
 
-	// INSTANCES
-	@:instParam({ t: PVec(3, -10, 10), def: [0., 0., 0.], disp: "World Acceleration", group: "Particle Movement" })
-	public var instWorldAcceleration : Array<Float>;
-	@:instParam({ t: PVec(3, -10, 10), def: [0., 0., 0.], disp: "Fixed Speed", group: "Particle Movement" })
-	public var instSpeed : Array<Float>;
-	@:instParam({ t: PVec(3, -10, 10), def: [0., 0., 0.], disp: "Fixed World Speed", group: "Particle Movement" })
-	public var instWorldSpeed : Array<Float>;
+	/** Version of the param format, the older one is upgraded on load (see `EmitterUpgrade`) **/
+	public static inline var PARAMS_VERSION = 2;
 
-	// In instance param to avoid refactoring the param editor more, but this is no longer linked to the instances (hence the instance: false in the declaration)
-	@:instParam({ t: PVec(3, -10, 10), def: [0., 0., 0.], disp: "Start Speed", group: "Particle Movement", instance: false })
-	public var instStartSpeed : Array<Float>;
-	@:instParam({ t: PVec(3, -10, 10), def: [0., 0., 0.], disp: "Start World Speed", group: "Particle Movement", instance: false })
-	public var instStartWorldSpeed : Array<Float>;
+	/** The params with modes, see `EmitterParam`. The other ones are the fields above. **/
+	public static var MODE_PARAMS : Array<ModeParamDef> = [
+		{ name: "lifeTime", disp: "Life Time", group: Spawn, def: [1.], min: 0, max: 10, category: "Properties" },
+		{ name: "worldAcceleration", disp: "World Acceleration", group: Particle, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement" },
+		{ name: "speed", disp: "Fixed Speed", group: Particle, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement" },
+		{ name: "worldSpeed", disp: "Fixed World Speed", group: Particle, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement" },
+		{ name: "startSpeed", disp: "Start Speed", group: Spawn, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement", track: "instStartSpeed" },
+		{ name: "startWorldSpeed", disp: "Start World Speed", group: Spawn, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement", track: "instStartWorldSpeed" },
+		{ name: "orbitSpeed", disp: "Orbit Speed", group: Particle, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement" },
+		{ name: "orbitSpeedMultiplier", disp: "Orbit Speed Multiplier", group: Multiplier, def: [1.], min: 0, max: 2, category: "Particle Movement", track: "instOrbitSpeedOverTime" },
+		{ name: "acceleration", disp: "Acceleration", group: Particle, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement" },
+		{ name: "maxVelocity", disp: "Max Velocity", group: Particle, def: [0.], min: 0, max: 10, category: "Limit Velocity" },
+		{ name: "dampen", disp: "Dampen", group: Particle, def: [0.], min: 0, max: 10, category: "Limit Velocity" },
+		{ name: "scale", disp: "Scale", group: Particle, def: [1.], min: 0, max: 2, category: "Particle Transform" },
+		{ name: "scaleMultiplier", disp: "Scale Multiplier", group: Multiplier, def: [1.], min: 0, max: 2, category: "Particle Transform", track: "instScaleOverTime" },
+		{ name: "stretch", disp: "Stretch", group: Particle, def: [1., 1., 1.], min: 0, max: 2, category: "Particle Transform" },
+		{ name: "stretchVelocity", disp: "Stretch Velocity", group: Particle, def: [0.], min: 0, max: 2, category: "Particle Transform" },
+		{ name: "rotation", disp: "Rotation", group: Particle, def: [0., 0., 0.], min: 0, max: 360, category: "Particle Transform" },
+		{ name: "pivot", disp: "Pivot", group: Particle, def: [0., 0., 0.], min: -1, max: 1, category: "Particle Transform" },
+		{ name: "offset", disp: "Offset", group: Particle, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Transform" },
+	];
+	public static var MODE_PARAMS_BY_NAME = [for( p in MODE_PARAMS ) p.name => p];
 
-	@:instParam({ t: PVec(3, -10, 10), def: [0., 0., 0.], disp: "Orbit Speed", group: "Particle Movement" })
-	public var instOrbitSpeed : Array<Float>;
-	@:instParam({ t: PFloat(0, 2.0), def: 1., disp: "Orbit Speed over time", group: "Particle Movement" })
-	public var instOrbitSpeedOverTime : Null<Float>;
-	@:instParam({ t: PVec(3, -10, 10), def: [0., 0., 0.], disp: "Acceleration", group: "Particle Movement" })
-	public var instAcceleration : Array<Float>;
-	@:instParam({ t: PFloat(0, 10.0), def: 0., disp: "Max Velocity", group: "Limit Velocity" })
-	public var instMaxVelocity : Null<Float>;
-	@:instParam({ t: PFloat(0, 10.0), def: 0., disp: "Dampen", group: "Limit Velocity" })
-	public var instDampen : Null<Float>;
-	@:instParam({ t: PFloat(0, 2.0), def: 1., disp: "Scale", group: "Particle Transform" })
-	public var instScale : Null<Float>;
-	@:instParam({ t: PFloat(0, 2.0), def: 1., disp: "Scale over time", group: "Particle Transform" })
-	public var instScaleOverTime : Null<Float>;
-	@:instParam({ t: PVec(3, 0.0, 2.0), def: [1., 1., 1.], disp: "Stretch", group: "Particle Transform" })
-	public var instStretch : Array<Float>;
-	@:instParam({ t: PFloat(0.0, 2.0), def: 0.0, disp: "Stretch Vel.", group: "Particle Transform" })
-	public var instStretchVelocity : Null<Float>;
-	@:instParam({ t: PVec(3, 0, 360), def: [0., 0., 0.], disp: "Rotation", group: "Particle Transform" })
-	public var instRotation : Array<Float>;
-	@:instParam({ t: PVec(3, -1, 1), def: [0., 0., 0.], disp: "Pivot", group: "Particle Transform" })
-	public var instPivot : Array<Float>;
-	@:instParam({ t: PVec(3, -10, 10), def: [0., 0., 0.], disp: "Offset", group: "Particle Transform" })
-	public var instOffset : Array<Float>;
+	/** The animation curves of the spawn and multiplier params, as tracks of the FX timeline **/
+	public static var instanceParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [for( p in MODE_PARAMS ) if( p.track != null ) ({
+		name: p.track,
+		disp: p.disp,
+		t: p.def.length > 1 ? PVec(p.def.length, p.min, p.max) : PFloat(p.min, p.max),
+		def: p.def.length > 1 ? (p.def : Dynamic) : (p.def[0] : Dynamic),
+		groupName: p.category,
+		animate: true,
+		instance: false,
+	} : hrt.prefab.fx.EmitterHelper.ParamDef)];
+
+	/** The old params added to their curve instead of being multiplied by it **/
+	static var LEGACY_ADDITIVE = ["Rotation", "Offset", "Pivot"];
+
+	/** The params with modes by name (see `MODE_PARAMS`), missing when all their components are unset **/
+	public var params : Map<String, ParamValue> = [];
+
+	/**
+		Components that leave one random slot unused before their own. Emitters upgraded from the
+		old format keep its slot layout this way, so they draw the very same randoms.
+	**/
+	public var skippedRandomSlots : Array<String> = null;
+
+	/** Loaded from the old format: the particle shaders under it are upgraded too **/
+	@:allow(hrt.prefab.Shader) var loadedLegacy = false;
 
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
@@ -1834,14 +1873,38 @@ class Emitter extends Object3D {
 
 	override function save() {
 		var data = super.save();
-		data.props = saveParams();
+		var props : Dynamic = saveParams();
+		props.paramsVersion = PARAMS_VERSION;
+		for( p in MODE_PARAMS ) {
+			var v = EmitterParam.save(params.get(p.name));
+			if( v != null )
+				Reflect.setField(props, p.name, v);
+		}
+		if( skippedRandomSlots != null )
+			props.skippedRandomSlots = skippedRandomSlots.copy();
+		data.props = props;
 		return data;
 	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		loadParams(obj.props);
-		props = null;
+		var props : Dynamic = obj.props ?? {};
+		loadParams(props);
+		params = [];
+		for( p in MODE_PARAMS ) {
+			var v = EmitterParam.parse(Reflect.field(props, p.name), p.def.length);
+			if( v != null )
+				params.set(p.name, v);
+		}
+		var skips : Array<Dynamic> = props.skippedRandomSlots;
+		skippedRandomSlots = skips == null ? null : [for( s in skips ) Std.string(s)];
+		loadedLegacy = props.paramsVersion == null;
+		if( loadedLegacy || EmitterUpgrade.hasLegacyFields(props, MODE_PARAMS) ) {
+			var skips = EmitterUpgrade.upgradeEmitter(this, props, obj.children, MODE_PARAMS, LEGACY_ADDITIVE, loadedLegacy, params);
+			if( skips != null )
+				skippedRandomSlots = (skippedRandomSlots ?? []).concat(skips);
+		}
+		this.props = null;
 		// Negative warmup time is an old version of delay
 		if( warmUpTime < 0 ) {
 			delay = -warmUpTime;
@@ -1853,7 +1916,64 @@ class Emitter extends Object3D {
 
 	override function copy(obj:Prefab) {
 		super.copy(obj);
-		copyParams(cast obj);
+		var from : Emitter = cast obj;
+		copyParams(from);
+		params = [for( k => v in from.params ) k => v.copy()];
+		skippedRandomSlots = from.skippedRandomSlots?.copy();
+	}
+
+	public function getParam( name : String ) : Null<ParamValue> {
+		return params.get(name);
+	}
+
+	/** Sets the modes of a param, null to unset all its components. **/
+	public function setParam( name : String, v : Null<ParamValue> ) {
+		if( EmitterParam.isUnset(v) )
+			params.remove(name);
+		else
+			params.set(name, v);
+	}
+
+	/**
+		The values the emitter object is built with. They are built in the order of the old
+		code, which allocated the random slots in that order.
+	**/
+	public function makeValues() : EmitterValues {
+		var b = new ParamBuilder(this, skippedRandomSlots);
+		inline function param( name : String ) return b.param(MODE_PARAMS_BY_NAME.get(name), params.get(name));
+		inline function animated( name : String, v : Float ) return b.animated(Evaluator.vVal(v), name, name);
+		var d = new InstanceDef();
+		d.localSpeed = param("speed");
+		d.worldSpeed = param("worldSpeed");
+		d.orbitSpeed = param("orbitSpeed");
+		d.orbitSpeedOverTime = param("orbitSpeedMultiplier");
+		d.acceleration = param("acceleration");
+		d.worldAcceleration = param("worldAcceleration");
+		d.localOffset = param("offset");
+		d.scale = param("scale");
+		d.scaleOverTime = param("scaleMultiplier");
+		d.dampen = param("dampen");
+		d.maxVelocity = param("maxVelocity");
+		d.stretch = param("stretch");
+		d.stretchVelocity = param("stretchVelocity");
+		d.rotation = param("rotation");
+		d.pivot = param("pivot");
+		var v = new EmitterValues();
+		v.instDef = d;
+		v.burstParticleCount = animated("burstParticleCount", burstParticleCount);
+		v.emitRate = animated("emitRate", emitRate);
+		v.emitRateMin = animated("emitRateMin", emitRateMin);
+		v.emitRateMax = animated("emitRateMax", emitRateMax);
+		v.emitAngle = animated("emitAngle", emitAngle);
+		v.startSpeed = param("startSpeed");
+		v.startWorldSpeed = param("startWorldSpeed");
+		// drawn on the emitter random stream when the particle spawns
+		var life = params.get("lifeTime");
+		var span = EmitterParam.span(life == null ? null : life[0], 1.0);
+		v.lifeTime = (span.min + span.max) * 0.5;
+		v.lifeTimeRand = (span.max - span.min) * 0.5;
+		v.builder = b;
+		return v;
 	}
 
 	override function getPreloadFiles():Array<String> {
@@ -1872,7 +1992,6 @@ class Emitter extends Object3D {
 			return;
 		}
 
-		var randIdx = 0;
 		var template : Object3D = cast children.find(
 			c -> EmitterObject.checkEnabled(c) &&
 			(c.name == null || c.name.indexOf("collision") == -1) &&
@@ -1881,67 +2000,8 @@ class Emitter extends Object3D {
 			c.to(Emitter) == null &&
 			c.to(hrt.prefab.l3d.Trails) == null);
 
-		var getCurve = hrt.prefab.Curve.getCurve.bind(this);
-
-		function makeParam(base: Float, randProp: Null<Float>, pname: String, suffix: String) : Value {
-			var xVal = Evaluator.vVal(base);
-			var randCurve = getCurve(pname + suffix + ":rand");
-			var randVal : Value = VZero;
-			if(randCurve != null)
-				randVal = Evaluator.vMult(VRandom(randIdx++, 1.0, 0.0), Evaluator.vMult(randCurve.makeVal(), VConst(randProp != null ? randProp : 1.0)));
-			else if(randProp != null && randProp != 0.0)
-				randVal = VRandom(randIdx++, randProp, 0.0);
-
-			var xCurve = getCurve(pname + suffix);
-			if (xCurve != null) {
-				if (xCurve.blendMode == CurveBlendMode.RandomBlend) {
-					var ca = Std.downcast(xCurve.children[0], Curve);
-					var cb = Std.downcast(xCurve.children[1], Curve);
-					return VRandomBetweenCurves(randIdx++, ca, cb);
-				}
-				else {
-					if (pname.indexOf("Rotation") >= 0 || pname.indexOf("Offset") >= 0 || pname.indexOf("Pivot") >= 0)
-						return Evaluator.vAdd(Evaluator.vAdd(xVal, randVal), xCurve.makeVal());
-					else
-						return Evaluator.vMult(Evaluator.vAdd(xVal, randVal), xCurve.makeVal());
-				}
-			}
-			else
-				return Evaluator.vAdd(xVal, randVal);
-		}
-
-		function fparam(p: hrt.prefab.fx.EmitterHelper.ParamDef, base: Null<Float>, rand: Null<Float>) : Value {
-			return makeParam(base != null ? base : p.def, rand, p.name, "");
-		}
-
-		function vparam(p: hrt.prefab.fx.EmitterHelper.ParamDef, base: Array<Float>, rand: Array<Float>) : Value {
-			var b : Array<Float> = base != null ? base : p.def;
-			inline function comp(idx, suffix) return makeParam(b[idx], rand != null ? rand[idx] : null, p.name, suffix);
-			var v : Value = VVector(comp(0, ":x"), comp(1, ":y"), comp(2, ":z"));
-			if(v.match(VVector(VZero, VZero, VZero)))
-				v = VZero;
-			else if(v.match(VVector(VConst(1.0), VConst(1.0), VConst(1.0))))
-				v = VConst(1.0);
-			return v;
-		}
-
-		var d = new InstanceDef();
-		d.localSpeed = param(instSpeed);
-		d.worldSpeed = param(instWorldSpeed);
-		d.orbitSpeed = param(instOrbitSpeed);
-		d.orbitSpeedOverTime = param(instOrbitSpeedOverTime);
-		d.acceleration = param(instAcceleration);
-		d.worldAcceleration = param(instWorldAcceleration);
-		d.localOffset = param(instOffset);
-		d.scale = param(instScale);
-		d.scaleOverTime = param(instScaleOverTime);
-		d.dampen = param(instDampen);
-		d.maxVelocity = param(instMaxVelocity);
-		d.stretch = param(instStretch);
-		d.stretchVelocity = param(instStretchVelocity);
-		d.rotation = param(instRotation);
-		d.pivot = param(instPivot);
-		emitterObj.instDef = d;
+		var values = makeValues();
+		emitterObj.instDef = values.instDef;
 		emitterObj.particleTemplate = template;
 
 		// SUB-EMITTER
@@ -1956,8 +2016,8 @@ class Emitter extends Object3D {
 		emitterObj.seedGroup 			= 	seedGroup;
 		emitterObj.subEmitterKind		= 	subEmitterKind;
 		// LIFE
-		emitterObj.lifeTime 			= 	lifeTime;
-		emitterObj.lifeTimeRand 		= 	lifeTimeRand;
+		emitterObj.lifeTime 			= 	values.lifeTime;
+		emitterObj.lifeTimeRand 		= 	values.lifeTimeRand;
 		emitterObj.speedFactor 			= 	speedFactor;
 		emitterObj.warmUpTime 			= 	warmUpTime;
 		emitterObj.delay 				= 	delay;
@@ -1965,22 +2025,22 @@ class Emitter extends Object3D {
 		emitterObj.emitType 			= 	emitType;
 		emitterObj.burstCount 			= 	Std.int(burstCount);
 		emitterObj.burstDelay 			= 	burstDelay;
-		emitterObj.burstParticleCount 	= 	param(burstParticleCount);
+		emitterObj.burstParticleCount 	= 	values.burstParticleCount;
 		emitterObj.emitDuration 		= 	emitDuration;
 		emitterObj.simulationSpace 		= 	simulationSpace;
 		emitterObj.particleScaling		= 	particleScaling;
 		emitterObj.emitOrientation 		= 	emitOrientation;
 		emitterObj.maxCount 			= 	maxCount;
 		emitterObj.sortMode 			= 	enableSort ? sortMode : None;
-		emitterObj.emitRate 			= 	param(emitRate);
-		emitterObj.emitRateMin 			= 	param(emitRateMin);
-		emitterObj.emitRateMax 			= 	param(emitRateMax);
+		emitterObj.emitRate 			= 	values.emitRate;
+		emitterObj.emitRateMin 			= 	values.emitRateMin;
+		emitterObj.emitRateMax 			= 	values.emitRateMax;
 		emitterObj.emitRateChangeDelay 	= 	emitRateChangeDelay;
 		emitterObj.emitShape 			= 	emitShape;
 		emitterObj.followRotation 		= 	followRotation;
 		emitterObj.applyMeshTransform 	= 	applyMeshTransform;
 		// EMIT SHAPE
-		emitterObj.emitAngle 			= 	param(emitAngle);
+		emitterObj.emitAngle 			= 	values.emitAngle;
 		emitterObj.emitRad1 			= 	emitRad1;
 		emitterObj.emitRad2 			= 	emitRad2;
 		emitterObj.emitSurface 			= 	emitSurface;
@@ -2009,15 +2069,15 @@ class Emitter extends Object3D {
 		emitterObj.randomGradient 		= 	randomGradient;
 
 		// PARTICLE MOVEMENT
-		emitterObj.startSpeed			=	param(instStartSpeed);
-		emitterObj.startWorldSpeed 		= 	param(instStartWorldSpeed);
+		emitterObj.startSpeed			=	values.startSpeed;
+		emitterObj.startWorldSpeed 		= 	values.startWorldSpeed;
 
 		// DEBUG
 		#if editor
 		emitterObj.debugGraphics.visible = viewDebug;
 		#end
 
-		emitterObj.init(randIdx, this);
+		emitterObj.init(values.builder, this);
 
 		#if editor
 		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2"].indexOf(propName) >= 0)
@@ -2184,40 +2244,44 @@ class Emitter extends Object3D {
 		for (p in getVisibleParams())
 			addParam(p);
 
-		// Instance params are optional (null means default), "+" sets them and "-" removes them
-		function addOptional(cat: hide.kit.Category, name: String, label: String, t: hrt.prefab.Props.PropType, init: () -> Dynamic) {
-			var line = new hide.kit.Line(cat, name);
-			line.label = label;
-			var set = Reflect.field(this, name) != null;
-			if (set) {
-				switch (t) {
-					case PVec(n, min, max):
-						addVecSliders(line, name, n, min, max);
-					case PFloat(min, max):
-						makeSlider(line, name, "", Reflect.field(this, name), min, max, (v) -> Reflect.setField(this, name, v));
-					default:
-						throw "Unsupported instance param type " + t;
+		// Params with modes: only the constant components are edited here, "+" sets a component
+		// to its default and "-" unsets the param
+		for (p in MODE_PARAMS) {
+			var line = new hide.kit.Line(getCategory(p.category), p.name);
+			line.label = p.disp;
+			var value = params.get(p.name);
+			var dim = p.def.length;
+			for (i in 0...dim) {
+				var id = p.name + "." + i;
+				var label = dim == 1 ? "" : ["X", "Y", "Z"][i];
+				function set(m: ParamMode) {
+					var v : ParamValue = params.get(p.name)?.copy() ?? [for (_ in 0...dim) null];
+					v[i] = m;
+					setParam(p.name, v);
+				}
+				switch (value == null ? null : value[i]) {
+					case null:
+						var btn = new hide.kit.Button(line, id, label + " +");
+						btn.onClick = () -> {
+							set(MConstant(p.def[i]));
+							ctx.rebuildPrefab(this);
+							ctx.rebuildInspector();
+						}
+					case MConstant(v):
+						makeSlider(line, id, label, v, p.min, p.max, (v) -> set(MConstant(v)));
+					case m:
+						new hide.kit.Text(line, id, label + " " + EmitterParam.kind(m));
 				}
 			}
-			var btn = new hide.kit.Button(line, set ? "remove" : "add", set ? "-" : "+");
-			btn.width = 1;
-			btn.onClick = () -> {
-				Reflect.setField(this, name, set ? null : init());
-				ctx.rebuildPrefab(this);
-				ctx.rebuildInspector();
+			if (value != null) {
+				var btn = new hide.kit.Button(line, "remove", "-");
+				btn.width = 1;
+				btn.onClick = () -> {
+					setParam(p.name, null);
+					ctx.rebuildPrefab(this);
+					ctx.rebuildInspector();
+				}
 			}
-		}
-
-		for (p in instanceParams) {
-			var cat = getCategory(p.groupName ?? "Particles");
-			addOptional(cat, p.name, p.disp ?? hide.kit.Macros.camelToSpaceCase(p.name), p.t, function() : Dynamic return switch (p.t) {
-				case PVec(_): ((p.def : Array<Float>).copy() : Dynamic);
-				default: p.def;
-			});
-			addOptional(cat, hrt.prefab.fx.EmitterHelper.randProp(p.name), "~", p.t, function() : Dynamic return switch (p.t) {
-				case PVec(n): ([for (_ in 0...n) 0.0] : Dynamic);
-				default: (0.0 : Dynamic);
-			});
 		}
 	}
 
@@ -2257,7 +2321,7 @@ class Emitter extends Object3D {
 		}
 
 		var params = getVisibleParams();
-		EmitterHelper.generateEdit(params, instanceParams, this, ctx.properties, onChange, refresh, true);
+		EmitterHelper.generateEdit(params, [], this, ctx.properties, onChange, refresh, true);
 	}
 
 	override function setSelected(b : Bool ) {
