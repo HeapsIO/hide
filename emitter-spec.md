@@ -48,6 +48,7 @@ The range (`from` / `to`) belongs to the param; a reference shares the shape onl
 - They set the animated value directly.
 - They hold plain keys: no range, no random. Constants of the old data are baked into the keys.
 - Targets: transforms, shader params outside emitters, Emitter params, Spawn `value` / `min` / `max`, Multipliers.
+- A param references its animation curves by path, like particle curves; curve names carry no meaning. The upgrade binds each param to its existing curve, under its old name.
 
 ## Storage
 
