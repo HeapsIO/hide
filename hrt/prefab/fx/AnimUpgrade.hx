@@ -1116,7 +1116,15 @@ class AnimUpgrade {
 					if( bv != null && bv.isLegacy() && !isBlend(bv) ) u.bakeLinear(bv, k, 0);
 					if( bounds != null ) {
 						if( bmin != null && bmin.isLegacy() && !isBlend(bmin) && blendMode(bmin) != 3 ) u.bakeLinear(bmin, bounds.lo, 0);
-						if( bmax != null && bmax.isLegacy() && !isBlend(bmax) ) u.bakeLinear(bmax, bounds.hi, 0);
+						if( bmax != null && bmax.isLegacy() && !isBlend(bmax) ) {
+							u.bakeLinear(bmax, bounds.hi, 0);
+							// the min made by the upgrade references the max: same bounds
+							if( bmin != null && blendMode(bmin) == 3 && bounds.hi != 0 ) {
+								var bp : String = get(bmin.data, "blendParam");
+								if( bp != null && StringTools.endsWith(bp, "." + path(bmax)) )
+									bmin.data.scale = bounds.lo / bounds.hi;
+							}
+						}
 					}
 					continue;
 				}
@@ -1233,5 +1241,232 @@ class AnimUpgrade {
 		indexUsers(n);
 		bakeLinear(n, copyScale, 0, false);
 		return n;
+	}
+
+	// ----------------------------------------------------------------------------------------
+	// Reference overrides
+
+	/** Marks the overrides of a Reference saved with the new animation curves (see `legacyOverride`) **/
+	public static inline var OVERRIDE_MARKER = "#anim";
+
+	static var CURVE_FIELDS = ["keys", "blendMode", "blendParam", "remapPath", "scale", "offset", "loop", "keyMode"];
+
+	/**
+		Prepares the old overrides `diff` of a Reference (saved before `OVERRIDE_MARKER`) to be applied on
+		`source`, its raw data. Old overrides set old curve values and the properties they were composed
+		with: when the source is already upgraded, the properties the overrides touch (an object, a shader,
+		an emitter whose fields or curves they change) get their curves back in the old format first, so
+		the upgrade of the result bakes them with the overridden values. The curves the overrides set are
+		marked as old.
+	**/
+	public static function legacyOverride( source : Dynamic, diff : Dynamic ) {
+		if( !enabled || source == null || diff == null )
+			return;
+		var u = new AnimUpgrade();
+		u.root = build(source, null);
+		u.indexUsers(u.root);
+		var touched : Array<RawNode> = [];
+		u.walkDiff(diff, u.root, touched);
+		for( n in touched )
+			u.unbake(n);
+	}
+
+	/** Walks `diff` (a `Diff.diffPrefab` of `n`), the prefabs whose curves or fields it changes go in `touched`. **/
+	function walkDiff( diff : Dynamic, n : RawNode, touched : Array<RawNode> ) {
+		if( diff == null || !Reflect.isObject(diff) ) return;
+		inline function touch( t : RawNode ) {
+			// a curve under a curve (blend) belongs to the prefab above them
+			while( t != null && t.isCurve ) t = t.parent;
+			if( t != null && touched.indexOf(t) < 0 ) touched.push(t);
+		}
+		for( f in Reflect.fields(diff) ) {
+			if( f == "children" || f.charAt(0) == "#" || f == "@index" ) continue;
+			touch(n);
+			if( n.isCurve && CURVE_FIELDS.indexOf(f) >= 0 )
+				// the old values of the curve
+				diff.version = 0;
+		}
+		var children : Dynamic = Reflect.field(diff, "children");
+		if( children == null ) return;
+		if( Std.isOfType(children, Array) ) {
+			// a whole new children array: old curves under `n`
+			touch(n);
+			return;
+		}
+		for( key in Reflect.fields(children) ) {
+			var cd : Dynamic = Reflect.field(children, key);
+			var name = key, nth = 0;
+			var split = key.split("@");
+			if( split.length == 2 ) {
+				name = split[0];
+				nth = Std.parseInt(split[1]) ?? 0;
+			}
+			var child = null;
+			for( c in n.children )
+				if( (get(c.data, "name") ?? "") == name && nth-- == 0 ) {
+					child = c;
+					break;
+				}
+			if( child == null ) {
+				// a new child, in the old format
+				if( cd != null && get(cd, "type") == "curve" )
+					touch(n);
+				continue;
+			}
+			if( cd == null ) {
+				if( child.isCurve ) touch(n);
+				continue;
+			}
+			if( child.isCurve ) {
+				touch(n);
+				var changed = false;
+				for( f in Reflect.fields(cd) )
+					if( CURVE_FIELDS.indexOf(f) >= 0 ) changed = true;
+				if( changed || Reflect.field(cd, "children") != null )
+					cd.version = 0;
+				walkDiff(cd, child, touched);
+				continue;
+			}
+			walkDiff(cd, child, touched);
+		}
+	}
+
+	static function unversion( c : RawNode ) {
+		Reflect.deleteField(c.data, "version");
+		for( ch in c.children )
+			if( ch.isCurve ) unversion(ch);
+	}
+
+	/** Inverse of `bakeLinear` (`a * v + b`), false if it has none. **/
+	function unbakeLinear( c : RawNode, a : Float, b : Float ) : Bool {
+		if( a == 0 ) return false;
+		bakeLinear(c, 1 / a, -b / a);
+		unversion(c);
+		return true;
+	}
+
+	/** Puts back in the old format the upgraded animation curves of `n` (see `legacyOverride`). **/
+	function unbake( n : RawNode ) {
+		var d = n.data;
+		inline function isNew( c : RawNode ) return c != null && !c.isLegacy();
+		if( isEmitter(n) ) {
+			unbakeEmitter(n);
+			return;
+		}
+		var inEmitter = false;
+		var p = n.parent;
+		while( p != null ) {
+			if( p.isA(hrt.prefab.fx.Emitter) ) inEmitter = true;
+			p = p.parent;
+		}
+		if( n.isA(Object3D) && !inEmitter ) {
+			var pos = [num(get(d, "x"), 0), num(get(d, "y"), 0), num(get(d, "z"), 0)];
+			var scale = [num(get(d, "scaleX"), 1), num(get(d, "scaleY"), 1), num(get(d, "scaleZ"), 1)];
+			var rot = [num(get(d, "rotationX"), 0), num(get(d, "rotationY"), 0), num(get(d, "rotationZ"), 0)];
+			function vector( prop : String, a : Array<Float>, b : Array<Float> ) : Bool {
+				var g = group(n, prop);
+				if( !Lambda.exists(g, c -> !c.isLegacy()) ) return true;
+				var ch = channels(g, prop, 3);
+				if( ch.uniform != null ) {
+					if( a[0] != a[1] || a[1] != a[2] || b[0] != b[1] || b[1] != b[2] ) return false;
+					return !isNew(ch.uniform) || unbakeLinear(ch.uniform, a[0], b[0]);
+				}
+				var ok = true;
+				for( i in 0...3 )
+					if( isNew(ch.comps[i]) && !unbakeLinear(ch.comps[i], a[i], b[i]) ) ok = false;
+				return ok;
+			}
+			var ok = vector("position", [1, 1, 1], pos);
+			ok = vector("localRotation", [360, 360, 360], [0, 0, 0]) && ok;
+			var gr = group(n, "rotation"), gs = group(n, "scale");
+			if( gr.length > 0 ) {
+				var cr = channels(gr, "rotation", 3);
+				var maxBase = -1, minAnim = 3;
+				for( i in 0...3 ) if( rot[i] != 0 ) maxBase = i;
+				for( i in 0...3 ) if( cr.comps[i] != null && i < minAnim ) minAnim = i;
+				ok = (maxBase <= minAnim && vector("rotation", [360, 360, 360], rot)) && ok;
+			}
+			if( gs.length > 0 ) {
+				var cs = channels(gs, "scale", 3);
+				var rb = new h3d.Matrix();
+				rb.initRotation(hxd.Math.degToRad(rot[0]), hxd.Math.degToRad(rot[1]), hxd.Math.degToRad(rot[2]));
+				var rbm = [[rb._11, rb._12, rb._13], [rb._21, rb._22, rb._23], [rb._31, rb._32, rb._33]];
+				var commutes = cs.uniform != null;
+				if( !commutes ) {
+					commutes = true;
+					for( i in 0...3 ) for( j in 0...3 )
+						if( i != j && Math.abs(rbm[i][j]) > 1e-9 && cs.comps[i] != cs.comps[j] ) commutes = false;
+				}
+				ok = (commutes && vector("scale", scale, [0, 0, 0])) && ok;
+			}
+			if( !ok )
+				warn(n, "old override on an upgraded transform that has no exact old form, the overridden curves keep their new values");
+		}
+		if( n.isA(Object2D) ) {
+			function vector2( prop : String, a : Array<Float>, b : Array<Float> ) {
+				var g = group(n, prop);
+				if( g.length == 0 ) return;
+				var ch = channels(g, prop, a.length);
+				if( ch.uniform != null ) {
+					if( isNew(ch.uniform) && (a.length == 1 || (a[0] == a[1] && b[0] == b[1])) ) unbakeLinear(ch.uniform, a[0], b[0]);
+					return;
+				}
+				for( i in 0...a.length )
+					if( isNew(ch.comps[i]) ) unbakeLinear(ch.comps[i], a[i], b[i]);
+			}
+			vector2("position", [1, 1], [num(get(d, "x"), 0), num(get(d, "y"), 0)]);
+			vector2("scale", [num(get(d, "scaleX"), 1), num(get(d, "scaleY"), 1)], [0, 0]);
+			var r = num(get(d, "rotation"), 0);
+			vector2("rotation", [360], [r != 0 ? hxd.Math.radToDeg(r) : 0]);
+		}
+		if( (n.isA(Shader) && !isParticleShader(n)) || n.isA(hrt.prefab.rfx.ScreenShaderGraph) ) {
+			var props : Dynamic = get(d, "props");
+			for( c in n.children ) {
+				if( !c.isCurve || !c.enabled() || !isNew(c) || c.name.indexOf(":") >= 0 ) continue;
+				var prop : Dynamic = null;
+				if( props != null )
+					for( f in Reflect.fields(props) )
+						if( f.toLowerCase() == c.name.toLowerCase() ) prop = Reflect.field(props, f);
+				if( Std.isOfType(prop, Float) || Std.isOfType(prop, Int) ) {
+					if( !unbakeLinear(c, prop, 0) )
+						warn(c, "old override on an upgraded shader param of value 0, the curve keeps its new values");
+				} else if( prop != null && !Std.isOfType(prop, Array) )
+					unversion(c);
+			}
+		}
+	}
+
+	/** `unbake` of an emitter: its bound animation curves (`animCurves`). **/
+	function unbakeEmitter( n : RawNode ) {
+		var props : Dynamic = get(n.data, "props");
+		if( props == null ) return;
+		var anim = EmitterParam.parseAnimCurves(get(props, "animCurves"));
+		var is2D = n.isA(hrt.prefab.fx.Emitter2D);
+		var defs = is2D ? hrt.prefab.fx.Emitter2D.MODE_PARAMS : hrt.prefab.fx.Emitter.MODE_PARAMS;
+		var settings : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = is2D ? hrt.prefab.fx.Emitter2D.emitterParams : hrt.prefab.fx.Emitter.emitterParams;
+		var sub = new AnimUpgrade();
+		sub.root = build({ children: get(n.data, "children") }, null);
+		inline function resolve( key : String ) {
+			var p = anim.get(key);
+			return p == null ? null : sub.locateRel(p);
+		}
+		for( s in settings ) {
+			if( s.animate != true ) continue;
+			var c = resolve(s.name);
+			if( c == null || c.isLegacy() || blendMode(c) == 2 ) continue;
+			var v = num(get(props, s.name), num(s.def, 0));
+			if( !unbakeLinear(c, v, 0) ) warn(c, "old override on an upgraded emitter setting of value 0");
+		}
+		for( d in defs ) {
+			if( d.animated != true ) continue;
+			var value = EmitterParam.parse(get(props, d.name), d.def.length);
+			for( i in 0...d.def.length ) {
+				var span = EmitterParam.span(value == null ? null : value[i], d.def[i]);
+				var cv = resolve(EmitterParam.paramAnimKey(d, i)), cmax = resolve(EmitterParam.paramAnimKey(d, i, "max"));
+				if( cv != null && !cv.isLegacy() && blendMode(cv) != 2 ) unbakeLinear(cv, span.max, 0);
+				if( cmax != null && !cmax.isLegacy() && blendMode(cmax) != 2 && get(cmax.data, "blendMode") == null && !unbakeLinear(cmax, span.max, 0) )
+					warn(cmax, "old override on an upgraded spawn range of max 0");
+			}
+		}
 	}
 }

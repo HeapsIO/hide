@@ -211,7 +211,10 @@ class Reference extends Object3D {
 			case Skip:
 				return null;
 			case Set(v):
-				return hrt.prefab.Diff.deepCopy(v);
+				var diff = hrt.prefab.Diff.deepCopy(v);
+				// the curves it sets hold the values they animate
+				Reflect.setField(diff, hrt.prefab.fx.AnimUpgrade.OVERRIDE_MARKER, hrt.prefab.Curve.VERSION);
+				return diff;
 		}
 		#else
 		return null;
@@ -257,6 +260,17 @@ class Reference extends Object3D {
 	**/
 	function resolveInternal() : Void {
 		inline applyLoadedReference(inline loadReference(source, editMode, overrides));
+	}
+
+	/**
+		The data of the referenced prefab `data` with `overrides` applied (`overrides` is kept intact).
+		Overrides saved before `AnimUpgrade.OVERRIDE_MARKER` hold old animation curves: see `AnimUpgrade.legacyOverride`.
+	**/
+	public static function applyOverrides(data: Dynamic, overrides: Dynamic) : Dynamic {
+		var diff = hrt.prefab.Diff.deepCopy(overrides);
+		if (Reflect.field(diff, hrt.prefab.fx.AnimUpgrade.OVERRIDE_MARKER) == null)
+			hrt.prefab.fx.AnimUpgrade.legacyOverride(data, diff);
+		return hrt.prefab.Diff.apply(data, diff);
 	}
 
 	function loadReference(source: String, editMode: EditMode, overrides: Dynamic) : LoadedReference {
@@ -306,7 +320,7 @@ class Reference extends Object3D {
 					if (overrides != null) {
 						// Diff.apply takes ownership of the diff, and the refInstance can be resolved again multiple times
 						// (e.g. when copy() reloads a newer version from disk), so we need to keep overrides intact
-						refInstanceData = hrt.prefab.Diff.apply(refInstanceData, hrt.prefab.Diff.deepCopy(overrides));
+						refInstanceData = applyOverrides(refInstanceData, overrides);
 					}
 					loaded.prefab = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, sh);
 				} else {
