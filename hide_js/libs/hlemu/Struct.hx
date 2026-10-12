@@ -15,6 +15,7 @@ class Struct {
 		s.__a = N.mem_address(buf);
 	}
 
+	/** a pointer (JS number) in a struct **/
 	public static inline function getNum64( v : js.lib.DataView, o : Int ) : Float {
 		return v.getUint32(o, true) + v.getInt32(o + 4, true) * 4294967296.;
 	}
@@ -44,7 +45,7 @@ class Struct {
 		N.mem_set_i32(p + 16, a.length);
 		for( i in 0...a.length ) {
 			var v : Dynamic = a[i];
-			N.mem_set_i64(p + 24 + i * 8, v == null ? 0 : v);
+			N.mem_set_ptr(p + 24 + i * 8, v);
 		}
 		return p;
 	}
@@ -55,8 +56,8 @@ class Struct {
 		var len = N.mem_get_i32(p + 16);
 		var out = [];
 		for( i in 0...len ) {
-			var v = N.mem_get_i64(p + 24 + i * 8);
-			out.push(v == 0 ? null : v);
+			var v = N.mem_get_ptr(p + 24 + i * 8);
+			out.push(v);
 		}
 		N.mem_free(p);
 		return out;
