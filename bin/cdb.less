@@ -110,24 +110,32 @@
 			background-color: #1f1e1e;
 		}
 
+		// the selection must not change the size of the cells (a border added on top makes the row one pixel taller,
+		// on the right the text narrower so it can wrap differently) : the cells already have a left and a bottom
+		// border, which change color, the other sides are drawn with inset shadows
 		tr.selected, td.selected {
 			background-color : #313a48;
 
-			&.top td.start { border-top: 1px solid #ccc; }
-			&.bot td.start { border-bottom: 1px solid #ccc; }
+			&.top td.start { --sel-top: 1px; }
+			&.bot td.start { border-bottom-color: #ccc; }
 			td.start, td.t_readonly {
-				border-left: 1px solid #ccc;
-				border-right: 1px solid #ccc;
+				--sel-right: 1px;
 				color: rgb(170, 170, 170);
 				background-color: #0b57d0;
 			}
+			td.start { --sel-left: 1px; }
+			td.t_readonly { border-left-color: #ccc; }
 		}
 
 		td.selected {
-			&.top { border-top: 1px solid #ccc; }
-			&.right { border-right: 1px solid #ccc; }
-			&.bot { border-bottom: 1px solid #ccc; }
-			&.left { border-left: 1px solid #ccc; }
+			&.top { --sel-top: 1px; }
+			&.right { --sel-right: 1px; }
+			&.bot { border-bottom-color: #ccc; }
+			&.left { border-left-color: #ccc; }
+		}
+
+		tr.selected td, td.selected {
+			box-shadow: inset 0 var(--sel-top, 0px) #ccc, inset calc(-1 * var(--sel-right, 0px)) 0 #ccc, inset var(--sel-left, 0px) 0 #ccc;
 		}
 
 		width : 100%;
@@ -370,6 +378,10 @@
 		}
 
 		td {
+			// sides of the selection (inherited : a cell does not take them from a selected cell around its table)
+			--sel-top: 0px;
+			--sel-right: 0px;
+			--sel-left: 0px;
 			user-select: none;
 			border-left : 1px solid #444;
 

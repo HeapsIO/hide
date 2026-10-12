@@ -89,32 +89,43 @@
 }
 .cdb .cdb-sheet tr.selected.top td.start,
 .cdb .cdb-sheet td.selected.top td.start {
-  border-top: 1px solid #ccc;
+  --sel-top: 1px;
 }
 .cdb .cdb-sheet tr.selected.bot td.start,
 .cdb .cdb-sheet td.selected.bot td.start {
-  border-bottom: 1px solid #ccc;
+  border-bottom-color: #ccc;
 }
 .cdb .cdb-sheet tr.selected td.start,
 .cdb .cdb-sheet td.selected td.start,
 .cdb .cdb-sheet tr.selected td.t_readonly,
 .cdb .cdb-sheet td.selected td.t_readonly {
-  border-left: 1px solid #ccc;
-  border-right: 1px solid #ccc;
+  --sel-right: 1px;
   color: #aaaaaa;
   background-color: #0b57d0;
 }
+.cdb .cdb-sheet tr.selected td.start,
+.cdb .cdb-sheet td.selected td.start {
+  --sel-left: 1px;
+}
+.cdb .cdb-sheet tr.selected td.t_readonly,
+.cdb .cdb-sheet td.selected td.t_readonly {
+  border-left-color: #ccc;
+}
 .cdb .cdb-sheet td.selected.top {
-  border-top: 1px solid #ccc;
+  --sel-top: 1px;
 }
 .cdb .cdb-sheet td.selected.right {
-  border-right: 1px solid #ccc;
+  --sel-right: 1px;
 }
 .cdb .cdb-sheet td.selected.bot {
-  border-bottom: 1px solid #ccc;
+  border-bottom-color: #ccc;
 }
 .cdb .cdb-sheet td.selected.left {
-  border-left: 1px solid #ccc;
+  border-left-color: #ccc;
+}
+.cdb .cdb-sheet tr.selected td,
+.cdb .cdb-sheet td.selected {
+  box-shadow: inset 0 var(--sel-top, 0px) #ccc, inset calc(-1 * var(--sel-right, 0px)) 0 #ccc, inset var(--sel-left, 0px) 0 #ccc;
 }
 .cdb .cdb-sheet th.start {
   width: 30px;
@@ -382,6 +393,9 @@
   font-style: italic;
 }
 .cdb .cdb-sheet td {
+  --sel-top: 0px;
+  --sel-right: 0px;
+  --sel-left: 0px;
   user-select: none;
   border-left: 1px solid #444;
   border-bottom: 1px solid #333;
