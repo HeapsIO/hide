@@ -69,6 +69,37 @@ class Evaluator {
 		return r != null ? r : VAdd(a, b);
 	}
 
+	/** Whether `getFast` can evaluate the value. **/
+	public static function isFlat(v: Value) : Bool {
+		return switch(v) {
+			case VAdd(_), VMult(_), VVector(_), VHsl(_): false;
+			case VParamRemap(a, _): isFlat(a);
+			case VValueRemap(a, remap): isFlat(a) && isFlat(remap);
+			case VLerp(a, b, t): isFlat(a) && isFlat(b) && isFlat(t);
+			default: true;
+		}
+	}
+
+	/**
+		lerp(a, b, t), folded into the flat values above when it matches one of them,
+		so the usual cases evaluate exactly like before.
+	**/
+	public static function vLerp(a: Value, b: Value, t: Value) : Value {
+		inline function const(v: Value) : Null<Float> return switch(v) { case VZero: 0.0; case VConst(f): f; default: null; };
+		var ca = const(a), cb = const(b);
+		var r : Null<Value> = switch [a, b, t] {
+			case [_, _, VZero]: a;
+			case [_, _, VConst(1.0)]: b;
+			case [VZero, _, _]: vMult(b, t);
+			case [_, _, _] if(ca != null && cb != null): vAdd(a, vMult(VConst(cb - ca), t));
+			// b = a + 1: the additive params (rotation, offset, pivot) with a random base
+			case [VRandom(ra, sa, aa), VRandom(rb, sb, ab), _] if(ra == rb && sa == sb && ab - aa == 1.0): vAdd(a, t);
+			case [VCurve(curveA), VCurve(curveB), VRandom(rid, 0.5, 0.5)]: VRandomBetweenCurves(rid, curveA, curveB);
+			default: null;
+		}
+		return r != null && isFlat(r) ? r : VLerp(a, b, t);
+	}
+
 	inline function getRandom(pidx: Int, ridx: Int) {
 		var i = pidx * stride + ridx;
 		return randValues[i];
@@ -108,6 +139,12 @@ class Evaluator {
 				var va = a.getVal(time);
 				var vb = b.getVal(time);
 				va + (vb - va) * ((getRandom(pidx, rid) + 1) * 0.5);
+			case VLerp(a, b, t):
+				var va = getFast(pidx, a, time);
+				var vb = getFast(pidx, b, time);
+				va + (vb - va) * getFast(pidx, t, time);
+			case VEasing(e):
+				e.eval(time);
 			case VParamRemap(a, param):
 				getFast(pidx, a, parameters[param] ?? 0.0);
 			case VValueRemap(a, remap):
@@ -129,6 +166,9 @@ class Evaluator {
 				return getFloat(pidx, a, time) + getFloat(pidx, b, time);
 			case VMult(a, b):
 				return getFloat(pidx, a, time) * getFloat(pidx, b, time);
+			case VLerp(a, b, t):
+				var va = getFloat(pidx, a, time);
+				return va + (getFloat(pidx, b, time) - va) * getFloat(pidx, t, time);
 			default:
 				return getFast(pidx, val, time);
 		}

@@ -19,6 +19,10 @@ enum Value {
 	VRandomBlendCurves(rid: Int, scale: Float, add: Float, a: Curve, b: Curve, blendVar: String);
 	// lerp(a.getVal(t), b.getVal(t), (random(rid)+1)/2)
 	VRandomBetweenCurves(rid: Int, a: Curve, b: Curve);  
+	// lerp(a, b, t), each of them a flat value
+	VLerp(a: Value, b: Value, t: Value);
+	// an easing of t
+	VEasing(e: Easing);
 
 	// rare complex values that we cannot currently optimize
 	VParamRemap(a: Value, param: String);
