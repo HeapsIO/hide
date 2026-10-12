@@ -393,10 +393,13 @@ class VirtualList<T> {
 	}
 
 	public function scrollToIndex(id: Int, request: ScrollRequest = Auto) {
+		// a pending request already replaced the current scroll
+		if (scrollRequest == null) {
+			prevScrollIndex = scrollIndex;
+			prevItemPixelScroll = itemPixelScroll;
+		}
 		scrollRequest = request;
-		prevScrollIndex = scrollIndex;
 		scrollIndex = id;
-		prevItemPixelScroll = itemPixelScroll;
 		itemPixelScroll = 0;
 		refresh();
 	}

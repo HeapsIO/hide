@@ -906,6 +906,7 @@ cdb-table2 {
 	flex-direction: column;
 	height: 100%;
 	background-color: #222;
+	outline: none;
 
 	> virtual-list {
 		flex: 1;
@@ -927,6 +928,22 @@ cdb-line {
 		overflow: hidden;
 		white-space: pre;
 		border-left: 1px solid #444;
+
+		// inside the cell, the line clips its content
+		&.cursor {
+			outline: 2px solid #4a8fd8;
+			outline-offset: -2px;
+		}
+
+		> input {
+			width: 100%;
+			padding: 0;
+			border: none;
+			outline: none;
+			background: none;
+			color: inherit;
+			font: inherit;
+		}
 	}
 }
 

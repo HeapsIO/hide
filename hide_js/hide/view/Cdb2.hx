@@ -6,7 +6,9 @@ class Cdb2 extends hide.ui.View<{}> {
 	override function onDisplay() {
 		var sheet = ide.database.getSheet(config.get("cdb.currentSheet"));
 		sheet ??= Lambda.find(ide.database.sheets, (s) -> !s.props.hide);
-		element.get(0).appendChild(new hide.comp.cdb2.Table(sheet).element);
+		element.get(0).appendChild(new hide.comp.cdb2.Table(sheet, undo).element);
+		keys.register("undo", function() undo.undo());
+		keys.register("redo", function() undo.redo());
 	}
 
 	override function getTitle() {

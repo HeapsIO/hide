@@ -871,6 +871,7 @@ cdb-table2 {
   flex-direction: column;
   height: 100%;
   background-color: #222;
+  outline: none;
 }
 cdb-table2 > virtual-list {
   flex: 1;
@@ -889,6 +890,19 @@ cdb-line > cdb-cell {
   overflow: hidden;
   white-space: pre;
   border-left: 1px solid #444;
+}
+cdb-line > cdb-cell.cursor {
+  outline: 2px solid #4a8fd8;
+  outline-offset: -2px;
+}
+cdb-line > cdb-cell > input {
+  width: 100%;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: none;
+  color: inherit;
+  font: inherit;
 }
 cdb-table-end {
   display: block;
