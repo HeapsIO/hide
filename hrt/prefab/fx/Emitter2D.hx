@@ -1,6 +1,7 @@
 package hrt.prefab.fx;
 
 import hrt.prefab.fx.Emitter;
+import hrt.prefab.fx.EmitterParam;
 import hrt.impl.Gradient;
 import hrt.prefab.Curve;
 
@@ -239,6 +240,28 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 			basisAbsPos.rotate(targetRotation);
 		}
 	}
+}
+
+/** The values an `Emitter2DObject` is built with, see `Emitter2D.makeValues`. **/
+@:publicFields
+class Emitter2DValues {
+	var instDef : InstanceDef;
+	var startSpeed : Value;
+	var startWorldSpeed : Value;
+	var emitRate : Value;
+	var emitRateMin : Value;
+	var emitRateMax : Value;
+	var burstParticleCount : Value;
+	var emitRadius : Value;
+	var emitAngle1 : Value;
+	var emitAngle2 : Value;
+	var emitWidth : Value;
+	var emitHeight : Value;
+	var lifeTime : Float;
+	var lifeTimeRand : Float;
+	/** Holds the random slots allocated by the values **/
+	var builder : ParamBuilder;
+	function new() { }
 }
 
 class Emitter2DObject extends h2d.Object {
@@ -493,8 +516,6 @@ class Emitter2D extends Object2D {
 		{ name: "emitSurface", t: PBool, def: false, disp: "Surface", groupName : "Shape Emission" },
 
 		// PARTICLE
-		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0, groupName : "Particle" },
-		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0, groupName : "Particle" },
 		{ name: "spriteType", t: PEnum(SpriteType), def: SpriteType.Color, groupName : "Particle" },
 		{ name: "color", t: PVec(4), def: [0,0,0,1], groupName : "Particle" },
 		{ name: "texture", t: PTexture, def: "", groupName : "Particle" },
@@ -513,40 +534,60 @@ class Emitter2D extends Object2D {
 		{ name: "animationBlendBetweenFrames", t: PBool, def: true, groupName : "Particle", disp: "Blend frames" },
 	];
 
-	public static var instanceParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [
+	/** Version of the param format, the older one is upgraded on load (see `EmitterUpgrade`) **/
+	public static inline var PARAMS_VERSION = 2;
+
+	/** The params with modes, see `EmitterParam`. The other ones are `emitterParams`. **/
+	public static var MODE_PARAMS : Array<ModeParamDef> = [
+		{ name: "lifeTime", disp: "Life Time", group: Spawn, def: [1.], min: 0, max: 10, category: "Particle" },
 		// PARTICLE TRANSFORM
-		{ name: "instScale",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale", groupName: "Particle Transform"},
-		{ name: "instScaleOverTime",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale over time", groupName: "Particle Transform"},
-		{ name: "instStretch",    			t: PVec(2, 0.0, 2.0), def: [1.,1.], disp: "Stretch", groupName: "Particle Transform"},
-		{ name: "instRotation",   			t: PFloat(0, 360),   def: 0., disp: "Rotation", groupName: "Particle Transform"},
-		{ name: "instOffset",     			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Offset", groupName: "Particle Transform"},
-
+		{ name: "scale", disp: "Scale", group: Particle, def: [1.], min: 0, max: 2, category: "Particle Transform" },
+		{ name: "scaleMultiplier", disp: "Scale Multiplier", group: Multiplier, def: [1.], min: 0, max: 2, category: "Particle Transform", track: "instScaleOverTime" },
+		{ name: "stretch", disp: "Stretch", group: Particle, def: [1., 1.], min: 0, max: 2, category: "Particle Transform" },
+		{ name: "rotation", disp: "Rotation", group: Particle, def: [0.], min: 0, max: 360, category: "Particle Transform" },
+		{ name: "offset", disp: "Offset", group: Particle, def: [0., 0.], min: -10, max: 10, category: "Particle Transform" },
 		// PARTICLE MOVEMENT
-		{ name: "instAcceleration",			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Acceleration", groupName: "Particle Movement"},
-		{ name: "instWorldAcceleration",	t: PVec(2, -10, 10),  def: [0.,0.], disp: "World Acceleration", groupName: "Particle Movement"},
-		{ name: "instSpeed",      			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Fixed Speed", groupName: "Particle Movement" },
-		{ name: "instWorldSpeed", 			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Fixed World Speed", groupName: "Particle Movement"},
-		// In instance param to avoid refactoring the param editor more, but this is no longer linked to the instances (hence the instance: false in the declaration)
-		{ name: "instStartSpeed",      		t: PVec(2, -10, 10),  def: [0.,0.], disp: "Start Speed",			groupName: "Particle Movement", instance: false},
-		{ name: "instStartWorldSpeed", 		t: PVec(2, -10, 10),  def: [0.,0.], disp: "Start World Speed",	groupName: "Particle Movement", instance: false},
-		{ name: "instOrbitSpeed", 			t: PFloat(-10., 10.),  def: 0., disp: "Orbit Speed", groupName: "Particle Movement"},
-		{ name: "instOrbitSpeedOverTime", 			t: PFloat(0, 2.0),  def: 1., disp: "Orbit Speed over time", groupName: "Particle Movement"},
-
+		{ name: "acceleration", disp: "Acceleration", group: Particle, def: [0., 0.], min: -10, max: 10, category: "Particle Movement" },
+		{ name: "worldAcceleration", disp: "World Acceleration", group: Particle, def: [0., 0.], min: -10, max: 10, category: "Particle Movement" },
+		{ name: "speed", disp: "Fixed Speed", group: Particle, def: [0., 0.], min: -10, max: 10, category: "Particle Movement" },
+		{ name: "worldSpeed", disp: "Fixed World Speed", group: Particle, def: [0., 0.], min: -10, max: 10, category: "Particle Movement" },
+		{ name: "startSpeed", disp: "Start Speed", group: Spawn, def: [0., 0.], min: -10, max: 10, category: "Particle Movement", track: "instStartSpeed" },
+		{ name: "startWorldSpeed", disp: "Start World Speed", group: Spawn, def: [0., 0.], min: -10, max: 10, category: "Particle Movement", track: "instStartWorldSpeed" },
+		{ name: "orbitSpeed", disp: "Orbit Speed", group: Particle, def: [0.], min: -10, max: 10, category: "Particle Movement" },
+		{ name: "orbitSpeedMultiplier", disp: "Orbit Speed Multiplier", group: Multiplier, def: [1.], min: 0, max: 2, category: "Particle Movement", track: "instOrbitSpeedOverTime" },
 		// PARTICLE LIMIT VELOCITY
-		{ name: "instMaxVelocity",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Max Velocity", groupName: "Particle Limit Velocity"},
-		{ name: "instDampen",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Dampen", groupName: "Particle Limit Velocity"},
+		{ name: "maxVelocity", disp: "Max Velocity", group: Particle, def: [0.], min: 0, max: 10, category: "Particle Limit Velocity" },
+		{ name: "dampen", disp: "Dampen", group: Particle, def: [0.], min: 0, max: 10, category: "Particle Limit Velocity" },
 	];
+	public static var MODE_PARAMS_BY_NAME = [for( p in MODE_PARAMS ) p.name => p];
+
+	/** The animation curves of the spawn and multiplier params, as tracks of the FX timeline **/
+	public static var instanceParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [for( p in MODE_PARAMS ) if( p.track != null ) ({
+		name: p.track,
+		disp: p.disp,
+		t: p.def.length > 1 ? PVec(p.def.length, p.min, p.max) : PFloat(p.min, p.max),
+		def: p.def.length > 1 ? (p.def : Dynamic) : (p.def[0] : Dynamic),
+		groupName: p.category,
+		animate: true,
+		instance: false,
+	} : hrt.prefab.fx.EmitterHelper.ParamDef)];
+
+	/** The old params added to their curve instead of being multiplied by it **/
+	static var LEGACY_ADDITIVE = ["Rotation", "Offset"];
+
+	/** The params with modes by name (see `MODE_PARAMS`), missing when all their components are unset **/
+	public var params : Map<String, ParamValue> = [];
+
+	/** See `Emitter.skippedRandomSlots` **/
+	public var skippedRandomSlots : Array<String> = null;
 
 	public static var PARAMS : Map<String, hrt.prefab.fx.EmitterHelper.ParamDef> = {
 		var map = new Map();
 		for(e in emitterParams) {
 			map.set(e.name, e);
 		}
-		for(i in instanceParams) {
-			i.instance = i.instance ?? true;
-			i.animate = true;
+		for(i in instanceParams)
 			map.set(i.name, i);
-		}
 		map;
 	};
 
@@ -582,11 +623,22 @@ class Emitter2D extends Object2D {
 				Reflect.deleteField(data.props, param.name);
 			}
 		}
+		var props : Dynamic = data.props;
+		props.paramsVersion = PARAMS_VERSION;
+		for( p in MODE_PARAMS ) {
+			var v = EmitterParam.save(params.get(p.name));
+			if( v != null )
+				Reflect.setField(props, p.name, v);
+		}
+		if( skippedRandomSlots != null )
+			props.skippedRandomSlots = skippedRandomSlots.copy();
 		return data;
 	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
+		// props is the loaded data itself, which is not ours to change
+		props = Reflect.copy(props) ?? {};
 		for(param in emitterParams) {
 			if(Reflect.hasField(obj.props, param.name)) {
 				var val : Dynamic = Reflect.field(obj.props, param.name);
@@ -610,6 +662,31 @@ class Emitter2D extends Object2D {
 			else if (param.name == "randomGradient")
 				(props:Dynamic).randomGradient = Gradient.getDefaultGradientData();
 		}
+
+		var data : Dynamic = obj.props ?? {};
+		params = [];
+		for( p in MODE_PARAMS ) {
+			var v = EmitterParam.parse(Reflect.field(data, p.name), p.def.length);
+			if( v != null )
+				params.set(p.name, v);
+		}
+		var skips : Array<Dynamic> = data.skippedRandomSlots;
+		skippedRandomSlots = skips == null ? null : [for( s in skips ) Std.string(s)];
+		var legacy = data.paramsVersion == null;
+		if( legacy || EmitterUpgrade.hasLegacyFields(data, MODE_PARAMS) ) {
+			var skips = EmitterUpgrade.upgradeEmitter(this, data, obj.children, MODE_PARAMS, LEGACY_ADDITIVE, legacy, params);
+			if( skips != null )
+				skippedRandomSlots = (skippedRandomSlots ?? []).concat(skips);
+		}
+		// the params with modes are not kept in props, nor their old fields
+		var props : Dynamic = props;
+		for( p in MODE_PARAMS ) {
+			var old = EmitterUpgrade.LEGACY_NAMES.get(p.name);
+			for( f in [p.name, old, old + "_rand", p.name + "Rand"] )
+				Reflect.deleteField(props, f);
+		}
+		Reflect.deleteField(props, "paramsVersion");
+		Reflect.deleteField(props, "skippedRandomSlots");
 	}
 
 	override function copy(obj:Prefab) {
@@ -627,6 +704,68 @@ class Emitter2D extends Object2D {
 			else if(param.def != null)
 				EmitterHelper.resetParam(props, param);
 		}
+		var from : Emitter2D = cast obj;
+		params = [for( k => v in from.params ) k => v.copy()];
+		skippedRandomSlots = from.skippedRandomSlots?.copy();
+	}
+
+	public function getParam( name : String ) : Null<ParamValue> {
+		return params.get(name);
+	}
+
+	/** Sets the modes of a param, null to unset all its components. **/
+	public function setParam( name : String, v : Null<ParamValue> ) {
+		if( EmitterParam.isUnset(v) )
+			params.remove(name);
+		else
+			params.set(name, v);
+	}
+
+	/**
+		The values the emitter object is built with. They are built in the order of the old
+		code, which allocated the random slots in that order.
+	**/
+	public function makeValues() : Emitter2DValues {
+		var b = new ParamBuilder(this, skippedRandomSlots);
+		inline function param( name : String ) return b.param(MODE_PARAMS_BY_NAME.get(name), params.get(name));
+		inline function animated( name : String ) {
+			var v : Float = EmitterHelper.getParamVal(PARAMS, props, name);
+			return b.animated(Evaluator.vVal(v), name, name);
+		}
+		var d = new InstanceDef();
+		d.localSpeed = param("speed");
+		d.worldSpeed = param("worldSpeed");
+		d.orbitSpeed = param("orbitSpeed");
+		d.orbitSpeedOverTime = param("orbitSpeedMultiplier");
+		d.acceleration = param("acceleration");
+		d.worldAcceleration = param("worldAcceleration");
+		d.localOffset = param("offset");
+		d.scale = param("scale");
+		d.scaleOverTime = param("scaleMultiplier");
+		d.dampen = param("dampen");
+		d.maxVelocity = param("maxVelocity");
+		d.stretch = param("stretch");
+		d.rotation = param("rotation");
+		var v = new Emitter2DValues();
+		v.instDef = d;
+		v.burstParticleCount = animated("burstParticleCount");
+		v.emitRate = animated("emitRate");
+		v.emitRateMin = animated("emitRateMin");
+		v.emitRateMax = animated("emitRateMax");
+		v.emitRadius = animated("emitRadius");
+		v.emitAngle1 = animated("emitAngle1");
+		v.emitAngle2 = animated("emitAngle2");
+		v.emitWidth = animated("emitWidth");
+		v.emitHeight = animated("emitHeight");
+		v.startSpeed = param("startSpeed");
+		v.startWorldSpeed = param("startWorldSpeed");
+		// drawn on the emitter random stream when the particle spawns
+		var life = params.get("lifeTime");
+		var span = EmitterParam.span(life == null ? null : life[0], 1.0);
+		v.lifeTime = (span.min + span.max) * 0.5;
+		v.lifeTimeRand = (span.max - span.min) * 0.5;
+		v.builder = b;
+		return v;
 	}
 
 	override function makeObject(parent2d : h2d.Object) {
@@ -637,108 +776,36 @@ class Emitter2D extends Object2D {
 		super.updateInstance(propName);
 
 		var emitterObj = Std.downcast(local2d, Emitter2DObject);
-		var randIdx = 0;
-
-		function makeParam(scope: Prefab, name: String): Value {
-			var getCurve = hrt.prefab.Curve.getCurve.bind(scope);
-
-			function makeCompVal(baseProp: Null<Float>, defVal: Float, randProp: Null<Float>, pname: String, suffix: String) : Value {
-				var xVal = Evaluator.vVal(baseProp != null ? baseProp : defVal);
-				var randCurve = getCurve(pname + suffix + ":rand");
-				var randVal : Value = VZero;
-				if(randCurve != null)
-					randVal = Evaluator.vMult(VRandom(randIdx++, 1.0, 0.0), Evaluator.vMult(randCurve.makeVal(), VConst(randProp != null ? randProp : 1.0)));
-				else if(randProp != null && randProp != 0.0)
-					randVal = VRandom(randIdx++, randProp, 0.0);
-
-				var xCurve = getCurve(pname + suffix);
-				if (xCurve != null) {
-					if (xCurve.blendMode == CurveBlendMode.RandomBlend) {
-						var ca = Std.downcast(xCurve.children[0], Curve);
-						var cb = Std.downcast(xCurve.children[1], Curve);
-						return VRandomBetweenCurves(randIdx++, ca, cb);
-					}
-					else {
-						if (pname.indexOf("Rotation") >= 0 || pname.indexOf("Offset") >= 0)
-							return Evaluator.vAdd(Evaluator.vAdd(xVal, randVal), xCurve.makeVal());
-						else
-							return Evaluator.vMult(Evaluator.vAdd(xVal, randVal), xCurve.makeVal());
-					}
-				}
-				else
-					return Evaluator.vAdd(xVal, randVal);
-			}
-
-			var baseProp: Dynamic = Reflect.field(props, name);
-			var randProp: Dynamic = Reflect.field(props, EmitterHelper.randProp(name));
-			var param = PARAMS.get(name);
-			switch(param.t) {
-				case PVec(_):
-					inline function makeComp(idx, suffix) {
-						return makeCompVal(
-							baseProp != null ? (baseProp[idx] : Float) : null,
-							param.def != null ? param.def[idx] : 0.0,
-							randProp != null ? (randProp[idx] : Float) : null,
-							param.name, suffix);
-					}
-					var v : Value = VVector(
-						makeComp(0, ":x"),
-						makeComp(1, ":y"),
-						makeComp(2, ":z"));
-					if(v.match(VVector(VZero, VZero, VZero)))
-						v = VZero;
-					else if(v.match(VVector(VConst(1.0), VConst(1.0), VConst(1.0))))
-						v = VConst(1.0);
-					return v;
-
-				default:
-					return makeCompVal(baseProp, param.def != null ? param.def : 0.0, randProp, param.name, "");
-			}
-		}
-
-		var d = new InstanceDef();
-		d.localSpeed = makeParam(this, "instSpeed");
-		d.worldSpeed = makeParam(this, "instWorldSpeed");
-		d.orbitSpeed = makeParam(this, "instOrbitSpeed");
-		d.orbitSpeedOverTime = makeParam(this, "instOrbitSpeedOverTime");
-		d.acceleration = makeParam(this, "instAcceleration");
-		d.worldAcceleration = makeParam(this, "instWorldAcceleration");
-		d.localOffset = makeParam(this, "instOffset");
-		d.scale = makeParam(this, "instScale");
-		d.scaleOverTime = makeParam(this, "instScaleOverTime");
-		d.dampen = makeParam(this, "instDampen");
-		d.maxVelocity = makeParam(this, "instMaxVelocity");
-		d.stretch = makeParam(this, "instStretch");
-		d.rotation = makeParam(this, "instRotation");
-		emitterObj.instDef = d;
+		var values = makeValues();
+		emitterObj.instDef = values.instDef;
 		emitterObj.blendMode  			= 	this.blendMode;
 		emitterObj.batch.blendMode      =   this.blendMode;
 		emitterObj.spriteType          	= 	EmitterHelper.getParamVal(PARAMS, props, "spriteType");
 		emitterObj.texture 			   	= 	EmitterHelper.getParamVal(PARAMS, props, "texture");
 		emitterObj.color 			   	= 	EmitterHelper.getParamVal(PARAMS, props, "color");
 		emitterObj.seed 			    = 	EmitterHelper.getParamVal(PARAMS, props, "seed");
-		emitterObj.lifeTime 			= 	EmitterHelper.getParamVal(PARAMS, props, "lifeTime");
-		emitterObj.lifeTimeRand 		= 	EmitterHelper.getParamVal(PARAMS, props, "lifeTimeRand");
+		emitterObj.lifeTime 			= 	values.lifeTime;
+		emitterObj.lifeTimeRand 		= 	values.lifeTimeRand;
 		emitterObj.speedFactor 			= 	EmitterHelper.getParamVal(PARAMS, props, "speedFactor");
 		emitterObj.warmUpTime 			= 	EmitterHelper.getParamVal(PARAMS, props, "warmUpTime");
 		emitterObj.delay 				= 	EmitterHelper.getParamVal(PARAMS, props, "delay");
 		emitterObj.emitType 			= 	EmitterHelper.getParamVal(PARAMS, props, "emitType");
 		emitterObj.burstCount 			= 	EmitterHelper.getParamVal(PARAMS, props, "burstCount");
 		emitterObj.burstDelay 			= 	EmitterHelper.getParamVal(PARAMS, props, "burstDelay");
-		emitterObj.burstParticleCount 	= 	makeParam(this, "burstParticleCount");
+		emitterObj.burstParticleCount 	= 	values.burstParticleCount;
 		emitterObj.emitDuration 		= 	EmitterHelper.getParamVal(PARAMS, props, "emitDuration");
 		emitterObj.emitOrientation 		= 	EmitterHelper.getParamVal(PARAMS, props, "emitOrientation");
 		emitterObj.maxCount 			= 	EmitterHelper.getParamVal(PARAMS, props, "maxCount");
-		emitterObj.emitRate 			= 	makeParam(this, "emitRate");
-		emitterObj.emitRateMin 			= 	makeParam(this, "emitRateMin");
-		emitterObj.emitRateMax 			= 	makeParam(this, "emitRateMax");
+		emitterObj.emitRate 			= 	values.emitRate;
+		emitterObj.emitRateMin 			= 	values.emitRateMin;
+		emitterObj.emitRateMax 			= 	values.emitRateMax;
 		emitterObj.emitRateChangeDelay 	= 	EmitterHelper.getParamVal(PARAMS, props, "emitRateChangeDelay");
 		emitterObj.emitShape 			= 	EmitterHelper.getParamVal(PARAMS, props, "emitShape");
-		emitterObj.emitRadius 			= 	makeParam(this, "emitRadius");
-		emitterObj.emitAngle1 			= 	makeParam(this, "emitAngle1");
-		emitterObj.emitAngle2 			= 	makeParam(this, "emitAngle2");
-		emitterObj.emitWidth 			= 	makeParam(this, "emitWidth");
-		emitterObj.emitHeight 			= 	makeParam(this, "emitHeight");
+		emitterObj.emitRadius 			= 	values.emitRadius;
+		emitterObj.emitAngle1 			= 	values.emitAngle1;
+		emitterObj.emitAngle2 			= 	values.emitAngle2;
+		emitterObj.emitWidth 			= 	values.emitWidth;
+		emitterObj.emitHeight 			= 	values.emitHeight;
 		emitterObj.emitSurface 			= 	EmitterHelper.getParamVal(PARAMS, props, "emitSurface");
 		emitterObj.spriteSheet 			= 	EmitterHelper.getParamVal(PARAMS, props, "spriteSheet");
 		emitterObj.frameCount 			= 	EmitterHelper.getParamVal(PARAMS, props, "frameCount");
@@ -753,10 +820,10 @@ class Emitter2D extends Object2D {
 		emitterObj.randomColor1 		= 	EmitterHelper.getParamVal(PARAMS, props, "randomColor1");
 		emitterObj.randomColor2 		= 	EmitterHelper.getParamVal(PARAMS, props, "randomColor2");
 		emitterObj.randomGradient 		= 	EmitterHelper.getParamVal(PARAMS, props, "randomGradient");
-		emitterObj.startSpeed			=	makeParam(this, "instStartSpeed");
-		emitterObj.startWorldSpeed 		= 	makeParam(this, "instStartWorldSpeed");
+		emitterObj.startSpeed			=	values.startSpeed;
+		emitterObj.startWorldSpeed 		= 	values.startWorldSpeed;
 
-		emitterObj.init(randIdx, this);
+		emitterObj.init(values.builder.slots.length, this);
 
 		#if editor
 		if(propName == null || ["emitShape", "emitRadius", "emitAngle1", "emitAngle2", "emitWidth", "emitHeight"].indexOf(propName) >= 0)
@@ -895,7 +962,7 @@ class Emitter2D extends Object2D {
 				removeParam("emitRateChangeDelay");
 		}
 
-		EmitterHelper.generateEdit(params, instanceParams, props, ctx.properties, onChange, refresh);
+		EmitterHelper.generateEdit(params, [], props, ctx.properties, onChange, refresh);
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
