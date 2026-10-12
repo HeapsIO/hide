@@ -264,6 +264,19 @@ class Table extends Component {
 	}
 
 
+	// the relative width of a column, 0 for a column which has a fixed width in cdb.less
+	static function getColumnWidth( c : cdb.Data.Column ) {
+		return switch( c.type ) {
+		case TTilePos: 0;
+		case TBool, TColor: 1;
+		case TInt, TFloat, TImage, TGradient, TCurve: 1.5;
+		case TEnum(_), TLayer(_), TTileLayer: 2;
+		case TId, TGuid, TRef(_), TFlags(_), TFile: 2.5;
+		case TString, TCustom(_), TFormula: 3;
+		case TList, TProperties, TPolymorph, TDynamic: 5;
+		}
+	}
+
 	function refreshTable() {
 		errorCount = 0;
 		errors = new Map<Line, Bool>();
@@ -286,6 +299,13 @@ class Table extends Component {
 
 		var colCount = columns.length;
 
+		// the default widths of the columns are relative to their types, in percents of the table (the table layout
+		// is fixed) : a width set in the css of the project (!important) replaces it
+		var totalWidth = 0.;
+		for( c in columns )
+			if( editor.isColumnVisible(c) )
+				totalWidth += getColumnWidth(c);
+
 		for( c in columns ) {
 			var editProps = Editor.getColumnProps(c);
 			var col = J("<th>");
@@ -294,6 +314,9 @@ class Table extends Component {
 			col.addClass( "n_" + c.name );
 			col.attr("title", c.name);
 			col.toggleClass("hidden", !editor.isColumnVisible(c));
+			var w = getColumnWidth(c);
+			if( w > 0 && editor.isColumnVisible(c) )
+				col.css("width", (w * 100 / totalWidth) + "%");
 			col.toggleClass("cat", editProps.categories != null);
 			if(editProps.categories != null)
 				for(c in editProps.categories)

@@ -422,12 +422,6 @@
 			background-color: #333;
 		}
 
-		th.t_bool,
-		th.t_int,
-		th.t_float {
-			width: 6%;
-		}
-
 		th.hidden, td.hidden {
 			width: 1px;
 			padding: 0;
@@ -477,6 +471,10 @@
 			display: inline-block;
 			vertical-align: middle;
 			image-rendering: pixelated;
+			// in a preview (list, props) : already at its size (24px), not zoomed by the css of the project
+			&.preview-icon {
+				zoom: 1;
+			}
 		}
 
 		td.t_int, td.t_float {
@@ -775,9 +773,15 @@
 
 		.t_properties, .t_polymorph {
 			.cell-root {
+				// the name of the property in a dimmer color, centered on the height of its value
 				.label {
 					display: flex;
+					align-items: center;
 					gap: 5px;
+					> .name {
+						color: #888;
+						flex-shrink: 0;
+					}
 				}
 
 				.content {
