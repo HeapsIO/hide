@@ -1369,33 +1369,154 @@ class FXEditor extends hide.view.FileView {
 
 	function addTracks(element : PrefabElement, props : Array<PropTrackDef>, ?prefix: String) {
 		var added = [];
+		var bindings : Array<{ anim : hrt.prefab.fx.EmitterParam.AnimCurves, key : String, curve : Curve }> = [];
 		for(prop in props) {
 			var id = prefix != null ? prefix + ":" + prop.name : prop.name;
+			// the animation curves of an emitter are bound to its params by path
+			var keys = emitterAnimKeys(element, id);
+			if(keys != null) {
+				var anim = getAnimCurves(element);
+				for(k in keys) {
+					if(anim.exists(k))
+						continue;
+					var field = k.split(".").pop();
+					var curve = new Curve(null, null);
+					curve.name = field == "min" || field == "max" ? id + ":" + field : id;
+					curve.addKey(0, emitterTrackValue(element, k, prop.def), Linear);
+					added.push(curve);
+					bindings.push({ anim: anim, key: k, curve: curve });
+				}
+				continue;
+			}
 			if(Curve.getCurve(element, id) != null)
 				continue;
-			var curve = new Curve(element,null);
+			var curve = new Curve(null, null);
 			curve.name = id;
-			if(prop.def != null)
-				curve.addKey(0, prop.def, Linear);
+			// the curve holds the value of the property: it starts from its current value
+			var v = trackValue(element, id, prop.def);
+			if(v != null)
+				curve.addKey(0, v, Linear);
 			added.push(curve);
 		}
 
 		if(added.length == 0)
 			return added;
 
-		undo.change(Custom(function(undo) {
+		function exec(undo: Bool) {
 			for(c in added) {
 				if(undo)
 					c.remove();
 				else
 					element.addChild(c);
 			}
+			for(b in bindings) {
+				if(undo)
+					b.anim.remove(b.key);
+				else
+					b.anim.set(b.key, hrt.prefab.fx.EmitterParam.curvePath(element, b.curve));
+			}
+		}
+		exec(false);
+		undo.change(Custom(function(undo) {
+			exec(undo);
 			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 			sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(SceneTree, () -> sceneEditor.selectElements(!undo ? [for (a in added) a] : [], NoHistory)));
 		}));
 		sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 		sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(SceneTree, () -> sceneEditor.selectElements([for (a in added) a], NoHistory)));
 		return added;
+	}
+
+	static function getAnimCurves(element: PrefabElement) : Null<hrt.prefab.fx.EmitterParam.AnimCurves> {
+		var e = Std.downcast(element, hrt.prefab.fx.Emitter);
+		if(e != null) return e.animCurves;
+		var e2 = Std.downcast(element, hrt.prefab.fx.Emitter2D);
+		if(e2 != null) return e2.animCurves;
+		return null;
+	}
+
+	/**
+		For an emitter, the keys of the animation curves (`AnimCurves`) of the track `id` (`emitRate`,
+		`startSpeed:x`...): the value, or the min and max of a range. Null when `id` is not one of its params.
+	**/
+	static function emitterAnimKeys(element: PrefabElement, id: String) : Null<Array<String>> {
+		var e = Std.downcast(element, hrt.prefab.fx.Emitter);
+		var e2 = Std.downcast(element, hrt.prefab.fx.Emitter2D);
+		if(e == null && e2 == null)
+			return null;
+		var parts = id.split(":");
+		var defs = e != null ? hrt.prefab.fx.Emitter.MODE_PARAMS_BY_NAME : hrt.prefab.fx.Emitter2D.MODE_PARAMS_BY_NAME;
+		var def = defs.get(parts[0]);
+		if(def == null) {
+			var settings = e != null ? [for(p in hrt.prefab.fx.Emitter.emitterParams) if(p.animate == true) p.name] : hrt.prefab.fx.Emitter2D.ANIMATED_SETTINGS;
+			return settings.indexOf(id) >= 0 ? [id] : null;
+		}
+		if(def.animated != true)
+			return null;
+		var i = parts.length > 1 ? hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1]) : 0;
+		if(i < 0)
+			return null;
+		var value = e != null ? e.getParam(def.name) : e2.getParam(def.name);
+		return switch(value == null ? null : value[i]) {
+			case hrt.prefab.fx.EmitterParam.ParamMode.MRange(_): [hrt.prefab.fx.EmitterParam.paramAnimKey(def, i, "min"), hrt.prefab.fx.EmitterParam.paramAnimKey(def, i, "max")];
+			default: [hrt.prefab.fx.EmitterParam.paramAnimKey(def, i)];
+		}
+	}
+
+	/** The current value of what the animation curve `key` of an emitter animates (see `AnimCurves`). **/
+	static function emitterTrackValue(element: PrefabElement, key: String, def: Null<Float>) : Float {
+		inline function num(v: Dynamic) : Null<Float> return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : null;
+		var e = Std.downcast(element, hrt.prefab.fx.Emitter);
+		var e2 = Std.downcast(element, hrt.prefab.fx.Emitter2D);
+		var parts = key.split(".");
+		var defs = e != null ? hrt.prefab.fx.Emitter.MODE_PARAMS_BY_NAME : hrt.prefab.fx.Emitter2D.MODE_PARAMS_BY_NAME;
+		var pdef = defs.get(parts[0]);
+		if(pdef == null)
+			return num(e != null ? Reflect.field(e, key) : hrt.prefab.fx.EmitterHelper.getParamVal(@:privateAccess hrt.prefab.fx.Emitter2D.PARAMS, e2.props, key)) ?? def ?? 0.0;
+		var i = parts.length > 1 ? hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1]) : -1;
+		if(i < 0) i = 0;
+		var field = parts[parts.length - 1];
+		var value = e != null ? e.getParam(pdef.name) : e2.getParam(pdef.name);
+		var span = hrt.prefab.fx.EmitterParam.span(value == null ? null : value[i], pdef.def[i]);
+		return field == "min" ? span.min : span.max;
+	}
+
+	/**
+		The current value of what the track `id` animates (an animation curve holds the value of the
+		property), `def` when it is not known (colors, visibility...).
+	**/
+	static function trackValue(element: PrefabElement, id: String, def: Null<Float>) : Null<Float> {
+		inline function num(v: Dynamic) : Null<Float> return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : null;
+		var parts = id.split(":");
+		var o3d = Std.downcast(element, hrt.prefab.Object3D);
+		var o2d = Std.downcast(element, hrt.prefab.Object2D);
+		var comp = parts.length > 1 ? parts[1] : "x";
+		var axis = comp.toUpperCase();
+		switch(parts[0]) {
+			case "position" if(o3d != null): return num(Reflect.field(o3d, comp)) ?? def;
+			case "rotation" if(o3d != null): return num(Reflect.field(o3d, "rotation" + axis)) ?? def;
+			case "scale" if(o3d != null): return num(Reflect.field(o3d, "scale" + axis)) ?? def;
+			case "position" if(o2d != null): return num(Reflect.field(o2d, comp)) ?? def;
+			case "rotation" if(o2d != null): return o2d.rotation;
+			case "scale" if(o2d != null): return num(Reflect.field(o2d, "scale" + axis)) ?? def;
+			case "localPosition", "localRotation": return def ?? 0.0;
+			default:
+		}
+		if(Std.isOfType(element, hrt.prefab.Shader) || Std.isOfType(element, hrt.prefab.rfx.ScreenShaderGraph)) {
+			var prop : Dynamic = element.props == null ? null : Reflect.field(element.props, parts[0]);
+			if(Std.isOfType(prop, Array) && parts.length > 1) {
+				var i = hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1]);
+				if(i >= 0)
+					return num((prop : Array<Dynamic>)[i]) ?? def;
+			}
+			return num(prop) ?? def;
+		}
+		if(Std.isOfType(element, hrt.prefab.rfx.RendererFX))
+			return num(Reflect.field(element, id)) ?? def;
+		var light = Std.downcast(element, Light);
+		if(light != null && parts.length == 1)
+			return num(Reflect.field(light, id)) ?? def;
+		return def;
 	}
 
 	public function getNewTrackMenu(elt: PrefabElement) : Array<hrt.ui.HuiMenu.MenuItem> {
@@ -1419,7 +1540,7 @@ class FXEditor extends hide.view.FileView {
 		function trackItem(name: String, props: Array<PropTrackDef>, ?prefix: String) : hrt.ui.HuiMenu.MenuItem {
 			var hasAllTracks = true;
 			for(p in props) {
-				if(getTrack(elt, prefix + ":" + p.name) == null)
+				if(getTrack(elt, prefix != null ? prefix + ":" + p.name : p.name) == null)
 					hasAllTracks = false;
 			}
 			return {
@@ -1832,6 +1953,11 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	static function getTrack(element : PrefabElement, propName : String) {
+		var keys = emitterAnimKeys(element, propName);
+		if(keys != null) {
+			var path = getAnimCurves(element).get(keys[0]);
+			return path == null ? null : hrt.prefab.fx.EmitterParam.resolveCurve(element, path);
+		}
 		return Curve.getCurve(element, propName, false);
 	}
 
