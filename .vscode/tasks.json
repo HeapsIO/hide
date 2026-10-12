@@ -15,7 +15,7 @@
         {
             // always builds the Electron editor (hide.js + main.js), whatever the active configuration
             "type": "hxml",
-            "file": "hide.hxml",
+            "file": "hide_jsdx.hxml",
             "problemMatcher": [
                 "$haxe-absolute",
                 "$haxe",
