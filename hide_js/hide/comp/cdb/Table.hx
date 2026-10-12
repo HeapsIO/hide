@@ -711,15 +711,16 @@ class Table extends Component {
 
 			if( !virtual ) break;
 
-			// measure the rows : their heights give the heights of the spacers
+			// measure the rows : their heights give the heights of the spacers. Fractional (offsetTop is rounded) : the
+			// position of the view (anchor) is computed from these heights, an error would move the rows on screen
 			var changed = false;
 			var spacerIndex = 0;
-			var tops = [for( r in shown ) r == null ? spacers[spacerIndex++].offsetTop : r.getElement().offsetTop];
-			var end = body.offsetTop + body.offsetHeight;
+			var tops = [for( r in shown ) (r == null ? spacers[spacerIndex++] : r.getElement()).getBoundingClientRect().top];
+			var end = body.getBoundingClientRect().bottom;
 			for( k => r in shown ) {
 				if( r == null ) continue;
 				var h = (k + 1 < tops.length ? tops[k + 1] : end) - tops[k];
-				if( h <= 0 || Math.abs(h - r.height) <= 0.5 ) continue;
+				if( h <= 0 || Math.abs(h - r.height) <= 0.01 ) continue;
 				changed = true;
 				r.height = h;
 				if( r.sep != null )
@@ -727,7 +728,8 @@ class Table extends Component {
 			}
 			if( !changed ) break;
 
-			// the lines which were never shown have the average height of the measured ones
+			// the lines which were never shown have the average height of the measured ones, in whole pixels : the
+			// spacer above the view changes only when it changes by a pixel, which the scroll compensates exactly
 			var sum = 0., count = 0;
 			for( r in rows )
 				if( r.line != null && r.height >= 0 && r.line.subTable == null ) {
@@ -735,7 +737,7 @@ class Table extends Component {
 					count++;
 				}
 			if( count > 0 )
-				lineHeight = sum / count;
+				lineHeight = Math.round(sum / count);
 		}
 
 		if( anchor != null ) {
