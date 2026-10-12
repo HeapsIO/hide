@@ -324,22 +324,18 @@ enum abstract DescriptorHeapFlags(Int) {
 	}
 }
 
-abstract Address(hl.I64) {
+abstract Address(Int64) from Int64 {
 
 	public var value(get,never) : Int64;
 
 	public inline function new( v : Int64 ) {
-		this = hl.I64.ofInt64(v);
+		this = v;
 	}
 
-	inline function get_value() return hl.I64.toInt64(this);
+	inline function get_value() return this;
 
 	public inline function offset( delta : Int ) : Address {
-		return cast ((this : Float) + delta);
-	}
-
-	@:from static inline function fromInt64( v : Int64 ) : Address {
-		return new Address(v);
+		return this + delta;
 	}
 }
 

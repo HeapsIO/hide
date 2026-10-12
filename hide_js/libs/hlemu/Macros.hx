@@ -100,15 +100,16 @@ class Macros {
 			case TAbstract(a, _):
 				var a = a.get();
 				switch( a.pack.concat([a.name]).join(".") ) {
-				case "Int", "Float", "Single", "hlemu.UI8", "hlemu.UI16", "hlemu.I64": macro cast 0;
+				case "Int", "Float", "Single", "hlemu.UI8", "hlemu.UI16": macro cast 0;
 				case "Bool": macro false;
-				case "haxe.Int64", "haxe._Int64.Int64": macro haxe.Int64.make(0, 0);
+				case "haxe.Int64", "haxe._Int64.Int64", "hlemu.I64": macro cast haxe.Int64.make(0, 0);
 				case "Null": null;
 				default:
 					if( a.meta.has(":coreType") ) null;
-					// enum abstracts over Int, EnumFlags...
+					// enum abstracts over Int, EnumFlags, abstracts over Int64 (dx.Address)...
 					else switch( Context.follow(a.type) ) {
 					case TAbstract(b, _) if( b.get().name == "Int" && b.get().pack.length == 0 ): macro cast 0;
+					case TAbstract(b, _) if( b.get().name == "Int64" ): macro cast haxe.Int64.make(0, 0);
 					default: null;
 					}
 				}
@@ -244,7 +245,7 @@ class Macros {
 			case "haxe.Int64", "haxe._Int64.Int64": return KInt64;
 			case "hlemu.UI8": return KU8;
 			case "hlemu.UI16": return KU16;
-			case "hlemu.I64": return KNum64;
+			case "hlemu.I64": return KInt64;
 			case "hlemu.Bytes", "hlemu.Abstract": return KPtr;
 			case "hlemu.CArray":
 				return KPtrRef(switch( Context.follow(params[0]) ) { case TInst(c, _) if( c.get().meta.has(":struct") ): c.get(); default: null; });
@@ -275,7 +276,7 @@ class Macros {
 		case KBool, KU8: { size : 1, align : 1 };
 		case KU16: { size : 2, align : 2 };
 		case KI32, KF32, KFlags: { size : 4, align : 4 };
-		case KF64, KInt64, KNum64, KPtr, KPtrRef(_): { size : 8, align : 8 };
+		case KF64, KInt64, KPtr, KPtrRef(_): { size : 8, align : 8 };
 		case KStruct(c): getLayout(c);
 		case KArray, KObject, KRef: { size : 0, align : 1 };
 		}
@@ -378,11 +379,8 @@ class Macros {
 				getter = macro return this.__v.getFloat64($o, true);
 				setter = macro { this.__v.setFloat64($o, v, true); return v; };
 			case KInt64:
-				getter = macro return haxe.Int64.make(this.__v.getInt32($o + 4, true), this.__v.getInt32($o, true));
-				setter = macro { var x : haxe.Int64 = v; this.__v.setInt32($o, x.low, true); this.__v.setInt32($o + 4, x.high, true); return v; };
-			case KNum64:
-				getter = macro return cast hlemu.Struct.getNum64(this.__v, $o);
-				setter = macro { hlemu.Struct.setNum64(this.__v, $o, cast v); return v; };
+				getter = macro return cast haxe.Int64.make(this.__v.getInt32($o + 4, true), this.__v.getInt32($o, true));
+				setter = macro { var x : haxe.Int64 = cast v; this.__v.setInt32($o, x.low, true); this.__v.setInt32($o + 4, x.high, true); return v; };
 			case KPtr if( isBytesType(ct, f.pos) ):
 				// In HL the GC follows the pointer : keep the haxe.io.Bytes it was converted from
 				// alive (shader bytecode kept in a pipeline description, for instance)
@@ -548,7 +546,11 @@ class Macros {
 			if( kind == KPtr && isBytesAccess(a.type) ) a.type = macro : hlemu.Bytes;
 			switch( kind ) {
 			case KInt64:
-				args.push(macro hlemu.I64.ofInt64($e));
+				// two 32 bits words (low, high) : exact, without allocating a BigInt for each call
+				var tmp = "__i64_" + a.name;
+				pre.push(macro var $tmp : haxe.Int64 = cast $e);
+				args.push(macro $i{tmp}.low);
+				args.push(macro $i{tmp}.high);
 			case KPtrRef(_):
 				args.push(macro hlemu.Struct.addrSync($e));
 			case KArray:
@@ -576,7 +578,7 @@ class Macros {
 			for( e in post ) body.push(e);
 		} else {
 			var conv = switch( retKind ) {
-			case KInt64: macro hlemu.I64.toInt64(__r);
+			case KInt64: macro cast hlemu.I64.ofBigInt(__r);
 			case KArray: macro cast hlemu.Struct.fromVarray(__r);
 			default: macro cast __r;
 			};
@@ -648,7 +650,8 @@ class Macros {
 			var kind = classify(t, false);
 			var ct = t.toComplexType();
 			var name = "BytesAccess_" + switch( kind ) {
-				case KPtr, KPtrRef(_), KNum64: "N64_" + StringTools.replace(t.toString(), ".", "_").split("<")[0];
+				// one type per element type : BytesAccess<Int64> and BytesAccess<dx.Address> differ
+				case KPtr, KPtrRef(_), KInt64: "N64_" + StringTools.replace(t.toString(), ".", "_").split("<")[0];
 				default: Std.string(kind);
 			};
 			try {
@@ -662,8 +665,8 @@ class Macros {
 				case KU16: size = 1; get = macro cast hlemu.Native.mem_get_ui16(p); set = macro hlemu.Native.mem_set_ui16(p, cast v);
 				case KF32: size = 2; get = macro hlemu.Native.mem_get_f32(p); set = macro hlemu.Native.mem_set_f32(p, v);
 				case KF64: size = 3; get = macro hlemu.Native.mem_get_f64(p); set = macro hlemu.Native.mem_set_f64(p, v);
-				case KInt64: size = 3; get = macro hlemu.I64.toInt64(hlemu.Native.mem_get_i64(p)); set = macro hlemu.Native.mem_set_i64(p, hlemu.I64.ofInt64(v));
-				case KNum64, KPtr: size = 3; get = macro cast hlemu.Native.mem_get_i64(p); set = macro hlemu.Native.mem_set_i64(p, cast v);
+				case KInt64: size = 3; get = macro cast haxe.Int64.make(hlemu.Native.mem_get_i32(p + 4), hlemu.Native.mem_get_i32(p)); set = macro { var x : haxe.Int64 = cast v; hlemu.Native.mem_set_i32(p, x.low); hlemu.Native.mem_set_i32(p + 4, x.high); };
+				case KPtr: size = 3; get = macro cast hlemu.Native.mem_get_ptr(p); set = macro hlemu.Native.mem_set_ptr(p, cast v);
 				default: Context.error("Unsupported BytesAccess type " + t.toString(), pos);
 				}
 				var sizeBits = size;
@@ -704,10 +707,8 @@ enum Kind {
 	KI32;
 	KF32;
 	KF64;
-	/** haxe.Int64 **/
+	/** haxe.Int64 (and hl.I64) **/
 	KInt64;
-	/** 64 bits integer stored as a JS number **/
-	KNum64;
 	/** pointer stored as a JS number, null when 0 **/
 	KPtr;
 	/** pointer to a struct or CArray (of the given struct) : the JS object is kept alive by the field **/

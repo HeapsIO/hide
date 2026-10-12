@@ -33,15 +33,15 @@ class NativeMeshTools {
 			indexes.setInt32(i << 2, i);
 		// user_info of mikkt.c
 		var m = haxe.io.Bytes.alloc(64);
-		M.mem_set_i64(addr(m) + 8, addr(vertices));
+		M.mem_set_ptr(addr(m) + 8, addr(vertices));
 		m.setInt32(16, stride);
 		m.setInt32(20, xPos);
 		m.setInt32(24, normalPos);
 		m.setInt32(28, uvPos);
-		M.mem_set_i64(addr(m) + 32, addr(tangents));
+		M.mem_set_ptr(addr(m) + 32, addr(tangents));
 		m.setInt32(40, 4);
 		m.setInt32(44, 0);
-		M.mem_set_i64(addr(m) + 48, addr(indexes));
+		M.mem_set_ptr(addr(m) + 48, addr(indexes));
 		m.setInt32(56, count);
 		if( !prims.compute_mikkt_tangents(addr(m), threshold) )
 			throw "assert";
@@ -86,9 +86,9 @@ class NativeMeshTools {
 		for( i in 0...count ) {
 			prims.vhacd_get_convex_hull(vhacd, i, addr(hull));
 			var points = new js.lib.Float64Array(hull.getInt32(16) * 3);
-			M.mem_copy(M.mem_address(points), M.mem_get_i64(addr(hull)), points.byteLength);
+			M.mem_copy(M.mem_address(points), M.mem_get_ptr(addr(hull)), points.byteLength);
 			var triangles = new js.lib.Int32Array(hull.getInt32(20) * 3);
-			M.mem_copy(M.mem_address(triangles), M.mem_get_i64(addr(hull) + 8), triangles.byteLength);
+			M.mem_copy(M.mem_address(triangles), M.mem_get_ptr(addr(hull) + 8), triangles.byteLength);
 			out.push({ vertices : [for( f in points ) f], indexes : [for( i in triangles ) i] });
 		}
 		prims.vhacd_release(vhacd);

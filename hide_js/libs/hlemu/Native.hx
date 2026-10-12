@@ -23,8 +23,9 @@ extern class Native {
 	static function mem_set_f32( p : Float, v : Float ) : Void;
 	static function mem_get_f64( p : Float ) : Float;
 	static function mem_set_f64( p : Float, v : Float ) : Void;
-	static function mem_get_i64( p : Float ) : Float;
-	static function mem_set_i64( p : Float, v : Float ) : Void;
+	/** pointers (JS numbers, null when 0) **/
+	static function mem_get_ptr( p : Float ) : Null<Float>;
+	static function mem_set_ptr( p : Float, v : Null<Float> ) : Void;
 	static function mem_ustrlen( p : Float ) : Int;
 	/** native address of the data of an ArrayBuffer, TypedArray or DataView **/
 	static function mem_address( buf : Dynamic ) : Float;

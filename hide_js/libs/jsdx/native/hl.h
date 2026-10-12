@@ -2,8 +2,8 @@
 // as a Node-API addon. Only what dx12.cpp uses is provided.
 //
 // Every DEFINE_PRIM registers its C function in a table; napi_prim.h generates the
-// JS wrapper from the C signature: numbers for integers, floats, enums, int64 and
-// pointers (all addresses are passed as JS numbers, exact below 2^53).
+// JS wrapper from the C signature: numbers for integers, floats, enums and pointers (CPU
+// addresses, exact as JS numbers), two 32 bits words for the 64 bits values (see napi_prim.h).
 #ifndef HL_SHIM_H
 #define HL_SHIM_H
 
