@@ -64,6 +64,7 @@ extern class WebContents {
 	function isDestroyed() : Bool;
 	function isCrashed() : Bool;
 	function openDevTools( ?options : Dynamic ) : Void;
+	function toggleDevTools() : Void;
 	function setDevToolsWebContents( wc : WebContents ) : Void;
 	static function fromId( id : Int ) : Null<WebContents>;
 }
