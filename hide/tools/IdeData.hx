@@ -3,18 +3,37 @@ package hide.tools;
 class IdeData {
 
 	public var projectDir(get,never) : String;
+	function get_projectDir() return currentProject.split("\\").join("/");
+
 	public var resourceDir(get,never) : String;
+	function get_resourceDir() return projectDir+"/res";
+
 	public var appPath(get, null): String;
-	public var userStatePath(get, null): String;
+	public var userDataPath(get, null): String;
 	public var database : cdb.Database = new cdb.Database();
 	public var fileWatcher : hide.tools.FileWatcher;
-
-	static final dBReloadMaxRetries = 5;
-	var databaseFile : String;
-	var databaseDiff : String;
-	var originDataBase : cdb.Database;
-	var dbWatcher : hide.tools.FileWatcher.FileWatchEvent;
 	public var shaderLoader : hide.tools.ShaderLoader;
+
+	public var userConfig(get, never) : Config; // Preferences of the user for all the projects
+	function get_userConfig() return config.user;
+
+	public var projectConfig(get, never) : Config; // Config of the project, shared by all its users
+	function get_projectConfig() return config.project;
+
+	public var projectUserConfig(get, never) : Config; // Preferences of the user for the current project
+	function get_projectUserConfig() return config.projectUser;
+
+	public var currentConfig(get, never) : Config.ReadOnlyConfig; // Value of the config that applies (all the layers merged). Writes must be done on a specific layer
+	function get_currentConfig() return config.projectUser;
+
+	// Editor states is basically editor UI state (camera position, last view opened, etc)
+	public var globalState(default, null) : EditorState;
+	public var projectState(default, null) : EditorState;
+
+	public var currentProject(get, never) : String;
+	function get_currentProject() : String return globalState.get("currentProject", "");
+	public var recentProjects(get, never) : Array<String>;
+	function get_recentProjects() : Array<String> return globalState.get("recentProjects", []);
 
 	/**
 		Indicates that this ide shouldn't try
@@ -22,80 +41,75 @@ class IdeData {
 	**/
 	public var readOnlyConfig = false;
 
-
-	var pakFile : hxd.fmt.pak.FileSystem;
-
-
-	// Default settings for HideGlobalConfig since we can't init values in a typedef
-	public var defaultIdeConfig : Map<String, Dynamic> = [
-		"closeSearchOnFileOpen" => false,
-		"typingDebounceThreshold" => 300,
-		"autoSavePrefab" => false,
-		"colorPickerEscUndo" => true,
-		"trackGpuAlloc" => false,
-		"svnShowVersionedFiles" => true,
-		"svnShowModifiedFiles" => true,
-		"unfocusCPUSavingMode" => true,
-		"screenCaptureResolution" => 4096,
-		"sceneEditorClickCycleObjects" => true,
-		"orientMeshOnDrag" => true,
-		"collisionOnDrag" => true,
-		"minDistFromCameraOnDrag" => 1,
-		"searchOnKeyPress" => true
+	/** Default values of the user preferences, set in the defaults layer of the configs **/
+	public var defaultUserConfig : Map<String, Dynamic> = [
+		"hide.autoSaveLayout" => true,
+		"hide.enableDBFormulas" => true,
+		"hide.closeSearchOnFileOpen" => false,
+		"hide.typingDebounceThreshold" => 300,
+		"hide.autoSavePrefab" => false,
+		"hide.colorPickerEscUndo" => true,
+		"hide.trackGpuAlloc" => false,
+		"hide.svnShowVersionedFiles" => true,
+		"hide.svnShowModifiedFiles" => true,
+		"hide.unfocusCPUSavingMode" => true,
+		"hide.screenCaptureResolution" => 4096,
+		"hide.sceneEditorClickCycleObjects" => true,
+		"hide.orientMeshOnDrag" => true,
+		"hide.collisionOnDrag" => true,
+		"hide.minDistFromCameraOnDrag" => 1,
+		"hide.searchOnKeyPress" => true
 	];
 
-	public var currentConfig(get,never) : Config;
-	public var ideConfig(get, never) : hide.Config.HideGlobalConfig;
-	public var projectConfig(get, never) : hide.HideProjectConfig;
-	public var config : {
-		global : Config, // Per user, for all projects
-		user : Config, // Per user, specific project
-		project : Config, // All users, specific project
-		current : Config, // Merge of all configs above
+	static final dBReloadMaxRetries = 5;
+	var databaseFile : String;
+	var databaseDiff : String;
+	var originDataBase : cdb.Database;
+	var dbWatcher : hide.tools.FileWatcher.FileWatchEvent;
+
+	var config : {
+		user : Config,
+		project : Config,
+		projectUser : Config,
 	};
+
+	var pakFile : hxd.fmt.pak.FileSystem;
 
 	public function new() {
 	}
 
-	function get_ideConfig() {
-		applyDefaultValues();
-		return cast config.global.source.hide;
-	}
-	function get_projectConfig() return cast config.user.source.hide;
-	function get_currentConfig() return config.user;
-
-	function get_projectDir() return ideConfig.currentProject.split("\\").join("/");
-	function get_resourceDir() return projectDir+"/res";
-
-	function getAppDataPath() {
-		return new haxe.io.Path(Sys.programPath()).dir+"/";
+	public function getProjectDataPath( projectPath : String ) : String {
+		return userDataPath + "/projects/" + projectPath.split("\\").join("/").split("/").join("_").split(":").join("_");
 	}
 
 	function initConfig( cwd : String ) {
-		config = Config.loadForProject(cwd, cwd+"/res", getAppDataPath());
+		globalState = new EditorState(userDataPath + "/editorState.json");
+		projectState = new EditorState();
+		config = Config.loadForProject(cwd, cwd+"/res");
 		fileWatcher = new hide.tools.FileWatcher();
 	}
 
 	public function isProjectValid() : Bool {
-		return ideConfig.currentProject != "" && ideConfig.currentProject != null;
+		return currentProject != "";
 	}
 
 	function setProject( dir : String ) {
 		fileWatcher.dispose();
 		dbWatcher = null;
-		if(dir != ideConfig.currentProject ) {
-			ideConfig.currentProject = dir;
-			ideConfig.recentProjects.remove(dir);
-			ideConfig.recentProjects.unshift(dir);
-			if( ideConfig.recentProjects.length > 10 ) ideConfig.recentProjects.pop();
-			if (!readOnlyConfig)
-				config.global.save();
+		if( dir != currentProject ) {
+			var recents = recentProjects;
+			recents.remove(dir);
+			recents.unshift(dir);
+			if( recents.length > 10 ) recents.pop();
+			globalState.set("recentProjects", recents);
+			globalState.set("currentProject", dir);
 		}
-		config = Config.loadForProject(projectDir, resourceDir, getAppDataPath());
-		databaseFile = config.project.get("cdb.databaseFile") ?? "data.cdb";
-		databaseDiff = config.user.get("cdb.databaseDiff");
+		projectState = isProjectValid() ? new EditorState(getProjectDataPath(projectDir) + "/editorState.json") : new EditorState();
+		config = Config.loadForProject(projectDir, resourceDir);
+		databaseFile = currentConfig.get("cdb.databaseFile") ?? "data.cdb";
+		databaseDiff = currentConfig.get("cdb.databaseDiff");
 
-		var pak = config.project.get("pak.dataFile");
+		var pak = currentConfig.get("pak.dataFile");
 		pakFile = null;
 		if( pak != null ) {
 			pakFile = new hxd.fmt.pak.FileSystem();
@@ -164,19 +178,16 @@ class IdeData {
 		return hidePath;
 	}
 
-	function get_userStatePath() {
-		var appPath = appPath;
-		if( sys.FileSystem.exists(appPath + "/props.json") ) {
-			return appPath;
+	function get_userDataPath() {
+		if( userDataPath != null )
+			return userDataPath;
+		var name = #if hl "hide-hl" #else "hide" #end;
+		var dir = switch( Sys.systemName() ) {
+			case "Windows": Sys.getEnv("LOCALAPPDATA") + "/" + name;
+			case "Mac": Sys.getEnv("HOME") + "/Library/Application Support/" + name;
+			default: (Sys.getEnv("XDG_STATE_HOME") ?? Sys.getEnv("HOME") + "/.local/state") + "/" + name;
 		}
-		if( Sys.systemName() ==  "Linux" ) {
-			var statePath = Sys.getEnv("XDG_STATE_HOME");
-			if( statePath == null ) {
-				statePath = Sys.getEnv("HOME") + "/.local/state";
-			}
-			return statePath + "/hide";
-		}
-		return appPath;
+		return userDataPath = dir.split("\\").join("/");
 	}
 
 	public function makeRelative( path : String ) {
@@ -264,7 +275,7 @@ class IdeData {
 			originDataBase.load(lastDBContent);
 			if( fileExists(databaseDiff) ) {
 				var d = new cdb.DiffFile();
-				d.apply(database,parseJSON(getFileText(databaseDiff)),config.project.get("cdb.view"));
+				d.apply(database,parseJSON(getFileText(databaseDiff)),currentConfig.get("cdb.view"));
 			}
 		}
 		if( dbWatcher == null )
@@ -450,21 +461,5 @@ class IdeData {
 	public function savePrefab( file : String, f : hrt.prefab.Prefab ) {
 		@:privateAccess var content = f.serialize();
 		sys.io.File.saveContent(getPath(file), toJSON(content));
-	}
-
-	public function applyDefaultValues() {
-		var ideConfig = config.global.source.hide;
-		for (field => value in defaultIdeConfig) {
-			if (!Reflect.hasField(ideConfig, field))
-				Reflect.setProperty(ideConfig, field, value);
-		}
-	}
-
-	public function removeDefaultValues() {
-		var ideConfig = config.global.source.hide;
-		for (field => value in defaultIdeConfig) {
-			if (Reflect.getProperty(ideConfig, field) == value)
-				Reflect.deleteField(ideConfig, field);
-		}
 	}
 }

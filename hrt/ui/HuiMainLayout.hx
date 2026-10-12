@@ -71,7 +71,7 @@ class HuiMainLayout extends HuiElement {
 	function fileMenu() : Array<HuiMenu.MenuItem> {
 		return [
 			{label: "Open Project ...", click: () -> hide.Ide.inst.chooseProject()},
-			{label: "Recent", menu: recentMenu(), enabled: hide.Ide.inst.ideConfig.recentProjects.length > 0},
+			{label: "Recent", menu: recentMenu(), enabled: hide.Ide.inst.recentProjects.length > 0},
 			{isSeparator: true},
 			{label: "Open Haxe Project", click: () -> Sys.command("Code", [hide.Ide.inst.projectDir])},
 			{label: "Exit", click: () -> hide.Ide.inst.exit()}
@@ -88,7 +88,7 @@ class HuiMainLayout extends HuiElement {
 			{isSeparator: true},
 			{label: "Ui Scale", menu: [
 					for (name => scale in hrt.ui.HuiBase.UIScales) {
-						{label: name, radio: () -> hide.Ide.inst.getLocalStorage(hrt.ui.HuiBase.UIScaleKey) ?? "x1.0" == name, click: () -> hide.Ide.inst.saveLocalStorage(hrt.ui.HuiBase.UIScaleKey, name)}
+						{label: name, radio: () -> hide.Ide.inst.globalState.get(hrt.ui.HuiBase.UIScaleKey) ?? "x1.0" == name, click: () -> hide.Ide.inst.globalState.set(hrt.ui.HuiBase.UIScaleKey, name)}
 					}
 				]
 			},
@@ -97,7 +97,7 @@ class HuiMainLayout extends HuiElement {
 
 	function recentMenu() : Array<HuiMenu.MenuItem> {
 		return [
-			for (project in hide.Ide.inst.ideConfig.recentProjects) {
+			for (project in hide.Ide.inst.recentProjects) {
 				label: project,
 				click: @:privateAccess hide.Ide.inst.setProject.bind(project),
 			}
@@ -162,4 +162,4 @@ class HuiMainLayout extends HuiElement {
 	}
 }
 
-#end
+#end

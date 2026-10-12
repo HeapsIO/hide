@@ -33,12 +33,9 @@ class App extends hxd.App {
 		ide.app = this;
 		ui = new hrt.ui.HuiBase(this, s2d);
 
-		if (hide.Ide.inst.ideConfig.currentProject != null)
-			@:privateAccess hide.Ide.inst.setProject(hide.Ide.inst.ideConfig.currentProject);
-		else
-			@:privateAccess hide.Ide.inst.setProject("");
+		@:privateAccess hide.Ide.inst.setProject(hide.Ide.inst.currentProject);
 
-		var winSize = ide.getLocalStorage("windowSize") ?? {w: 800, h: 600};
+		var winSize = ide.globalState.get("windowSize") ?? {w: 800, h: 600};
 		// hxd.Window.getInstance().resize(winSize.w, winSize.h);
 
 		#if hldx
@@ -62,7 +59,7 @@ class App extends hxd.App {
 	override function onResize() {
 		super.onResize();
 		var win = hxd.Window.getInstance();
-		hide.Ide.inst.saveLocalStorage("windowSize", {w: win.width, h: win.height});
+		hide.Ide.inst.globalState.set("windowSize", {w: win.width, h: win.height});
 	}
 
 	override function dispose() {
@@ -223,4 +220,4 @@ class App extends hxd.App {
 	static public function defer(f: Void->Void) : Void {
 		hide.Ide.inst.app.defered.push(f);
 	}
-}
+}

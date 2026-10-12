@@ -150,7 +150,7 @@ class MSDFView extends FileView {
 
 				applyShaderConfiguration();
 			}
-		}, this.viewMode.match(MSDF), null, false);
+		}, this.viewMode.match(MSDF), null, None);
 		tgMSDF.element.addClass("show-msdf");
 
 		var tgRaw = tools.addToggle("show-raw","file-image-o", "Show Raw", "", function (e) {
@@ -167,7 +167,7 @@ class MSDFView extends FileView {
 				applyShaderConfiguration();
 			}
 
-		}, this.viewMode.match(Raw), null, false);
+		}, this.viewMode.match(Raw), null, None);
 		tgRaw.element.addClass("show-raw");
 
 		var tgComparison = tools.addToggle("show-comparison","arrows-h", "Show comparison between MSDF and Raw", "", function (e) {
@@ -184,7 +184,7 @@ class MSDFView extends FileView {
 				applyShaderConfiguration();
 			}
 
-		}, this.viewMode.match(Comparison), null, false);
+		}, this.viewMode.match(Comparison), null, None);
 		tgComparison.element.addClass("show-comparison");
 
 		tools.addSeparator();

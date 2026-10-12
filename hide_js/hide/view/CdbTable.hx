@@ -217,7 +217,7 @@ class CdbTable extends hide.ui.View<{}> {
 		var sheets = getSheets();
 		editor.show(sheets[index],tabContents[index]);
 		currentSheet = editor.getCurrentSheet();
-		ide.currentConfig.set("cdb.currentSheet", sheets[index].name);
+		ide.projectUserConfig.set("cdb.currentSheet", sheets[index].name);
 
 		var validationFunc = @:privateAccess editor.formulas?.validationFuncs?.get(currentSheet);
 		if (validationFunc == null) {
@@ -272,7 +272,7 @@ class CdbTable extends hide.ui.View<{}> {
 				}
 				var catMenu : Array<hrt.ui.HuiMenu.MenuItem> = [];
 				for (c in allCats) {
-					var visibleCats = ide.projectConfig.dbCategories;
+					var visibleCats : Array<String> = ide.projectState.get("dbCategories");
 					catMenu.push({ label: c, icon: visibleCats != null && visibleCats.indexOf(c) < 0 ? null : "check", click: () -> {
 						if (visibleCats == null)
 							visibleCats = [c];
@@ -282,9 +282,8 @@ class CdbTable extends hide.ui.View<{}> {
 							visibleCats.push(c);
 						if (visibleCats.length == 0)
 							visibleCats = null;
-						ide.projectConfig.dbCategories = visibleCats;
-						ide.config.user.save();
-						applyCategories(ide.projectConfig.dbCategories);
+						ide.projectState.set("dbCategories", visibleCats);
+						applyCategories(ide.projectState.get("dbCategories"));
 						ide.initMenu();
 					} });
 				}
@@ -310,7 +309,7 @@ class CdbTable extends hide.ui.View<{}> {
 						currentSheet = sshow.name;
 					if( getTabCache() != tabCache )
 						rebuild();
-					applyCategories(ide.projectConfig.dbCategories);
+					applyCategories(ide.projectState.get("dbCategories"));
 				});
 			};
 		}
@@ -355,7 +354,7 @@ class CdbTable extends hide.ui.View<{}> {
 			tabs.currentTab = tabContents[idx];
 		}
 
-		applyCategories(ide.projectConfig.dbCategories, false);
+		applyCategories(ide.projectState.get("dbCategories"), false);
 		applyProofing(false);
 
 		watch(@:privateAccess ide.databaseFile, () -> syncTabs());
@@ -366,8 +365,8 @@ class CdbTable extends hide.ui.View<{}> {
 			@:privateAccess tabs.syncTabs();
 		var sheets = getSheets();
 		var header = @:privateAccess tabs.header;
-		element.toggleClass("loc-proofread", ide.projectConfig.dbProofread == true);
-		if( ide.projectConfig.dbProofread == true ) {
+		element.toggleClass("loc-proofread", ide.projectState.get("dbProofread") == true);
+		if( ide.projectState.get("dbProofread") == true ) {
 			for(i in 0...sheets.length) {
 				var tab = header.find('[index=$i]');
 				var ignoreCount = 0;
@@ -382,7 +381,7 @@ class CdbTable extends hide.ui.View<{}> {
 				}
 			}
 		}
-		applyCategories(ide.projectConfig.dbCategories, doRefresh);
+		applyCategories(ide.projectState.get("dbCategories"), doRefresh);
 	}
 
 	public function applyCategories(displayedCats: Array<String>, doRefresh=true) {

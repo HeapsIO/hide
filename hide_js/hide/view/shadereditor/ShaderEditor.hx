@@ -530,7 +530,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		if (previewElem.get(0).matches(":hover")) {
 			for (item in items) {
 				if (StringTools.endsWith(item, ".prefab") || StringTools.endsWith(item, ".fx")) {
-					var renderProp = config.getLocal("scene.renderProps");
+					var renderProp = config.get("scene.renderProps");
 					var renderProps : Array<String> = renderProp is String ? [renderProp] : cast renderProp;
 					if (renderProps.contains(item)) {
 						previewSettings.renderPropsPath = item;
@@ -1233,7 +1233,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	function listRenderProps() {
-		var renderProp = config.getLocal("scene.renderProps");
+		var renderProp = config.get("scene.renderProps");
 		if (renderProp != null) {
 			var renderProps : Array<Dynamic> = renderProp is String ? [{"name": "Default", "value": renderProp}] : cast renderProp;
 			return renderProps;

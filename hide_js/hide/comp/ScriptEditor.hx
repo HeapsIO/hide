@@ -99,7 +99,7 @@ class ScriptCache {
 		LAST_API_TYPES = null;
 	}
 
-	static function loadCache( config : hide.Config ) {
+	static function loadCache( config : hide.Config.ReadOnlyConfig ) {
 		var api = config.get("script.api");
 		var apiFiles : Array<String> = config.get("script.api.files");
 		if( api != LAST_API || apiFiles != LAST_FILES || CHECK_CACHE == null ) {
@@ -116,7 +116,7 @@ class ScriptCache {
 		return CHECK_CACHE;
 	}
 
-	public static function getCachedResult( config : hide.Config, documentName : String, constants : Map<String,Dynamic>, code : String ) : Bool {
+	public static function getCachedResult( config : hide.Config.ReadOnlyConfig, documentName : String, constants : Map<String,Dynamic>, code : String ) : Bool {
 		var cache = loadCache(config);
 		var signature = hashString(code+":"+documentName+":"+haxe.Json.stringify(constants));
 		var error : Null<Bool> = cache.getResult(signature);
@@ -132,7 +132,7 @@ class ScriptCache {
 	static var LAST_API_FILES = null;
 	static var LAST_API_TYPES = null;
 
-	public static function loadApiFiles( config : hide.Config ) {
+	public static function loadApiFiles( config : hide.Config.ReadOnlyConfig ) {
 		var files = config.get("script.api.files");
 		if( files != null && (files != LAST_API_FILES || LAST_API_TYPES == null) ) {
 			var key = files.join(";");
@@ -157,7 +157,7 @@ class ScriptChecker {
 	var ide : hide.Ide;
 	var api : ScriptCache;
 	var checkEvents : Bool;
-	public var config : hide.Config;
+	public var config : hide.Config.ReadOnlyConfig;
 	public var documentName : String;
 	public var constants : Map<String,Dynamic>;
 	public var evalTo : String;
@@ -167,7 +167,7 @@ class ScriptChecker {
 	var initDone = false;
 	var apiHash : String;
 
-	public function new( config : hide.Config, documentName : String, ?constants : Map<String,Dynamic> ) {
+	public function new( config : hide.Config.ReadOnlyConfig, documentName : String, ?constants : Map<String,Dynamic> ) {
 		this.config = config;
 		this.documentName = documentName;
 		this.constants = constants == null ? new Map() : constants;

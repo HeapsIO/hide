@@ -377,23 +377,16 @@ class Prefab extends hide.view.FileView {
 	}
 
 	override function onBeforeClose() {
-		if(Ide.inst.ideConfig.autoSavePrefab)
+		if(Ide.inst.currentConfig.get("hide.autoSavePrefab"))
 			this.save();
 
 		return super.onBeforeClose();
 	}
 
 	function refreshColLayout() {
-		var config = ide.ideConfig;
-		if( config.sceneEditorLayout == null ) {
-			config.sceneEditorLayout = {
-				colsVisible: true,
-				colsCombined: false,
-			};
-		}
-		setCombine(config.sceneEditorLayout.colsCombined);
+		setCombine(ide.globalState.get("sceneEditor.colsCombined", false));
 
-		if( config.sceneEditorLayout.colsVisible )
+		if( ide.globalState.get("sceneEditor.colsVisible", true) )
 			showColumns();
 		else
 			hideColumns();
@@ -417,8 +410,7 @@ class Prefab extends hide.view.FileView {
 		element.find(".props-column").first().hide();
 		element.find(".splitter").first().hide();
 		element.find(".show-cols-btn").first().show();
-		ide.ideConfig.sceneEditorLayout.colsVisible = false;
-		@:privateAccess ide.config.global.save();
+		ide.globalState.set("sceneEditor.colsVisible", false);
 		@:privateAccess if( scene.window != null) scene.window.checkResize();
 	}
 
@@ -427,8 +419,7 @@ class Prefab extends hide.view.FileView {
 		element.find(".props-column").first().show();
 		element.find(".splitter").first().show();
 		element.find(".show-cols-btn").first().hide();
-		ide.ideConfig.sceneEditorLayout.colsVisible = true;
-		@:privateAccess ide.config.global.save();
+		ide.globalState.set("sceneEditor.colsVisible", true);
 		@:privateAccess if( scene.window != null) scene.window.checkResize();
 	}
 
@@ -446,8 +437,7 @@ class Prefab extends hide.view.FileView {
 			element.find(".combine-btn").first().show();
 			element.find(".separate-btn").first().hide();
 		}
-		ide.ideConfig.sceneEditorLayout.colsCombined = val;
-		@:privateAccess ide.config.global.save();
+		ide.globalState.set("sceneEditor.colsCombined", val);
 		@:privateAccess if( scene.window != null) scene.window.checkResize();
 	}
 
@@ -492,7 +482,7 @@ class Prefab extends hide.view.FileView {
 		toolsDefs.push({id: "selfOnlyTransformsToggle", title : "Self only transforms", icon : "map-pin", type : Toggle((v) -> sceneEditor.selfOnlyTransform = v)});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-		toolsDefs.push({id: "ruler", title : "Ruler mode", icon : "arrows-h", type : Toggle((v) -> sceneEditor.toggleRuler(v)), defaultValue: false, saveToggleState: false});
+		toolsDefs.push({id: "ruler", title : "Ruler mode", icon : "arrows-h", type : Toggle((v) -> sceneEditor.toggleRuler(v)), defaultValue: false, storage: None});
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
 

@@ -45,7 +45,7 @@ class Keys {
 		listeners.push(l);
 	}
 
-	public function processEvent( e : Element.Event, config : Config ) {
+	public function processEvent( e : Element.Event, config : Config.ReadOnlyConfig ) {
 		if (disabledStack > 0)
 			return false;
 		var parts = [];
@@ -79,7 +79,7 @@ class Keys {
 		return false;
 	}
 
-	static public function matchJsEvent(shortcutName : String, event: js.html.KeyboardEvent, config : Config) {
+	static public function matchJsEvent(shortcutName : String, event: js.html.KeyboardEvent, config : Config.ReadOnlyConfig) {
 		var keyCode : String = config.get("key."+shortcutName);
 
 		var split = keyCode.split("-");
@@ -98,7 +98,7 @@ class Keys {
 		return true;
 	}
 
-	public function triggerKey( e : Element.Event, key : String, config : Config ) {
+	public function triggerKey( e : Element.Event, key : String, config : Config.ReadOnlyConfig ) {
 		for( l in listeners )
 			if( l(e) )
 				return true;
@@ -124,7 +124,7 @@ class Keys {
 		return Reflect.field(e.get(0), "__keys");
 	}
 
-	public function sortDocCategories(config: Config) : Map<String, Array<{name: String, shortcut: String}>> {
+	public function sortDocCategories(config: Config.ReadOnlyConfig) : Map<String, Array<{name: String, shortcut: String}>> {
 		var ret = new Map();
 		for (k => v in keys) {
 			var shortcut = config.get("key."+k);

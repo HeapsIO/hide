@@ -61,7 +61,7 @@ class CameraControllerEditor extends Popup {
             var isGlobal = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
             checkBox.prop("checked", isGlobal);
             checkBox.on("change", function(_) {
-                Ide.inst.currentConfig.set("sceneeditor.camera.isglobalsettings", checkBox.is(':checked'));
+                Ide.inst.projectUserConfig.set("sceneeditor.camera.isglobalsettings", checkBox.is(':checked'));
             });
         }
 

@@ -411,21 +411,21 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end impl
 		if (saveDisplayPath == null)
 			return;
 
-		hide.Ide.inst.saveLocalStorage(saveDisplayPath + ":" + key, value);
+		hide.Ide.inst.projectState.set(saveDisplayPath + ":" + key, value);
 	}
 
 	function getDisplayState(key: String, def: Dynamic) : Dynamic {
 		if (saveDisplayPath == null)
 			return def;
 
-		return hide.Ide.inst.getLocalStorage(saveDisplayPath + ":" + key) ?? def;
+		return hide.Ide.inst.projectState.get(saveDisplayPath + ":" + key) ?? def;
 	}
 
 	function clearDisplayState(key: String) : Void {
 		if (saveDisplayPath == null)
 			return;
 
-		hide.Ide.inst.clearLocalStorage(saveDisplayPath + ":" + key);
+		hide.Ide.inst.projectState.remove(saveDisplayPath + ":" + key);
 	}
 
 	function getDisplayName() : String {

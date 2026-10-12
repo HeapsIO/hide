@@ -117,8 +117,8 @@ class ScenePreview extends Scene {
 		return listRenderPropsStatic(config);
 	}
 
-	static public function listRenderPropsStatic(config: hide.Config) : Array<{name: String, value: String}> {
-		var renderProps = config.getLocal("scene.renderProps");
+	static public function listRenderPropsStatic(config: hide.Config.ReadOnlyConfig) : Array<{name: String, value: String}> {
+		var renderProps = config.get("scene.renderProps");
 		var ret : Array<{name: String, value: String}> = [];
 
 		if (renderProps is String) {

@@ -176,7 +176,9 @@ class ProjectSettings extends hide.ui.View<{}> {
 		function onChange(file : String, newObj : Dynamic) {
 			sys.io.File.saveContent(file, hide.Ide.inst.toJSON(newObj));
 			inspect(s);
-			ide.currentConfig.load(file);
+			var projectConfig = ide.projectConfig;
+			if( file == projectConfig.path )
+				projectConfig.load(file);
 			for (v in @:privateAccess ide.views)
 				v.config = null;
 		}

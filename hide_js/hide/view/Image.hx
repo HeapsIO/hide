@@ -370,7 +370,7 @@ class Image extends FileView {
 
 				applyShaderConfiguration();
 			}
-		}, this.viewMode.match(Compressed), null, false, false);
+		}, this.viewMode.match(Compressed), null, None, false);
 		tgCompressed.element.addClass("show-compressed");
 
 		var tgUncompressed = tools.addToggle("show-uncompressed","file-image-o", "Show uncompressed texture", "", function (e) {
@@ -387,7 +387,7 @@ class Image extends FileView {
 				applyShaderConfiguration();
 			}
 
-		}, this.viewMode.match(Uncompressed), null, false, false);
+		}, this.viewMode.match(Uncompressed), null, None, false);
 		tgUncompressed.element.addClass("show-uncompressed");
 
 		var tgComparison = tools.addToggle("show-comparison","arrows-h", "Show comparison between compressed and uncompressed texture", "", function (e) {
@@ -404,7 +404,7 @@ class Image extends FileView {
 				applyShaderConfiguration();
 			}
 
-		}, this.viewMode.match(Comparison), null, false, false);
+		}, this.viewMode.match(Comparison), null, None, false);
 		tgComparison.element.addClass("show-comparison");
 
 		tools.addSeparator();
@@ -465,7 +465,7 @@ class Image extends FileView {
 			tools.addToggle("Channel"+name, "", "Channel "+name, name, function(b) {
 				shader.channels &= ~(1 << i);
 				if( b ) shader.channels |= 1 << i;
-			});
+			}, null, null, State);
 		}
 
 		if( !compressedTexture.flags.has(Cube) ) {

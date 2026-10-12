@@ -10,6 +10,12 @@ enum ToolType {
 	Separator;
 }
 
+enum ToggleStorage {
+	None; // Not saved, the toggle starts with its default value
+	Preference; // User preference, saved in the project user config
+	State; // State of the editor, saved in the prokect editor state
+}
+
 typedef ToolDef = {
 	id: String,
 	title : String,
@@ -18,7 +24,7 @@ typedef ToolDef = {
 	?iconStyle: Dynamic,
 	?rightClick : Void -> Void,
 	?defaultValue : Dynamic,
-	?saveToggleState: Bool, // default to true
+	?storage: ToggleStorage,
 }
 
 //
@@ -87,8 +93,26 @@ class Toolbar extends Component {
 		return e;
 	}
 
-	public function addToggle( id: String, icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false, ?toggledIcon : String, saveToggleState : Bool = true, canBeUntoggled : Bool = true) : ToolToggle {
+	public function addToggle( id: String, icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false, ?toggledIcon : String, ?storage : ToggleStorage, canBeUntoggled : Bool = true) : ToolToggle {
 		var e = new Element('<div class="button2" id="${id}" title="${title==null ? "" : title}"><div class="icon ico ico-$icon"/></div>');
+		var def = defValue != null ? defValue : false;
+		storage = storage ?? Preference;
+
+		function getSaved() : Bool {
+			return switch( storage ) {
+				case None: def;
+				case Preference: Ide.inst.currentConfig.get('sceneeditor.${id}', def);
+				case State: Ide.inst.projectState.get('toolbar.${id}', def);
+			}
+		}
+
+		function save( checked : Bool ) {
+			switch( storage ) {
+				case None:
+				case Preference: Ide.inst.projectUserConfig.set('sceneeditor.${id}', checked);
+				case State: Ide.inst.projectState.set('toolbar.${id}', checked);
+			}
+		}
 
 		if(label != null)
 			new Element('<label>$label</label>').appendTo(e);
@@ -107,7 +131,7 @@ class Toolbar extends Component {
 				e.find(".icon").toggleClass('ico-$toggledIcon', checked);
 			}
 
-			Ide.inst.currentConfig.set('sceneeditor.${id}', checked);
+			save(checked);
 
 			if( onToggle != null ) onToggle(checked);
 		}
@@ -116,12 +140,11 @@ class Toolbar extends Component {
 		e.appendTo(curGroup);
 
 
-		var def = defValue != null ? defValue : false;
-		if( (saveToggleState && Ide.inst.currentConfig.get('sceneeditor.${id}', def)) || (!saveToggleState && def) )
+		if( getSaved() )
 			tog();
 
-		if (saveToggleState) {
-			onToggle(Ide.inst.currentConfig.get('sceneeditor.${id}', def));
+		if (storage != None) {
+			onToggle(getSaved());
 		}
 
 		return {
@@ -133,11 +156,11 @@ class Toolbar extends Component {
 				e.contextmenu(function(e) { f(); e.preventDefault(); });
 			},
 			refresh : function() {
-				if (!saveToggleState)
+				if (storage == None)
 					return;
 
 				var isCheck = e.get(0).hasAttribute("checked");
-				if (isCheck != Ide.inst.currentConfig.get('sceneeditor.${id}', def))
+				if (isCheck != getSaved())
 					tog();
 			}
 		};
@@ -262,7 +285,7 @@ class Toolbar extends Component {
 		});
 	}
 
-	public function makeToolbar(toolsDefs : Array<hide.comp.Toolbar.ToolDef>, ?config : Config, ?keys : hide.ui.Keys) {
+	public function makeToolbar(toolsDefs : Array<hide.comp.Toolbar.ToolDef>, ?config : Config.ReadOnlyConfig, ?keys : hide.ui.Keys) {
 		for (tool in toolsDefs) {
 			var key = null;
 			if (config != null) {
@@ -276,7 +299,7 @@ class Toolbar extends Component {
 				case Button(f):
 					el = addButton(tool.icon, tool.title + shortcut, f, tool.rightClick);
 				case Toggle(f):
-					var toggle = addToggle(tool.id, tool.icon, tool.title + shortcut, null, f, tool.defaultValue, null, tool.saveToggleState);
+					var toggle = addToggle(tool.id, tool.icon, tool.title + shortcut, null, f, tool.defaultValue, null, tool.storage);
 					el = toggle.element;
 					if( key != null && keys != null)
 						keys.register("sceneeditor." + tool.id, () -> toggle.toggle(!toggle.isDown()));

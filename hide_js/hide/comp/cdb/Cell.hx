@@ -353,7 +353,7 @@ class Cell {
 			elementHtml.classList.toggle("formula", editor.formulas.has(this) );
 		default:
 		}
-		if( ide.projectConfig.dbProofread == true ) {
+		if( ide.projectState.get("dbProofread") == true ) {
 			var classes = elementHtml.className.split(" ");
 			switch( column.type ) {
 			case TRef(name):

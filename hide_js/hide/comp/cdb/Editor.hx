@@ -75,7 +75,7 @@ class Editor extends Component {
 	var filters : Array<String> = [];
 
 	public var view : cdb.DiffFile.ConfigView;
-	public var config : hide.Config;
+	public var config : hide.Config.ReadOnlyConfig;
 	public var cursor : Cursor;
 	public var keys : hide.ui.Keys;
 	public var undo : hide.ui.UndoHistory;
@@ -1683,7 +1683,7 @@ class Editor extends Component {
 		element.addClass('cdb');
 
 		formulas = new Formulas(this);
-		formulas.enable = ide.ideConfig.enableDBFormulas;
+		formulas.enable = ide.currentConfig.get("hide.enableDBFormulas");
 		formulas.evaluateAll(currentSheet.realSheet);
 
 		var content = new Element("<table>");
@@ -1712,7 +1712,7 @@ class Editor extends Component {
 					<input type="text" class="search-bar-cdb"></input>
 				</div>
 			</div>
-			${!Ide.inst.ideConfig.searchOnKeyPress ? '<div class="btn ico ico-search" id="btn-search" title="Search"></div>' : ''}
+			${!Ide.inst.currentConfig.get("hide.searchOnKeyPress") ? '<div class="btn ico ico-search" id="btn-search" title="Search"></div>' : ''}
 			<p id="results">No results</p>
 			<div class="btn search-type fa fa-font" title="Change search type"></div>
 			<div class="btn search-hidden fa fa-eye" title="Search through hidden categories"></div>
@@ -1772,7 +1772,7 @@ class Editor extends Component {
 					return;
 				}
 
-				if (ide.ideConfig.searchOnKeyPress)
+				if (ide.currentConfig.get("hide.searchOnKeyPress"))
 					search(i.val(), idx);
 			});
 		}
@@ -1866,7 +1866,7 @@ class Editor extends Component {
 		});
 
 		// If there is still a search apply it
-		if (!Ide.inst.ideConfig.closeSearchOnCDBSheetChange) {
+		if (!Ide.inst.currentConfig.get("hide.closeSearchOnCDBSheetChange")) {
 			if (filters.length > 0) {
 				searchBox.show();
 				for (f in filters)
@@ -1912,7 +1912,7 @@ class Editor extends Component {
 
 	public function isColumnVisible( c : cdb.Data.Column ) {
 		var props = getColumnProps(c);
-		var cats = ide.projectConfig.dbCategories;
+		var cats : Array<String> = ide.projectState.get("dbCategories");
 		return cats == null || props.categories == null || cats.filter(c -> props.categories.indexOf(c) >= 0).length > 0;
 	}
 

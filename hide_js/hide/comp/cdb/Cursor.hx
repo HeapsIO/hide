@@ -249,11 +249,11 @@ class Cursor {
 							markNode(el, "right");
 						if (cellY == sel.y2)
 							markNode(el, "bot");
-						if (Ide.inst.ideConfig.highlightActiveLineHeader)
+						if (Ide.inst.currentConfig.get("hide.highlightActiveLineHeader"))
 							markJq(c.line.element, "highlight");
-						if (Ide.inst.ideConfig.highlightActiveColumnHeader)
+						if (Ide.inst.currentConfig.get("hide.highlightActiveColumnHeader"))
 							markJq(table.element.find('th[title="${c.column.name}"]'), "highlight");
-						if (Ide.inst.ideConfig.highlightActiveLine)
+						if (Ide.inst.currentConfig.get("hide.highlightActiveLine"))
 							markJq(c.line.element, "active-line");
 					}
 				}

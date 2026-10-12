@@ -783,7 +783,7 @@ class HuiHelpPopup extends HuiPopup {
 
 /**
 	Button that allow toggling
-	hide.Ide.inst.ideConfig.sceneEditorVerticalSidebar
+	the "hide.sceneEditorVerticalSidebar" user config
 **/
 class HuiSplitterDirectionWidget extends HuiElement {
 		static var SRC = <hui-splitter-direction-widget>
@@ -797,15 +797,15 @@ class HuiSplitterDirectionWidget extends HuiElement {
 		initComponent();
 
 		btn.onClick = (e: hxd.Event) -> {
-			hide.Ide.inst.ideConfig.sceneEditorVerticalSidebar = !hide.Ide.inst.ideConfig.sceneEditorVerticalSidebar;
-			hide.Ide.inst.config.global.save();
+			var ide = hide.Ide.inst;
+			ide.userConfig.set("hide.sceneEditorVerticalSidebar", !ide.currentConfig.get("hide.sceneEditorVerticalSidebar", false));
 			refreshIcon();
 		}
 		refreshIcon();
 	}
 
 	function refreshIcon() {
-		if(hide.Ide.inst.ideConfig.sceneEditorVerticalSidebar) {
+		if(hide.Ide.inst.currentConfig.get("hide.sceneEditorVerticalSidebar", false)) {
 			icon.setIcon(HuiRes.ui.icons.split_vertical);
 		} else {
 			icon.setIcon(HuiRes.ui.icons.split_horizontal);
