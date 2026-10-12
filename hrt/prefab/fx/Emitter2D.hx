@@ -259,6 +259,9 @@ class Emitter2DValues {
 	var emitHeight : Value;
 	var lifeTime : Float;
 	var lifeTimeRand : Float;
+	/** The bounds of the life time, animated over the FX time (null when not) **/
+	var lifeTimeMin : Value;
+	var lifeTimeMax : Value;
 	/** Holds the random slots allocated by the values **/
 	var builder : ParamBuilder;
 	function new() { }
@@ -284,6 +287,9 @@ class Emitter2DObject extends h2d.Object {
 	public var seed = 0;
 	public var lifeTime = 2.0;
 	public var lifeTimeRand = 0.0;
+	/** The bounds of the life time, animated over the FX time (null when not, `lifeTime` and `lifeTimeRand` are used) **/
+	public var lifeTimeMin : Value = null;
+	public var lifeTimeMax : Value = null;
 	public var speedFactor = 1.0;
 	public var warmUpTime = 0.0;
 	public var delay = 0.0;
@@ -435,7 +441,11 @@ class Emitter2DObject extends h2d.Object {
 	function doEmit(count : Int) {
 		for (_ in 0...count) {
 			var part = new Particle2DInstance(getTile(), this);
-			part.lifeTime = lifeTime + rand.srand(lifeTimeRand);
+			if( lifeTimeMin != null ) {
+				var lo = evaluator.getFloat(lifeTimeMin, curTime), hi = evaluator.getFloat(lifeTimeMax, curTime);
+				part.lifeTime = (lo + hi) * 0.5 + rand.srand((hi - lo) * 0.5);
+			} else
+				part.lifeTime = lifeTime + rand.srand(lifeTimeRand);
 			part.idx = instanceCounter;
 			this.particles.push(part);
 			instanceCounter = (instanceCounter + 1) % maxCount;
@@ -539,10 +549,10 @@ class Emitter2D extends Object2D {
 
 	/** The params with modes, see `EmitterParam`. The other ones are `emitterParams`. **/
 	public static var MODE_PARAMS : Array<ModeParamDef> = [
-		{ name: "lifeTime", disp: "Life Time", group: Spawn, def: [1.], min: 0, max: 10, category: "Particle" },
+		{ name: "lifeTime", disp: "Life Time", group: Spawn, def: [1.], min: 0, max: 10, category: "Particle", animated: true },
 		// PARTICLE TRANSFORM
 		{ name: "scale", disp: "Scale", group: Particle, def: [1.], min: 0, max: 2, category: "Particle Transform" },
-		{ name: "scaleMultiplier", disp: "Scale Multiplier", group: Multiplier, def: [1.], min: 0, max: 2, category: "Particle Transform", track: "instScaleOverTime" },
+		{ name: "scaleMultiplier", disp: "Scale Multiplier", group: Multiplier, def: [1.], min: 0, max: 2, category: "Particle Transform", animated: true },
 		{ name: "stretch", disp: "Stretch", group: Particle, def: [1., 1.], min: 0, max: 2, category: "Particle Transform" },
 		{ name: "rotation", disp: "Rotation", group: Particle, def: [0.], min: 0, max: 360, category: "Particle Transform" },
 		{ name: "offset", disp: "Offset", group: Particle, def: [0., 0.], min: -10, max: 10, category: "Particle Transform" },
@@ -551,19 +561,25 @@ class Emitter2D extends Object2D {
 		{ name: "worldAcceleration", disp: "World Acceleration", group: Particle, def: [0., 0.], min: -10, max: 10, category: "Particle Movement" },
 		{ name: "speed", disp: "Fixed Speed", group: Particle, def: [0., 0.], min: -10, max: 10, category: "Particle Movement" },
 		{ name: "worldSpeed", disp: "Fixed World Speed", group: Particle, def: [0., 0.], min: -10, max: 10, category: "Particle Movement" },
-		{ name: "startSpeed", disp: "Start Speed", group: Spawn, def: [0., 0.], min: -10, max: 10, category: "Particle Movement", track: "instStartSpeed" },
-		{ name: "startWorldSpeed", disp: "Start World Speed", group: Spawn, def: [0., 0.], min: -10, max: 10, category: "Particle Movement", track: "instStartWorldSpeed" },
+		{ name: "startSpeed", disp: "Start Speed", group: Spawn, def: [0., 0.], min: -10, max: 10, category: "Particle Movement", animated: true },
+		{ name: "startWorldSpeed", disp: "Start World Speed", group: Spawn, def: [0., 0.], min: -10, max: 10, category: "Particle Movement", animated: true },
 		{ name: "orbitSpeed", disp: "Orbit Speed", group: Particle, def: [0.], min: -10, max: 10, category: "Particle Movement" },
-		{ name: "orbitSpeedMultiplier", disp: "Orbit Speed Multiplier", group: Multiplier, def: [1.], min: 0, max: 2, category: "Particle Movement", track: "instOrbitSpeedOverTime" },
+		{ name: "orbitSpeedMultiplier", disp: "Orbit Speed Multiplier", group: Multiplier, def: [1.], min: 0, max: 2, category: "Particle Movement", animated: true },
 		// PARTICLE LIMIT VELOCITY
 		{ name: "maxVelocity", disp: "Max Velocity", group: Particle, def: [0.], min: 0, max: 10, category: "Particle Limit Velocity" },
 		{ name: "dampen", disp: "Dampen", group: Particle, def: [0.], min: 0, max: 10, category: "Particle Limit Velocity" },
 	];
 	public static var MODE_PARAMS_BY_NAME = [for( p in MODE_PARAMS ) p.name => p];
 
+	/** The emitter settings animated over the FX time **/
+	public static var ANIMATED_SETTINGS = ["burstParticleCount", "emitRate", "emitRateMin", "emitRateMax", "emitRadius", "emitAngle1", "emitAngle2", "emitWidth", "emitHeight"];
+
+	/** The animation curves of the emitter settings, spawn params and multipliers, by path (see `AnimCurves`) **/
+	public var animCurves : AnimCurves = [];
+
 	/** The animation curves of the spawn and multiplier params, as tracks of the FX timeline **/
-	public static var instanceParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [for( p in MODE_PARAMS ) if( p.track != null ) ({
-		name: p.track,
+	public static var instanceParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [for( p in MODE_PARAMS ) if( p.animated == true ) ({
+		name: p.name,
 		disp: p.disp,
 		t: p.def.length > 1 ? PVec(p.def.length, p.min, p.max) : PFloat(p.min, p.max),
 		def: p.def.length > 1 ? (p.def : Dynamic) : (p.def[0] : Dynamic),
@@ -632,6 +648,9 @@ class Emitter2D extends Object2D {
 		}
 		if( skippedRandomSlots != null )
 			props.skippedRandomSlots = skippedRandomSlots.copy();
+		var anim = EmitterParam.saveAnimCurves(animCurves);
+		if( anim != null )
+			props.animCurves = anim;
 		return data;
 	}
 
@@ -678,6 +697,13 @@ class Emitter2D extends Object2D {
 			if( skips != null )
 				skippedRandomSlots = (skippedRandomSlots ?? []).concat(skips);
 		}
+		animCurves = EmitterParam.parseAnimCurves(data.animCurves);
+		var settings = [for( name in ANIMATED_SETTINGS ) { name: name, value: (EmitterHelper.getParamVal(PARAMS, props, name) : Float) }];
+		var skips = AnimUpgrade.upgradeEmitter(this, obj.children, settings, MODE_PARAMS, params, animCurves);
+		if( skips != null )
+			for( s in skips )
+				if( skippedRandomSlots == null || skippedRandomSlots.indexOf(s) < 0 )
+					skippedRandomSlots = (skippedRandomSlots ?? []).concat([s]);
 		// the params with modes are not kept in props, nor their old fields
 		var props : Dynamic = props;
 		for( p in MODE_PARAMS ) {
@@ -687,6 +713,7 @@ class Emitter2D extends Object2D {
 		}
 		Reflect.deleteField(props, "paramsVersion");
 		Reflect.deleteField(props, "skippedRandomSlots");
+		Reflect.deleteField(props, "animCurves");
 	}
 
 	override function copy(obj:Prefab) {
@@ -707,6 +734,7 @@ class Emitter2D extends Object2D {
 		var from : Emitter2D = cast obj;
 		params = [for( k => v in from.params ) k => v.copy()];
 		skippedRandomSlots = from.skippedRandomSlots?.copy();
+		animCurves = from.animCurves.copy();
 	}
 
 	public function getParam( name : String ) : Null<ParamValue> {
@@ -726,11 +754,11 @@ class Emitter2D extends Object2D {
 		code, which allocated the random slots in that order.
 	**/
 	public function makeValues() : Emitter2DValues {
-		var b = new ParamBuilder(this, skippedRandomSlots);
+		var b = new ParamBuilder(this, skippedRandomSlots, animCurves);
 		inline function param( name : String ) return b.param(MODE_PARAMS_BY_NAME.get(name), params.get(name));
 		inline function animated( name : String ) {
 			var v : Float = EmitterHelper.getParamVal(PARAMS, props, name);
-			return b.animated(Evaluator.vVal(v), name, name);
+			return b.animated(Evaluator.vVal(v), name);
 		}
 		var d = new InstanceDef();
 		d.localSpeed = param("speed");
@@ -764,6 +792,11 @@ class Emitter2D extends Object2D {
 		var span = EmitterParam.span(life == null ? null : life[0], 1.0);
 		v.lifeTime = (span.min + span.max) * 0.5;
 		v.lifeTimeRand = (span.max - span.min) * 0.5;
+		var anim = b.animatedSpan(MODE_PARAMS_BY_NAME.get("lifeTime"), life == null ? null : life[0]);
+		if( anim != null ) {
+			v.lifeTimeMin = anim.min;
+			v.lifeTimeMax = anim.max;
+		}
 		v.builder = b;
 		return v;
 	}
@@ -786,6 +819,8 @@ class Emitter2D extends Object2D {
 		emitterObj.seed 			    = 	EmitterHelper.getParamVal(PARAMS, props, "seed");
 		emitterObj.lifeTime 			= 	values.lifeTime;
 		emitterObj.lifeTimeRand 		= 	values.lifeTimeRand;
+		emitterObj.lifeTimeMin 			= 	values.lifeTimeMin;
+		emitterObj.lifeTimeMax 			= 	values.lifeTimeMax;
 		emitterObj.speedFactor 			= 	EmitterHelper.getParamVal(PARAMS, props, "speedFactor");
 		emitterObj.warmUpTime 			= 	EmitterHelper.getParamVal(PARAMS, props, "warmUpTime");
 		emitterObj.delay 				= 	EmitterHelper.getParamVal(PARAMS, props, "delay");

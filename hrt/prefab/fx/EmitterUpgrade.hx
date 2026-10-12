@@ -14,8 +14,8 @@ import hrt.prefab.fx.EmitterParam;
 	RandomBlend mode replaces it by a random between its two child curves.
 
 	The curves stay where they are and the modes reference them by path. The animation curves
-	of the spawn and multiplier params (over the FX time) are left as they are: they keep
-	multiplying the value (see `ModeParamDef.track`).
+	of the spawn and multiplier params (over the FX time) are bound to them and baked next, by
+	`AnimUpgrade.upgradeEmitter`.
 
 	The upgrade reads the raw data of the children, it runs from `load`, before they exist.
 **/

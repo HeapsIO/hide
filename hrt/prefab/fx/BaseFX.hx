@@ -160,10 +160,14 @@ typedef ObjectAnimation = {
 	?obj: h3d.scene.Object,
 	?elt2d: hrt.prefab.Object2D,
 	?obj2d: h2d.Object,
-	?position: Value,
+	/**
+		The animated transform fields, each the value of the field (degrees for the rotations), null for
+		a field that keeps the value of the prefab. 3D: `TRANSFORM_3D`, 2D: `TRANSFORM_2D`.
+		Null when no field is animated.
+	**/
+	?transform: Array<Null<Value>>,
+	/** Offsets applied to the local transform of the leaf objects under the object (rotation in degrees) **/
 	?localPosition: Value,
-	?scale: Value,
-	?rotation: Value,
 	?localRotation: Value,
 	?color: Value,
 	?visibility: Value,
@@ -186,6 +190,11 @@ interface BaseFX {
 class BaseFXTools {
 	public static var useAutoPerInstance = true;
 
+	/**
+		The animated params of a shader (or a shader graph) over the FX time: the curves under
+		`basePrefab` named after the params. A float (int, bool) is the value of its curve, a vector
+		comes from its component curves, a color from its channel curves.
+	**/
 	public static function makeShaderParams(basePrefab: hrt.prefab.Prefab, shaderDef: hxsl.SharedShader) {
 		if(shaderDef == null)
 			return null;
@@ -199,45 +208,42 @@ class BaseFXTools {
 
 			paramCount++;
 
-			var prop = Reflect.field(basePrefab.props, v.name);
-			if (prop == null)
-				prop = Reflect.field(basePrefab, v.name);
-			if (prop == null)
-				prop = hrt.prefab.DynamicShader.getDefault(v.type);
-
-			var curves = Curve.getCurves(basePrefab, v.name);
-			if(curves == null || curves.length == 0)
+			var val = makeShaderParamValue(basePrefab, v.name, v.type);
+			if(val == null)
 				continue;
-
-			switch(v.type) {
-				case TVec(_, VFloat) :
-					var isColor = v.name.toLowerCase().indexOf("color") >= 0;
-					var val = isColor ? Curve.getColorValue(curves) : Curve.getVectorValue(curves);
-					if(ret == null) ret = [];
-					ret.push({
-						idx: paramCount - 1,
-						def: v,
-						value: val,
-					});
-
-				default:
-					var base = 1.0;
-					if(Std.isOfType(prop, Float) || Std.isOfType(prop, Int))
-						base = cast prop;
-					var curve = Curve.getCurve(basePrefab, v.name);
-					var val = Value.VConst(base);
-					if(curve != null)
-						val = Value.VMult(curve.makeVal(), VConst(base));
-					if(ret == null) ret = [];
-					ret.push({
-						idx: paramCount - 1,
-						def: v,
-						value: val,
-					});
-			}
+			if(ret == null) ret = [];
+			ret.push({
+				idx: paramCount - 1,
+				def: v,
+				value: val,
+			});
 		}
 
 		return ret;
+	}
+
+	/** The value of the param `name` of type `type` animated by the curves under `basePrefab`, null if it is not animated. **/
+	public static function makeShaderParamValue(basePrefab: hrt.prefab.Prefab, name: String, type: hxsl.Ast.Type) : Null<Value> {
+		var curves = Curve.getCurves(basePrefab, name);
+		if(curves == null || curves.length == 0)
+			return null;
+		return switch(type) {
+			case TVec(_, VFloat):
+				name.toLowerCase().indexOf("color") >= 0 ? Curve.getColorValue(curves) : Curve.getVectorValue(curves);
+			default:
+				var curve = Curve.getCurve(basePrefab, name);
+				if(curve != null)
+					curve.makeVal();
+				else {
+					// component curves on a float are not read, the param keeps the value of the prefab
+					var prop = Reflect.field(basePrefab.props, name);
+					if (prop == null)
+						prop = Reflect.field(basePrefab, name);
+					if (prop == null)
+						prop = hrt.prefab.DynamicShader.getDefault(type);
+					Value.VConst(Std.isOfType(prop, Float) || Std.isOfType(prop, Int) ? (prop : Float) : 1.0);
+				}
+		}
 	}
 
 	/**

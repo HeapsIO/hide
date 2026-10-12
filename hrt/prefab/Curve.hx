@@ -49,6 +49,12 @@ typedef CurveKeys = Array<CurveKey>;
 
 @:prefabIcon(HuiRes.ui.icons.prefab.curve)
 class Curve extends Prefab {
+	/**
+		Current format of the curve values: an animation curve (over the FX time) holds the value of
+		the property it animates. Saved in the `version` field, a curve without it is in the old format.
+	**/
+	public static inline var VERSION = 1;
+
 	#if !editor
 	public static var BAKE_ENABLE = true;
 	public static var BAKE_MAX_DURATION = 1.0;
@@ -66,6 +72,12 @@ class Curve extends Prefab {
 
 	@:s public var offset : Float = 0.0;
 	@:s public var scale : Float = 1.0;
+
+	/**
+		Format of the values of the curve, see `VERSION`. Curves saved before it are `0`: the old FX
+		animations composed them with the animated property (`hrt.prefab.fx.AnimUpgrade` bakes them).
+	**/
+	public var version : Int = VERSION;
 
 	public var maxTime : Float = 5000.;
 	public var duration(get, never): Float;
@@ -106,6 +118,8 @@ class Curve extends Prefab {
 			o.blendMode = Std.parseInt(o.blendMode);
 		}
 		super.load(o);
+		var v : Dynamic = o.version;
+		version = v == null ? 0 : Std.int(v);
 		if( keys.length == 0 ) {
 			addKey(0.0, 0.0);
 			addKey(1.0, 1.0);
@@ -126,8 +140,16 @@ class Curve extends Prefab {
 		return name;
 	}
 
+	override function save() : Dynamic {
+		var o : Dynamic = super.save();
+		if( version > 0 )
+			o.version = version;
+		return o;
+	}
+
 	override function copy(o:Prefab) {
 		super.copy(o);
+		version = (cast o : Curve).version;
 	}
 
 	override function makeInstance() {

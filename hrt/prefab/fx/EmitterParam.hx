@@ -53,6 +53,14 @@ enum abstract ParamModeKind(String) from String to String {
 	var KCurveRange = "CurveRange";
 }
 
+/**
+	The animation curves (over the FX time) of the params of an emitter, by key (see `EmitterParam.animKey`):
+	the path of the curve from the emitter, like `SCurve`. An animation curve holds the value of what it
+	animates: an emitter setting (`emitRate`...), the `value`, `min` or `max` of a spawn param
+	component, a multiplier. Curve names carry no meaning.
+**/
+typedef AnimCurves = Map<String, String>;
+
 /** One mode per component (a scalar param has one), null when unset. A null `ParamValue` is a param with every component unset. **/
 typedef ParamValue = Array<Null<ParamMode>>;
 
@@ -68,15 +76,51 @@ typedef ModeParamDef = {
 	/** Inspector category **/
 	var category : String;
 	/**
-		Spawn and multiplier params: name of the animation curves over the FX time that multiply
-		the value, found by name among the children of the emitter (`<track>:x/y/z` per component).
+		Spawn and multiplier params: their `value` (a constant or unset component), or `min` / `max`
+		(a range), take an animation curve over the FX time, see `AnimCurves`.
 	**/
-	var ?track : String;
+	var ?animated : Bool;
 }
 
 class EmitterParam {
 
 	public static var COMPONENTS = ["x", "y", "z", "w"];
+
+	/**
+		The key of an animation curve in `AnimCurves`: the param name, `.x/.y/.z` for a component of a
+		vector, `.min` / `.max` for the bounds of a range (`startSpeed.x.min`). `comp` is -1 for a scalar.
+	**/
+	public static function animKey( name : String, comp : Int, ?field : String ) {
+		var k = comp < 0 ? name : name + "." + COMPONENTS[comp];
+		return field == null ? k : k + "." + field;
+	}
+
+	/** The key of the animation curve of component `i` of `def` (see `animKey`). **/
+	public static function paramAnimKey( def : ModeParamDef, i : Int, ?field : String ) {
+		return animKey(def.name, def.def.length == 1 ? -1 : i, field);
+	}
+
+	public static function parseAnimCurves( v : Dynamic ) : AnimCurves {
+		var out : AnimCurves = [];
+		if( v != null )
+			for( k in Reflect.fields(v) ) {
+				var p : Dynamic = Reflect.field(v, k);
+				if( p != null )
+					out.set(k, Std.string(p));
+			}
+		return out;
+	}
+
+	public static function saveAnimCurves( m : AnimCurves ) : Dynamic {
+		if( m == null || !m.iterator().hasNext() )
+			return null;
+		var keys = [for( k in m.keys() ) k];
+		keys.sort(Reflect.compare);
+		var o = {};
+		for( k in keys )
+			Reflect.setField(o, k, m.get(k));
+		return o;
+	}
 
 	public static function kind( m : ParamMode ) : ParamModeKind {
 		return switch( m ) {
@@ -300,6 +344,7 @@ class ParamBuilder {
 
 	var owner : Prefab;
 	var skips : Array<String>;
+	var anim : AnimCurves;
 
 	/** The component keys of the random slots, in slot order. **/
 	public var slots(default, null) : Array<String> = [];
@@ -309,9 +354,16 @@ class ParamBuilder {
 		keeps the slot layout of the emitters upgraded from the old format (see
 		`Emitter.skippedRandomSlots`).
 	**/
-	public function new( owner : Prefab, ?skips : Array<String> ) {
+	public function new( owner : Prefab, ?skips : Array<String>, ?anim : AnimCurves ) {
 		this.owner = owner;
 		this.skips = skips;
+		this.anim = anim;
+	}
+
+	/** The animation curve bound to `key` (see `AnimCurves`), null if none or if it does not resolve. **/
+	public function animCurve( key : String ) : Null<Curve> {
+		var path = anim?.get(key);
+		return path == null ? null : EmitterParam.resolveCurve(owner, path);
 	}
 
 	function slot( key : String ) {
@@ -358,17 +410,66 @@ class ParamBuilder {
 	}
 
 	/**
-		`base` multiplied by the animation curve named `name` (over the FX time), the first
-		enabled child of the emitter with that name, case insensitive.
+		The value of an emitter setting animated over the FX time: its animation curve bound to `key`,
+		`base` when there is none. A curve in RandomBlend mode is a random between its two child curves.
 	**/
-	public function animated( base : Value, key : String, name : String ) : Value {
-		var c = Curve.getCurve(owner, name);
+	public function animated( base : Value, key : String ) : Value {
+		var c = animCurve(key);
 		if( c == null )
 			return base;
-		// random between the two child curves, the base value is not used
+		return curveValue(c, key);
+	}
+
+	function curveValue( c : Curve, key : String ) : Value {
 		if( c.blendMode == RandomBlend )
 			return VRandomBetweenCurves(slot(key), Std.downcast(c.children[0], Curve), Std.downcast(c.children[1], Curve));
-		return Evaluator.vMult(base, c.makeVal());
+		return c.makeVal();
+	}
+
+	/**
+		The value of component `i` of a spawn or multiplier param, `key` naming it for its random slot:
+		the animation curve of its `value` (constant or unset component), or of its `min` / `max` (range).
+	**/
+	public function animatedComp( key : String, m : Null<ParamMode>, def : ModeParamDef, i : Int ) : Value {
+		switch( m ) {
+		case MRange(min, max):
+			var cmin = animCurve(EmitterParam.paramAnimKey(def, i, "min")), cmax = animCurve(EmitterParam.paramAnimKey(def, i, "max"));
+			if( cmin == null && cmax == null )
+				return comp(key, m, def.def[i]);
+			if( skips != null && skips.indexOf(key) >= 0 )
+				slot(key + "~");
+			var rid = slot(key);
+			inline function bound( c : Curve, v : Float ) return c != null ? c.makeVal() : Evaluator.vVal(v);
+			return Evaluator.vLerp(bound(cmin, min), bound(cmax, max), VRandom(rid, 0.5, 0.5));
+		default:
+			var c = animCurve(EmitterParam.paramAnimKey(def, i));
+			if( c == null )
+				return comp(key, m, def.def[i]);
+			if( skips != null && skips.indexOf(key) >= 0 )
+				slot(key + "~");
+			return curveValue(c, key);
+		}
+	}
+
+	/**
+		The animated bounds of a scalar spawn param drawn by the emitter itself (the life time): null
+		when it has no animation curve, the constant ones are kept.
+	**/
+	public function animatedSpan( def : ModeParamDef, m : Null<ParamMode> ) : Null<{ min : Value, max : Value }> {
+		var span = EmitterParam.span(m, def.def[0]);
+		switch( m ) {
+		case MRange(_):
+			var cmin = animCurve(EmitterParam.paramAnimKey(def, 0, "min")), cmax = animCurve(EmitterParam.paramAnimKey(def, 0, "max"));
+			if( cmin == null && cmax == null )
+				return null;
+			return { min: cmin != null ? cmin.makeVal() : Evaluator.vVal(span.min), max: cmax != null ? cmax.makeVal() : Evaluator.vVal(span.max) };
+		default:
+			var c = animCurve(EmitterParam.paramAnimKey(def, 0));
+			if( c == null )
+				return null;
+			var v = c.makeVal();
+			return { min: v, max: v };
+		}
 	}
 
 	/**
@@ -378,10 +479,8 @@ class ParamBuilder {
 	public function param( def : ModeParamDef, value : Null<ParamValue> ) : Value {
 		var dim = def.def.length;
 		inline function one( key : String, i : Int ) {
-			var c = comp(key, value == null ? null : value[i], def.def[i]);
-			if( def.track != null )
-				c = animated(c, key, dim == 1 ? def.track : def.track + ":" + EmitterParam.COMPONENTS[i]);
-			return c;
+			var m = value == null ? null : value[i];
+			return def.animated == true ? animatedComp(key, m, def, i) : comp(key, m, def.def[i]);
 		}
 		if( dim == 1 )
 			return one(def.name, 0);

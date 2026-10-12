@@ -110,22 +110,8 @@ class FX2DAnimation extends h2d.Object {
 		this.localTime = time;
 
 		for(anim in objects) {
-			if(anim.scale != null) {
-				evaluator.getVector(anim.scale, time, tmpPt);
-				anim.obj2d.scaleX = anim.elt2d.scaleX * tmpPt.x;
-				anim.obj2d.scaleY = anim.elt2d.scaleY * tmpPt.y;
-			}
-
-			if(anim.rotation != null) {
-				var rotation = evaluator.getFloat(anim.rotation, time);
-				anim.obj2d.rotation = anim.elt2d.rotation + rotation * (Math.PI / 180.0);
-			}
-
-			if(anim.position != null) {
-				evaluator.getVector(anim.position, time, tmpPt);
-				anim.obj2d.x = anim.elt2d.x + tmpPt.x;
-				anim.obj2d.y = anim.elt2d.y + tmpPt.y;
-			}
+			if(anim.transform != null)
+				applyTransform(anim, evaluator, time);
 
 			if(anim.visibility != null)
 				anim.obj2d.visible = anim.elt2d.visible && evaluator.getFloat(anim.visibility, time) > 0.5;
@@ -174,6 +160,25 @@ class FX2DAnimation extends h2d.Object {
 		this.prevTime = localTime;
 	}
 
+	/** Order of the fields of `ObjectAnimation.transform` in 2D **/
+	public static var TRANSFORM_2D = ["x", "y", "scaleX", "scaleY", "rotation"];
+
+	/** Sets the transform of an animated object at `time`: the animated fields, the others from the prefab. **/
+	public static function applyTransform(anim: ObjectAnimation, evaluator: Evaluator, time: Float) {
+		var e = anim.elt2d;
+		var t = anim.transform;
+		inline function field(i: Int, base: Float) : Float {
+			var v = t[i];
+			return v == null ? base : evaluator.getFloat(v, time);
+		}
+		var o = anim.obj2d;
+		o.x = field(0, e.x);
+		o.y = field(1, e.y);
+		o.scaleX = field(2, e.scaleX);
+		o.scaleY = field(3, e.scaleY);
+		o.rotation = hxd.Math.degToRad(field(4, e.rotation));
+	}
+
 	override function sync( ctx : h2d.RenderContext ) {
 		var changed = posChanged;
 		if( changed ) calcAbsPos();
@@ -219,7 +224,14 @@ class FX2D extends Object2D implements BaseFX {
 		var obj2d = elt.to(hrt.prefab.Object2D);
 		if(obj2d == null || obj2d.local2d == null)
 			return;
+		var anim = makeObjectAnimation(obj2d, obj2d.local2d);
+		if(anim != null)
+			anims.push(anim);
+	}
 
+	/** The animations of an object of the FX: the curves under it named after what they animate. Null when nothing is animated. **/
+	public static function makeObjectAnimation(obj2d: hrt.prefab.Object2D, local2d: h2d.Object) : Null<ObjectAnimation> {
+		var elt : PrefabElement = obj2d;
 		// TODO: Support references?
 		var anyFound = false;
 
@@ -228,19 +240,6 @@ class FX2D extends Object2D implements BaseFX {
 			if(c != null)
 				anyFound = true;
 			return c != null ? VCurve(c) : def;
-		}
-
-		function makeVector(name: String, defVal: Float, uniform: Bool=true, scale: Float=1.0) : Value {
-			var curves = Curve.getCurves(elt, name);
-			if(curves == null || curves.length == 0)
-				return null;
-
-			anyFound = true;
-
-			if(uniform && curves.length == 1 && curves[0].name == name)
-				return scale != 1.0 ? VMult(curves[0].makeVal(), VConst(scale)) : curves[0].makeVal();
-
-			return Curve.getVectorValue(curves, defVal, scale);
 		}
 
 		function makeColor(name: String) {
@@ -252,12 +251,19 @@ class FX2D extends Object2D implements BaseFX {
 			return Curve.getColorValue(curves);
 		}
 
+		var position = FX.FXAnimation.vectorCurves(elt, "position", 2);
+		var scale = FX.FXAnimation.vectorCurves(elt, "scale", 2);
+		var rotation = FX.FXAnimation.vectorCurves(elt, "rotation", 1);
+		var transform = null;
+		if(position != null || scale != null || rotation != null) {
+			anyFound = true;
+			transform = (position ?? [null, null]).concat(scale ?? [null, null]).concat(rotation ?? [null]);
+		}
+
 		var anim : ObjectAnimation = {
 			elt2d: obj2d,
-			obj2d: obj2d.local2d,
-			position: makeVector("position", 0.0),
-			scale: makeVector("scale", 1.0, true),
-			rotation: makeVector("rotation", 0.0, 360.0),
+			obj2d: local2d,
+			transform: transform,
 			color: makeColor("color"),
 			visibility: makeVal("visibility", null),
 		};
@@ -265,8 +271,17 @@ class FX2D extends Object2D implements BaseFX {
 		if (Std.isOfType(elt, hrt.prefab.l2d.Anim2D) || Std.isOfType(elt, hrt.prefab.l2d.Atlas))
 			anyFound = true;
 
-		if(anyFound)
-			anims.push(anim);
+		return anyFound ? anim : null;
+	}
+
+	override function load( obj : Dynamic ) {
+		super.load(obj);
+		// curves in the old format, before the children are made from the data
+		hrt.prefab.fx.AnimUpgrade.upgradeFX(obj, true);
+	}
+
+	override function copy( obj : Prefab ) {
+		super.copy(obj);
 	}
 
 	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab {

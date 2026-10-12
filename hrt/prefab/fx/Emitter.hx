@@ -105,6 +105,9 @@ class EmitterValues {
 	var emitAngle : Value;
 	var lifeTime : Float;
 	var lifeTimeRand : Float;
+	/** The bounds of the life time, animated over the FX time (null when not) **/
+	var lifeTimeMin : Value;
+	var lifeTimeMax : Value;
 	/** Holds the random slots allocated by the values, the particle shaders add theirs **/
 	var builder : ParamBuilder;
 	function new() { }
@@ -551,6 +554,9 @@ class EmitterObject extends h3d.scene.Object {
 	// LIFE
 	public var lifeTime = 2.0;
 	public var lifeTimeRand = 0.0;
+	/** The bounds of the life time, animated over the FX time (null when not, `lifeTime` and `lifeTimeRand` are used) **/
+	public var lifeTimeMin : Value = null;
+	public var lifeTimeMax : Value = null;
 	public var speedFactor = 1.0;
 	public var warmUpTime = 0.0;
 	public var delay = 0.0;
@@ -1053,7 +1059,11 @@ class EmitterObject extends h3d.scene.Object {
 			for( i in 0...count ) {
 				var part = allocInstance();
 				part.startTime = globalTime;
-				part.lifeTime = hxd.Math.max(0.01, lifeTime + random.srand(lifeTimeRand));
+				if( lifeTimeMin != null ) {
+					var lo = evaluator.getFloat(lifeTimeMin, curTime), hi = evaluator.getFloat(lifeTimeMax, curTime);
+					part.lifeTime = hxd.Math.max(0.01, (lo + hi) * 0.5 + random.srand((hi - lo) * 0.5));
+				} else
+					part.lifeTime = hxd.Math.max(0.01, lifeTime + random.srand(lifeTimeRand));
 
 				if(useRandomColor) {
 					if (useRandomGradient) {
@@ -1819,19 +1829,19 @@ class Emitter extends Object3D {
 
 	/** The params with modes, see `EmitterParam`. The other ones are the fields above. **/
 	public static var MODE_PARAMS : Array<ModeParamDef> = [
-		{ name: "lifeTime", disp: "Life Time", group: Spawn, def: [1.], min: 0, max: 10, category: "Properties" },
+		{ name: "lifeTime", disp: "Life Time", group: Spawn, def: [1.], min: 0, max: 10, category: "Properties", animated: true },
 		{ name: "worldAcceleration", disp: "World Acceleration", group: Particle, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement" },
 		{ name: "speed", disp: "Fixed Speed", group: Particle, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement" },
 		{ name: "worldSpeed", disp: "Fixed World Speed", group: Particle, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement" },
-		{ name: "startSpeed", disp: "Start Speed", group: Spawn, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement", track: "instStartSpeed" },
-		{ name: "startWorldSpeed", disp: "Start World Speed", group: Spawn, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement", track: "instStartWorldSpeed" },
+		{ name: "startSpeed", disp: "Start Speed", group: Spawn, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement", animated: true },
+		{ name: "startWorldSpeed", disp: "Start World Speed", group: Spawn, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement", animated: true },
 		{ name: "orbitSpeed", disp: "Orbit Speed", group: Particle, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement" },
-		{ name: "orbitSpeedMultiplier", disp: "Orbit Speed Multiplier", group: Multiplier, def: [1.], min: 0, max: 2, category: "Particle Movement", track: "instOrbitSpeedOverTime" },
+		{ name: "orbitSpeedMultiplier", disp: "Orbit Speed Multiplier", group: Multiplier, def: [1.], min: 0, max: 2, category: "Particle Movement", animated: true },
 		{ name: "acceleration", disp: "Acceleration", group: Particle, def: [0., 0., 0.], min: -10, max: 10, category: "Particle Movement" },
 		{ name: "maxVelocity", disp: "Max Velocity", group: Particle, def: [0.], min: 0, max: 10, category: "Limit Velocity" },
 		{ name: "dampen", disp: "Dampen", group: Particle, def: [0.], min: 0, max: 10, category: "Limit Velocity" },
 		{ name: "scale", disp: "Scale", group: Particle, def: [1.], min: 0, max: 2, category: "Particle Transform" },
-		{ name: "scaleMultiplier", disp: "Scale Multiplier", group: Multiplier, def: [1.], min: 0, max: 2, category: "Particle Transform", track: "instScaleOverTime" },
+		{ name: "scaleMultiplier", disp: "Scale Multiplier", group: Multiplier, def: [1.], min: 0, max: 2, category: "Particle Transform", animated: true },
 		{ name: "stretch", disp: "Stretch", group: Particle, def: [1., 1., 1.], min: 0, max: 2, category: "Particle Transform" },
 		{ name: "stretchVelocity", disp: "Stretch Velocity", group: Particle, def: [0.], min: 0, max: 2, category: "Particle Transform" },
 		{ name: "rotation", disp: "Rotation", group: Particle, def: [0., 0., 0.], min: 0, max: 360, category: "Particle Transform" },
@@ -1841,8 +1851,8 @@ class Emitter extends Object3D {
 	public static var MODE_PARAMS_BY_NAME = [for( p in MODE_PARAMS ) p.name => p];
 
 	/** The animation curves of the spawn and multiplier params, as tracks of the FX timeline **/
-	public static var instanceParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [for( p in MODE_PARAMS ) if( p.track != null ) ({
-		name: p.track,
+	public static var instanceParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [for( p in MODE_PARAMS ) if( p.animated == true ) ({
+		name: p.name,
 		disp: p.disp,
 		t: p.def.length > 1 ? PVec(p.def.length, p.min, p.max) : PFloat(p.min, p.max),
 		def: p.def.length > 1 ? (p.def : Dynamic) : (p.def[0] : Dynamic),
@@ -1856,6 +1866,12 @@ class Emitter extends Object3D {
 
 	/** The params with modes by name (see `MODE_PARAMS`), missing when all their components are unset **/
 	public var params : Map<String, ParamValue> = [];
+
+	/**
+		The animation curves of the emitter settings (the `animate` ones of `emitterParams`), spawn
+		params and multipliers, by path (see `AnimCurves`).
+	**/
+	public var animCurves : AnimCurves = [];
 
 	/**
 		Components that leave one random slot unused before their own. Emitters upgraded from the
@@ -1882,6 +1898,9 @@ class Emitter extends Object3D {
 		}
 		if( skippedRandomSlots != null )
 			props.skippedRandomSlots = skippedRandomSlots.copy();
+		var anim = EmitterParam.saveAnimCurves(animCurves);
+		if( anim != null )
+			props.animCurves = anim;
 		data.props = props;
 		return data;
 	}
@@ -1904,6 +1923,13 @@ class Emitter extends Object3D {
 			if( skips != null )
 				skippedRandomSlots = (skippedRandomSlots ?? []).concat(skips);
 		}
+		animCurves = EmitterParam.parseAnimCurves(props.animCurves);
+		var settings = [for( p in emitterParams ) if( p.animate == true ) { name: p.name, value: (Reflect.field(this, p.name) : Float) }];
+		var skips = AnimUpgrade.upgradeEmitter(this, obj.children, settings, MODE_PARAMS, params, animCurves);
+		if( skips != null )
+			for( s in skips )
+				if( skippedRandomSlots == null || skippedRandomSlots.indexOf(s) < 0 )
+					skippedRandomSlots = (skippedRandomSlots ?? []).concat([s]);
 		this.props = null;
 		// Negative warmup time is an old version of delay
 		if( warmUpTime < 0 ) {
@@ -1920,6 +1946,7 @@ class Emitter extends Object3D {
 		copyParams(from);
 		params = [for( k => v in from.params ) k => v.copy()];
 		skippedRandomSlots = from.skippedRandomSlots?.copy();
+		animCurves = from.animCurves.copy();
 	}
 
 	public function getParam( name : String ) : Null<ParamValue> {
@@ -1939,9 +1966,9 @@ class Emitter extends Object3D {
 		code, which allocated the random slots in that order.
 	**/
 	public function makeValues() : EmitterValues {
-		var b = new ParamBuilder(this, skippedRandomSlots);
+		var b = new ParamBuilder(this, skippedRandomSlots, animCurves);
 		inline function param( name : String ) return b.param(MODE_PARAMS_BY_NAME.get(name), params.get(name));
-		inline function animated( name : String, v : Float ) return b.animated(Evaluator.vVal(v), name, name);
+		inline function animated( name : String, v : Float ) return b.animated(Evaluator.vVal(v), name);
 		var d = new InstanceDef();
 		d.localSpeed = param("speed");
 		d.worldSpeed = param("worldSpeed");
@@ -1972,6 +1999,11 @@ class Emitter extends Object3D {
 		var span = EmitterParam.span(life == null ? null : life[0], 1.0);
 		v.lifeTime = (span.min + span.max) * 0.5;
 		v.lifeTimeRand = (span.max - span.min) * 0.5;
+		var anim = b.animatedSpan(MODE_PARAMS_BY_NAME.get("lifeTime"), life == null ? null : life[0]);
+		if( anim != null ) {
+			v.lifeTimeMin = anim.min;
+			v.lifeTimeMax = anim.max;
+		}
 		v.builder = b;
 		return v;
 	}
@@ -2018,6 +2050,8 @@ class Emitter extends Object3D {
 		// LIFE
 		emitterObj.lifeTime 			= 	values.lifeTime;
 		emitterObj.lifeTimeRand 		= 	values.lifeTimeRand;
+		emitterObj.lifeTimeMin 			= 	values.lifeTimeMin;
+		emitterObj.lifeTimeMax 			= 	values.lifeTimeMax;
 		emitterObj.speedFactor 			= 	speedFactor;
 		emitterObj.warmUpTime 			= 	warmUpTime;
 		emitterObj.delay 				= 	delay;
