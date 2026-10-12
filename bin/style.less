@@ -6951,3 +6951,35 @@ fancy-gallery-item {
 		}
 	}
 }
+
+virtual-list {
+	display: block;
+	position: relative;
+	overflow: hidden;
+	contain: strict;
+
+	> virtual-list-items > * {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+	}
+
+	> virtual-list-scrollbar {
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		width: 8px;
+
+		> virtual-list-cursor {
+			display: block;
+			border-radius: 4px;
+			background-color: @color-tool-bg;
+		}
+
+		&:hover > virtual-list-cursor {
+			background-color: @color-tool-bg-hover;
+		}
+	}
+}

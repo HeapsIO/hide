@@ -900,3 +900,38 @@ body.fullScreenMode {
 		height: 100% !important;
 	}
 }
+
+cdb-table2 {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	background-color: #222;
+
+	> virtual-list {
+		flex: 1;
+	}
+}
+
+cdb-line {
+	display: grid;
+	border-bottom: 1px solid #444;
+	contain: content;
+
+	&.header {
+		font-weight: bold;
+		background-color: #333;
+	}
+
+	> cdb-cell {
+		padding: 2px 4px;
+		overflow: hidden;
+		white-space: pre;
+		border-left: 1px solid #444;
+	}
+}
+
+cdb-table-end {
+	display: block;
+	height: 20px;
+	border-bottom: 1px solid #444;
+}

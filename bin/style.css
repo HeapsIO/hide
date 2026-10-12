@@ -5809,3 +5809,30 @@ fancy-gallery-item.details .icon-placement {
   min-width: 0;
   flex: 1;
 }
+virtual-list {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  contain: strict;
+}
+virtual-list > virtual-list-items > * {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+virtual-list > virtual-list-scrollbar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+}
+virtual-list > virtual-list-scrollbar > virtual-list-cursor {
+  display: block;
+  border-radius: 4px;
+  background-color: #545454;
+}
+virtual-list > virtual-list-scrollbar:hover > virtual-list-cursor {
+  background-color: #656565;
+}
