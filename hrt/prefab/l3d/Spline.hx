@@ -256,7 +256,8 @@ class Spline extends hrt.prefab.Object3D {
 		}
 
 		for ( s in findAll(SplineMesh, true) )
-			s.updateInstance();
+			if ( s.local3d != null )
+				s.updateInstance();
 		for ( s in findAll(hrt.prefab.l3d.SplineMeshSpawner, true) )
 			s.updateInstance();
 	}

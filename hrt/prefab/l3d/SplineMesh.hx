@@ -77,7 +77,7 @@ class SplineMesh extends hrt.prefab.Object3D {
 		super.updateInstance(propName);
 		disposeSplineMesh();
 
-		if ( spline == null || spline.samples == null )
+		if ( spline == null || spline.samples.length < 2 )
 			computeDefaultSplineMesh();
 		else
 			computeSplineMesh();
@@ -183,9 +183,6 @@ class SplineMesh extends hrt.prefab.Object3D {
 
 	function computeSplineMesh() {
 		var samples = spline.samples;
-		if ( samples.length < 2 || local3d == null )
-			return;
-
 		var bounds = new h3d.col.Bounds();
 
 		var vertexPerPoint = vertexPerPoint;
