@@ -652,7 +652,7 @@ class AnimUpgrade {
 		if( cr != null ) {
 			var animAxes = [for( i in 0...3 ) if( cr.comps[i] != null ) i];
 			var maxBase = -1, minAnim = 3;
-			for( i in 0...3 ) if( rot[i] != 0 ) maxBase = i;
+			for( i in 0...3 ) if( Math.abs(rot[i]) > 1e-6 ) maxBase = i;
 			for( i in animAxes ) if( i < minAnim ) minAnim = i;
 			if( maxBase <= minAnim ) // Rx Ry Rz (base) * Rx Ry Rz (anim): one rotation in that order
 				rotMap = [for( i in 0...3 ) cr.comps[i] == null ? { src: null, a: 0., b: rot[i] } : { src: i, a: 360., b: rot[i] }];
@@ -850,23 +850,52 @@ class AnimUpgrade {
 		base.initScale(withScale ? scale[0] : 1, withScale ? scale[1] : 1, withScale ? scale[2] : 1);
 		base.rotate(hxd.Math.degToRad(rot[0]), hxd.Math.degToRad(rot[1]), hxd.Math.degToRad(rot[2]));
 		var m = new h3d.Matrix();
-		var outS = [[], [], []], outR = [[], [], []];
-		var prev = [for( r in rot ) hxd.Math.degToRad(r)];
 		var worst = 0.;
-		for( t in times ) {
+		function sampleAt( t : Float, prev : Array<Float> ) : { s : Array<Float>, r : Array<Float>, error : Float } {
 			inline function f( v : Null<Value>, def : Float ) return v == null ? def : ev.getFloat(v, t);
 			var s = withScale ? [f(sv[0], 1), f(sv[1], 1), f(sv[2], 1)] : [1., 1., 1.];
 			m.initScale(s[0], s[1], s[2]);
 			m.rotate(f(rv[0], 0) * Math.PI * 2, f(rv[1], 0) * Math.PI * 2, f(rv[2], 0) * Math.PI * 2);
 			m.multiply(base, m);
 			var d = decompose(m, prev, withScale ? [s[0] * scale[0], s[1] * scale[1], s[2] * scale[2]] : [1., 1., 1.]);
-			prev = d.r;
-			for( i in 0...3 ) {
-				outS[i].push(d.s[i]);
-				outR[i].push(hxd.Math.radToDeg(d.r[i]));
-			}
 			if( d.error > worst ) worst = d.error;
+			return d;
 		}
+		// samples, refined where the linear keys between two of them would miss the transform
+		var samples = [];
+		var prev = [for( r in rot ) hxd.Math.degToRad(r)];
+		for( t in times ) {
+			var d = sampleAt(t, prev);
+			prev = d.r;
+			samples.push({ t: t, d: d });
+		}
+		var rtol = hxd.Math.degToRad(ROTATION_TOLERANCE);
+		function refine( a : { t : Float, d : Dynamic }, b : { t : Float, d : Dynamic }, depth : Int, out : Array<{ t : Float, d : Dynamic }> ) {
+			if( depth > 0 && b.t - a.t > 1e-6 ) {
+				var tm = (a.t + b.t) * 0.5;
+				var dm = sampleAt(tm, a.d.r);
+				var bad = false;
+				for( i in 0...3 ) {
+					if( Math.abs(dm.r[i] - (a.d.r[i] + b.d.r[i]) * 0.5) > rtol ) bad = true;
+					var sv = (a.d.s[i] + b.d.s[i]) * 0.5;
+					if( withScale && Math.abs(dm.s[i] - sv) > SCALE_TOLERANCE * Math.max(1, Math.abs(scale[i])) ) bad = true;
+				}
+				if( bad ) {
+					var mid = { t: tm, d: (dm : Dynamic) };
+					refine(a, mid, depth - 1, out);
+					out.push(mid);
+					refine(mid, b, depth - 1, out);
+				}
+			}
+		}
+		var all = [samples[0]];
+		for( i in 1...samples.length ) {
+			refine(samples[i - 1], samples[i], 10, all);
+			all.push(samples[i]);
+		}
+		times = [for( x in all ) x.t];
+		var outS = [for( i in 0...3 ) [for( x in all ) (x.d.s[i] : Float)]];
+		var outR = [for( i in 0...3 ) [for( x in all ) hxd.Math.radToDeg(x.d.r[i])]];
 		if( worst > 1e-4 )
 			warn(n, 'scale and rotation not separable (shear ${Math.round(worst * 1e4) / 1e4}), approximated');
 
@@ -1382,7 +1411,7 @@ class AnimUpgrade {
 			if( gr.length > 0 ) {
 				var cr = channels(gr, "rotation", 3);
 				var maxBase = -1, minAnim = 3;
-				for( i in 0...3 ) if( rot[i] != 0 ) maxBase = i;
+				for( i in 0...3 ) if( Math.abs(rot[i]) > 1e-6 ) maxBase = i;
 				for( i in 0...3 ) if( cr.comps[i] != null && i < minAnim ) minAnim = i;
 				ok = (maxBase <= minAnim && vector("rotation", [360, 360, 360], rot)) && ok;
 			}
