@@ -62,6 +62,15 @@
 .cdb-view > .hide-tabs > .tabs-header > div.hidden {
   display: none;
 }
+.cdb-view > .hide-tabs > .tabs-header > div.drop-before {
+  box-shadow: inset 3px 0 0 #6a8fc8;
+}
+.cdb-view > .hide-tabs > .tabs-header > div.drop-after {
+  box-shadow: inset -3px 0 0 #6a8fc8;
+}
+.cdb-view > .hide-tabs > .tabs-header.tab-dragging > div {
+  cursor: grabbing;
+}
 .cdb-view {
   z-index: 0;
 }
@@ -450,6 +459,20 @@
   overflow: hidden;
   cursor: pointer;
   user-select: none;
+}
+.cdb .cdb-sheet th {
+  position: relative;
+}
+.cdb .cdb-sheet th > .col-resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+}
+.cdb .cdb-sheet th > .col-resize:hover {
+  background-color: #4a5d7a;
 }
 .cdb .cdb-sheet tr.head .display {
   font-style: italic;

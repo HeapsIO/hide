@@ -2274,6 +2274,7 @@ class Editor extends Component {
 				beginChanges();
 				editProps.categories = cats;
 				col.editor = editProps;
+				removeUnusedCategories();
 				endChanges();
 				refresh();
 			})});
@@ -2311,6 +2312,18 @@ class Editor extends Component {
 				refresh();
 			}});
 		}
+		if( table.displayMode == Table ) {
+			var hidden = table.getHiddenColumns();
+			menu.push({ label : "", isSeparator : true });
+			menu.push({ label : "Hide Column", enabled : Lambda.count(table.columns, c -> table.isColumnShown(c)) > 1, click : () -> table.setColumnHidden(col, true) });
+			if( hidden.length > 0 ) {
+				var show : Array<hrt.ui.HuiMenu.MenuItem> = [for( c in hidden ) { label : c.name, click : () -> table.setColumnHidden(c, false) }];
+				show.push({ label : "", isSeparator : true });
+				show.push({ label : "Show All", click : () -> table.showAllColumns() });
+				menu.push({ label : "Show Columns", menu : show });
+			}
+			menu.push({ label : "Reset Default Sizes", enabled : table.hasUserWidths(), click : () -> table.resetUserWidths() });
+		}
 		hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu);
 	}
 
@@ -2319,7 +2332,7 @@ class Editor extends Component {
 		do {
 			next += (dir == Left ? -1 : 1);
 		}
-		while (next >= 0 && next <= table.columns.length - 1 && !isColumnVisible(table.columns[next]));
+		while (next >= 0 && next <= table.columns.length - 1 && !table.isColumnShown(table.columns[next]));
 		return next;
 	}
 
@@ -2563,16 +2576,36 @@ class Editor extends Component {
 		endChanges();
 	}
 
+	// a category exists while a sheet or a column uses it : its color and its display state are removed with it
+	function removeUnusedCategories() {
+		var used = getCategories(base);
+		var ed = getEditorData(base);
+		if( ed != null && ed.categoryColors != null ) {
+			for( c in ed.categoryColors.keys() )
+				if( used.indexOf(c) < 0 )
+					ed.categoryColors.remove(c);
+			if( ed.categoryColors.keys().length == 0 )
+				Reflect.deleteField(ed, "categoryColors");
+			if( Reflect.fields(ed).length == 0 )
+				Reflect.deleteField(@:privateAccess base.data, "editor");
+		}
+		var shown : Array<String> = ide.projectState.get("dbCategories");
+		if( shown != null && Lambda.exists(shown, c -> used.indexOf(c) < 0) ) {
+			var kept = shown.filter(c -> used.indexOf(c) >= 0);
+			ide.projectState.set("dbCategories", kept.length == 0 ? null : kept);
+		}
+	}
+
 	function categoriesMenu(categories: Array<String>, setFunc : Array<String> -> Void) {
-		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [{ label : "Set...", click : function() {
-			var wstr = "";
-			if(categories != null)
-				wstr = categories.join(",");
-			wstr = ide.ask("Set Categories (comma separated)", wstr);
-			if(wstr == null)
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [{ label : "New...", click : function() {
+			var name = ide.ask("New Category");
+			if(name == null)
 				return;
-			categories = [for(s in wstr.split(",")) { var t = StringTools.trim(s); if(t.length > 0) t; }];
-			setFunc(categories.length > 0 ? categories : null);
+			name = StringTools.trim(name);
+			if(name.length == 0 || (categories != null && categories.indexOf(name) >= 0))
+				return;
+			categories = categories == null ? [name] : categories.concat([name]);
+			setFunc(categories);
 			#if editor
 			ide.initMenu();
 			#end
@@ -2600,9 +2633,20 @@ class Editor extends Component {
 
 	static var CATEGORY_COLORS = ["Red", "Orange", "Yellow", "Green", "Teal", "Blue", "Purple", "Pink", "Gray"];
 
+	// in the database : "editor" is not a field of cdb.Data, kept by its json load / save
+	static function getEditorData( db : cdb.Database, create = false ) : { ?categoryColors : haxe.DynamicAccess<String> } {
+		var data = @:privateAccess db.data;
+		var ed = Reflect.field(data, "editor");
+		if( ed == null && create ) {
+			ed = {};
+			Reflect.setField(data, "editor", ed);
+		}
+		return ed;
+	}
+
 	public static function getCategoryColor( cat : String ) : String {
-		var colors = Ide.inst.projectConfig.get("cdb.categoryColors");
-		return colors == null ? null : Reflect.field(colors, cat);
+		var ed = getEditorData(Ide.inst.database);
+		return ed == null || ed.categoryColors == null ? null : ed.categoryColors.get(cat);
 	}
 
 	public static function setTabColor( tab : Element, color : String ) {
@@ -2621,12 +2665,18 @@ class Editor extends Component {
 	}
 
 	function setCategoryColor( cat : String, color : String ) {
-		var colors : Dynamic = Reflect.copy(ide.projectConfig.get("cdb.categoryColors", {}));
+		beginChanges();
+		var ed = getEditorData(base, true);
+		if( ed.categoryColors == null ) ed.categoryColors = {};
 		if( color == null )
-			Reflect.deleteField(colors, cat);
+			ed.categoryColors.remove(cat);
 		else
-			Reflect.setField(colors, cat, color);
-		ide.projectConfig.set("cdb.categoryColors", Reflect.fields(colors).length == 0 ? null : colors);
+			ed.categoryColors.set(cat, color);
+		if( ed.categoryColors.keys().length == 0 )
+			Reflect.deleteField(ed, "categoryColors");
+		if( Reflect.fields(ed).length == 0 )
+			Reflect.deleteField(@:privateAccess base.data, "editor");
+		endChanges();
 	}
 
 	function categoryColorMenu( categories : Array<String>, onChange : Void -> Void ) : Array<hrt.ui.HuiMenu.MenuItem> {
@@ -2725,10 +2775,13 @@ class Editor extends Component {
 					var props = getSheetProps(sheet);
 					props.categories = cats;
 					sheet.props.editor = props;
+					removeUnusedCategories();
 					endChanges();
 					onChange();
-				})},
-				{ label : "Category Color", enabled : getSheetProps(sheet).categories != null, menu : categoryColorMenu(getSheetProps(sheet).categories, onChange) },
+				}).concat([
+					{ label : "", isSeparator : true },
+					{ label : "Color", enabled : getSheetProps(sheet).categories != null, menu : categoryColorMenu(getSheetProps(sheet).categories, onChange) },
+				])},
 				{ label : "", isSeparator: true },
 
 			]);

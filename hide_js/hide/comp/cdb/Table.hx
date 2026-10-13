@@ -1,6 +1,8 @@
 package hide.comp.cdb;
 import hide.ui.QueryHelper.*;
 
+typedef ColumnsConfig = { ?widths : haxe.DynamicAccess<Int>, ?hidden : Array<String> };
+
 enum DisplayMode {
 	Table;
 	Properties;
@@ -276,6 +278,128 @@ class Table extends Component {
 		}
 	}
 
+	// in the state of the project for its user (not shared)
+	function getColumnsConfig( create = false ) : ColumnsConfig {
+		var all : haxe.DynamicAccess<ColumnsConfig> = hide.Ide.inst.projectState.get("dbColumns");
+		var key = getRealSheet().name;
+		if( all == null ) {
+			if( !create ) return null;
+			all = {};
+			hide.Ide.inst.projectState.set("dbColumns", all);
+		}
+		var conf = all.get(key);
+		if( conf == null && create ) {
+			conf = {};
+			all.set(key, conf);
+		}
+		return conf;
+	}
+
+	function saveColumnsConfig() {
+		var all : haxe.DynamicAccess<ColumnsConfig> = hide.Ide.inst.projectState.get("dbColumns");
+		var key = getRealSheet().name;
+		var conf = all?.get(key);
+		if( conf != null ) {
+			if( conf.widths != null && conf.widths.keys().length == 0 ) Reflect.deleteField(conf, "widths");
+			if( conf.hidden != null && conf.hidden.length == 0 ) Reflect.deleteField(conf, "hidden");
+			if( Reflect.fields(conf).length == 0 ) all.remove(key);
+		}
+		if( all == null || all.keys().length == 0 )
+			hide.Ide.inst.projectState.remove("dbColumns");
+		else
+			hide.Ide.inst.projectState.set("dbColumns", all);
+	}
+
+	public function isColumnShown( c : cdb.Data.Column ) {
+		if( !editor.isColumnVisible(c) ) return false;
+		var conf = getColumnsConfig();
+		return conf == null || conf.hidden == null || conf.hidden.indexOf(c.name) < 0;
+	}
+
+	public function getHiddenColumns() {
+		var conf = getColumnsConfig();
+		return conf == null || conf.hidden == null ? [] : [for( c in columns ) if( conf.hidden.indexOf(c.name) >= 0 ) c];
+	}
+
+	public function setColumnHidden( c : cdb.Data.Column, hidden : Bool ) {
+		var conf = getColumnsConfig(true);
+		if( conf.hidden == null ) conf.hidden = [];
+		conf.hidden.remove(c.name);
+		if( hidden ) conf.hidden.push(c.name);
+		saveColumnsConfig();
+		refresh();
+	}
+
+	public function showAllColumns() {
+		var conf = getColumnsConfig();
+		if( conf == null || conf.hidden == null ) return;
+		conf.hidden = [];
+		saveColumnsConfig();
+		refresh();
+	}
+
+	public function hasUserWidths() {
+		var conf = getColumnsConfig();
+		return conf != null && conf.widths != null;
+	}
+
+	public function resetUserWidths() {
+		var conf = getColumnsConfig();
+		if( conf == null ) return;
+		Reflect.deleteField(conf, "widths");
+		saveColumnsConfig();
+		refresh();
+	}
+
+	function getUserWidth( c : cdb.Data.Column ) : Null<Int> {
+		var conf = getColumnsConfig();
+		return conf == null || conf.widths == null ? null : conf.widths.get(c.name);
+	}
+
+	function setUserWidth( c : cdb.Data.Column, width : Null<Int> ) {
+		var conf = getColumnsConfig(true);
+		if( conf.widths == null ) conf.widths = {};
+		if( width == null )
+			conf.widths.remove(c.name);
+		else
+			conf.widths.set(c.name, width);
+		saveColumnsConfig();
+	}
+
+	// dragged : the width of the column ; double click : back to its default width
+	function addColumnResizer( th : Element, c : cdb.Data.Column ) {
+		var handle = J('<div class="col-resize"></div>').appendTo(th);
+		handle.on("mousedown", function(e) {
+			if( e.button != 0 ) return;
+			e.preventDefault();
+			e.stopPropagation();
+			var elt = th.get(0);
+			var startX = e.pageX;
+			var startWidth = Std.parseFloat(js.Browser.window.getComputedStyle(elt).width);
+			var width = Math.round(startWidth);
+			var doc = J(js.Browser.document);
+			var root : Table = this;
+			while( root.parent != null ) root = root.parent;
+			doc.on("mousemove.colResize", function(e) {
+				width = Math.round(Math.max(20, startWidth + e.pageX - startX));
+				elt.style.width = width + "px";
+				// now : the heights of the rows change, rendered in the next frame the view would jump
+				root.render();
+			});
+			doc.on("mouseup.colResize", function(_) {
+				doc.off(".colResize");
+				setUserWidth(c, width);
+				if( parent != null ) refresh();
+			});
+		});
+		handle.on("click", (e) -> e.stopPropagation());
+		handle.on("dblclick", function(e) {
+			e.stopPropagation();
+			setUserWidth(c, null);
+			refresh();
+		});
+	}
+
 	function refreshTable() {
 		errorCount = 0;
 		errors = new Map<Line, Bool>();
@@ -298,12 +422,17 @@ class Table extends Component {
 
 		var colCount = columns.length;
 
-		var totalWidth = 0.;
+		var totalWidth = 0., fixedWidth = 0;
 		for( c in columns )
-			if( editor.isColumnVisible(c) )
-				totalWidth += getColumnWidth(c);
-		if( parent != null && totalWidth > 0 )
-			element.css("width", 'min(100%, ${Math.round(totalWidth * 70) + 40}px)');
+			if( isColumnShown(c) ) {
+				var uw = getUserWidth(c);
+				if( uw != null )
+					fixedWidth += uw + 21; // (padding and border of a th)
+				else
+					totalWidth += getColumnWidth(c);
+			}
+		if( parent != null && (totalWidth > 0 || fixedWidth > 0) )
+			element.css("width", 'min(100%, ${Math.round(totalWidth * 70) + fixedWidth + 40}px)');
 
 		for( c in columns ) {
 			var editProps = Editor.getColumnProps(c);
@@ -312,10 +441,15 @@ class Table extends Component {
 			col.addClass( "t_"+c.type.getName().substr(1).toLowerCase() );
 			col.addClass( "n_" + c.name );
 			col.attr("title", c.name);
-			col.toggleClass("hidden", !editor.isColumnVisible(c));
-			var w = getColumnWidth(c);
-			if( w > 0 && totalWidth > 0 && editor.isColumnVisible(c) )
+			var shown = isColumnShown(c);
+			col.toggleClass("hidden", !shown);
+			var uw = getUserWidth(c), w = getColumnWidth(c);
+			if( shown && uw != null )
+				col.css("width", uw + "px");
+			else if( shown && w > 0 && totalWidth > 0 )
 				col.css("width", (w * 100 / totalWidth) + "%");
+			if( shown )
+				addColumnResizer(col, c);
 			col.toggleClass("cat", editProps.categories != null);
 			if(editProps.categories != null)
 				for(c in editProps.categories)

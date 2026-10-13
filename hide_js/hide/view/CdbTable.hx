@@ -256,6 +256,7 @@ class CdbTable extends hide.ui.View<{}> {
 		element.addClass("cdb-view");
 		element.toggleClass("cdb-diff", @:privateAccess ide.databaseDiff != null);
 		tabs = new hide.comp.Tabs(element, true);
+		initTabsDrag();
 		tabCache = getTabCache();
 		tabContents = [];
 		for( sheet in sheets ) {
@@ -393,6 +394,57 @@ class CdbTable extends hide.ui.View<{}> {
 			}
 		}
 		applyCategories(ide.projectState.get("dbCategories"), doRefresh);
+	}
+
+	// the order is the index of the sheets in their props, not their order in the database (smaller diffs)
+	function initTabsDrag() {
+		var header = @:privateAccess tabs.header;
+		header.on("mousedown", function(e) {
+			if( e.button != 0 ) return;
+			var tab = new Element(e.target).closest("[index]");
+			if( tab.parent().get(0) != header.get(0) ) return;
+			var sheets = getSheets();
+			var from = Std.parseInt(tab.attr("index"));
+			if( from == null || from >= sheets.length ) return;
+			var startX = e.pageX, startY = e.pageY, dragging = false, target = -1;
+			var doc = new Element(js.Browser.document);
+			doc.on("mousemove.tabDrag", function(e) {
+				if( !dragging && Math.abs(e.pageX - startX) + Math.abs(e.pageY - startY) < 5 ) return;
+				dragging = true;
+				header.addClass("tab-dragging");
+				header.children().removeClass("drop-before drop-after");
+				target = -1;
+				var over = new Element(js.Browser.document.elementFromPoint(e.clientX, e.clientY)).closest("[index]");
+				if( over.parent().get(0) != header.get(0) ) return;
+				var idx = Std.parseInt(over.attr("index"));
+				if( idx == null || idx >= sheets.length ) return;
+				var r = over.get(0).getBoundingClientRect();
+				var after = e.clientX > r.left + r.width * 0.5;
+				over.addClass(after ? "drop-after" : "drop-before");
+				target = idx + (after ? 1 : 0);
+			});
+			doc.on("mouseup.tabDrag", function(_) {
+				doc.off(".tabDrag");
+				header.removeClass("tab-dragging");
+				header.children().removeClass("drop-before drop-after");
+				if( !dragging || target < 0 ) return;
+				var sheet = sheets[from];
+				sheets.remove(sheet);
+				sheets.insert(target > from ? target - 1 : target, sheet);
+				editor.beginChanges();
+				for( i => s in sheets ) {
+					var props = hide.comp.cdb.Editor.getSheetProps(s);
+					if( props.index != i ) {
+						props.index = i;
+						s.props.editor = props;
+					}
+				}
+				editor.endChanges();
+				currentSheet = sheet.name;
+				if( getTabCache() != tabCache )
+					rebuild();
+			});
+		});
 	}
 
 	public function applyCategories(displayedCats: Array<String>, doRefresh=true) {

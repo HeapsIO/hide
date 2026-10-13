@@ -50,11 +50,11 @@ class Cell {
 			if(editProps.categories != null)
 				for(c in editProps.categories)
 					root.classList.add("cat-" + c);
-			var visible = editor.isColumnVisible(column);
-			root.classList.toggle("hidden", !visible);
-			if(!visible)
-				return;
 		}
+		var visible = line.table.displayMode == Table ? line.table.isColumnShown(column) : line.table.parent != null || editor.isColumnVisible(column);
+		root.classList.toggle("hidden", !visible);
+		if(!visible)
+			return;
 
 		if( column.kind == Script ) root.classList.add("t_script");
 		refresh();
