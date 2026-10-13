@@ -85,6 +85,7 @@ class Editor extends Component {
 	var searchExp : Bool = false; // Does filters are parsed by hscript parser
 	var filterFlags : FilterFlags = (Regular: FilterFlags) | (Warning: FilterFlags) | (Error: FilterFlags);
 	var filters : Array<String> = [];
+	var insertedWhileFiltering : Array<Dynamic> = [];
 
 	public var view : cdb.DiffFile.ConfigView;
 	public var config : hide.Config;
@@ -301,6 +302,13 @@ class Editor extends Component {
 	}
 
 
+	public function onLineInserted( obj : Dynamic ) {
+		if( filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error) )
+			return;
+		insertedWhileFiltering.push(obj);
+		updateFilters();
+	}
+
 	public function updateFilters() {
 		var table = tables.filter((t) -> t.sheet == currentSheet)[0];
 		if (table == null || table.displayMode != Table)
@@ -336,11 +344,12 @@ class Editor extends Component {
 		var displayedSeps = new Map<Int, Separator>();
 		for (l in table.lines) {
 			// lines in collapsed groups are only searched with searchHidden
-			var filtered = (!searchHidden && filters.length > 0 && l.separator != null && l.separator.isCollapsed()) || isLineFilteredBySearch(table, l);
+			var inserted = insertedWhileFiltering.indexOf(l.obj) >= 0;
+			var filtered = !inserted && ((!searchHidden && filters.length > 0 && l.separator != null && l.separator.isCollapsed()) || isLineFilteredBySearch(table, l));
 			if (!filtered)
 				results++;
 
-			filtered = filtered || isLineFilteredByStatus(l);
+			filtered = filtered || (!inserted && isLineFilteredByStatus(l));
 			l.filtered = filtered;
 			if (!filtered) {
 				var parentSeps = Separator.getParentSeparators(l.index, seps);
@@ -1766,6 +1775,7 @@ class Editor extends Component {
 				filters[idxSearchBar] = "";
 
 			filters[idxSearchBar] = searchText;
+			insertedWhileFiltering = [];
 
 			// Slow table refresh protection
 			if (currentSheet.lines.length > 300) {
@@ -1859,6 +1869,7 @@ class Editor extends Component {
 
 		searchBox.find(".close-search").click(function(_) {
 			filters = [];
+			insertedWhileFiltering = [];
 			searchExp = false;
 			searchHidden = true;
 			updateFilters();
@@ -2587,6 +2598,61 @@ class Editor extends Component {
 		return menu;
 	}
 
+	static var CATEGORY_COLORS = ["Red", "Orange", "Yellow", "Green", "Teal", "Blue", "Purple", "Pink", "Gray"];
+
+	public static function getCategoryColor( cat : String ) : String {
+		var colors = Ide.inst.config.project.get("cdb.categoryColors");
+		return colors == null ? null : Reflect.field(colors, cat);
+	}
+
+	public static function setTabColor( tab : Element, color : String ) {
+		var e = tab.get(0);
+		if( e == null )
+			return;
+		e.className = ~/\bcatcolor-[^\s]+/g.replace(e.className, "");
+		e.style.removeProperty("--cat-color");
+		tab.toggleClass("cat-colored", color != null);
+		if( color == null )
+			return;
+		if( StringTools.startsWith(color, "#") )
+			e.style.setProperty("--cat-color", color);
+		else
+			tab.addClass("catcolor-" + color);
+	}
+
+	function setCategoryColor( cat : String, color : String ) {
+		var colors : Dynamic = Reflect.copy(ide.config.project.get("cdb.categoryColors", {}));
+		if( color == null )
+			Reflect.deleteField(colors, cat);
+		else
+			Reflect.setField(colors, cat, color);
+		ide.config.project.set("cdb.categoryColors", Reflect.fields(colors).length == 0 ? null : colors);
+	}
+
+	function categoryColorMenu( categories : Array<String>, onChange : Void -> Void ) : Array<hrt.ui.HuiMenu.MenuItem> {
+		if( categories == null )
+			return [];
+		function colors( cat : String ) : Array<hrt.ui.HuiMenu.MenuItem> {
+			var current = getCategoryColor(cat);
+			function set( color : String ) {
+				setCategoryColor(cat, color);
+				onChange();
+			}
+			var custom = current != null && StringTools.startsWith(current, "#");
+			var menu : Array<hrt.ui.HuiMenu.MenuItem> = [for( c in CATEGORY_COLORS ) { label : c, checked : current == c.toLowerCase(), click : () -> set(c.toLowerCase()) }];
+			menu.push({ label : "Custom...", checked : custom, click : function() {
+				var color = ide.ask("Color of " + cat + " (#rrggbb)", custom ? current : "#");
+				if( color != null && ~/^#[0-9a-fA-F]{6}$/.match(color) )
+					set(color);
+			}});
+			menu.push({ label : "None", checked : current == null, click : () -> set(null) });
+			return menu;
+		}
+		if( categories.length == 1 )
+			return colors(categories[0]);
+		return [for( c in categories ) { label : c, menu : colors(c) }];
+	}
+
 	public function createDBSheet( ?index : Int ) {
 		var value = ide.ask("Sheet name");
 		if( value == "" || value == null ) return null;
@@ -2662,6 +2728,7 @@ class Editor extends Component {
 					endChanges();
 					onChange();
 				})},
+				{ label : "Category Color", enabled : getSheetProps(sheet).categories != null, menu : categoryColorMenu(getSheetProps(sheet).categories, onChange) },
 				{ label : "", isSeparator: true },
 
 			]);

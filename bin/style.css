@@ -181,6 +181,8 @@ input:focus,
 textarea:focus,
 .hide-dropdown > .dropdown-cont:focus {
   background-color: #141414;
+  outline: none;
+  border-color: #4a5d7a;
 }
 select:hover,
 input:hover,
