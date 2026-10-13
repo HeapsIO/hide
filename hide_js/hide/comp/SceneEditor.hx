@@ -186,7 +186,7 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 			btn.click(function(e) {
 				if (e.button == 0) {
 					var v = !editor.ide.currentConfig.get(store);
-					editor.ide.currentConfig.set(store, v);
+					editor.ide.projectUserConfig.set(store, v);
 					btn.get(0).toggleAttribute("checked", v);
 					cb();
 				}
@@ -215,7 +215,7 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 				color.element.height("100%");
 				color.element.width("100%");
 				color.onChange = function(move) {
-					editor.ide.currentConfig.set(store, color.value);
+					editor.ide.projectUserConfig.set(store, color.value);
 					editor.updateBackgroundColor();
 				}
 
@@ -796,7 +796,7 @@ class RenderPropsPopup extends Popup {
 			cb.prop('checked', Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
 			cb.on('change', function(){
 				var v = cb.prop('checked');
-				Ide.inst.currentConfig.set("sceneeditor.renderprops.edit", v);
+				Ide.inst.projectUserConfig.set("sceneeditor.renderprops.edit", v);
 				tmpView.setRenderPropsEditionVisibility(v);
 
 				@:privateAccess
@@ -814,7 +814,7 @@ class RenderPropsPopup extends Popup {
 			rpEditionEl.css({ 'padding-bottom' : '5px' });
 		}
 
-		var renderProps = view.config.getLocal("scene.renderProps");
+		var renderProps = view.config.get("scene.renderProps");
 
 		if (renderProps is String) {
 			var s_renderProps:String = cast renderProps;
@@ -861,7 +861,7 @@ class RenderPropsPopup extends Popup {
 		form_div.find("label").remove();
 		form_div.find('input[type=radio]').remove();
 
-		var renderProps = view.config.getLocal("scene.renderProps");
+		var renderProps = view.config.get("scene.renderProps");
 		if (renderProps is Array) {
 			var a_renderProps = cast (renderProps, Array<Dynamic>);
 			var selectedRenderProps = editor.view.getDisplayState("renderProps");
@@ -1156,7 +1156,7 @@ class SceneEditor {
 			]);
 		});
 
-		var customEditorProps = @:privateAccess ide.config.current.get("customEditor");
+		var customEditorProps = ide.currentConfig.get("customEditor");
 		if( customEditorProps != null ) {
 			var cl = try js.Lib.eval(customEditorProps) catch( e : Dynamic ) null;
 			if( cl == null  ) {
@@ -1183,14 +1183,14 @@ class SceneEditor {
 	}
 
 	public function setViewportOverlaysVisibility(visible: Bool) {
-		ide.currentConfig.set("sceneeditor.showViewportOverlays", visible);
+		ide.projectUserConfig.set("sceneeditor.showViewportOverlays", visible);
 		updateViewportOverlays();
 	}
 
 	function getOrInitConfig(key:String, def:Dynamic) : Dynamic {
 		var v = ide.currentConfig.get(key);
 		if (v == null) {
-			ide.currentConfig.set(key, def);
+			ide.projectUserConfig.set(key, def);
 			return def;
 		}
 		return v;
@@ -1769,7 +1769,7 @@ class SceneEditor {
 		var delaySelection : Bool = true;
 
 		function doPickSelect(allowCycle: Bool, ?elts: Array<{d: Float, prefab: PrefabElement}>) {
-			allowCycle = allowCycle && Ide.inst.ideConfig.sceneEditorClickCycleObjects;
+			allowCycle = allowCycle && Ide.inst.currentConfig.get("hide.sceneEditorClickCycleObjects");
 			elts ??= getAllPrefabsUnderMouse();
 			if (elts.length > 0) {
 				if(K.isDown(K.SHIFT)) {
@@ -2788,7 +2788,7 @@ class SceneEditor {
 	}
 
 	function getRenderPropsPath() : String {
-		var renderProps = view.config.getLocal("scene.renderProps");
+		var renderProps = view.config.get("scene.renderProps");
 		if (renderProps is String) {
 			return cast renderProps;
 		}
@@ -2804,7 +2804,7 @@ class SceneEditor {
 					isRenderPropAvailable = true;
 			}
 
-			var source = view.config.getLocal("scene.renderProps")[0].value;
+			var source = view.config.get("scene.renderProps")[0].value;
 			if (savedRenderProp != null && isRenderPropAvailable)
 				source = savedRenderProp.value;
 			return source;
@@ -4109,11 +4109,11 @@ class SceneEditor {
 					checkbox.checked = allowNewInspector != preferEdit2;
 					checkbox.onchange = () -> {
 						if (preferEdit2) {
-							Ide.inst.currentConfig.set("sceneeditor.oldInspector", checkbox.checked);
+							Ide.inst.projectUserConfig.set("sceneeditor.oldInspector", checkbox.checked);
 						} else {
-							Ide.inst.currentConfig.set("sceneeditor.newInspector", checkbox.checked);
+							Ide.inst.projectUserConfig.set("sceneeditor.newInspector", checkbox.checked);
 						}
-						Ide.inst.currentConfig.save();
+						Ide.inst.projectUserConfig.save();
 						refreshProps();
 					}
 
@@ -4417,7 +4417,7 @@ class SceneEditor {
 			return t;
 		}
 
-		if (ide.ideConfig.collisionOnDrag) {
+		if (ide.currentConfig.get("hide.collisionOnDrag")) {
 			var minDist = -1.;
 			var hitObj : h3d.scene.Object = null;
 			for (obj in scene.s3d) {
@@ -4429,7 +4429,7 @@ class SceneEditor {
 
 					try {
 						var dist = obj.getCollider().rayIntersection(ray, true);
-						if ((minDist < 0 || (dist >= 0 && dist < minDist)) && dist > ide.ideConfig.minDistFromCameraOnDrag) {
+						if ((minDist < 0 || (dist >= 0 && dist < minDist)) && dist > ide.currentConfig.get("hide.minDistFromCameraOnDrag")) {
 							minDist = dist;
 							hitObj = obj;
 						}
@@ -4459,7 +4459,7 @@ class SceneEditor {
 				var norm = ddx.cross(ddy);
 				norm.normalize();
 
-				if (ide.ideConfig.orientMeshOnDrag) {
+				if (ide.currentConfig.get("hide.orientMeshOnDrag")) {
 					var q = new h3d.Quat();
 					q.initMoveTo(new h3d.Vector(0, 0, 1), norm);
 					transform = q.toMatrix();
@@ -5844,7 +5844,7 @@ class SceneEditor {
 					recents.unshift(p.type);
 					var recentSize : Int = view.config.get("sceneeditor.recentsize");
 					if (recents.length > recentSize) recents.splice(recentSize, recents.length - recentSize);
-					ide.currentConfig.set(getRecentMenuKey(), recents);
+					ide.projectUserConfig.set(getRecentMenuKey(), recents);
 					return p;
 				}
 

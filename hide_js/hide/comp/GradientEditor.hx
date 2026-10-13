@@ -770,7 +770,7 @@ class GradientEditor extends Popup {
 
 	function initPreview() {
 		previewDiv = new Element('<div id="preview">').appendTo(element);
-		previewScene = new hide.comp.Scene(ide.config.current, previewDiv, null);
+		previewScene = new hide.comp.Scene(ide.currentConfig, previewDiv, null);
 		previewScene.autoDisposeOutOfDocument = !keepPreviewAlive;
 		previewScene.onReady = onPreviewReady;
 		previewScene.onUpdate = onPreviewUpdate;

@@ -223,10 +223,12 @@ class Model extends HuiView<{path: String}> {
 		super(_state, parent);
 		initComponent();
 
-		saveDisplayKey = state != null ? 'model:${state.path}' : "model:__empty";
+		saveDisplayKey = 'model:${state.path}';
 
 		var path = Ide.inst.getRelPath(state.path);
+		var config = hide.Config.loadForFile(Ide.inst, state.path);
 		sceneEditor.load = () -> load(path);
+		sceneEditor.getConfig = () -> config;
 		sceneEditor.getObjectsAt = getObjectsAt;
 		sceneEditor.getSelectedObjects = getSelectedObjects;
 		sceneEditor.onScenePush = (e) -> {
@@ -630,7 +632,7 @@ class Model extends HuiView<{path: String}> {
 	}
 
 	function getAnimationPropsPath() {
-		var path = hide.Ide.inst.config.current.get("hmd.savePropsByAnimation", true) ? obj.currentAnimation.resourcePath : state.path;
+		var path = hide.Ide.inst.currentConfig.get("hmd.savePropsByAnimation", true) ? obj.currentAnimation.resourcePath : state.path;
 		var parts = path.split(".");
 		parts.pop();
 		parts.push("props");

@@ -179,7 +179,7 @@ class HuiSceneEditor extends HuiElement {
 	}
 
 	function syncSidebarMode() {
-		var newMode = hide.Ide.inst.ideConfig.sceneEditorVerticalSidebar ?? false;
+		var newMode : Bool = hide.Ide.inst.currentConfig.get("hide.sceneEditorVerticalSidebar", false);
 		if (newMode != verticalSidebar) {
 			verticalSidebar = newMode;
 			if (verticalSidebar) {
@@ -547,7 +547,7 @@ class HuiSceneEditor extends HuiElement {
 
 	public function getRenderProfileConfigs() : Array<{ name: String, value: String }> {
 		var renderProfiles = [];
-		var renderProfileConfig = hide.Ide.inst.currentConfig.getLocal(RENDER_PROFILE_KEY);
+		var renderProfileConfig = hide.Ide.inst.currentConfig.get(RENDER_PROFILE_KEY);
 		if (renderProfileConfig is String) {
 			renderProfiles.push({ name: cast (renderProfileConfig, String), value: cast (renderProfileConfig, String) });
 		}
@@ -671,6 +671,6 @@ class HuiSceneEditor extends HuiElement {
 	public dynamic function getSelectedObjects() : Array<h3d.scene.Object> { return []; }
 	public dynamic function getObjectsAt(sx : Int, sy : Int, ?root : h3d.scene.Object, ?f : h3d.scene.Object -> Bool) : Array<{object: h3d.scene.Object, distance: Float}> { return []; }
 	public dynamic function load() {}
-	public dynamic function getConfig() : hide.Config { return null; }
+	public dynamic function getConfig() : hide.Config.ReadOnlyConfig { return null; }
 }
 #end

@@ -638,7 +638,7 @@ class FXEditor extends hide.view.FileView {
 		tools.addSeparator();
 
 
-		pauseButton = tools.addToggle("pause", "pause", "Pause animation (Space)", function(v) {}, false, "play");
+		pauseButton = tools.addToggle("pause", "pause", "Pause animation (Space)", function(v) {}, false, "play", State);
 		loopButton = tools.addToggle("loop", "retweet", "Loop animation (O)", function(v) {
 			var fxAnim = sceneEditor.root3d.find((f) -> Std.downcast(f, hrt.prefab.fx.FX.FXAnimation));
 
@@ -653,7 +653,7 @@ class FXEditor extends hide.view.FileView {
 					}
 				}
 			}
-		}, false);
+		}, false, null, State);
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
 		}, scene.speed);

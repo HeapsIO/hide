@@ -18,7 +18,6 @@ private typedef DataDef = {
 
 class DataFiles {
 
-	static var skip : Int = 0;
 	static var watching : Map<String, Void -> Void > = new Map();
 
 	#if (editor || cdb_datafiles)
@@ -427,10 +426,24 @@ class DataFiles {
 	}
 
 	#if (editor || cdb_datafiles)
+	// the signature of the content of the files saved by HIDE : their change events are ignored
+	static var written : Map<String, String> = new Map();
+
+	static function contentSign( content : String ) {
+		#if js
+		return js.node.Crypto.createHash(js.node.Crypto.CryptoAlgorithm.MD5).update(content).digest("base64");
+		#else
+		return haxe.crypto.Md5.encode(content);
+		#end
+	}
+
 	static function onFileChanged(path: String) {
-		if( skip > 0 ) {
-			skip--;
-			return;
+		var sign = written.get(path);
+		if( sign != null ) {
+			var content = try sys.io.File.getContent(Ide.inst.getPath(path)) catch( e : Dynamic ) null;
+			if( content != null && contentSign(content) == sign )
+				return;
+			written.remove(path);
 		}
 		haxe.Timer.delay(function() {
 
@@ -504,7 +517,8 @@ class DataFiles {
 			if (delayedReload == null) {
 				delayedReload = haxe.Timer.delay(() -> {
 					#if editor
-					Editor.refreshAll(false, false);
+					// changed outside of the cdb editor : its undo would revert the file
+					Editor.refreshAll(true, false);
 					delayedReload = null;
 					#end
 				},1);
@@ -837,7 +851,6 @@ class DataFiles {
 			}
 		}
 		for( file => pf in prefabs ) {
-			skip++;
 			var path = ide.getPath(file);
 
 			#if editor
@@ -850,6 +863,7 @@ class DataFiles {
 				var txt = try sys.io.File.getContent(path) catch( e : Dynamic ) null;
 				if( txt == out ) continue;
 			}
+			written.set(file, contentSign(out));
 			sys.io.File.saveContent(path, out);
 			#end
 		}

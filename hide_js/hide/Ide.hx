@@ -7,6 +7,14 @@ enum MessageKind {
 	Info;
 	Error;
 }
+
+typedef WindowPos = { x : Int, y : Int, w : Int, h : Int, max : Bool };
+
+typedef LayoutState = {
+	var content : Any;
+	var fullScreen : { name : String, state : Any };
+}
+
 class IdeCache {
 	public var getTextureCache : Map<String, h3d.mat.Texture> = [];
 
@@ -32,7 +40,7 @@ class Ide extends hide.tools.IdeData {
 	var window : electron.Window;
 	var layout : golden.Layout;
 
-	var currentLayout : { name : String, state : HideProjectConfig.LayoutState };
+	var currentLayout : { name : String, state : LayoutState };
 	var currentFullScreen(default,set) : hide.ui.View<Dynamic>;
 	var maximized : Bool;
 	var fullscreen : Bool;
@@ -72,6 +80,7 @@ class Ide extends hide.tools.IdeData {
 		var thumb = StringTools.contains(js.Browser.window.location.href, "thumbnail");
 		if (thumb) {
 			thumbnailMode = true;
+			readOnlyConfig = true;
 		}
 
 		function wait() {
@@ -88,10 +97,6 @@ class Ide extends hide.tools.IdeData {
 		return js.Browser.window.localStorage;
 	}
 
-	override function getAppDataPath() {
-		return electron.App.dataPath;
-	}
-
 	function initPad() {
 		gamePad = hxd.Pad.createDummy();
 		hxd.Pad.wait((p) -> gamePad = p);
@@ -106,7 +111,7 @@ class Ide extends hide.tools.IdeData {
 		window = electron.Window.get();
 		var cwd = Sys.getCwd();
 		initConfig(cwd);
-		var current = ideConfig.currentProject;
+		var current = currentProject;
 		if( current == "" ) cwd;
 
 		var args = js.Browser.document.URL.split("?")[1];
@@ -133,7 +138,7 @@ class Ide extends hide.tools.IdeData {
 				yMax = s.work_area.y + s.work_area.height;
 		}
 		if( subView == null ) {
-			var wp = ideConfig.windowPos;
+			var wp : WindowPos = globalState.get("windowPos");
 			if( wp != null ) {
 				if( wp.w > 400 && wp.h > 300 )
 					window.resizeTo(wp.w, wp.h);
@@ -148,9 +153,6 @@ class Ide extends hide.tools.IdeData {
 
 		if (!thumbnailMode)
 			window.show(true);
-
-		if( config.global.get("hide") == null )
-			error("Failed to load defaultProps.json");
 
 		if( !sys.FileSystem.exists(current) || !sys.FileSystem.isDirectory(current) ) {
 			if( current != "" ) js.Browser.alert(current+" no longer exists");
@@ -322,16 +324,16 @@ class Ide extends hide.tools.IdeData {
 	function onWindowChange() {
 		if( hasReloaded )
 			return;
-		if( ideConfig.windowPos == null ) ideConfig.windowPos = { x : 0, y : 0, w : 0, h : 0, max : false };
-		ideConfig.windowPos.max = maximized;
+		var wp : WindowPos = globalState.get("windowPos", { x : 0, y : 0, w : 0, h : 0, max : false });
+		wp.max = maximized;
 		if( !maximized ) {
-			ideConfig.windowPos.x = window.x;
-			ideConfig.windowPos.y = window.y;
-			ideConfig.windowPos.w = window.width;
-			ideConfig.windowPos.h = window.height;
+			wp.x = window.x;
+			wp.y = window.y;
+			wp.w = window.width;
+			wp.h = window.height;
 		}
 		if( subView == null )
-			config.global.save();
+			globalState.set("windowPos", wp);
 
 		for (v in views)
 			v.onResize();
@@ -394,7 +396,7 @@ class Ide extends hide.tools.IdeData {
 		return target;
 	}
 
-	function initLayout( ?state : { name : String, state : HideProjectConfig.LayoutState } ) {
+	function initLayout( ?state : { name : String, state : LayoutState } ) {
 		initializing = true;
 
 		if( layout != null ) {
@@ -402,19 +404,20 @@ class Ide extends hide.tools.IdeData {
 			layout = null;
 		}
 
-		var emptyLayout : HideProjectConfig.LayoutState = { content : [], fullScreen : null };
+		var emptyLayout : LayoutState = { content : [], fullScreen : null };
 
 		if( state == null ) {
-			var emptyLayout : HideProjectConfig.LayoutState = {
+			var emptyLayout : LayoutState = {
 				content: [{type: golden.Config.ItemType.Row, isClosable: false, id: "content_root"}], fullScreen : null,
 			};
 
 
 			var layoutName = isCDB ? "CDB" : "Default";
-			for( i => p in projectConfig.layouts.copy() ) {
+			var layouts = getLayouts();
+			for( i => p in layouts.copy() ) {
 				if( p.name == layoutName ) {
 					if( p.state.content == null || (p.state.content:Array<Dynamic>)[0]?.id != "content_root") {
-						projectConfig.layouts.splice(i, 1);
+						layouts.splice(i, 1);
 						continue;
 					};
 					state = p;
@@ -423,8 +426,9 @@ class Ide extends hide.tools.IdeData {
 
 			if( state == null ) {
 				state = { name : layoutName, state : emptyLayout };
-				projectConfig.layouts.push(state);
+				layouts.push(state);
 			}
+			projectState.set("layouts", layouts);
 		}
 
 		if( subView != null )
@@ -436,10 +440,10 @@ class Ide extends hide.tools.IdeData {
 			content: state.state.content,
 			settings: {
 				// Default to false
-				reorderEnabled : config.user.get('layout.reorderEnabled', true) == true,
-				constrainDragToHeader : config.user.get('layout.constrainDragToHeader', true) == true,
-				showPopoutIcon : config.user.get('layout.showPopoutIcon') == true,
-				showMaximiseIcon : config.user.get('layout.showMaximiseIcon') == true
+				reorderEnabled : currentConfig.get('layout.reorderEnabled', true) == true,
+				constrainDragToHeader : currentConfig.get('layout.constrainDragToHeader', true) == true,
+				showPopoutIcon : currentConfig.get('layout.showPopoutIcon') == true,
+				showMaximiseIcon : currentConfig.get('layout.showMaximiseIcon') == true
 			}
 		};
 
@@ -612,13 +616,17 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	function onLayoutChanged() {
-		if( initializing || !ideConfig.autoSaveLayout || isCDB )
+		if( initializing || !currentConfig.get("hide.autoSaveLayout") || isCDB )
 			return;
 		currentLayout.state = saveLayout();
-		if( subView == null ) this.config.user.save();
+		if( subView == null ) projectState.set("layouts", getLayouts());
 	}
 
-	function saveLayout() : HideProjectConfig.LayoutState {
+	function getLayouts() : Array<{ name : String, state : LayoutState }> {
+		return projectState.get("layouts", []);
+	}
+
+	function saveLayout() : LayoutState {
 		return {
 			content : layout.toConfig().content,
 			fullScreen : currentFullScreen == null ? null : { name : currentFullScreen.viewClass, state : currentFullScreen.state }
@@ -749,25 +757,25 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	function loadProject() {
-		var dir = ideConfig.currentProject;
+		var dir = currentProject;
 		setProgress();
 		hxsl.Cache.clear();
 
 		var localDir = sys.FileSystem.exists(resourceDir) ? resourceDir : projectDir;
-		var fsconf = config.current.get("fs.config", "default");
+		var fsconf = currentConfig.get("fs.config", "default");
 		hxd.res.Loader.currentInstance = new CustomLoader(new hxd.fs.LocalFileSystem(localDir,fsconf));
 		renderers = [
 			new hide.Renderer.MaterialSetup("Default"),
 			new hide.Renderer.PbrSetup("PBR"),
 		];
 
-		var plugins : Array<String> = config.current.get("plugins");
+		var plugins : Array<String> = currentConfig.get("plugins");
 		for ( plugin in plugins )
 			loadPlugin(plugin, function() {});
 
 		loadDatabase();
 
-		if( config.project.get("debug.displayErrors")  ) {
+		if( currentConfig.get("debug.displayErrors")  ) {
 			js.Browser.window.onerror = function(msg, url, line, col, error) {
 				if( error == null ) return true; // some internal chrome errors are only a msg, skip
 				var e = error.stack;
@@ -781,7 +789,7 @@ class Ide extends hide.tools.IdeData {
 			Reflect.deleteField(js.Browser.window, "onerror");
 
 		waitScripts(function() {
-			var extraRenderers = config.current.get("renderers");
+			var extraRenderers = currentConfig.get("renderers");
 			for( name in Reflect.fields(extraRenderers) ) {
 				var clName = Reflect.field(extraRenderers, name);
 				var cl = try js.Lib.eval(clName) catch( e : Dynamic ) null;
@@ -793,11 +801,10 @@ class Ide extends hide.tools.IdeData {
 			}
 
 			var render = renderers[0];
-			if( projectConfig.renderer == null )
-				projectConfig.renderer = config.current.get("defaultRenderer");
+			var rendererName : String = projectState.get("renderer", currentConfig.get("defaultRenderer"));
 			for( r in renderers ) {
 				var name = r.displayName == null ? r.name : r.displayName;
-				if( name == projectConfig.renderer ) {
+				if( name == rendererName ) {
 					render = r;
 					break;
 				}
@@ -1290,8 +1297,8 @@ class Ide extends hide.tools.IdeData {
 	public var customFilepathRefFilters : Array<(ctx : FilterPathContext) -> Void> = [];
 
 	public function refreshFont() {
-		var font = ideConfig.useAlternateFont ? "Verdana" : "Inter";
-		var size = ideConfig.useAlternateFont ? "9pt" : "9.5pt";
+		var font = currentConfig.get("hide.useAlternateFont") ? "Verdana" : "Inter";
+		var size = currentConfig.get("hide.useAlternateFont") ? "9pt" : "9.5pt";
 		js.Browser.document.documentElement.style.setProperty("--default-font", font);
 		js.Browser.document.documentElement.style.setProperty("--default-font-size", size);
 
@@ -1358,7 +1365,7 @@ class Ide extends hide.tools.IdeData {
 			window.title = text;
 			return;
 		}
-		var title = config.current.get("hide.windowTitle");
+		var title = currentConfig.get("hide.windowTitle");
 		window.title = title != null ? title : ((isCDB ? "CastleDB" : "HIDE") + " - " + projectDir);
 	}
 
@@ -1377,16 +1384,17 @@ class Ide extends hide.tools.IdeData {
 
 		if( subView != null ) return;
 
-		var menuHTML = "<content>"+new Element("#mainmenu").html() + config.project.get("menu.extra")+"</content>";
+		var menuHTML = "<content>"+new Element("#mainmenu").html() + currentConfig.get("menu.extra")+"</content>";
 		var menu = new Element(menuHTML);
 
 		// project
-		if( ideConfig.recentProjects.length > 0 )
+		var recents = recentProjects;
+		if( recents.length > 0 )
 			menu.find(".project .recents").html("");
-		for( v in ideConfig.recentProjects.copy() ) {
+		for( v in recents.copy() ) {
 			if( !sys.FileSystem.exists(v) ) {
-				ideConfig.recentProjects.remove(v);
-				config.global.save();
+				recents.remove(v);
+				globalState.set("recentProjects", recents);
 				continue;
 			}
 			new Element("<menu>").attr("label",v).appendTo(menu.find(".project .recents")).click(function(_){
@@ -1405,8 +1413,7 @@ class Ide extends hide.tools.IdeData {
 			}, true);
 		});
 		menu.find(".project .clear").click(function(_) {
-			ideConfig.recentProjects = [];
-			config.global.save();
+			globalState.set("recentProjects", []);
 			initMenu();
 		});
 		menu.find(".project .exit").click(function(_) {
@@ -1415,7 +1422,8 @@ class Ide extends hide.tools.IdeData {
 		menu.find(".project .clear-local").click(function(_) {
 			js.Browser.window.localStorage.clear();
 			electron.App.clearCache();
-			try sys.FileSystem.deleteFile(Ide.inst.appPath + "/props.json") catch( e : Dynamic ) {};
+			try sys.FileSystem.deleteFile(userDataPath + "/preferences.json") catch( e : Dynamic ) {};
+			try sys.FileSystem.deleteFile(userDataPath + "/editorState.json") catch( e : Dynamic ) {};
 			js.Browser.location.reload();
 		});
 		menu.find(".build-files").click(function(_) {
@@ -1432,8 +1440,7 @@ class Ide extends hide.tools.IdeData {
 			var name = r.displayName != null ? r.displayName : r.name;
 			new Element("<menu type='checkbox'>").attr("label", name).prop("checked",r == h3d.mat.MaterialSetup.current).appendTo(menu.find(".project .renderers")).click(function(_) {
 				if( r != h3d.mat.MaterialSetup.current ) {
-					projectConfig.renderer = name;
-					config.user.save();
+					projectState.set("renderer", name);
 					reload();
 				}
 			});
@@ -1496,10 +1503,9 @@ class Ide extends hide.tools.IdeData {
 			});
 		});
 
-		var proofing = projectConfig.dbProofread == true;
+		var proofing = projectState.get("dbProofread") == true;
 		db.find(".dbProofread").prop("checked", proofing).click(function(_) {
-			projectConfig.dbProofread = !proofing;
-			config.global.save();
+			projectState.set("dbProofread", !proofing);
 			for( v in getViews(hide.view.CdbTable) )
 				v.applyProofing();
 			initMenu();
@@ -1507,8 +1513,7 @@ class Ide extends hide.tools.IdeData {
 
 		function setDiff(f) {
 			databaseDiff = f;
-			config.user.set("cdb.databaseDiff", f);
-			config.user.save();
+			projectUserConfig.set("cdb.databaseDiff", f);
 			loadDatabase();
 			hide.comp.cdb.Editor.refreshAll();
 			initMenu();
@@ -1535,77 +1540,70 @@ class Ide extends hide.tools.IdeData {
 		db.find(".dbCustom").click(function(_) {
 			open("hide.view.CdbCustomTypes",{});
 		});
-		db.find(".dbFormulasEnable").prop("checked",ideConfig.enableDBFormulas).click(function(_) {
-			ideConfig.enableDBFormulas = !ideConfig.enableDBFormulas;
-			config.global.save();
+		db.find(".dbFormulasEnable").prop("checked",currentConfig.get("hide.enableDBFormulas")).click(function(_) {
+			userConfig.set("hide.enableDBFormulas", !currentConfig.get("hide.enableDBFormulas"));
 			hide.comp.cdb.Editor.refreshAll();
 		});
 		db.find(".dbFormulas").click(function(_) {
-			open("hide.comp.cdb.FormulasView",{ path : config.current.get("cdb.formulasFile") });
+			open("hide.comp.cdb.FormulasView",{ path : currentConfig.get("cdb.formulasFile") });
 		});
 
 		// Categories
 		{
-			function applyCategories() {
+			function setCategories( cats : Array<String> ) {
+				projectState.set("dbCategories", cats);
 				for( v in getViews(hide.view.CdbTable) )
-					v.applyCategories(projectConfig.dbCategories);
+					v.applyCategories(cats);
 				initMenu();
 			}
+			var visibleCats : Array<String> = projectState.get("dbCategories");
 			var allCats = hide.comp.cdb.Editor.getCategories(database);
 			var showAll = db.find(".dbCatShowAll");
 			for(cat in allCats) {
-				var isShown = projectConfig.dbCategories == null || projectConfig.dbCategories.indexOf(cat) >= 0;
+				var isShown = visibleCats == null || visibleCats.indexOf(cat) >= 0;
 				new Element("<menu type='checkbox'>").attr("label",cat).prop("checked", isShown).insertBefore(showAll).click(function(_){
-					if(projectConfig.dbCategories == null)
-						projectConfig.dbCategories = allCats; // Init with all cats
+					var cats = visibleCats ?? allCats.copy(); // Init with all cats
 					if(isShown)
-						projectConfig.dbCategories.remove(cat);
+						cats.remove(cat);
 					else
-						projectConfig.dbCategories.push(cat);
-					config.user.save();
-					applyCategories();
+						cats.push(cat);
+					setCategories(cats);
 				});
 			}
 			new Element("<separator>").insertBefore(showAll);
 
 			db.find(".dbCatShowAll").click(function(_) {
-				projectConfig.dbCategories = null;
-				config.user.save();
-				applyCategories();
+				setCategories(null);
 			});
 			db.find(".dbCatHideAll").click(function(_) {
-				projectConfig.dbCategories = [];
-				config.user.save();
-				applyCategories();
+				setCategories([]);
 			});
 		}
 
 		// layout
 		var layouts = menu.find(".layout .content");
 		layouts.html("");
-		if(projectConfig.layouts == null)
-			projectConfig.layouts = [];
-		for( l in projectConfig.layouts ) {
+		for( l in getLayouts() ) {
 			if( l.name == "Default" ) continue;
 			new Element("<menu>").attr("label",l.name).addClass(l.name).appendTo(layouts).click(function(_) {
 				initLayout(l);
 			});
 		}
 		menu.find(".layout .autosave").click(function(_) {
-			ideConfig.autoSaveLayout = !ideConfig.autoSaveLayout;
-			config.global.save();
-		}).prop("checked",ideConfig.autoSaveLayout);
+			userConfig.set("hide.autoSaveLayout", !currentConfig.get("hide.autoSaveLayout"));
+		}).prop("checked",currentConfig.get("hide.autoSaveLayout"));
 
 		menu.find(".layout .saveas").click(function(_) {
 			var name = ask("Please enter a layout name:");
 			if( name == null || name == "" ) return;
-			projectConfig.layouts.push({ name : name, state : saveLayout() });
-			config.user.save();
+			var layouts = getLayouts();
+			layouts.push({ name : name, state : saveLayout() });
+			projectState.set("layouts", layouts);
 			initMenu();
 		});
 		menu.find(".layout .save").click(function(_) {
 			currentLayout.state = saveLayout();
-			config.global.save();
+			projectState.set("layouts", getLayouts());
 		});
 
 		menu.find(".capture-transparentBG").click(function(_) {
@@ -1638,7 +1636,7 @@ class Ide extends hide.tools.IdeData {
 					return;
 				}
 
-				var textureRes = ideConfig.screenCaptureResolution;
+				var textureRes = currentConfig.get("hide.screenCaptureResolution");
 				var renderTexture = new h3d.mat.Texture(Std.int(textureRes * scene.s3d.camera.screenRatio), textureRes, [Target], RGBA);
 				renderTexture.depthBuffer = new h3d.mat.Texture(renderTexture.width, renderTexture.height, Depth24Stencil8);
 				renderTexture.clear(0, 0);
@@ -1690,7 +1688,7 @@ class Ide extends hide.tools.IdeData {
 			}
 
 			chooseFileSave("capture.png", (path) -> {
-				var textureRes = ideConfig.screenCaptureResolution;
+				var textureRes = currentConfig.get("hide.screenCaptureResolution");
 
 
 				var renderTexture = new h3d.mat.Texture(Std.int(textureRes * scene.s3d.camera.screenRatio), textureRes, [Target]);

@@ -190,6 +190,8 @@ select, input, textarea, .hide-dropdown >.dropdown-cont {
 	border : 1px solid #444;
 	&:focus {
 		background-color: rgb(20,20,20);
+		outline: none;
+		border-color: #4a5d7a;
 	}
 	&:hover {
 		border-color : #888;
@@ -223,7 +225,14 @@ select, input, textarea, .hide-dropdown >.dropdown-cont {
 			max-height: 200px;
 			overflow-y: auto;
 			width: 100%;
+			// the list is virtual : the sizer has the height of all the options, only the ones in the view are in it
+			.options-sizer {
+				position: relative;
+			}
 			.dropdown-option {
+				position: absolute;
+				left: 0;
+				right: 0;
 				z-index: @contextmenu-layer;
 				display : flex;
 				align-items: center;

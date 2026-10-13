@@ -11,9 +11,6 @@ class CdbTable extends hide.ui.View<{}> {
 	var view : cdb.DiffFile.ConfigView;
 
 	var topBar : Element;
-	var regularCountEl : Element;
-	var warningCountEl : Element;
-	var errorCountEl : Element;
 
 	public function new( ?state ) {
 		super(state);
@@ -185,11 +182,23 @@ class CdbTable extends hide.ui.View<{}> {
 		haxe.Timer.delay(() -> editor.cursor.update(), 1); // scroll
 	}
 
+	#if js
+	override function onRebuild() {
+		// the tabs are rebuilt (a sheet added, renamed, moved...) : the editor keeps its undo
+		var undoElts = @:privateAccess editor.undo.undoElts.copy();
+		var redoElts = @:privateAccess editor.undo.redoElts.copy();
+		super.onRebuild();
+		@:privateAccess editor.undo.undoElts = undoElts;
+		@:privateAccess editor.undo.redoElts = redoElts;
+	}
+	#end
+
 	function syncTabs() {
 		if( getTabCache() != tabCache || editor.getCurrentSheet() != currentSheet ) {
 			currentSheet = editor.getCurrentSheet();
 			rebuild();
-		}
+		} else
+			refreshCurrentStatus();
 	}
 
 	public function getSheets() {
@@ -217,7 +226,7 @@ class CdbTable extends hide.ui.View<{}> {
 		var sheets = getSheets();
 		editor.show(sheets[index],tabContents[index]);
 		currentSheet = editor.getCurrentSheet();
-		ide.currentConfig.set("cdb.currentSheet", sheets[index].name);
+		ide.projectUserConfig.set("cdb.currentSheet", sheets[index].name);
 
 		var validationFunc = @:privateAccess editor.formulas?.validationFuncs?.get(currentSheet);
 		if (validationFunc == null) {
@@ -245,6 +254,7 @@ class CdbTable extends hide.ui.View<{}> {
 		element.addClass("cdb-view");
 		element.toggleClass("cdb-diff", @:privateAccess ide.databaseDiff != null);
 		tabs = new hide.comp.Tabs(element, true);
+		initTabsDrag();
 		tabCache = getTabCache();
 		tabContents = [];
 		for( sheet in sheets ) {
@@ -272,7 +282,7 @@ class CdbTable extends hide.ui.View<{}> {
 				}
 				var catMenu : Array<hrt.ui.HuiMenu.MenuItem> = [];
 				for (c in allCats) {
-					var visibleCats = ide.projectConfig.dbCategories;
+					var visibleCats : Array<String> = ide.projectState.get("dbCategories");
 					catMenu.push({ label: c, icon: visibleCats != null && visibleCats.indexOf(c) < 0 ? null : "check", click: () -> {
 						if (visibleCats == null)
 							visibleCats = [c];
@@ -282,9 +292,8 @@ class CdbTable extends hide.ui.View<{}> {
 							visibleCats.push(c);
 						if (visibleCats.length == 0)
 							visibleCats = null;
-						ide.projectConfig.dbCategories = visibleCats;
-						ide.config.user.save();
-						applyCategories(ide.projectConfig.dbCategories);
+						ide.projectState.set("dbCategories", visibleCats);
+						applyCategories(ide.projectState.get("dbCategories"));
 						ide.initMenu();
 					} });
 				}
@@ -310,39 +319,49 @@ class CdbTable extends hide.ui.View<{}> {
 						currentSheet = sshow.name;
 					if( getTabCache() != tabCache )
 						rebuild();
-					applyCategories(ide.projectConfig.dbCategories);
+					applyCategories(ide.projectState.get("dbCategories"));
 				});
 			};
 		}
 
 		topBar = new Element('<div class="top-bar">
-			<span class="regular ${@:privateAccess editor.filterFlags.has(Regular) ? "" : "disabled"}"><div class="icon ico ico-check-square"></div><p>0</p></span>
-			<span class="warning" ${@:privateAccess editor.filterFlags.has(Warning) ? "" : "disabled"}><div class="icon ico ico-warning"></div><p>0</p></span>
-			<span class="error" ${@:privateAccess editor.filterFlags.has(Error) ? "" : "disabled"}><div class="icon ico ico-exclamation-circle"></div><p>0</p></span>
+			<span class="status error hidden" title="Show only the errors (shift+click: add / remove)"><p>0</p></span>
+			<span class="status warning hidden" title="Show only the warnings (shift+click: add / remove)"><p>0</p></span>
+			<span class="pin-status" title="Pin the errors / warnings count in the sheet tab"><div class="icon ico ico-thumb-tack"></div></span>
 		</div>');
 		tabs.element.prepend(topBar);
-		regularCountEl = topBar.find(".regular").find("p");
-		warningCountEl = topBar.find(".warning").find("p");
-		errorCountEl = topBar.find(".error").find("p");
 
-		function filterListener(el : Element, flag : hide.comp.cdb.Editor.FilterFlag) {
-			var disabled = el.hasClass("disabled");
-			disabled = !disabled;
-			el.toggleClass("disabled", disabled);
-
-			if (disabled)
-				@:privateAccess editor.filterFlags.unset(flag);
-			else
-				@:privateAccess editor.filterFlags.set(flag);
+		// shift+click adds or removes a status to the ones shown
+		function filterStatus( flag : hide.comp.cdb.Editor.FilterFlag, add : Bool ) {
+			var cur = @:privateAccess editor.filterFlags;
+			var filtering = !cur.has(Regular);
+			var flags = new haxe.EnumFlags<hide.comp.cdb.Editor.FilterFlag>();
+			if( add && filtering ) {
+				flags = cur;
+				if( flags.has(flag) ) flags.unset(flag) else flags.set(flag);
+			} else if( !(filtering && cur.has(flag)) )
+				flags.set(flag);
+			if( !flags.has(Error) && !flags.has(Warning) ) {
+				flags.set(Regular);
+				flags.set(Warning);
+				flags.set(Error);
+			}
+			@:privateAccess editor.filterFlags = flags;
 			editor.updateFilters();
+			refreshCurrentStatus();
 		}
-
-		var regularEl = element.find(".regular");
-		regularEl.on("click", function(e) { filterListener(regularEl, Regular); });
-		var warningEl = element.find(".warning");
-		warningEl.on("click", function(e) { filterListener(warningEl, Warning); });
-		var errorEl = element.find(".error");
-		errorEl.on("click", function(e) { filterListener(errorEl, Error); });
+		topBar.find(".error").on("click", (e) -> filterStatus(Error, e.shiftKey));
+		topBar.find(".warning").on("click", (e) -> filterStatus(Warning, e.shiftKey));
+		topBar.find(".pin-status").on("click", function(_) {
+			var sheet = getSheets().filter(s -> s.name == editor.getCurrentSheet())[0];
+			if( sheet == null ) return;
+			var props = hide.comp.cdb.Editor.getSheetProps(sheet);
+			editor.beginChanges();
+			if( props.pinStatus ) Reflect.deleteField(props, "pinStatus") else props.pinStatus = true;
+			sheet.props.editor = props;
+			editor.endChanges();
+			refreshCurrentStatus();
+		});
 
 
 		if( sheets.length > 0 ) {
@@ -355,7 +374,7 @@ class CdbTable extends hide.ui.View<{}> {
 			tabs.currentTab = tabContents[idx];
 		}
 
-		applyCategories(ide.projectConfig.dbCategories, false);
+		applyCategories(ide.projectState.get("dbCategories"), false);
 		applyProofing(false);
 
 		watch(@:privateAccess ide.databaseFile, () -> syncTabs());
@@ -366,8 +385,8 @@ class CdbTable extends hide.ui.View<{}> {
 			@:privateAccess tabs.syncTabs();
 		var sheets = getSheets();
 		var header = @:privateAccess tabs.header;
-		element.toggleClass("loc-proofread", ide.projectConfig.dbProofread == true);
-		if( ide.projectConfig.dbProofread == true ) {
+		element.toggleClass("loc-proofread", ide.projectState.get("dbProofread") == true);
+		if( ide.projectState.get("dbProofread") == true ) {
 			for(i in 0...sheets.length) {
 				var tab = header.find('[index=$i]');
 				var ignoreCount = 0;
@@ -382,7 +401,129 @@ class CdbTable extends hide.ui.View<{}> {
 				}
 			}
 		}
-		applyCategories(ide.projectConfig.dbCategories, doRefresh);
+		applyCategories(ide.projectState.get("dbCategories"), doRefresh);
+	}
+
+	// the order is the index of the sheets in their props, not their order in the database (smaller diffs)
+	function initTabsDrag() {
+		var header = @:privateAccess tabs.header;
+		header.on("mousedown", function(e) {
+			if( e.button != 0 ) return;
+			var tab = new Element(e.target).closest("[index]");
+			if( tab.parent().get(0) != header.get(0) ) return;
+			var sheets = getSheets();
+			var from = Std.parseInt(tab.attr("index"));
+			if( from == null || from >= sheets.length ) return;
+			var startX = e.pageX, startY = e.pageY, dragging = false, target = -1;
+			var doc = new Element(js.Browser.document);
+			doc.on("mousemove.tabDrag", function(e) {
+				if( !dragging && Math.abs(e.pageX - startX) + Math.abs(e.pageY - startY) < 5 ) return;
+				dragging = true;
+				header.addClass("tab-dragging");
+				header.children().removeClass("drop-before drop-after");
+				target = -1;
+				var over = new Element(js.Browser.document.elementFromPoint(e.clientX, e.clientY)).closest("[index]");
+				if( over.parent().get(0) != header.get(0) ) return;
+				var idx = Std.parseInt(over.attr("index"));
+				if( idx == null || idx >= sheets.length ) return;
+				var r = over.get(0).getBoundingClientRect();
+				var after = e.clientX > r.left + r.width * 0.5;
+				over.addClass(after ? "drop-after" : "drop-before");
+				target = idx + (after ? 1 : 0);
+			});
+			doc.on("mouseup.tabDrag", function(_) {
+				doc.off(".tabDrag");
+				header.removeClass("tab-dragging");
+				header.children().removeClass("drop-before drop-after");
+				if( !dragging || target < 0 ) return;
+				var sheet = sheets[from];
+				sheets.remove(sheet);
+				sheets.insert(target > from ? target - 1 : target, sheet);
+				editor.beginChanges();
+				for( i => s in sheets ) {
+					var props = hide.comp.cdb.Editor.getSheetProps(s);
+					if( props.index != i ) {
+						props.index = i;
+						s.props.editor = props;
+					}
+				}
+				editor.endChanges();
+				currentSheet = sheet.name;
+				if( getTabCache() != tabCache )
+					rebuild();
+			});
+		});
+	}
+
+	public function setSearchCounts( counts : Map<String, Int> ) {
+		var header = @:privateAccess tabs.header;
+		header.find(".search-count").remove();
+		header.children().removeClass("no-results");
+		if( counts == null ) return;
+		for( i => s in getSheets() ) {
+			var n = counts.get(s.name);
+			if( n == null ) continue;
+			var tab = header.find('[index=$i]');
+			if( n == 0 )
+				tab.addClass("no-results");
+			else
+				new Element('<span class="search-count">$n</span>').appendTo(tab);
+		}
+	}
+
+	function refreshCurrentStatus() {
+		var t = @:privateAccess editor.tables[0];
+		if( t != null ) t.refreshLinesStatus();
+	}
+
+	public function refreshStatus( errors : Int, warnings : Int ) {
+		if( topBar == null ) return;
+		var flags = @:privateAccess editor.filterFlags;
+		function set( el : Element, n : Int, flag ) {
+			var only = flags.has(flag) && !flags.has(Regular);
+			el.toggleClass("active", only);
+			el.toggleClass("hidden", n == 0 && !only);
+			el.find("p").text(n);
+		}
+		set(topBar.find(".error"), errors, Error);
+		set(topBar.find(".warning"), warnings, Warning);
+		refreshPinnedStatus(errors, warnings);
+	}
+
+	// pinned sheets keep their errors (else warnings) count in their tab, which is wider to always have room for it
+	function refreshPinnedStatus( ?currentErrors : Int, ?currentWarnings : Int ) {
+		if( tabs == null ) return;
+		var header = @:privateAccess tabs.header;
+		header.find(".status-count").remove();
+		var cur = editor.getCurrentSheet();
+		var funcs = @:privateAccess editor.formulas?.validationFuncs;
+		for( i => s in getSheets() ) {
+			var tab = header.find('[index=$i]');
+			var pinned = hide.comp.cdb.Editor.getSheetProps(s).pinStatus == true && funcs != null && funcs.exists(s.name);
+			tab.toggleClass("pin-status", pinned);
+			tab.removeClass("pin-empty");
+			if( s.name == cur )
+				topBar.find(".pin-status").toggleClass("active", pinned);
+			if( !pinned ) continue;
+			var errors = 0, warnings = 0;
+			if( s.name == cur && currentErrors != null ) {
+				errors = currentErrors;
+				warnings = currentWarnings;
+			} else {
+				for( st in editor.getSheetStatus(s) )
+					switch( st ) {
+					case Error(_): errors++;
+					case Warning(_): warnings++;
+					default:
+					}
+			}
+			if( errors > 0 )
+				new Element('<span class="status-count error">$errors</span>').appendTo(tab);
+			else if( warnings > 0 )
+				new Element('<span class="status-count warning">$warnings</span>').appendTo(tab);
+			else
+				tab.addClass("pin-empty");
+		}
 	}
 
 	public function applyCategories(displayedCats: Array<String>, doRefresh=true) {
@@ -394,9 +535,13 @@ class CdbTable extends hide.ui.View<{}> {
 			var tab = header.find('[index=$i]');
 			tab.toggleClass("cat", props.categories != null);
 			tab.get(0).className = ~/(cat-[^\s]+)/g.replace(tab.get(0).className, "");
+			var color = null;
 			if(props.categories != null)
-				for(c in props.categories)
+				for(c in props.categories) {
 					tab.addClass("cat-" + c);
+					if( color == null ) color = hide.comp.cdb.Editor.getCategoryColor(c);
+				}
+			hide.comp.cdb.Editor.setTabColor(tab, color);
 		}
 
 		// Reset order of header tabs and visibility
@@ -409,6 +554,8 @@ class CdbTable extends hide.ui.View<{}> {
 		for (idx in 0...allCats.length) {
 			var cat = allCats[idx];
 			var tabHeader = header.find('[index=${sheets.length + idx}]');
+			var color = hide.comp.cdb.Editor.getCategoryColor(cat);
+			hide.comp.cdb.Editor.setTabColor(tabHeader, color);
 			var grouped = displayedCats?.indexOf(cat) < 0;
 			tabHeader.toggleClass("hidden", !grouped);
 			var grouppedHeaders = header.find('.cat-${cat}');

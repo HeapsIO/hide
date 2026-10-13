@@ -534,8 +534,8 @@ class Reference extends Object3D {
 		function recordRefChange(newRef: LoadedReference, setFields: (isUndo: Bool) -> Void) {
 			var oldRef = getLoadedReference();
 			function exec(isUndo: Bool) {
-				setFields(isUndo);
 				applyLoadedReference(isUndo ? oldRef : newRef);
+				setFields(isUndo);
 				ctx.rebuildPrefab(this);
 				ctx.rebuildInspector();
 			}

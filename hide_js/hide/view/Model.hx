@@ -2324,22 +2324,22 @@ class Model extends FileView {
 
 		tools.addSeparator();
 
-		aloop = tools.addToggle("refresh", "refresh", "Loop animation", function(v) {
+		aloop = tools.addToggle("loop", "refresh", "Loop animation", function(v) {
 			if( obj.currentAnimation != null ) {
 				obj.currentAnimation.loop = v;
 				obj.currentAnimation.onAnimEnd = function() {
 					if( !v ) haxe.Timer.delay(function() obj.currentAnimation.setFrame(0), 500);
 				}
 			}
-		});
+		}, null, null, State);
 
 		apause = tools.addToggle("pause", "pause", "Pause animation", function(v) {
 			if( obj.currentAnimation != null ) obj.currentAnimation.pause = v;
-		});
+		}, null, null, State);
 
 		aretarget = tools.addToggle("retarget", "share-square-o", "Retarget Animation", function(b) {
 			setRetargetAnim(b);
-		});
+		}, null, null, State);
 
 		aspeed = tools.addRange("Animation speed", function(v) {
 			if( obj.currentAnimation != null ) obj.currentAnimation.speed = v;

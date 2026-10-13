@@ -52,7 +52,7 @@ class GraphEditor extends hide.comp.Component {
 	var heapsScene : JQuery;
 	var editorDisplay : SVG;
 	var editorMatrix : JQuery;
-	public var config : hide.Config;
+	public var config : hide.Config.ReadOnlyConfig;
 
 
 	public var previewsScene : hide.comp.Scene = null;
@@ -111,7 +111,7 @@ class GraphEditor extends hide.comp.Component {
 	// Maps a packIO of an input to it's visual link in the graph
 	var edges : Map<Int, JQuery> = [];
 
-	public function new(config: hide.Config, editor: hide.view.GraphInterface.IGraphEditor, parent: Element = null) {
+	public function new(config: hide.Config.ReadOnlyConfig, editor: hide.view.GraphInterface.IGraphEditor, parent: Element = null) {
 		super(parent, new Element('
 		<div class="flex vertical" >
 			<div class="flex-elt graph-view" tabindex="0" >

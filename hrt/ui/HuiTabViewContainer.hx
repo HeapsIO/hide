@@ -102,9 +102,21 @@ class HuiTabViewContainer extends HuiTabContainer {
 				tabs: tabState,
 			}
 
-			Reflect.setField(hide.Ide.inst.projectConfig.tabViews, dom.id.toString(), state);
-			hide.Ide.inst.config.user.save();
+			hide.Ide.inst.projectState.set(getStateKey(), state);
 		}
+	}
+
+	/** Tabs opened by default in a panel that was never saved **/
+	static final DEFAULT_TABS : Map<String, TabViewData> = [
+		"left-panel" => { tabIndex: 0, tabs: [{type: "fileBrowser"}] },
+	];
+
+	function getStateKey() {
+		return "tabViews." + dom.id.toString();
+	}
+
+	function getSavedState() : Null<TabViewData> {
+		return hide.Ide.inst.projectState.get(getStateKey(), DEFAULT_TABS.get(dom.id.toString()));
 	}
 
 	function getViewState(element: HuiElement) : ViewData {
@@ -153,7 +165,7 @@ class HuiTabViewContainer extends HuiTabContainer {
 
 	// Restore default tab from save
 	override function getDefaultCurrentTab() {
-		var state = hide.Ide.inst.projectConfig.tabViews.get(dom.id.toString());
+		var state = getSavedState();
 		var index = state?.tabIndex ?? 0;
 		var tabs = getTabs();
 		index = hxd.Math.iclamp(index, 0, tabs.length);
@@ -163,7 +175,7 @@ class HuiTabViewContainer extends HuiTabContainer {
 	function loadViewState() {
 		var tabList : Array<ViewData> = [];
 		if (dom.id.isDefined()) {
-			var state = hide.Ide.inst.projectConfig.tabViews.get(dom.id.toString());
+			var state = getSavedState();
 			tabList = state?.tabs ?? tabList;
 		}
 

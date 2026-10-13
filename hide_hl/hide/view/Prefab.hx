@@ -41,7 +41,6 @@ class Prefab extends HuiView<{path: String}> {
 
 	static var editorHideCommand = new hrt.ui.HuiCommands.HuiCommand("Editor Hide", {key: hxd.Key.H});
 
-	public var config(default, null) : hide.Config;
 	public var hidden : Map<hrt.prefab.Prefab, Bool> = new Map();
 
 	var currentEditContext: EditContext;
@@ -85,17 +84,11 @@ class Prefab extends HuiView<{path: String}> {
 
 		hrt.tools.FileManager.inst.watchFileChange(onFileChange);
 
-		if (state != null) {
-			config = hide.Config.loadForFile(hide.Ide.inst, state.path);
-			saveDisplayKey = '/prefabEditor:${state.path}';
-
-		} else {
-			config = hide.Ide.inst.currentConfig;
-			saveDisplayKey = "/prefabEditor:__empty";
-		}
+		var config : hide.Config.ReadOnlyConfig = hide.Config.loadForFile(hide.Ide.inst, state.path);
+		saveDisplayKey = '/prefabEditor:${state.path}';
 
 		sceneEditor.load = () -> reload();
-		sceneEditor.getConfig = () -> { return config; };
+		sceneEditor.getConfig = () -> config;
 		sceneEditor.getObjectsAt = getObjectsAt;
 		sceneEditor.getSelectedObjects = () -> {
 			var selectedObjects = [];
@@ -804,7 +797,7 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	function getDefaultSceneFilters() : Map<String, Bool> {
-		var filters = hide.Ide.inst.config.project.get(DEFAULT_SCENE_FILTERS);
+		var filters = hide.Ide.inst.currentConfig.get(DEFAULT_SCENE_FILTERS);
 		if (filters == null)
 			return [];
 		var val : Map<String, Bool> = [];
@@ -819,7 +812,7 @@ class Prefab extends HuiView<{path: String}> {
 		for (key => value in actualSceneFilters) {
 			Reflect.setField(save, key, value);
 		}
-		hide.Ide.inst.config.project.set(DEFAULT_SCENE_FILTERS, save);
+		hide.Ide.inst.projectConfig.set(DEFAULT_SCENE_FILTERS, save);
 		updateSceneFilters();
 		saveSceneFilters();
 	}
@@ -1761,7 +1754,7 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	function getAvailableTags() : Array<TagInfo>{
-		return cast Ide.inst.config.current.get(TAGS_CONFIG_KEY);
+		return cast Ide.inst.currentConfig.get(TAGS_CONFIG_KEY);
 	}
 
 	public function getTag(p: hrt.prefab.Prefab) : TagInfo {
@@ -2576,14 +2569,14 @@ class Prefab extends HuiView<{path: String}> {
 			var label = prefab.editorProps.name;
 			return {label: label, click: () -> {
 				callback.bind(prefab.prefabClass)();
-				var recents : Array<String> = Ide.inst.currentConfig.get("editor.newrecents", []);
+				var recents : Array<String> = Ide.inst.projectState.get("editor.newrecents", []);
 				if (recents.contains(prefabKey))
 					recents.remove(prefabKey);
 				recents.insert(0, prefabKey);
 				var maxLength = 10;
 				if (recents.length > 10)
 					recents.resize(10);
-				Ide.inst.currentConfig.set("editor.newrecents", recents);
+				Ide.inst.projectState.set("editor.newrecents", recents);
 			}, icon: prefab.editorProps.icon};
 		}
 
@@ -2618,7 +2611,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		lines.sort((a,b) -> Reflect.compare(a.label, b.label));
 
-		var recents : Array<String> = Ide.inst.currentConfig.get("editor.newrecents", []);
+		var recents : Array<String> = Ide.inst.projectState.get("editor.newrecents", []);
 		var recentLines : Array<hrt.ui.HuiMenu.MenuItem> = [];
 		for (r in recents) {
 			var l = getLine(r);
@@ -2944,14 +2937,14 @@ class EditContext extends hrt.prefab.EditContext2 {
 			return;
 
 		if (value == null) {
-			hide.Ide.inst.deleteLocalStorage(getSaveKey(category, key));
+			hide.Ide.inst.projectState.remove(getSaveKey(category, key));
 			return;
 		}
-		hide.Ide.inst.saveLocalStorage(getSaveKey(category, key), value);
+		hide.Ide.inst.projectState.set(getSaveKey(category, key), value);
 	}
 
 	function getSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String) : Null<Dynamic> {
-		var v = hide.Ide.inst.getLocalStorage(getSaveKey(category, key));
+		var v = hide.Ide.inst.projectState.get(getSaveKey(category, key));
 		if (v == null)
 			return null;
 		return v;

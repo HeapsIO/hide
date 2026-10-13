@@ -32,7 +32,6 @@ class Categorie {
 					v = Std.parseFloat(editElement.val());
 
 				onChange(v);
-				Ide.inst.config.global.save();
 			} );
 	}
 }

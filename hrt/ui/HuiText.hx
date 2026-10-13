@@ -105,6 +105,8 @@ class HuiText extends HuiElement {
 		"regular-small" => ["font/Inter-Regular-cv05-cv08-tnum-10pt.fnt", "font/Inter-Regular-cv05-cv08-tnum-20pt.fnt"],
 		"italic" => ["font/Inter-Italic-cv05-cv08-tnum-13pt.fnt", "font/Inter-Italic-cv05-cv08-tnum-26pt.fnt"],
 		"code" => ["font/Iosevka-Regular-15pt.fnt", "font/Iosevka-Regular-30pt.fnt"],
+		"regular-big" => ["font/Inter-Regular-cv05-cv08-tnum-28pt.fnt", "font/Inter-Regular-cv05-cv08-tnum-56pt.fnt"],
+		"regular-very-big" => ["font/Inter-Regular-cv05-cv08-tnum-36pt.fnt", "font/Inter-Regular-cv05-cv08-tnum-72pt.fnt"]
 	];
 
 	static var bitmapFontCache: Map<String, Array<h2d.Font>> = [];

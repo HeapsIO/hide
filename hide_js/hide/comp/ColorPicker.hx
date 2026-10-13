@@ -68,7 +68,7 @@ class ColorBox extends Component {
 					onChange(true);
 				};
 				picker.onClose = function() {
-					workValue = (picker.wasCancelled && ide.ideConfig.colorPickerEscUndo) ? startValue : picker.value;
+					workValue = (picker.wasCancelled && ide.currentConfig.get("hide.colorPickerEscUndo")) ? startValue : picker.value;
 					repaint();
 					onChange(false);
 					picker.onClose = function(){};
@@ -435,7 +435,7 @@ class ColorPicker extends Popup {
 				function(e : Event) {
 					var val = Std.parseInt(modeSelect.val());
 					var modeIndex : Int = Std.int(hxd.Math.clamp(val, 0, ColorSpace.colorModes.length));
-					ide.currentConfig.set("colorPicker.secondaryColorMode", modeIndex);
+					ide.projectUserConfig.set("colorPicker.secondaryColorMode", modeIndex);
 					changeColorMode(ColorSpace.colorModes[modeIndex]);
 				}
 			);

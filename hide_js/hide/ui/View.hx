@@ -31,7 +31,7 @@ class View<T> extends hide.comp.Component {
 
 	var undoStack: Array<UndoHistory> = [new hide.ui.UndoHistory()];
 
-	public var config(get, null) : Config;
+	public var config(get, null) : Config.ReadOnlyConfig;
 	public var viewClass(get, never) : String;
 	public var defaultOptions(get,never) : ViewOptions;
 	var needRebuild : Bool;

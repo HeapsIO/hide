@@ -13,60 +13,10 @@ typedef ConfigField = {
 }
 #end
 
-typedef HideGlobalConfig = {
-	var autoSaveLayout : Null<Bool>;
-	var useAlternateFont : Null<Bool>;
-
-	var currentProject : String;
-	var recentProjects : Array<String>;
-
-	var windowPos : { x : Int, y : Int, w : Int, h : Int, max : Bool };
-
-	@:optional var sceneEditorLayout : { colsVisible : Bool, colsCombined : Bool };
-
-	// General
-	var autoSavePrefab : Bool;
-	var svnShowVersionedFiles : Bool;
-	var svnShowModifiedFiles : Bool;
-	var enableDBFormulas : Bool;
-	var screenCaptureResolution : Int;
-	var minDistFromCameraOnDrag : Float;
-	var colorPickerEscUndo : Bool;
-
-
-	// Search
-	var closeSearchOnFileOpen : Bool;
-	var closeSearchOnCDBSheetChange : Bool;
-	var typingDebounceThreshold : Int;
-
-	// Performance
-	var trackGpuAlloc : Bool;
-	var unfocusCPUSavingMode : Bool;
-
-	// Scene Editor
-	var orientMeshOnDrag : Bool;
-	var collisionOnDrag : Bool;
-	var sceneEditorClickCycleObjects : Bool;
-
-	// hidehl
-	var sceneEditorVerticalSidebar: Bool;
-
-	// CDB
-	var searchOnKeyPress : Bool;
-	var highlightActiveLine : Bool;
-	var highlightActiveLineHeader : Bool;
-	var highlightActiveColumnHeader : Bool;
-
-	// Filebrowser
-	var filebrowserDebugIgnoreThumbnailCache : Bool;
-	var filebrowserDebugServerCommands : Bool;
-	var filebrowserDebugShowWindow : Bool;
-	var filebrowserDebugShowMenu : Bool;
-};
-
-typedef ConfigDef = {
-	var hide : {};
-};
+#if !macro
+@:forward(get)
+abstract ReadOnlyConfig(Config) from Config {}
+#end
 
 class Config {
 #if !macro
@@ -74,20 +24,18 @@ class Config {
 	var ide : Ide;
 	var parent : Config;
 	public var path(default,null) : String;
-	public var source(default, null) : ConfigDef = cast {};
-	public var current : ConfigDef = cast {};
+	public var source(default, null) : Dynamic = {};
+	public var current : Dynamic = {};
 
 	var prevConfig: String = null;
+
+	static var changeCount = 0;
+	var syncedChangeCount = -1;
 
 	public function new( ?parent : Config ) {
 		ide = Ide.inst;
 		this.parent = parent;
 		sync();
-	}
-
-	public function isLocal() {
-		if( path == null && parent != null ) return parent.isLocal();
-		return path == null || StringTools.startsWith(path, ide.projectDir);
 	}
 
 	public function load( path : String ) {
@@ -96,18 +44,19 @@ class Config {
 		if( sys.FileSystem.exists(fullPath) )
 			source = try ide.parseJSON(sys.io.File.getContent(fullPath)) catch( e : Dynamic ) throw e+" (in "+fullPath+")";
 		else
-			source = cast {};
+			source = {};
+		changeCount++;
 		sync();
 	}
 
 	public function save() {
-		ide.removeDefaultValues();
 		sync();
 		saveToDisk();
 	}
 
 	function saveToDisk() {
 		if( path == null ) throw "Cannot save properties (unknown path)";
+		if( ide.readOnlyConfig ) return;
 		var fullPath = ide.getPath(path);
 		if( Reflect.fields(source).length == 0 )
 			try sys.FileSystem.deleteFile(fullPath) catch( e : Dynamic ) {};
@@ -137,7 +86,6 @@ class Config {
 		a row then only rewrites the file once instead of once per value.
 	**/
 	public function queueSave() {
-		ide.removeDefaultValues();
 		sync();
 		saveDelay = SAVE_DELAY;
 		if( !pendingSaves.contains(this) )
@@ -169,9 +117,15 @@ class Config {
 
 	public function sync() {
 		if( parent != null ) parent.sync();
-		current = cast {};
+		current = {};
 		if( parent != null ) merge(parent.current);
 		if( source != null ) merge(source);
+		syncedChangeCount = changeCount;
+	}
+
+	inline function syncIfChanged() {
+		if( syncedChangeCount != changeCount )
+			sync();
 	}
 
 	function merge( value : Dynamic ) {
@@ -211,26 +165,21 @@ class Config {
 	}
 
 	public function get( key : String, ?defaultVal : Dynamic ) : Dynamic {
+		syncIfChanged();
 		var val = Reflect.field(current,key);
 		if(val != null) return val;
 		return defaultVal;
 	}
 
-	public function getLocal( key : String, ?defaultVal : Dynamic ) : Dynamic {
-		var v = get(key);
-		if( v == null ) return defaultVal;
-		if( isLocal() ) return v;
-		if( parent == null ) return defaultVal;
-		return parent.getLocal(key,defaultVal);
-	}
-
 	public function set( key : String, val : Dynamic ) {
+		syncIfChanged();
 		if (val == Reflect.field(current, key))
 			return;
 		if( val == null )
 			Reflect.deleteField(source, key);
 		else
 			Reflect.setField(source, key, val);
+		changeCount++;
 		#if editor_hl
 		queueSave();
 		#else
@@ -255,8 +204,13 @@ class Config {
 		return config;
 	}
 
-	public static function loadForProject( projectPath : String, resourcePath : String, appDataPath : String ) {
-		var hidePath = Ide.inst.appPath;
+	/**
+		Load the config layers of a project, each one being the parent of the next :
+		defaults (hide installation) < user (all projects) < project (shared, res/props.json) < project user
+	**/
+	public static function loadForProject( projectPath : String, resourcePath : String ) {
+		var ide = Ide.inst;
+		var hidePath = ide.appPath;
 
 		var defaults = new Config();
 		try {
@@ -266,64 +220,38 @@ class Config {
 			alert('Fatal error : Couldn\'t load ${hidePath}/defaultProps.json. Please check your hide installation.\n$err');
 			Sys.exit(-1);
 		}
+		for( key => value in ide.defaultUserConfig )
+			if( !Reflect.hasField(defaults.source, key) )
+				Reflect.setField(defaults.source, key, value);
+		defaults.sync();
 
-		var userGlobals = loadConfig(new Config(defaults), Ide.inst.userStatePath + "/props.json");
-
-		if( userGlobals.source.hide == null )
-			userGlobals.source.hide = {
-				autoSaveLayout : true,
-				enableDBFormulas : true,
-				layouts : null,
-				recentProjects : [],
-				currentProject : "",
-				windowPos : null,
-				renderer : null,
-			};
-
-		var perProject = loadConfig(new Config(userGlobals), resourcePath + "/props.json");
-
-		var projectUserCustom = loadConfig(new Config(perProject), appDataPath + "/" + projectPath.split("\\").join("/").split("/").join("_").split(":").join("_") + ".json");
-		var p = projectUserCustom;
-		if( p.source.hide == null ) {
-		#if js
-			p.source.hide = ({ layouts : [], renderer : null, dbCategories: null, dbProofread: null } : HideProjectConfig);
-		#else
-			p.source.hide = ({ tabViews:
-				{
-					"left-panel": {
-						tabIndex: 0,
-						tabs: [{type: "fileBrowser"}]
-					},
-				}
-			} : HideProjectConfig);
-		#end
-		}
-
-		var current = new Config(projectUserCustom);
+		var user = loadConfig(new Config(defaults), ide.userDataPath + "/preferences.json");
+		var project = loadConfig(new Config(user), resourcePath + "/props.json");
+		var projectUser = loadConfig(new Config(project), ide.getProjectDataPath(projectPath) + "/preferences.json");
 
 		return {
-			global : userGlobals,
-			project : perProject,
-			user : projectUserCustom,
-			current : current,
+			user : user,
+			project : project,
+			projectUser : projectUser,
 		};
 	}
 
 	public static function loadForFile( ide : hide.tools.IdeData, path : String ) {
-		var parts = path.split("/");
+		var relPath = ide.makeRelative(path);
+		var inResources = !haxe.io.Path.isAbsolute(relPath) && !StringTools.startsWith(relPath, "..");
+		var parts = inResources ? [for( p in relPath.split("/") ) if( p != "" ) p] : [];
 		var propFiles = [];
 		var first = true, allowSave = false;
-		while( true ) {
+		while( parts.length > 0 ) {
 			var pfile = ide.getPath(parts.join("/") + "/props.json");
 			if( sys.FileSystem.exists(pfile) ) {
 				propFiles.unshift(pfile);
 				if( first ) allowSave = true;
 			}
-			if( parts.length == 0 ) break;
 			first = false;
 			parts.pop();
 		}
-		var parent = ide.currentConfig;
+		var parent = ide.projectUserConfig;
 		for( p in propFiles ) {
 			parent = new Config(parent);
 			parent.load(p);
@@ -342,7 +270,7 @@ class Config {
 		Build macro to be used as `@:build(hide.Config.configMacro())` on a class.
 
 		Every static variable of that class decorated with `@:config` is meant to be
-		persisted through `hide.Ide.inst.currentConfig.get/set` instead of being stored
+		read through `hide.Ide.inst.currentConfig.get` and written in `projectUserConfig` instead of being stored
 		in the class itself.
 
 		Keys are always prefixed so they can't collide with the ones of another class :
@@ -359,7 +287,7 @@ class Config {
 		resolving to the same key is a compilation error, because they would silently share
 		their value while each declaring its own default. The check only knows about the
 		variables declared through this macro, so a `#` key can still point at a raw key that
-		is read with `currentConfig.get/set` somewhere else.
+		is read with `currentConfig.get` somewhere else.
 	**/
 	public static function configMacro( ?prefix : String ) : Array<Field> {
 		var cl = Context.getLocalClass().get();
@@ -435,7 +363,7 @@ class Config {
 					args : [{ name : "value", type : t }],
 					ret : t,
 					expr : macro {
-						hide.Ide.inst.currentConfig.set($v{key}, value != $defaultValue ? value : null);
+						hide.Ide.inst.projectUserConfig.set($v{key}, value != $defaultValue ? value : null);
 						return value;
 					},
 				}),

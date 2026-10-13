@@ -190,6 +190,29 @@
   var path = './';
   var fs = require('fs');
   var timer = 0;
+  // the compiler writes hide.js in several steps : reload only once it is complete (it ends with the source map
+  // comment) and its size no longer changes, a truncated file would leave an empty window
+  var lastSize = -1;
+  function reloadWhenComplete() {
+	var size = -1, complete = false;
+	try {
+		var fd = fs.openSync(path + 'hide.js', 'r');
+		size = fs.fstatSync(fd).size;
+		var tail = Buffer.alloc(Math.min(size, 256));
+		fs.readSync(fd, tail, 0, tail.length, size - tail.length);
+		fs.closeSync(fd);
+		complete = tail.toString().indexOf('//# sourceMappingURL=') >= 0;
+	} catch( e ) {
+	}
+	if( !complete || size != lastSize ) {
+		lastSize = size;
+		timer = setTimeout(reloadWhenComplete, 500);
+		return;
+	}
+	timer = 0;
+	reloadWatcher.close();
+	hide.Ide.inst.reload();
+  }
   var reloadWatcher=fs.watch(path, function(_,file) {
 	if (file == null)
 		return;
@@ -202,10 +225,7 @@
 
 		if (timer != 0)
 			clearTimeout(timer);
-		timer = setTimeout(function() {
-			reloadWatcher.close();
-			hide.Ide.inst.reload();
-		}, 1000);
+		timer = setTimeout(reloadWhenComplete, 1000);
 	}
 
 	if (ext == "css") {

@@ -13,7 +13,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	var cleanup = new Array<Void->Void>();
 	var defaultCamera : h3d.Camera;
 	var listeners = new Array<Float -> Void>();
-	public var config : hide.Config;
+	public var config : hide.Config.ReadOnlyConfig;
 	public var engine : h3d.Engine;
 	public var width(get, never) : Int;
 	public var height(get, never) : Int;
@@ -126,7 +126,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		window = @:privateAccess new hxd.Window(canvas);
 		window.propagateKeyEvents = true;
 		window.setCurrent();
-		h3d.impl.MemoryManager.enableTrackAlloc(Ide.inst.ideConfig.trackGpuAlloc);
+		h3d.impl.MemoryManager.enableTrackAlloc(Ide.inst.currentConfig.get("hide.trackGpuAlloc"));
 		engine = @:privateAccess new h3d.Engine();
 		@:privateAccess engine.resCache.set(Scene, this);
 		engine.backgroundColor = 0xFF111111;
@@ -230,7 +230,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		if( !visible || pendingCount > 0)
 			return;
 		var dt = hxd.Timer.tmod * speed / 60;
-		if( !Ide.inst.isFocused && Ide.inst.ideConfig.unfocusCPUSavingMode ) {
+		if( !Ide.inst.isFocused && Ide.inst.currentConfig.get("hide.unfocusCPUSavingMode") ) {
 			// refresh at 1FPS
 			unFocusedTime += dt;
 			if( unFocusedTime < 1 ) return;

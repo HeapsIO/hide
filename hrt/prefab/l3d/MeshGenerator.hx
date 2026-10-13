@@ -450,7 +450,7 @@ class MeshGenerator extends Object3D {
 		return ctx.ide.getPath(".tmp/meshGeneratorData/"+ extractMeshName(meshPath) +"_thumbnail.png");
 	}
 
-	function getRandomMeshPath( config : hide.Config, socket : Socket ) : String {
+	function getRandomMeshPath( config : hide.Config.ReadOnlyConfig, socket : Socket ) : String {
 		var available : Array<String> = [];
 		for( f in filter ) {
 			var meshList : Array<Dynamic> = config.get("meshGenerator." + f);

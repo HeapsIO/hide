@@ -210,14 +210,13 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 	static function init() {
 		hide.ui.View.register(RemoteConsoleView);
 		function wait() {
-			if( Ide.inst?.config?.project == null ) {
+			if( Ide.inst == null || @:privateAccess Ide.inst.config == null ) {
 				haxe.Timer.delay(wait, 10);
 				return;
 			}
 			if (Ide.inst.thumbnailMode)
 				return;
-			var config = Ide.inst.config.project;
-			var pconfig = config.get("remoteconsole");
+			var pconfig = Ide.inst.currentConfig.get("remoteconsole");
 			if( pconfig != null && pconfig.disableAutoStartServer != true ) {
 				var host = pconfig.host ?? hrt.impl.RemoteConsole.DEFAULT_HOST;
 				var port = pconfig.port ?? hrt.impl.RemoteConsole.DEFAULT_PORT;

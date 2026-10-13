@@ -27,7 +27,7 @@ private class DomkitCssParser extends domkit.CssParser {
 class DomkitChecker {
 
 	var ide : hide.Ide;
-	var config : hide.Config;
+	var config : hide.Config.ReadOnlyConfig;
 	var checker : domkit.Checker;
 	var parsers : Array<domkit.CssValue.ValueParser>;
 	var lessVariables : Map<String, domkit.CssValue> = new Map();

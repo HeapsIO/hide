@@ -352,8 +352,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	function getIcon(item : FileEntry) : String {
 		var vcsClass = switch(item.vcsStatus) {
 			case None: "";
-			case UpToDate: Ide.inst.ideConfig.svnShowVersionedFiles ? "fancy-status-icon fancy-status-icon-ok" : "";
-			case Modified: Ide.inst.ideConfig.svnShowModifiedFiles ? "fancy-status-icon fancy-status-icon-modified" : "";
+			case UpToDate: Ide.inst.currentConfig.get("hide.svnShowVersionedFiles") ? "fancy-status-icon fancy-status-icon-ok" : "";
+			case Modified: Ide.inst.currentConfig.get("hide.svnShowModifiedFiles") ? "fancy-status-icon fancy-status-icon-modified" : "";
 		};
 
 		if (item.kind == Dir)
@@ -874,7 +874,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		fancyGallery.onContextMenu = contextMenu.bind(true);
 
-		if (Ide.inst.ideConfig.filebrowserDebugShowMenu) {
+		if (Ide.inst.currentConfig.get("hide.filebrowserDebugShowMenu")) {
 			browserLayout.find(".btn-collapse-folders").after(new Element('<fancy-button class="btn-debug"><span class="ico ico-bug"></span></fancy-button>'));
 			var button = browserLayout.find(".btn-debug").get(0);
 			button.onclick = (e) -> {

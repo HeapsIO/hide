@@ -342,7 +342,7 @@ class HuiBase extends HuiElement {
 		}
 
 		// HiDPI support for hldx targets
-		var upscale = hxd.Window.getInstance().displayScale * UIScales.get(hide.Ide.inst.getLocalStorage(UIScaleKey) ?? "x1.0");
+		var upscale = hxd.Window.getInstance().displayScale * UIScales.get(hide.Ide.inst.globalState.get(UIScaleKey) ?? "x1.0");
 
 		if (previousUiScale != upscale) {
 			previousUiScale = upscale;

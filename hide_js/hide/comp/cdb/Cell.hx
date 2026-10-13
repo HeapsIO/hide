@@ -50,11 +50,11 @@ class Cell {
 			if(editProps.categories != null)
 				for(c in editProps.categories)
 					root.classList.add("cat-" + c);
-			var visible = editor.isColumnVisible(column);
-			root.classList.toggle("hidden", !visible);
-			if(!visible)
-				return;
 		}
+		var visible = line.table.displayMode == Table ? line.table.isColumnShown(column) : line.table.parent != null || editor.isColumnVisible(column);
+		root.classList.toggle("hidden", !visible);
+		if(!visible)
+			return;
 
 		if( column.kind == Script ) root.classList.add("t_script");
 		refresh();
@@ -181,7 +181,7 @@ class Cell {
 				];
 		case TInt, TFloat:
 			function setF( f : Formulas.Formula ) {
-				editor.beginChanges();
+				line.beginChanges();
 				editor.formulas.set(this, f);
 				line.evaluate();
 				editor.endChanges();
@@ -228,7 +228,7 @@ class Cell {
 					}
 					Reflect.setField(obj, pc.name, newVal);
 				}
-				editor.beginChanges();
+				line.beginChanges();
 				editor.changeObject(line, column, column.opt && pc == null ? null : obj);
 				editor.endChanges();
 				refresh();
@@ -303,6 +303,7 @@ class Cell {
 		}
 		#end
 		currentValue = Reflect.field(editObject, editColumn.name);
+		editor.searchTexts.delete(line.obj);
 
 		blurOff = true;
 		var html = valueHtml(column, Reflect.field(line.obj, column.name), line.table.getRealSheet(), line.obj, []);
@@ -321,6 +322,9 @@ class Cell {
 		default:
 		}
 		blurOff = false;
+
+		var text : String = column.type == TString && column.kind != Script ? Reflect.field(line.obj, column.name) : null;
+		elementHtml.classList.toggle("multiline", text != null && isMultiline(text));
 
 		updateClasses();
 		var subTable = line.subTable;
@@ -353,7 +357,7 @@ class Cell {
 			elementHtml.classList.toggle("formula", editor.formulas.has(this) );
 		default:
 		}
-		if( ide.projectConfig.dbProofread == true ) {
+		if( ide.projectState.get("dbProofread") == true ) {
 			var classes = elementHtml.className.split(" ");
 			switch( column.type ) {
 			case TRef(name):
@@ -477,6 +481,9 @@ class Cell {
 			return {str: Std.string(s), containsHtml:true};
 		}
 
+		var previewIcon : Null<Int> = scope.length > 0 ? 24 : null;
+		var displayIconLimit : Null<Int> = previewIcon == null ? 32 : null;
+
 		if( v == null ) {
 			if( c.opt )
 				return val(" ");
@@ -499,6 +506,8 @@ class Cell {
 			}
 		case TString if( c.kind == Script ):  // wrap content in div because td cannot have max-height
 			v == "" ? val(" ") : html('<div class="script">${colorizeScript(c,v,line.getRootLine().getId())}</div>');
+		case TString if( scope.length > 0 && c.kind == Localizable && isMultiline(v) ):
+			html('<span class="loc-multiline">' + spacesToNBSP(StringTools.htmlEscape(v).split("\n").join("<br/>")) + '</span>');
 		case TString, TLayer(_), TGuid:
 			v == "" ? val(" ") : html(spacesToNBSP(StringTools.htmlEscape(v).split("\n").join("<br/>")));
 		case TFormula:
@@ -526,7 +535,12 @@ class Cell {
 					id = v;
 				}
 				var i = s.index.get(id);
-				html(i == null ? '<span class="error">#REF($v)</span>' : (i.ico == null ? "" : tileHtml(i.ico,true).str+" ") + StringTools.htmlEscape(i.disp));
+				if( i == null )
+					html('<span class="error">#REF($v)</span>');
+				else if( i.ico == null )
+					html(StringTools.htmlEscape(i.disp));
+				else
+					html('<span class="with-icon">' + tileHtml(i.ico, true, previewIcon, displayIconLimit).str + StringTools.htmlEscape(i.disp) + '</span>');
 			}
 		case TBool:
 			val(v?"Y":"N");
@@ -539,37 +553,44 @@ class Cell {
 			var ps = sheet.getSub(c);
 			var out : Array<String> = [];
 			scope.push({ s : sheet, obj : obj });
-			var isHtml = false;
 			var idCol = Lambda.find(ps.columns, c -> c.type == TId);
+			var hasQty = false;
 			for( v in a ) {
-				var vals = [];
+				var shown : Array<{ c : cdb.Data.Column, str : String }> = [];
 				for( c in ps.columns ) {
 					if(c.type == TString && c.kind == Script)
 						continue;
 					if( !canViewSubColumn(ps, c) ) continue;
 					var fs = idCol != null && c.type.match(TFormula | TPolymorph) ? cdb.FormulaEngine.listScope(a, idCol.name, c, c.type == TPolymorph ? ps.getSub(c).columns : null, Reflect.field(v, idCol.name)) : null;
 					var h = valueHtml(c, Reflect.field(v, c.name), ps, v, scope, fs);
-					if( h.str != "" && h.str != " " )
-					{
-						isHtml = isHtml || h.containsHtml;
-						vals.push(h.str);
-					}
+					if( h.str == "" || h.str == " " )
+						continue;
+					shown.push({ c : c, str : h.str });
 				}
-				inline function char(s) return '<span class="minor">$s</span>';
-				if (vals.length == 0)
+				if( shown.length == 0 )
 					continue;
-				else if (vals.length == 1) {
-					out.push(vals[0]);
+				var qty : String = null;
+				var qi = -1, hasRef = false;
+				for( i => s in shown )
+					switch( s.c.type ) {
+					case TInt, TFloat: if( qi < 0 ) qi = i;
+					case TRef(_), TEnum(_): hasRef = true;
+					default:
+					}
+				if( hasRef && shown.length >= 2 && shown.length <= 4 && (qi == 0 || (qi == 1 && shown.length <= 3)) ) {
+					qty = shown[qi].str;
+					shown.splice(qi, 1);
 				}
-				else {
-					out.push((char('[') + vals.join(char(',')) + char(']')));
-					isHtml = true;
-				}
+				var vals = [for( s in shown ) s.str];
+				if( qty != null ) hasQty = true;
+				out.push((qty == null ? "" : '<span class="qty">$qty</span>') + [for( v in vals ) '<span class="v">$v</span>'].join(""));
 			}
 			scope.pop();
 			if( out.length == 0 )
 				return val("");
-			return {str: out.join(", "), containsHtml: true};
+			var count = hasQty ? "" : '<span class="qty count${a.length == 1 ? " one" : ""}">${a.length}</span>';
+			var last = out.length - 1;
+			return html('<span class="list-preview">' + [for( i => e in out ) '<span class="list-preview-item">${i == 0 ? count : ""}$e${i < last ? '<span class="minor">,</span>' : ""}</span>'].join("") + '</span>');
 		case TPolymorph:
 			var ps = sheet.getSub(c);
 			scope.push({ s : sheet, obj : obj });
@@ -591,7 +612,7 @@ class Cell {
 				var pval = Reflect.field(v, pc.name);
 				if( pval == null && pc.opt ) continue;
 				if( !canViewSubColumn(ps, pc) ) continue;
-				out.push('<div class="label">${pc.name} : <div class="content">${valueHtml(pc, pval, ps, v, scope).str}</div></div>');
+				out.push('<div class="label"><span class="name">${pc.name}</span><div class="content">${valueHtml(pc, pval, ps, v, scope).str}</div></div>');
 			}
 			scope.pop();
 			html(out.join(""));
@@ -637,12 +658,15 @@ class Cell {
 			var path = ide.getPath(v);
 			var ext = v.split(".").pop().toLowerCase();
 			if (v == "") return html('<span class="error">#MISSING</span>');
+			var inPreview = scope.length > 0;
 			var innerHtml = StringTools.htmlEscape(v);
-			innerHtml = '<span title=\'$innerHtml\' >' + innerHtml  + '</span>';
+			innerHtml = '<span title=\'$innerHtml\' >' + (inPreview ? StringTools.htmlEscape(v.split("/").pop()) : innerHtml) + '</span>';
 			if (!editor.quickExists(path)) return html('<span class="error">#NOTFOUND : $innerHtml</span>');
 			else if( ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" ) {
 				#if js
 				var url = ide.getUnCachedUrl(path);
+				if( inPreview )
+					return html('<img class="preview-thumb" src="$url" title="${StringTools.htmlEscape(v)}"/>');
 				var dims = imageDims.get(url);
 				var dimsText = dims != null ? dims.width+"x"+dims.height : "";
 				var onload = dims != null ? "" : 'onload="hide.comp.cdb.Cell.onImageLoad(this, \'$url\');"';
@@ -659,9 +683,11 @@ class Cell {
 				}
 				#end
 			}
+			if( inPreview )
+				return html(innerHtml);
 			return html(innerHtml + ' <input type="submit" value="open" onclick="hide.Ide.inst.openFile(\'$path\')"/>');
 		case TTilePos:
-			return tileHtml(v);
+			return tileHtml(v, false, previewIcon, sheet.props.displayIcon == c.name ? displayIconLimit : null);
 		case TTileLayer:
 			var v : cdb.Types.TileLayer = v;
 			var path = ide.getPath(v.file);
@@ -826,7 +852,7 @@ class Cell {
 		return name;
 	}
 
-	function tileHtml( v : cdb.Types.TilePos, ?isInline ) : {str: String, containsHtml: Bool} {
+	function tileHtml( v : cdb.Types.TilePos, ?isInline, ?maxSize : Int, ?limit : Int ) : {str: String, containsHtml: Bool} {
 		var path = ide.getPath(v.file);
 		if( !editor.quickExists(path) ) {
 			if( isInline ) return {str: "", containsHtml: false};
@@ -835,7 +861,9 @@ class Cell {
 		var width = v.size * (v.width == null?1:v.width);
 		var height = v.size * (v.height == null?1:v.height);
 		var max = width > height ? width : height;
-		var zoom = max <= 32 ? 2 : 64 / max;
+		var zoom = maxSize != null ? maxSize / max : max <= 32 ? 2 : 64 / max;
+		if( limit != null && max * zoom > limit )
+			zoom = limit / max;
 		var inl = isInline ? 'display:inline-block;' : '';
 		#if js
 		var url = ide.getUnCachedUrl(path);
@@ -845,8 +873,10 @@ class Cell {
 		var bg = 'background : url(\'$url\') -${px}px -${py}px;';
 		if( zoom > 1 )
 			bg += "image-rendering : pixelated;";
+		else if( zoom < 1 )
+			bg += "image-rendering : auto;";
 		var html = '<div
-			class="tile toload"
+			class="tile toload${maxSize != null ? " preview-icon" : ""}"
 			path="$path"
 			zoom="$zoom"
 			style="width : ${Std.int(width * zoom)}px; height : ${Std.int(height * zoom)}px; opacity:0; $bg $inl"
@@ -950,6 +980,10 @@ class Cell {
 				return StringTools.ltrim(d.substr(d.indexOf('=>') + 2));
 		}
 		return null;
+	}
+
+	static function isMultiline( text : String ) {
+		return text.indexOf("\n") >= 0 || text.length > 50;
 	}
 
 	// replace consecutive spaces to non brekable space + a space
@@ -2011,7 +2045,7 @@ class Cell {
 			focus();
 		case TTilePos:
 			// if we change a file that has moved, change it for all instances having the same file
-			editor.beginChanges();
+			table.beginChanges();
 			var change = false;
 			var oldV : cdb.Types.TilePos = currentValue;
 			var newV : cdb.Types.TilePos = newValue;
@@ -2038,9 +2072,12 @@ class Cell {
 	public function setValue( value : Dynamic ) {
 		var pe = getPolyEdit();
 		if( pe != null ) {
+			// the undo keeps the line before the change of the variant
+			line.beginChanges(editor.getCellMergeKey(line, column));
 			Reflect.setField(pe.obj, pe.col.name, value);
 			currentValue = value;
 			editor.changeObject(line, column, pe.obj);
+			editor.endChanges();
 			return;
 		}
 		currentValue = value;
@@ -2068,6 +2105,9 @@ class Cell {
 	}
 
 	public function editCustomType(typeName : String, ctValue : Dynamic, col : cdb.Data.Column, parentEl : Element, rightAnchor: Float, topAnchor : Float, depth : Int = 0) {
+		// edited in a copy : the value of the line changes once applied (the undo keeps it before)
+		if( depth == 0 && ctValue != null )
+			ctValue = haxe.Json.parse(haxe.Json.stringify(ctValue));
 		var customType = editor.base.getCustomType(typeName);
 
 		parentEl.empty();

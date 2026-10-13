@@ -5,14 +5,13 @@ enum HideViewPosition {
 	Main;
 	Bottom;
 }
+
 class Ide extends hide.tools.IdeData {
 	public static var inst : Ide;
 	public var app : hide.App;
 
 	public var isThumbnailMode = false;
 
-	// Keep a small delay between saves to avoid spamming the disk with writes
-	var localStorageSaveDelay: Float = 0.0;
 	public var isSVNAvailable(default, null): Bool;
 
 	/**
@@ -20,8 +19,6 @@ class Ide extends hide.tools.IdeData {
 		as we don't have access to advanced clipboard capabilities like MIME
 	**/
 	var localClipboard: Dynamic = null;
-
-	static final localUserDataSave = "hidehl.json";
 
 	var updates : Array<(dt: Float) -> Void> = [];
 
@@ -32,15 +29,10 @@ class Ide extends hide.tools.IdeData {
 		var cwd = Sys.getCwd();
 		initConfig(cwd);
 
-		loadLocalStorage();
-
 		new hrt.tools.FileManager();
 
 		isSVNAvailable = new sys.io.Process("svn", ["info", getPath(projectDir)]).exitCode(true) == 0;
 	}
-
-	var localStorage: Dynamic = {};
-	var localStorageSaveQueued: Bool = false;
 
 	public function setClipboard(text: String, data: Dynamic) {
 		hxd.System.setClipboardText(text);
@@ -56,39 +48,9 @@ class Ide extends hide.tools.IdeData {
 	}
 
 
-	public function saveLocalStorage(key: String, data: Dynamic) {
-		Reflect.setField(localStorage, key, data);
-
-		queueStorageSave();
-	}
-
-	public function deleteLocalStorage(key: String) {
-		Reflect.deleteField(localStorage, key);
-
-		queueStorageSave();
-	}
-
-	function queueStorageSave() {
-		localStorageSaveQueued = true;
-	}
-
-	function saveLocalStorageToDisk() {
-		sys.io.File.saveContent(appPath + "/" + localUserDataSave, toJSON(localStorage));
-	}
-
 	public function update(dt: Float) {
-		#if editor_hl
 		hide.Config.updatePendingSaves(dt);
-		#end
-
-		localStorageSaveDelay -= dt;
-		if (localStorageSaveQueued) {
-			if (localStorageSaveDelay < 0) {
-				saveLocalStorageToDisk();
-				localStorageSaveDelay = 5.0;
-				localStorageSaveQueued = false;
-			}
-		}
+		hide.tools.EditorState.updatePendingSaves(dt);
 
 		for (update in updates) {
 			update(dt);
@@ -111,26 +73,10 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function dispose() {
-		#if editor_hl
 		hide.Config.flushPendingSaves();
-		#end
-
-		if (localStorageSaveQueued) {
-			saveLocalStorageToDisk();
-			localStorageSaveQueued = false;
-		}
+		hide.tools.EditorState.flushPendingSaves();
 
 		hrt.tools.FileManager.inst.dispose();
-	}
-
-	function loadLocalStorage() {
-		try {
-			var data = sys.io.File.getContent(appPath + "/" + localUserDataSave);
-			localStorage = haxe.Json.parse(data);
-		} catch(e) {
-			trace("Error loading localUserSave", e);
-			localStorage = {};
-		}
 	}
 
 	public function chooseProject() {
@@ -199,16 +145,6 @@ class Ide extends hide.tools.IdeData {
 
 	public function exit() {
 		Sys.exit(0);
-	}
-
-	public function getLocalStorage(key: String) : Null<Dynamic> {
-		return Reflect.field(localStorage,key);
-
-	}
-
-	public function clearLocalStorage(key: String) {
-		Reflect.deleteField(localStorage, key);
-		queueStorageSave();
 	}
 
 

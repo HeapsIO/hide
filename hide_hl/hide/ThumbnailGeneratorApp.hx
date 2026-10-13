@@ -130,14 +130,14 @@ class ThumbnailGenerator {
 	static final maxBufferSize = 16384;
 
 	function new() {
-		/*if (Ide.inst.ideConfig.filebrowserDebugShowWindow) {
+		/*if (Ide.inst.currentConfig.get("hide.filebrowserDebugShowWindow")) {
 			nw.Window.get().show(true);
 		} else {
 			untyped nw.Window.get().hide();
 		}
 		nw.Window.get().resizeTo(128,128);*/
 
-		if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+		if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
 			trace("verbose output enabled");
 		else
 			trace("no verbose output");
@@ -178,15 +178,15 @@ class ThumbnailGenerator {
 		}
 		switch((message.type:hrt.tools.FileManager.ManagerToGenCommand)) {
 			case queue:
-				if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+				if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
 					trace('queue ${message.path}');
 				renderMiniature(message.path, sendSuccess.bind(message.path));
 			case clear:
-				if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+				if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
 					trace('clear');
 				miniaturesToRender = [];
 			case prio:
-				if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+				if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
 					trace('prio ${message.path} ->  ${message.prio}');
 				var toSet = Lambda.find(miniaturesToRender, (m) -> m.path == message.path);
 				if (toSet != null) {
@@ -222,7 +222,7 @@ class ThumbnailGenerator {
 	}
 
 	static function getRenderProps(filePath: String, config: Config) : String {
-		// var renderPropsPath = config.getLocal("thumbnail.renderProps");
+		// var renderPropsPath = config.get("thumbnail.renderProps");
 		// if (renderPropsPath == null) {
 		// 	var renderPropsList = hide.comp.ScenePreview.listRenderPropsStatic(config);
 		// 	if (renderPropsList.length > 0) {
@@ -460,7 +460,7 @@ class ThumbnailGenerator {
 	}
 
 	function handleTexture(toRender: RenderInfo, thumbnailPath: String) {
-		if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+		if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
 			trace('handleTexture ${toRender.path}');
 
 		try {
@@ -470,7 +470,7 @@ class ThumbnailGenerator {
 			waitingAsyncLoad = true;
 			img.waitLoad(() -> {
 				try {
-					if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+					if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
 						trace('handleTexture waitLoad finished (${toRender.path})');
 
 					waitingAsyncLoad = false;
@@ -522,7 +522,7 @@ class ThumbnailGenerator {
 
 					toRender.cb(path);
 
-					if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+					if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
 						trace('handleTexture DONE (${toRender.path})');
 				} catch (e) {
 					waitingAsyncLoad = false;
@@ -581,7 +581,7 @@ class ThumbnailGenerator {
 			var thumbnailPathString = thumbnailPath.toString();
 
 			var shouldGenerate = true;
-			if (!Ide.inst.ideConfig.filebrowserDebugIgnoreThumbnailCache && sys.FileSystem.exists(thumbnailPathString)) {
+			if (!Ide.inst.currentConfig.get("hide.filebrowserDebugIgnoreThumbnailCache") && sys.FileSystem.exists(thumbnailPathString)) {
 				shouldGenerate = false;
 				sendSuccess(toRender.path, thumbnailPathString);
 				continue;
