@@ -178,6 +178,9 @@ class IdeData {
 			var prevPath = new haxe.io.Path(hidePath).dir;
 			if( sys.FileSystem.exists(prevPath + "/hide.js") )
 				return prevPath;
+			// packaged electron
+			if( sys.FileSystem.exists(hidePath + "/resources/app/hide.js") )
+				return hidePath + "/resources/app";
 			// nwjs launch
 			var path = Sys.getCwd().split("\\").join("/");
 			if( sys.FileSystem.exists(path+"/hide.js") )
