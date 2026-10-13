@@ -264,7 +264,6 @@ class Table extends Component {
 	}
 
 
-	// the relative width of a column, 0 for a column which has a fixed width in cdb.less
 	static function getColumnWidth( c : cdb.Data.Column ) {
 		return switch( c.type ) {
 		case TTilePos: 0;
@@ -299,12 +298,12 @@ class Table extends Component {
 
 		var colCount = columns.length;
 
-		// the default widths of the columns are relative to their types, in percents of the table (the table layout
-		// is fixed) : a width set in the css of the project (!important) replaces it
 		var totalWidth = 0.;
 		for( c in columns )
 			if( editor.isColumnVisible(c) )
 				totalWidth += getColumnWidth(c);
+		if( parent != null && totalWidth > 0 )
+			element.css("width", 'min(100%, ${Math.round(totalWidth * 70) + 40}px)');
 
 		for( c in columns ) {
 			var editProps = Editor.getColumnProps(c);
@@ -315,7 +314,7 @@ class Table extends Component {
 			col.attr("title", c.name);
 			col.toggleClass("hidden", !editor.isColumnVisible(c));
 			var w = getColumnWidth(c);
-			if( w > 0 && editor.isColumnVisible(c) )
+			if( w > 0 && totalWidth > 0 && editor.isColumnVisible(c) )
 				col.css("width", (w * 100 / totalWidth) + "%");
 			col.toggleClass("cat", editProps.categories != null);
 			if(editProps.categories != null)
@@ -734,8 +733,7 @@ class Table extends Component {
 
 			if( !virtual ) break;
 
-			// measure the rows : their heights give the heights of the spacers. Fractional (offsetTop is rounded) : the
-			// position of the view (anchor) is computed from these heights, an error would move the rows on screen
+			// (offsetTop is rounded)
 			var changed = false;
 			var spacerIndex = 0;
 			var tops = [for( r in shown ) (r == null ? spacers[spacerIndex++] : r.getElement()).getBoundingClientRect().top];
@@ -751,8 +749,6 @@ class Table extends Component {
 			}
 			if( !changed ) break;
 
-			// the lines which were never shown have the average height of the measured ones, in whole pixels : the
-			// spacer above the view changes only when it changes by a pixel, which the scroll compensates exactly
 			var sum = 0., count = 0;
 			for( r in rows )
 				if( r.line != null && r.height >= 0 && r.line.subTable == null ) {
@@ -1040,20 +1036,28 @@ class Table extends Component {
 			J("<option>").attr("value","$new").text("New property...").appendTo(sel);
 		else if( !canInsert )
 			end.remove();
+		sel.on("mousedown", function(e) {
+			e.preventDefault();
+			openPropertyChooser();
+		});
 		sel.change(function(e) {
 			var v = Element.getVal(sel);
 			if( v == "" )
 				return;
 			sel.val("");
 			editor.element.focus();
-			if( v == "$new" ) {
-				editor.newColumn(sheet, null, function(c) {
-					if( c.opt ) insertProperty(c.name);
-				});
-				return;
-			}
-			insertProperty(v);
+			chooseProperty(v);
 		});
+	}
+
+	function chooseProperty( v : String ) {
+		if( v == "$new" ) {
+			editor.newColumn(sheet, null, function(c) {
+				if( c.opt ) insertProperty(c.name);
+			});
+			return;
+		}
+		insertProperty(v);
 	}
 
 	function insertProperty( p : String ) {
@@ -1141,30 +1145,7 @@ class Table extends Component {
 		if( !canInsert() )
 			return;
 		if( displayMode == Properties ) {
-			var ins = element.find("select.insertField");
-			var options = [for( o in ins.find("option").elements() ) Element.getVal(o)];
-			ins.attr("size", options.length);
-			options.shift();
-			ins.focus();
-			var index = 0;
-			ins.val(options[0]);
-			ins.off();
-			ins.blur(function(_) refresh());
-			ins.keydown(function(e) {
-				switch (e.keyCode) {
-					case hxd.Key.ESCAPE:
-						element.focus();
-					case hxd.Key.UP if( index > 0 ):
-						ins.val(options[--index]);
-					case hxd.Key.DOWN if( index < options.length - 1 ):
-						ins.val(options[++index]);
-					case hxd.Key.ENTER:
-						insertProperty(Element.getVal(ins));
-					default:
-				}
-				e.stopPropagation();
-				e.preventDefault();
-			});
+			openPropertyChooser();
 			return;
 		}
 		beginLinesChanges();
@@ -1172,6 +1153,71 @@ class Table extends Component {
 		editor.formulas.evaluateLine(getRealSheet(), obj);
 		editor.endChanges();
 		refresh();
+		if( parent == null )
+			editor.onLineInserted(obj);
+	}
+
+	function openPropertyChooser() {
+		var ins = element.find("select.insertField");
+		var options = [for( o in ins.find("option").elements() ) o];
+		options.shift().hide();
+		var newProp = Lambda.find(options, o -> Element.getVal(o) == "$new");
+		if( newProp != null ) options.remove(newProp);
+		if( options.length == 0 && newProp == null ) return;
+		ins.off();
+		var filter = new Element('<input type="text" class="insertFilter" placeholder="Search property..." spellcheck="false"/>').insertBefore(ins);
+		var shown = [];
+		var index = 0;
+		var closed = false;
+		function select( i : Int ) {
+			index = i;
+			ins.val(shown.length == 0 ? "" : Element.getVal(shown[index]));
+		}
+		function update() {
+			var f = StringTools.trim(filter.val()).toLowerCase();
+			shown = [];
+			for( o in options ) {
+				var ok = f == "" || o.text().toLowerCase().indexOf(f) >= 0;
+				o.toggle(ok);
+				if( ok ) shown.push(o);
+			}
+			if( newProp != null ) shown.push(newProp);
+			ins.attr("size", hxd.Math.imax(shown.length, 2));
+			select(0);
+		}
+		function close( ?choice : String ) {
+			if( closed ) return;
+			closed = true;
+			refresh();
+			editor.element.focus();
+			if( choice != null ) chooseProperty(choice);
+		}
+		ins.on("mousedown", function(e) {
+			e.preventDefault();
+			var o = new Element(e.target).closest("option");
+			if( o.length > 0 ) close(Element.getVal(o));
+		});
+		filter.on("input", function(_) update());
+		filter.blur(function(_) close());
+		filter.keydown(function(e) {
+			switch( e.keyCode ) {
+			case hxd.Key.ESCAPE:
+				close();
+			case hxd.Key.UP:
+				if( index > 0 ) select(index - 1);
+			case hxd.Key.DOWN:
+				if( index < shown.length - 1 ) select(index + 1);
+			case hxd.Key.ENTER:
+				if( shown.length > 0 ) close(Element.getVal(shown[index]));
+			default:
+				e.stopPropagation();
+				return;
+			}
+			e.stopPropagation();
+			e.preventDefault();
+		});
+		update();
+		filter.focus();
 	}
 
 	public function moveLines(lines : Array<Line>, delta : Int) {

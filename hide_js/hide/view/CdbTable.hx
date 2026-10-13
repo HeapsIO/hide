@@ -404,9 +404,13 @@ class CdbTable extends hide.ui.View<{}> {
 			var tab = header.find('[index=$i]');
 			tab.toggleClass("cat", props.categories != null);
 			tab.get(0).className = ~/(cat-[^\s]+)/g.replace(tab.get(0).className, "");
+			var color = null;
 			if(props.categories != null)
-				for(c in props.categories)
+				for(c in props.categories) {
 					tab.addClass("cat-" + c);
+					if( color == null ) color = hide.comp.cdb.Editor.getCategoryColor(c);
+				}
+			hide.comp.cdb.Editor.setTabColor(tab, color);
 		}
 
 		// Reset order of header tabs and visibility
@@ -419,6 +423,8 @@ class CdbTable extends hide.ui.View<{}> {
 		for (idx in 0...allCats.length) {
 			var cat = allCats[idx];
 			var tabHeader = header.find('[index=${sheets.length + idx}]');
+			var color = hide.comp.cdb.Editor.getCategoryColor(cat);
+			hide.comp.cdb.Editor.setTabColor(tabHeader, color);
 			var grouped = displayedCats?.indexOf(cat) < 0;
 			tabHeader.toggleClass("hidden", !grouped);
 			var grouppedHeaders = header.find('.cat-${cat}');
