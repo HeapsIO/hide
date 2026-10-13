@@ -55,8 +55,8 @@ class Config {
 	}
 
 	function saveToDisk() {
-		if( path == null ) throw "Cannot save properties (unknown path)";
 		if( ide.readOnlyConfig ) return;
+		if( path == null ) throw "Cannot save properties (unknown path)";
 		var fullPath = ide.getPath(path);
 		if( Reflect.fields(source).length == 0 )
 			try sys.FileSystem.deleteFile(fullPath) catch( e : Dynamic ) {};
@@ -225,9 +225,13 @@ class Config {
 				Reflect.setField(defaults.source, key, value);
 		defaults.sync();
 
-		var user = loadConfig(new Config(defaults), ide.userDataPath + "/preferences.json");
+		var user = new Config(defaults);
+		if( !ide.defaultConfig )
+			loadConfig(user, ide.userDataPath + "/preferences.json");
 		var project = loadConfig(new Config(user), resourcePath + "/props.json");
-		var projectUser = loadConfig(new Config(project), ide.getProjectDataPath(projectPath) + "/preferences.json");
+		var projectUser = new Config(project);
+		if( !ide.defaultConfig )
+			loadConfig(projectUser, ide.getProjectDataPath(projectPath) + "/preferences.json");
 
 		return {
 			user : user,

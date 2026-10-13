@@ -116,12 +116,14 @@ class Ide extends hide.tools.IdeData {
 		inst = this;
 		window = electron.Window.get();
 		var cwd = Sys.getCwd();
-		initConfig(cwd);
 		for( a in nw.App.argv ) {
 			var pre = "--project-dir=";
 			if( StringTools.startsWith(a, pre) )
 				projectOverride = a.substr(pre.length);
+			else if( a == "--default-config" )
+				defaultConfig = true;
 		}
+		initConfig(cwd);
 		var current = currentProject;
 		if( current == "" ) cwd;
 

@@ -43,6 +43,13 @@ class IdeData {
 	**/
 	public var readOnlyConfig = false;
 
+	/** Ignore user configs and states (only defaults and project config are loaded), implies readOnlyConfig **/
+	public var defaultConfig(default, set) = false;
+	function set_defaultConfig(v) {
+		if( v ) readOnlyConfig = true;
+		return defaultConfig = v;
+	}
+
 	/** Default values of the user preferences, set in the defaults layer of the configs **/
 	public var defaultUserConfig : Map<String, Dynamic> = [
 		"hide.autoSaveLayout" => true,
@@ -85,7 +92,7 @@ class IdeData {
 	}
 
 	function initConfig( cwd : String ) {
-		globalState = new EditorState(userDataPath + "/editorState.json");
+		globalState = new EditorState(defaultConfig ? null : userDataPath + "/editorState.json");
 		projectState = new EditorState();
 		config = Config.loadForProject(cwd, cwd+"/res");
 		fileWatcher = new hide.tools.FileWatcher();
@@ -107,7 +114,7 @@ class IdeData {
 			globalState.set("recentProjects", recents);
 			globalState.set("currentProject", dir);
 		}
-		projectState = isProjectValid() ? new EditorState(getProjectDataPath(projectDir) + "/editorState.json") : new EditorState();
+		projectState = isProjectValid() && !defaultConfig ? new EditorState(getProjectDataPath(projectDir) + "/editorState.json") : new EditorState();
 		config = Config.loadForProject(projectDir, resourceDir);
 		databaseFile = currentConfig.get("cdb.databaseFile") ?? "data.cdb";
 		databaseDiff = currentConfig.get("cdb.databaseDiff");
