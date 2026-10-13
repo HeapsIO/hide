@@ -37,12 +37,13 @@ haxelib git hashlink https://github.com/HaxeFoundation/hashlink master other/hax
 #### 2. Build Heaps IDE
 - Clone this repo
 - Windows: run `setup.bat`. It checks [Node.js](https://nodejs.org) and Haxe, installs Electron in `bin/electron` if missing (step 3 not needed), then runs `haxe hide.hxml`
-- Windows, DirectX 12: run `setup_jsdx.bat` instead. It also builds `bin/jsdx/dx12.node` and installs the shader compiler DLLs, then runs `haxe hide_jsdx.hxml`. Requires Visual Studio with the C++ tools and `HASHLINK_SRC` set to the hashlink `src` directory
+- Windows, DirectX 12: run `setup_jsdx.bat` instead. It also builds `bin/jsdx/dx12.node` and installs the shader compiler DLLs, then runs `haxe hide_jsdx.hxml`. Requires Visual Studio with the C++ tools. `HASHLINK_SRC` can be set to override the hashlink source used to get the cpp files for the dx12 driver
 - Other platforms: run `haxe hide.hxml`
 - This will create hide.js (editor) and main.js (Electron main process) in the bin folder
 - If there are errors when compiling, make sure you are using the latest libraries from git
 
 #### 3. Install Electron
+- Windows: already done by `setup.bat` / `setup_jsdx.bat` (step 2)
 - Download the [Electron](https://github.com/electron/electron/releases) release zip for your platform (`electron-vXX-<platform>-x64.zip`) and unzip it into the `/bin/electron` directory
 - On OSX, copy all files from `bin` into the `Electron.app/Contents/Resources/app` folder
 
@@ -54,7 +55,7 @@ haxelib git hashlink https://github.com/HaxeFoundation/hashlink master other/hax
 
 ## Configuration
 
-In your project's resource folder, you can create a `props.json` configuration file to override Hide's default settings. Refer to `bin/defaultProps.json` for the list of available settings. 
+In your project's resource folder, you can create a `props.json` configuration file to override Hide's default settings. Refer to `bin/defaultProps.json` for the list of available settings.
 
 
 ## Extending Hide
@@ -102,7 +103,7 @@ import hrt.prefab.Context;
 import hrt.prefab.Library;
 
 class MyPrefab extends hrt.prefab.Object3D {
-    
+
     public function new(?parent) {
         super(parent);
         type = "myprefab";
@@ -133,7 +134,7 @@ You can add your own viewers/editors for files, by extending `hide.view.FileView
 import hide.view.FileView;
 
 class CustomView extends FileView {
-    
+
     // onDisplay should create html layout of your view. It is also called each when file is changed externally.
     override public function onDisplay()
     {
@@ -150,13 +151,13 @@ class CustomView extends FileView {
         var path = getPath();
         // ... your code to fill content
   }
-  
+
   // Register the view with specific extensions.
   // Extensions starting with `json.` refer to `.json` files with `type` at root
   // object being second part of extension ("type": "customView" in this sample).
   // Otherwise it is treated as regular file extension.
   // Providing icon and createNew is optional. If createNew set, HIDE file tree will have a context menu item to create new file that FileView represents.
   static var _ = hide.view.FileTree.registerExtension(CustomView, ["json.customView", "customview"], { icon: "snowflake-o", createNew: "Dialog Context" });
-  
+
 }
 ```
