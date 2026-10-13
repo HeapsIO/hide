@@ -85,6 +85,13 @@
             "presentation": { "group": "1_hide", "order": 1 }
         },
         {
+            "name": "Launch HIDE_jsdx",
+            "configurations": ["HIDE main process", "HIDE editor"],
+            "preLaunchTask": "Build hide_jsdx",
+            "stopAll": true,
+            "presentation": { "group": "1_hide", "order": 1 }
+        },
+        {
             "name": "Launch CDB",
             "configurations": ["CDB main process", "HIDE editor"],
             "preLaunchTask": "Build hide",

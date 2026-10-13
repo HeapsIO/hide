@@ -15,7 +15,7 @@
         {
             // always builds the Electron editor (hide.js + main.js), whatever the active configuration
             "type": "hxml",
-            "file": "hide_jsdx.hxml",
+            "file": "hide.hxml",
             "problemMatcher": [
                 "$haxe-absolute",
                 "$haxe",
@@ -24,6 +24,19 @@
             ],
             "group": "build",
             "label": "Build hide"
+        },
+        {
+            // always builds the Electron editor (hide.js + main.js), whatever the active configuration
+            "type": "hxml",
+            "file": "hide_jsdx.hxml",
+            "problemMatcher": [
+                "$haxe-absolute",
+                "$haxe",
+                "$haxe-error",
+                "$haxe-trace"
+            ],
+            "group": "build",
+            "label": "Build hide_jsdx"
         },
         {
             // always builds the HashLink editor, whatever the active configuration
