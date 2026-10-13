@@ -96,7 +96,10 @@ class Table {
 		// entries hold the previous sheet
 		visibleList.resize(0);
 		openSheets.clear();
+		cursor = null;
+		cursorCell = null;
 		openSubSheet(null, sheetPath);
+		list.scrollToIndex(0, Start);
 
 		if (sheet == null)
 			return;

@@ -926,7 +926,9 @@ cdb-line {
 	> cdb-cell {
 		padding: 2px 4px;
 		overflow: hidden;
-		white-space: pre;
+		white-space: pre-wrap;
+		// also breaks the words wider than the cell, like json values
+		overflow-wrap: anywhere;
 		border-left: 1px solid #444;
 
 		// inside the cell, the line clips its content

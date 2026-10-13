@@ -888,7 +888,8 @@ cdb-line.header {
 cdb-line > cdb-cell {
   padding: 2px 4px;
   overflow: hidden;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   border-left: 1px solid #444;
 }
 cdb-line > cdb-cell.cursor {

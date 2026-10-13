@@ -201,15 +201,15 @@ class VirtualList<T> {
 				return line != null ? line.height : Std.int(avgHeight);
 			}
 
-			// move the anchor past the items scrolled out of view, so they aren't generated
+			/*
+				Move the anchor past the items scrolled out of view, so they aren't generated. Not upward : the items
+				above the anchor aren't measured, it would move by their estimated height. The layout fills the space
+				above the anchor instead.
+			*/
 			if (scrollRequest == null) {
 				while (scrollIndex < items.length - 1 && itemPixelScroll >= lastHeight(scrollIndex)) {
 					itemPixelScroll -= lastHeight(scrollIndex);
 					scrollIndex++;
-				}
-				while (scrollIndex > 0 && itemPixelScroll < 0) {
-					scrollIndex--;
-					itemPixelScroll += lastHeight(scrollIndex);
 				}
 			}
 
