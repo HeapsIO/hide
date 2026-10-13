@@ -14,6 +14,24 @@
 .catcolor-pink { --cat-color: #4a2a36; }
 .catcolor-gray { --cat-color: #2e2e2e; }
 
+.status-bubble() {
+	min-width: 14px;
+	padding: 0 4px;
+	box-sizing: border-box;
+	border-radius: 7px;
+	font-size: 9px;
+	line-height: 14px;
+	text-align: center;
+	&.error {
+		background-color: #7a2426;
+		color: #fbd4d4;
+	}
+	&.warning {
+		background-color: #6b5a14;
+		color: #f6eab8;
+	}
+}
+
 .cdb-view > .hide-tabs > .tabs-header {
 	display: flex;
 	flex-wrap: wrap;
@@ -46,6 +64,42 @@
 		&.hidden {
 			display: none;
 		}
+		position: relative;
+		// over the corner of the tab : its width does not change
+		> .search-count {
+			position: absolute;
+			top: -7px;
+			right: -6px;
+			z-index: 3;
+			min-width: 14px;
+			padding: 0 3px;
+			box-sizing: border-box;
+			border-radius: 7px;
+			background-color: #2b3a50;
+			color: #cfdcef;
+			font-size: 9px;
+			line-height: 14px;
+			text-align: center;
+			pointer-events: none;
+		}
+		&.pin-status {
+			padding-right: 34px;
+		}
+		&.pin-status.pin-empty {
+			padding-left: 23px;
+			padding-right: 23px;
+		}
+		> .status-count {
+			position: absolute;
+			top: 50%;
+			right: 6px;
+			transform: translateY(-50%);
+			pointer-events: none;
+			.status-bubble();
+		}
+		&.no-results {
+			opacity: 0.45;
+		}
 		&.drop-before {
 			box-shadow: inset 3px 0 0 #6a8fc8;
 		}
@@ -75,42 +129,37 @@
 		background-color: #222222;
 
 		span {
-			width: 35px;
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			border-left: solid @border-size  @border-color;
-			padding: 5px;
-
+			margin-left: 4px;
+			cursor: pointer;
+			.status-bubble();
+			min-width: 18px;
+			padding: 0 6px;
+			border-radius: 8px;
+			font-size: 11px;
+			line-height: 16px;
 			&:hover {
-				filter: brightness(1.5);
-				cursor: pointer;
+				filter: brightness(1.3);
 			}
-
-			&.disabled {
-				opacity: 0.4;
+			&.hidden {
+				display: none;
 			}
-
-			.icon {
-				margin-right: 3px;
+			p {
+				margin: 0;
+				color: inherit;
 			}
-
-			&.regular {
-				.icon {
-					color:#72b043;
-				}
+			&.active {
+				box-shadow: inset 0 0 0 1px currentColor;
 			}
-
-			&.warning {
-				.icon {
-					color:#f8cc1b;
-				}
-			}
-
-			&.error {
-				border-right: solid @border-size  @border-color;
-				.icon {
-					color:#e12729;
+			&.pin-status {
+				padding: 0 3px;
+				color: #666;
+				.icon { margin: 0; }
+				&.active {
+					color: #9fb6dc;
+					box-shadow: none;
 				}
 			}
 		}
