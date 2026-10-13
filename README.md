@@ -36,7 +36,9 @@ haxelib git hashlink https://github.com/HaxeFoundation/hashlink master other/hax
 
 #### 2. Build Heaps IDE
 - Clone this repo
-- Run `haxe hide.hxml`
+- Windows: run `setup.bat`. It checks [Node.js](https://nodejs.org) and Haxe, installs Electron in `bin/electron` if missing (step 3 not needed), then runs `haxe hide.hxml`
+- Windows, DirectX 12: run `setup_jsdx.bat` instead. It also builds `bin/jsdx/dx12.node` and installs the shader compiler DLLs, then runs `haxe hide_jsdx.hxml`. Requires Visual Studio with the C++ tools and `HASHLINK_SRC` set to the hashlink `src` directory
+- Other platforms: run `haxe hide.hxml`
 - This will create hide.js (editor) and main.js (Electron main process) in the bin folder
 - If there are errors when compiling, make sure you are using the latest libraries from git
 
