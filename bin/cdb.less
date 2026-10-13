@@ -46,6 +46,15 @@
 		&.hidden {
 			display: none;
 		}
+		&.drop-before {
+			box-shadow: inset 3px 0 0 #6a8fc8;
+		}
+		&.drop-after {
+			box-shadow: inset -3px 0 0 #6a8fc8;
+		}
+	}
+	&.tab-dragging > div {
+		cursor: grabbing;
 	}
 }
 
@@ -416,6 +425,20 @@
 			overflow: hidden;
 			cursor: pointer;
 			user-select: none;
+		}
+		th {
+			position: relative;
+			> .col-resize {
+				position: absolute;
+				top: 0;
+				right: 0;
+				bottom: 0;
+				width: 5px;
+				cursor: col-resize;
+				&:hover {
+					background-color: #4a5d7a;
+				}
+			}
 		}
 
 		tr.head .display {

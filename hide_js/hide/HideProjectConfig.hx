@@ -9,4 +9,5 @@ typedef HideProjectConfig = {
 	var renderer : String;
 	var dbCategories : Array<String>;
 	var dbProofread : Null<Bool>;
+	var ?dbColumns : haxe.DynamicAccess<{ ?widths : haxe.DynamicAccess<Int>, ?hidden : Array<String> }>;
 };

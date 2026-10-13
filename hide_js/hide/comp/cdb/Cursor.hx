@@ -130,6 +130,7 @@ class Cursor {
 		}
 
 		var minX = table.displayMode == Table ? -1 : 0;
+		var prevX = x;
 		var maxX = table.columns.length;
 		var maxY = table.lines.length;
 		if( dx < 0 ) {
@@ -159,6 +160,16 @@ class Cursor {
 		if( dy > 0 ) {
 			y += dy;
 			if( y >= maxY ) y = maxY - 1;
+		}
+		if( dx != 0 && table.displayMode == Table ) {
+			var step = dx > 0 ? 1 : -1;
+			var nx = x;
+			while( nx >= 0 && nx < maxX && !table.isColumnShown(table.columns[nx]) )
+				nx += step;
+			if( nx >= maxX )
+				x = prevX;
+			else
+				x = nx < 0 ? minX : nx;
 		}
 
 		// Moving cursor update selection
