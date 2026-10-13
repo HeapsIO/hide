@@ -103,10 +103,6 @@ class Ide extends hide.tools.IdeData {
 		return js.Browser.window.localStorage;
 	}
 
-	override function getAppDataPath() {
-		return electron.App.dataPath;
-	}
-
 	function initPad() {
 		gamePad = hxd.Pad.createDummy();
 		hxd.Pad.wait((p) -> gamePad = p);
@@ -128,11 +124,6 @@ class Ide extends hide.tools.IdeData {
 				defaultConfig = true;
 		}
 		initConfig(cwd);
-		for( a in nw.App.argv ) {
-			var pre = "--project-dir=";
-			if( StringTools.startsWith(a, pre) )
-				projectOverride = a.substr(pre.length);
-		}
 		var current = currentProject;
 		if( current == "" ) cwd;
 
@@ -349,10 +340,10 @@ class Ide extends hide.tools.IdeData {
 		var wp : WindowPos = globalState.get("windowPos", { x : 0, y : 0, w : 0, h : 0, max : false });
 		wp.max = maximized;
 		if( !maximized ) {
-			ideConfig.windowPos.x = window.x;
-			ideConfig.windowPos.y = window.y;
-			ideConfig.windowPos.w = window.width;
-			ideConfig.windowPos.h = window.height;
+			wp.x = window.x;
+			wp.y = window.y;
+			wp.w = window.width;
+			wp.h = window.height;
 		}
 		if( subView == null )
 			globalState.set("windowPos", wp);
