@@ -1,7 +1,7 @@
 @echo off
 rem Builds bin\jsdx\dx12.node from hldx's dx12.cpp and the heaps natives (mikktspace, meshoptimizer, V-HACD),
 rem unmodified, with the hl.h shim.
-rem Uses HASHLINK_SRC (the hashlink "src" directory) for the sources (libs\directx, libs\heaps, include).
+rem Uses the hashlink "src" directory for the sources (libs\directx, libs\heaps, include) : HASHLINK_SRC, or found from the hashlink haxelib.
 rem The shader compiler DLLs (dxcompiler.dll, dxil.dll) are installed in bin\jsdx by setup_jsdx.bat.
 rem Requires Visual Studio with the C++ desktop workload (any edition or the Build Tools) and npm (node-api-headers, installed if missing).
 setlocal
@@ -11,14 +11,13 @@ set ROOT=%~dp0..
 set OUT=%~dp0..\..\..\..\bin\jsdx
 set NODE_API=%~dp0..\node_modules\node-api-headers
 if "%HASHLINK_SRC%"=="" (
-	echo HASHLINK_SRC is not set : it must point to the hashlink "src" directory
-	exit /b 1
+	for /f "usebackq delims=" %%i in (`haxelib libpath hashlink`) do set HASHLINK_SRC=%%i..\..
 )
 set HLDX=%HASHLINK_SRC%\libs\directx
 set HLHEAPS=%HASHLINK_SRC%\libs\heaps
 set HLINC=%HASHLINK_SRC%\include
 if not exist "%HLDX%\dx12.cpp" (
-	echo "%HLDX%\dx12.cpp" not found : HASHLINK_SRC must point to the hashlink "src" directory
+	echo "%HLDX%\dx12.cpp" not found : set HASHLINK_SRC to the hashlink "src" directory, or install the hashlink haxelib from git as in README.md
 	exit /b 1
 )
 rem HIDE keeps dx12.node loaded : the link would fail
