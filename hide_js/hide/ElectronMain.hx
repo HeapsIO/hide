@@ -47,7 +47,7 @@ class ElectronMain {
 	static function main() {
 		var argv : Array<String> = js.Node.process.argv;
 		var env = js.Node.process.env;
-		isCDB = argv.indexOf("--cdb") >= 0 || env.get("HIDE_START_CDB") == "1";
+		isCDB = argv.indexOf("--cdb") >= 0 || env.get("HIDE_START_CDB") == "1" || js.node.Path.parse(js.Node.process.execPath).name.toLowerCase() == "cdb";
 		testMode = env.get("HIDE_TEST") == "1";
 		appName = isCDB ? "CDB" : "hide";
 		appTitle = isCDB ? "CDB" : "HIDE";
@@ -164,7 +164,8 @@ class ElectronMain {
 			height : opts.height == null ? 600 : opts.height,
 			show : show && !testMode,
 			title : opts.title == null ? appTitle : opts.title,
-			icon : js.node.Path.join(js.Node.__dirname, "res", isCDB ? "cdb.png" : "hide.png"),
+			// ICO is only supported on Windows
+			icon : js.node.Path.join(js.Node.__dirname, "res", (isCDB ? "cdb." : "hide.") + (js.Node.process.platform == "win32" ? "ico" : "png")),
 			backgroundColor : "#222222",
 			webPreferences : {
 				nodeIntegration : true,
