@@ -493,7 +493,8 @@ class Ide extends hide.tools.IdeData {
 
 		var commitHash = getGitCommitHashAndDate();
 		if (commitHash.length > 0) {
-			new Element('<span class="build">hide $commitHash</span>').appendTo(statusBar);
+			var driver = #if dx12 "dx12" #else "webgl" #end;
+			new Element('<span class="build">hide $driver $commitHash</span>').appendTo(statusBar);
 		}
 
 		layout = new golden.Layout(goldenConfig, goldenContainer.get(0));
