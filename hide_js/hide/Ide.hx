@@ -113,6 +113,11 @@ class Ide extends hide.tools.IdeData {
 		window = nw.Window.get();
 		var cwd = Sys.getCwd();
 		initConfig(cwd);
+		for( a in nw.App.argv ) {
+			var pre = "--project-dir=";
+			if( StringTools.startsWith(a, pre) )
+				projectOverride = a.substr(pre.length);
+		}
 		var current = currentProject;
 		if( StringTools.endsWith(cwd,"package.nw") && sys.FileSystem.exists(cwd.substr(0,-10)+"res") )
 			cwd = cwd.substr(0,-11);
