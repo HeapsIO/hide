@@ -687,6 +687,10 @@ class ScriptChecker {
 	}
 
 	public function getCompletion( script : String ) {
+		return getCompletionAt(script)?.t;
+	}
+
+	function getCompletionAt( script : String ) : hscript.Checker.Completion {
 		var parser = makeParser();
 		parser.resumeErrors = true;
 		var expr = parser.parseString(script,""); // should not error
@@ -695,9 +699,15 @@ class ScriptChecker {
 			var et = checker.check(expr,null,true);
 			return null;
 		} catch( e : hscript.Checker.Completion ) {
-			// ignore
-			return e.t;
+			return e;
 		}
+	}
+
+	public function getScope( script : String ) : Array<{ name : String, t : TType }> {
+		var c = try getCompletionAt(script + "__scope__") catch( e : Dynamic ) null;
+		if( c == null || c.t != null )
+			return null;
+		return checker.getCompletion(c);
 	}
 
 	public function check( script : String, checkTypes = true ) {
@@ -764,14 +774,99 @@ class ScriptEditor extends CodeEditor {
 		haxe.Timer.delay(function() doCheckScript(), 0);
 	}
 
-	// Crude way of checking if there is no tab between the cursor position and the start of the line
-	static final globalScopeRegex = ~/(^|\n)\S*($|\n)/;
+	static function isGlobalStatement( script : String ) {
+		if( !~/(^|\n)[ \t]*(function[ \t]+)?\w*$/.match(script) )
+			return false;
+		var depth = 0, i = 0, len = script.length;
+		while( i < len ) {
+			var c = script.charCodeAt(i++);
+			switch( c ) {
+			case "{".code: depth++;
+			case "}".code: depth--;
+			case '"'.code, "'".code:
+				while( i < len ) {
+					var c2 = script.charCodeAt(i++);
+					if( c2 == "\\".code ) i++;
+					else if( c2 == c ) break;
+				}
+			case "/".code if( script.charCodeAt(i) == "/".code ):
+				while( i < len && script.charCodeAt(i) != "\n".code ) i++;
+			case "/".code if( script.charCodeAt(i) == "*".code ):
+				var end = script.indexOf("*/", i + 1);
+				i = end < 0 ? len : end + 2;
+			default:
+			}
+		}
+		return depth == 0;
+	}
+
+	static function findCall( script : String ) : { open : Int, arg : Int } {
+		var depth = 0, arg = 0, i = script.length - 1;
+		while( i >= 0 ) {
+			var c = script.charCodeAt(i);
+			switch( c ) {
+			case ")".code, "]".code, "}".code:
+				depth++;
+			case "(".code, "[".code, "{".code:
+				if( depth == 0 )
+					return c == "(".code ? { open : i, arg : arg } : null;
+				depth--;
+			case ",".code if( depth == 0 ):
+				arg++;
+			case ";".code if( depth == 0 ):
+				return null;
+			case '"'.code, "'".code:
+				var start = script.lastIndexOf(String.fromCharCode(c), i - 1);
+				if( start < 0 ) return null;
+				i = start;
+			default:
+			}
+			i--;
+		}
+		return null;
+	}
+
+	static final NOT_CALLED = ["if", "while", "for", "switch", "catch", "function", "return", "new"];
+
+	function getCall( script : String ) : { name : String, args : Array<{ name : String, opt : Bool, t : TType }>, ret : TType, arg : Int } {
+		var call = findCall(script);
+		if( call == null ) return null;
+		var before = StringTools.rtrim(script.substr(0, call.open));
+		var name = ~/([A-Za-z_][A-Za-z0-9_]*)$/;
+		if( !name.match(before) ) return null;
+		var prev = ~/(^|[^A-Za-z0-9_.])([A-Za-z_][A-Za-z0-9_]*)\s+[A-Za-z0-9_.]*$/;
+		if( NOT_CALLED.indexOf(name.matched(1)) >= 0 || (prev.match(before) && NOT_CALLED.indexOf(prev.matched(2)) >= 0) )
+			return null;
+		var t = try checker.getCompletion(before + ".") catch( e : Dynamic ) null;
+		if( t == null ) return null;
+		switch( checker.checker.follow(t) ) {
+		case TFun(args, ret):
+			return { name : name.matched(1), args : args, ret : ret, arg : call.arg };
+		default:
+			return null;
+		}
+	}
+
+	override function getSignatureHelp( position : Int ) : monaco.Languages.SignatureHelp {
+		var call = getCall(code.substr(0, position));
+		if( call == null || call.args.length == 0 ) return null;
+		var params = [for( a in call.args ) (a.opt ? "?" : "") + a.name + " : " + hscript.Checker.typeStr(a.t)];
+		return {
+			signatures : [{
+				label : call.name + "(" + params.join(", ") + ") : " + hscript.Checker.typeStr(call.ret),
+				parameters : [for( p in params ) { label : p }],
+			}],
+			activeSignature : 0,
+			activeParameter : call.arg < call.args.length ? call.arg : call.args.length - 1,
+		};
+	}
 
 
 	override function getCompletion( position : Int ) : Array<monaco.Languages.CompletionItem> {
 		var script = code.substr(0,position);
 
 		var results : Array<monaco.Languages.CompletionItem> = [];
+		var expected : TType = null;
 
 		var vars : Map<String,TType>;
 		if( script.charCodeAt(script.length-1) == ".".code ) {
@@ -783,10 +878,37 @@ class ScriptEditor extends CodeEditor {
 					vars.set(f.name, f.t);
 			}
 		} else {
-			vars = checker.checker.getGlobals();
+			var word = ~/[A-Za-z0-9_]*$/;
+			word.match(script);
+			var scope = checker.getScope(word.matchedLeft());
+			if( scope != null ) {
+				vars = [];
+				for( f in scope ) vars.set(f.name, f.t);
+			} else
+				vars = checker.checker.getGlobals();
+
+			var call = getCall(word.matchedLeft());
+			if( call != null && call.arg < call.args.length ) {
+				expected = call.args[call.arg].t;
+				if( checker.checker.follow(expected).match(TBool) )
+					for( v in ["true", "false"] )
+						results.push({ kind : Keyword, label : v, sortText : "0" + v });
+				var globals = checker.checker.getGlobals();
+				for( name in checker.cdbEnums ) {
+					switch( globals.get(name) ) {
+					case TInst(cl, _):
+						var ids = [for( f in cl.fields ) f];
+						if( ids.length == 0 || !checker.checker.tryUnify(ids[0].t, expected) )
+							continue;
+						for( f in ids )
+							results.push({ kind : Value, label : name + "." + f.name, filterText : f.name, sortText : "0" + f.name, detail : hscript.Checker.typeStr(f.t) });
+					default:
+					}
+				}
+			}
 
 			// only push function ... snippets if we are in the global scope
-			if (globalScopeRegex.match(script)) {
+			if( isGlobalStatement(script) ) {
 				var lastLine = script.substr(0, position).split("\n").pop();
 				var isFunction = lastLine.indexOf("function") >= 0;
 				for( ev => t in @:privateAccess checker.checker.events ) {
@@ -821,20 +943,19 @@ class ScriptEditor extends CodeEditor {
 				}
 			}
 			var isFun = checker.follow(t).match(TFun(_));
-			if( isFun ) {
-				results.push({
-					kind : Method,
-					label : k,
-					detail : hscript.Checker.typeStr(t),
-					commitCharacters: ["("],
-				});
-			} else {
-				results.push({
-					kind : Field,
-					label : k,
-					detail : hscript.Checker.typeStr(t),
-				});
-			}
+			var item : monaco.Languages.CompletionItem = isFun ? {
+				kind : Method,
+				label : k,
+				detail : hscript.Checker.typeStr(t),
+				commitCharacters: ["("],
+			} : {
+				kind : Field,
+				label : k,
+				detail : hscript.Checker.typeStr(t),
+			};
+			if( expected != null )
+				item.sortText = (checker.tryUnify(t, expected) ? "1" : "2") + k;
+			results.push(item);
 		}
 
 		return results;

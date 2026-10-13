@@ -113,11 +113,27 @@ class CodeEditor extends Component {
 					return { suggestions : getKeyWordsCompletion() };
 				}
 			});
+
+			monaco.Languages.registerSignatureHelpProvider(lang, {
+				signatureHelpTriggerCharacters : ["(", ","],
+				signatureHelpRetriggerCharacters : [","],
+				provideSignatureHelp : function(model,position,_,_) {
+					var comp : CodeEditor = (model : Dynamic).__comp__;
+					if( comp == null ) return null;
+					var code = model.getValueInRange({startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column});
+					var help = comp.getSignatureHelp(code.length);
+					return help == null ? null : { value : help, dispose : function() {} };
+				}
+			});
 		}
 	}
 
 	function getCompletion( position : Int ) : Array<monaco.Languages.CompletionItem> {
 		return [];
+	}
+
+	function getSignatureHelp( position : Int ) : monaco.Languages.SignatureHelp {
+		return null;
 	}
 
 	function getKeyWordsCompletion() : Array<monaco.Languages.CompletionItem> {
