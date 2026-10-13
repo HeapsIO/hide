@@ -1204,6 +1204,8 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function tick( dt : Float, full=true) {
+		if (scene == null)
+			scene = getScene();
 
 		#if editor
 		debugGraphics.clear();
