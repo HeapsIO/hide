@@ -128,6 +128,11 @@ class Ide extends hide.tools.IdeData {
 				defaultConfig = true;
 		}
 		initConfig(cwd);
+		for( a in nw.App.argv ) {
+			var pre = "--project-dir=";
+			if( StringTools.startsWith(a, pre) )
+				projectOverride = a.substr(pre.length);
+		}
 		var current = currentProject;
 		if( current == "" ) cwd;
 
