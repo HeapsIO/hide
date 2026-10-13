@@ -262,9 +262,15 @@ class IdeData {
 			// this seems to happen when another program tries to write to to the file when we are trying to read it. In that
 			// case, we schedule another loadDatabase call in the future
 			if (retries < dBReloadMaxRetries) {
-				haxe.Timer.delay(() -> loadDatabase(checkExists, retries + 1), 100);
+				haxe.Timer.delay(function() {
+					loadDatabase(checkExists, retries + 1);
+					// the editors were refreshed with the previous database
+					#if js
+					hide.comp.cdb.Editor.refreshAll(true);
+					#end
+				}, 100);
 			} else {
-				error(e);
+				error("Can't load " + databaseFile + " (SVN conflict?), it will not be saved until it is fixed : " + e);
 			}
 			return;
 		}
@@ -324,11 +330,30 @@ class IdeData {
 	}
 
 
-	function databaseHasExternChanges() : Bool{
-		var stats = fileStat(databaseFile);
-		if( stats == null || lastStats == null )
+	// the file is not the one loaded or saved last (SVN update, conflict...) : writing it would revert these changes
+	function databaseHasExternChanges() : Bool {
+		if( lastDBContent == null )
 			return false;
-		return stats.mtime.getTime() > lastStats.mtime.getTime();
+		var stats = fileStat(databaseFile);
+		if( stats == null )
+			return false;
+		if( lastStats != null && stats.mtime.getTime() == lastStats.mtime.getTime() && stats.size == lastStats.size )
+			return false;
+		return getFileText(databaseFile) != lastDBContent;
+	}
+
+	var externReload : haxe.Timer;
+	function onDatabaseExternChanges() {
+		if( externReload != null )
+			return;
+		error(databaseFile + " was modified outside of HIDE (SVN update?) : the last change is not saved to keep these modifications, the database is reloaded.");
+		externReload = haxe.Timer.delay(function() {
+			externReload = null;
+			loadDatabase(true);
+			#if js
+			hide.comp.cdb.Editor.refreshAll(true);
+			#end
+		}, 0);
 	}
 
 	public function saveDatabase( ?forcePrefabs ) {
@@ -339,21 +364,14 @@ class IdeData {
 			throw "Thumbnail generator can't save the cdb database";
 		#end
 
-		if( dbWatcher != null ) {
-			var b = fileWatcher.isChangePending(dbWatcher);
-			if( b ) {
-				throw "Save when database is changed outside of Hide and is waiting for reload. Please reload Hide.";
-			}
+		if( (dbWatcher != null && fileWatcher.isChangePending(dbWatcher)) || databaseHasExternChanges() ) {
+			onDatabaseExternChanges();
+			return;
 		}
 
-		function checkBeforeWrite() {
-			if (databaseHasExternChanges())
-				throw "Save when database is changed outside of Hide. Please reload Hide.";
-		}
 		#if js
 		hide.comp.cdb.DataFiles.save(function() {
 			if( databaseDiff != null ) {
-				checkBeforeWrite();
 				sys.io.File.saveContent(getPath(databaseDiff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
 				if ( dbWatcher != null )
 					fileWatcher.ignorePrevChange(dbWatcher);
@@ -374,10 +392,8 @@ class IdeData {
 				}
 
 				lastDBContent = database.save();
-				lastStats = fileStat(databaseFile);
-
-				checkBeforeWrite();
 				sys.io.File.saveContent(getPath(databaseFile), lastDBContent);
+				lastStats = fileStat(databaseFile);
 				if ( dbWatcher != null )
 					fileWatcher.ignorePrevChange(dbWatcher);
 
