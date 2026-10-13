@@ -218,6 +218,10 @@ class FileWatcher {
 					return;
 				}
 				w.wasChanged = true;
+			} else if( !w.isDir && js.node.Fs.existsSync(w.path) ) {
+				// replaced by another file (SVN update writes a temp file then renames it)
+				w.lastStat = js.node.Fs.statSync(w.path);
+				w.wasChanged = true;
 			}
 			if( w.changed ) return;
 			w.changed = true;
@@ -227,7 +231,7 @@ class FileWatcher {
 		#else
 		w.w = new hl.uv.Fs(w.path, function(ev) {
 			if( w.isDir && ev == Change ) return;
-			if( ev == Change ) w.wasChanged = true;
+			if( ev == Change || (!w.isDir && sys.FileSystem.exists(w.path)) ) w.wasChanged = true;
 			if( w.changed ) return;
 			w.changed = true;
 			w.version++;
