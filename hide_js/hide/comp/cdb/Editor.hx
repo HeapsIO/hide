@@ -37,6 +37,7 @@ typedef EditorColumnProps = {
 typedef EditorSheetProps = {
 	var ?index : Int;
 	var ?categories : Array<String>;
+	var ?pinStatus : Bool;
 }
 
 typedef OptionalBackup = Array<{line: Dynamic, colName: String, data: Dynamic}>;
@@ -69,6 +70,7 @@ class Editor extends Component {
 	var dataVersion = 0;
 	// the texts of the lines for the search, by line object
 	var searchTexts = new js.lib.WeakMap<String>();
+	var dataSearchTexts = new js.lib.WeakMap<String>();
 	// the validation of the lines of the sheets (formulas.hx), by sheet name
 	var statusCache : Map<String, { version : Int, status : Array<Formulas.ValidationResult> }> = [];
 	// the version of the data when the formulas of a sheet were evaluated, by sheet name
@@ -208,7 +210,6 @@ class Editor extends Component {
 		keys.register("cdb.globalSeekIds", () -> new GlobalSeek(cdbTable.element, cdbTable, GlobalIds, currentSheet));
 
 		filterFlags = (Regular: FilterFlags) | (Warning: FilterFlags) | (Error: FilterFlags);
-		this.cdbTable?.element.find(".top-bar").find(".disabled").removeClass("disabled");
 
 		base = sheet.base;
 		if( cursor == null )
@@ -325,6 +326,7 @@ class Editor extends Component {
 				}
 			});
 			table.refreshRows();
+			updateSearchCounts(0);
 			return;
 		}
 
@@ -369,15 +371,11 @@ class Editor extends Component {
 		table.refreshRows();
 
 		searchBox.find("#results").text(results > 0 ? '$results Results' : 'No results');
+		updateSearchCounts(results);
 		cursor.update();
 	}
 
 	function isLineFilteredBySearch(table : Table, line : Line) : Bool {
-		function removeAccents(str: String) {
-			var t = untyped str.toLowerCase().normalize('NFD');
-			return ~/[\u0300-\u036f]/g.map(t, (r) -> "");
-		}
-
 		if (filters.length == 0)
 			return false;
 
@@ -1151,6 +1149,78 @@ class Editor extends Component {
 	function dataChanged() {
 		dataVersion++;
 		searchTexts = new js.lib.WeakMap();
+		dataSearchTexts = new js.lib.WeakMap();
+	}
+
+	static function removeAccents( str : String ) {
+		var t = untyped str.toLowerCase().normalize('NFD');
+		return ~/[̀-ͯ]/g.map(t, (r) -> "");
+	}
+
+	// the searched text of a line of a sheet which is not displayed : its values, close to the text of its cells
+	function getDataSearchText( sheet : cdb.Sheet, obj : Dynamic ) : String {
+		var text = dataSearchTexts.get(obj);
+		if( text != null ) return text;
+		var buf = new StringBuf();
+		function add( sheet : cdb.Sheet, obj : Dynamic ) {
+			if( obj == null ) return;
+			for( c in sheet.columns ) {
+				var v : Dynamic = Reflect.field(obj, c.name);
+				if( v == null ) continue;
+				switch( c.type ) {
+				case TList:
+					var sub = sheet.getSub(c);
+					for( o in (v : Array<Dynamic>) ) add(sub, o);
+				case TProperties:
+					add(sheet.getSub(c), v);
+				case TRef(name):
+					buf.add(v);
+					var r = base.getSheet(name);
+					var i = r == null ? null : r.index.get(v);
+					if( i != null ) { buf.add(" "); buf.add(i.disp); }
+				case TEnum(values):
+					buf.add(values[v]);
+				case TFlags(values):
+					for( i in 0...values.length ) if( (v : Int) & (1 << i) != 0 ) { buf.add(values[i]); buf.add(" "); }
+				case TId, TString, TInt, TFloat, TFile, TGuid, TDynamic, TCustom(_):
+					buf.add(Std.string(v));
+				default:
+				}
+				buf.add(" ");
+			}
+		}
+		add(sheet, obj);
+		text = removeAccents(buf.toString());
+		dataSearchTexts.set(obj, text);
+		return text;
+	}
+
+	// the number of lines found in each sheet, on their tabs (text search only)
+	function updateSearchCounts( currentResults : Int ) {
+		if( cdbTable == null ) return;
+		if( filters.length == 0 || searchExp ) {
+			cdbTable.setSearchCounts(null);
+			return;
+		}
+		var search = [for( f in filters ) removeAccents(f)];
+		var counts = new Map();
+		for( s in cdbTable.getSheets() ) {
+			if( s == currentSheet ) {
+				counts.set(s.name, currentResults);
+				continue;
+			}
+			var n = 0;
+			for( obj in s.lines ) {
+				var text = getDataSearchText(s, obj);
+				for( f in search )
+					if( text.indexOf(f) >= 0 ) {
+						n++;
+						break;
+					}
+			}
+			counts.set(s.name, n);
+		}
+		cdbTable.setSearchCounts(counts);
 	}
 
 	/**

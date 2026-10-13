@@ -1458,9 +1458,7 @@ class Table extends Component {
 	public function refreshLinesStatus() {
 		if (editor.cdbTable == null)
 			return;
-		@:privateAccess editor.cdbTable.warningCountEl.text(warningCount);
-		@:privateAccess editor.cdbTable.errorCountEl.text(errorCount);
-		@:privateAccess editor.cdbTable.regularCountEl.text(lines.length - (errorCount + warningCount));
+		editor.cdbTable.refreshStatus(errorCount, warningCount);
 	}
 }
 @:allow(hide.comp.cdb)
