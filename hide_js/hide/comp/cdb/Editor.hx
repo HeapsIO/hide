@@ -2714,6 +2714,34 @@ class Editor extends Component {
 		return ed;
 	}
 
+	// the zoom shown while it is chosen, not saved
+	public static var previewIconZoom : Null<Int>;
+
+	// the speed of the animations of the sub tables, 0 for none
+	public static function getAnimSpeed() : Int {
+		var speed : Null<Int> = Ide.inst.globalState.get("cdbAnimSpeed");
+		return speed == null ? 1 : speed;
+	}
+
+	public static function setAnimSpeed( speed : Int ) {
+		if( speed == 1 ) Ide.inst.globalState.remove("cdbAnimSpeed") else Ide.inst.globalState.set("cdbAnimSpeed", speed);
+	}
+
+	public static function animDuration( ms : Int ) : Int {
+		var speed = getAnimSpeed();
+		return speed == 0 ? 0 : Math.round(ms / speed);
+	}
+
+	// the zoom of the icons displayed smaller than their size, in percent
+	public static function getIconZoom() : Float {
+		var percent : Null<Int> = previewIconZoom ?? Ide.inst.projectState.get("cdbIconZoom");
+		return percent == null ? 1 : percent / 100;
+	}
+
+	public static function setIconZoom( percent : Int ) {
+		if( percent == 100 ) Ide.inst.projectState.remove("cdbIconZoom") else Ide.inst.projectState.set("cdbIconZoom", percent);
+	}
+
 	public static function getCategoryColor( cat : String ) : String {
 		var ed = getEditorData(Ide.inst.database);
 		return ed == null || ed.categoryColors == null ? null : ed.categoryColors.get(cat);

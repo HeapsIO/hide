@@ -599,6 +599,61 @@ class CdbTable extends hide.ui.View<{}> {
 	}
 	#end
 
+	override function buildTabMenu() {
+		var menu = super.buildTabMenu();
+		menu.push({ isSeparator : true });
+		menu.push({ label : "Icons Scale...", click : openIconsScale });
+		var speed = hide.comp.cdb.Editor.getAnimSpeed();
+		function speedItem( label : String, s : Int ) : hrt.ui.HuiMenu.MenuItem {
+			return { label : label, radio : () -> speed == s, click : () -> hide.comp.cdb.Editor.setAnimSpeed(s) };
+		}
+		menu.push({ label : "Animations", menu : [speedItem("x1", 1), speedItem("x2", 2), speedItem("x3", 3), speedItem("Off", 0)] });
+		return menu;
+	}
+
+	// the icons are shown at the scale of the slider, which is saved by Apply only
+	function openIconsScale() {
+		var Editor = hide.comp.cdb.Editor;
+		var saved = Math.round(Editor.getIconZoom() * 100);
+		var popup = new hide.comp.Popup(element);
+		popup.position = Inside;
+		popup.offsetX = 10;
+		popup.offsetY = 10;
+		popup.element.addClass("cdb-icons-scale");
+		var content = new Element('<div>
+			<div class="title">Icons Scale</div>
+			<div class="slider"><input type="range" min="25" max="200" step="5" value="$saved"/><span class="value">$saved%</span></div>
+			<div class="buttons"><input type="button" class="apply" value="Apply"/><input type="button" class="cancel" value="Cancel"/></div>
+		</div>').appendTo(popup.element);
+		var range = content.find("input[type=range]");
+		var applied = false, pending = false;
+		function preview() {
+			if( pending ) return;
+			pending = true;
+			js.Browser.window.requestAnimationFrame(function(_) {
+				pending = false;
+				Editor.refreshAll(false, false);
+			});
+		}
+		range.on("input", function(_) {
+			var v = Std.parseInt(range.val());
+			content.find(".value").text(v + "%");
+			Editor.previewIconZoom = v;
+			preview();
+		});
+		content.find(".apply").click(function(_) {
+			applied = true;
+			Editor.setIconZoom(Std.parseInt(range.val()));
+			popup.close();
+		});
+		content.find(".cancel").click((_) -> popup.close());
+		popup.onClose = function() {
+			Editor.previewIconZoom = null;
+			if( !applied && Math.round(Editor.getIconZoom() * 100) != Std.parseInt(range.val()) )
+				Editor.refreshAll(false, false);
+		};
+	}
+
 	override function getTitle() {
 		return "CDB"+ @:privateAccess (ide.databaseDiff != null ? " - "+ide.databaseDiff : "");
 	}

@@ -28,6 +28,33 @@
 .catcolor-gray {
   --cat-color: #2e2e2e;
 }
+.popup.cdb-icons-scale {
+  padding: 8px 10px;
+  background-color: #222;
+  border: 1px solid #444;
+}
+.popup.cdb-icons-scale .title {
+  margin-bottom: 6px;
+  color: #ccc;
+}
+.popup.cdb-icons-scale .slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.popup.cdb-icons-scale .slider input {
+  width: 200px;
+}
+.popup.cdb-icons-scale .slider .value {
+  min-width: 36px;
+  text-align: right;
+}
+.popup.cdb-icons-scale .buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
 .cdb-view > .hide-tabs > .tabs-header {
   display: flex;
   flex-wrap: wrap;
@@ -278,7 +305,7 @@
   background-color: #151515;
   color: #4d4d4d;
   border-left: none;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid #262626;
 }
 .cdb .cdb-sheet tr.head td.start {
   cursor: nw-resize;
@@ -530,6 +557,16 @@
   cursor: pointer;
   user-select: none;
 }
+.cdb .cdb-sheet th.prop-name {
+  text-align: right;
+  font-weight: normal;
+  background-color: #1a1a1a;
+  border-color: #262626;
+}
+.cdb .cdb-sheet th.prop-name > i.ico {
+  float: left;
+  margin: 2px 5px 0 0 !important;
+}
 .cdb .cdb-sheet th {
   position: relative;
 }
@@ -665,6 +702,9 @@
 .cdb .cdb-sheet .with-icon {
   gap: 4px;
 }
+.cdb .cdb-sheet .cell-root .tile {
+  flex-shrink: 0;
+}
 .cdb .cdb-sheet img.preview-thumb {
   max-width: 24px;
   max-height: 24px;
@@ -673,9 +713,54 @@
 .cdb .cdb-sheet .list-preview {
   flex-wrap: wrap;
   column-gap: 6px;
+  row-gap: 3px;
 }
 .cdb .cdb-sheet .list-preview-item > .v + .v {
   margin-left: 4px;
+}
+.cdb .cdb-sheet .list-preview:not(.by-line) {
+  overflow: hidden;
+}
+.cdb .cdb-sheet .list-preview:not(.by-line) > .list-preview-item {
+  position: relative;
+}
+.cdb .cdb-sheet .list-preview:not(.by-line) > .list-preview-item + .list-preview-item::before {
+  content: ",";
+  position: absolute;
+  left: -6px;
+  color: #666;
+}
+.cdb .cdb-sheet .list-preview.by-line {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+.cdb .cdb-sheet .list-preview.by-line > .list-preview-item > .qty.count {
+  display: none;
+}
+.cdb .cdb-sheet .list-preview.by-line > .list-preview-item {
+  white-space: nowrap;
+  overflow: hidden;
+}
+.cdb .cdb-sheet .list-preview.by-line > .list-preview-item .label,
+.cdb .cdb-sheet .list-preview.by-line > .list-preview-item .content,
+.cdb .cdb-sheet .list-preview.by-line > .list-preview-item .list-preview,
+.cdb .cdb-sheet .list-preview.by-line > .list-preview-item .list-preview-item {
+  display: inline-flex;
+  align-items: center;
+}
+.cdb .cdb-sheet .list-preview.by-line > .list-preview-item .list-preview {
+  flex-direction: row;
+  flex-wrap: nowrap;
+}
+.cdb .cdb-sheet .list-preview.by-line > .list-preview-item .props-preview {
+  display: inline-flex;
+}
+.cdb .cdb-sheet .list-preview.by-line > .list-preview-item .props-preview > .label {
+  display: inline-flex;
+}
+.cdb .cdb-sheet .list-preview.by-line > .list-preview-item .label {
+  margin-right: 8px;
 }
 .cdb .cdb-sheet input.insertFilter {
   display: block;
@@ -727,6 +812,11 @@
 .cdb .cdb-sheet td.t_int input,
 .cdb .cdb-sheet td.t_float input {
   text-align: center;
+}
+.cdb .cdb-sheet td.t_enum:not(.edit) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cdb .cdb-sheet td.t_int.zero,
 .cdb .cdb-sheet td.t_float.zero {
@@ -980,28 +1070,63 @@
   pointer-events: none;
 }
 .cdb .cdb-sheet .t_properties .cell-root .label,
-.cdb .cdb-sheet .t_polymorph .cell-root .label {
+.cdb .cdb-sheet .t_polymorph .cell-root .label,
+.cdb .cdb-sheet .t_list .cell-root .label {
   display: flex;
   align-items: center;
   gap: 5px;
 }
 .cdb .cdb-sheet .t_properties .cell-root .label > .name,
-.cdb .cdb-sheet .t_polymorph .cell-root .label > .name {
+.cdb .cdb-sheet .t_polymorph .cell-root .label > .name,
+.cdb .cdb-sheet .t_list .cell-root .label > .name {
   color: #888;
   flex-shrink: 0;
 }
 .cdb .cdb-sheet .t_properties .cell-root .content .color,
-.cdb .cdb-sheet .t_polymorph .cell-root .content .color {
+.cdb .cdb-sheet .t_polymorph .cell-root .content .color,
+.cdb .cdb-sheet .t_list .cell-root .content .color {
   height: 15px !important;
   width: 15px !important;
   border: solid 1px white;
 }
 .cdb .cdb-sheet .t_properties .cell-root > .color,
-.cdb .cdb-sheet .t_polymorph .cell-root > .color {
+.cdb .cdb-sheet .t_polymorph .cell-root > .color,
+.cdb .cdb-sheet .t_list .cell-root > .color {
   display: inline-block;
   height: 15px;
   width: 15px;
   border: solid 1px white;
+}
+.cdb .cdb-sheet .cell-root .props-preview {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  column-gap: 5px;
+  align-items: center;
+}
+.cdb .cdb-sheet .cell-root .props-preview > .label {
+  display: contents;
+}
+.cdb .cdb-sheet .cell-root .props-preview > .label > .name {
+  text-align: right;
+}
+.cdb .cdb-sheet .cell-root .props-preview .props-preview {
+  position: relative;
+  padding-left: 6px;
+}
+.cdb .cdb-sheet .cell-root .props-preview .props-preview::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 1px;
+  background-color: #3a3a3a;
+}
+.cdb .cdb-sheet .cell-root .by-line .props-preview {
+  padding-left: 0;
+}
+.cdb .cdb-sheet .cell-root .by-line .props-preview::before {
+  display: none;
 }
 .cdb.cdb-obj-editor:not(.cdb-large .cdb.cdb-obj-editor) {
   margin-top: 10px;

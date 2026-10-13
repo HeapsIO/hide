@@ -32,6 +32,34 @@
 	}
 }
 
+.popup.cdb-icons-scale {
+	padding: 8px 10px;
+	background-color: #222;
+	border: 1px solid #444;
+	.title {
+		margin-bottom: 6px;
+		color: #ccc;
+	}
+	.slider {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		input {
+			width: 200px;
+		}
+		.value {
+			min-width: 36px;
+			text-align: right;
+		}
+	}
+	.buttons {
+		display: flex;
+		justify-content: flex-end;
+		gap: 6px;
+		margin-top: 8px;
+	}
+}
+
 .cdb-view > .hide-tabs > .tabs-header {
 	display: flex;
 	flex-wrap: wrap;
@@ -258,7 +286,7 @@
 			background-color: #151515;
 			color: #4d4d4d;
 			border-left: none;
-			border-bottom : 1px solid #444;
+			border-bottom : 1px solid #262626;
 		}
 
 		tr.head td.start {
@@ -475,6 +503,17 @@
 			cursor: pointer;
 			user-select: none;
 		}
+		// the labels of the properties are against their values, their icons on the left
+		th.prop-name {
+			text-align: right;
+			font-weight: normal;
+			background-color: #1a1a1a;
+			border-color: #262626;
+			> i.ico {
+				float: left;
+				margin: 2px 5px 0 0 !important;
+			}
+		}
 		th {
 			position: relative;
 			> .col-resize {
@@ -624,6 +663,10 @@
 		.with-icon {
 			gap: 4px;
 		}
+		// the text is cut, not the icons
+		.cell-root .tile {
+			flex-shrink: 0;
+		}
 		img.preview-thumb {
 			max-width: 24px;
 			max-height: 24px;
@@ -632,9 +675,54 @@
 		.list-preview {
 			flex-wrap: wrap;
 			column-gap: 6px;
+			row-gap: 3px;
 		}
 		.list-preview-item > .v + .v {
 			margin-left: 4px;
+		}
+		// the comma before an element is in the gap : cut out of the list for the first element of a line
+		.list-preview:not(.by-line) {
+			overflow: hidden;
+			> .list-preview-item {
+				position: relative;
+			}
+			> .list-preview-item + .list-preview-item::before {
+				content: ",";
+				position: absolute;
+				left: -6px;
+				color: #666;
+			}
+		}
+		.list-preview.by-line {
+			// the count of a list put by line for its width (see Cell.fitCells)
+			> .list-preview-item > .qty.count {
+				display: none;
+			}
+			flex-direction: column;
+			flex-wrap: nowrap;
+			align-items: flex-start;
+			// everything of an element on its line (its props, the lists inside)
+			> .list-preview-item {
+				white-space: nowrap;
+				overflow: hidden;
+				.label, .content, .list-preview, .list-preview-item {
+					display: inline-flex;
+					align-items: center;
+				}
+				.list-preview {
+					flex-direction: row;
+					flex-wrap: nowrap;
+				}
+				.props-preview {
+					display: inline-flex;
+					> .label {
+						display: inline-flex;
+					}
+				}
+				.label {
+					margin-right: 8px;
+				}
+			}
 		}
 
 		input.insertFilter {
@@ -689,6 +777,13 @@
 			input {
 				text-align : center;
 			}
+		}
+
+		// a value is a single word : cut in its cell instead of over the next one (not its dropdown when edited)
+		td.t_enum:not(.edit) {
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 
 		td.t_int.zero, td.t_float.zero {
@@ -981,7 +1076,7 @@
 			pointer-events: none;
 		}
 
-		.t_properties, .t_polymorph {
+		.t_properties, .t_polymorph, .t_list {
 			.cell-root {
 				.label {
 					display: flex;
@@ -1006,6 +1101,40 @@
 					width: 15px;
 					border: solid 1px white;
 				}
+			}
+		}
+
+		// the names of the props in a column, on the right : their values aligned
+		.cell-root .props-preview {
+			display: inline-grid;
+			grid-template-columns: auto auto;
+			column-gap: 5px;
+			align-items: center;
+			> .label {
+				display: contents;
+				> .name {
+					text-align: right;
+				}
+			}
+		}
+		// the sub props grouped by a bar, shorter than them : it never touches the next one
+		.cell-root .props-preview .props-preview {
+			position: relative;
+			padding-left: 6px;
+			&::before {
+				content: "";
+				position: absolute;
+				left: 0;
+				top: 3px;
+				bottom: 3px;
+				width: 1px;
+				background-color: #3a3a3a;
+			}
+		}
+		.cell-root .by-line .props-preview {
+			padding-left: 0;
+			&::before {
+				display: none;
 			}
 		}
 	}

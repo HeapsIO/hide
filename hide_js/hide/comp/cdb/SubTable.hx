@@ -151,11 +151,12 @@ class SubTable extends Table {
 	}
 
 	public function show( ?immediate ) {
-		if( immediate ) {
+		var duration = Editor.animDuration(100);
+		if( immediate || duration == 0 ) {
 			slider.show();
 			revealInView();
 		} else
-			slider.slideDown(100, revealInView);
+			slider.slideDown(duration, revealInView);
 		alignUnderCell();
 	}
 
@@ -191,8 +192,12 @@ class SubTable extends Table {
 	override public function close() {
 		if( cell.line.subTable == this ) cell.line.subTable = null;
 		if( slider != null ) {
-			slider.slideUp(100, function() { slider = null; close(); });
-			return;
+			var duration = Editor.animDuration(100);
+			if( duration > 0 ) {
+				slider.slideUp(duration, function() { slider = null; close(); });
+				return;
+			}
+			slider = null;
 		}
 		cell.elementHtml.classList.remove("parent-sub-table");
 		super.close();

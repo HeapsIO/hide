@@ -271,7 +271,11 @@ class Table extends Component {
 		case TTilePos: 0;
 		case TBool, TColor: 1;
 		case TInt, TFloat, TImage, TGradient, TCurve: 1.5;
-		case TEnum(_), TLayer(_), TTileLayer: 2;
+		case TEnum(values):
+			var len = 0;
+			for( v in values ) if( v.length > len ) len = v.length;
+			Math.max(2, Math.min(3, len * 0.2));
+		case TLayer(_), TTileLayer: 2;
 		case TId, TGuid, TRef(_), TFlags(_), TFile: 2.5;
 		case TString, TCustom(_), TFormula: 3;
 		case TList, TProperties, TPolymorph, TDynamic: 5;
@@ -864,7 +868,6 @@ class Table extends Component {
 				body.insertBefore(getSpacer(spacerCount++, gap), cur);
 				shown.push(null);
 			}
-
 			if( !virtual ) break;
 
 			// (offsetTop is rounded)
@@ -1134,7 +1137,7 @@ class Table extends Component {
 
 			var v = Reflect.field(props, c.name);
 			var l = new Element("<tr>").appendTo(element);
-			var th = new Element("<th>").text(c.name).appendTo(l);
+			var th = new Element("<th>").addClass("prop-name").text(c.name).appendTo(l);
 			var td = new Element("<td>").addClass("c").appendTo(l);
 
 			addIcons(c, th);

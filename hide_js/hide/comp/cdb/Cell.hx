@@ -293,6 +293,66 @@ class Cell {
 		return def;
 	}
 
+	// a cell up to this height shows all its content, else it scrolls in MAX_HEIGHT (no scrollbar for a few pixels)
+	public static inline var MAX_HEIGHT = 200;
+	public static inline var MAX_HEIGHT_FIT = 250;
+
+	#if js
+	// a cell is fit when its size changes : displayed, its column resized, its content changed
+	static var fitObserver : hide.comp.ResizeObserver;
+
+	static function observeFit( root : js.html.Element ) {
+		if( fitObserver == null )
+			fitObserver = new hide.comp.ResizeObserver(function(entries, _) {
+				var roots : Array<js.html.Element> = [];
+				for( e in entries ) {
+					var t : js.html.Element = e.target;
+					if( !t.isConnected )
+						fitObserver.unobserve(t);
+					else if( e.contentRect.width > 0 )
+						roots.push(t);
+				}
+				fitRoots(roots);
+			});
+		fitObserver.observe(root);
+	}
+
+	/**
+		The lists of the cells are one element by line when the elements do not fit side by side, then the height of the cells.
+		The reads of each step are done before its writes (a single layout).
+	**/
+	static function fitRoots( roots : Array<js.html.Element> ) {
+		if( roots.length == 0 ) return;
+		var lists : Array<js.html.Element> = [];
+		for( root in roots ) {
+			root.style.maxHeight = MAX_HEIGHT_FIT + "px";
+			var auto = root.querySelectorAll(".list-preview.by-width");
+			for( i in 0...auto.length )
+				(cast auto[i] : js.html.Element).classList.remove("by-line", "by-width");
+			var all = root.querySelectorAll(".list-preview:not(.by-line)");
+			for( i in 0...all.length )
+				lists.push(cast all[i]);
+		}
+		var byLine = [for( l in lists ) if( l.children.length > 1 && l.closest(".by-line") == null && eachOnItsLine(l) ) l];
+		for( l in byLine )
+			l.classList.add("by-line", "by-width");
+		var tall = [for( root in roots ) if( root.scrollHeight > MAX_HEIGHT_FIT ) root];
+		for( root in tall )
+			root.style.maxHeight = MAX_HEIGHT + "px";
+	}
+
+	// each element below the previous one (the elements of a line can be shifted by a pixel)
+	static function eachOnItsLine( list : js.html.Element ) {
+		var prevBottom = -1e9;
+		for( i in 0...list.children.length ) {
+			var r = list.children[i].getBoundingClientRect();
+			if( r.top < prevBottom - 1 ) return false;
+			prevBottom = r.bottom;
+		}
+		return true;
+	}
+	#end
+
 	public function refresh(withSubtable = false) {
 		#if js
 		if (dropdown != null) {
@@ -310,7 +370,11 @@ class Cell {
 		if( !html.containsHtml )
 			elementHtml.textContent = html.str;
 		else
-			elementHtml.innerHTML = "<div class='cell-root' style='max-height: 200px; overflow-y:auto; overflow-x:hidden;'>" + html.str + "</div>";
+			elementHtml.innerHTML = "<div class='cell-root' style='max-height: ${MAX_HEIGHT_FIT}px; overflow-y:auto; overflow-x:hidden;'>" + html.str + "</div>";
+		#if js
+		if( html.containsHtml )
+			observeFit(cast elementHtml.firstElementChild);
+		#end
 
 		switch( column.type ) {
 		case TEnum(values):
@@ -555,6 +619,8 @@ class Cell {
 			scope.push({ s : sheet, obj : obj });
 			var idCol = Lambda.find(ps.columns, c -> c.type == TId);
 			var hasQty = false;
+			// large elements (lists or props inside, many values) : one per line
+			var byLine = false;
 			for( v in a ) {
 				var shown : Array<{ c : cdb.Data.Column, str : String }> = [];
 				for( c in ps.columns ) {
@@ -569,6 +635,8 @@ class Cell {
 				}
 				if( shown.length == 0 )
 					continue;
+				if( shown.length > 4 || Lambda.exists(shown, s -> s.c.type.match(TList | TProperties | TPolymorph)) )
+					byLine = true;
 				var qty : String = null;
 				var qi = -1, hasRef = false;
 				for( i => s in shown )
@@ -588,9 +656,8 @@ class Cell {
 			scope.pop();
 			if( out.length == 0 )
 				return val("");
-			var count = hasQty ? "" : '<span class="qty count${a.length == 1 ? " one" : ""}">${a.length}</span>';
-			var last = out.length - 1;
-			return html('<span class="list-preview">' + [for( i => e in out ) '<span class="list-preview-item">${i == 0 ? count : ""}$e${i < last ? '<span class="minor">,</span>' : ""}</span>'].join("") + '</span>');
+			var count = hasQty || byLine ? "" : '<span class="qty count${a.length == 1 ? " one" : ""}">${a.length}</span>';
+			return html('<span class="list-preview${byLine ? " by-line" : ""}">' + [for( i => e in out ) '<span class="list-preview-item">${i == 0 ? count : ""}$e</span>'].join("") + '</span>');
 		case TPolymorph:
 			var ps = sheet.getSub(c);
 			scope.push({ s : sheet, obj : obj });
@@ -615,7 +682,7 @@ class Cell {
 				out.push('<div class="label"><span class="name">${pc.name}</span><div class="content">${valueHtml(pc, pval, ps, v, scope).str}</div></div>');
 			}
 			scope.pop();
-			html(out.join(""));
+			out.length == 0 ? val("") : html('<div class="props-preview">' + out.join("") + '</div>');
 		case TCustom(name):
 			var t = editor.base.getCustomType(name);
 			var isHtml = false;
@@ -864,6 +931,8 @@ class Cell {
 		var zoom = maxSize != null ? maxSize / max : max <= 32 ? 2 : 64 / max;
 		if( limit != null && max * zoom > limit )
 			zoom = limit / max;
+		if( zoom < 1 )
+			zoom = Math.min(zoom * Editor.getIconZoom(), 1);
 		var inl = isInline ? 'display:inline-block;' : '';
 		#if js
 		var url = ide.getUnCachedUrl(path);
@@ -1009,6 +1078,15 @@ class Cell {
 
 	static final isWhiteSpace = ~/^\s*$/;
 
+	// the line keeps its height while the content of the cell is replaced by its editor (the open sub table keeps it too)
+	function keepLineHeight() : Void -> Void {
+		var lineElt = line.element?.get(0);
+		if( lineElt == null || line.subTable != null )
+			return () -> {};
+		lineElt.style.height = lineElt.getBoundingClientRect().height + "px";
+		return function() if( line.subTable == null ) lineElt.style.height = "";
+	}
+
 	public function edit() {
 		if( !canEdit() )
 			return;
@@ -1124,6 +1202,7 @@ class Cell {
 		case TRef(name):
 			var sdat = editor.base.getSheet(name);
 			if( sdat == null ) return;
+			var restoreHeight = keepLineHeight();
 			elementHtml.innerHTML = null;
 			elementHtml.classList.add("edit");
 			#if js
@@ -1172,7 +1251,7 @@ class Cell {
 					return null;
 				if (c.ico == null)
 					return new Element("<div style='display:inline-block;width:16px'/>");
-				return new Element(tileHtml(c.ico, true).str);
+				return new Element(tileHtml(c.ico, true, null, 24).str);
 			}
 			var d = new Dropdown(new Element(elementHtml), elts, currentValue, makeIcon, true);
 			dropdown = d.element[0];
@@ -1181,6 +1260,7 @@ class Cell {
 			}
 			d.onClose = function() {
 				dropdown = null;
+				restoreHeight();
 				closeEdit();
 			}
 			d.filterInput.keydown(function(e) {
@@ -1200,6 +1280,7 @@ class Cell {
 			});
 			#end
 		case TEnum(values):
+			var restoreHeight = keepLineHeight();
 			elementHtml.innerHTML = null;
 			elementHtml.classList.add("edit");
 			#if js
@@ -1223,6 +1304,7 @@ class Cell {
 				setValue(val);
 			}
 			d.onClose = function() {
+				restoreHeight();
 				closeEdit();
 			}
 			d.filterInput.keydown(function(e) {

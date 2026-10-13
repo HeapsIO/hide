@@ -106,6 +106,12 @@ class Dropdown extends Component {
 			});
 		}
 		filterInput.focus();
+		// the current value in the middle of the list (at the end of the view, it seems not selected)
+		if( highlightIndex != null ) {
+			var cont = optionsCont.get(0);
+			cont.scrollTop = Std.int(Math.max(0, highlightIndex * itemHeight - (cont.clientHeight - itemHeight) / 2));
+			renderOptions();
+		}
 
 		filterInput.blur(function(e) {
 			if( e.relatedTarget != null && new Element(e.relatedTarget).hasClass("dropdown-option") )
