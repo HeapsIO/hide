@@ -171,9 +171,18 @@ class SubTable extends Table {
 	}
 
 	function alignUnderCell() {
+		var sub = this;
+		while( sub != null ) {
+			sub.alignSelf();
+			sub = Std.downcast(sub.parent, SubTable);
+		}
+	}
+
+	function alignSelf() {
 		var group = slider?.parent();
 		if( group == null || !group.hasClass("under-cell") ) return;
 		var content = displayMode == Properties ? slider : element;
+		content.css("margin-left", "0px");
 		var groupRect = group.get(0).getBoundingClientRect();
 		var x = cell.elementHtml.getBoundingClientRect().left - groupRect.left;
 		content.css("margin-left", Math.round(Math.max(0, Math.min(x, groupRect.width - content.outerWidth()))) + "px");
@@ -201,6 +210,9 @@ class SubTable extends Table {
 		if( cell.line.subTable == null )
 			cell.line.element.get(0).style.height = "";
 		cell.refresh();
+		var parentSub = Std.downcast(parent, SubTable);
+		if( parentSub != null )
+			parentSub.alignUnderCell();
 	}
 
 	override function refreshLinesStatus() {
