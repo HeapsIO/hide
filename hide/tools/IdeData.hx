@@ -31,7 +31,9 @@ class IdeData {
 	public var projectState(default, null) : EditorState;
 
 	public var currentProject(get, never) : String;
-	function get_currentProject() : String return globalState.get("currentProject", "");
+	function get_currentProject() : String return projectOverride ?? globalState.get("currentProject", "");
+	/** Project dir forced from the command line, never saved as the current project **/
+	var projectOverride : String;
 	public var recentProjects(get, never) : Array<String>;
 	function get_recentProjects() : Array<String> return globalState.get("recentProjects", []);
 
@@ -97,6 +99,7 @@ class IdeData {
 		fileWatcher.dispose();
 		dbWatcher = null;
 		if( dir != currentProject ) {
+			projectOverride = null;
 			var recents = recentProjects;
 			recents.remove(dir);
 			recents.unshift(dir);
