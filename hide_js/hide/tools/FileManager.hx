@@ -106,9 +106,10 @@ class FileEntry {
 			children.resize(0);
 
 		if (js.node.Fs.existsSync(fullPath)) {
-			var paths = js.node.Fs.readdirSync(fullPath);
+			var entries : Array<Dynamic> = (js.node.Fs : Dynamic).readdirSync(fullPath, { withFileTypes : true });
 
-			for (path in paths) {
+			for (entry in entries) {
+				var path : String = entry.name;
 				if (StringTools.startsWith(path, "."))
 					continue;
 				var prev = oldChildren.get(path);
@@ -116,8 +117,8 @@ class FileEntry {
 					children.push(prev);
 					oldChildren.remove(path);
 				} else {
-					var info = js.node.Fs.statSync(fullPath + "/" + path);
-					var newEntry = new FileEntry(path, this, info.isDirectory() ? Dir : File);
+					var isDir : Bool = entry.isSymbolicLink() ? js.node.Fs.statSync(fullPath + "/" + path).isDirectory() : entry.isDirectory();
+					var newEntry = new FileEntry(path, this, isDir ? Dir : File);
 					newEntry.refreshChildren();
 					children.push(newEntry);
 				}
