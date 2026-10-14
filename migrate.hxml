@@ -1,0 +1,19 @@
+# The prefab format migration tool: upgrades the files of a project saved in an older prefab
+# format (see hide/tools/migrate/Cli.hx). Usage: hl migrate.hl <res dir> [--out <dir> | --in-place]
+# A game with its own prefab classes adds their packages here: --macro include("mygame.prefab")
+-cp .
+-lib heaps
+-lib hscript
+-lib domkit
+-D hide
+-D hscriptPos
+-D resourcesPath=hide_hl/emptyres
+-main hide.tools.migrate.Cli
+-hl migrate.hl
+--macro keep('h3d.shader')
+--macro include("hrt.prefab", false)
+--macro include("hrt.prefab.fx")
+--macro include("hrt.prefab.l3d", false)
+--macro include("hrt.prefab.l2d", false)
+--macro include("hrt.prefab.rfx", false)
+--macro include("hrt.shader", false)
