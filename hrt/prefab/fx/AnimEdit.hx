@@ -219,12 +219,15 @@ class AnimMarker extends hide.kit.Element {
 		slider.menuItems = menu;
 		if (curve == null)
 			return;
-		@:privateAccess slider.getFieldValue = () -> curve.getVal(time());
+		@:privateAccess slider.getFieldValue = () -> value(time());
 		@:privateAccess slider.onFieldChange = (temp) -> editKey(slider.value, temp);
-		slider.value = curve.getVal(time());
+		slider.value = value(time());
 	}
 
 	inline function time() return AnimEdit.getTime(owner) ?? 0.;
+
+	// a reference curve has no keys of its own
+	function value(t: Float) return new Evaluator().getFloat(curve.makeVal(), t);
 
 	function editKey(value: Float, temp: Bool) {
 		pending ??= hrt.prefab.Diff.deepCopy(curve.save());
@@ -277,7 +280,7 @@ class AnimMarker extends hide.kit.Element {
 		if (curve == null || t == lastTime || pending != null)
 			return;
 		lastTime = t;
-		slider.value = curve.getVal(t);
+		slider.value = value(t);
 		native.toggleClass("key", AnimEdit.keyAt(curve, t) != null);
 	}
 
