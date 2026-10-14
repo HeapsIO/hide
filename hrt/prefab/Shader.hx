@@ -327,7 +327,51 @@ class Shader extends Prefab {
 		ctx.build(
 			<category("Shader") id="shaderCat"/>
 		);
-		shaderCat.buildPropsList(props, this.props);
+		// the shaders of the particles: under an emitter, out of its sub-emitters and trails
+		var p = parent;
+		while (p != null && !(p is hrt.prefab.fx.Emitter) && !(p is hrt.prefab.l3d.Trails))
+			p = p.parent;
+		if (!(p is hrt.prefab.fx.Emitter)) {
+			shaderCat.buildPropsList(props, this.props);
+			return;
+		}
+
+		// the params read over the particle life have modes, see BaseFXTools.makeShaderParams
+		function setParticleParam(name: String, v: hrt.prefab.fx.EmitterParam.ParamValue) {
+			particleParams ??= [];
+			for (k in [for (k in particleParams.keys()) k])
+				if (k.toLowerCase() == name.toLowerCase())
+					particleParams.remove(k);
+			if (v != null)
+				particleParams.set(name, v);
+			if (!particleParams.iterator().hasNext())
+				particleParams = null;
+		}
+		for (prop in props) {
+			var v = Lambda.find(shaderDef.data.vars, v -> v.name == prop.name);
+			var dim = switch (v.type) {
+				case TVec(n, VFloat) if (v.name.toLowerCase().indexOf("color") < 0): n;
+				case TFloat, TInt, TBool: 1;
+				default: 0;
+			}
+			if (dim == 0) {
+				shaderCat.buildProp(prop, this.props);
+				continue;
+			}
+			// an unset component keeps the value of the prop
+			var value : Dynamic = Reflect.field(this.props, prop.name);
+			var base = [for (i in 0...dim) {
+				var c : Dynamic = dim == 1 ? value : Std.isOfType(value, Array) ? value[i] : null;
+				Std.isOfType(c, Float) || Std.isOfType(c, Int) ? (c : Float) : 0.0;
+			}];
+			var t : hrt.prefab.Props.PropType = switch (prop.t) {
+				case PFloat(_), PVec(_): prop.t;
+				case PInt(min, max): hrt.prefab.Props.PropType.PFloat(min, max);
+				default: hrt.prefab.Props.PropType.PFloat(0, 1);
+			}
+			hrt.prefab.fx.EmitterEdit.param(ctx, shaderCat, this, { name: prop.name, t: t, def: base, kind: Particle, groupName: null }, ["Constant", "Curve"],
+				() -> getParticleParam(prop.name), (v) -> setParticleParam(prop.name, v), refresh);
+		}
 	}
 
 	function getEditProps(shaderDef: hxsl.SharedShader) : Array<hrt.prefab.Props.PropDef> {
