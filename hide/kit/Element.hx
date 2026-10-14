@@ -250,13 +250,30 @@ class Element {
 		}
 	}
 
+	/** Items added to the context menu of this element and of the line it is in **/
+	public var menuItems : Null<() -> Array<hrt.ui.HuiMenu.MenuItem>> = null;
+
+	function collectMenuItems(out: Array<hrt.ui.HuiMenu.MenuItem>) {
+		if (menuItems != null)
+			for (item in menuItems())
+				out.push(item);
+		for (c in children)
+			if (!(c is Category))
+				c.collectMenuItems(out);
+	}
+
 	function getEditMenuContent() : Array<hrt.ui.HuiMenu.MenuItem> {
-		return [
+		var items = [];
+		if (!(this is Category))
+			collectMenuItems(items);
+		if (items.length > 0)
+			items.push({isSeparator: true});
+		return items.concat([
 			{label: "Copy", click: copyToClipboard, enabled: canCopy()},
 			{label: "Paste", click: pasteFromClipboard, enabled: canPaste()},
 			{isSeparator: true},
 			{label: "Reset", click: resetWithUndo, enabled: canReset()}
-		];
+		]);
 	}
 
 	// Internal API

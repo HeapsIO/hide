@@ -165,6 +165,8 @@ class KitRoot #if !macro extends Element #end {
 	}
 
 	public function postEditStep() {
+		if (prefab != null && !isMultiEdit)
+			hrt.prefab.fx.AnimEdit.decorate(this, prefab);
 		#if castle
 		if (prefab != null) {
 			new CDB(this, "cdb");

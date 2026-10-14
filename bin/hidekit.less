@@ -904,3 +904,18 @@ kit-root {
 	}
 }
 
+kit-root {
+	kit-anim-marker {
+		flex: 0 0 8px;
+		width: 8px;
+		height: 8px;
+		margin-inline: 2px;
+		transform: rotate(45deg);
+		border: 1px solid #777;
+		box-sizing: border-box;
+		cursor: pointer;
+		&:hover { border-color: #ccc; }
+		&.animated { background-color: #6bbf59; border-color: #6bbf59; }
+		&.animated.key { background-color: #e8c547; border-color: #e8c547; }
+	}
+}
