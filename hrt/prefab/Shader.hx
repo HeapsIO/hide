@@ -42,8 +42,15 @@ class Shader extends Prefab {
 
 	override function copy(data: Prefab) {
 		super.copy(data);
-		var from : Shader = cast data;
-		particleParams = from.particleParams == null ? null : [for( k => v in from.particleParams ) k => v?.copy()];
+		particleParams = hrt.prefab.fx.EmitterParam.copyByName((cast data : Shader).particleParams);
+	}
+
+	/** The emitter whose particles get this shader: under an emitter, out of its sub-emitters and trails **/
+	public function getParticleEmitter() : Null<hrt.prefab.fx.Emitter> {
+		var p = parent;
+		while (p != null && !(p is hrt.prefab.fx.Emitter) && !(p is hrt.prefab.l3d.Trails))
+			p = p.parent;
+		return Std.downcast(p, hrt.prefab.fx.Emitter);
 	}
 
 	public function makeShader() : hxsl.Shader {
@@ -315,11 +322,7 @@ class Shader extends Prefab {
 		ctx.build(
 			<category("Shader") id="shaderCat"/>
 		);
-		// the shaders of the particles: under an emitter, out of its sub-emitters and trails
-		var p = parent;
-		while (p != null && !(p is hrt.prefab.fx.Emitter) && !(p is hrt.prefab.l3d.Trails))
-			p = p.parent;
-		if (!(p is hrt.prefab.fx.Emitter)) {
+		if (getParticleEmitter() == null) {
 			// out of the emitters, the float params can be animated over the FX time
 			var animated = findParent(hrt.prefab.fx.Emitter) == null;
 			for (prop in props) {
@@ -342,21 +345,14 @@ class Shader extends Prefab {
 		}
 		for (prop in props) {
 			var v = Lambda.find(shaderDef.data.vars, v -> v.name == prop.name);
-			var dim = switch (v.type) {
-				case TVec(n, VFloat) if (v.name.toLowerCase().indexOf("color") < 0): n;
-				case TFloat, TInt, TBool: 1;
-				default: 0;
-			}
+			var dim = hrt.prefab.fx.EmitterParam.particleDim(v);
 			if (dim == 0) {
 				shaderCat.buildProp(prop, this.props);
 				continue;
 			}
 			// an unset component keeps the value of the prop
 			var value : Dynamic = Reflect.field(this.props, prop.name);
-			var base = [for (i in 0...dim) {
-				var c : Dynamic = dim == 1 ? value : Std.isOfType(value, Array) ? value[i] : null;
-				Std.isOfType(c, Float) || Std.isOfType(c, Int) ? (c : Float) : 0.0;
-			}];
+			var base = [for (i in 0...dim) hrt.prefab.fx.EmitterParam.baseComponent(value, dim, i)];
 			var t : hrt.prefab.Props.PropType = switch (prop.t) {
 				case PFloat(_), PVec(_): prop.t;
 				case PInt(min, max): hrt.prefab.Props.PropType.PFloat(min, max);

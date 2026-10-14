@@ -202,11 +202,8 @@ class BaseFXTools {
 
 			paramCount++;
 
-			var val = switch(v.type) {
-				case TVec(n, VFloat) if(particle && v.name.toLowerCase().indexOf("color") < 0): makeParticleShaderValue(cast basePrefab, v.name, n);
-				case TFloat, TInt, TBool if(particle): makeParticleShaderValue(cast basePrefab, v.name, 1);
-				default: makeShaderParamValue(basePrefab, v.name, v.type);
-			}
+			var dim = particle ? EmitterParam.particleDim(v) : 0;
+			var val = dim > 0 ? makeParticleShaderValue(cast basePrefab, v.name, dim) : makeShaderParamValue(basePrefab, v.name, v.type);
 			if(val == null)
 				continue;
 			if(ret == null) ret = [];
@@ -248,10 +245,7 @@ class BaseFXTools {
 		if(value == null)
 			return null;
 		var prop : Dynamic = Reflect.field(shader.props, name);
-		function comp(i: Int) {
-			var base : Dynamic = dim == 1 ? prop : Std.isOfType(prop, Array) ? prop[i] : null;
-			return hrt.prefab.fx.EmitterParam.ParamBuilder.fixedValue(shader, value[i], Std.isOfType(base, Float) || Std.isOfType(base, Int) ? base : 0.0);
-		}
+		function comp(i: Int) return EmitterParam.ParamBuilder.fixedValue(shader, value[i], EmitterParam.baseComponent(prop, dim, i));
 		return dim == 1 ? comp(0) : VVector(comp(0), comp(1), dim > 2 ? comp(2) : VZero, dim > 3 ? comp(3) : null);
 	}
 

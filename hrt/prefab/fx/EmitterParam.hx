@@ -108,6 +108,25 @@ class EmitterParam {
 		return out;
 	}
 
+	public static function copyByName( params : Null<Map<String, ParamValue>> ) : Null<Map<String, ParamValue>> {
+		return params == null ? null : [for( k => v in params ) k => v?.copy()];
+	}
+
+	/** The components of a shader param read over the particle life: a float, or a vector that is not a color. 0 for the others. **/
+	public static function particleDim( v : hxsl.Ast.TVar ) : Int {
+		return switch( v.type ) {
+		case TVec(n, VFloat) if( v.name.toLowerCase().indexOf("color") < 0 ): n;
+		case TFloat, TInt, TBool: 1;
+		default: 0;
+		}
+	}
+
+	/** Component `i` of the value `prop` of a shader param of `dim` components, 0 when it is not a number **/
+	public static function baseComponent( prop : Dynamic, dim : Int, i : Int ) : Float {
+		var c : Dynamic = dim == 1 ? prop : Std.isOfType(prop, Array) ? prop[i] : null;
+		return Std.isOfType(c, Float) || Std.isOfType(c, Int) ? c : 0.0;
+	}
+
 	static function parseMode( v : Dynamic ) : Null<ParamMode> {
 		if( v == null )
 			return null;
