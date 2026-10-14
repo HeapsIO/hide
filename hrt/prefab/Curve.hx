@@ -263,20 +263,8 @@ class Curve extends Prefab {
 		var samples = new haxe.ds.Vector<Float>(numPts);
 		var prevLoop = loop;
 		loop = false; // prevent getVal from looping during baking
-		// linear keys in one pass, getVal searches every key
-		var linear = Lambda.foreach(keys, k -> k.mode == Linear && k.prevHandle == null && k.nextHandle == null);
-		var k = 0;
-		for (i in 0...numPts) {
-			var t = i / BAKE_RESOLUTION;
-			if (!linear) {
-				samples[i] = getVal(t);
-				continue;
-			}
-			while (k < keys.length - 1 && t > keys[k + 1].time)
-				k++;
-			var a = keys[k], b = keys[k + 1];
-			samples[i] = b == null || t <= a.time ? a.value : a.value + (b.value - a.value) * (t - a.time) / (b.time - a.time);
-		}
+		for (i in 0...numPts)
+			samples[i] = getVal(i / BAKE_RESOLUTION);
 		loop = prevLoop;
 		bake = samples;
 		bakeDuration = duration;
