@@ -41,6 +41,14 @@ class Evaluator {
 		}
 	}
 
+	/** The mean of `val` over its random, at time 0 **/
+	public function getMean(val: Value) : Float {
+		return switch(val) {
+			case VRandom(_, min, max): (min + max) * 0.5;
+			default: getFloat(val, 0);
+		}
+	}
+
 	public inline function getFloat(pidx: Int=0, val: Value, time: Float) : Float {
 		return getFast(pidx, val, time);
 	}

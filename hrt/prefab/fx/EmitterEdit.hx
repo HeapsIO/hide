@@ -236,10 +236,20 @@ class EmitterEdit {
 
 	/**
 		The inspector of an emitter: its `settings` (the `@:animate` ones can be animated) and its params
-		with modes, grouped in categories. `onChange(name, temp)` follows each edit.
+		with modes, grouped in categories. A change of a `refresh` setting rebuilds the inspector,
+		`onChange(name)` follows each edit.
 	**/
-	public static function edit(ctx: EditContext2, emitter: Prefab, settings: Array<EmitterHelper.ParamDef>, params: Array<ModeParamDef>,
-			getParam: String -> Null<ParamValue>, setParam: (String, Null<ParamValue>) -> Void, onChange: (String, Bool) -> Void) {
+	public static function edit(ctx: EditContext2, owner: ParamOwner, settings: Array<EmitterHelper.ParamDef>, refresh: Array<String>, ?onChange: String -> Void) {
+		var emitter : Prefab = cast owner;
+		function changed(name: String, temp: Bool) {
+			if (name == "useRandomGradient")
+				Reflect.setField(emitter, "randomGradient", Reflect.field(emitter, name) ? hrt.impl.Gradient.getDefaultGradientData() : null);
+			if (onChange != null)
+				onChange(name);
+			ctx.rebuildPrefab(emitter);
+			if (!temp && refresh.contains(name))
+				ctx.rebuildInspector();
+		}
 		var categories = new Map<String, hide.kit.Category>();
 		function getCategory(name: String) {
 			var cat = categories.get(name);
@@ -265,21 +275,21 @@ class EmitterEdit {
 						s.max = max;
 						s.showRange = min != null && max != null;
 						s.onFieldChange = (_) -> vec[i] = s.value;
-						s.onValueChange = (temp) -> onChange(p.name, temp);
+						s.onValueChange = (temp) -> changed(p.name, temp);
 					}
 				default:
 					var widget = cat.buildProp(p, emitter);
 					if (widget == null)
 						continue;
-					widget.onValueChange = (temp) -> onChange(p.name, temp);
+					widget.onValueChange = (temp) -> changed(p.name, temp);
 					var slider = Std.downcast(widget, hide.kit.Slider);
 					if (p.animate && slider != null)
 						slider.anim = p.name;
 			}
 		}
 
-		for (p in params)
-			param(ctx, getCategory(p.groupName), emitter, p, kindModes(p.kind), () -> getParam(p.name), (v) -> setParam(p.name, v), (temp) -> onChange(p.name, temp));
+		for (p in owner.getModeParams())
+			param(ctx, getCategory(p.groupName), emitter, p, kindModes(p.kind), () -> owner.getParam(p.name), (v) -> owner.setParam(p.name, v), (temp) -> changed(p.name, temp));
 	}
 }
 

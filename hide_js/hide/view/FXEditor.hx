@@ -1275,7 +1275,7 @@ class FXEditor extends hide.view.FileView {
 			var section: Section = { root:root, curves: [], children: [], events: []};
 			var eventAdded = false;
 
-			if (root is Curve && !isInstanceCurve(cast root))
+			if (root is Curve && !hrt.prefab.fx.AnimEdit.isParticleCurve(cast root))
 				curvesToDraw.push(cast root);
 
 			if (root is IEvent && depth == 0)
@@ -1283,7 +1283,7 @@ class FXEditor extends hide.view.FileView {
 
 			for(child in root.children) {
 				// particle curves are edited in the inspector of their emitter
-				if (Lambda.exists(child.flatten(Curve), c -> !isInstanceCurve(c))) {
+				if (Lambda.exists(child.flatten(Curve), c -> !hrt.prefab.fx.AnimEdit.isParticleCurve(c))) {
 					if (child is Curve) {
 						var c = Std.downcast(child, Curve);
 						curvesToDraw.push(c);
@@ -1358,27 +1358,17 @@ class FXEditor extends hide.view.FileView {
 		var added = [];
 		for(prop in props) {
 			var id = prefix != null ? prefix + ":" + prop.name : prop.name;
-			var keys = emitterAnimKeys(element, id);
-			if(keys != null) {
-				for(k in keys) {
-					if(Curve.getCurve(element, k, false) != null)
-						continue;
-					var curve = new Curve(null, null);
-					curve.name = k;
-					curve.addKey(0, emitterTrackValue(element, k, prop.def), Linear);
-					added.push(curve);
-				}
-				continue;
+			for(k in hrt.prefab.fx.AnimEdit.animKeys(element, id) ?? [id]) {
+				if(Curve.getCurve(element, k, false) != null)
+					continue;
+				var curve = new Curve(null, null);
+				curve.name = k;
+				// the curve holds the value of the property: it starts from its current value
+				var v = hrt.prefab.fx.AnimEdit.currentValue(element, k) ?? prop.def;
+				if(v != null)
+					curve.addKey(0, v, Linear);
+				added.push(curve);
 			}
-			if(Curve.getCurve(element, id) != null)
-				continue;
-			var curve = new Curve(null, null);
-			curve.name = id;
-			// the curve holds the value of the property: it starts from its current value
-			var v = trackValue(element, id, prop.def);
-			if(v != null)
-				curve.addKey(0, v, Linear);
-			added.push(curve);
 		}
 
 		if(added.length == 0)
@@ -1403,88 +1393,6 @@ class FXEditor extends hide.view.FileView {
 		return added;
 	}
 
-	/**
-		For an emitter, the names of the animation curves of the track `id` (`emitRate`,
-		`startSpeed:x`...): the value, or the min and max of a range. Null when `id` is not one of its params.
-	**/
-	static function emitterAnimKeys(element: PrefabElement, id: String) : Null<Array<String>> {
-		var e = Std.downcast(element, hrt.prefab.fx.Emitter);
-		var e2 = Std.downcast(element, hrt.prefab.fx.Emitter2D);
-		if(e == null && e2 == null)
-			return null;
-		var parts = id.split(":");
-		var def = Lambda.find(e != null ? hrt.prefab.fx.Emitter.MODE_PARAMS : hrt.prefab.fx.Emitter2D.MODE_PARAMS, p -> p.name == parts[0]);
-		if(def == null) {
-			var settings = [for(p in (e != null ? hrt.prefab.fx.Emitter.emitterParams : hrt.prefab.fx.Emitter2D.emitterParams)) if(p.animate == true) p.name];
-			return settings.indexOf(id) >= 0 ? [id] : null;
-		}
-		if(def.kind == Particle)
-			return null;
-		var i = parts.length > 1 ? hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1]) : 0;
-		if(i < 0)
-			return null;
-		var value = e != null ? e.getParam(def.name) : e2.getParam(def.name);
-		return switch(value == null ? null : value[i]) {
-			case hrt.prefab.fx.EmitterParam.ParamMode.MRange(_): [hrt.prefab.fx.EmitterParam.animKey(def, i, "min"), hrt.prefab.fx.EmitterParam.animKey(def, i, "max")];
-			default: [hrt.prefab.fx.EmitterParam.animKey(def, i)];
-		}
-	}
-
-	/** The current value of what the animation curve `key` of an emitter animates. **/
-	static function emitterTrackValue(element: PrefabElement, key: String, def: Null<Float>) : Float {
-		inline function num(v: Dynamic) : Null<Float> return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : null;
-		var e = Std.downcast(element, hrt.prefab.fx.Emitter);
-		var e2 = Std.downcast(element, hrt.prefab.fx.Emitter2D);
-		var parts = key.split(":");
-		var pdef = Lambda.find(e != null ? hrt.prefab.fx.Emitter.MODE_PARAMS : hrt.prefab.fx.Emitter2D.MODE_PARAMS, p -> p.name == parts[0]);
-		if(pdef == null)
-			return num(Reflect.field(element, key)) ?? def ?? 0.0;
-		var i = parts.length > 1 ? hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1]) : -1;
-		if(i < 0) i = 0;
-		var field = parts[parts.length - 1];
-		var value = e != null ? e.getParam(pdef.name) : e2.getParam(pdef.name);
-		var span = hrt.prefab.fx.EmitterParam.span(value == null ? null : value[i], pdef.def[i]);
-		return field == "min" ? span.min : span.max;
-	}
-
-	/**
-		The current value of what the track `id` animates (an animation curve holds the value of the
-		property), `def` when it is not known (colors, visibility...).
-	**/
-	static function trackValue(element: PrefabElement, id: String, def: Null<Float>) : Null<Float> {
-		inline function num(v: Dynamic) : Null<Float> return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : null;
-		var parts = id.split(":");
-		var o3d = Std.downcast(element, hrt.prefab.Object3D);
-		var o2d = Std.downcast(element, hrt.prefab.Object2D);
-		var comp = parts.length > 1 ? parts[1] : "x";
-		var axis = comp.toUpperCase();
-		switch(parts[0]) {
-			case "position" if(o3d != null): return num(Reflect.field(o3d, comp)) ?? def;
-			case "rotation" if(o3d != null): return num(Reflect.field(o3d, "rotation" + axis)) ?? def;
-			case "scale" if(o3d != null): return num(Reflect.field(o3d, "scale" + axis)) ?? def;
-			case "position" if(o2d != null): return num(Reflect.field(o2d, comp)) ?? def;
-			case "rotation" if(o2d != null): return o2d.rotation;
-			case "scale" if(o2d != null): return num(Reflect.field(o2d, "scale" + axis)) ?? def;
-			case "localPosition", "localRotation": return def ?? 0.0;
-			default:
-		}
-		if(Std.isOfType(element, hrt.prefab.Shader) || Std.isOfType(element, hrt.prefab.rfx.ScreenShaderGraph)) {
-			var prop : Dynamic = element.props == null ? null : Reflect.field(element.props, parts[0]);
-			if(Std.isOfType(prop, Array) && parts.length > 1) {
-				var i = hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1]);
-				if(i >= 0)
-					return num((prop : Array<Dynamic>)[i]) ?? def;
-			}
-			return num(prop) ?? def;
-		}
-		if(Std.isOfType(element, hrt.prefab.rfx.RendererFX))
-			return num(Reflect.field(element, id)) ?? def;
-		var light = Std.downcast(element, Light);
-		if(light != null && parts.length == 1)
-			return num(Reflect.field(light, id)) ?? def;
-		return def;
-	}
-
 	public function getNewTrackMenu(elt: PrefabElement) : Array<hrt.ui.HuiMenu.MenuItem> {
 		var obj3dElt = Std.downcast(elt, hrt.prefab.Object3D);
 		var obj2dElt = Std.downcast(elt, hrt.prefab.Object2D);
@@ -1492,8 +1400,7 @@ class FXEditor extends hide.view.FileView {
 		var rfxElt = Std.downcast(elt, hrt.prefab.rfx.RendererFX);
 		var screenShaderGraph = Std.downcast(elt, hrt.prefab.rfx.ScreenShaderGraph);
 
-		var emitterElt = Std.downcast(elt, hrt.prefab.fx.Emitter);
-		var emitter2DElt = Std.downcast(elt, hrt.prefab.fx.Emitter2D);
+		var emitterElt : hrt.prefab.fx.EmitterParam.ParamOwner = elt is hrt.prefab.fx.EmitterParam.ParamOwner ? cast elt : null;
 
 		var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
 		var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [];
@@ -1648,18 +1555,14 @@ class FXEditor extends hide.view.FileView {
 			menuItems.push(item);
 		}
 
-		function addEmitterParams(settings: Array<hrt.prefab.fx.EmitterHelper.ParamDef>, modeParams: Array<hrt.prefab.fx.EmitterParam.ModeParamDef>) {
-			for(param in settings)
+		if(emitterElt != null) {
+			for(param in emitterElt.getSettings())
 				if(param.animate)
 					addParam(param, "");
-			for(p in modeParams)
+			for(p in emitterElt.getModeParams())
 				if(p.kind != Particle)
 					addParam({ name: p.name, t: p.t, def: p.def.length > 1 ? p.def : p.def[0], disp: p.disp }, "");
 		}
-		if(emitterElt != null)
-			addEmitterParams(hrt.prefab.fx.Emitter.emitterParams, hrt.prefab.fx.Emitter.MODE_PARAMS);
-		if(emitter2DElt != null)
-			addEmitterParams(hrt.prefab.fx.Emitter2D.emitterParams, hrt.prefab.fx.Emitter2D.MODE_PARAMS);
 
 		if (particle2dElt != null) {
 			for(param in hrt.prefab.l2d.Particle2D.emitter2dParams) {
@@ -1914,17 +1817,13 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	static function getTrack(element : PrefabElement, propName : String) {
-		var keys = emitterAnimKeys(element, propName);
+		var keys = hrt.prefab.fx.AnimEdit.animKeys(element, propName);
 		return Curve.getCurve(element, keys != null ? keys[0] : propName, false);
 	}
 
 	static function upperCase(prop: String) {
 		if(prop == null) return "";
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
-	}
-
-	static inline function isInstanceCurve(curve: Curve) {
-		return hrt.prefab.fx.AnimEdit.isParticleCurve(curve);
 	}
 
 	static var _ = Extension.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX", name: "FX" });

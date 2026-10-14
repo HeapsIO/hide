@@ -123,6 +123,8 @@ class EmitterMacros {
 			function copyParams( from : $selfType ) {
 				$b{copy};
 			}
+			public function getSettings() return emitterParams;
+			public function getModeParams() return MODE_PARAMS;
 			public function getParam( name : String ) : Null<hrt.prefab.fx.EmitterParam.ParamValue> {
 				return ${{ expr: ESwitch(macro name, getCases, macro null), pos: pos }};
 			}

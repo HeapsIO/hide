@@ -320,7 +320,7 @@ class Emitter2DObject extends h2d.Object {
 
 		if (spriteSheet != null) {
 			var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
-			var meanLifeTime = switch(lifeTime) { case VRandom(_, min, max): (min + max) * 0.5; default: evaluator.getFloat(lifeTime, 0); };
+			var meanLifeTime = evaluator.getMean(lifeTime);
 			animatedTexShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / meanLifeTime);
 			animatedTexShader.useSourceUVs = animationUseSourceUVs;
 			animatedTexShader.startTime = 0;
@@ -459,7 +459,7 @@ class Emitter2DObject extends h2d.Object {
 @:prefabName("Emitter 2D")
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter2d)
 @:build(hrt.prefab.fx.EmitterMacros.build(hrt.prefab.fx.Emitter2D.Emitter2DObject))
-class Emitter2D extends Object2D {
+class Emitter2D extends Object2D implements ParamOwner {
 
 	@:group("Properties")
 	@:s @:range(0, 1) public var speedFactor : Float = 1.0;
@@ -704,16 +704,10 @@ class Emitter2D extends Object2D {
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
 		super.edit2(ctx);
-		function onChange(pname: String, isTemp: Bool) {
-			if (pname == "useRandomGradient")
-				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
+		EmitterEdit.edit(ctx, this, getVisibleParams(), REFRESH_PARAMS, (pname) -> {
 			if (pname == "spriteType" && spriteType != SpriteType.SpriteSheet)
 				spriteSheet = null;
-			ctx.rebuildPrefab(this);
-			if (!isTemp && REFRESH_PARAMS.contains(pname))
-				ctx.rebuildInspector();
-		}
-		EmitterEdit.edit(ctx, this, getVisibleParams(), MODE_PARAMS, getParam, setParam, onChange);
+		});
 	}
 
 	#if editor

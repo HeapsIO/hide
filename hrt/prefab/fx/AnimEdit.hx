@@ -2,6 +2,8 @@ package hrt.prefab.fx;
 
 #if domkit
 
+import hrt.prefab.fx.EmitterParam;
+
 /**
 	Animation curves edited from the inspector, Blender-like: a marker after an animatable field tells
 	if it is animated (and keyed at the current time), its menu animates it, inserts or removes a key.
@@ -35,19 +37,71 @@ class AnimEdit {
 		var top : Prefab = curve;
 		while (top.parent is Curve)
 			top = top.parent;
-		var e = top.parent;
-		if (!(e is Emitter || e is Emitter2D))
-			return top.findParent(Emitter) != null || top.findParent(Emitter2D) != null;
-		return !isChannel(top.name) && !isParamName(e, top.name);
+		var emitter : ParamOwner = top.parent is ParamOwner ? cast top.parent : null;
+		if (emitter == null)
+			return top.findParent(Prefab, p -> p is ParamOwner) != null;
+		return !isChannel(top.name) && !isParamName(emitter, top.name);
 	}
 
 	/** If `name` is the name of an animation curve of an emitter param **/
-	static function isParamName(emitter: Prefab, name: String) {
+	static function isParamName(emitter: ParamOwner, name: String) {
 		var base = name?.split(":")[0];
-		var is3d = emitter is Emitter;
-		var settings = is3d ? Emitter.emitterParams : Emitter2D.emitterParams;
-		var params = is3d ? Emitter.MODE_PARAMS : Emitter2D.MODE_PARAMS;
-		return Lambda.exists(settings, p -> p.animate == true && p.name == base) || Lambda.exists(params, p -> p.kind != Particle && p.name == base);
+		return Lambda.exists(emitter.getSettings(), p -> p.animate == true && p.name == base) || Lambda.exists(emitter.getModeParams(), p -> p.kind != Particle && p.name == base);
+	}
+
+	/**
+		The names of the animation curves of the property `prop` of an emitter (`emitRate`, `startSpeed:x`...):
+		the value, or the min and max of a range. Null when `prop` is not one of its params.
+	**/
+	public static function animKeys(owner: Prefab, prop: String) : Null<Array<String>> {
+		var emitter : ParamOwner = owner is ParamOwner ? cast owner : null;
+		if (emitter == null)
+			return null;
+		var parts = prop.split(":");
+		var def = Lambda.find(emitter.getModeParams(), p -> p.name == parts[0]);
+		if (def == null)
+			return Lambda.exists(emitter.getSettings(), p -> p.animate == true && p.name == prop) ? [prop] : null;
+		var i = parts.length > 1 ? EmitterParam.COMPONENTS.indexOf(parts[1]) : 0;
+		if (def.kind == Particle || i < 0)
+			return null;
+		var value = emitter.getParam(def.name);
+		return switch (value == null ? null : value[i]) {
+			case MRange(_): [EmitterParam.animKey(def, i, "min"), EmitterParam.animKey(def, i, "max")];
+			default: [EmitterParam.animKey(def, i)];
+		}
+	}
+
+	/** The current value of what the animation curve `key` of `owner` animates, null when it is not known (colors, visibility...) **/
+	public static function currentValue(owner: Prefab, key: String) : Null<Float> {
+		inline function num(v: Dynamic) : Null<Float> return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : null;
+		var parts = key.split(":");
+		var emitter : ParamOwner = owner is ParamOwner ? cast owner : null;
+		var def = emitter == null ? null : Lambda.find(emitter.getModeParams(), p -> p.name == parts[0]);
+		if (def != null) {
+			var i = parts.length > 1 ? hxd.Math.imax(0, EmitterParam.COMPONENTS.indexOf(parts[1])) : 0;
+			var value = emitter.getParam(def.name);
+			var span = EmitterParam.span(value == null ? null : value[i], def.def[i]);
+			return parts[parts.length - 1] == "min" ? span.min : span.max;
+		}
+		var comp = parts.length > 1 ? parts[1] : "x";
+		if (owner is Object3D || owner is Object2D) {
+			switch (parts[0]) {
+				case "position": return num(Reflect.field(owner, comp));
+				case "rotation" if (owner is Object2D): return (cast owner : Object2D).rotation;
+				case "rotation", "scale": return num(Reflect.field(owner, parts[0] + comp.toUpperCase()));
+				case "localPosition", "localRotation": return 0.;
+				default:
+			}
+		}
+		if (owner is Shader || owner is hrt.prefab.rfx.ScreenShaderGraph) {
+			var prop : Dynamic = owner.props == null ? null : Reflect.field(owner.props, parts[0]);
+			if (Std.isOfType(prop, Array) && parts.length > 1)
+				prop = (prop : Array<Dynamic>)[EmitterParam.COMPONENTS.indexOf(parts[1])];
+			return num(prop);
+		}
+		if (emitter != null || owner is hrt.prefab.rfx.RendererFX || (owner is Light && parts.length == 1))
+			return num(Reflect.field(owner, key));
+		return null;
 	}
 
 	public static function findCurve(owner: Prefab, name: String) : Null<Curve> {

@@ -38,6 +38,14 @@ typedef ModeParamDef = {
 	var ?disp : String;
 }
 
+/** An emitter: its settings, its params with modes and their values **/
+interface ParamOwner {
+	function getSettings() : Array<EmitterHelper.ParamDef>;
+	function getModeParams() : Array<ModeParamDef>;
+	function getParam( name : String ) : Null<ParamValue>;
+	function setParam( name : String, v : Null<ParamValue> ) : Void;
+}
+
 class EmitterParam {
 
 	public static var COMPONENTS = ["x", "y", "z", "w"];

@@ -787,7 +787,7 @@ class EmitterObject extends h3d.scene.Object {
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 			if( frameCount > 1 && spriteSheet != null ) {
 				var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
-				var meanLifeTime = switch(lifeTime) { case VRandom(_, min, max): (min + max) * 0.5; default: evaluator.getFloat(lifeTime, 0); };
+				var meanLifeTime = evaluator.getMean(lifeTime);
 				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / meanLifeTime);
 				animatedTextureShader.useSourceUVs = animationUseSourceUVs;
 				animatedTextureShader.startTime = @:privateAccess scene?.renderer.ctx.globalTime ?? 0.0;
@@ -1728,7 +1728,7 @@ class EmitterObject extends h3d.scene.Object {
 @:prefabName("Emitter")
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter)
 @:build(hrt.prefab.fx.EmitterMacros.build(hrt.prefab.fx.Emitter.EmitterObject))
-class Emitter extends Object3D {
+class Emitter extends Object3D implements ParamOwner {
 
 	@:group("Properties")
 	@:s @:disp("Sub Kind") public var subEmitterKind : SubEmitterKind = SubEmitterKind.SpawnOnDeath;
@@ -2060,20 +2060,12 @@ class Emitter extends Object3D {
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
 		super.edit2(ctx);
-
-		function onChange(pname: String, isTemp: Bool) {
-			if (pname == "useRandomGradient")
-				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
+		EmitterEdit.edit(ctx, this, getVisibleParams(), REFRESH_PARAMS, (pname) -> {
 			if (pname == "warmUpTime" && warmUpTime < 0) {
 				warmUpTime = 0;
 				ctx.quickError("Warm up time can no longer be negative. Use the Delay property instead");
 			}
-			ctx.rebuildPrefab(this);
-			if (!isTemp && REFRESH_PARAMS.contains(pname))
-				ctx.rebuildInspector();
-		}
-
-		EmitterEdit.edit(ctx, this, getVisibleParams(), MODE_PARAMS, getParam, setParam, onChange);
+		});
 	}
 
 	#if editor
