@@ -461,6 +461,28 @@ class ParticleInstance {
 			speed.z += delta.z;
 		}
 
+		// COLLISION
+		if(emitter.useCollision) {
+			var plane = emitter.collisionPlane;
+			var dist = plane.distance(getPosition());
+			if(dist < 0) {
+				var k = emitter.killOnCollision;
+				if(k > 0 && (k >= 1 || emitter.random.rand() < k))
+					life = lifeTime;
+				var n = plane.getNormal();
+				var vn = speedAccumulation.dot(n);
+				var e = vn < 0 ? 1 + emitter.elasticity : 1;
+				if(vn < 0) {
+					speedAccumulation.x -= n.x * vn * e;
+					speedAccumulation.y -= n.y * vn * e;
+					speedAccumulation.z -= n.z * vn * e;
+				}
+				x -= n.x * dist * e;
+				y -= n.y * dist * e;
+				z -= n.z * dist * e;
+			}
+		}
+
 		this.speedAccumulation.load(speedAccumulation);
 
 
@@ -584,6 +606,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var elasticity : Float = 1.0;
 	public var killOnCollision : Float = 0.0;
 	public var useCollision : Bool = false;
+	var collisionPlane : h3d.col.Plane;
 	// RANDOM COLOR
 	public var useRandomColor : Bool = false;
 	public var useRandomGradient : Bool = false;
@@ -1478,6 +1501,15 @@ class EmitterObject extends h3d.scene.Object {
 		if (particleScaling == None) {
 			var scale = parentTransform.getScale();
 			parentTransform.scale(1.0/scale.x, 1.0/scale.y, 1.0/scale.z);
+		}
+
+		if (useCollision) {
+			var m = new h3d.Matrix();
+			m.initInverse(parentTransform);
+			m.multiply(parentNonEmitter.getAbsPos(), m);
+			collisionPlane = h3d.col.Plane.Z();
+			collisionPlane.transform(m);
+			collisionPlane.normalize();
 		}
 
 		// Particle space <-> emitter space, for orbit speed
