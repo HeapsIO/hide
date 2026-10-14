@@ -215,42 +215,32 @@ class Curve extends Prefab {
 	}
 
 	public function makeVal(ignoreRemap: Bool = false) : Value {
-		if (!ignoreRemap) {
-			if (remapPath == null) {
-				return makeVal(true);
-			}
-			var val = makeVal(true);
-			var param = getRemapParameter();
-			if (param != null) {
-				return VParamRemap(val, param);
-			}
-			else {
-				var root = getRoot(false);
-				var remapCurve = Std.downcast(root.locatePrefab(remapPath), Curve);
-				return remapCurve != null ? VValueRemap(val, remapCurve.makeVal()) : val;
-			}
-		}
-
-		switch(blendMode) {
-			case None:
-				return VCurve(this);
+		var val = switch(blendMode) {
+			case None, RandomBlend:
+				VCurve(ShCurve(this), 0, 1);
 			case Blend:
 				var ca = Std.downcast(this.children[0], Curve);
 				var cb = Std.downcast(this.children[1], Curve);
-				if (ca == null) return cb != null ? VCurve(cb) : VConst(0.0);
-				if (cb == null) return VCurve(ca);
-				return VBlendCurves(ca, cb, blendParam);
-			case RandomBlend:
-				return VCurve(this);
+				if (ca == null && cb == null) return VConst(0.0);
+				VCurve(ca == null ? ShCurve(cb) : cb == null ? ShCurve(ca) : ShBlend(ca, cb, blendParam), 0, 1);
 			case Reference:
-				var val = getRef()?.makeVal();
-				if (val == null)
-					return VConst(0.0);
-				if (scale != 1.0 || offset != 0.0)
-					val = VLerp(VConst(offset), VConst(offset + scale), val);
-				return val;
+				switch(getRef()?.makeVal()) {
+					case null: return VConst(0.0);
+					case VConst(v): VConst(v * scale + offset);
+					case VCurve(s, from, to): VCurve(s, from * scale + offset, to * scale + offset);
+					case v: v;
+				}
 			default:
 				throw "invalid blendMode value";
+		}
+		if (ignoreRemap || remapPath == null)
+			return val;
+		var param = getRemapParameter();
+		var remapCurve = param == null ? Std.downcast(getRoot(false).locatePrefab(remapPath), Curve) : null;
+		return switch(val) {
+			case VCurve(s, from, to) if (param != null): VCurve(ShParamRemap(s, param), from, to);
+			case VCurve(s, from, to) if (remapCurve != null): VCurve(ShValueRemap(s, remapCurve.makeVal()), from, to);
+			default: val;
 		}
 	}
 

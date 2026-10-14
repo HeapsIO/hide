@@ -555,8 +555,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var trails : hrt.prefab.l3d.Trails.TrailObj;
 	public var trailsTemplate : hrt.prefab.l3d.Trails;
 	// LIFE
-	public var lifeTimeMin : Value = VConst(2.0);
-	public var lifeTimeMax : Value = VConst(2.0);
+	public var lifeTime : Value = VConst(2.0);
 	public var speedFactor = 1.0;
 	public var warmUpTime = 0.0;
 	public var delay = 0.0;
@@ -644,8 +643,6 @@ class EmitterObject extends h3d.scene.Object {
 	var orbitFromEmitter = new h3d.Matrix();
 	var baseEmitMat : h3d.Matrix;
 	var meshTransform = new h3d.Matrix();
-	var randomValues : Array<Float>;
-	var randSlots : Int;
 
 	public function new(?parent) {
 		super(parent);
@@ -687,9 +684,8 @@ class EmitterObject extends h3d.scene.Object {
 
 	function init(randSlots: Int, prefab: Emitter) {
 		this.emitterPrefab = prefab;
-		this.randSlots = randSlots;
-		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
-		evaluator = new Evaluator(randomValues, randSlots);
+		evaluator = new Evaluator();
+		evaluator.allocRandom(maxCount, randSlots);
 		var anim = getParentFX();
 		if(anim != null)
 			evaluator.parameters = @:privateAccess anim.evaluator.parameters;
@@ -791,7 +787,8 @@ class EmitterObject extends h3d.scene.Object {
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 			if( frameCount > 1 && spriteSheet != null ) {
 				var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
-				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / ((evaluator.getFloat(lifeTimeMin, 0) + evaluator.getFloat(lifeTimeMax, 0)) * 0.5));
+				var meanLifeTime = switch(lifeTime) { case VRandom(_, min, max): (min + max) * 0.5; default: evaluator.getFloat(lifeTime, 0); };
+				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / meanLifeTime);
 				animatedTextureShader.useSourceUVs = animationUseSourceUVs;
 				animatedTextureShader.startTime = @:privateAccess scene?.renderer.ctx.globalTime ?? 0.0;
 				animatedTextureShader.loop = animationLoop;
@@ -874,10 +871,7 @@ class EmitterObject extends h3d.scene.Object {
 		emitTarget = 0;
 		listHead = null;
 
-		if(randomValues != null) {
-			for(i in 0...randomValues.length)
-				randomValues[i] = random.srand();
-		}
+		evaluator?.resetRandom(random);
 
 		if(particles != null) {
 			for(i in 0...particlesCount) {
@@ -1049,8 +1043,7 @@ class EmitterObject extends h3d.scene.Object {
 			for( i in 0...count ) {
 				var part = allocInstance();
 				part.startTime = globalTime;
-				var lo = evaluator.getFloat(lifeTimeMin, curTime), hi = evaluator.getFloat(lifeTimeMax, curTime);
-				part.lifeTime = hxd.Math.max(0.01, (lo + hi) * 0.5 + random.srand((hi - lo) * 0.5));
+				part.lifeTime = hxd.Math.max(0.01, evaluator.getFloat(part.idx, lifeTime, curTime));
 
 				if(useRandomColor) {
 					if (useRandomGradient) {

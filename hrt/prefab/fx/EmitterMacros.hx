@@ -99,14 +99,10 @@ class EmitterMacros {
 			copy.push(macro @:pos(p) this.$n = from.$n?.copy());
 			getCases.push({ values: [macro $v{key}], expr: macro this.$n });
 			setCases.push({ values: [macro $v{key}], expr: macro this.$n = v });
-			switch( kind ) {
-			case "Spawn" if( dim == 1 ):
-				// drawn by the emitter when a particle spawns
-				var min = key + "Min", max = key + "Max";
-				spawnValues.push(macro @:pos(p) { var s = b.bounds($def, this.$n, 0); obj.$min = s.min; obj.$max = s.max; });
-			case "Spawn": spawnValues.push(macro @:pos(p) obj.$key = b.param($def, this.$n));
-			default: particleValues.push(macro @:pos(p) d.$key = b.param($def, this.$n));
-			}
+			if( kind == "Spawn" )
+				spawnValues.push(macro @:pos(p) obj.$key = b.param($def, this.$n));
+			else
+				particleValues.push(macro @:pos(p) d.$key = b.param($def, this.$n));
 		}
 
 		var objPath = haxe.macro.ExprTools.toString(objectType).split(".");

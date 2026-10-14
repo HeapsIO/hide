@@ -616,7 +616,7 @@ class FXAnimation extends h3d.scene.Object {
 
 				if(anim.color != null) {
 					switch(anim.color) {
-						case VCurve(a):
+						case VCurve(ShCurve(_), 0, 1):
 							for(mat in anim.obj.getMaterials())
 								mat.color.a = evaluator.getFloat(anim.color, newTime);
 						default:

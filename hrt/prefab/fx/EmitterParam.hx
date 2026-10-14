@@ -192,17 +192,24 @@ class ParamBuilder {
 		this.anim = anim;
 	}
 
+	/** The value of a shape, from 0 to 1, 1 for a missing curve **/
 	public static function shape( owner : Prefab, s : ParamShape ) : Value {
 		return switch( s ) {
-		case SCurve(path):
-			// a missing curve leaves the value at `to`
-			EmitterParam.resolveCurve(owner, path)?.makeVal() ?? VConst(1.0);
-		case SEasing(e): VEasing(e);
+		case SCurve(path): EmitterParam.resolveCurve(owner, path)?.makeVal() ?? VConst(1.0);
+		case SEasing(e): VCurve(ShEasing(e), 0, 1);
 		}
 	}
 
-	static inline function curve( owner : Prefab, s : ParamShape, from : Float, to : Float ) : Value {
-		return VLerp(VConst(from), VConst(to), shape(owner, s));
+	static inline function at( from : Float, to : Float, k : Float ) {
+		return k == 0 ? from : k == 1 ? to : from + (to - from) * k;
+	}
+
+	static function curve( owner : Prefab, s : ParamShape, from : Float, to : Float ) : Value {
+		return switch( shape(owner, s) ) {
+		case VCurve(sh, a, b): VCurve(sh, at(from, to, a), at(from, to, b));
+		case VConst(k): VConst(at(from, to, k));
+		default: VConst(to);
+		}
 	}
 
 	/** The value of a component without randomness: unset, Constant or Curve **/
@@ -215,18 +222,17 @@ class ParamBuilder {
 		}
 	}
 
-	static inline function range( rid : Int, min : Float, max : Float ) : Value {
-		return VRandom(rid, (max - min) * 0.5, (max + min) * 0.5);
-	}
-
 	public function comp( m : Null<ParamMode>, def : Float ) : Value {
 		return switch( m ) {
-		case MRange(min, max): range(randomSlots++, min, max);
+		case MRange(min, max): VRandom(randomSlots++, min, max);
 		case MRandomCurve(s, f0, f1, t0, t1):
 			var rid = randomSlots++;
-			VLerp(range(rid, f0, f1), range(rid, t0, t1), shape(owner, s));
-		case MCurveRange(a, af, at, b, bf, bt):
-			VLerp(curve(owner, a, af, at), curve(owner, b, bf, bt), VRandom(randomSlots++, 0.5, 0.5));
+			switch( shape(owner, s) ) {
+			case VCurve(sh, a, b): VRandomCurve(rid, sh, at(f0, t0, a), at(f1, t1, a), at(f0, t0, b), at(f1, t1, b));
+			case VConst(k): VRandom(rid, at(f0, t0, k), at(f1, t1, k));
+			default: VRandom(rid, t0, t1);
+			}
+		case MCurveRange(a, aFrom, aTo, b, bFrom, bTo): VCurveRange(randomSlots++, curve(owner, a, aFrom, aTo), curve(owner, b, bFrom, bTo));
 		default: fixedValue(owner, m, def);
 		}
 	}
@@ -238,7 +244,7 @@ class ParamBuilder {
 		if( c == null )
 			return base;
 		if( c.blendMode == RandomBlend )
-			return VLerp(VCurve(Std.downcast(c.children[0], Curve)), VCurve(Std.downcast(c.children[1], Curve)), VRandom(randomSlots++, 0.5, 0.5));
+			return VCurveRange(randomSlots++, VCurve(ShCurve(Std.downcast(c.children[0], Curve)), 0, 1), VCurve(ShCurve(Std.downcast(c.children[1], Curve)), 0, 1));
 		return c.makeVal();
 	}
 
@@ -261,8 +267,8 @@ class ParamBuilder {
 		case [Spawn, MRange(_)]:
 			var b = bounds(def, value, i);
 			switch( [b.min, b.max] ) {
-			case [VConst(min), VConst(max)]: range(randomSlots++, min, max);
-			default: VLerp(b.min, b.max, VRandom(randomSlots++, 0.5, 0.5));
+			case [VConst(min), VConst(max)]: VRandom(randomSlots++, min, max);
+			default: VCurveRange(randomSlots++, b.min, b.max);
 			}
 		default: animated(EmitterParam.animKey(def, i), fixedValue(owner, m, def.def[i]));
 		}

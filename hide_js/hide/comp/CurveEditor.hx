@@ -690,7 +690,7 @@ class CurveEditor extends hide.comp.Component {
 		tlGroup = svg.group(root, "tlgroup");
 		markersGroup = svg.group(root, "markers").css({'pointer-events':'none'});
 
-		evaluator = new hrt.prefab.fx.Evaluator([]);
+		evaluator = new hrt.prefab.fx.Evaluator();
 
 		tlGroup.mousedown(function(e) {
 			var lastX = e.clientX;

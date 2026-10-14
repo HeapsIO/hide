@@ -1,13 +1,13 @@
 package hrt.prefab.fx;
 
-class Evaluator {
-	var randValues : Array<Float>;
-	public var parameters: Map<String, Float> = [];
-	var stride : Int;
+import hrt.prefab.fx.Value;
 
-	public function new(?randValues: Array<Float>, stride: Int=0) {
-		this.randValues = randValues;
-		this.stride = stride;
+class Evaluator {
+	public var parameters: Map<String, Float> = [];
+	var randValues : Array<Float> = [];
+	var slots = 0;
+
+	public function new() {
 	}
 
 	public static function vVal(f: Float) : Value {
@@ -17,9 +17,19 @@ class Evaluator {
 		}
 	}
 
-	inline function getRandom(pidx: Int, ridx: Int) {
-		var i = pidx * stride + ridx;
-		return randValues[i];
+	/** `slots` randoms for each of `count` particles **/
+	public function allocRandom(count: Int, slots: Int) {
+		this.slots = slots;
+		randValues = [for(_ in 0...count * slots) 0.];
+	}
+
+	public function resetRandom(rand: hxd.Rand) {
+		for(i in 0...randValues.length)
+			randValues[i] = (rand.srand() + 1) * 0.5;
+	}
+
+	inline function getRandom(pidx: Int, rid: Int) {
+		return randValues[pidx * slots + rid];
 	}
 
 	public function setAllParameters(params: Array<hrt.prefab.fx.FX.Parameter>) {
@@ -40,16 +50,23 @@ class Evaluator {
 		return switch(val) {
 			case null, VZero: 0.0;
 			case VConst(v): v;
-			case VCurve(c): c.getVal(time);
-			case VRandom(rid, scale, add): getRandom(pidx, rid) * scale + add;
-			case VLerp(a, b, t):
-				var va = getFast(pidx, a, time);
-				va + (getFast(pidx, b, time) - va) * getFast(pidx, t, time);
-			case VEasing(e): e.eval(time);
-			case VBlendCurves(a, b, blendVar): hxd.Math.lerp(a.getVal(time), b.getVal(time), parameters[blendVar] ?? 0.0);
-			case VParamRemap(a, param): getFast(pidx, a, parameters[param] ?? 0.0);
-			case VValueRemap(a, remap): getFast(pidx, a, getFast(pidx, remap, time));
+			case VRandom(rid, min, max): hxd.Math.lerp(min, max, getRandom(pidx, rid));
+			case VCurve(s, from, to): hxd.Math.lerp(from, to, getShape(s, time));
+			case VRandomCurve(rid, s, fromMin, fromMax, toMin, toMax):
+				var u = getRandom(pidx, rid);
+				hxd.Math.lerp(hxd.Math.lerp(fromMin, fromMax, u), hxd.Math.lerp(toMin, toMax, u), getShape(s, time));
+			case VCurveRange(rid, a, b): hxd.Math.lerp(getFast(pidx, a, time), getFast(pidx, b, time), getRandom(pidx, rid));
 			case VVector(_), VHsl(_): throw "getFloat: vector value";
+		}
+	}
+
+	function getShape(s: CurveShape, time: Float) : Float {
+		return switch(s) {
+			case ShCurve(c): c.getVal(time);
+			case ShEasing(e): e.eval(time);
+			case ShBlend(a, b, param): hxd.Math.lerp(a.getVal(time), b.getVal(time), parameters[param] ?? 0.0);
+			case ShParamRemap(s, param): getShape(s, parameters[param] ?? 0.0);
+			case ShValueRemap(s, remap): getShape(s, getFast(0, remap, time));
 		}
 	}
 
@@ -57,13 +74,16 @@ class Evaluator {
 		return switch(val) {
 			case VZero: 0;
 			case VConst(v): v * time;
-			case VCurve(c): c.getSum(time);
-			case VBlendCurves(a, b, blendVar): hxd.Math.lerp(a.getSum(time), b.getSum(time), parameters[blendVar] ?? 0.0);
-			case VParamRemap(a, param): getSum(a, parameters[param] ?? 0.0) * time;
-			case VLerp(VConst(a), VConst(b), t): a * time + (b - a) * getSum(t, time);
-			case VLerp(a, b, t = VConst(_) | VRandom(_)):
-				var sa = getSum(a, time);
-				sa + (getSum(b, time) - sa) * getFloat(t, 0);
+			case VCurve(s, from, to): from * time + (to - from) * getShapeSum(s, time);
+			default: throw "not implemented";
+		}
+	}
+
+	function getShapeSum(s: CurveShape, time: Float) : Float {
+		return switch(s) {
+			case ShCurve(c): c.getSum(time);
+			case ShBlend(a, b, param): hxd.Math.lerp(a.getSum(time), b.getSum(time), parameters[param] ?? 0.0);
+			case ShParamRemap(s, param): getShapeSum(s, parameters[param] ?? 0.0) * time;
 			default: throw "not implemented";
 		}
 	}

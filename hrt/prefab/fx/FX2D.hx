@@ -116,7 +116,7 @@ class FX2DAnimation extends h2d.Object {
 
 			if(anim.color != null) {
 				switch(anim.color) {
-					case VCurve(a):
+					case VCurve(ShCurve(_), 0, 1):
 						anim.obj2d.alpha = evaluator.getFloat(anim.color, time);
 					default:
 						var drawable = Std.downcast(anim.obj2d, h2d.Drawable);
@@ -248,7 +248,7 @@ class FX2D extends Object2D implements BaseFX {
 			var c = Curve.getCurve(elt, name);
 			if(c != null)
 				anyFound = true;
-			return c != null ? VCurve(c) : def;
+			return c != null ? VCurve(ShCurve(c), 0, 1) : def;
 		}
 
 		function makeColor(name: String) {

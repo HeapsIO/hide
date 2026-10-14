@@ -253,16 +253,13 @@ class Emitter2DObject extends h2d.Object {
 	var curTime = 0.;
 	var countToEmit = 0.;
 	var totalBurstCount = 0;
-	var randomValues : Array<Float>;
-	var randSlots : Int;
 	var instanceCounter = 0;
 	var animatedTexShader : h3d.shader.AnimatedTexture = null;
 
 	// Emitter parameters
 	public var instDef : InstanceDef;
 	public var seed = 0;
-	public var lifeTimeMin : Value = VConst(2.0);
-	public var lifeTimeMax : Value = VConst(2.0);
+	public var lifeTime : Value = VConst(2.0);
 	public var speedFactor = 1.0;
 	public var warmUpTime = 0.0;
 	public var delay = 0.0;
@@ -310,20 +307,22 @@ class Emitter2DObject extends h2d.Object {
 
 		batch = new h2d.SpriteBatch(h2d.Tile.fromColor(0xFF00FF, 10, 10), this);
 		batch.hasRotationScale = true;
-		evaluator = new Evaluator([0], 1);
+		evaluator = new Evaluator();
 		rand = new hxd.Rand(seed);
 	}
 
 	public function init(randSlots: Int, prefab: Emitter2D) {
-		var randomValues = [for(_ in 0...(maxCount * randSlots)) rand.srand()];
-		evaluator = new Evaluator(randomValues, randSlots);
+		evaluator = new Evaluator();
+		evaluator.allocRandom(maxCount, randSlots);
+		evaluator.resetRandom(rand);
 
 		if (animatedTexShader != null)
 			batch.removeShader(animatedTexShader);
 
 		if (spriteSheet != null) {
 			var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
-			animatedTexShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / ((evaluator.getFloat(lifeTimeMin, 0) + evaluator.getFloat(lifeTimeMax, 0)) * 0.5));
+			var meanLifeTime = switch(lifeTime) { case VRandom(_, min, max): (min + max) * 0.5; default: evaluator.getFloat(lifeTime, 0); };
+			animatedTexShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / meanLifeTime);
 			animatedTexShader.useSourceUVs = animationUseSourceUVs;
 			animatedTexShader.startTime = 0;
 			animatedTexShader.loop = animationLoop;
@@ -414,9 +413,8 @@ class Emitter2DObject extends h2d.Object {
 	function doEmit(count : Int) {
 		for (_ in 0...count) {
 			var part = new Particle2DInstance(getTile(), this);
-			var lo = evaluator.getFloat(lifeTimeMin, curTime), hi = evaluator.getFloat(lifeTimeMax, curTime);
-			part.lifeTime = (lo + hi) * 0.5 + rand.srand((hi - lo) * 0.5);
 			part.idx = instanceCounter;
+			part.lifeTime = evaluator.getFloat(part.idx, lifeTime, curTime);
 			this.particles.push(part);
 			instanceCounter = (instanceCounter + 1) % maxCount;
 		}
@@ -430,10 +428,7 @@ class Emitter2DObject extends h2d.Object {
 		instanceCounter = 0;
 
 		rand.init(seed);
-		if (randomValues != null) {
-			for(i in 0...randomValues.length)
-				randomValues[i] = rand.srand();
-		}
+		evaluator.resetRandom(rand);
 	}
 
 	function getTile() {
