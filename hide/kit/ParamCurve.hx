@@ -161,13 +161,7 @@ class ParamCurve extends Element {
 
 	function commit(before: Dynamic) {
 		changed();
-		var c = curve, owner = owner, editor = root.editor;
-		var after = hrt.prefab.Diff.deepCopy(c.save());
-		editor.recordUndo((isUndo) -> {
-			hrt.prefab.fx.AnimEdit.tempLoad(c, hrt.prefab.Diff.deepCopy(isUndo ? before : after));
-			editor.rebuildPrefab(owner);
-			editor.rebuildInspector();
-		}, [c]);
+		root.editor.recordPrefabUndo(curve, before, owner);
 	}
 }
 

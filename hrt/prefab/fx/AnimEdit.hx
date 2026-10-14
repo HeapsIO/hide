@@ -2,42 +2,25 @@ package hrt.prefab.fx;
 
 #if domkit
 
-/** The animation curve of a property: a child of `owner` named after the property (`EmitterParam.animKey` for an emitter) **/
-enum AnimTarget {
-	ByName(owner: Prefab, name: String);
-}
-
 /**
 	Animation curves edited from the inspector, Blender-like: a marker after an animatable field tells
 	if it is animated (and keyed at the current time), its menu animates it, inserts or removes a key.
 	An animated field shows the value at the current time of the FX, editing it sets a key there.
-	The editor finds, creates and removes the animation curves here only.
+	The animation curve of a field is a child of the animated prefab, named after the property.
 **/
 @:access(hrt.prefab.Prefab)
 class AnimEdit {
 
-	static var OBJECT_FIELDS = [
-		"x" => "position:x", "y" => "position:y", "z" => "position:z",
-		"scaleX" => "scale:x", "scaleY" => "scale:y", "scaleZ" => "scale:z",
-		"rotationX" => "rotation:x", "rotationY" => "rotation:y", "rotationZ" => "rotation:z",
-	];
-	static var LIGHT_FIELDS = ["power", "range", "angle", "fallOff", "size"];
-
-	/** The time of the FX `p` is in, null out of an FX **/
-	public static function getTime(p: Prefab) : Null<Float> {
-		if (!(p is BaseFX) && !FX.inFX(p))
+	/** The time and the evaluator of the FX `p` is in, null out of an FX **/
+	public static function getFX(p: Prefab) : Null<{ time: Float, evaluator: Evaluator }> {
+		if (p.findParent(Prefab, c -> c is BaseFX, true) == null)
 			return null;
 		var root = p.getRoot();
 		var anim3d = Std.downcast(root.to(Object3D)?.local3d, FX.FXAnimation);
 		if (anim3d != null)
-			return anim3d.localTime;
+			return { time: anim3d.localTime, evaluator: @:privateAccess anim3d.evaluator };
 		var anim2d = Std.downcast(root.to(Object2D)?.local2d, FX2D.FX2DAnimation);
-		return anim2d?.localTime;
-	}
-
-	/** Loads the data of an undo step **/
-	public static function tempLoad(p: Prefab, data: Dynamic) {
-		#if (editor || editor_hl) p.editorTempLoad(data); #else p.load(data); #end
+		return anim2d == null ? null : { time: anim2d.localTime, evaluator: @:privateAccess anim2d.evaluator };
 	}
 
 	/** Curves under emitters named after them animate the emitter object **/
@@ -67,59 +50,66 @@ class AnimEdit {
 		return Lambda.exists(settings, p -> p.animate == true && p.name == base) || Lambda.exists(params, p -> p.kind != Particle && p.name == base);
 	}
 
-	public static function findCurve(target: AnimTarget) : Null<Curve> {
-		return switch (target) {
-			case ByName(owner, name):
-				// a single curve can animate all the components of a vector
-				Curve.getCurve(owner, name, false) ?? (name.indexOf(":") > 0 ? Curve.getCurve(owner, name.split(":")[0], false) : null);
-		}
+	public static function findCurve(owner: Prefab, name: String) : Null<Curve> {
+		// a single curve can animate all the components of a vector
+		return Curve.getCurve(owner, name, false) ?? (name.indexOf(":") > 0 ? Curve.getCurve(owner, name.split(":")[0], false) : null);
 	}
 
-	/** Binds the animatable properties of the objects, lights and shaders out of emitters of the edited prefab **/
-	public static function decorate(root: hide.kit.KitRoot, prefab: Prefab) {
-		if (getTime(prefab) == null || prefab.findParent(Emitter) != null || prefab.findParent(Emitter2D) != null)
+	/** Shows the animation curve `name` of `owner` on `slider`, nothing out of an FX **/
+	public static function bind(editor: EditContext2, slider: hide.kit.Slider<Float>, owner: Prefab, name: String) {
+		if (getFX(owner) == null)
 			return;
-		var shader = Std.downcast(prefab, Shader);
-		if (shader != null) {
-			var cat = root.getById("shaderCat");
-			if (cat == null)
+		var curve = findCurve(owner, name);
+		function time() return getFX(owner)?.time ?? 0.;
+		var label = slider.label != null && slider.label.length > 0 ? ' (${slider.label})' : "";
+		function menu() : Array<hrt.ui.HuiMenu.MenuItem> {
+			if (curve == null)
+				return [{ label: "Animate" + label, click: () -> animate(editor, owner, name, slider.value, time()) }];
+			var key = keyAt(curve, time());
+			return [
+				key == null
+					? { label: "Insert key" + label, click: () -> setKey(editor, curve, owner, time(), slider.value) }
+					: { label: "Remove key" + label, click: () -> setKey(editor, curve, owner, time(), null), enabled: curve.keys.length > 1 },
+				{ label: "Remove animation" + label, click: () -> removeAnimation(editor, owner, name) },
+			];
+		}
+		var marker = new hide.kit.AnimMarker(slider, curve != null, menu);
+		marker.onMarkerClick = () -> {
+			if (curve == null)
+				animate(editor, owner, name, slider.value, time());
+			else if (keyAt(curve, time()) == null)
+				setKey(editor, curve, owner, time(), slider.value);
+			else if (curve.keys.length > 1)
+				setKey(editor, curve, owner, time(), null);
+		}
+		if (curve == null)
+			return;
+
+		marker.isKeyed = () -> keyAt(curve, time()) != null;
+		// the curve before the temporary edits of the field
+		var pending : Dynamic = null;
+		function value() {
+			var fx = getFX(owner);
+			// a reference curve has no keys of its own
+			return fx == null ? slider.value : fx.evaluator.getFloat(curve.makeVal(), fx.time);
+		}
+		slider.getFieldValue = () -> pending != null ? slider.value : value();
+		slider.onFieldChange = (temp) -> {
+			pending ??= Diff.deepCopy(curve.save());
+			var t = time();
+			var key = keyAt(curve, t);
+			if (key != null)
+				key.value = slider.value;
+			else
+				curve.addKey(t, slider.value);
+			editor.rebuildPrefab(owner);
+			if (temp)
 				return;
-			for (c in cat.getChildren()) {
-				var s = Std.downcast(c, hide.kit.Slider);
-				if (s != null)
-					bind(s, ByName(shader, s.id));
-			}
-			return;
+			var before = pending;
+			pending = null;
+			editor.recordPrefabUndo(curve, before, owner);
 		}
-		if (prefab.to(Object3D) == null)
-			return;
-		var isLight = Std.isOfType(prefab, Light);
-		function rec(e: hide.kit.Element) {
-			for (c in e.getChildren().copy()) {
-				var s = Std.downcast(c, hide.kit.Slider);
-				var name = s == null ? null : OBJECT_FIELDS.get(s.id) ?? (isLight && LIGHT_FIELDS.contains(s.id) ? s.id : null);
-				if (name != null)
-					bind(s, ByName(prefab, name));
-				else
-					rec(c);
-			}
-		}
-		rec(root);
-	}
-
-	/** Shows the animation of `target` on `slider`, nothing out of an FX **/
-	public static function bind(slider: hide.kit.Slider<Float>, target: AnimTarget) {
-		var owner = switch (target) { case ByName(o, _): o; };
-		if (getTime(owner) == null)
-			return;
-		var marker = new AnimMarker(null, slider.id + "Anim", slider, target, owner);
-		var parent = @:privateAccess slider.parent;
-		if (!(parent is hide.kit.Line)) {
-			parent = new hide.kit.Line(null, slider.id + "Line");
-			@:privateAccess slider.wrapWith(parent);
-		}
-		var index = parent.getChildren().indexOf(slider);
-		@:privateAccess parent.addChildAt(marker, index < 0 ? parent.numChildren : index + 1);
+		slider.value = value();
 	}
 
 	/**
@@ -138,7 +128,7 @@ class AnimEdit {
 			for (i => c in children)
 				if (c.parent != owner)
 					owner.addChildAt(c, i);
-			tempLoad(owner, Diff.deepCopy(isUndo ? before : after));
+			EditContext2.tempLoad(owner, Diff.deepCopy(isUndo ? before : after));
 			editor.rebuildTree(owner);
 			editor.rebuildPrefab(owner);
 			editor.rebuildInspector();
@@ -156,23 +146,18 @@ class AnimEdit {
 		return name;
 	}
 
-	public static function animate(editor: EditContext2, target: AnimTarget, value: Float, time: Float) {
-		switch (target) {
-			case ByName(owner, name):
-				editTree(editor, owner, () -> {
-					var c = new Curve(owner, owner.shared);
-					c.name = name;
-					c.addKey(time, value, Linear);
-				});
-		}
+	public static function animate(editor: EditContext2, owner: Prefab, name: String, value: Float, time: Float) {
+		editTree(editor, owner, () -> {
+			var c = new Curve(owner, owner.shared);
+			c.name = name;
+			c.addKey(time, value, Linear);
+		});
 	}
 
-	public static function removeAnimation(editor: EditContext2, target: AnimTarget) {
-		var curve = findCurve(target);
-		if (curve == null)
-			return;
-		var owner = curve.parent;
-		editTree(editor, owner, () -> curve.remove());
+	public static function removeAnimation(editor: EditContext2, owner: Prefab, name: String) {
+		var curve = findCurve(owner, name);
+		if (curve != null)
+			editTree(editor, curve.parent, () -> curve.remove());
 	}
 
 	public static function keyAt(curve: Curve, time: Float) {
@@ -189,133 +174,8 @@ class AnimEdit {
 			key.value = value;
 		else
 			curve.addKey(time, value);
-		var after = Diff.deepCopy(curve.save());
 		editor.rebuildPrefab(owner);
-		editor.recordUndo((isUndo) -> {
-			tempLoad(curve, Diff.deepCopy(isUndo ? before : after));
-			editor.rebuildPrefab(owner);
-			editor.rebuildInspector();
-		}, [curve]);
-	}
-}
-
-/** The marker of an animatable field, after it in its line **/
-@:access(hrt.prefab.Prefab)
-class AnimMarker extends hide.kit.Element {
-	var slider : hide.kit.Slider<Float>;
-	var target : AnimTarget;
-	var owner : Prefab;
-	var curve : Curve;
-	var lastTime : Null<Float> = null;
-	/** The curve before the temporary edits of the field **/
-	var pending : Dynamic;
-
-	public function new(parent, id, slider, target, owner) {
-		super(parent, id);
-		this.slider = slider;
-		this.target = target;
-		this.owner = owner;
-		curve = AnimEdit.findCurve(target);
-		slider.menuItems = menu;
-		if (curve == null)
-			return;
-		@:privateAccess slider.getFieldValue = () -> value(time());
-		@:privateAccess slider.onFieldChange = (temp) -> editKey(slider.value, temp);
-		slider.value = value(time());
-	}
-
-	inline function time() return AnimEdit.getTime(owner) ?? 0.;
-
-	// a reference curve has no keys of its own
-	function value(t: Float) return new Evaluator().getFloat(curve.makeVal(), t);
-
-	function editKey(value: Float, temp: Bool) {
-		pending ??= hrt.prefab.Diff.deepCopy(curve.save());
-		var t = time();
-		var key = AnimEdit.keyAt(curve, t);
-		if (key != null)
-			key.value = value;
-		else
-			curve.addKey(t, value);
-		var editor = root.editor;
-		editor.rebuildPrefab(owner);
-		if (temp)
-			return;
-		var c = curve, owner = owner, before = pending, after = hrt.prefab.Diff.deepCopy(curve.save());
-		pending = null;
-		editor.recordUndo((isUndo) -> {
-			AnimEdit.tempLoad(c, hrt.prefab.Diff.deepCopy(isUndo ? before : after));
-			editor.rebuildPrefab(owner);
-			editor.rebuildInspector();
-		}, [c]);
-	}
-
-	function menu() : Array<hrt.ui.HuiMenu.MenuItem> {
-		var editor = root.editor;
-		var label = slider.label != null && slider.label.length > 0 ? ' (${slider.label})' : "";
-		if (curve == null)
-			return [{ label: "Animate" + label, click: () -> AnimEdit.animate(editor, target, slider.value, time()) }];
-		var key = AnimEdit.keyAt(curve, time());
-		return [
-			key == null
-				? { label: "Insert key" + label, click: () -> AnimEdit.setKey(editor, curve, owner, time(), slider.value) }
-				: { label: "Remove key" + label, click: () -> AnimEdit.setKey(editor, curve, owner, time(), null), enabled: curve.keys.length > 1 },
-			{ label: "Remove animation" + label, click: () -> AnimEdit.removeAnimation(editor, target) },
-		];
-	}
-
-	function onMarkerClick() {
-		var editor = root.editor;
-		if (curve == null)
-			AnimEdit.animate(editor, target, slider.value, time());
-		else if (AnimEdit.keyAt(curve, time()) == null)
-			AnimEdit.setKey(editor, curve, owner, time(), slider.value);
-		else if (curve.keys.length > 1)
-			AnimEdit.setKey(editor, curve, owner, time(), null);
-	}
-
-	/** Follows the time of the FX **/
-	function sync() {
-		var t = time();
-		if (curve == null || t == lastTime || pending != null)
-			return;
-		lastTime = t;
-		slider.value = value(t);
-		native.toggleClass("key", AnimEdit.keyAt(curve, t) != null);
-	}
-
-	override function makeSelf() {
-		#if js
-		var e = js.Browser.document.createElement("kit-anim-marker");
-		e.classList.toggle("animated", curve != null);
-		e.title = curve == null ? "Animate (right click: menu)" : "Insert or remove a key at the current time (right click: menu)";
-		e.addEventListener("click", (ev: js.html.MouseEvent) -> {
-			ev.stopPropagation();
-			if (!isDisabled())
-				onMarkerClick();
-		});
-		e.addEventListener("contextmenu", (ev: js.html.MouseEvent) -> {
-			ev.preventDefault();
-			ev.stopPropagation();
-			if (!isDisabled())
-				hide.comp.ContextMenu.createFromEvent(ev, menu());
-		});
-		native = e;
-		// follows the time until the inspector is rebuilt
-		var shown = false;
-		function loop(_) {
-			if (e.isConnected) {
-				shown = true;
-				sync();
-			} else if (shown)
-				return;
-			js.Browser.window.requestAnimationFrame(loop);
-		}
-		if (curve != null)
-			js.Browser.window.requestAnimationFrame(loop);
-		#else
-		super.makeSelf();
-		#end
+		editor.recordPrefabUndo(curve, before, owner);
 	}
 }
 

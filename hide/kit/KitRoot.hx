@@ -153,12 +153,7 @@ class KitRoot #if !macro extends Element #end {
 		var after = hrt.prefab.Diff.deepCopy(prefab.save());
 		if (hrt.prefab.Diff.diff(before, after) != Skip) {
 			sideEffects.push((isUndo) -> {
-				var data = hrt.prefab.Diff.deepCopy(isUndo ? before : after);
-				#if (editor || editor_hl)
-				prefab.editorTempLoad(data);
-				#else
-				prefab.load(data);
-				#end
+				hrt.prefab.EditContext2.tempLoad(prefab, hrt.prefab.Diff.deepCopy(isUndo ? before : after));
 				doTry(() -> prefab.updateInstance());
 			});
 		}
@@ -166,12 +161,22 @@ class KitRoot #if !macro extends Element #end {
 
 	public function postEditStep() {
 		if (prefab != null && !isMultiEdit)
-			hrt.prefab.fx.AnimEdit.decorate(this, prefab);
+			bindAnimations(this);
 		#if castle
 		if (prefab != null) {
 			new CDB(this, "cdb");
 		}
 		#end
+	}
+
+	function bindAnimations(e: Element) {
+		for (c in e.children.copy()) {
+			var slider = Std.downcast(c, Slider);
+			if (slider?.anim != null)
+				editor.bindAnimation(cast slider, prefab, slider.anim);
+			else
+				bindAnimations(c);
+		}
 	}
 
 	#end

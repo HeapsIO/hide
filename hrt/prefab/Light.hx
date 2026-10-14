@@ -354,7 +354,7 @@ class Light extends Object3D {
 					<checkbox field={isMainLight} label="MainLight"/>
 					<select field={kind} id="lightKind" onValueChange={refresh}/>
 					<color field={color}/>
-					<range(0, 10) field={power}/>
+					<range(0, 10) field={power} anim="power"/>
 					<range(0, 1) field={occlusionFactor}/>
 					<block if (kind == Directional)>
 						<range(0, 1000) field={maxDist}/>
@@ -364,14 +364,14 @@ class Light extends Object3D {
 						<checkbox field={cascade} onValueChange={refresh}/>
 					</block>
 					<block if (kind == Spot)>
-						<range(1, 20) field={range}/>
-						<range(1, 90) field={angle}/>
-						<range(1, 90) field={fallOff}/>
+						<range(1, 20) field={range} anim="range"/>
+						<range(1, 90) field={angle} anim="angle"/>
+						<range(1, 90) field={fallOff} anim="fallOff"/>
 						<file type={"texture"} field={cookiePath} id="cookiePathEl"/>
 					</block>
 					<block if (kind == Point)>
-						<range(0, 5) field={size}/>
-						<range(1, 20) field={range}/>
+						<range(0, 5) field={size} anim="size"/>
+						<range(1, 20) field={range} anim="range"/>
 						<range(0.02, 5) field={zNear}/>
 					</block>
 					<block if (kind == Capsule)>

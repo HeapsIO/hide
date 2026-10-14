@@ -1736,11 +1736,19 @@ class FXEditor extends hide.view.FileView {
 		return false;
 	}
 
+	var markersTime = -1.;
+
 	function onUpdate(dt : Float) {
 		if (is2D)
 			onUpdate2D(dt);
 		else
 			onUpdate3D(dt);
+		// the animated fields of the inspector show their value at the current time
+		var root = sceneEditor.curEdit2?.root;
+		if (root != null && markersTime != currentTime) {
+			markersTime = currentTime;
+			hide.kit.AnimMarker.refreshAll(root);
+		}
 	}
 
 	function onUpdate2D(dt:Float) {

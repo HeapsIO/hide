@@ -162,6 +162,32 @@ abstract class EditContext2 {
 		recordUndoImpl(callback, prefabs);
 	}
 
+	/** Loads `data`, a copy of the `save()` of `p`, as an undo step does **/
+	public static function tempLoad(p: Prefab, data: Dynamic) {
+		#if (editor || editor_hl)
+		@:privateAccess p.editorTempLoad(data);
+		#else
+		p.load(data);
+		#end
+	}
+
+	/** Records the change of `p` since `before`, a copy of its `save()`, as an undo step that rebuilds `rebuilt` **/
+	public function recordPrefabUndo(p: Prefab, before: Dynamic, rebuilt: Prefab) {
+		var after = Diff.deepCopy(@:privateAccess p.save());
+		recordUndo((isUndo) -> {
+			tempLoad(p, Diff.deepCopy(isUndo ? before : after));
+			rebuildPrefab(rebuilt);
+			rebuildInspector();
+		}, [p]);
+	}
+
+	#if domkit
+	/** Shows on `slider` the animation curve `name` of `prefab` (`Slider.anim`) **/
+	public function bindAnimation(slider: hide.kit.Slider<Float>, prefab: Prefab, name: String) {
+		hrt.prefab.fx.AnimEdit.bind(this, slider, prefab, name);
+	}
+	#end
+
 	/**
 		Implement this to record the undo step in the editor undo stack
 	**/

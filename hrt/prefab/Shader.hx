@@ -320,7 +320,13 @@ class Shader extends Prefab {
 		while (p != null && !(p is hrt.prefab.fx.Emitter) && !(p is hrt.prefab.l3d.Trails))
 			p = p.parent;
 		if (!(p is hrt.prefab.fx.Emitter)) {
-			shaderCat.buildPropsList(props, this.props);
+			// out of the emitters, the float params can be animated over the FX time
+			var animated = findParent(hrt.prefab.fx.Emitter) == null;
+			for (prop in props) {
+				var slider = Std.downcast(shaderCat.buildProp(prop, this.props), hide.kit.Slider);
+				if (slider != null && animated)
+					slider.anim = prop.name;
+			}
 			return;
 		}
 

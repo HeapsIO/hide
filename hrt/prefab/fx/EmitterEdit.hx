@@ -3,7 +3,6 @@ package hrt.prefab.fx;
 #if domkit
 
 import hrt.prefab.fx.EmitterParam;
-import hrt.prefab.fx.AnimEdit.AnimTarget;
 
 /**
 	Inspector of the params with modes, of the emitters and of the particle shaders (see emitter-spec.md, UI).
@@ -53,7 +52,7 @@ class EmitterEdit {
 
 	public static function shapeFunction(owner: Prefab, s: ParamShape) : Float -> Float {
 		var v = ParamBuilder.shape(owner, s);
-		var ev = new Evaluator();
+		var ev = AnimEdit.getFX(owner)?.evaluator ?? new Evaluator();
 		return (t) -> ev.getFloat(v, t);
 	}
 
@@ -174,8 +173,8 @@ class EmitterEdit {
 				s.min = range.min;
 				s.max = range.max;
 				s.defaultValue = def.def[i];
-				@:privateAccess s.showRange = range.min != null && range.max != null;
-				@:privateAccess s.onFieldChange = (_) -> {
+				s.showRange = range.min != null && range.max != null;
+				s.onFieldChange = (_) -> {
 					p[k] = s.value;
 					apply();
 				}
@@ -183,8 +182,7 @@ class EmitterEdit {
 					onChange(temp);
 					if (changed != null) changed();
 				}
-				if (anim != null)
-					AnimEdit.bind(s, ByName(owner, anim));
+				s.anim = anim;
 			}
 
 			// a curve editor, the `to` fields on top and the `from` ones below
@@ -265,8 +263,8 @@ class EmitterEdit {
 						s.value = vec[i];
 						s.min = min;
 						s.max = max;
-						@:privateAccess s.showRange = min != null && max != null;
-						@:privateAccess s.onFieldChange = (_) -> vec[i] = s.value;
+						s.showRange = min != null && max != null;
+						s.onFieldChange = (_) -> vec[i] = s.value;
 						s.onValueChange = (temp) -> onChange(p.name, temp);
 					}
 				default:
@@ -276,7 +274,7 @@ class EmitterEdit {
 					widget.onValueChange = (temp) -> onChange(p.name, temp);
 					var slider = Std.downcast(widget, hide.kit.Slider);
 					if (p.animate && slider != null)
-						AnimEdit.bind(cast slider, ByName(emitter, p.name));
+						slider.anim = p.name;
 			}
 		}
 

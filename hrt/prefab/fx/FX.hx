@@ -946,10 +946,7 @@ class FX extends Object3D implements BaseFX {
 	}
 
 	public static function inFX( p : Prefab ) {
-		var c = p.parent;
-		while( c != null && !Std.isOfType(c, BaseFX) )
-			c = c.parent;
-		return c != null;
+		return p.findParent(Prefab, c -> c is BaseFX) != null;
 	}
 
 	override function load( data : Dynamic ) {
