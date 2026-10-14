@@ -47,7 +47,7 @@ class EmitterMacros {
 		var fields = Context.getBuildFields();
 		var pos = Context.currentPos();
 		var settings = [], modeParams = [];
-		var load = [], save = [], copy = [], getCases = [], setCases = [];
+		var load = [], unset = [], save = [], copy = [], getCases = [], setCases = [];
 		var particleValues = [], settingValues = [], spawnValues = [];
 		var group = "Params";
 
@@ -64,6 +64,8 @@ class EmitterMacros {
 					var animate = meta(f, ":animate") != null;
 					settings.push(macro @:pos(p) { name: $v{n}, t: ${propType(f, t, init)}, def: (${init ?? macro null} : Dynamic), groupName: $v{group},
 						animate: $v{animate}, disp: ${disp == null ? macro null : disp[0]} });
+					if( init != null && init.expr.match(EArrayDecl(_)) )
+						save.push(macro @:pos(p) if( haxe.Json.stringify(this.$n) == haxe.Json.stringify($init) ) Reflect.deleteField(data, $v{n}));
 					if( animate )
 						settingValues.push(macro @:pos(p) obj.$n = b.animated($v{n}, hrt.prefab.fx.Evaluator.vVal(this.$n)));
 				default:
@@ -92,6 +94,7 @@ class EmitterMacros {
 			modeParams.push(macro @:pos(p) { name: $v{key}, t: ${a[0]}, def: ($a{defs} : Array<Float>), kind: hrt.prefab.fx.EmitterParam.ParamKind.$kind,
 				groupName: $v{group}, disp: ${disp == null ? macro null : disp[0]} });
 			load.push(macro @:pos(p) this.$n = hrt.prefab.fx.EmitterParam.parse(params.$key, $v{dim}));
+			unset.push(macro @:pos(p) this.$n = null);
 			save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.save(this.$n); if( v != null ) { params.$key = v; any = true; } });
 			copy.push(macro @:pos(p) this.$n = from.$n?.copy());
 			getCases.push({ values: [macro $v{key}], expr: macro this.$n });
@@ -112,11 +115,12 @@ class EmitterMacros {
 		var add : Array<Field> = (macro class {
 			public static var emitterParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = $a{settings};
 			public static var MODE_PARAMS : Array<hrt.prefab.fx.EmitterParam.ModeParamDef> = $a{modeParams};
-			public var animCurves : hrt.prefab.fx.EmitterParam.AnimCurves = [];
+			public var animCurves : Null<hrt.prefab.fx.EmitterParam.AnimCurves>;
 			function loadParams( data : Dynamic ) {
-				var params : Dynamic = data.params ?? {};
-				$b{load};
-				animCurves = hrt.prefab.fx.EmitterParam.parseAnimCurves(data.animCurves);
+				var params : Dynamic = data.params;
+				if( params == null ) $b{unset} else $b{load};
+				var anim : Dynamic = data.animCurves;
+				animCurves = anim == null ? null : hrt.prefab.fx.EmitterParam.parseAnimCurves(anim);
 			}
 			function saveParams( data : Dynamic ) {
 				var params : Dynamic = {}, any = false;
@@ -127,7 +131,7 @@ class EmitterMacros {
 			}
 			function copyParams( from : $selfType ) {
 				$b{copy};
-				animCurves = from.animCurves.copy();
+				animCurves = from.animCurves?.copy();
 			}
 			public function getParam( name : String ) : Null<hrt.prefab.fx.EmitterParam.ParamValue> {
 				return ${{ expr: ESwitch(macro name, getCases, macro null), pos: pos }};

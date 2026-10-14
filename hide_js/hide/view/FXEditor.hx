@@ -1417,9 +1417,9 @@ class FXEditor extends hide.view.FileView {
 
 	static function getAnimCurves(element: PrefabElement) : Null<hrt.prefab.fx.EmitterParam.AnimCurves> {
 		var e = Std.downcast(element, hrt.prefab.fx.Emitter);
-		if(e != null) return e.animCurves;
+		if(e != null) return e.animCurves ??= [];
 		var e2 = Std.downcast(element, hrt.prefab.fx.Emitter2D);
-		if(e2 != null) return e2.animCurves;
+		if(e2 != null) return e2.animCurves ??= [];
 		return null;
 	}
 
@@ -1942,7 +1942,7 @@ class FXEditor extends hide.view.FileView {
 	/** A particle curve: under an emitter and not one of its animation curves **/
 	static function isInstanceCurve(curve: Curve) {
 		var e = curve.findParent(hrt.prefab.fx.Emitter);
-		return e != null && !Lambda.has(e.animCurves, hrt.prefab.fx.EmitterParam.curvePath(e, curve));
+		return e != null && (e.animCurves == null || !Lambda.has(e.animCurves, hrt.prefab.fx.EmitterParam.curvePath(e, curve)));
 	}
 
 	static var _ = Extension.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX", name: "FX" });

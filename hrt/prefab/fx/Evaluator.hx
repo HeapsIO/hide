@@ -31,19 +31,24 @@ class Evaluator {
 		}
 	}
 
-	public function getFloat(pidx: Int=0, val: Value, time: Float) : Float {
+	public inline function getFloat(pidx: Int=0, val: Value, time: Float) : Float {
+		return getFast(pidx, val, time);
+	}
+
+	// no optional argument: HL boxes it
+	public function getFast(pidx: Int, val: Value, time: Float) : Float {
 		return switch(val) {
 			case null, VZero: 0.0;
 			case VConst(v): v;
 			case VCurve(c): c.getVal(time);
 			case VRandom(rid, scale, add): getRandom(pidx, rid) * scale + add;
 			case VLerp(a, b, t):
-				var va = getFloat(pidx, a, time);
-				va + (getFloat(pidx, b, time) - va) * getFloat(pidx, t, time);
+				var va = getFast(pidx, a, time);
+				va + (getFast(pidx, b, time) - va) * getFast(pidx, t, time);
 			case VEasing(e): e.eval(time);
 			case VBlendCurves(a, b, blendVar): hxd.Math.lerp(a.getVal(time), b.getVal(time), parameters[blendVar] ?? 0.0);
-			case VParamRemap(a, param): getFloat(pidx, a, parameters[param] ?? 0.0);
-			case VValueRemap(a, remap): getFloat(pidx, a, getFloat(pidx, remap, time));
+			case VParamRemap(a, param): getFast(pidx, a, parameters[param] ?? 0.0);
+			case VValueRemap(a, remap): getFast(pidx, a, getFast(pidx, remap, time));
 			case VVector(_), VHsl(_): throw "getFloat: vector value";
 		}
 	}
@@ -63,7 +68,7 @@ class Evaluator {
 		}
 	}
 
-	public inline function getVector(pidx: Int=0, v: Value, time: Float, vec: h3d.Vector4) {
+	public function getVector(pidx: Int=0, v: Value, time: Float, vec: h3d.Vector4) {
 		switch(v) {
 			case VVector(x, y, z, null):
 				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time), getFloat(pidx, z, time), 1.0);
@@ -76,6 +81,22 @@ class Evaluator {
 				vec.set(0,0,0,1);
 			default:
 				var f = getFloat(pidx, v, time);
+				vec.set(f, f, f, 1.0);
+		}
+		return vec;
+	}
+
+	// inlined, `vec` stays on the stack
+	public inline function getFastVec(pidx: Int, v: Value, time: Float, vec: h3d.Vector4) {
+		switch(v) {
+			case VVector(x, y, z, null):
+				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), 1.0);
+			case VVector(x, y, z, w):
+				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), getFast(pidx, w, time));
+			case VZero:
+				vec.set(0,0,0,1);
+			default:
+				var f = getFast(pidx, v, time);
 				vec.set(f, f, f, 1.0);
 		}
 		return vec;

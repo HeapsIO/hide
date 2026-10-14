@@ -186,6 +186,12 @@ class Macros {
 						path.push(t.get().name);
 					if (defaultValue == null)
 						defaultValue = macro @:pos(source.pos) null;
+					if (!defaultValue.expr.match(EConst(CIdent("null"))))
+						return macro @:pos(source.pos) {
+							if ($e{source} == null) $e{defaultValue}
+							else if (Std.isOfType($e{source}, String)) hrt.prefab.Macros.enumOrNullByName($p{path}, $e{source}, null, $e{defaultValue})
+							else $e{source};
+						}
 					return macro @:pos(source.pos) {
 						if (Std.isOfType($e{source}, String) || $e{source} == null) {
 							hrt.prefab.Macros.enumOrNullByName($p{path}, $e{source}, null, $e{defaultValue});
@@ -200,11 +206,12 @@ class Macros {
 			}
 		}
 
-		var e : Expr = deepCopyRec(type, sourceExpr, Context.typeof(sourceExpr), defaultValue, custommFilter);
+		// the source is read once, a field of a dynamic object is a lookup
+		var e : Expr = deepCopyRec(type, macro _src, Context.typeof(sourceExpr), defaultValue, custommFilter);
 
 		var pos = Context.currentPos();
 
-		return macro @:pos(pos) $e{target} = ${e};
+		return macro @:pos(pos) { var _src : Dynamic = $sourceExpr; $e{target} = ${e}; };
 	};
 
 	static macro public function deepCopyFromOther(target: Expr, sourceExpr: Expr, defaultValue: Expr) : Expr {

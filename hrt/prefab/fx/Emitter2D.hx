@@ -546,6 +546,8 @@ class Emitter2D extends Object2D {
 	override function save() {
 		var data = super.save();
 		saveParams(data);
+		if( !useRandomColor || !useRandomGradient )
+			Reflect.deleteField(data, "randomGradient");
 		if( !FX.inFX(this) )
 			data.version = FX.VERSION;
 		return data;
@@ -556,7 +558,7 @@ class Emitter2D extends Object2D {
 			FX.checkVersion(this, obj);
 		super.load(obj);
 		loadParams(obj);
-		if( randomGradient == null )
+		if( randomGradient == null && useRandomGradient )
 			randomGradient = Gradient.getDefaultGradientData();
 	}
 

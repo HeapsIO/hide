@@ -65,8 +65,13 @@ class EmitterParam {
 		if( v == null )
 			return null;
 		var a : Array<Dynamic> = Std.isOfType(v, Array) ? v : [v];
-		var out = [for( i in 0...dim ) parseMode(a[i])];
-		return Lambda.exists(out, m -> m != null) ? out : null;
+		var out = [], any = false;
+		for( i in 0...dim ) {
+			var m = parseMode(a[i]);
+			out.push(m);
+			if( m != null ) any = true;
+		}
+		return any ? out : null;
 	}
 
 	public static function save( v : Null<ParamValue> ) : Dynamic {
@@ -121,12 +126,13 @@ class EmitterParam {
 	}
 
 	/** `[{ param: key, curve: path }, ...]` **/
-	public static function parseAnimCurves( v : Dynamic ) : AnimCurves {
-		var a : Array<Dynamic> = v ?? [];
-		return [for( b in a ) (b.param : String) => (b.curve : String)];
+	public static function parseAnimCurves( v : Array<Dynamic> ) : AnimCurves {
+		return [for( b in v ) (b.param : String) => (b.curve : String)];
 	}
 
-	public static function saveAnimCurves( m : AnimCurves ) : Dynamic {
+	public static function saveAnimCurves( m : Null<AnimCurves> ) : Dynamic {
+		if( m == null )
+			return null;
 		var keys = [for( k in m.keys() ) k];
 		keys.sort(Reflect.compare);
 		return keys.length == 0 ? null : [for( k in keys ) { param: k, curve: m.get(k) }];
@@ -227,7 +233,7 @@ class ParamBuilder {
 
 	/** The value of animation curve `key`, `base` when there is none **/
 	public function animated( key : String, base : Value ) : Value {
-		var path = anim.get(key);
+		var path = anim?.get(key);
 		var c = path == null ? null : EmitterParam.resolveCurve(owner, path);
 		if( c == null )
 			return base;

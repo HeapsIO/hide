@@ -295,15 +295,15 @@ class ParticleInstance {
 
 		//SCALE
 		var def = emitter.instDef;
-		evaluator.getVector(idx, def.stretch, t, v);
-		v.scale3(evaluator.getFloat(idx, def.scale, t));
-		v.scale3(evaluator.getFloat(idx, def.scaleMultiplier, emitter.curTime));
+		evaluator.getFastVec(idx, def.stretch, t, v);
+		v.scale3(evaluator.getFast(idx, def.scale, t));
+		v.scale3(evaluator.getFast(idx, def.scaleMultiplier, emitter.curTime));
 		localMat.initScale(v.x, v.y, v.z);
 
 
 		// PIVOT
 		if(def.pivot != VZero) {
-			evaluator.getVector(idx, def.pivot, t, v);
+			evaluator.getFastVec(idx, def.pivot, t, v);
 			localMat.tx = v.x * localMat._11;
 			localMat.ty = v.y * localMat._22;
 			localMat.tz = v.z * localMat._33;
@@ -311,14 +311,14 @@ class ParticleInstance {
 
 		// ROTATION
 		if(def.rotation != VZero) {
-			evaluator.getVector(idx, def.rotation, t, v);
+			evaluator.getFastVec(idx, def.rotation, t, v);
 			v.scale3(Math.PI / 180.0);
 			localMat.rotate(v.x, v.y, v.z);
 		}
 
 		//OFFSET
 		if(def.offset != VZero) {
-			evaluator.getVector(idx, def.offset, t, v);
+			evaluator.getFastVec(idx, def.offset, t, v);
 			localMat.tx += v.x;
 			localMat.ty += v.y;
 			localMat.tz += v.z;
@@ -345,18 +345,18 @@ class ParticleInstance {
 
 		if( life == 0 ) {
 			// START LOCAL SPEED
-			evaluator.getVector(idx, emitter.startSpeed, emitter.curTime, v);
+			evaluator.getFastVec(idx, emitter.startSpeed, emitter.curTime, v);
 			v.transform3x3(emitOrientation);
 			add(speedAccumulation, v);
 			// START WORLD SPEED
-			evaluator.getVector(idx, emitter.startWorldSpeed, emitter.curTime, v);
+			evaluator.getFastVec(idx, emitter.startWorldSpeed, emitter.curTime, v);
 			v.transform3x3(emitter.invTransform);
 			add(speedAccumulation, v);
 		}
 
 		// ACCELERATION
 		if(def.acceleration != VZero) {
-			evaluator.getVector(idx, def.acceleration, t, v);
+			evaluator.getFastVec(idx, def.acceleration, t, v);
 			v.scale3(dt);
 			v.transform3x3(emitOrientation);
 			add(speedAccumulation, v);
@@ -364,7 +364,7 @@ class ParticleInstance {
 
 		// WORLD ACCELERATION
 		if(def.worldAcceleration != VZero) {
-			evaluator.getVector(idx, def.worldAcceleration, t, v);
+			evaluator.getFastVec(idx, def.worldAcceleration, t, v);
 			v.scale3(dt);
 			if(emitter.simulationSpace == Local)
 				v.transform3x3(emitter.invTransform);
@@ -377,14 +377,14 @@ class ParticleInstance {
 
 		// SPEED
 		if(def.speed != VZero) {
-			evaluator.getVector(idx, def.speed, t, v);
+			evaluator.getFastVec(idx, def.speed, t, v);
 			v.transform3x3(emitOrientation);
 			add(speed, v);
 		}
 
 		// DAMPEN
 		if (def.dampen != VZero) {
-			var dampen = evaluator.getFloat(idx, def.dampen, t);
+			var dampen = evaluator.getFast(idx, def.dampen, t);
 			var scale = Math.exp(dampen* -dt);
 			speedAccumulation.scale(scale);
 		}
@@ -392,7 +392,7 @@ class ParticleInstance {
 
 		// WORLD SPEED
 		if(def.worldSpeed != VZero) {
-			evaluator.getVector(idx, def.worldSpeed, t, v);
+			evaluator.getFastVec(idx, def.worldSpeed, t, v);
 			if(emitter.simulationSpace == Local)
 				v.transform3x3(emitter.invTransform);
 			add(speed, v);
@@ -400,7 +400,7 @@ class ParticleInstance {
 
 		// MAX VELOCITY
 		if (def.maxVelocity != VZero) {
-			var maxVel = evaluator.getFloat(idx, def.maxVelocity, t);
+			var maxVel = evaluator.getFast(idx, def.maxVelocity, t);
 			var curVelSq = speed.lengthSq();
 			if (maxVel * maxVel < curVelSq) {
 				speed.normalize();
@@ -416,7 +416,7 @@ class ParticleInstance {
 
 		// STRETCH VELOCITY
 		if (def.stretchVelocity != VZero) {
-			var s = evaluator.getFloat(idx, def.stretchVelocity, t);
+			var s = evaluator.getFast(idx, def.stretchVelocity, t);
 			var absPos = this.absPos;
 			var sx = hxd.Math.abs(speed.x * absPos._11 + speed.y * absPos._12 + speed.z * absPos._13);
 			sx = hxd.Math.min(sx, 0.25);
@@ -437,10 +437,10 @@ class ParticleInstance {
 		z += speed.z * dt;
 
 		if(def.orbitSpeed != VZero) {
-			evaluator.getVector(idx, def.orbitSpeed, t, v);
+			evaluator.getFastVec(idx, def.orbitSpeed, t, v);
 
 			// degrees per second
-			var factorOverTime = evaluator.getFloat(idx, def.orbitSpeedMultiplier, emitter.curTime);
+			var factorOverTime = evaluator.getFast(idx, def.orbitSpeedMultiplier, emitter.curTime);
 			v.scale3(factorOverTime * (Math.PI / 180.0));
 
 			tmpMat.initRotation(v.x * dt, v.y * dt, v.z * dt);
@@ -1835,6 +1835,8 @@ class Emitter extends Object3D {
 	override function save() {
 		var data = super.save();
 		saveParams(data);
+		if( !useRandomColor || !useRandomGradient )
+			Reflect.deleteField(data, "randomGradient");
 		if( !FX.inFX(this) )
 			data.version = FX.VERSION;
 		return data;
@@ -1850,7 +1852,7 @@ class Emitter extends Object3D {
 			delay = -warmUpTime;
 			warmUpTime = 0;
 		}
-		if( randomGradient == null )
+		if( randomGradient == null && useRandomGradient )
 			randomGradient = Gradient.getDefaultGradientData();
 	}
 
