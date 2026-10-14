@@ -121,15 +121,21 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			return lightColor;
 		}
 
-		function pointLightIntensity( delta : Vec3, size : Float, invRange4 : Float ) : Float {
-			var dist = delta.dot(delta);
-			var falloff = saturate(1 - dist*dist * invRange4);
-			if( size > 0 ) {
-				dist = (dist.sqrt() - size).max(0.);
-				dist *= dist;
+		function pointLightIntensity( delta : Vec3, size : Float, invRange4 : Float, minDist2 : Float, inverseSquareFalloff : Bool ) : Float {
+			var intensity = 0.;
+			if( inverseSquareFalloff )
+				intensity = inverseSquareIntensity(delta, minDist2, invRange4);
+			else {
+				var dist = delta.dot(delta);
+				var falloff = saturate(1 - dist*dist * invRange4);
+				if( size > 0 ) {
+					dist = (dist.sqrt() - size).max(0.);
+					dist *= dist;
+				}
+				falloff *= falloff;
+				intensity = falloff * falloff * exp(-extinction * dist);
 			}
-			falloff *= falloff;
-			return falloff * falloff * exp(-extinction * dist);
+			return intensity;
 		}
 
 		function evaluateCapsuleLight( index : Int ) : Vec3 {
@@ -140,8 +146,9 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var lightPos = lightInfos[i+1].rgb;
 			var invRange4 = lightInfos[i+1].a;
 			var left = lightInfos[i+2].rgb;
+			var inverseSquareFalloff = lightInfos[i+2].a > 0.0;
 
-			var light = capsuleLightDiffuse(lightPos, left, halfLength, radius, invRange4, transformedPosition);
+			var light = capsuleLightDiffuse(lightPos, left, halfLength, radius, invRange4, transformedPosition, inverseSquareFalloff);
 			return directLighting(light.w * lightColor, light.xyz, light.xyz);
 		}
 
@@ -156,8 +163,9 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var right = lightInfos[i+3].rgb;
 			var up = lightInfos[i+4].rgb;
 			var angles = vec4(lightInfos[i+3].a, lightInfos[i+4].a, lightInfos[i+5].r, lightInfos[i+5].g);
+			var inverseSquareFalloff = lightInfos[i+5].b > 0.0;
 
-			var light = rectangleLightDiffuse(lightPos, lightDir, right, up, halfSize, angles, range, invRange4, transformedPosition);
+			var light = rectangleLightDiffuse(lightPos, lightDir, right, up, halfSize, angles, range, invRange4, transformedPosition, inverseSquareFalloff);
 			return directLighting(light.w * lightColor, light.xyz, light.xyz);
 		}
 

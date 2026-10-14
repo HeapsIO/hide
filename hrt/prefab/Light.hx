@@ -8,6 +8,13 @@ enum abstract LightKind(String) {
 	var Rectangle;
 }
 
+enum abstract LightUnit(String) to String {
+	var Unitless;
+	var Lumen;
+	var Candela;
+	var Lux;
+}
+
 typedef LightShadows = {
 	var mode : h3d.pass.Shadows.RenderMode;
 	var size : Int;
@@ -46,6 +53,8 @@ class Light extends Object3D {
 	@:s public var kind : LightKind = Point;
 	@:s public var color : Int = 0xffffff;
 	@:s public var power : Float = 1.0;
+	@:s public var unit : LightUnit = Unitless;
+	@:s public var inverseSquareFalloff : Bool = false;
 	@:s public var occlusionFactor = 1.0;
 	@:s public var isMainLight : Bool = false;
 	@:c public var shadows : LightShadows = getShadowsDefault();
@@ -114,6 +123,37 @@ class Light extends Object3D {
 		super(parent, shared);
 		range = 10;
 		zNear = 0.02;
+	}
+
+	function getUnit() : LightUnit {
+		return switch( unit ) {
+		case _ if( kind != Directional && !inverseSquareFalloff ): Unitless;
+		case Lux if( kind != Directional ): Candela;
+		case Lumen, Candela if( kind == Directional ): Lux;
+		default: unit;
+		}
+	}
+
+	function getUnits() : Array<LightUnit> {
+		return kind == Directional ? [Unitless, Lux] : [Unitless, Lumen, Candela];
+	}
+
+	static function getUnitSymbol( unit : LightUnit ) : String {
+		return switch( unit ) {
+		case Unitless: null;
+		case Lumen: "lm";
+		case Candela: "cd";
+		case Lux: "lx";
+		}
+	}
+
+	static function getUnitMax( unit : LightUnit ) : Float {
+		return switch( unit ) {
+		case Unitless: 10;
+		case Lumen: 10000;
+		case Candela: 1000;
+		case Lux: 120000;
+		}
 	}
 
 	function syncCascadeParams() {
@@ -218,6 +258,8 @@ class Light extends Object3D {
 			light.occlusionFactor = occlusionFactor;
 			light.color.setColor(color);
 			light.power = power;
+			light.unit = h3d.scene.pbr.Light.LightUnit.createByName(getUnit());
+			light.inverseSquareFalloff = inverseSquareFalloff;
 			light.shadows.mode = shadows.mode;
 			light.shadows.size = shadows.size;
 			light.shadows.blur.radius = shadows.radius;
@@ -334,6 +376,11 @@ class Light extends Object3D {
 			ctx.rebuildInspector();
 		}
 
+		function onKindChange(b:Bool) {
+			unit = getUnit();
+			refresh(b);
+		}
+
 		function addCascade(_:Bool) {
 			if (params.length > cascadeNbr) {
 				params.resize(cascadeNbr);
@@ -347,14 +394,18 @@ class Light extends Object3D {
 		}
 
 		var tmp : Dynamic = shadows.samplingMode;
+		var validUnit = getUnit();
+		var unitEntries = [for( u in getUnits() ) { value : u, label : u == Unitless ? '$u' : '$u (${getUnitSymbol(u)})' }];
 		ctx.build(
 			<root>
 				<category("Light")>
 					<checkbox field={debugDisplay}/>
 					<checkbox field={isMainLight} label="MainLight"/>
-					<select field={kind} id="lightKind" onValueChange={refresh}/>
+					<select field={kind} id="lightKind" onValueChange={onKindChange}/>
 					<color field={color}/>
-					<range(0, 10) field={power}/>
+					<checkbox field={inverseSquareFalloff} onValueChange={refresh} if (kind != Directional)/>
+					<select(unitEntries) field={unit} label="Light Unit" onValueChange={refresh} if (kind == Directional || inverseSquareFalloff)/>
+					<range(0, getUnitMax(validUnit)) field={power} unit={getUnitSymbol(validUnit)} poly={validUnit != Unitless}/>
 					<range(0, 1) field={occlusionFactor}/>
 					<block if (kind == Directional)>
 						<range(0, 1000) field={maxDist}/>
@@ -714,6 +765,12 @@ class Light extends Object3D {
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
+		var validUnit = getUnit();
+		var unitOptions = [for( u in getUnits() ) '<option value="$u">$u</option>'].join("");
+		var symbol = getUnitSymbol(validUnit);
+		var powerLabel = symbol == null ? "Power" : 'Power ($symbol)';
+		var falloffRow = kind == Directional ? "" : '<dt>Inverse Square Falloff</dt><dd><input type="checkbox" field="inverseSquareFalloff"/></dd>';
+		var unitRow = kind == Directional || inverseSquareFalloff ? '<dt>Light Unit</dt><dd><select field="unit">$unitOptions</select></dd>' : "";
 		var group = new hide.Element('
 			<div class="group" name="Light">
 				<dl>
@@ -728,7 +785,9 @@ class Light extends Object3D {
 							<option value="Rectangle">Rectangle</option>
 						</select></dd>
 					<dt>Color</dt><dd><input type="color" field="color"/></dd>
-					<dt>Power</dt><dd><input type="range" min="0" max="10" field="power"/></dd>
+					$falloffRow
+					$unitRow
+					<dt>$powerLabel</dt><dd><input type="range" min="0" max="${getUnitMax(validUnit)}" field="power"/></dd>
 					<dt>Occlusion Factor</dt><dd><input type="range" min="0" max="1" field="occlusionFactor"/></dd>
 				</dl>
 			</div>
@@ -784,7 +843,8 @@ class Light extends Object3D {
 		}
 
 		ctx.properties.add(group, this, function(pname) {
-			if( pname == "kind" || pname == "cascade" || pname == "autoShrink" ){
+			if( pname == "kind" ) unit = getUnit();
+			if( pname == "kind" || pname == "unit" || pname == "inverseSquareFalloff" || pname == "cascade" || pname == "autoShrink" ){
 				ctx.rebuildPrefab(this);
 				ctx.rebuildProperties();
 			}
