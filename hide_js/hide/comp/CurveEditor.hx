@@ -1270,25 +1270,7 @@ class CurveEditor extends hide.comp.Component {
 		var minX = xt(0) - 1;
 
 		var maxTime = this.duration == 0 ? 5000 : this.duration;
-		var curvesMaxTime = 0.0;
-
-		// Restrict the "time" to the max of the curves if all curves have a max time
-		// (usefull when editting Per instance values)
-		for (curve in curves) {
-			if (curve.maxTime > 0) {
-				curvesMaxTime = hxd.Math.max(curvesMaxTime, curve.maxTime);
-			} else {
-				curvesMaxTime = 0.0;
-				break;
-			}
-		}
-
-		if (curvesMaxTime > 0) {
-			maxTime = curvesMaxTime;
-		}
-
 		var maxX = xt(maxTime);
-		svg.line(overlayGroup, xt(1), svg.element.height(), xt(1), 0, { stroke:'#000000', 'stroke-width':'1px', 'stroke-dasharray':'10, 5' });
 		svg.line(overlayGroup, minX, svg.element.height(), minX, 0, { stroke:'#000000', 'stroke-width':'1px' });
 		svg.line(overlayGroup, maxX, svg.element.height(), maxX, 0, { stroke:'#000000', 'stroke-width':'1px' });
 		svg.rect(overlayGroup, 0, 0, Math.max(0,xt(0)), svg.element.height(), { 'fill':'#000000', opacity:0.3});

@@ -868,8 +868,6 @@ class FXEditor extends hide.view.FileView {
 			this.curveEditor.xOffset = xOffset;
 			this.curveEditor.xScale = xScale;
 
-			if(isInstanceCurve(curve))
-				curve.maxTime = 1.0;
 			this.curveEditor.curves.push(curve);
 			this.curveEditor.onChange = function(anim) {
 				//refreshDopesheet();
@@ -1277,14 +1275,15 @@ class FXEditor extends hide.view.FileView {
 			var section: Section = { root:root, curves: [], children: [], events: []};
 			var eventAdded = false;
 
-			if (root is Curve)
+			if (root is Curve && !isInstanceCurve(cast root))
 				curvesToDraw.push(cast root);
 
 			if (root is IEvent && depth == 0)
 				eventsToDraw.push(cast root);
 
 			for(child in root.children) {
-				if (child.flatten(Curve).length > 0) {
+				// particle curves are edited in the inspector of their emitter
+				if (Lambda.exists(child.flatten(Curve), c -> !isInstanceCurve(c))) {
 					if (child is Curve) {
 						var c = Std.downcast(child, Curve);
 						curvesToDraw.push(c);
@@ -1939,10 +1938,8 @@ class FXEditor extends hide.view.FileView {
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
 	}
 
-	/** A particle curve: under an emitter and not one of its animation curves **/
-	static function isInstanceCurve(curve: Curve) {
-		var e = curve.findParent(hrt.prefab.fx.Emitter);
-		return e != null && (e.animCurves == null || !Lambda.has(e.animCurves, hrt.prefab.fx.EmitterParam.curvePath(e, curve)));
+	static inline function isInstanceCurve(curve: Curve) {
+		return hrt.prefab.fx.AnimEdit.isParticleCurve(curve);
 	}
 
 	static var _ = Extension.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX", name: "FX" });
