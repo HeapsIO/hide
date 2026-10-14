@@ -185,6 +185,15 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 
 	override function start( r:h3d.scene.Renderer) {
 		r.ctx.computeVelocity = velocity;
+		frustumJitter.curPattern = jitterPattern;
+		frustumJitter.update();
+		setJitterOffsets(r.ctx);
+	}
+
+	function setJitterOffsets( ctx : h3d.scene.RenderContext ) {
+		@:privateAccess ctx.cameraJitterOffsets.set(
+			-frustumJitter.curSample.x / ctx.renderResolutionWidth, frustumJitter.curSample.y / ctx.renderResolutionHeight,
+			-frustumJitter.prevSample.x / ctx.renderResolutionWidth, frustumJitter.prevSample.y / ctx.renderResolutionHeight);
 	}
 
 	override function begin( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
@@ -192,21 +201,15 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			var ctx = r.ctx;
 			var s = pass.shader;
 
-			frustumJitter.curPattern = jitterPattern;
-			frustumJitter.update();
-
-			var prevJitterOffsetX = -frustumJitter.prevSample.x / ctx.renderResolutionWidth;
-			var prevJitterOffsetY = frustumJitter.prevSample.y / ctx.renderResolutionHeight;
-			var jitterOffsetX = -frustumJitter.curSample.x / ctx.renderResolutionWidth;
-			var jitterOffsetY = frustumJitter.curSample.y / ctx.renderResolutionHeight;
+			setJitterOffsets(ctx);
+			var jitter = @:privateAccess ctx.cameraJitterOffsets;
 
 			curMatNoJitter.load(ctx.camera.m);
-			ctx.camera.jitterOffsetX = jitterOffsetX;
-			ctx.camera.jitterOffsetY = jitterOffsetY;
+			ctx.camera.jitterOffsetX = jitter.x;
+			ctx.camera.jitterOffsetY = jitter.y;
 			ctx.camera.update();
 			// Update inverse proj
 			ctx.camera.getInverseProj();
-			@:privateAccess ctx.cameraJitterOffsets.set( jitterOffsetX, jitterOffsetY, prevJitterOffsetX, prevJitterOffsetY );
 			s.cameraInverseViewProj.initInverse(curMatNoJitter);
 			@:privateAccess r.ctx.cameraPreviousViewProj.load(prevMatJittered);
 		}
