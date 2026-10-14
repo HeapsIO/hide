@@ -1448,10 +1448,10 @@ class FXEditor extends hide.view.FileView {
 		var defs = e != null ? hrt.prefab.fx.Emitter.MODE_PARAMS_BY_NAME : hrt.prefab.fx.Emitter2D.MODE_PARAMS_BY_NAME;
 		var def = defs.get(parts[0]);
 		if(def == null) {
-			var settings = e != null ? [for(p in hrt.prefab.fx.Emitter.emitterParams) if(p.animate == true) p.name] : hrt.prefab.fx.Emitter2D.ANIMATED_SETTINGS;
+			var settings = [for(p in (e != null ? hrt.prefab.fx.Emitter.emitterParams : hrt.prefab.fx.Emitter2D.emitterParams)) if(p.animate == true) p.name];
 			return settings.indexOf(id) >= 0 ? [id] : null;
 		}
-		if(def.animated != true)
+		if(!hrt.prefab.fx.EmitterParam.isAnimated(def))
 			return null;
 		var i = parts.length > 1 ? hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1]) : 0;
 		if(i < 0)
@@ -1472,7 +1472,7 @@ class FXEditor extends hide.view.FileView {
 		var defs = e != null ? hrt.prefab.fx.Emitter.MODE_PARAMS_BY_NAME : hrt.prefab.fx.Emitter2D.MODE_PARAMS_BY_NAME;
 		var pdef = defs.get(parts[0]);
 		if(pdef == null)
-			return num(e != null ? Reflect.field(e, key) : hrt.prefab.fx.EmitterHelper.getParamVal(@:privateAccess hrt.prefab.fx.Emitter2D.PARAMS, e2.props, key)) ?? def ?? 0.0;
+			return num(Reflect.field(element, key)) ?? def ?? 0.0;
 		var i = parts.length > 1 ? hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1]) : -1;
 		if(i < 0) i = 0;
 		var field = parts[parts.length - 1];

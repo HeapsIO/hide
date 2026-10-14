@@ -33,27 +33,24 @@ class Shader extends Prefab {
 	override function load(obj: Dynamic) {
 		super.load(obj);
 		particleParams = null;
-		var data : Dynamic = obj.particleParams;
+		// [{ name: param, value: modes }, ...]
+		var data : Array<Dynamic> = obj.particleParams;
 		if( data != null )
-			for( name in Reflect.fields(data) ) {
-				var v : Dynamic = Reflect.field(data, name);
+			for( p in data ) {
+				var name : String = p.name;
+				var v : Dynamic = p.value;
 				var value = hrt.prefab.fx.EmitterParam.parse(v, Std.isOfType(v, Array) ? (v : Array<Dynamic>).length : 1);
-				if( value != null )
+				if( name != null && value != null )
 					setParticleParam(name, value);
 			}
-		var emitter = getParticleEmitter();
-		if( emitter != null && @:privateAccess emitter.loadedLegacy )
-			for( name => value in hrt.prefab.fx.EmitterUpgrade.upgradeShader(this, props, obj.children) )
-				setParticleParam(name, value);
 	}
 
 	override function save() : Dynamic {
 		var obj = super.save();
 		if( particleParams != null ) {
-			var data = {};
-			for( name => value in particleParams )
-				Reflect.setField(data, name, hrt.prefab.fx.EmitterParam.save(value));
-			obj.particleParams = data;
+			var names = [for( name in particleParams.keys() ) name];
+			names.sort(Reflect.compare);
+			obj.particleParams = [for( name in names ) { name: name, value: hrt.prefab.fx.EmitterParam.save(particleParams.get(name)) }];
 		}
 		return obj;
 	}

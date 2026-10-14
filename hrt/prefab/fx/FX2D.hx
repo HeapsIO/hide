@@ -215,6 +215,21 @@ class FX2D extends Object2D implements BaseFX {
 	@:s var loop : Bool = false;
 	@:s var startLoop : Float = 0.0;
 
+	override function load( data : Dynamic ) {
+		FX.checkVersion(this, data);
+		super.load(data);
+	}
+
+	override function copy( obj : Prefab ) {
+		super.copy(obj);
+	}
+
+	override function save() : Dynamic {
+		var data = super.save();
+		data.version = FX.VERSION;
+		return data;
+	}
+
 
 	function getObjAnimations(elt: PrefabElement, anims: Array<ObjectAnimation>) {
 		for(c in elt.children) {
@@ -272,16 +287,6 @@ class FX2D extends Object2D implements BaseFX {
 			anyFound = true;
 
 		return anyFound ? anim : null;
-	}
-
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		// curves in the old format, before the children are made from the data
-		hrt.prefab.fx.AnimUpgrade.upgradeFX(obj, true);
-	}
-
-	override function copy( obj : Prefab ) {
-		super.copy(obj);
 	}
 
 	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab {

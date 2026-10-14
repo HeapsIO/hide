@@ -945,14 +945,50 @@ class FX extends Object3D implements BaseFX {
 		cullingRadius = 3.0;
 	}
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		// curves in the old format, before the children are made from the data
-		hrt.prefab.fx.AnimUpgrade.upgradeFX(obj, false);
+	/**
+		Version of the data of an FX, saved on its root (and on an emitter out of any FX), 0 when missing.
+		Older data is upgraded on load by `upgrader`, or rejected.
+	**/
+	public static inline var VERSION = 1;
+
+	/** Upgrades in place data of an older version, `root` of a file or not. Set by `hide.tools.migrate` when it is compiled in. **/
+	public static var upgrader : (data : Dynamic, version : Int, root : Bool) -> Void;
+
+	/** Called before `p`, the root of FX data, loads `data` **/
+	public static function checkVersion( p : Prefab, data : Dynamic ) {
+		var v : Dynamic = data.version;
+		if( v == VERSION )
+			return;
+		var version : Int = v == null ? 0 : v;
+		if( upgrader == null || version > VERSION )
+			throw '${p.shared.currentPath} ${p.getAbsPath()}: FX data of version $version, this build reads version $VERSION. '
+				+ 'Migrate the project with the hide migration tool (hide/migrate.hxml), or upgrade it on load: --macro include("hide.tools.migrate")';
+		upgrader(data, version, p.parent == null);
+	}
+
+	public static function inFX( p : Prefab ) {
+		var c = p.parent;
+		while( c != null ) {
+			if( Std.isOfType(c, BaseFX) )
+				return true;
+			c = c.parent;
+		}
+		return false;
+	}
+
+	override function load( data : Dynamic ) {
+		checkVersion(this, data);
+		super.load(data);
 	}
 
 	override function copy( obj : Prefab ) {
 		super.copy(obj);
+	}
+
+	override function save() : Dynamic {
+		var data = super.save();
+		data.version = VERSION;
+		return data;
 	}
 
 	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab  {

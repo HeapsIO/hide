@@ -3,200 +3,193 @@ package hrt.prefab.fx;
 #if macro
 import haxe.macro.Context;
 import haxe.macro.Expr;
-
-enum ParamKind {
-	KScalar;
-	KVec( n : Int );
-	KEnum( e : Expr );
-	KGradient;
-}
-
-typedef Param = {
-	var name : String;
-	var kind : ParamKind;
-	var def : Expr;
-	var pos : Position;
-}
 #end
 
+/**
+	Builds the params of an emitter from its fields:
+
+	- the `@:s` fields are its settings, serialized like any prefab field: `@:range(min, max)` for the
+	  inspector, `@:animate` when an animation curve can set it;
+	- `@:param(PFloat(0, 2), Particle, 1.)` on a `ParamValue`: a param with modes, of a `ParamGroup`, with
+	  its default (0 when not given), saved in `params` (under `@:name("x")` when the field cannot be named so);
+	- `@:group("Name")`: the inspector group of the field and of the next ones.
+
+	Generates `emitterParams` (the settings), `MODE_PARAMS`, `loadParams` / `saveParams` / `copyParams`,
+	`getParam` / `setParam` by name, and `makeValues`, which builds the values into the emitter object
+	`objectType`: per particle params first, then the settings, then the spawn params, the order their
+	random slots are allocated in.
+**/
 class EmitterMacros {
 
 	#if macro
 
-	static function metaObj( f : Field, name : String ) : Null<Array<ObjectField>> {
-		if( f.meta == null )
-			return null;
-		for( m in f.meta )
-			if( m.name == name ) {
-				if( m.params.length != 1 )
-					Context.error(name + " expects one object argument", m.pos);
-				return switch( m.params[0].expr ) {
-					case EObjectDecl(fl): fl;
-					default: Context.error(name + " expects an object argument", m.pos);
-				}
-			}
+	static function metaArgs( f : Field, name : String ) : Null<Array<Expr>> {
+		for( m in f.meta ?? [] )
+			if( m.name == name )
+				return m.params;
 		return null;
 	}
 
-	static function field( fl : Array<ObjectField>, name : String ) : Null<Expr> {
-		for( f in fl )
-			if( f.field == name )
-				return f.expr;
-		return null;
+	static function typePath( e : Expr ) : ComplexType {
+		var parts = haxe.macro.ExprTools.toString(e).split(".");
+		var i = 0;
+		while( i < parts.length && parts[i].charAt(0) == parts[i].charAt(0).toLowerCase() ) i++;
+		return TPath({ pack: parts.slice(0, i), name: parts[i], sub: parts[i + 1] });
 	}
 
-	static function kindOf( t : Expr ) : ParamKind {
-		return switch( t.expr ) {
-			case ECall({expr: EConst(CIdent("PVec"))}, args):
-				switch( args[0].expr ) {
-					case EConst(CInt(v)): KVec(Std.parseInt(v));
-					default: Context.error("PVec size must be a constant", t.pos);
-				}
-			case ECall({expr: EConst(CIdent("PEnum"))}, args): KEnum(args[0]);
-			case EConst(CIdent("PGradient")): KGradient;
-			default: KScalar;
+	/** The inspector type of a setting, from its type **/
+	static function propType( f : Field, t : ComplexType, init : Null<Expr> ) : Expr {
+		var r = metaArgs(f, ":range") ?? [];
+		var min = r[0] ?? macro null, max = r[1] ?? macro null;
+		var name = switch( t ) { case TPath(p): p.sub ?? p.name; default: Context.error("Unsupported setting type", f.pos); };
+		return switch( name ) {
+			case "Float": macro PFloat($min, $max);
+			case "Int": macro PInt($min, $max);
+			case "Bool": macro PBool;
+			case "String": macro PTexture;
+			case "GradientData": macro PGradient;
+			case "Array":
+				var n = switch( init?.expr ) { case EArrayDecl(v): v.length; default: Context.error("A vector setting needs its default", f.pos); };
+				macro PVec($v{n}, $min, $max);
+			default: macro PEnum($i{name});
 		}
 	}
 
-	public static function build() : Array<Field> {
+	public static function build( objectType : Expr ) : Array<Field> {
 		var fields = Context.getBuildFields();
 		var pos = Context.currentPos();
-		var params : Array<Param> = [];
-		var emitterDecls : Array<Expr> = [];
-		var extra : Array<Field> = [];
+		var selfType = Context.toComplexType(Context.getLocalType());
+		var statics : Array<Field> = [];
+		var settings = [], modeDecls = [];
+		var load = [], save = [], copy = [], getCases = [], setCases = [];
+		var particleValues = [], settingValues = [], spawnValues = [];
+		var group = "Params";
 
 		for( f in fields ) {
-			var meta = metaObj(f, ":param");
-			if( meta == null )
+			var g = metaArgs(f, ":group");
+			if( g != null )
+				group = switch( g[0].expr ) { case EConst(CString(s)): s; default: Context.error("@:group expects a string", f.pos); };
+			var p = f.pos;
+			var n = f.name;
+
+			if( metaArgs(f, ":s") != null ) {
+				switch( f.kind ) {
+				case FVar(t, init):
+					var animate = metaArgs(f, ":animate") != null;
+					settings.push(macro @:pos(p) ({ name: $v{n}, t: ${propType(f, t, init)}, def: (${init ?? macro null} : Dynamic), groupName: $v{group}, animate: $v{animate} }
+						: hrt.prefab.fx.EmitterHelper.ParamDef));
+					if( animate )
+						settingValues.push(macro @:pos(p) obj.$n = b.animated(hrt.prefab.fx.Evaluator.vVal(this.$n), $v{n}));
+				default:
+				}
 				continue;
-
-			var fdef = null;
-			switch( f.kind ) {
-				case FVar(_, e): fdef = e;
-				default: Context.error("Emitter param must be a variable", f.pos);
 			}
 
-			var t = field(meta, "t");
-			if( t == null )
-				Context.error("Missing param type", f.pos);
-			var kind = kindOf(t);
-			var def = fdef ?? macro @:pos(f.pos) null;
-
-			var decl : Array<ObjectField> = [
-				{ field: "name", expr: macro @:pos(f.pos) $v{f.name} },
-				{ field: "t", expr: t },
-				{ field: "def", expr: macro @:pos(f.pos) ($def : Dynamic) },
-			];
-			var disp = field(meta, "disp");
-			if( disp != null ) decl.push({ field: "disp", expr: disp });
-			var group = field(meta, "group");
-			if( group != null ) decl.push({ field: "groupName", expr: group });
-			decl.push({ field: "animate", expr: field(meta, "animate") ?? macro false });
-
-			var declExpr : Expr = { expr: EObjectDecl(decl), pos: f.pos };
-			var declName = "P_" + f.name;
-			extra.push({
-				name: declName,
-				access: [AStatic, AFinal],
-				kind: FVar(macro : hrt.prefab.fx.EmitterHelper.ParamDef, declExpr),
-				pos: f.pos,
-			});
-			emitterDecls.push(macro @:pos(f.pos) $i{declName});
-			params.push({ name: f.name, kind: kind, def: def, pos: f.pos });
+			var a = metaArgs(f, ":param");
+			if( a == null )
+				continue;
+			var t = a[0];
+			var modeGroup = switch( a[1]?.expr ) {
+				case EConst(CIdent(g)) if( ["Spawn", "Particle", "Multiplier"].indexOf(g) >= 0 ): g;
+				default: Context.error("@:param(type, Spawn | Particle | Multiplier, ?default)", p);
+			}
+			var nameArg = metaArgs(f, ":name");
+			var key = switch( nameArg == null ? null : nameArg[0].expr ) {
+				case null: n;
+				case EConst(CString(k)): k;
+				default: Context.error("@:name expects a string", p);
+			}
+			var dim = switch( t.expr ) {
+				case ECall({expr: EConst(CIdent("PVec"))}, args): switch( args[0].expr ) { case EConst(CInt(v)): Std.parseInt(v); default: 1; };
+				default: 1;
+			}
+			var defs = switch( a[2]?.expr ) {
+				case null: [for( _ in 0...dim ) macro 0.];
+				case EArrayDecl(values): values;
+				default: [a[2]];
+			}
+			var defName = "MP_" + key;
+			statics.push({ name: defName, access: [APublic, AStatic, AFinal], pos: p, kind: FVar(macro : hrt.prefab.fx.EmitterParam.ModeParamDef,
+				macro @:pos(p) { name: $v{key}, t: $t, def: ${{ expr: EArrayDecl([for( d in defs ) macro ($d : Float)]), pos: p }},
+					group: hrt.prefab.fx.EmitterParam.ParamGroup.$modeGroup, category: $v{group} }) });
+			modeDecls.push(macro @:pos(p) $i{defName});
+			load.push(macro @:pos(p) this.$n = hrt.prefab.fx.EmitterParam.parse(params.$key, $v{dim}));
+			save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.save(this.$n); if( v != null ) { params.$key = v; any = true; } });
+			copy.push(macro @:pos(p) this.$n = from.$n?.copy());
+			getCases.push({ values: [macro $v{key}], expr: macro this.$n });
+			setCases.push({ values: [macro $v{key}], expr: macro this.$n = v });
+			var def = macro @:pos(p) $i{defName};
+			if( modeGroup != "Spawn" )
+				particleValues.push(macro @:pos(p) d.$key = b.param($def, this.$n));
+			else if( dim > 1 )
+				spawnValues.push(macro @:pos(p) obj.$key = b.param($def, this.$n));
+			else {
+				// a scalar spawn param is drawn from the emitter random stream when a particle spawns
+				var rand = key + "Rand", min = key + "Min", max = key + "Max";
+				spawnValues.push(macro @:pos(p) {
+					var s = b.span($def, this.$n);
+					obj.$key = s.mid;
+					obj.$rand = s.rand;
+					obj.$min = s.min;
+					obj.$max = s.max;
+				});
+			}
 		}
 
-		var load : Array<Expr> = [];
-		var save : Array<Expr> = [];
-		var copy : Array<Expr> = [];
+		statics.push({ name: "emitterParams", access: [APublic, AStatic], pos: pos,
+			kind: FVar(macro : Array<hrt.prefab.fx.EmitterHelper.ParamDef>, { expr: EArrayDecl(settings), pos: pos }) });
+		statics.push({ name: "PARAMS", access: [APublic, AStatic], pos: pos,
+			kind: FVar(macro : Map<String, hrt.prefab.fx.EmitterHelper.ParamDef>, macro [for( p in emitterParams ) p.name => p]) });
+		statics.push({ name: "MODE_PARAMS", access: [APublic, AStatic], pos: pos,
+			kind: FVar(macro : Array<hrt.prefab.fx.EmitterParam.ModeParamDef>, { expr: EArrayDecl(modeDecls), pos: pos }) });
+		statics.push({ name: "MODE_PARAMS_BY_NAME", access: [APublic, AStatic], pos: pos,
+			kind: FVar(macro : Map<String, hrt.prefab.fx.EmitterParam.ModeParamDef>, macro [for( p in MODE_PARAMS ) p.name => p]) });
+		statics.push({ name: "instanceParams", doc: "The spawn and multiplier params, as tracks of the FX timeline", access: [APublic, AStatic], pos: pos,
+			kind: FVar(macro : Array<hrt.prefab.fx.EmitterHelper.ParamDef>, macro hrt.prefab.fx.EmitterParam.timelineTracks(MODE_PARAMS)) });
 
-		for( p in params ) {
-			var n = p.name;
-			var def = p.def;
-			var pos = p.pos;
-
-			var src = macro @:pos(pos) props.$n;
-			load.push(switch( p.kind ) {
-				case KEnum(e):
-					macro @:pos(pos) this.$n = hrt.prefab.Macros.enumOrNullByName($e, $src, null, $def);
-				case KGradient:
-					macro @:pos(pos) this.$n = $src;
-				case KVec(_):
-					macro @:pos(pos) { var v = $src; this.$n = v == null ? $def : hrt.prefab.fx.EmitterHelper.toArray(v); };
-				default:
-					macro @:pos(pos) { var v = $src; this.$n = v == null ? $def : v; };
-			});
-
-			var set = macro @:pos(pos) Reflect.setField(props, $v{n}, this.$n);
-			var changed = switch( p.kind ) {
-				case KVec(_): macro @:pos(pos) !hrt.prefab.fx.EmitterHelper.sameArray(this.$n, $def);
-				case KGradient: macro @:pos(pos) true;
-				default: macro @:pos(pos) this.$n != $def;
-			}
-			switch( p.kind ) {
-				case KEnum(_): set = macro @:pos(pos) Reflect.setField(props, $v{n}, Type.enumConstructor(this.$n));
-				default:
-			}
-			save.push(p.kind.match(KGradient)
-				? macro @:pos(pos) if( this.$n != null && $changed ) $set
-				: macro @:pos(pos) if( $changed ) $set);
-
-			copy.push(switch( p.kind ) {
-				case KVec(_): macro @:pos(pos) this.$n = from.$n == null ? null : from.$n.copy();
-				default: macro @:pos(pos) this.$n = from.$n;
-			});
-		}
-
-		var selfType = Context.toComplexType(Context.getLocalType());
-
-		extra.push({
-			name: "emitterParams",
-			access: [APublic, AStatic],
-			kind: FVar(macro : Array<hrt.prefab.fx.EmitterHelper.ParamDef>, { expr: EArrayDecl(emitterDecls), pos: pos }),
-			pos: pos,
-		});
-		extra.push({
-			name: "PARAMS",
-			access: [APublic, AStatic],
-			kind: FVar(macro : Map<String, hrt.prefab.fx.EmitterHelper.ParamDef>, macro {
-				var m = new Map();
-				for( p in emitterParams ) m.set(p.name, p);
-				m;
-			}),
-			pos: pos,
-		});
-
-		extra.push({
-			name: "loadParams",
-			access: [],
-			kind: FFun({
-				args: [{ name: "props", type: macro : Dynamic }],
-				expr: macro { if( props == null ) props = {}; $b{load}; },
-			}),
-			pos: pos,
-		});
-		extra.push({
-			name: "saveParams",
-			access: [],
-			kind: FFun({
-				args: [],
-				ret: macro : Dynamic,
-				expr: macro { var props : Dynamic = {}; $b{save}; return props; },
-			}),
-			pos: pos,
-		});
-		extra.push({
-			name: "copyParams",
-			access: [],
-			kind: FFun({
-				args: [{ name: "from", type: selfType }],
-				expr: { expr: EBlock(copy), pos: pos },
-			}),
-			pos: pos,
-		});
-
-		for( f in extra )
-			fields.push(f);
-		return fields;
+		var methods : Array<Field> = [
+			{ name: "animCurves", access: [APublic], pos: pos, kind: FVar(macro : hrt.prefab.fx.EmitterParam.AnimCurves, macro []) },
+			{ name: "loadParams", pos: pos, kind: FFun({ args: [{ name: "data", type: macro : Dynamic }], expr: macro {
+				var params : Dynamic = data.params ?? {};
+				$b{load};
+				animCurves = hrt.prefab.fx.EmitterParam.parseAnimCurves(data.animCurves);
+			} }) },
+			{ name: "saveParams", pos: pos, kind: FFun({ args: [{ name: "data", type: macro : Dynamic }], expr: macro {
+				var params : Dynamic = {}, any = false;
+				$b{save};
+				if( any ) data.params = params;
+				var anim = hrt.prefab.fx.EmitterParam.saveAnimCurves(animCurves);
+				if( anim != null ) data.animCurves = anim;
+			} }) },
+			{ name: "copyParams", pos: pos, kind: FFun({ args: [{ name: "from", type: selfType }], expr: macro {
+				$b{copy};
+				animCurves = from.animCurves.copy();
+			} }) },
+			{ name: "getParam", access: [APublic], pos: pos, kind: FFun({ args: [{ name: "name", type: macro : String }],
+				ret: macro : Null<hrt.prefab.fx.EmitterParam.ParamValue>,
+				expr: { expr: EReturn({ expr: ESwitch(macro name, getCases, macro null), pos: pos }), pos: pos } }) },
+			{ name: "setParam", doc: "Null unsets every component", access: [APublic], pos: pos, kind: FFun({
+				args: [{ name: "name", type: macro : String }, { name: "v", type: macro : Null<hrt.prefab.fx.EmitterParam.ParamValue> }],
+				expr: macro {
+					if( hrt.prefab.fx.EmitterParam.isUnset(v) ) v = null;
+					${{ expr: ESwitch(macro name, setCases, macro throw "No param " + name), pos: pos }};
+				} }) },
+			{ name: "makeValues", access: [APublic], pos: pos, kind: FFun({ args: [{ name: "obj", type: typePath(objectType) }],
+				ret: macro : hrt.prefab.fx.EmitterParam.ParamBuilder,
+				expr: macro {
+					var b = new hrt.prefab.fx.EmitterParam.ParamBuilder(this, animCurves);
+					var d = new hrt.prefab.fx.Emitter.InstanceDef();
+					obj.instDef = d;
+					$b{particleValues};
+					$b{settingValues};
+					$b{spawnValues};
+					return b;
+				} }) },
+		];
+		// the statics first: the ones of the class can use them in their initialization
+		for( i => f in statics )
+			fields.insert(i, f);
+		return fields.concat(methods);
 	}
 	#end
 }

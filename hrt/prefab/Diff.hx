@@ -360,9 +360,7 @@ class Diff {
 		// The diff is returned as is when the root prefab type changed, don't keep the version in the prefab data
 		if (result == diff) {
 			result = Reflect.copy(diff);
-			for (f in Reflect.fields(result))
-				if (StringTools.startsWith(f, "#"))
-					Reflect.deleteField(result, f);
+			Reflect.deleteField(result, "#v");
 		}
 		return result;
 	}
@@ -388,8 +386,7 @@ class Diff {
 	**/
 	static function applyObject(target: Dynamic, diff: Dynamic, isPrefab: Bool) : Dynamic {
 		for (field in Reflect.fields(diff)) {
-			// `#v` and the other markers of the root
-			if (StringTools.startsWith(field, "#"))
+			if (field == "#v")
 				continue;
 
 			if (isPrefab && field == "children")
