@@ -13,10 +13,12 @@ Scope: `Emitter` and `Emitter2D`. Editing through the new inspector only (edit2 
 |---|---|---|---|
 | Emitter | emission settings (rate, burst count, angle, shape dimensions...) | Constant | animatable ones take an animation curve |
 | Spawn | lifetime, start speed, start world speed | Constant, Range | `value` / `min` / `max` take an animation curve, read when the particle spawns |
-| Particle | speed, world speed, acceleration, world acceleration, orbit speed, dampen, max velocity, scale, stretch, stretch velocity, rotation, pivot, offset; particle shader params | all | — |
+| Particle | speed, world speed, acceleration, world acceleration, orbit speed, dampen, max velocity, scale, stretch, stretch velocity, rotation, pivot, offset | all | — |
+| Particle shader params | params of the shaders applied to the particles | Constant, Curve | — |
 | Multipliers | scale multiplier, orbit speed multiplier | Constant | take an animation curve, read every frame |
 
 Vector params have one mode per component. Rotations are in degrees, rotation speeds (orbit speed) in degrees per second.
+Particle shaders get their per-particle randomness on the GPU, from the emitter's `particleRandom`.
 
 ## Modes
 
