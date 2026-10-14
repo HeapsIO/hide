@@ -312,7 +312,6 @@ class Emitter2DObject extends h2d.Object {
 	}
 
 	public function init(randSlots: Int, prefab: Emitter2D) {
-		evaluator = new Evaluator();
 		evaluator.allocRandom(maxCount, randSlots);
 		evaluator.resetRandom(rand);
 
