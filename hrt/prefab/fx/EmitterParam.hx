@@ -172,25 +172,15 @@ class EmitterParam {
 		}
 	}
 
-	/** The curve at `path` under `owner`: names separated by dots, `name-N` for the Nth sibling of that name **/
+	/** The curve at `path` under `owner` (`Prefab.locatePrefab`), null when it or a prefab on its path is disabled **/
 	public static function resolveCurve( owner : Prefab, path : String ) : Null<Curve> {
-		var p = owner;
-		for( part in path.split(".") ) {
-			var found = Lambda.find(p.children, c -> c.name == part);
-			var dash = part.lastIndexOf("-");
-			if( found == null && dash > 0 ) {
-				var name = part.substr(0, dash), n = Std.parseInt(part.substr(dash + 1));
-				for( c in p.children )
-					if( c.name == name && n-- == 0 ) {
-						found = c;
-						break;
-					}
-			}
-			if( found == null || !found.enabled )
+		var curve = owner.locatePrefab(path)?.to(Curve);
+		var p : Prefab = curve;
+		while( p != null && p != owner ) {
+			if( !p.enabled )
 				return null;
-			p = found;
+			p = p.parent;
 		}
-		var curve = p.to(Curve);
 		#if editor
 		if( curve != null && owner.shared.editor?.isHidden(curve) )
 			return null;
