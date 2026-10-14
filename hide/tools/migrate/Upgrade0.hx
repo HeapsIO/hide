@@ -51,9 +51,9 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 class Upgrade0 {
 
 	/** Rotation tolerance of the sampled re-bakes, in degrees **/
-	public static var ROTATION_TOLERANCE = 0.01;
+	public static var ROTATION_TOLERANCE = 0.02;
 	/** Scale tolerance of the sampled re-bakes, relative **/
-	public static var SCALE_TOLERANCE = 1e-5;
+	public static var SCALE_TOLERANCE = 1e-4;
 	/** Error of a sampled re-bake beyond which the object gets a parent, relative to the scale of the matrix rows **/
 	public static var MATRIX_TOLERANCE = 5e-4;
 	/** Sampling step of the re-bakes, in seconds **/
