@@ -7,7 +7,8 @@ import haxe.macro.Expr;
 
 /**
 	Emitter fields:
-	- `@:s` settings, `@:range(min, max)`, `@:animate` when an animation curve can set them, `@:disp("Label")`;
+	- `@:s` settings, `@:range(min, max)`, `@:animate` when an animation curve can set them, `@:disp("Label")`,
+	  `@:t(PFile([...]))` for a type other than the one of the field;
 	- `@:param(PVec(3, -10, 10), Particle, default)` params with modes (`EmitterParam`), saved in `params`,
 	  under `@:name("key")` when given;
 	- `@:group("Name")`: the inspector group of the field and of the next ones.
@@ -25,6 +26,9 @@ class EmitterMacros {
 	}
 
 	static function propType( f : Field, t : ComplexType, init : Null<Expr> ) : Expr {
+		var explicit = meta(f, ":t");
+		if( explicit != null )
+			return explicit[0];
 		var r = meta(f, ":range") ?? [];
 		var min = r[0] ?? macro null, max = r[1] ?? macro null;
 		return switch( t ) {
@@ -43,7 +47,8 @@ class EmitterMacros {
 		}
 	}
 
-	public static function build( objectType : Expr ) : Array<Field> {
+	/** `objectType`: the path of the class of the emitter object **/
+	public static function build( objectType : String ) : Array<Field> {
 		var fields = Context.getBuildFields();
 		var pos = Context.currentPos();
 		var settings = [], modeParams = [];
@@ -105,12 +110,14 @@ class EmitterMacros {
 				particleValues.push(macro @:pos(p) d.$key = b.param($def, this.$n));
 		}
 
-		var objPath = haxe.macro.ExprTools.toString(objectType).split(".");
-		var objCT = TPath({ pack: objPath.slice(0, objPath.length - 2), name: objPath[objPath.length - 2], sub: objPath[objPath.length - 1] });
+		var objCT = Context.toComplexType(Context.getType(objectType));
 		var selfType = Context.toComplexType(Context.getLocalType());
-		var add : Array<Field> = (macro class {
+		// the statics first, the ones of the class can use them
+		var statics = (macro class {
 			public static var emitterParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = $a{settings};
 			public static var MODE_PARAMS : Array<hrt.prefab.fx.EmitterParam.ModeParamDef> = $a{modeParams};
+		}).fields;
+		var methods = (macro class {
 			function loadParams( data : Dynamic ) {
 				var params : Dynamic = data.params;
 				if( params == null ) $b{unset} else $b{load};
@@ -141,8 +148,7 @@ class EmitterMacros {
 				return b;
 			}
 		}).fields;
-		// the statics first, the ones of the class can use them
-		return add.slice(0, 2).concat(fields).concat(add.slice(2));
+		return statics.concat(fields).concat(methods);
 	}
 	#end
 }

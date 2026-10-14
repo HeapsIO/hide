@@ -457,7 +457,7 @@ class Emitter2DObject extends h2d.Object {
 @:access(hrt.prefab.fx.Emitter2DObject)
 @:prefabName("Emitter 2D")
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter2d)
-@:build(hrt.prefab.fx.EmitterMacros.build(hrt.prefab.fx.Emitter2D.Emitter2DObject))
+@:build(hrt.prefab.fx.EmitterMacros.build("hrt.prefab.fx.Emitter2D.Emitter2DObject"))
 class Emitter2D extends Object2D implements ParamOwner {
 
 	@:group("Properties")
@@ -497,7 +497,7 @@ class Emitter2D extends Object2D implements ParamOwner {
 	@:s @:disp("Color 1") public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
 	@:s @:disp("Color 2") public var randomColor2 : Array<Float> = [1., 1., 1., 1.];
 	@:s @:disp("Gradient") public var randomGradient : hrt.impl.Gradient.GradientData;
-	@:s @:disp("Sheet") public var spriteSheet : String;
+	@:s @:t(PFile(["jpg", "png"])) @:disp("Sheet") public var spriteSheet : String;
 	@:s @:range(0) @:disp("Frames") public var frameCount : Int = 0;
 	@:s @:range(1) @:disp("Divisions X") public var frameDivisionX : Int = 1;
 	@:s @:range(1) @:disp("Divisions Y") public var frameDivisionY : Int = 1;

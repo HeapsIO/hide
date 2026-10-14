@@ -1726,7 +1726,7 @@ class EmitterObject extends h3d.scene.Object {
 
 @:prefabName("Emitter")
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter)
-@:build(hrt.prefab.fx.EmitterMacros.build(hrt.prefab.fx.Emitter.EmitterObject))
+@:build(hrt.prefab.fx.EmitterMacros.build("hrt.prefab.fx.Emitter.EmitterObject"))
 class Emitter extends Object3D implements ParamOwner {
 
 	@:group("Properties")
@@ -1774,7 +1774,7 @@ class Emitter extends Object3D implements ParamOwner {
 	@:s @:disp("Gradient") public var randomGradient : hrt.impl.Gradient.GradientData;
 
 	@:group("Sprite Sheet Animation")
-	@:s @:disp("Sheet") public var spriteSheet : String;
+	@:s @:t(PFile(["jpg", "png"])) @:disp("Sheet") public var spriteSheet : String;
 	@:s @:range(0) @:disp("Frames") public var frameCount : Int = 0;
 	@:s @:range(1) @:disp("Divisions X") public var frameDivisionX : Int = 1;
 	@:s @:range(1) @:disp("Divisions Y") public var frameDivisionY : Int = 1;
