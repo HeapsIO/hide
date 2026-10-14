@@ -1,6 +1,6 @@
 # Emitter params — spec
 
-Scope: `Emitter` and `Emitter2D`. Editing through the new inspector only (edit2 / HideKit). Colors (particle shader color curves, emitter random color / gradient) keep their current model.
+Scope: `Emitter` and `Emitter2D`. Editing through the new inspector only (edit2 / HideKit), in the JS editor (hide_js); HideHL is dropped. Colors (particle shader color curves, emitter random color / gradient) keep their current model.
 
 ## Terms
 
