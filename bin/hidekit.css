@@ -782,6 +782,31 @@ kit-root .detached .is-cdb-editor {
     border-color: #333333;
   }
 }
+kit-root .kit-param-curve {
+  flex: 1 1;
+  height: 90px;
+  background-color: #161616;
+  border: 1px solid #333;
+  border-radius: 3px;
+}
+kit-root .kit-param-curve path {
+  fill: none;
+  stroke: #f05a5a;
+}
+kit-root .kit-param-curve path.main {
+  stroke-width: 2px;
+}
+kit-root .kit-param-curve path.extreme {
+  stroke-width: 1px;
+  stroke-dasharray: 4 3;
+}
+kit-root .kit-param-curve line.zero {
+  stroke: #444;
+}
+kit-root .kit-param-curve rect.key {
+  fill: #eee;
+  cursor: move;
+}
 kit-root kit-anim-marker {
   flex: 0 0 8px;
   width: 8px;

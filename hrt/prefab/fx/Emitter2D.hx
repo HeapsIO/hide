@@ -616,45 +616,8 @@ class Emitter2D extends Object2D {
 		#end
 	}
 
-	#if editor
-	override function edit( ctx : hide.prefab.EditContext ) {
-		super.edit(ctx);
-
-		function refresh() {
-			ctx.rebuildProperties();
-		}
-
-		function onChange(?pname: String) {
-			if (pname == "useRandomGradient") {
-				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
-				refresh();
-			}
-
-			if (pname == "spriteType") {
-				if (spriteType != SpriteType.SpriteSheet)
-					spriteSheet = null;
-				refresh();
-			}
-
-			ctx.onChange(this, pname);
-
-			if (pname == "warmUpTime") {
-				if (warmUpTime < 0) {
-					warmUpTime = 0;
-					hide.Ide.inst.quickError("Warm up time can no longer be negative. Use the Delay property instead");
-					refresh();
-				}
-			}
-
-			if(["emitShape",
-				"useCollision",
-				"emitType",
-				"useRandomColor"
-				].indexOf(pname) >= 0) {
-					refresh();
-				}
-		}
-
+	#if (editor || editor_hl)
+	function getVisibleParams() : Array<hrt.prefab.fx.EmitterHelper.ParamDef> {
 		var params = emitterParams.copy();
 		inline function removeParam(pname: String) {
 			params.remove(params.find(p -> p.name == pname));
@@ -739,9 +702,27 @@ class Emitter2D extends Object2D {
 				removeParam("emitRateChangeDelay");
 		}
 
-		EmitterHelper.generateEdit(params, this, ctx.properties, onChange);
+		return params;
 	}
 
+	static var REFRESH_PARAMS = ["emitShape", "emitType", "spriteType", "useRandomColor", "useRandomGradient"];
+	#end
+
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+		function onChange(pname: String, isTemp: Bool) {
+			if (pname == "useRandomGradient")
+				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
+			if (pname == "spriteType" && spriteType != SpriteType.SpriteSheet)
+				spriteSheet = null;
+			ctx.rebuildPrefab(this);
+			if (!isTemp && REFRESH_PARAMS.contains(pname))
+				ctx.rebuildInspector();
+		}
+		EmitterEdit.edit(ctx, this, getVisibleParams(), MODE_PARAMS, getParam, setParam, onChange);
+	}
+
+	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		return {
 			icon : "asterisk",

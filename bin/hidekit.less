@@ -905,6 +905,19 @@ kit-root {
 }
 
 kit-root {
+	.kit-param-curve {
+		flex: 1 1;
+		height: 90px;
+		background-color: #161616;
+		border: 1px solid #333;
+		border-radius: 3px;
+		path { fill: none; stroke: #f05a5a; }
+		path.main { stroke-width: 2px; }
+		path.extreme { stroke-width: 1px; stroke-dasharray: 4 3; }
+		line.zero { stroke: #444; }
+		rect.key { fill: #eee; cursor: move; }
+	}
+
 	kit-anim-marker {
 		flex: 0 0 8px;
 		width: 8px;
