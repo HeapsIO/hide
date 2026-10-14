@@ -34,8 +34,8 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	- Emitter params with modes (`Emitter`, `Emitter2D`, the particle shaders), from the base value,
 	  random amount and curves by name of the old params (see `emitter-spec.md`, Upgrade).
 	- Animation curves hold the value they animate: the constants the old FX composed them with are
-	  baked into them (exactly when the old value is linear in the curve), and the emitter params
-	  reference theirs by path (`animCurves`).
+	  baked into them (exactly when the old value is linear in the curve), and the ones of the emitter
+	  params are named after what they animate (`startSpeed:x:min`, `scaleMultiplier`).
 	- Orbit speeds go from radians to degrees per second.
 	- Transforms are re-baked to what the old runtime showed: `setTransform` kept a scale and a
 	  quaternion of the animated matrix (a shear is lost), sampled when there is no exact form. An
@@ -1408,9 +1408,8 @@ class Upgrade0 {
 		var defs = is2D ? EMITTER_2D : EMITTER_3D;
 		var props : Dynamic = get(e.data, "props") ?? {};
 		var params = upgradeParams(e, props, defs, is2D ? ADDITIVE_2D : ADDITIVE_3D);
-		var anim = new Map<String, String>();
 		var settings = [for( s in (is2D ? SETTINGS_2D : SETTINGS_3D) ) { name: s.name, value: num(get(props, s.name), s.def) }];
-		upgradeEmitterAnims(e, settings, defs, params, anim);
+		upgradeEmitterAnims(e, settings, defs, params);
 
 		// orbit speeds in degrees per second
 		var orbit = params.get("orbitSpeed");
@@ -1449,11 +1448,6 @@ class Upgrade0 {
 		}
 		if( any )
 			RawNode.setField(e.data, "params", out);
-		if( anim.iterator().hasNext() ) {
-			var keys = [for( k in anim.keys() ) k];
-			keys.sort(Reflect.compare);
-			RawNode.setField(e.data, "animCurves", [for( k in keys ) obj(["param", k, "curve", anim.get(k)])]);
-		}
 		change(e, "emitter params with modes");
 
 		// the shaders on its particles
@@ -1578,26 +1572,21 @@ class Upgrade0 {
 	/**
 		The old animation curves of an emitter: the settings (`settings`, with their value), the spawn
 		params and the multipliers were multiplied by their curve, found by name (the old names). The
-		curves are bound to the params by path in `anim` and baked. A range `(k ± a) * curve` gets one
-		curve per bound (the second one a reference to the first).
+		curves are baked and named after what they animate (`EmitterParam.animKey`). A range
+		`(k ± a) * curve` gets one curve per bound (the second one a reference to the first).
 	**/
 	function upgradeEmitterAnims( e : RawNode, settings : Array<{ name : String, value : Float }>, defs : Array<ParamDef>,
-		params : Map<String, Array<Null<Mode>>>, anim : Map<String, String> ) {
+		params : Map<String, Array<Null<Mode>>> ) {
 		inline function find( name : String ) : Null<RawNode> {
 			return Lambda.find(e.children, c -> c.isCurve && c.enabled() && sameName(c.name, name));
 		}
-		inline function resolve( key : String ) : Null<RawNode> {
-			var p = anim.get(key);
-			return p == null ? null : resolveRel(e, p);
-		}
 		inline function isBlend( n : RawNode ) return blendMode(n) == 2;
-		inline function path( n : RawNode ) return relPath(e, n);
+		var renames = [];
 
 		// emitter settings: value * curve
 		for( s in settings ) {
 			var n = find(s.name);
 			if( n == null || !isLegacy(n) ) continue;
-			anim.set(s.name, path(n));
 			if( !isBlend(n) )
 				bakeLinear(n, s.value, 0);
 			change(n, isBlend(n) ? "emitter setting, random blend" : "emitter setting");
@@ -1612,38 +1601,34 @@ class Upgrade0 {
 			var changed = false;
 			for( i in 0...dim ) {
 				var suffix = dim == 1 ? "" : ":" + COMPONENTS[i];
-				var key = dim == 1 ? d.name : d.name + "." + COMPONENTS[i];
+				var key = d.name + suffix;
 				var m = out[i];
-				var kValue = key, kMin = key + ".min", kMax = key + ".max";
 				var bounds = switch( m ) { case MRange(lo, hi): { lo: lo, hi: hi }; default: null; };
 				var k = switch( m ) { case MConstant(v): v; default: d.def[i]; };
 				var c = find(d.old + suffix);
 				if( c == null || !isLegacy(c) ) continue;
-				var cpath = path(c);
 				if( d.group == Multiplier ) {
-					anim.set(kValue, cpath);
+					renames.push({ node: c, name: key });
 					if( !isBlend(c) ) bakeLinear(c, k, 0);
 					change(c, isBlend(c) ? "multiplier, random blend" : "multiplier");
 					continue;
 				}
 				if( isBlend(c) ) {
-					// random between the two child curves: a range between them, the value is not used
-					var sub = c.curveChildren();
-					if( sub.length < 2 ) {
+					// random between the two child curves, the value is not used
+					if( c.curveChildren().length < 2 ) {
 						warn(c, "random blend without its two child curves");
 						continue;
 					}
-					if( bounds == null ) {
-						out[i] = MRange(k, k);
+					if( m != null ) {
+						out[i] = null;
 						changed = true;
 					}
-					anim.set(kMin, path(sub[0]));
-					anim.set(kMax, path(sub[1]));
+					renames.push({ node: c, name: key });
 					change(c, "spawn, random blend");
 					continue;
 				}
 				if( bounds == null ) {
-					anim.set(kValue, cpath);
+					renames.push({ node: c, name: key });
 					bakeLinear(c, k, 0);
 					change(c, "spawn value");
 					continue;
@@ -1651,22 +1636,56 @@ class Upgrade0 {
 				// (k ± a) * c: one curve per bound
 				var lo = bounds.lo, hi = bounds.hi;
 				if( hi != 0 ) {
-					anim.set(kMax, cpath);
-					if( lo != 0 ) {
-						var ref = emitterCopy(e, c, d.name + suffix + ":min", lo / hi, lo);
-						anim.set(kMin, path(ref));
-					}
+					renames.push({ node: c, name: key + ":max" });
+					if( lo != 0 )
+						emitterCopy(e, c, key + ":min", lo / hi, lo);
 					bakeLinear(c, hi, 0);
 				} else if( lo != 0 ) {
-					anim.set(kMin, cpath);
+					renames.push({ node: c, name: key + ":min" });
 					bakeLinear(c, lo, 0);
 				}
 				change(c, "spawn range");
 			}
-			if( changed )
-				params.set(d.name, out);
+			if( changed ) {
+				if( isUnset(out) )
+					params.remove(d.name);
+				else
+					params.set(d.name, out);
+			}
 		}
+		renameCurves(renames);
 		markAll(e, e, false);
+	}
+
+	/** Renames curves, the paths of the file to them or through them follow **/
+	function renameCurves( renames : Array<{ node : RawNode, name : String }> ) {
+		if( renames.length == 0 )
+			return;
+		var refs = [];
+		function collect( n : RawNode ) {
+			if( n.isCurve )
+				for( f in (blendMode(n) == 3 ? ["blendParam", "remapPath"] : ["remapPath"]) ) {
+					var v : Dynamic = get(n.data, f);
+					var target = Std.isOfType(v, String) ? locate(v) : null;
+					if( target != null )
+						refs.push({ node: n, field: f, target: target });
+				}
+			for( c in n.children )
+				collect(c);
+		}
+		collect(root);
+		for( r in renames ) {
+			if( Lambda.exists(r.node.parent.children, c -> c != r.node && c.enabled() && sameName(c.name, r.name)) )
+				warn(r.node, 'renamed ${r.name}, the name of another curve');
+			r.node.rename(r.name);
+		}
+		for( r in refs ) {
+			var path = pathOf(r.target);
+			if( path != null && path != get(r.node.data, r.field) ) {
+				Reflect.setField(r.node.data, r.field, path);
+				change(r.node, r.field + " path to a renamed curve");
+			}
+		}
 	}
 
 	/**

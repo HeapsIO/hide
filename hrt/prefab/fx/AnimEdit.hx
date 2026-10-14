@@ -2,16 +2,10 @@ package hrt.prefab.fx;
 
 #if domkit
 
-/**
-	The animation curve of a property: a child of `owner` named after the property, `name` for objects
-	and shaders, the param key of an emitter (`EmitterParam.animKey`, `startSpeed.x.min` is `startSpeed:x:min`).
-**/
+/** The animation curve of a property: a child of `owner` named after the property (`EmitterParam.animKey` for an emitter) **/
 enum AnimTarget {
 	ByName(owner: Prefab, name: String);
-	ByKey(emitter: Prefab, key: String);
 }
-
-typedef AnimCurvesOwner = { var animCurves : Null<EmitterParam.AnimCurves>; }
 
 /**
 	Animation curves edited from the inspector, Blender-like: a marker after an animatable field tells
@@ -46,10 +40,6 @@ class AnimEdit {
 		#if (editor || editor_hl) p.editorTempLoad(data); #else p.load(data); #end
 	}
 
-	public static function getAnimCurves(p: Prefab) : Null<EmitterParam.AnimCurves> {
-		return p is Emitter || p is Emitter2D ? (cast p : AnimCurvesOwner).animCurves : null;
-	}
-
 	/** Curves under emitters named after them animate the emitter object **/
 	static var CHANNELS = ["position", "rotation", "scale", "color", "visibility", "localposition", "localrotation"];
 
@@ -65,13 +55,7 @@ class AnimEdit {
 		var e = top.parent;
 		if (!(e is Emitter || e is Emitter2D))
 			return top.findParent(Emitter) != null || top.findParent(Emitter2D) != null;
-		var anim = getAnimCurves(e);
-		return !isChannel(top.name) && !isParamName(e, top.name) && (anim == null || !Lambda.has(anim, EmitterParam.curvePath(e, cast top)));
-	}
-
-	/** The name of the animation curve of the param `key` of an emitter **/
-	public static inline function keyName(key: String) {
-		return key.split(".").join(":");
+		return !isChannel(top.name) && !isParamName(e, top.name);
 	}
 
 	/** If `name` is the name of an animation curve of an emitter param **/
@@ -88,10 +72,6 @@ class AnimEdit {
 			case ByName(owner, name):
 				// a single curve can animate all the components of a vector
 				Curve.getCurve(owner, name, false) ?? (name.indexOf(":") > 0 ? Curve.getCurve(owner, name.split(":")[0], false) : null);
-			case ByKey(emitter, key):
-				// files migrated before the naming convention bind their curves by path only
-				var path = getAnimCurves(emitter)?.get(key);
-				Curve.getCurve(emitter, keyName(key), false) ?? (path == null ? null : EmitterParam.resolveCurve(emitter, path));
 		}
 	}
 
@@ -129,7 +109,7 @@ class AnimEdit {
 
 	/** Shows the animation of `target` on `slider`, nothing out of an FX **/
 	public static function bind(slider: hide.kit.Slider<Float>, target: AnimTarget) {
-		var owner = switch (target) { case ByName(o, _), ByKey(o, _): o; };
+		var owner = switch (target) { case ByName(o, _): o; };
 		if (getTime(owner) == null)
 			return;
 		var marker = new AnimMarker(null, slider.id + "Anim", slider, target, owner);
@@ -184,16 +164,6 @@ class AnimEdit {
 					c.name = name;
 					c.addKey(time, value, Linear);
 				});
-			case ByKey(emitter, key):
-				editTree(editor, emitter, () -> {
-					var c = new Curve(emitter, emitter.shared);
-					c.name = keyName(key);
-					c.addKey(time, value, Linear);
-					// the runtime still reads the emitter animations through animCurves
-					var e : AnimCurvesOwner = cast emitter;
-					e.animCurves ??= [];
-					e.animCurves.set(key, EmitterParam.curvePath(emitter, c));
-				});
 		}
 	}
 
@@ -202,13 +172,7 @@ class AnimEdit {
 		if (curve == null)
 			return;
 		var owner = curve.parent;
-		editTree(editor, owner, () -> {
-			curve.remove();
-			switch (target) {
-				case ByKey(emitter, key): (cast emitter : AnimCurvesOwner).animCurves?.remove(key);
-				default:
-			}
-		});
+		editTree(editor, owner, () -> curve.remove());
 	}
 
 	public static function keyAt(curve: Curve, time: Float) {

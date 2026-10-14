@@ -111,23 +111,17 @@ class EmitterMacros {
 		var add : Array<Field> = (macro class {
 			public static var emitterParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = $a{settings};
 			public static var MODE_PARAMS : Array<hrt.prefab.fx.EmitterParam.ModeParamDef> = $a{modeParams};
-			public var animCurves : Null<hrt.prefab.fx.EmitterParam.AnimCurves>;
 			function loadParams( data : Dynamic ) {
 				var params : Dynamic = data.params;
 				if( params == null ) $b{unset} else $b{load};
-				var anim : Dynamic = data.animCurves;
-				animCurves = anim == null ? null : hrt.prefab.fx.EmitterParam.parseAnimCurves(anim);
 			}
 			function saveParams( data : Dynamic ) {
 				var params : Dynamic = {}, any = false;
 				$b{save};
 				if( any ) data.params = params;
-				var anim = hrt.prefab.fx.EmitterParam.saveAnimCurves(animCurves);
-				if( anim != null ) data.animCurves = anim;
 			}
 			function copyParams( from : $selfType ) {
 				$b{copy};
-				animCurves = from.animCurves?.copy();
 			}
 			public function getParam( name : String ) : Null<hrt.prefab.fx.EmitterParam.ParamValue> {
 				return ${{ expr: ESwitch(macro name, getCases, macro null), pos: pos }};
@@ -136,7 +130,7 @@ class EmitterMacros {
 				${{ expr: ESwitch(macro name, setCases, macro throw "No param " + name), pos: pos }};
 			}
 			public function makeValues( obj : $objCT ) : hrt.prefab.fx.EmitterParam.ParamBuilder {
-				var b = new hrt.prefab.fx.EmitterParam.ParamBuilder(this, animCurves);
+				var b = new hrt.prefab.fx.EmitterParam.ParamBuilder(this);
 				var d = new hrt.prefab.fx.Emitter.InstanceDef();
 				obj.instDef = d;
 				$b{particleValues};

@@ -184,7 +184,7 @@ class EmitterEdit {
 					if (changed != null) changed();
 				}
 				if (anim != null)
-					AnimEdit.bind(s, ByKey(owner, anim));
+					AnimEdit.bind(s, ByName(owner, anim));
 			}
 
 			// a curve editor, the `to` fields on top and the `from` ones below
@@ -276,7 +276,7 @@ class EmitterEdit {
 					widget.onValueChange = (temp) -> onChange(p.name, temp);
 					var slider = Std.downcast(widget, hide.kit.Slider);
 					if (p.animate && slider != null)
-						AnimEdit.bind(cast slider, ByKey(emitter, p.name));
+						AnimEdit.bind(cast slider, ByName(emitter, p.name));
 			}
 		}
 

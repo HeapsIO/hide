@@ -1356,22 +1356,17 @@ class FXEditor extends hide.view.FileView {
 
 	function addTracks(element : PrefabElement, props : Array<PropTrackDef>, ?prefix: String) {
 		var added = [];
-		var bindings : Array<{ anim : hrt.prefab.fx.EmitterParam.AnimCurves, key : String, curve : Curve }> = [];
 		for(prop in props) {
 			var id = prefix != null ? prefix + ":" + prop.name : prop.name;
-			// the animation curves of an emitter are bound to its params by path
 			var keys = emitterAnimKeys(element, id);
 			if(keys != null) {
-				var anim = getAnimCurves(element);
 				for(k in keys) {
-					if(anim.exists(k))
+					if(Curve.getCurve(element, k, false) != null)
 						continue;
-					var field = k.split(".").pop();
 					var curve = new Curve(null, null);
-					curve.name = field == "min" || field == "max" ? id + ":" + field : id;
+					curve.name = k;
 					curve.addKey(0, emitterTrackValue(element, k, prop.def), Linear);
 					added.push(curve);
-					bindings.push({ anim: anim, key: k, curve: curve });
 				}
 				continue;
 			}
@@ -1396,12 +1391,6 @@ class FXEditor extends hide.view.FileView {
 				else
 					element.addChild(c);
 			}
-			for(b in bindings) {
-				if(undo)
-					b.anim.remove(b.key);
-				else
-					b.anim.set(b.key, hrt.prefab.fx.EmitterParam.curvePath(element, b.curve));
-			}
 		}
 		exec(false);
 		undo.change(Custom(function(undo) {
@@ -1414,16 +1403,8 @@ class FXEditor extends hide.view.FileView {
 		return added;
 	}
 
-	static function getAnimCurves(element: PrefabElement) : Null<hrt.prefab.fx.EmitterParam.AnimCurves> {
-		var e = Std.downcast(element, hrt.prefab.fx.Emitter);
-		if(e != null) return e.animCurves ??= [];
-		var e2 = Std.downcast(element, hrt.prefab.fx.Emitter2D);
-		if(e2 != null) return e2.animCurves ??= [];
-		return null;
-	}
-
 	/**
-		For an emitter, the keys of the animation curves (`AnimCurves`) of the track `id` (`emitRate`,
+		For an emitter, the names of the animation curves of the track `id` (`emitRate`,
 		`startSpeed:x`...): the value, or the min and max of a range. Null when `id` is not one of its params.
 	**/
 	static function emitterAnimKeys(element: PrefabElement, id: String) : Null<Array<String>> {
@@ -1449,12 +1430,12 @@ class FXEditor extends hide.view.FileView {
 		}
 	}
 
-	/** The current value of what the animation curve `key` of an emitter animates (see `AnimCurves`). **/
+	/** The current value of what the animation curve `key` of an emitter animates. **/
 	static function emitterTrackValue(element: PrefabElement, key: String, def: Null<Float>) : Float {
 		inline function num(v: Dynamic) : Null<Float> return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : null;
 		var e = Std.downcast(element, hrt.prefab.fx.Emitter);
 		var e2 = Std.downcast(element, hrt.prefab.fx.Emitter2D);
-		var parts = key.split(".");
+		var parts = key.split(":");
 		var pdef = Lambda.find(e != null ? hrt.prefab.fx.Emitter.MODE_PARAMS : hrt.prefab.fx.Emitter2D.MODE_PARAMS, p -> p.name == parts[0]);
 		if(pdef == null)
 			return num(Reflect.field(element, key)) ?? def ?? 0.0;
@@ -1926,11 +1907,7 @@ class FXEditor extends hide.view.FileView {
 
 	static function getTrack(element : PrefabElement, propName : String) {
 		var keys = emitterAnimKeys(element, propName);
-		if(keys != null) {
-			var path = getAnimCurves(element).get(keys[0]);
-			return path == null ? null : hrt.prefab.fx.EmitterParam.resolveCurve(element, path);
-		}
-		return Curve.getCurve(element, propName, false);
+		return Curve.getCurve(element, keys != null ? keys[0] : propName, false);
 	}
 
 	static function upperCase(prop: String) {

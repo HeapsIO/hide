@@ -29,9 +29,6 @@ enum ParamMode {
 /** One mode per component, null when unset **/
 typedef ParamValue = Array<Null<ParamMode>>;
 
-/** Path of the animation curve of each animated value, by `EmitterParam.animKey` **/
-typedef AnimCurves = Map<String, String>;
-
 typedef ModeParamDef = {
 	var name : String;
 	var t : hrt.prefab.Props.PropType;
@@ -45,10 +42,10 @@ class EmitterParam {
 
 	public static var COMPONENTS = ["x", "y", "z", "w"];
 
-	/** `startSpeed.x.min`: the param, its component for a vector, the bound of a range **/
+	/** The name of an animation curve, `startSpeed:x:min`: the param, its component for a vector, the bound of a range **/
 	public static function animKey( def : ModeParamDef, comp : Int, ?field : String ) {
-		var k = def.def.length == 1 ? def.name : def.name + "." + COMPONENTS[comp];
-		return field == null ? k : k + "." + field;
+		var k = def.def.length == 1 ? def.name : def.name + ":" + COMPONENTS[comp];
+		return field == null ? k : k + ":" + field;
 	}
 
 	public static function span( m : Null<ParamMode>, def : Float ) : { min : Float, max : Float } {
@@ -125,19 +122,6 @@ class EmitterParam {
 		}
 	}
 
-	/** `[{ param: key, curve: path }, ...]` **/
-	public static function parseAnimCurves( v : Array<Dynamic> ) : AnimCurves {
-		return [for( b in v ) (b.param : String) => (b.curve : String)];
-	}
-
-	public static function saveAnimCurves( m : Null<AnimCurves> ) : Dynamic {
-		if( m == null )
-			return null;
-		var keys = [for( k in m.keys() ) k];
-		keys.sort(Reflect.compare);
-		return keys.length == 0 ? null : [for( k in keys ) { param: k, curve: m.get(k) }];
-	}
-
 	/** The curve at `path` under `owner`: names separated by dots, `name-N` for the Nth sibling of that name **/
 	public static function resolveCurve( owner : Prefab, path : String ) : Null<Curve> {
 		var p = owner;
@@ -184,12 +168,10 @@ class EmitterParam {
 class ParamBuilder {
 
 	var owner : Prefab;
-	var anim : AnimCurves;
 	public var randomSlots(default, null) = 0;
 
-	public function new( owner : Prefab, anim : AnimCurves ) {
+	public function new( owner : Prefab ) {
 		this.owner = owner;
-		this.anim = anim;
 	}
 
 	/** The value of a shape, from 0 to 1, 1 for a missing curve **/
@@ -237,10 +219,9 @@ class ParamBuilder {
 		}
 	}
 
-	/** The value of animation curve `key`, `base` when there is none **/
-	public function animated( key : String, base : Value ) : Value {
-		var path = anim?.get(key);
-		var c = path == null ? null : EmitterParam.resolveCurve(owner, path);
+	/** The value of the animation curve `name`, `base` when there is none **/
+	public function animated( name : String, base : Value ) : Value {
+		var c = Curve.getCurve(owner, name);
 		if( c == null )
 			return base;
 		if( c.blendMode == RandomBlend )
@@ -248,28 +229,13 @@ class ParamBuilder {
 		return c.makeVal();
 	}
 
-	/** The bounds of component `i` of a spawn param, the same value for a Constant **/
-	public function bounds( def : ModeParamDef, value : Null<ParamValue>, i : Int ) : { min : Value, max : Value } {
-		var m = value == null ? null : value[i];
-		switch( m ) {
-		case MRange(min, max):
-			return { min: animated(EmitterParam.animKey(def, i, "min"), VConst(min)), max: animated(EmitterParam.animKey(def, i, "max"), VConst(max)) };
-		default:
-			var v = animated(EmitterParam.animKey(def, i), fixedValue(owner, m, def.def[i]));
-			return { min: v, max: v };
-		}
-	}
-
 	function component( def : ModeParamDef, value : Null<ParamValue>, i : Int ) : Value {
 		var m = value == null ? null : value[i];
 		return switch( [def.kind, m] ) {
 		case [Particle, _]: comp(m, def.def[i]);
-		case [Spawn, MRange(_)]:
-			var b = bounds(def, value, i);
-			switch( [b.min, b.max] ) {
-			case [VConst(min), VConst(max)]: VRandom(randomSlots++, min, max);
-			default: VCurveRange(randomSlots++, b.min, b.max);
-			}
+		case [Spawn, MRange(min, max)]:
+			var a = animated(EmitterParam.animKey(def, i, "min"), VConst(min)), b = animated(EmitterParam.animKey(def, i, "max"), VConst(max));
+			a.match(VConst(_)) && b.match(VConst(_)) ? VRandom(randomSlots++, min, max) : VCurveRange(randomSlots++, a, b);
 		default: animated(EmitterParam.animKey(def, i), fixedValue(owner, m, def.def[i]));
 		}
 	}
