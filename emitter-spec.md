@@ -16,7 +16,7 @@ Scope: `Emitter` and `Emitter2D`. Editing through the new inspector only (edit2 
 | Particle | speed, world speed, acceleration, world acceleration, orbit speed, dampen, max velocity, scale, stretch, stretch velocity, rotation, pivot, offset; particle shader params | all | — |
 | Multipliers | scale multiplier, orbit speed multiplier | Constant | take an animation curve, read every frame |
 
-Vector params have one mode per component.
+Vector params have one mode per component. Rotations are in degrees, rotation speeds (orbit speed) in degrees per second.
 
 ## Modes
 
@@ -74,7 +74,8 @@ Rule: runtime-equivalent whenever possible, while simplifying.
 | start speed curves (FX time) | animation curves on its Spawn fields, baked |
 | scale / orbit speed over time | Multipliers, Constant or animation curve |
 | emitter param `k·c` | animation curve, `k` baked |
-| emitter object transform curves | animation curves, re-baked to override the transform |
+| object transform curves | animation curves, re-baked to override the transform (old rotation curves in turns become degrees); when the old animation scaled in the parent's axes (a shear), a parent object with the original name takes the animation and the object keeps its base transform |
+| orbit speed (radians per second) | degrees per second |
 | particle shader float `c·k` | Curve `c`, from 0, to `k` |
 | particle shader vector, some components animated | animated components: Curve; the others: Constant 0 |
 
