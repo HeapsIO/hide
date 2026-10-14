@@ -1767,7 +1767,10 @@ class Upgrade0 {
 			return;
 		var names = [for( k in out.keys() ) k];
 		names.sort(Reflect.compare);
-		RawNode.setField(s.data, "particleParams", [for( n in names ) obj(["name", n, "value", saveValue(out.get(n))])]);
+		var params : Dynamic = {};
+		for( n in names )
+			Reflect.setField(params, n, saveValue(out.get(n)));
+		RawNode.setField(s.data, "particleParams", params);
 		change(s, "particle shader params with modes");
 	}
 

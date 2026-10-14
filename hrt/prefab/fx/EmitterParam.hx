@@ -77,6 +77,29 @@ class EmitterParam {
 		return v.length == 1 ? saveMode(v[0]) : [for( m in v ) saveMode(m)];
 	}
 
+	/** Params stored by name, `{ name: value }`, a vector is an array **/
+	public static function parseByName( v : Dynamic ) : Null<Map<String, ParamValue>> {
+		if( v == null )
+			return null;
+		var out = new Map();
+		for( name in Reflect.fields(v) ) {
+			var p : Dynamic = Reflect.field(v, name);
+			out.set(name, parse(p, Std.isOfType(p, Array) ? p.length : 1));
+		}
+		return out;
+	}
+
+	public static function saveByName( params : Null<Map<String, ParamValue>> ) : Dynamic {
+		if( params == null )
+			return null;
+		var names = [for( name in params.keys() ) name];
+		names.sort(Reflect.compare);
+		var out = {};
+		for( name in names )
+			Reflect.setField(out, name, save(params.get(name)));
+		return out;
+	}
+
 	static function parseMode( v : Dynamic ) : Null<ParamMode> {
 		if( v == null )
 			return null;

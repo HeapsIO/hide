@@ -29,17 +29,14 @@ class Shader extends Prefab {
 
 	override function load(obj: Dynamic) {
 		super.load(obj);
-		var data : Array<Dynamic> = obj.particleParams;
-		particleParams = data == null ? null : [for( p in data ) (p.name : String) => hrt.prefab.fx.EmitterParam.parse(p.value, Std.isOfType(p.value, Array) ? p.value.length : 1)];
+		particleParams = hrt.prefab.fx.EmitterParam.parseByName(obj.particleParams);
 	}
 
 	override function save() : Dynamic {
 		var obj = super.save();
-		if( particleParams != null ) {
-			var names = [for( name in particleParams.keys() ) name];
-			names.sort(Reflect.compare);
-			obj.particleParams = [for( name in names ) { name: name, value: hrt.prefab.fx.EmitterParam.save(particleParams.get(name)) }];
-		}
+		var params = hrt.prefab.fx.EmitterParam.saveByName(particleParams);
+		if( params != null )
+			obj.particleParams = params;
 		return obj;
 	}
 
@@ -47,15 +44,6 @@ class Shader extends Prefab {
 		super.copy(data);
 		var from : Shader = cast data;
 		particleParams = from.particleParams == null ? null : [for( k => v in from.particleParams ) k => v?.copy()];
-	}
-
-	/** Case insensitive, like the curves **/
-	public function getParticleParam(name: String) : Null<hrt.prefab.fx.EmitterParam.ParamValue> {
-		if( particleParams != null )
-			for( k => v in particleParams )
-				if( k.toLowerCase() == name.toLowerCase() )
-					return v;
-		return null;
 	}
 
 	public function makeShader() : hxsl.Shader {
@@ -339,11 +327,10 @@ class Shader extends Prefab {
 		// the params read over the particle life have modes, see BaseFXTools.makeShaderParams
 		function setParticleParam(name: String, v: hrt.prefab.fx.EmitterParam.ParamValue) {
 			particleParams ??= [];
-			for (k in [for (k in particleParams.keys()) k])
-				if (k.toLowerCase() == name.toLowerCase())
-					particleParams.remove(k);
 			if (v != null)
 				particleParams.set(name, v);
+			else
+				particleParams.remove(name);
 			if (!particleParams.iterator().hasNext())
 				particleParams = null;
 		}
@@ -370,7 +357,7 @@ class Shader extends Prefab {
 				default: hrt.prefab.Props.PropType.PFloat(0, 1);
 			}
 			hrt.prefab.fx.EmitterEdit.param(ctx, shaderCat, this, { name: prop.name, t: t, def: base, kind: Particle, groupName: null }, ["Constant", "Curve"],
-				() -> getParticleParam(prop.name), (v) -> setParticleParam(prop.name, v), refresh);
+				() -> particleParams?.get(prop.name), (v) -> setParticleParam(prop.name, v), refresh);
 		}
 	}
 

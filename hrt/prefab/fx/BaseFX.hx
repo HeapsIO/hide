@@ -244,7 +244,7 @@ class BaseFXTools {
 
 	/** The value of param `name` of a shader under an emitter, from its modes, an unset component keeps its prop **/
 	public static function makeParticleShaderValue(shader: hrt.prefab.Shader, name: String, dim: Int) : Null<Value> {
-		var value = shader.getParticleParam(name);
+		var value = shader.particleParams?.get(name);
 		if(value == null)
 			return null;
 		var prop : Dynamic = Reflect.field(shader.props, name);
