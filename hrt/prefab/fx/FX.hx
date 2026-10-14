@@ -954,6 +954,7 @@ class FX extends Object3D implements BaseFX {
 		super.load(data);
 	}
 
+	// the prefab macros require it with the `load` override
 	override function copy( obj : Prefab ) {
 		super.copy(obj);
 	}

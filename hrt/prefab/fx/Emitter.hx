@@ -1,7 +1,6 @@
 package hrt.prefab.fx;
 import hrt.impl.Gradient;
 import hrt.prefab.l3d.Polygon;
-import hrt.prefab.Curve;
 import hrt.prefab.fx.Value;
 import hrt.prefab.fx.Evaluator;
 import hrt.prefab.fx.EmitterParam;
@@ -1892,7 +1891,6 @@ class Emitter extends Object3D implements ParamOwner {
 		// RANDOM
 		emitterObj.seedGroup 			= 	seedGroup;
 		emitterObj.subEmitterKind		= 	subEmitterKind;
-		// LIFE
 		emitterObj.speedFactor 			= 	speedFactor;
 		emitterObj.warmUpTime 			= 	warmUpTime;
 		emitterObj.delay 				= 	delay;
@@ -1939,8 +1937,6 @@ class Emitter extends Object3D implements ParamOwner {
 		emitterObj.randomColor1 		= 	h3d.Vector.fromArray(randomColor1);
 		emitterObj.randomColor2 		= 	h3d.Vector.fromArray(randomColor2);
 		emitterObj.randomGradient 		= 	randomGradient;
-
-		// PARTICLE MOVEMENT
 
 		// DEBUG
 		#if editor

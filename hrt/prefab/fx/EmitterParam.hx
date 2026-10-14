@@ -17,7 +17,7 @@ enum ParamShape {
 	SEasing(e : Easing);
 }
 
-/** The mode of a param component, see emitter-spec.md **/
+/** The mode of a param component: a value, a random in a range, or over the particle life **/
 enum ParamMode {
 	MConstant( value : Float );
 	MRange( min : Float, max : Float );

@@ -3,7 +3,6 @@ package hrt.prefab.fx;
 import hrt.prefab.fx.Emitter;
 import hrt.prefab.fx.EmitterParam;
 import hrt.impl.Gradient;
-import hrt.prefab.Curve;
 
 using Lambda;
 
