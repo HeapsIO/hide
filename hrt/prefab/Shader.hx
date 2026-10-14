@@ -19,11 +19,8 @@ class Shader extends Prefab {
 
 	public var shader : hxsl.Shader;
 
-	/**
-		Under an emitter: the params evaluated over the particle life, by shader param name, with
-		their modes (see `hrt.prefab.fx.EmitterParam`). Colors keep their curves instead.
-	**/
-	public var particleParams : Map<String, hrt.prefab.fx.EmitterParam.ParamValue> = null;
+	/** Under an emitter: the params over the particle life, by name (`EmitterParam`, Constant or Curve) **/
+	public var particleParams : Map<String, hrt.prefab.fx.EmitterParam.ParamValue>;
 
 	function new(parent, sh: ContextShared) {
 		super(parent, sh);
@@ -32,17 +29,8 @@ class Shader extends Prefab {
 
 	override function load(obj: Dynamic) {
 		super.load(obj);
-		particleParams = null;
-		// [{ name: param, value: modes }, ...]
 		var data : Array<Dynamic> = obj.particleParams;
-		if( data != null )
-			for( p in data ) {
-				var name : String = p.name;
-				var v : Dynamic = p.value;
-				var value = hrt.prefab.fx.EmitterParam.parse(v, Std.isOfType(v, Array) ? (v : Array<Dynamic>).length : 1);
-				if( name != null && value != null )
-					setParticleParam(name, value);
-			}
+		particleParams = data == null ? null : [for( p in data ) (p.name : String) => hrt.prefab.fx.EmitterParam.parse(p.value, Std.isOfType(p.value, Array) ? p.value.length : 1)];
 	}
 
 	override function save() : Dynamic {
@@ -58,46 +46,16 @@ class Shader extends Prefab {
 	override function copy(data: Prefab) {
 		super.copy(data);
 		var from : Shader = cast data;
-		particleParams = from.particleParams == null ? null : [for( k => v in from.particleParams ) k => v.copy()];
+		particleParams = from.particleParams == null ? null : [for( k => v in from.particleParams ) k => v?.copy()];
 	}
 
-	/** The emitter whose particles the shader applies to, if any **/
-	public function getParticleEmitter() : Null<hrt.prefab.fx.Emitter> {
-		var p = parent;
-		while( p != null ) {
-			if( Std.isOfType(p, hrt.prefab.fx.Emitter) )
-				return cast p;
-			if( Std.isOfType(p, hrt.prefab.l3d.Trails) )
-				return null;
-			p = p.parent;
-		}
-		return null;
-	}
-
-	/** The modes of a param over the particle life, the name is case insensitive like the old curves. **/
+	/** Case insensitive, like the curves **/
 	public function getParticleParam(name: String) : Null<hrt.prefab.fx.EmitterParam.ParamValue> {
-		if( particleParams == null )
-			return null;
-		var v = particleParams.get(name);
-		if( v != null )
-			return v;
-		for( k => v in particleParams )
-			if( hrt.prefab.Curve.sameName(k, name) )
-				return v;
+		if( particleParams != null )
+			for( k => v in particleParams )
+				if( k.toLowerCase() == name.toLowerCase() )
+					return v;
 		return null;
-	}
-
-	/** Sets the modes of a param over the particle life, null to unset it. **/
-	public function setParticleParam(name: String, value: Null<hrt.prefab.fx.EmitterParam.ParamValue>) {
-		if( hrt.prefab.fx.EmitterParam.isUnset(value) ) {
-			particleParams?.remove(name);
-			if( particleParams != null && !particleParams.iterator().hasNext() )
-				particleParams = null;
-			return;
-		}
-		if( particleParams == null )
-			particleParams = [];
-		particleParams.set(name, value);
 	}
 
 	public function makeShader() : hxsl.Shader {

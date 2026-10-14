@@ -295,15 +295,15 @@ class ParticleInstance {
 
 		//SCALE
 		var def = emitter.instDef;
-		evaluator.getFastVec(idx, def.stretch, t, v);
-		v.scale3(evaluator.getFast(idx, def.scale, t));
-		v.scale3(evaluator.getFast(idx, def.scaleMultiplier, emitter.curTime));
+		evaluator.getVector(idx, def.stretch, t, v);
+		v.scale3(evaluator.getFloat(idx, def.scale, t));
+		v.scale3(evaluator.getFloat(idx, def.scaleMultiplier, emitter.curTime));
 		localMat.initScale(v.x, v.y, v.z);
 
 
 		// PIVOT
 		if(def.pivot != VZero) {
-			evaluator.getFastVec(idx, def.pivot, t, v);
+			evaluator.getVector(idx, def.pivot, t, v);
 			localMat.tx = v.x * localMat._11;
 			localMat.ty = v.y * localMat._22;
 			localMat.tz = v.z * localMat._33;
@@ -311,14 +311,14 @@ class ParticleInstance {
 
 		// ROTATION
 		if(def.rotation != VZero) {
-			evaluator.getFastVec(idx, def.rotation, t, v);
+			evaluator.getVector(idx, def.rotation, t, v);
 			v.scale3(Math.PI / 180.0);
 			localMat.rotate(v.x, v.y, v.z);
 		}
 
 		//OFFSET
 		if(def.offset != VZero) {
-			evaluator.getFastVec(idx, def.offset, t, v);
+			evaluator.getVector(idx, def.offset, t, v);
 			localMat.tx += v.x;
 			localMat.ty += v.y;
 			localMat.tz += v.z;
@@ -345,18 +345,18 @@ class ParticleInstance {
 
 		if( life == 0 ) {
 			// START LOCAL SPEED
-			evaluator.getFastVec(idx, emitter.startSpeed, emitter.curTime, v);
+			evaluator.getVector(idx, emitter.startSpeed, emitter.curTime, v);
 			v.transform3x3(emitOrientation);
 			add(speedAccumulation, v);
 			// START WORLD SPEED
-			evaluator.getFastVec(idx, emitter.startWorldSpeed, emitter.curTime, v);
+			evaluator.getVector(idx, emitter.startWorldSpeed, emitter.curTime, v);
 			v.transform3x3(emitter.invTransform);
 			add(speedAccumulation, v);
 		}
 
 		// ACCELERATION
 		if(def.acceleration != VZero) {
-			evaluator.getFastVec(idx, def.acceleration, t, v);
+			evaluator.getVector(idx, def.acceleration, t, v);
 			v.scale3(dt);
 			v.transform3x3(emitOrientation);
 			add(speedAccumulation, v);
@@ -364,7 +364,7 @@ class ParticleInstance {
 
 		// WORLD ACCELERATION
 		if(def.worldAcceleration != VZero) {
-			evaluator.getFastVec(idx, def.worldAcceleration, t, v);
+			evaluator.getVector(idx, def.worldAcceleration, t, v);
 			v.scale3(dt);
 			if(emitter.simulationSpace == Local)
 				v.transform3x3(emitter.invTransform);
@@ -377,14 +377,14 @@ class ParticleInstance {
 
 		// SPEED
 		if(def.speed != VZero) {
-			evaluator.getFastVec(idx, def.speed, t, v);
+			evaluator.getVector(idx, def.speed, t, v);
 			v.transform3x3(emitOrientation);
 			add(speed, v);
 		}
 
 		// DAMPEN
 		if (def.dampen != VZero) {
-			var dampen = evaluator.getFast(idx, def.dampen, t);
+			var dampen = evaluator.getFloat(idx, def.dampen, t);
 			var scale = Math.exp(dampen* -dt);
 			speedAccumulation.scale(scale);
 		}
@@ -392,7 +392,7 @@ class ParticleInstance {
 
 		// WORLD SPEED
 		if(def.worldSpeed != VZero) {
-			evaluator.getFastVec(idx, def.worldSpeed, t, v);
+			evaluator.getVector(idx, def.worldSpeed, t, v);
 			if(emitter.simulationSpace == Local)
 				v.transform3x3(emitter.invTransform);
 			add(speed, v);
@@ -400,7 +400,7 @@ class ParticleInstance {
 
 		// MAX VELOCITY
 		if (def.maxVelocity != VZero) {
-			var maxVel = evaluator.getFast(idx, def.maxVelocity, t);
+			var maxVel = evaluator.getFloat(idx, def.maxVelocity, t);
 			var curVelSq = speed.lengthSq();
 			if (maxVel * maxVel < curVelSq) {
 				speed.normalize();
@@ -416,7 +416,7 @@ class ParticleInstance {
 
 		// STRETCH VELOCITY
 		if (def.stretchVelocity != VZero) {
-			var s = evaluator.getFast(idx, def.stretchVelocity, t);
+			var s = evaluator.getFloat(idx, def.stretchVelocity, t);
 			var absPos = this.absPos;
 			var sx = hxd.Math.abs(speed.x * absPos._11 + speed.y * absPos._12 + speed.z * absPos._13);
 			sx = hxd.Math.min(sx, 0.25);
@@ -437,10 +437,10 @@ class ParticleInstance {
 		z += speed.z * dt;
 
 		if(def.orbitSpeed != VZero) {
-			evaluator.getFastVec(idx, def.orbitSpeed, t, v);
+			evaluator.getVector(idx, def.orbitSpeed, t, v);
 
 			// degrees per second
-			var factorOverTime = evaluator.getFast(idx, def.orbitSpeedMultiplier, emitter.curTime);
+			var factorOverTime = evaluator.getFloat(idx, def.orbitSpeedMultiplier, emitter.curTime);
 			v.scale3(factorOverTime * (Math.PI / 180.0));
 
 			tmpMat.initRotation(v.x * dt, v.y * dt, v.z * dt);
@@ -555,11 +555,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var trails : hrt.prefab.l3d.Trails.TrailObj;
 	public var trailsTemplate : hrt.prefab.l3d.Trails;
 	// LIFE
-	public var lifeTime = 2.0;
-	public var lifeTimeRand = 0.0;
-	/** The bounds of the life time, animated over the FX time (null when not, `lifeTime` and `lifeTimeRand` are used) **/
-	public var lifeTimeMin : Value = null;
-	public var lifeTimeMax : Value = null;
+	public var lifeTimeMin : Value = VConst(2.0);
+	public var lifeTimeMax : Value = VConst(2.0);
 	public var speedFactor = 1.0;
 	public var warmUpTime = 0.0;
 	public var delay = 0.0;
@@ -649,8 +646,6 @@ class EmitterObject extends h3d.scene.Object {
 	var meshTransform = new h3d.Matrix();
 	var randomValues : Array<Float>;
 	var randSlots : Int;
-	/** The param component drawn by each random slot **/
-	var randomKeys : Array<String>;
 
 	public function new(?parent) {
 		super(parent);
@@ -690,8 +685,14 @@ class EmitterObject extends h3d.scene.Object {
 		scene = getScene();
 	}
 
-	function init(params: ParamBuilder, prefab: Emitter) {
+	function init(randSlots: Int, prefab: Emitter) {
 		this.emitterPrefab = prefab;
+		this.randSlots = randSlots;
+		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
+		evaluator = new Evaluator(randomValues, randSlots);
+		var anim = getParentFX();
+		if(anim != null)
+			evaluator.parameters = @:privateAccess anim.evaluator.parameters;
 
 		updateParentNonEmitter();
 
@@ -783,14 +784,14 @@ class EmitterObject extends h3d.scene.Object {
 			var shaders = findRec(emitterPrefab, hrt.prefab.Shader);
 			for( shader in shaders ) {
 				makeShaderInstance(shader);
-				hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch, params);
+				hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch, true);
 			}
 
 			// Animated textures animations
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 			if( frameCount > 1 && spriteSheet != null ) {
 				var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
-				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / lifeTime);
+				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / ((evaluator.getFloat(lifeTimeMin, 0) + evaluator.getFloat(lifeTimeMax, 0)) * 0.5));
 				animatedTextureShader.useSourceUVs = animationUseSourceUVs;
 				animatedTextureShader.startTime = @:privateAccess scene?.renderer.ctx.globalTime ?? 0.0;
 				animatedTextureShader.loop = animationLoop;
@@ -825,21 +826,6 @@ class EmitterObject extends h3d.scene.Object {
 
 		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
 		particlesCount = maxCount;
-		randomKeys = params.slots;
-		randSlots = randomKeys.length;
-		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
-		evaluator = new Evaluator(randomValues, randSlots);
-		// the particle shaders draw their randoms from the emitter
-		if( customAnims != null )
-			for( anim in customAnims ) @:privateAccess {
-				anim.randValues = randomValues;
-				anim.stride = randSlots;
-			}
-
-		var anim = getParentFX();
-		if(anim != null)
-			evaluator.parameters = @:privateAccess anim.evaluator.parameters;
-
 		reset();
 	}
 
@@ -888,8 +874,6 @@ class EmitterObject extends h3d.scene.Object {
 		emitTarget = 0;
 		listHead = null;
 
-		// Slot after slot, in the order the values were built (see ParamBuilder). Keyed draws would
-		// hash the particle and randomKeys[slot] instead, so that editing a param cannot shift the others.
 		if(randomValues != null) {
 			for(i in 0...randomValues.length)
 				randomValues[i] = random.srand();
@@ -1065,11 +1049,8 @@ class EmitterObject extends h3d.scene.Object {
 			for( i in 0...count ) {
 				var part = allocInstance();
 				part.startTime = globalTime;
-				if( lifeTimeMin != null ) {
-					var lo = evaluator.getFloat(lifeTimeMin, curTime), hi = evaluator.getFloat(lifeTimeMax, curTime);
-					part.lifeTime = hxd.Math.max(0.01, (lo + hi) * 0.5 + random.srand((hi - lo) * 0.5));
-				} else
-					part.lifeTime = hxd.Math.max(0.01, lifeTime + random.srand(lifeTimeRand));
+				var lo = evaluator.getFloat(lifeTimeMin, curTime), hi = evaluator.getFloat(lifeTimeMax, curTime);
+				part.lifeTime = hxd.Math.max(0.01, (lo + hi) * 0.5 + random.srand((hi - lo) * 0.5));
 
 				if(useRandomColor) {
 					if (useRandomGradient) {
@@ -1492,9 +1473,8 @@ class EmitterObject extends h3d.scene.Object {
 				return;
 			inline tmpMat.load(p.absPos.toMatrix());
 			batch.worldPosition = tmpMat;
-			for( anim in customAnims ) {
+						for( anim in customAnims ) {
 				var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
-				anim.particle = p.idx;
 				anim.setTime(t);
 			}
 			if( animatedTextureShader != null ){
@@ -1758,58 +1738,58 @@ class EmitterObject extends h3d.scene.Object {
 class Emitter extends Object3D {
 
 	@:group("Properties")
-	@:s public var subEmitterKind : SubEmitterKind = SubEmitterKind.SpawnOnDeath;
+	@:s @:disp("Sub Kind") public var subEmitterKind : SubEmitterKind = SubEmitterKind.SpawnOnDeath;
 	@:s @:range(0, 1) public var speedFactor : Float = 1.0;
-	@:s @:range(0, 1) public var warmUpTime : Float = 0.0;
+	@:s @:range(0, 1) @:disp("Warm Up") public var warmUpTime : Float = 0.0;
 	@:s @:range(0, 10) public var delay : Float = 0.0;
-	@:s @:range(0, 100) public var seedGroup : Int = 0;
-	@:s public var alignMode : AlignMode = AlignMode.None;
-	@:s public var alignLockAxis : AlignLockAxis = AlignLockAxis.ScreenZ;
+	@:s @:range(0, 100) @:disp("Seed") public var seedGroup : Int = 0;
+	@:s @:disp("Mode") public var alignMode : AlignMode = AlignMode.None;
+	@:s @:disp("Lock Axis") public var alignLockAxis : AlignLockAxis = AlignLockAxis.ScreenZ;
 	@:s public var simulationSpace : SimulationSpace = SimulationSpace.Local;
-	@:s public var particleScaling : ParticleScaling = ParticleScaling.Parent;
+	@:s @:disp("Scaling") public var particleScaling : ParticleScaling = ParticleScaling.Parent;
 	@:s public var followRotation : Bool = false;
 	@:s public var applyMeshTransform : Bool = false;
 	@:s public var enableSort : Bool = true;
 	@:s public var sortMode : SortMode = SortMode.Depth;
 
 	@:group("Emit Params")
-	@:s public var emitType : EmitType = EmitType.Infinity;
-	@:s @:range(0, 10.0) public var emitDuration : Float = 1.0;
-	@:s @:range(0, 100) @:animate public var emitRate : Float = 5;
-	@:s @:range(0, 100) @:animate public var emitRateMin : Float = 5;
-	@:s @:range(0, 100) @:animate public var emitRateMax : Float = 5;
-	@:s @:range(0.01, 5.0) public var emitRateChangeDelay : Float = 1.0;
-	@:s @:range(1, 10) public var burstCount : Float = 1;
-	@:s @:range(0, 1.0) public var burstDelay : Float = 1.0;
-	@:s @:range(1, 10) @:animate public var burstParticleCount : Float = 1;
+	@:s @:disp("Type") public var emitType : EmitType = EmitType.Infinity;
+	@:s @:range(0, 10.0) @:disp("Duration") public var emitDuration : Float = 1.0;
+	@:s @:range(0, 100) @:animate @:disp("Rate") public var emitRate : Float = 5;
+	@:s @:range(0, 100) @:animate @:disp("Rate Min") public var emitRateMin : Float = 5;
+	@:s @:range(0, 100) @:animate @:disp("Rate Max") public var emitRateMax : Float = 5;
+	@:s @:range(0.01, 5.0) @:disp("Rate Change Time") public var emitRateChangeDelay : Float = 1.0;
+	@:s @:range(1, 10) @:disp("Count") public var burstCount : Float = 1;
+	@:s @:range(0, 1.0) @:disp("Delay") public var burstDelay : Float = 1.0;
+	@:s @:range(1, 10) @:animate @:disp("Particle Count") public var burstParticleCount : Float = 1;
 	@:s @:range(0, 100) public var maxCount : Int = 20;
-	@:s public var emitOrientation : Orientation = Orientation.Forward;
+	@:s @:disp("Orientation") public var emitOrientation : Orientation = Orientation.Forward;
 
 	@:group("Emit Shape")
-	@:s public var emitShape : EmitShape = EmitShape.Sphere;
-	@:s @:range(0, 360.0) @:animate public var emitAngle : Float = 30.0;
-	@:s @:range(0, 1.0) public var emitRad1 : Float = 1.0;
-	@:s @:range(0, 1.0) public var emitRad2 : Float = 1.0;
-	@:s public var emitSurface : Bool = false;
-	@:s @:range(0, 1.0) public var emitDomeCut : Float = 0.5;
-	@:s public var emitDomeFlip : Bool = false;
+	@:s @:disp("Shape") public var emitShape : EmitShape = EmitShape.Sphere;
+	@:s @:range(0, 360.0) @:animate @:disp("Angle") public var emitAngle : Float = 30.0;
+	@:s @:range(0, 1.0) @:disp("Radius 1") public var emitRad1 : Float = 1.0;
+	@:s @:range(0, 1.0) @:disp("Radius 2") public var emitRad2 : Float = 1.0;
+	@:s @:disp("Surface") public var emitSurface : Bool = false;
+	@:s @:range(0, 1.0) @:disp("Cut") public var emitDomeCut : Float = 0.5;
+	@:s @:disp("Flip") public var emitDomeFlip : Bool = false;
 
 	@:group("Color")
-	@:s public var useRandomColor : Bool = false;
-	@:s public var useRandomGradient : Bool = false;
-	@:s public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
-	@:s public var randomColor2 : Array<Float> = [1., 1., 1., 1.];
-	@:s public var randomGradient : hrt.impl.Gradient.GradientData;
+	@:s @:disp("Random Color") public var useRandomColor : Bool = false;
+	@:s @:disp("Random Gradient") public var useRandomGradient : Bool = false;
+	@:s @:disp("Color 1") public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
+	@:s @:disp("Color 2") public var randomColor2 : Array<Float> = [1., 1., 1., 1.];
+	@:s @:disp("Gradient") public var randomGradient : hrt.impl.Gradient.GradientData;
 
 	@:group("Sprite Sheet Animation")
-	@:s public var spriteSheet : String;
-	@:s @:range(0) public var frameCount : Int = 0;
-	@:s @:range(1) public var frameDivisionX : Int = 1;
-	@:s @:range(1) public var frameDivisionY : Int = 1;
-	@:s @:range(0, 2.0) public var animationSpeed : Float = 1.0;
-	@:s public var animationLoop : Bool = true;
-	@:s public var animationUseSourceUVs : Bool = true;
-	@:s public var animationBlendBetweenFrames : Bool = true;
+	@:s @:disp("Sheet") public var spriteSheet : String;
+	@:s @:range(0) @:disp("Frames") public var frameCount : Int = 0;
+	@:s @:range(1) @:disp("Divisions X") public var frameDivisionX : Int = 1;
+	@:s @:range(1) @:disp("Divisions Y") public var frameDivisionY : Int = 1;
+	@:s @:range(0, 2.0) @:disp("Speed") public var animationSpeed : Float = 1.0;
+	@:s @:disp("Loop") public var animationLoop : Bool = true;
+	@:s @:disp("Use Source UV") public var animationUseSourceUVs : Bool = true;
+	@:s @:disp("Blend Frames") public var animationBlendBetweenFrames : Bool = true;
 
 	@:group("Ground Collision")
 	@:s public var useCollision : Bool = false;
@@ -1817,12 +1797,12 @@ class Emitter extends Object3D {
 	@:s @:range(0, 1.0) public var killOnCollision : Float = 0.0;
 
 	@:group("Debug")
-	@:s public var viewDebug : Bool = false;
+	@:s @:disp("Show Debug") public var viewDebug : Bool = false;
 
 	// Params with modes (`EmitterParam`), in the order of their random slots
 	@:group("Particle Movement")
-	@:param(PVec(3, -10, 10), Particle) public var speed : ParamValue;
-	@:param(PVec(3, -10, 10), Particle) public var worldSpeed : ParamValue;
+	@:param(PVec(3, -10, 10), Particle) @:disp("Fixed Speed") public var speed : ParamValue;
+	@:param(PVec(3, -10, 10), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamValue;
 	/** Degrees per second **/
 	@:param(PVec(3, -360, 360), Particle) public var orbitSpeed : ParamValue;
 	@:param(PFloat(0, 2), Multiplier, 1.) public var orbitSpeedMultiplier : ParamValue;
@@ -1972,7 +1952,7 @@ class Emitter extends Object3D {
 		emitterObj.debugGraphics.visible = viewDebug;
 		#end
 
-		emitterObj.init(params, this);
+		emitterObj.init(params.randomSlots, this);
 
 		#if editor
 		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2", "emitDomeCut", "emitDomeFlip"].indexOf(propName) >= 0)
@@ -2146,10 +2126,10 @@ class Emitter extends Object3D {
 		// Params with modes: only the constant components are edited here, "+" sets a component
 		// to its default and "-" unsets the param
 		for (p in MODE_PARAMS) {
-			var line = new hide.kit.Line(getCategory(p.category), p.name);
-			line.label = hide.kit.Macros.camelToSpaceCase(p.name);
+			var line = new hide.kit.Line(getCategory(p.groupName), p.name);
+			line.label = p.disp ?? hide.kit.Macros.camelToSpaceCase(p.name);
 			var value = getParam(p.name);
-			var range = EmitterParam.range(p);
+			var range = switch (p.t) { case PFloat(min, max), PVec(_, min, max): { min: min, max: max }; default: { min: null, max: null }; };
 			var dim = p.def.length;
 			for (i in 0...dim) {
 				var id = p.name + "." + i;
@@ -2170,7 +2150,7 @@ class Emitter extends Object3D {
 					case MConstant(v):
 						makeSlider(line, id, label, v, range.min, range.max, (v) -> set(MConstant(v)));
 					case m:
-						new hide.kit.Text(line, id, label + " " + EmitterParam.kind(m));
+						new hide.kit.Text(line, id, label + " " + Type.enumConstructor(m).substr(1));
 				}
 			}
 			if (value != null) {

@@ -104,14 +104,12 @@ class FX2DAnimation extends h2d.Object {
 	}
 
 
-	static var tmpPt = new h3d.Vector4();
 	public function setTime( time : Float ) {
 
 		this.localTime = time;
 
 		for(anim in objects) {
-			if(anim.transform != null)
-				applyTransform(anim, evaluator, time);
+			applyTransform(anim, evaluator, time);
 
 			if(anim.visibility != null)
 				anim.obj2d.visible = anim.elt2d.visible && evaluator.getFloat(anim.visibility, time) > 0.5;
@@ -160,23 +158,19 @@ class FX2DAnimation extends h2d.Object {
 		this.prevTime = localTime;
 	}
 
-	/** Order of the fields of `ObjectAnimation.transform` in 2D **/
-	public static var TRANSFORM_2D = ["x", "y", "scaleX", "scaleY", "rotation"];
-
-	/** Sets the transform of an animated object at `time`: the animated fields, the others from the prefab. **/
 	public static function applyTransform(anim: ObjectAnimation, evaluator: Evaluator, time: Float) {
-		var e = anim.elt2d;
-		var t = anim.transform;
-		inline function field(i: Int, base: Float) : Float {
-			var v = t[i];
-			return v == null ? base : evaluator.getFloat(v, time);
+		var e = anim.elt2d, o = anim.obj2d, p = anim.position, s = anim.scale, r = anim.rotation;
+		inline function f(v: Value, base: Float) return v == null ? base : evaluator.getFloat(v, time);
+		if(p != null) {
+			o.x = f(p.x, e.x);
+			o.y = f(p.y, e.y);
 		}
-		var o = anim.obj2d;
-		o.x = field(0, e.x);
-		o.y = field(1, e.y);
-		o.scaleX = field(2, e.scaleX);
-		o.scaleY = field(3, e.scaleY);
-		o.rotation = hxd.Math.degToRad(field(4, e.rotation));
+		if(s != null) {
+			o.scaleX = f(s.x, e.scaleX);
+			o.scaleY = f(s.y, e.scaleY);
+		}
+		if(r != null)
+			o.rotation = hxd.Math.degToRad(f(r.x, e.rotation));
 	}
 
 	override function sync( ctx : h2d.RenderContext ) {
@@ -266,24 +260,17 @@ class FX2D extends Object2D implements BaseFX {
 			return Curve.getColorValue(curves);
 		}
 
-		var position = FX.FXAnimation.vectorCurves(elt, "position", 2);
-		var scale = FX.FXAnimation.vectorCurves(elt, "scale", 2);
-		var rotation = FX.FXAnimation.vectorCurves(elt, "rotation", 1);
-		var transform = null;
-		if(position != null || scale != null || rotation != null) {
-			anyFound = true;
-			transform = (position ?? [null, null]).concat(scale ?? [null, null]).concat(rotation ?? [null]);
-		}
-
 		var anim : ObjectAnimation = {
 			elt2d: obj2d,
 			obj2d: local2d,
-			transform: transform,
+			position: FX.FXAnimation.vectorAnimation(elt, "position"),
+			scale: FX.FXAnimation.vectorAnimation(elt, "scale"),
+			rotation: FX.FXAnimation.vectorAnimation(elt, "rotation"),
 			color: makeColor("color"),
 			visibility: makeVal("visibility", null),
 		};
 
-		if (Std.isOfType(elt, hrt.prefab.l2d.Anim2D) || Std.isOfType(elt, hrt.prefab.l2d.Atlas))
+		if (anim.position != null || anim.scale != null || anim.rotation != null || Std.isOfType(elt, hrt.prefab.l2d.Anim2D) || Std.isOfType(elt, hrt.prefab.l2d.Atlas))
 			anyFound = true;
 
 		return anyFound ? anim : null;

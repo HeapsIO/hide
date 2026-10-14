@@ -17,89 +17,6 @@ class Evaluator {
 		}
 	}
 
-	static function canRemap(v: Value) : Bool {
-		return switch(v) {
-			case VZero, VConst(_), VRandom(_): true; // only values that we are sure do not use time
-			default: false;
-		}
-	}
-
-	static inline function commute(a: Value, b: Value, fn: (Value, Value) -> Null<Value>) : Null<Value> {
-		var r = fn(a, b);
-		return r != null ? r : fn(b, a);
-	}
-
-	public static function vMult(a: Value, b: Value) : Value {
-		if(a == VZero || b == VZero) return VZero;
-		var r = commute(a, b, (a, b) -> switch [a, b] {
-			case [VConst(1.0), _]: b;
-			case [VConst(va), VConst(vb)]: VConst(va * vb);
-			case [VConst(va), VCurve(c)]: VCurveT(c, va, 0.0);
-			case [VConst(va), VCurveT(c, scale, add)]: VCurveT(c, scale * va, add * va);
-			case [VRandom(rid, scale, add), VCurve(c)]: VRandMultCurve(rid, scale, add, c);
-			case [VRandom(rid, scale, 0.0), VCurveT(c, cscale, 0.0)]: VRandMultCurve(rid, scale * cscale, 0.0, c);
-			case [VRandom(rid, scale, add), VBlendCurves(1.0, 0.0, ca, cb, bv)]:
-				VRandomBlendCurves(rid, scale, add, ca, cb, bv);
-			case [VConst(va), VBlendCurves(scale, add, ca, cb, bv)]:
-				VBlendCurves(scale * va, add * va, ca, cb, bv);
-			case [VConst(va), VRandomBlendCurves(rid, scale, add, ca, cb, bv)]:
-				VRandomBlendCurves(rid, scale * va, add * va, ca, cb, bv);
-			case [_, VParamRemap(v, param)] if(canRemap(a)): VParamRemap(vMult(a, v), param);
-			case [_, VValueRemap(v, remap)] if(canRemap(a)): VValueRemap(vMult(a, v), remap);
-			default: null;
-		});
-		return r != null ? r : VMult(a, b);
-	}
-
-	public static function vAdd(a: Value, b: Value) : Value {
-		if(a == VZero) return b;
-		if(b == VZero) return a;
-		var r = commute(a, b, (a, b) -> switch [a, b] {
-			case [VConst(va), VConst(vb)]: VConst(va + vb);
-			case [VConst(va), VRandom(rid, scale, add)]: VRandom(rid, scale, add + va);
-			case [VConst(va), VCurve(c)]: VCurveT(c, 1.0, va);
-			case [VConst(va), VCurveT(c, scale, add)]: VCurveT(c, scale, add + va);
-			case [VRandom(rid, scale, add), VCurve(c)]: VRandAddCurve(rid, scale, add, c);
-			case [VRandom(rid, scale, add), VCurveT(c, 1.0, cadd)]: VRandAddCurve(rid, scale, add + cadd, c);
-			case [VConst(va), VBlendCurves(scale, add, ca, cb, bv)]: VBlendCurves(scale, add + va, ca, cb, bv);
-			case [_, VParamRemap(v, param)] if(canRemap(a)): VParamRemap(vAdd(a, v), param);
-			case [_, VValueRemap(v, remap)] if(canRemap(a)): VValueRemap(vAdd(a, v), remap);
-			default: null;
-		});
-		return r != null ? r : VAdd(a, b);
-	}
-
-	/** Whether `getFast` can evaluate the value. **/
-	public static function isFlat(v: Value) : Bool {
-		return switch(v) {
-			case VAdd(_), VMult(_), VVector(_), VHsl(_): false;
-			case VParamRemap(a, _): isFlat(a);
-			case VValueRemap(a, remap): isFlat(a) && isFlat(remap);
-			case VLerp(a, b, t): isFlat(a) && isFlat(b) && isFlat(t);
-			default: true;
-		}
-	}
-
-	/**
-		lerp(a, b, t), folded into the flat values above when it matches one of them,
-		so the usual cases evaluate exactly like before.
-	**/
-	public static function vLerp(a: Value, b: Value, t: Value) : Value {
-		inline function const(v: Value) : Null<Float> return switch(v) { case VZero: 0.0; case VConst(f): f; default: null; };
-		var ca = const(a), cb = const(b);
-		var r : Null<Value> = switch [a, b, t] {
-			case [_, _, VZero]: a;
-			case [_, _, VConst(1.0)]: b;
-			case [VZero, _, _]: vMult(b, t);
-			case [_, _, _] if(ca != null && cb != null): vAdd(a, vMult(VConst(cb - ca), t));
-			// b = a + 1: the additive params (rotation, offset, pivot) with a random base
-			case [VRandom(ra, sa, aa), VRandom(rb, sb, ab), _] if(ra == rb && sa == sb && ab - aa == 1.0): vAdd(a, t);
-			case [VCurve(curveA), VCurve(curveB), VRandom(rid, 0.5, 0.5)]: VRandomBetweenCurves(rid, curveA, curveB);
-			default: null;
-		}
-		return r != null && isFlat(r) ? r : VLerp(a, b, t);
-	}
-
 	inline function getRandom(pidx: Int, ridx: Int) {
 		var i = pidx * stride + ridx;
 		return randValues[i];
@@ -114,93 +31,40 @@ class Evaluator {
 		}
 	}
 
-	public function getFast(pidx: Int, val: Value, time: Float) : Float {
+	public function getFloat(pidx: Int=0, val: Value, time: Float) : Float {
 		return switch(val) {
-			case null: 0.0;
-			case VZero: 0.0;
+			case null, VZero: 0.0;
 			case VConst(v): v;
 			case VCurve(c): c.getVal(time);
-			case VCurveT(c, scale, add): c.getVal(time) * scale + add;
 			case VRandom(rid, scale, add): getRandom(pidx, rid) * scale + add;
-			case VRandMultCurve(rid, scale, add, c):
-				(getRandom(pidx, rid) * scale + add) * c.getVal(time);
-			case VRandAddCurve(rid, scale, add, c):
-				getRandom(pidx, rid) * scale + add + c.getVal(time);
-			case VBlendCurves(scale, add, a, b, blendVar):
-				var va = a.getVal(time);
-				var vb = b.getVal(time);
-				hxd.Math.lerp(va, vb, parameters[blendVar] ?? 0.0) * scale + add;
-			case VRandomBlendCurves(rid, scale, add, a, b, blendVar):
-				var rnd = getRandom(pidx, rid) * scale + add;
-				var va = a.getVal(time);
-				var vb = b.getVal(time);
-				rnd * hxd.Math.lerp(va, vb, parameters[blendVar] ?? 0.0);
-			case VRandomBetweenCurves(rid, a, b):
-				var va = a.getVal(time);
-				var vb = b.getVal(time);
-				va + (vb - va) * ((getRandom(pidx, rid) + 1) * 0.5);
-			case VLerp(a, b, t):
-				var va = getFast(pidx, a, time);
-				var vb = getFast(pidx, b, time);
-				va + (vb - va) * getFast(pidx, t, time);
-			case VEasing(e):
-				e.eval(time);
-			case VParamRemap(a, param):
-				getFast(pidx, a, parameters[param] ?? 0.0);
-			case VValueRemap(a, remap):
-				getFast(pidx, a, getFast(pidx, remap, time));
-			default:
-				throw "getFast: non-flat Value " + Type.enumConstructor(val);
-		}
-	}
-
-	public function getFloat(pidx: Int=0, val: Value, time: Float) : Float {
-		switch(val) {
-			case VParamRemap(a, param):
-				var time = parameters[param] ?? 0.0;
-				return getFloat(pidx, a, time);
-			case VValueRemap(a, remap):
-				var time = getFloat(pidx, remap, time);
-				return getFloat(pidx, a, time);
-			case VAdd(a, b):
-				return getFloat(pidx, a, time) + getFloat(pidx, b, time);
-			case VMult(a, b):
-				return getFloat(pidx, a, time) * getFloat(pidx, b, time);
 			case VLerp(a, b, t):
 				var va = getFloat(pidx, a, time);
-				return va + (getFloat(pidx, b, time) - va) * getFloat(pidx, t, time);
-			default:
-				return getFast(pidx, val, time);
+				va + (getFloat(pidx, b, time) - va) * getFloat(pidx, t, time);
+			case VEasing(e): e.eval(time);
+			case VBlendCurves(a, b, blendVar): hxd.Math.lerp(a.getVal(time), b.getVal(time), parameters[blendVar] ?? 0.0);
+			case VParamRemap(a, param): getFloat(pidx, a, parameters[param] ?? 0.0);
+			case VValueRemap(a, remap): getFloat(pidx, a, getFloat(pidx, remap, time));
+			case VVector(_), VHsl(_): throw "getFloat: vector value";
 		}
 	}
 
 	public function getSum(val: Value, time: Float) : Float {
-		switch(val) {
-			case VZero: return 0;
-			case VConst(v): return v * time;
-			case VCurve(c): return c.getSum(time);
-			case VCurveT(c, scale, add): return c.getSum(time) * scale + add * time;
-			case VAdd(a, b):
-				return getSum(a, time) + getSum(b, time);
-			case VParamRemap(a, param):
-				var blend = parameters[param] ?? 0.0;
-				return getSum(a, blend) * time;
-			case VMult(a, VConst(b)), VMult(VConst(b), a): return getSum(a, time) * b;
-			case VBlendCurves(scale, add, a, b, blendVar):
-				var blend = parameters[blendVar] ?? 0.0;
-				return hxd.Math.lerp(a.getSum(time), b.getSum(time), blend) * scale + add * time;
-			case VRandomBlendCurves(rid, scale, add, a, b, blendVar):
-				var blend = parameters[blendVar] ?? 0.0;
-				return (getRandom(0, rid) * scale + add) * hxd.Math.lerp(a.getSum(time), b.getSum(time), blend);
+		return switch(val) {
+			case VZero: 0;
+			case VConst(v): v * time;
+			case VCurve(c): c.getSum(time);
+			case VBlendCurves(a, b, blendVar): hxd.Math.lerp(a.getSum(time), b.getSum(time), parameters[blendVar] ?? 0.0);
+			case VParamRemap(a, param): getSum(a, parameters[param] ?? 0.0) * time;
+			case VLerp(VConst(a), VConst(b), t): a * time + (b - a) * getSum(t, time);
+			case VLerp(a, b, t = VConst(_) | VRandom(_)):
+				var sa = getSum(a, time);
+				sa + (getSum(b, time) - sa) * getFloat(t, 0);
 			default: throw "not implemented";
 		}
-		return 0.0;
 	}
 
-	public function getVector(pidx: Int=0, v: Value, time: Float, vec: h3d.Vector4) {
+	public inline function getVector(pidx: Int=0, v: Value, time: Float, vec: h3d.Vector4) {
 		switch(v) {
-			case VMult(a, b):
-				throw "need optimization";
 			case VVector(x, y, z, null):
 				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time), getFloat(pidx, z, time), 1.0);
 			case VVector(x, y, z, w):
@@ -217,28 +81,9 @@ class Evaluator {
 		return vec;
 	}
 
-	public inline function getFastVec(pidx: Int, v: Value, time: Float, vec: h3d.Vector4) {
-		switch(v) {
-			case VVector(x, y, z, null):
-				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), 1.0);
-			case VVector(x, y, z, w):
-				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), getFast(pidx, w, time));
-			case VZero:
-				vec.set(0,0,0,1);
-			default:
-				var f = getFast(pidx, v, time);
-				vec.set(f, f, f, 1.0);
-		}
-		return vec;
-	}
-
 	public function getVector2(pidx: Int=0, v: Value, time: Float, vec: h2d.col.Point) {
 		switch(v) {
-			case VMult(a, b):
-				throw "need optimization";
-			case VVector(x, y, z, null):
-				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time));
-			case VVector(x, y, z, w):
+			case VVector(x, y, _, _):
 				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time));
 			case VZero:
 				vec.set(0,0);

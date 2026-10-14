@@ -261,11 +261,8 @@ class Emitter2DObject extends h2d.Object {
 	// Emitter parameters
 	public var instDef : InstanceDef;
 	public var seed = 0;
-	public var lifeTime = 2.0;
-	public var lifeTimeRand = 0.0;
-	/** The bounds of the life time, animated over the FX time (null when not, `lifeTime` and `lifeTimeRand` are used) **/
-	public var lifeTimeMin : Value = null;
-	public var lifeTimeMax : Value = null;
+	public var lifeTimeMin : Value = VConst(2.0);
+	public var lifeTimeMax : Value = VConst(2.0);
 	public var speedFactor = 1.0;
 	public var warmUpTime = 0.0;
 	public var delay = 0.0;
@@ -326,7 +323,7 @@ class Emitter2DObject extends h2d.Object {
 
 		if (spriteSheet != null) {
 			var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
-			animatedTexShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / lifeTime);
+			animatedTexShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / ((evaluator.getFloat(lifeTimeMin, 0) + evaluator.getFloat(lifeTimeMax, 0)) * 0.5));
 			animatedTexShader.useSourceUVs = animationUseSourceUVs;
 			animatedTexShader.startTime = 0;
 			animatedTexShader.loop = animationLoop;
@@ -417,11 +414,8 @@ class Emitter2DObject extends h2d.Object {
 	function doEmit(count : Int) {
 		for (_ in 0...count) {
 			var part = new Particle2DInstance(getTile(), this);
-			if( lifeTimeMin != null ) {
-				var lo = evaluator.getFloat(lifeTimeMin, curTime), hi = evaluator.getFloat(lifeTimeMax, curTime);
-				part.lifeTime = (lo + hi) * 0.5 + rand.srand((hi - lo) * 0.5);
-			} else
-				part.lifeTime = lifeTime + rand.srand(lifeTimeRand);
+			var lo = evaluator.getFloat(lifeTimeMin, curTime), hi = evaluator.getFloat(lifeTimeMax, curTime);
+			part.lifeTime = (lo + hi) * 0.5 + rand.srand((hi - lo) * 0.5);
 			part.idx = instanceCounter;
 			this.particles.push(part);
 			instanceCounter = (instanceCounter + 1) % maxCount;
@@ -478,51 +472,51 @@ class Emitter2D extends Object2D {
 	@:s @:range(0, 100) public var seed : Int = 0;
 
 	@:group("Emission")
-	@:s @:range(0, 1) public var warmUpTime : Float = 0.0;
+	@:s @:range(0, 1) @:disp("Warm Up") public var warmUpTime : Float = 0.0;
 	@:s @:range(0, 10) public var delay : Float = 0.0;
-	@:s public var emitType : EmitType = EmitType.Infinity;
-	@:s @:range(0, 10.0) public var emitDuration : Float = 1.0;
-	@:s @:range(0, 100) @:animate public var emitRate : Float = 5;
-	@:s @:range(0, 100) @:animate public var emitRateMin : Float = 5;
-	@:s @:range(0, 100) @:animate public var emitRateMax : Float = 5;
-	@:s @:range(0.01, 5.0) public var emitRateChangeDelay : Float = 1.0;
-	@:s @:range(1, 10) public var burstCount : Int = 1;
-	@:s @:range(0, 1.0) public var burstDelay : Float = 1.0;
-	@:s @:range(1, 10) @:animate public var burstParticleCount : Float = 1;
+	@:s @:disp("Type") public var emitType : EmitType = EmitType.Infinity;
+	@:s @:range(0, 10.0) @:disp("Duration") public var emitDuration : Float = 1.0;
+	@:s @:range(0, 100) @:animate @:disp("Rate") public var emitRate : Float = 5;
+	@:s @:range(0, 100) @:animate @:disp("Rate Min") public var emitRateMin : Float = 5;
+	@:s @:range(0, 100) @:animate @:disp("Rate Max") public var emitRateMax : Float = 5;
+	@:s @:range(0.01, 5.0) @:disp("Rate Change Time") public var emitRateChangeDelay : Float = 1.0;
+	@:s @:range(1, 10) @:disp("Count") public var burstCount : Int = 1;
+	@:s @:range(0, 1.0) @:disp("Delay") public var burstDelay : Float = 1.0;
+	@:s @:range(1, 10) @:animate @:disp("Particle Count") public var burstParticleCount : Float = 1;
 	@:s @:range(0, 100) public var maxCount : Int = 20;
-	@:s public var emitOrientation : Orientation = Orientation.Forward;
+	@:s @:disp("Orientation") public var emitOrientation : Orientation = Orientation.Forward;
 
 	@:group("Shape Emission")
-	@:s public var emitShape : Emit2DShape = Emit2DShape.Circle;
-	@:s @:range(0, 360.0) @:animate public var emitRadius : Float = 20.0;
-	@:s @:range(0, 360.0) @:animate public var emitAngle1 : Float = 20.0;
-	@:s @:range(0, 360.0) @:animate public var emitAngle2 : Float = 40.0;
-	@:s @:range(0, 10.0) @:animate public var emitWidth : Float = 1.0;
-	@:s @:range(0, 10.0) @:animate public var emitHeight : Float = 1.0;
-	@:s public var emitSurface : Bool = false;
+	@:s @:disp("Shape") public var emitShape : Emit2DShape = Emit2DShape.Circle;
+	@:s @:range(0, 360.0) @:animate @:disp("Radius") public var emitRadius : Float = 20.0;
+	@:s @:range(0, 360.0) @:animate @:disp("Angle 1") public var emitAngle1 : Float = 20.0;
+	@:s @:range(0, 360.0) @:animate @:disp("Angle 2") public var emitAngle2 : Float = 40.0;
+	@:s @:range(0, 10.0) @:animate @:disp("Width") public var emitWidth : Float = 1.0;
+	@:s @:range(0, 10.0) @:animate @:disp("Height") public var emitHeight : Float = 1.0;
+	@:s @:disp("Surface") public var emitSurface : Bool = false;
 
 	@:group("Particle")
 	@:s public var spriteType : SpriteType = SpriteType.Color;
 	@:s public var color : Array<Float> = [0., 0., 0., 1.];
 	@:s public var texture : String = "";
-	@:s public var useRandomColor : Bool = false;
-	@:s public var useRandomGradient : Bool = false;
-	@:s public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
-	@:s public var randomColor2 : Array<Float> = [1., 1., 1., 1.];
-	@:s public var randomGradient : hrt.impl.Gradient.GradientData;
-	@:s public var spriteSheet : String;
-	@:s @:range(0) public var frameCount : Int = 0;
-	@:s @:range(1) public var frameDivisionX : Int = 1;
-	@:s @:range(1) public var frameDivisionY : Int = 1;
-	@:s @:range(0, 2.0) public var animationSpeed : Float = 1.0;
-	@:s public var animationLoop : Bool = true;
-	@:s public var animationUseSourceUVs : Bool = true;
-	@:s public var animationBlendBetweenFrames : Bool = true;
+	@:s @:disp("Random Color") public var useRandomColor : Bool = false;
+	@:s @:disp("Random Gradient") public var useRandomGradient : Bool = false;
+	@:s @:disp("Color 1") public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
+	@:s @:disp("Color 2") public var randomColor2 : Array<Float> = [1., 1., 1., 1.];
+	@:s @:disp("Gradient") public var randomGradient : hrt.impl.Gradient.GradientData;
+	@:s @:disp("Sheet") public var spriteSheet : String;
+	@:s @:range(0) @:disp("Frames") public var frameCount : Int = 0;
+	@:s @:range(1) @:disp("Divisions X") public var frameDivisionX : Int = 1;
+	@:s @:range(1) @:disp("Divisions Y") public var frameDivisionY : Int = 1;
+	@:s @:range(0, 2.0) @:disp("Speed") public var animationSpeed : Float = 1.0;
+	@:s @:disp("Loop") public var animationLoop : Bool = true;
+	@:s @:disp("Use Source UV") public var animationUseSourceUVs : Bool = true;
+	@:s @:disp("Blend Frames") public var animationBlendBetweenFrames : Bool = true;
 
 	// Params with modes (`EmitterParam`), in the order of their random slots
 	@:group("Particle Movement")
-	@:param(PVec(2, -10, 10), Particle) public var speed : ParamValue;
-	@:param(PVec(2, -10, 10), Particle) public var worldSpeed : ParamValue;
+	@:param(PVec(2, -10, 10), Particle) @:disp("Fixed Speed") public var speed : ParamValue;
+	@:param(PVec(2, -10, 10), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamValue;
 	/** Degrees per second **/
 	@:param(PFloat(-360, 360), Particle) public var orbitSpeed : ParamValue;
 	@:param(PFloat(0, 2), Multiplier, 1.) public var orbitSpeedMultiplier : ParamValue;
@@ -612,7 +606,7 @@ class Emitter2D extends Object2D {
 		emitterObj.randomColor2 		= 	h3d.Vector.fromArray(randomColor2);
 		emitterObj.randomGradient 		= 	randomGradient;
 
-		emitterObj.init(params.slots.length, this);
+		emitterObj.init(params.randomSlots, this);
 
 		#if editor
 		if(propName == null || ["emitShape", "emitRadius", "emitAngle1", "emitAngle2", "emitWidth", "emitHeight"].indexOf(propName) >= 0)

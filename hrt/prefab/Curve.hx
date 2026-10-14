@@ -7,7 +7,6 @@ import hide.prefab.HideProps;
 
 
 import hrt.prefab.fx.Value;
-import hrt.prefab.fx.Evaluator;
 
 using Lambda;
 
@@ -240,17 +239,15 @@ class Curve extends Prefab {
 				var cb = Std.downcast(this.children[1], Curve);
 				if (ca == null) return cb != null ? VCurve(cb) : VConst(0.0);
 				if (cb == null) return VCurve(ca);
-				return VBlendCurves(1.0, 0.0, ca, cb, blendParam);
+				return VBlendCurves(ca, cb, blendParam);
 			case RandomBlend:
 				return VCurve(this);
 			case Reference:
 				var val = getRef()?.makeVal();
 				if (val == null)
 					return VConst(0.0);
-				if (scale != 1.0)
-					val = Evaluator.vMult(val, VConst(scale));
-				if (offset != 0.0)
-					val = Evaluator.vAdd(val, VConst(offset));
+				if (scale != 1.0 || offset != 0.0)
+					val = VLerp(VConst(offset), VConst(offset + scale), val);
 				return val;
 			default:
 				throw "invalid blendMode value";
@@ -759,7 +756,7 @@ class Curve extends Prefab {
 		return false;
 	}
 
-	public static inline function sameName(a: String, b: String) {
+	static inline function checkName(a: String, b: String) {
 		return a == b || a.toLowerCase() == b.toLowerCase();
 	}
 
@@ -769,7 +766,7 @@ class Curve extends Prefab {
 			#if editor
 			if (parent.shared.editor?.isHidden(c)) continue;
 			#end
-			if(!sameName(c.name, name)) continue;
+			if(!checkName(c.name, name)) continue;
 			var curve = c.to(Curve);
 			if(curve == null) continue;
 			return curve;
@@ -786,7 +783,7 @@ class Curve extends Prefab {
 			#end
 			var idx = c.name.indexOf(":");
 			var curvePrefix = (idx >= 0) ? c.name.substr(0, idx) : c.name;
-			if(!sameName(curvePrefix, prefix))
+			if(!checkName(curvePrefix, prefix))
 				continue;
 			var curve = c.to(Curve);
 			if(curve == null) continue;
@@ -877,7 +874,7 @@ class Curve extends Prefab {
 		return curves.find(c -> StringTools.endsWith(c.name.toLowerCase(), suffix));
 	}
 
-	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0, scale: Float=1.0, randomValue: Float = 0) : Value {
+	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0) : Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}
@@ -887,14 +884,7 @@ class Curve extends Prefab {
 		var w = find(":w");
 
 		inline function curveOrVal(c: Curve, defVal: Float) : Value {
-			if (c == null)
-				return VConst(defVal);
-
-			var vc = c.makeVal();
-			if (scale != 1.0) {
-				return VMult(vc, VConst(scale));
-			}
-			return vc;
+			return c == null ? VConst(defVal) : c.makeVal();
 		}
 
 		return VVector(

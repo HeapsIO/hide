@@ -868,20 +868,8 @@ class FXEditor extends hide.view.FileView {
 			this.curveEditor.xOffset = xOffset;
 			this.curveEditor.xScale = xScale;
 
-			var isInstance = isInstanceCurve(curve);
-			if (isInstance) {
-				var name = curve.name.split(":")[0];
-				var param = hrt.prefab.fx.Emitter.PARAMS[name];
-				if (param != null) {
-					isInstance = param.instance;
-				} else {
-					isInstance = false;
-				}
-			}
-
-			if(isInstance) {
-				curve.maxTime = curve.name.indexOf("OverTime") >= 0 ? 5000 : 1.0;
-			}
+			if(isInstanceCurve(curve))
+				curve.maxTime = 1.0;
 			this.curveEditor.curves.push(curve);
 			this.curveEditor.onChange = function(anim) {
 				//refreshDopesheet();
@@ -1445,21 +1433,20 @@ class FXEditor extends hide.view.FileView {
 		if(e == null && e2 == null)
 			return null;
 		var parts = id.split(":");
-		var defs = e != null ? hrt.prefab.fx.Emitter.MODE_PARAMS_BY_NAME : hrt.prefab.fx.Emitter2D.MODE_PARAMS_BY_NAME;
-		var def = defs.get(parts[0]);
+		var def = Lambda.find(e != null ? hrt.prefab.fx.Emitter.MODE_PARAMS : hrt.prefab.fx.Emitter2D.MODE_PARAMS, p -> p.name == parts[0]);
 		if(def == null) {
 			var settings = [for(p in (e != null ? hrt.prefab.fx.Emitter.emitterParams : hrt.prefab.fx.Emitter2D.emitterParams)) if(p.animate == true) p.name];
 			return settings.indexOf(id) >= 0 ? [id] : null;
 		}
-		if(!hrt.prefab.fx.EmitterParam.isAnimated(def))
+		if(def.kind == Particle)
 			return null;
 		var i = parts.length > 1 ? hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1]) : 0;
 		if(i < 0)
 			return null;
 		var value = e != null ? e.getParam(def.name) : e2.getParam(def.name);
 		return switch(value == null ? null : value[i]) {
-			case hrt.prefab.fx.EmitterParam.ParamMode.MRange(_): [hrt.prefab.fx.EmitterParam.paramAnimKey(def, i, "min"), hrt.prefab.fx.EmitterParam.paramAnimKey(def, i, "max")];
-			default: [hrt.prefab.fx.EmitterParam.paramAnimKey(def, i)];
+			case hrt.prefab.fx.EmitterParam.ParamMode.MRange(_): [hrt.prefab.fx.EmitterParam.animKey(def, i, "min"), hrt.prefab.fx.EmitterParam.animKey(def, i, "max")];
+			default: [hrt.prefab.fx.EmitterParam.animKey(def, i)];
 		}
 	}
 
@@ -1469,8 +1456,7 @@ class FXEditor extends hide.view.FileView {
 		var e = Std.downcast(element, hrt.prefab.fx.Emitter);
 		var e2 = Std.downcast(element, hrt.prefab.fx.Emitter2D);
 		var parts = key.split(".");
-		var defs = e != null ? hrt.prefab.fx.Emitter.MODE_PARAMS_BY_NAME : hrt.prefab.fx.Emitter2D.MODE_PARAMS_BY_NAME;
-		var pdef = defs.get(parts[0]);
+		var pdef = Lambda.find(e != null ? hrt.prefab.fx.Emitter.MODE_PARAMS : hrt.prefab.fx.Emitter2D.MODE_PARAMS, p -> p.name == parts[0]);
 		if(pdef == null)
 			return num(Reflect.field(element, key)) ?? def ?? 0.0;
 		var i = parts.length > 1 ? hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1]) : -1;
@@ -1682,31 +1668,18 @@ class FXEditor extends hide.view.FileView {
 			menuItems.push(item);
 		}
 
-		if(emitterElt != null) {
-			for(param in hrt.prefab.fx.Emitter.emitterParams) {
-				if(!param.animate)
-					continue;
-				addParam(param, "");
-			}
-			for(param in hrt.prefab.fx.Emitter.instanceParams) {
-				if(!param.animate)
-					continue;
-				addParam(param, param.instance ? "Instance " : "");
-			}
+		function addEmitterParams(settings: Array<hrt.prefab.fx.EmitterHelper.ParamDef>, modeParams: Array<hrt.prefab.fx.EmitterParam.ModeParamDef>) {
+			for(param in settings)
+				if(param.animate)
+					addParam(param, "");
+			for(p in modeParams)
+				if(p.kind != Particle)
+					addParam({ name: p.name, t: p.t, def: p.def.length > 1 ? p.def : p.def[0], disp: p.disp }, "");
 		}
-
-		if(emitter2DElt != null) {
-			for(param in hrt.prefab.fx.Emitter2D.emitterParams) {
-				if(!param.animate)
-					continue;
-				addParam(param, "");
-			}
-			for(param in hrt.prefab.fx.Emitter2D.instanceParams) {
-				if(!param.animate)
-					continue;
-				addParam(param, param.instance ? "Instance " : "");
-			}
-		}
+		if(emitterElt != null)
+			addEmitterParams(hrt.prefab.fx.Emitter.emitterParams, hrt.prefab.fx.Emitter.MODE_PARAMS);
+		if(emitter2DElt != null)
+			addEmitterParams(hrt.prefab.fx.Emitter2D.emitterParams, hrt.prefab.fx.Emitter2D.MODE_PARAMS);
 
 		if (particle2dElt != null) {
 			for(param in hrt.prefab.l2d.Particle2D.emitter2dParams) {
@@ -1966,8 +1939,10 @@ class FXEditor extends hide.view.FileView {
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
 	}
 
+	/** A particle curve: under an emitter and not one of its animation curves **/
 	static function isInstanceCurve(curve: Curve) {
-		return curve.findParent(hrt.prefab.fx.Emitter) != null;
+		var e = curve.findParent(hrt.prefab.fx.Emitter);
+		return e != null && !Lambda.has(e.animCurves, hrt.prefab.fx.EmitterParam.curvePath(e, curve));
 	}
 
 	static var _ = Extension.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX", name: "FX" });
