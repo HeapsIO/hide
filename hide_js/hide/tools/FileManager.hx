@@ -857,7 +857,7 @@ class RenderWindowManager {
 		// the generator socket is properly initialised
 		untyped js.Browser.window.requestIdleCallback(() -> {
 			state = Ready;
-			generatorWindow = electron.Window.open('app.html?thumbnail=true', {
+			generatorWindow = electron.Window.open('app.html?thumbnail=true&project=' + StringTools.urlEncode(hide.Ide.inst.projectDir), {
 				show: false,
 				title: "HideThumbnailGenerator"
 			});

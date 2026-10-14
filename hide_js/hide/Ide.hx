@@ -140,6 +140,10 @@ class Ide extends hide.tools.IdeData {
 				var state = electron.App.getShared(Std.parseInt(vars.get("sid")));
 				subView = { component : sub, state : state };
 			}
+			// the editor state is written by the main window in another process : it can be read while partially written
+			var project = vars.get("project");
+			if( thumbnailMode && project != null )
+				current = project;
 		}
 
 		var xMax = 1;
