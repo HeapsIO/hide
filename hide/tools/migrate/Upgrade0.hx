@@ -37,10 +37,12 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	  baked into them (exactly when the old value is linear in the curve), and the emitter params
 	  reference theirs by path (`animCurves`).
 	- Orbit speeds go from radians to degrees per second.
-	- An object whose old animation cannot be held by its own transform (a shear, a rotation the
-	  euler curves cannot follow) gets a parent object, which takes its name, its place, its
-	  position and its animation; it keeps its base rotation and scale and its content, under a new
-	  name (`<name>_base`). The paths of the file through it are updated.
+	- Transforms are re-baked to what the old runtime showed: `setTransform` kept a scale and a
+	  quaternion of the animated matrix (a shear is lost), sampled when there is no exact form. An
+	  object whose rotation the euler curves cannot follow (through the gimbal lock) gets a parent
+	  object, which takes its name, its place, its position and its animation; it keeps its base
+	  rotation and scale and its content, under a new name (`<name>_base`). The paths of the file
+	  through it are updated.
 	- The overrides of the references are rewritten for the upgraded files they override (see
 	  `upgradeReference`), reading the other files of the project through the context.
 
@@ -841,17 +843,16 @@ class Upgrade0 {
 		var problem : String = null;
 		if( span.param )
 			problem = "rotation / scale curves depending on an FX parameter";
-		// all the curves loop on the same period: so does the re-bake
-		var loop = span.loop && !varyingOnce && periods.length == 1 && span.min >= 0 && periods[0] > 0;
+		// all the curves loop: the re-bake loops over their common period, else it covers the FX
+		var period = commonPeriod(periods);
+		var loop = span.loop && !varyingOnce && period > 0 && span.min >= 0;
 		if( loop ) {
 			span.min = 0;
-			span.max = periods[0];
+			span.max = period;
 		} else {
 			var duration = fxDuration > 0 ? fxDuration : 5.0;
 			if( span.loop && span.max < duration ) span.max = duration;
 			span.max += 1;
-			if( span.loop && problem == null )
-				problem = "looping rotation / scale curves";
 		}
 
 		var ev = new Evaluator();
@@ -880,9 +881,9 @@ class Upgrade0 {
 		var base = new h3d.Matrix();
 		base.initScale(withScale ? scale[0] : 1, withScale ? scale[1] : 1, withScale ? scale[2] : 1);
 		base.rotate(hxd.Math.degToRad(rot[0]), hxd.Math.degToRad(rot[1]), hxd.Math.degToRad(rot[2]));
-		var m = new h3d.Matrix();
+		var m = new h3d.Matrix(), q = new h3d.Quat(), tmp = new h3d.Matrix(), sc = new h3d.Vector();
 		var worst = 0.;
-		function oldMatrix( t : Float, out : h3d.Matrix ) {
+		function rawMatrix( t : Float, out : h3d.Matrix ) {
 			inline function f( v : Null<Value>, def : Float ) return v == null ? def : ev.getFloat(v, t);
 			var s = withScale ? [f(sv[0], 1), f(sv[1], 1), f(sv[2], 1)] : [1., 1., 1.];
 			out.initScale(s[0], s[1], s[2]);
@@ -890,9 +891,36 @@ class Upgrade0 {
 			out.multiply(base, out);
 			return s;
 		}
-		function sampleAt( t : Float, prev : Array<Float> ) : { s : Array<Float>, r : Array<Float>, error : Float } {
-			var s = oldMatrix(t, m);
-			var d = decompose(m, prev, withScale ? [s[0] * scale[0], s[1] * scale[1], s[2] * scale[2]] : [1., 1., 1.]);
+		// the old runtime set it with h3d.scene.Object.setTransform, which keeps a scale and a quaternion: a
+		// shear is lost, and the rotation of the previous frame stays while a scale is 0
+		function rotationAt( t : Float, depth : Int ) {
+			rawMatrix(t, tmp);
+			var sc = tmp.getScale();
+			if( Math.abs(sc.x) > hxd.Math.EPSILON && Math.abs(sc.y) > hxd.Math.EPSILON && Math.abs(sc.z) > hxd.Math.EPSILON ) {
+				tmp.prependScale(1 / sc.x, 1 / sc.y, 1 / sc.z);
+				q.initRotateMatrix(tmp);
+			} else if( depth < 60 )
+				rotationAt(t - 1 / 60, depth + 1);
+			else
+				q.initRotation(hxd.Math.degToRad(rot[0]), hxd.Math.degToRad(rot[1]), hxd.Math.degToRad(rot[2]));
+		}
+		// its scale and rotation, `out`: the quaternion of a sheared matrix is not normalized, the runtime then
+		// showed a transform that is not a scale and a rotation, the closest one is with the quaternion normalized
+		var loss = 0.;
+		function oldTransform( t : Float, out : h3d.Matrix ) {
+			rawMatrix(t, out);
+			sc.load(out.getScale());
+			rotationAt(t, 0);
+			loss = Math.max(loss, Math.abs(q.lengthSq() - 1));
+			q.normalize();
+			q.toMatrix(out);
+		}
+		// the closest scale and euler angles
+		function sampleAt( t : Float, prev : Array<Float> ) : { s : Array<Float>, r : Array<Float>, error : Float, m : h3d.Matrix } {
+			oldTransform(t, m);
+			var d = decompose(m, prev, [1., 1., 1.]);
+			d.s = [d.s[0] * sc.x, d.s[1] * sc.y, d.s[2] * sc.z];
+			d.m.prependScale(sc.x, sc.y, sc.z);
 			if( d.error > worst ) worst = d.error;
 			return d;
 		}
@@ -931,20 +959,19 @@ class Upgrade0 {
 		times = [for( x in all ) x.t];
 		var outS = [for( i in 0...3 ) [for( x in all ) (x.d.s[i] : Float)]];
 		var outR = [for( i in 0...3 ) [for( x in all ) hxd.Math.radToDeg(x.d.r[i])]];
-		if( worst > MATRIX_TOLERANCE && problem == null )
-			problem = 'scale and rotation not separable (shear ${Math.round(worst * 1e4) / 1e4})';
 
 		var scaleKeys = [], rotKeys = [];
 		for( i in 0...3 ) {
 			scaleKeys.push(withScale ? fitKeys(times, outS[i], SCALE_TOLERANCE * Math.max(1, Math.abs(scale[i]))) : null);
 			rotKeys.push(fitKeys(times, outR[i], ROTATION_TOLERANCE));
 		}
-		var fit = { cs: cs, cr: cr, scale: scale, rot: rot, withScale: withScale, loop: loop, scaleKeys: scaleKeys, rotKeys: rotKeys, problem: problem };
+		var fit = { cs: cs, cr: cr, scale: scale, rot: rot, withScale: withScale, loop: loop, scaleKeys: scaleKeys, rotKeys: rotKeys, problem: problem, nonRigid: loss };
 		if( problem == null ) {
 			// the keys against the old transform, between the samples and around the keys
 			var check = [];
 			var t = span.min - 0.5;
-			while( t <= span.max + 0.5 ) {
+			// a re-bake of curves that keep looping holds until its end
+			while( t <= span.max + (span.loop && !loop ? 0 : 0.5) ) {
 				check.push(t);
 				t += SAMPLE_STEP * 0.5;
 			}
@@ -952,15 +979,29 @@ class Upgrade0 {
 				check.push(k - 1e-4);
 				check.push(k + 1e-4);
 			}
-			var err = fitError(fit, check, oldMatrix);
+			// against the closest scale and rotation, the rest is reported as a loss
+			var err = fitError(fit, check, (t, out) -> out.load(sampleAt(t, [0., 0., 0.]).m));
 			if( err > MATRIX_TOLERANCE )
 				fit.problem = 'rotation the euler angles cannot follow (error ${Math.round(err * 1e4) / 1e4} with sampled keys)';
 		}
 		return fit;
 	}
 
+	/** The smallest multiple of the loop periods, 0 when there is none (or not under 16 times the longest one) **/
+	static function commonPeriod( periods : Array<Float> ) : Float {
+		var longest = 0.;
+		for( p in periods ) if( p > longest ) longest = p;
+		if( longest <= 0 ) return 0;
+		for( k in 1...17 ) {
+			var c = longest * k;
+			if( Lambda.foreach(periods, p -> p > 0 && Math.abs(c / p - Math.round(c / p)) < 1e-6) )
+				return c;
+		}
+		return 0;
+	}
+
 	/** The worst error of the re-baked keys against the old transform at `times`, relative to the scale of the matrix rows. **/
-	function fitError( fit : Dynamic, times : Array<Float>, oldMatrix : (Float, h3d.Matrix) -> Array<Float> ) : Float {
+	function fitError( fit : Dynamic, times : Array<Float>, oldMatrix : (Float, h3d.Matrix) -> Void ) : Float {
 		var ev = new Evaluator();
 		function curve( keys : Array<Dynamic>, base : Float ) : Value {
 			if( keys == null ) return VConst(base);
@@ -1011,6 +1052,8 @@ class Upgrade0 {
 		}
 		if( fit.problem != null )
 			warn(n, fit.problem + ", approximated");
+		if( fit.nonRigid > MATRIX_TOLERANCE )
+			warn(n, 'the old runtime showed a transform that is not a scale and a rotation (the quaternion of a sheared matrix, off by ${Math.round(fit.nonRigid * 1e4) / 1e4}), the quaternion is normalized');
 		change(n, withScale ? "rotation and scale, sampled" : "rotation, sampled");
 	}
 
@@ -1052,7 +1095,7 @@ class Upgrade0 {
 		Scale and euler angles (radians, closest to `prev`) of a matrix (its 3x3 part), `signs` telling
 		the sign of each scale. `error`: what the rebuilt matrix misses of it.
 	**/
-	static function decompose( m : h3d.Matrix, prev : Array<Float>, signs : Array<Float> ) : { s : Array<Float>, r : Array<Float>, error : Float } {
+	static function decompose( m : h3d.Matrix, prev : Array<Float>, signs : Array<Float> ) : { s : Array<Float>, r : Array<Float>, error : Float, m : h3d.Matrix } {
 		var rows = [[m._11, m._12, m._13], [m._21, m._22, m._23], [m._31, m._32, m._33]];
 		var det = m._11 * (m._22 * m._33 - m._23 * m._32) - m._12 * (m._21 * m._33 - m._23 * m._31) + m._13 * (m._21 * m._32 - m._22 * m._31);
 		var sg = [for( v in signs ) v < 0 ? -1. : 1.];
@@ -1095,7 +1138,7 @@ class Upgrade0 {
 		var scaleRef = Math.max(1e-6, Math.max(Math.abs(s[0]), Math.max(Math.abs(s[1]), Math.abs(s[2]))));
 		for( e in [check._11 - m._11, check._12 - m._12, check._13 - m._13, check._21 - m._21, check._22 - m._22, check._23 - m._23, check._31 - m._31, check._32 - m._32, check._33 - m._33] )
 			err = Math.max(err, Math.abs(e) / scaleRef);
-		return { s: s, r: best, error: err };
+		return { s: s, r: best, error: err, m: check };
 	}
 
 	/**

@@ -77,7 +77,7 @@ Rule: runtime-equivalent whenever possible, while simplifying.
 | start speed curves (FX time) | animation curves on its Spawn fields, baked |
 | scale / orbit speed over time | Multipliers, Constant or animation curve |
 | emitter param `k·c` | animation curve, `k` baked |
-| object transform curves | animation curves, re-baked to override the transform (old rotation curves in turns become degrees); when the old animation scaled in the parent's axes (a shear), a parent object with the original name takes the animation and the object keeps its base transform |
+| object transform curves | animation curves, re-baked to override the transform (old rotation curves in turns become degrees) to what the old runtime showed: `setTransform` dropped a shear; when the euler curves cannot follow the rotation (gimbal lock), a parent object with the original name takes the animation and the object keeps its base transform |
 | orbit speed (radians per second) | degrees per second |
 | particle shader float `c·k` | Curve `c`, from 0, to `k` |
 | particle shader vector, some components animated | animated components: Curve; the others: Constant 0 |
