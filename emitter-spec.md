@@ -53,7 +53,7 @@ The range (`from` / `to`) belongs to the param; a reference shares the shape onl
 ## Storage
 
 - Params are stored under their plain name (`scale`, `startSpeed`...), each component with its mode and fields.
-- Old files are converted once by a migration tool in `hide/tools`, run over a whole project: it rewrites every old-format file, updates the files that override or point at what it changes, only touches the nodes it changes, and is idempotent. The runtime reads the new format only and rejects an old-format file with an error naming the tool.
+- Old files are converted once by a migration tool in `hide/tools`, run over a whole project: it rewrites every old-format file, updates the files that override or point at what it changes, only touches the nodes it changes, and is idempotent. Loading an old-format file still works as a fallback: the same migration code upgrades it in memory, alone (no fixes in other files), with a warning recommending the tool.
 
 ## Upgrade
 
