@@ -362,7 +362,7 @@ class Shader extends Prefab {
 				case PInt(min, max): hrt.prefab.Props.PropType.PFloat(min, max);
 				default: hrt.prefab.Props.PropType.PFloat(0, 1);
 			}
-			hrt.prefab.fx.EmitterEdit.param(ctx, shaderCat, this, { name: prop.name, t: t, def: base, kind: Particle, groupName: null }, ["Constant", "Curve"],
+			hrt.prefab.fx.EmitterEdit.param(ctx, shaderCat, this, { name: prop.name, t: t, def: base, kind: Particle, groupName: null }, [Constant, Curve],
 				() -> particleParams?.get(prop.name), (v) -> setParticleParam(prop.name, v), refresh);
 		}
 	}

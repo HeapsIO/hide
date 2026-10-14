@@ -4,24 +4,37 @@ package hrt.prefab.fx;
 
 import hrt.prefab.fx.EmitterParam;
 
-/**
-	Inspector of the params with modes, of the emitters and of the particle shaders (see emitter-spec.md, UI).
-**/
+enum abstract ModeKind(String) to String {
+	var Constant;
+	var Range;
+	var Curve;
+	var RandomCurve;
+	var CurveRange;
+}
+
+/** Inspector of the params with modes, of the emitters and of the particle shaders **/
 class EmitterEdit {
 
-	public static var MODES = ["Constant", "Range", "Curve", "RandomCurve", "CurveRange"];
-	static var MODE_LABELS = ["Constant", "Range", "Curve", "Random Curve", "Curve Range"];
-
-	public static function kindModes(kind: ParamKind) : Array<String> {
+	static function kindModes(kind: ParamKind) : Array<ModeKind> {
 		return switch (kind) {
-			case Spawn: ["Constant", "Range"];
-			case Particle: MODES;
-			case Multiplier: ["Constant"];
+			case Spawn: [Constant, Range];
+			case Particle: [Constant, Range, Curve, RandomCurve, CurveRange];
+			case Multiplier: [Constant];
+		}
+	}
+
+	static function kindOf(m: ParamMode) : ModeKind {
+		return switch (m) {
+			case MConstant(_): Constant;
+			case MRange(_): Range;
+			case MCurve(_): Curve;
+			case MRandomCurve(_): RandomCurve;
+			case MCurveRange(_): CurveRange;
 		}
 	}
 
 	/** `m` in `mode`, keeping its values: exactly when `mode` can express it, its middle otherwise **/
-	public static function convert(m: Null<ParamMode>, mode: String, def: Float) : ParamMode {
+	static function convert(m: Null<ParamMode>, mode: ModeKind, def: Float) : ParamMode {
 		var s = null, s2 = null, f0 = def, f1 = def, t0 = def, t1 = def;
 		switch (m) {
 			case null:
@@ -33,24 +46,24 @@ class EmitterEdit {
 		}
 		s ??= SEasing(Linear);
 		return switch (mode) {
-			case "Range": MRange(t0, t1);
-			case "Curve": MCurve(s, (f0 + f1) * 0.5, (t0 + t1) * 0.5);
-			case "RandomCurve": MRandomCurve(s, f0, f1, t0, t1);
-			case "CurveRange": MCurveRange(s, f0, t0, s2 ?? s, f1, t1);
-			default: MConstant((t0 + t1) * 0.5);
+			case Constant: MConstant((t0 + t1) * 0.5);
+			case Range: MRange(t0, t1);
+			case Curve: MCurve(s, (f0 + f1) * 0.5, (t0 + t1) * 0.5);
+			case RandomCurve: MRandomCurve(s, f0, f1, t0, t1);
+			case CurveRange: MCurveRange(s, f0, t0, s2 ?? s, f1, t1);
 		}
 	}
 
 	/** The curves under `owner` that can be a shape: not an object channel nor an animation curve **/
 	static function shapeCurves(owner: Prefab) : Array<Curve> {
 		return [for (c in owner.children) {
-			var curve = Std.downcast(c, Curve);
+			var curve = Std.downcast(c, hrt.prefab.Curve);
 			if (curve != null && AnimEdit.isParticleCurve(curve))
 				curve;
 		}];
 	}
 
-	public static function shapeFunction(owner: Prefab, s: ParamShape) : Float -> Float {
+	static function shapeFunction(owner: Prefab, s: ParamShape) : Float -> Float {
 		var v = ParamBuilder.shape(owner, s);
 		var ev = AnimEdit.getFX(owner)?.evaluator ?? new Evaluator();
 		return (t) -> ev.getFloat(v, t);
@@ -104,7 +117,7 @@ class EmitterEdit {
 		a `+`. `set` stores a new value, `onChange` follows each edit. The Spawn and Multiplier fields can be
 		animated (`AnimEdit`).
 	**/
-	public static function param(ctx: EditContext2, parent: hide.kit.Element, owner: Prefab, def: ModeParamDef, modes: Array<String>,
+	public static function param(ctx: EditContext2, parent: hide.kit.Element, owner: Prefab, def: ModeParamDef, modes: Array<ModeKind>,
 			get: () -> Null<ParamValue>, set: Null<ParamValue> -> Void, onChange: Bool -> Void) {
 		var dim = def.def.length;
 		var label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
@@ -151,31 +164,30 @@ class EmitterEdit {
 			}
 
 			var select = new hide.kit.Select(line, "mode");
-			var entries : Array<hide.kit.Select.SelectEntry> = [for (mode in modes) { value: mode, label: MODE_LABELS[MODES.indexOf(mode)] }];
+			var entries : Array<hide.kit.Select.SelectEntry> = [for (mode in modes) { value: mode, label: hide.kit.Macros.camelToSpaceCase(mode) }];
 			entries.push({ value: "unset", label: "Unset" });
 			select.setEntries(entries);
-			var mode = Type.enumConstructor(m).substr(1);
-			select.value = mode;
-			select.defaultValue = mode;
+			select.value = kindOf(m);
+			select.defaultValue = select.value;
 			select.onValueChange = (_) -> {
 				setComp(i, select.value == "unset" ? null : convert(get()[i], select.value, def.def[i]));
 				rebuild();
 			}
 
-			// the fields of the mode, by their index in the constructor
-			var p = Type.enumParameters(m);
-			function apply() setComp(i, Type.createEnum(ParamMode, Type.enumConstructor(m), p));
+			// the fields of the mode are the variables bound by the switch below, `make` builds the mode from them
+			var make : () -> ParamMode = null;
+			function apply() setComp(i, make());
 			function animKey(?field: String) return def.kind == Particle ? null : EmitterParam.animKey(def, i, field);
-			function slider(parent: hide.kit.Element, sid: String, label: String, k: Int, ?anim: String, ?changed: () -> Void) {
+			function slider(parent: hide.kit.Element, sid: String, label: String, value: Float, set: Float -> Void, ?anim: String, ?changed: () -> Void) {
 				var s = new hide.kit.Slider<Float>(parent, sid);
 				s.label = label;
-				s.value = p[k];
+				s.value = value;
 				s.min = range.min;
 				s.max = range.max;
 				s.defaultValue = def.def[i];
 				s.showRange = range.min != null && range.max != null;
 				s.onFieldChange = (_) -> {
-					p[k] = s.value;
+					set(s.value);
 					apply();
 				}
 				s.onValueChange = (temp) -> {
@@ -186,8 +198,7 @@ class EmitterEdit {
 			}
 
 			// a curve editor, the `to` fields on top and the `from` ones below
-			function curve(sk: Int, from: Array<Int>, to: Array<Int>, ranges: () -> Array<hide.kit.ParamCurve.ParamRange>, suffix: String) {
-				var s : ParamShape = p[sk];
+			function curve(s: ParamShape, from: Array<{ v: Float, set: Float -> Void }>, to: Array<{ v: Float, set: Float -> Void }>, ranges: () -> Array<hide.kit.ParamCurve.ParamRange>, suffix: String) {
 				var top = new hide.kit.Line(parent, id + "To" + suffix);
 				top.label = "To";
 				var graph = new hide.kit.ParamCurve(parent, id + "Curve" + suffix, owner, shapeFunction(owner, s), ranges(), editableCurve(owner, s));
@@ -198,38 +209,46 @@ class EmitterEdit {
 					graph.refresh();
 				}
 				var names = to.length == 1 ? [""] : ["Min", "Max"];
-				for (j => k in to)
-					slider(top, "to" + j, names[j], k, null, changed);
-				for (j => k in from)
-					slider(bottom, "from" + j, names[j], k, null, changed);
+				for (j => f in to)
+					slider(top, "to" + j, names[j], f.v, f.set, null, changed);
+				for (j => f in from)
+					slider(bottom, "from" + j, names[j], f.v, f.set, null, changed);
 			}
-			function shape(parent: hide.kit.Element, sk: Int) {
-				shapeSelect(ctx, parent, "shape" + sk, owner, p[sk], def.name + (dim == 1 ? "" : comp.toUpperCase()), (s) -> {
-					p[sk] = s;
+			function shape(parent: hide.kit.Element, sid: String, s: ParamShape, set: ParamShape -> Void) {
+				shapeSelect(ctx, parent, sid, owner, s, def.name + (dim == 1 ? "" : comp.toUpperCase()), (s) -> {
+					set(s);
 					apply();
 				});
 			}
 			inline function mid(a: Float, b: Float) return (a + b) * 0.5;
 
 			switch (m) {
-				case MConstant(_):
-					slider(line, "value", "", 0, animKey());
-				case MRange(_):
-					slider(line, "min", "Min", 0, animKey("min"));
-					slider(line, "max", "Max", 1, animKey("max"));
-				case MCurve(_):
-					shape(line, 0);
-					curve(0, [1], [2], () -> [{ from: p[1], to: p[2] }], "");
-				case MRandomCurve(_):
-					shape(line, 0);
-					curve(0, [1, 2], [3, 4], () -> [{ from: mid(p[1], p[2]), to: mid(p[3], p[4]) }, { from: p[1], to: p[3] }, { from: p[2], to: p[4] }], "");
-				case MCurveRange(_):
-					for (j => sk in [0, 3]) {
-						var sub = new hide.kit.Line(parent, id + "Shape" + j);
-						sub.label = j == 0 ? "A" : "B";
-						shape(sub, sk);
-						curve(sk, [sk + 1], [sk + 2], () -> [{ from: p[sk + 1], to: p[sk + 2] }], "" + j);
-					}
+				case MConstant(v):
+					make = () -> MConstant(v);
+					slider(line, "value", "", v, x -> v = x, animKey());
+				case MRange(min, max):
+					make = () -> MRange(min, max);
+					slider(line, "min", "Min", min, x -> min = x, animKey("min"));
+					slider(line, "max", "Max", max, x -> max = x, animKey("max"));
+				case MCurve(s, from, to):
+					make = () -> MCurve(s, from, to);
+					shape(line, "shape0", s, x -> s = x);
+					curve(s, [{ v: from, set: x -> from = x }], [{ v: to, set: x -> to = x }], () -> [{ from: from, to: to }], "");
+				case MRandomCurve(s, fromMin, fromMax, toMin, toMax):
+					make = () -> MRandomCurve(s, fromMin, fromMax, toMin, toMax);
+					shape(line, "shape0", s, x -> s = x);
+					curve(s, [{ v: fromMin, set: x -> fromMin = x }, { v: fromMax, set: x -> fromMax = x }], [{ v: toMin, set: x -> toMin = x }, { v: toMax, set: x -> toMax = x }],
+						() -> [{ from: mid(fromMin, fromMax), to: mid(toMin, toMax) }, { from: fromMin, to: toMin }, { from: fromMax, to: toMax }], "");
+				case MCurveRange(a, aFrom, aTo, b, bFrom, bTo):
+					make = () -> MCurveRange(a, aFrom, aTo, b, bFrom, bTo);
+					var lineA = new hide.kit.Line(parent, id + "Shape0");
+					lineA.label = "A";
+					shape(lineA, "shape0", a, x -> a = x);
+					curve(a, [{ v: aFrom, set: x -> aFrom = x }], [{ v: aTo, set: x -> aTo = x }], () -> [{ from: aFrom, to: aTo }], "0");
+					var lineB = new hide.kit.Line(parent, id + "Shape1");
+					lineB.label = "B";
+					shape(lineB, "shape3", b, x -> b = x);
+					curve(b, [{ v: bFrom, set: x -> bFrom = x }], [{ v: bTo, set: x -> bTo = x }], () -> [{ from: bFrom, to: bTo }], "1");
 			}
 		}
 	}
