@@ -4294,6 +4294,7 @@ hide-popover hide-content {
   border-top: 1px solid #333;
   flex-shrink: 0;
   display: flex;
+  position: relative;
   font-family: var(--default-font);
 }
 .hide-root > .status-bar.error {
@@ -4303,6 +4304,52 @@ hide-popover hide-content {
 .hide-root > .status-bar .build {
   margin-left: auto;
   flex-grow: 0;
+}
+.hide-root > .status-bar .game-launcher {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  position: absolute;
+  left: 50%;
+  top: 0px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+.hide-root > .status-bar .game-launcher .play-btn,
+.hide-root > .status-bar .game-launcher .target-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 14px;
+  padding: 0px 4px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.hide-root > .status-bar .game-launcher .play-btn:hover,
+.hide-root > .status-bar .game-launcher .target-btn:hover {
+  background-color: #3a3a3a;
+}
+.hide-root > .status-bar .game-launcher .play-btn .icon {
+  color: #6fbf73;
+}
+.hide-root > .status-bar .game-launcher .target-btn.disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.hide-root > .status-bar .game-launcher .target-btn.disabled:hover {
+  background-color: transparent;
+}
+.hide-root > .status-bar .game-launcher.compiling .play-btn {
+  background-color: #444;
+}
+.hide-root > .status-bar .game-launcher.compiling .play-btn .icon {
+  color: #e6c84a;
+}
+.hide-root > .status-bar .game-launcher.running .play-btn {
+  background-color: #3c78c8;
+}
+.hide-root > .status-bar .game-launcher.running .play-btn .icon {
+  color: #fff;
 }
 .hide-root > .status-bar .error-suppressed {
   flex-grow: 1;

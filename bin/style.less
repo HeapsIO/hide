@@ -5058,6 +5058,7 @@ hide-popover {
 		flex-shrink: 0;
 
 		display: flex;
+		position: relative;
 
 		font-family: var(--default-font);
 
@@ -5070,6 +5071,60 @@ hide-popover {
 		.build {
 			margin-left: auto;
 			flex-grow: 0;
+		}
+
+		.game-launcher {
+			display: flex;
+			align-items: center;
+			gap: 2px;
+			position: absolute;
+			left: 50%;
+			top: 0px;
+			height: 100%;
+			transform: translateX(-50%);
+
+			.play-btn, .target-btn {
+				display: flex;
+				align-items: center;
+				gap: 4px;
+				height: 14px;
+				padding: 0px 4px;
+				border-radius: 2px;
+				cursor: pointer;
+
+				&:hover {
+					background-color: #3a3a3a;
+				}
+			}
+
+			.play-btn .icon {
+				color: #6fbf73;
+			}
+
+			.target-btn.disabled {
+				opacity: 0.5;
+				cursor: default;
+
+				&:hover {
+					background-color: transparent;
+				}
+			}
+
+			&.compiling .play-btn {
+				background-color: #444;
+
+				.icon {
+					color: #e6c84a;
+				}
+			}
+
+			&.running .play-btn {
+				background-color: #3c78c8;
+
+				.icon {
+					color: #fff;
+				}
+			}
 		}
 
 		.error-suppressed {
