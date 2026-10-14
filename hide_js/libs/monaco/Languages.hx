@@ -60,9 +60,53 @@ typedef CompletionItem = {
 	//var ?textEdit : deprecated
 }
 
+typedef SignatureHelpProvider = {
+	var ?signatureHelpTriggerCharacters : Array<String>;
+	var ?signatureHelpRetriggerCharacters : Array<String>;
+	function provideSignatureHelp( model : Model, position : Position, token : Any, context : SignatureHelpContext ) : Null<SignatureHelpResult>;
+}
+
+typedef SignatureHelpContext = {
+	var triggerKind : SignatureHelpTriggerKind;
+	var ?triggerCharacter : String;
+	var isRetrigger : Bool;
+	var ?activeSignatureHelp : SignatureHelp;
+}
+
+enum abstract SignatureHelpTriggerKind(Int) {
+	var Invoke = 1;
+	var TriggerCharacter = 2;
+	var ContentChange = 3;
+}
+
+typedef SignatureHelpResult = {
+	var value : SignatureHelp;
+	function dispose() : Void;
+}
+
+typedef SignatureHelp = {
+	var signatures : Array<SignatureInformation>;
+	var activeSignature : Int;
+	var activeParameter : Int;
+}
+
+typedef SignatureInformation = {
+	var label : String;
+	var ?documentation : MarkdownString;
+	var parameters : Array<ParameterInformation>;
+	var ?activeParameter : Int;
+}
+
+typedef ParameterInformation = {
+	var label : String;
+	var ?documentation : MarkdownString;
+}
+
 @:native("monaco.languages")
 extern class Languages {
 
 	public static function registerCompletionItemProvider( language : String, provider : CompletionProvider ) : Void;
+
+	public static function registerSignatureHelpProvider( language : String, provider : SignatureHelpProvider ) : Void;
 
 }

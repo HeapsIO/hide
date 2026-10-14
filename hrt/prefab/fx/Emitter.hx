@@ -50,6 +50,7 @@ enum EmitShape {
 	Sphere;
 	Box;
 	Cylinder;
+	Dome;
 }
 
 enum Orientation {
@@ -324,9 +325,9 @@ class ParticleInstance {
 		// PIVOT
 		if(def.pivot != VZero) {
 			evaluator.getFastVec(idx, def.pivot, t, v);
-			localMat.tx = v.x;
-			localMat.ty = v.y;
-			localMat.tz = v.z;
+			localMat.tx = v.x * localMat._11;
+			localMat.ty = v.y * localMat._22;
+			localMat.tz = v.z * localMat._33;
 		}
 
 		// ROTATION
@@ -482,6 +483,28 @@ class ParticleInstance {
 			speed.z += delta.z;
 		}
 
+		// COLLISION
+		if(emitter.useCollision) {
+			var plane = emitter.collisionPlane;
+			var dist = plane.distance(getPosition());
+			if(dist < 0) {
+				var k = emitter.killOnCollision;
+				if(k > 0 && (k >= 1 || emitter.random.rand() < k))
+					life = lifeTime;
+				var n = plane.getNormal();
+				var vn = speedAccumulation.dot(n);
+				var e = vn < 0 ? 1 + emitter.elasticity : 1;
+				if(vn < 0) {
+					speedAccumulation.x -= n.x * vn * e;
+					speedAccumulation.y -= n.y * vn * e;
+					speedAccumulation.z -= n.z * vn * e;
+				}
+				x -= n.x * dist * e;
+				y -= n.y * dist * e;
+				z -= n.z * dist * e;
+			}
+		}
+
 		this.speedAccumulation.load(speedAccumulation);
 
 
@@ -591,6 +614,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitRad1 : Float = 1.0;
 	public var emitRad2 : Float = 1.0;
 	public var emitSurface : Bool = false;
+	public var emitDomeCut : Float = 0.5;
+	public var emitDomeFlip : Bool = false;
 	// ANIMATION
 	public var spriteSheet : String;
 	public var frameCount : Int = 0;
@@ -608,6 +633,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var elasticity : Float = 1.0;
 	public var killOnCollision : Float = 0.0;
 	public var useCollision : Bool = false;
+	var collisionPlane : h3d.col.Plane;
 	// RANDOM COLOR
 	public var useRandomColor : Bool = false;
 	public var useRandomGradient : Bool = false;
@@ -1115,6 +1141,28 @@ class EmitterObject extends h3d.scene.Object {
 						tmpOffset.scale(0.5);
 						if( emitOrientation == Normal )
 							tmpQuat.initDirection(tmpOffset);
+					case Dome:
+						var zMin = 1.0 - 2.0 * hxd.Math.clamp(emitDomeCut, 0, 1);
+						if( emitSurface ) {
+							var z = zMin + (1.0 - zMin) * random.rand();
+							var r = Math.sqrt(1.0 - z * z);
+							var a = random.rand() * Math.PI * 2;
+							tmpOffset.set(Math.cos(a) * r, Math.sin(a) * r, z);
+						}
+						else {
+							var r = zMin > 0 ? Math.sqrt(1.0 - zMin * zMin) : 1.0;
+							do {
+								tmpOffset.x = random.srand(r);
+								tmpOffset.y = random.srand(r);
+								tmpOffset.z = zMin + (1.0 - zMin) * random.rand();
+							}
+							while( tmpOffset.lengthSq() > 1.0 );
+						}
+						if( emitDomeFlip )
+							tmpOffset.z = -tmpOffset.z;
+						tmpOffset.scale(0.5);
+						if( emitOrientation == Normal )
+							tmpQuat.initDirection(tmpOffset);
 					case Cone:
 						tmpOffset.set(0, 0, 0);
 						var theta = random.rand() * Math.PI * 2;
@@ -1243,6 +1291,8 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function tick( dt : Float, full=true) {
+		if (scene == null)
+			scene = getScene();
 
 		#if editor
 		debugGraphics.clear();
@@ -1518,6 +1568,15 @@ class EmitterObject extends h3d.scene.Object {
 			parentTransform.scale(1.0/scale.x, 1.0/scale.y, 1.0/scale.z);
 		}
 
+		if (useCollision) {
+			var m = new h3d.Matrix();
+			m.initInverse(parentTransform);
+			m.multiply(parentNonEmitter.getAbsPos(), m);
+			collisionPlane = h3d.col.Plane.Z();
+			collisionPlane.transform(m);
+			collisionPlane.normalize();
+		}
+
 		// Particle space <-> emitter space, for orbit speed
 		if (instDef.orbitSpeed != VZero) {
 			orbitToEmitter.multiply(parentTransform, getInvPos());
@@ -1779,6 +1838,10 @@ class Emitter extends Object3D {
 	public var emitRad2 : Float = 1.0;
 	@:param({ t: PBool, disp: "Surface", group: "Emit Shape" })
 	public var emitSurface : Bool = false;
+	@:param({ t: PFloat(0, 1.0), disp: "Cut", group: "Emit Shape" })
+	public var emitDomeCut : Float = 0.5;
+	@:param({ t: PBool, disp: "Flip", group: "Emit Shape" })
+	public var emitDomeFlip : Bool = false;
 	@:param({ t: PEnum(Orientation), disp: "Orientation", group: "Emit Params" })
 	public var emitOrientation : Orientation = Orientation.Forward;
 
@@ -2078,6 +2141,8 @@ class Emitter extends Object3D {
 		emitterObj.emitRad1 			= 	emitRad1;
 		emitterObj.emitRad2 			= 	emitRad2;
 		emitterObj.emitSurface 			= 	emitSurface;
+		emitterObj.emitDomeCut 			= 	emitDomeCut;
+		emitterObj.emitDomeFlip 		= 	emitDomeFlip;
 		// ALIGNMENT
 		emitterObj.alignMode 			= 	alignMode;
 		emitterObj.alignLockAxis 		= 	alignLockAxis;
@@ -2114,7 +2179,7 @@ class Emitter extends Object3D {
 		emitterObj.init(values.builder, this);
 
 		#if editor
-		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2"].indexOf(propName) >= 0)
+		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2", "emitDomeCut", "emitDomeFlip"].indexOf(propName) >= 0)
 			updateEmitShape(emitterObj);
 		#end
 	}
@@ -2145,6 +2210,10 @@ class Emitter extends Object3D {
 		if(emitShape != Cylinder) {
 			removeParam("emitRad1");
 			removeParam("emitRad2");
+		}
+		if(emitShape != Dome) {
+			removeParam("emitDomeCut");
+			removeParam("emitDomeFlip");
 		}
 
 		switch(alignMode) {
@@ -2469,6 +2538,32 @@ class Emitter extends Object3D {
 			}
 			case Sphere:
 				mesh = new h3d.scene.Sphere(0xffffff, 0.5, true, debugShape);
+			case Dome: {
+				var maxPhi = Math.acos(1.0 - 2.0 * hxd.Math.clamp(emitDomeCut, 0, 1));
+				var sz = emitDomeFlip ? -0.5 : 0.5;
+				var g = new h3d.scene.Graphics(debugShape);
+				inline function pt(phi : Float, t : Float, first : Bool) {
+					var r = Math.sin(phi) * 0.5;
+					if(first)
+						g.moveTo(Math.cos(t) * r, Math.sin(t) * r, Math.cos(phi) * sz);
+					else
+						g.lineTo(Math.cos(t) * r, Math.sin(t) * r, Math.cos(phi) * sz);
+				}
+				g.material.mainPass.setPassName("overlay");
+				g.lineStyle(1, 0xffffff);
+				for(j in 0...4) {
+					var phi = maxPhi * (4 - j) / 4;
+					for(i in 0...33)
+						pt(phi, i / 32 * Math.PI * 2, i == 0);
+				}
+				for(k in 0...8) {
+					var t = k / 8 * Math.PI * 2;
+					for(i in 0...17)
+						pt(maxPhi * i / 16, t, i == 0);
+				}
+				g.ignoreCollide = true;
+				mesh = g;
+			}
 		}
 
 		if(mesh != null) {

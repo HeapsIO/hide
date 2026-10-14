@@ -39,18 +39,20 @@ class SubTable extends Table {
 					.toggleClass("sublist-pad-" + parent.nestedIndex);
 			}
 
-			var count = cell.columnIndex + 1;
-			if (count < 3 && cell.table.columns.length >= 8)
-				count += 2; // fix when a lot of columns but the subproperty is on the left
-			group = new Element("<td>").attr("colspan",""+(count+1)).appendTo(insertedTR);
-			var remain = cell.table.columns.length - count;
-			if( remain > 0 )
-				new Element("<td>").attr("colspan", "" + remain).appendTo(insertedTR);
+			if( parent.displayMode == Properties ) {
+				var count = cell.columnIndex + 1;
+				group = new Element("<td>").attr("colspan",""+(count+1)).appendTo(insertedTR);
+				var remain = cell.table.columns.length - count;
+				if( remain > 0 )
+					new Element("<td>").attr("colspan", "" + remain).appendTo(insertedTR);
+			} else {
+				group = new Element("<td>").attr("colspan", "" + (cell.table.columns.length + 1)).addClass("under-cell").appendTo(insertedTR);
+			}
 		} else {
 			new Element("<td>")
 				.appendTo(insertedTR)
 				.toggleClass("sublist-pad-" + parent.nestedIndex);
-			group = new Element("<td>").attr("colspan",""+cell.table.columns.length).appendTo(insertedTR);
+			group = new Element("<td>").attr("colspan",""+cell.table.columns.length).addClass("under-cell").appendTo(insertedTR);
 		}
 		slider = new Element("<div>").appendTo(group);
 		slider.hide();
@@ -61,7 +63,12 @@ class SubTable extends Table {
 		insertedTR.data("parent-cell", cell);
 		insertedTR.data("parent-tr", cell.line.element);
 
+		// the line stays in the DOM while its sub table is open
+		if( !line.row.attached )
+			parent.render();
 		insertedTR.insertAfter(cell.line.element);
+		var lineElt = cell.line.element.get(0);
+		lineElt.style.height = lineElt.getBoundingClientRect().height + "px";
 		cell.elementHtml.textContent = "...";
 		cell.elementHtml.classList.add("parent-sub-table");
 
@@ -83,7 +90,7 @@ class SubTable extends Table {
 
 	override function refresh() {
 		super.refresh();
-
+		alignUnderCell();
 		checkIntegrity();
 	}
 
@@ -144,17 +151,53 @@ class SubTable extends Table {
 	}
 
 	public function show( ?immediate ) {
-		if( immediate )
+		var duration = Editor.animDuration(100);
+		if( immediate || duration == 0 ) {
 			slider.show();
-		else
-			slider.slideDown(100);
+			revealInView();
+		} else
+			slider.slideDown(duration, revealInView);
+		alignUnderCell();
+	}
+
+	function revealInView() {
+		if( slider == null ) return;
+		var scroll = editor.element.get(0);
+		var view = scroll.getBoundingClientRect();
+		var bottom = insertedTR.get(0).getBoundingClientRect().bottom;
+		var lineTop = cell.line.element.get(0).getBoundingClientRect().top - (view.top + 30);
+		var delta = Math.min(bottom + 4 - view.bottom, lineTop);
+		if( delta > 0 )
+			scroll.scrollTop += Math.ceil(delta);
+	}
+
+	function alignUnderCell() {
+		var sub = this;
+		while( sub != null ) {
+			sub.alignSelf();
+			sub = Std.downcast(sub.parent, SubTable);
+		}
+	}
+
+	function alignSelf() {
+		var group = slider?.parent();
+		if( group == null || !group.hasClass("under-cell") ) return;
+		var content = displayMode == Properties ? slider : element;
+		content.css("margin-left", "0px");
+		var groupRect = group.get(0).getBoundingClientRect();
+		var x = cell.elementHtml.getBoundingClientRect().left - groupRect.left;
+		content.css("margin-left", Math.round(Math.max(0, Math.min(x, groupRect.width - content.outerWidth()))) + "px");
 	}
 
 	override public function close() {
 		if( cell.line.subTable == this ) cell.line.subTable = null;
 		if( slider != null ) {
-			slider.slideUp(100, function() { slider = null; close(); });
-			return;
+			var duration = Editor.animDuration(100);
+			if( duration > 0 ) {
+				slider.slideUp(duration, function() { slider = null; close(); });
+				return;
+			}
+			slider = null;
 		}
 		cell.elementHtml.classList.remove("parent-sub-table");
 		super.close();
@@ -169,7 +212,12 @@ class SubTable extends Table {
 	override function dispose() {
 		super.dispose();
 		insertedTR.remove();
+		if( cell.line.subTable == null )
+			cell.line.element.get(0).style.height = "";
 		cell.refresh();
+		var parentSub = Std.downcast(parent, SubTable);
+		if( parentSub != null )
+			parentSub.alignUnderCell();
 	}
 
 	override function refreshLinesStatus() {

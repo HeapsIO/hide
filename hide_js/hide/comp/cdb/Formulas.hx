@@ -69,6 +69,7 @@ class Formulas {
 	var formulas : Array<Formula> = [];
 	var fmap : Map<String, Map<String, Formula>> = [];
 	var currentMap : Map<String,Dynamic>;
+	var batchDepth = 0;
 	var validationFuncs : Map<String, ValidationFunction> = [];
 
 	public var enable = true;
@@ -88,7 +89,14 @@ class Formulas {
 		Editor.refreshAll();
 	}
 
-	public function evaluateAll( ?sheet : cdb.Sheet ) {
+	/**
+		Evaluates the formulas of a new line of a sheet.
+	**/
+	public function evaluateLine( sheet : cdb.Sheet, obj : Dynamic ) {
+		evaluateAll(sheet, obj);
+	}
+
+	public function evaluateAll( ?sheet : cdb.Sheet, ?onlyObj : Dynamic ) {
 		if( !enable )
 			return;
 		currentMap = new Map();
@@ -102,7 +110,7 @@ class Formulas {
 					var def = Editor.getColumnProps(c).formula;
 					columns.push({ name : c.name, def : def, opt : c.opt });
 				}
-			for( o in s.getLines() ) {
+			for( o in (onlyObj != null ? [onlyObj] : s.getLines()) ) {
 				var omapped : Dynamic = null;
 				for( c in columns ) {
 					var fname : String = Reflect.field(o,c.name+"__f");
@@ -129,17 +137,29 @@ class Formulas {
 
 		var o = sheet.getLines()[lineIndex];
 
-		currentMap = new Map();
+		if( batchDepth == 0 )
+			currentMap = new Map();
 		var omapped = remap(o, sheet);
 
 		try {
 			var ret = validationFunc.call(omapped);
-			currentMap = null;
+			if( batchDepth == 0 ) currentMap = null;
 			return ret;
 		} catch( e : Dynamic ) {
-			currentMap = null;
+			if( batchDepth == 0 ) currentMap = null;
 			return Error(Std.string(e));
 		}
+	}
+
+	/**
+		Validates several lines (in `f`) sharing the remapped objects : the data must not change meanwhile.
+	**/
+	public function validateBatch( f : Void -> Void ) {
+		if( batchDepth++ == 0 )
+			currentMap = new Map();
+		f();
+		if( --batchDepth == 0 )
+			currentMap = null;
 	}
 
 	function remap( o : Dynamic, s : cdb.Sheet ) : Dynamic {

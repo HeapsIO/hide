@@ -15,7 +15,6 @@ typedef UndoSheet = {
 }
 
 typedef UndoState = {
-	var data : Any;
 	var sheet : String;
 	var separatorsState: Map<String, Bool>;
 	var cursor : Cursor.CursorState;
@@ -38,6 +37,7 @@ typedef EditorColumnProps = {
 typedef EditorSheetProps = {
 	var ?index : Int;
 	var ?categories : Array<String>;
+	var ?pinStatus : Bool;
 }
 
 typedef OptionalBackup = Array<{line: Dynamic, colName: String, data: Dynamic}>;
@@ -51,6 +51,8 @@ enum FilterFlag {
 typedef FilterFlags = haxe.EnumFlags<FilterFlag>;
 
 @:allow(hide.comp.cdb)
+@:access(hide.comp.cdb.Table)
+@:access(hide.comp.cdb.Separator)
 class Editor extends Component {
 	static var CLIPBOARD_PREFIX = "[CDB_FORMAT]";
 	static var COMPARISON_EXPR_CHARS = ["!=", ">=", "<=", "==", "<", ">"];
@@ -63,16 +65,29 @@ class Editor extends Component {
 	var displayMode : Table.DisplayMode;
 	var changesDepth : Int = 0;
 	var api : EditorApi;
-	var undoState : Array<UndoState> = [];
-	var currentValue : Any;
+	var history : Undo;
+	// incremented when the data changes : the caches below are valid for a version
+	var dataVersion = 0;
+	// the texts of the lines for the search, by line object
+	var searchTexts = new js.lib.WeakMap<String>();
+	var dataSearchTexts = new js.lib.WeakMap<String>();
+	// the validation of the lines of the sheets (formulas.hx), by sheet name
+	var statusCache : Map<String, { version : Int, status : Array<Formulas.ValidationResult> }> = [];
+	// the version of the data when the formulas of a sheet were evaluated, by sheet name
+	var evaluatedVersion : Map<String, Int> = [];
 	var cdbTable : hide.view.CdbTable;
 	var separatorsState : Map<String, Bool> = [];
+	// the measured heights of the rows of the virtual tables, by sheet path
+	var rowHeights : Map<String, { lines : Array<Float>, seps : Array<Float>, line : Float, sep : Float }> = [];
+	// the scroll of the sheet restored once it is shown, unless the cursor moved the view meanwhile (goto)
+	var pendingScroll : Null<Int>;
 
 	var searchBox : Element;
 	var searchHidden : Bool = true; // Search through hidden categories
 	var searchExp : Bool = false; // Does filters are parsed by hscript parser
 	var filterFlags : FilterFlags = (Regular: FilterFlags) | (Warning: FilterFlags) | (Error: FilterFlags);
 	var filters : Array<String> = [];
+	var insertedWhileFiltering : Array<Dynamic> = [];
 
 	public var view : cdb.DiffFile.ConfigView;
 	public var config : hide.Config.ReadOnlyConfig;
@@ -90,7 +105,8 @@ class Editor extends Component {
 		this.config = config;
 		this.cdbTable = cdbTable;
 		view = cast this.config.get("cdb.view");
-		undo = new hide.ui.UndoHistory(40);
+		undo = new hide.ui.UndoHistory(300);
+		history = new Undo(this);
 	}
 
 	public function getCurrentSheet() {
@@ -103,7 +119,15 @@ class Editor extends Component {
 		if( parent != null )
 			parent.append(element);
 
-		element.on("scrollend", () -> saveDisplayState("scroll", element.scrollTop()));
+		element.on("scrollend", function() {
+			saveDisplayState("scroll", element.scrollTop());
+			var v = tables[0]?.getViewLine();
+			if( v != null ) saveDisplayState("scrollLine", v);
+		});
+		element.on("scroll", function(_) {
+			for( t in tables )
+				if( t.virtual ) t.render();
+		});
 
 		currentSheet = sheet;
 		saveDisplayKey = "cdb_" + sheet.getPath();
@@ -186,7 +210,6 @@ class Editor extends Component {
 		keys.register("cdb.globalSeekIds", () -> new GlobalSeek(cdbTable.element, cdbTable, GlobalIds, currentSheet));
 
 		filterFlags = (Regular: FilterFlags) | (Warning: FilterFlags) | (Error: FilterFlags);
-		this.cdbTable?.element.find(".top-bar").find(".disabled").removeClass("disabled");
 
 		base = sheet.base;
 		if( cursor == null )
@@ -194,11 +217,19 @@ class Editor extends Component {
 
 		if( displayMode == null ) displayMode = Table;
 		DataFiles.load();
-		if( currentValue == null ) currentValue = api.copy();
 		refresh();
 
+		pendingScroll = getDisplayState("scroll") ?? 0;
 		js.Browser.window.requestAnimationFrame((_) -> {
-			element.scrollTop(getDisplayState("scroll") ?? 0);
+			if( pendingScroll != null ) {
+				// the virtual table restores its first line : the heights of the rows above can be estimated
+				var v : { line : Int, offset : Float } = getDisplayState("scrollLine");
+				if( v != null && tables[0] != null && tables[0].virtual )
+					tables[0].scrollToLine(v.line, v.offset);
+				else
+					element.scrollTop(pendingScroll);
+			}
+			pendingScroll = null;
 		});
 	}
 
@@ -240,51 +271,20 @@ class Editor extends Component {
 		case K.TAB:
 			cursor.move( e.shiftKey ? -1 : 1, 0, false, false, true);
 			return true;
-		case K.PGUP:
-			var stickyElHeight = element.find(".separator").height();
-			if (Math.isNaN(stickyElHeight))
-				stickyElHeight = element.find("thead").outerHeight();
-			else
-				stickyElHeight += element.find("thead").outerHeight();
-
-			var lines = element.find("tbody").find(".start");
-			var idx = lines.length - 1;
-			while (idx >= 0) {
-				var b = lines[idx].getBoundingClientRect();
-				if (b.top <= stickyElHeight)
-					break;
-				idx--;
-			}
-
-			cursor.setDefault(cursor.table, cursor.x, idx);
-			lines.get(idx).scrollIntoView({ block: js.html.ScrollLogicalPosition.END });
-
-			// Handle sticky elements
-			element.scrollTop(element.scrollTop() + element.parent().siblings(".tabs-header").outerHeight());
-
-			return true;
-		case K.PGDOWN:
-			var height = element.outerHeight() - (element.find("thead").outerHeight() + element.parent().siblings(".tabs-header").outerHeight());
-			var lines = element.find("tbody").find(".start");
-			var idx = 0;
-			for (el in lines) {
-				var b = el.getBoundingClientRect();
-				if (b.top >= height)
-					break;
-				idx++;
-			}
-
-			if (idx > lines.length - 1)
-				idx = lines.length - 1;
-			lines.get(idx).scrollIntoView(true);
-			cursor.setDefault(cursor.table, cursor.x, idx);
-
-			// Handle sticky elements
-			var sepHeight = element.find(".separator").height();
-			if (Math.isNaN(sepHeight))
-				sepHeight = 0;
-			element.scrollTop(element.scrollTop() - (element.find("thead").height() + sepHeight));
-
+		case K.PGUP, K.PGDOWN:
+			// move the view and the cursor by a page of lines
+			var t = cursor.table;
+			var line = cursor.getLine();
+			if( t == null || line == null )
+				return true;
+			var scroll = element.get(0);
+			var headH = element.find("thead").outerHeight();
+			var pageH = Math.max(scroll.clientHeight - headH, 20);
+			var page = Std.int(Math.max(1, Math.floor(pageH / t.lineHeight) - 1));
+			var up = e.keyCode == K.PGUP;
+			scroll.scrollTop += Std.int(up ? -pageH : pageH);
+			var y = t.moveDisplayed(line.index, up ? -page : page, true);
+			cursor.set(t, cursor.x, y, null, true, true, true);
 			return true;
 		case K.SPACE:
 			e.preventDefault(); // prevent scroll
@@ -303,29 +303,30 @@ class Editor extends Component {
 	}
 
 
+	public function onLineInserted( obj : Dynamic ) {
+		if( filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error) )
+			return;
+		insertedWhileFiltering.push(obj);
+		updateFilters();
+	}
+
 	public function updateFilters() {
 		var table = tables.filter((t) -> t.sheet == currentSheet)[0];
-		if (table.displayMode == AllProperties)
+		if (table == null || table.displayMode != Table)
 			return;
 
+		var seps = table.separators ?? [];
 		if (filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error)) {
-			var seps = @:privateAccess table.separators ?? [];
-			var firstSepIdx = seps.length > 0 ? seps[0].data.index : hxd.Math.POSITIVE_INFINITY;
-
-			for (l in table.lines) {
+			for (l in table.lines)
 				l.filtered = false;
-				if (l.index < firstSepIdx) {
-					l.element.removeClass("filtered");
-					if (l.element.hasClass("hidden"))
-						l.create();
+			table.lockRows(function() {
+				for (s in seps) {
+					s.filtered = false;
+					s.refresh(false);
 				}
-			}
-
-			for (s in seps) {
-				@:privateAccess s.filtered = false;
-				s.refresh(false);
-			}
-
+			});
+			table.refreshRows();
+			updateSearchCounts(0);
 			return;
 		}
 
@@ -340,55 +341,41 @@ class Editor extends Component {
 		if (filters.length <= 0)
 			searchBox.find("#results").text('No results');
 
-		// Create hidden lines to ensure they are take into account while searching
-		if (searchHidden) {
-			for (l in table.lines) {
-				if (l.element.hasClass("hidden"))
-					l.create();
-			}
-		}
-
 		// Apply filters on lines
 		var results = 0;
-		var seps = @:privateAccess table.separators;
 		var displayedSeps = new Map<Int, Separator>();
 		for (l in table.lines) {
-			var filtered = isLineFilteredBySearch(table, l);
+			// lines in collapsed groups are only searched with searchHidden
+			var inserted = insertedWhileFiltering.indexOf(l.obj) >= 0;
+			var filtered = !inserted && ((!searchHidden && filters.length > 0 && l.separator != null && l.separator.isCollapsed()) || isLineFilteredBySearch(table, l));
 			if (!filtered)
 				results++;
 
-			filtered = filtered || isLineFilteredByStatus(l);
-
-			if (filtered) @:privateAccess {
-				l.filtered = true;
-				l.hide();
-			}
-			else {
-				var parentSeps = seps == null ? [] : Separator.getParentSeparators(l.index, seps);
+			filtered = filtered || (!inserted && isLineFilteredByStatus(l));
+			l.filtered = filtered;
+			if (!filtered) {
+				var parentSeps = Separator.getParentSeparators(l.index, seps);
 				for (s in parentSeps)
 					displayedSeps.set(s.data.index, s);
 			}
 		}
 
-		if (seps != null) {
+		table.lockRows(function() {
 			for (s in seps) {
-				@:privateAccess s.filtered = displayedSeps.get(s.data.index) == null;
-				if (@:privateAccess !s.filtered)
+				s.filtered = displayedSeps.get(s.data.index) == null;
+				if (!s.filtered)
 					s.reveal();
 				s.refresh(false);
 			}
-		}
+		});
+		table.refreshRows();
 
 		searchBox.find("#results").text(results > 0 ? '$results Results' : 'No results');
+		updateSearchCounts(results);
 		cursor.update();
 	}
 
 	function isLineFilteredBySearch(table : Table, line : Line) : Bool {
-		function removeAccents(str: String) {
-			var t = untyped str.toLowerCase().normalize('NFD');
-			return ~/[\u0300-\u036f]/g.map(t, (r) -> "");
-		}
-
 		if (filters.length == 0)
 			return false;
 
@@ -455,7 +442,7 @@ class Editor extends Component {
 		else {
 			isFiltered = function(line: hide.comp.cdb.Line) {
 				function isLineFiltered(line : hide.comp.cdb.Line) {
-					var content = removeAccents(line.element.get(0).textContent);
+					var content = removeAccents(line.getSearchText());
 					for (f in filters)
 						if (content.indexOf(removeAccents(f)) >= 0)
 							return false;
@@ -791,7 +778,7 @@ class Editor extends Component {
 
 			var plainText = ide.getClipboard(nw.Clipboard.ClipboardType.Text);
 
-			beginChanges();
+			cursor.table.beginChanges();
 			for (c in targetCells) {
 				var col = c.column;
 				if (!c.table.canEditColumn(col.name) || isPasteImmutable(col))
@@ -805,8 +792,9 @@ class Editor extends Component {
 				toRefresh.push(c);
 			}
 
-			endChanges();
+			// the formulas are evaluated in the change
 			refresh();
+			endChanges();
 			return;
 		}
 
@@ -860,7 +848,7 @@ class Editor extends Component {
 
 		// Manage pasting one value into several cells
 		if (data.length == 1) {
-			beginChanges();
+			cursor.table.beginChanges();
 
 			// We copied one cell
 			if (schema.length == 1) {
@@ -897,13 +885,13 @@ class Editor extends Component {
 				}
 			}
 
-			endChanges();
 			refresh();
+			endChanges();
 			return;
 		}
 
 
-		beginChanges();
+		cursor.table.beginChanges();
 		var curPosY = Std.int(Math.max(0, cursor.y));
 		var curPosX = Std.int(Math.max(0, cursor.x));
 		for (d in data) {
@@ -928,8 +916,11 @@ class Editor extends Component {
 
 				if( c2.type == TList || c2.type == TProperties || c2.type == TPolymorph )
 					shouldFullRefresh = true;
-				if( !shouldFullRefresh )
-					toRefresh.push(cursor.table.lines[curPosY].cells[cid + curPosX]);
+				if( !shouldFullRefresh ) {
+					var line = cursor.table.lines[curPosY];
+					line.create();
+					toRefresh.push(line.cells[cid + curPosX]);
+				}
 			}
 			curPosY++;
 		}
@@ -942,7 +933,7 @@ class Editor extends Component {
 		if( cursor.selection == null )
 			return;
 
-		beginChanges();
+		if( cursor.x < 0 ) cursor.table.beginLinesChanges() else cursor.table.beginChanges();
 		cursor.selection.sort((el1, el2) -> { return el1.y1 == el2.y1 ? 0 : el1.y1 < el2.y1 ? 1 : -1; });
 		for (s in cursor.selection)
 			delete(s.x1, s.x2, s.y1, s.y2);
@@ -966,7 +957,7 @@ class Editor extends Component {
 
 		var needRefresh = false;
 		var modifiedLines = [];
-		beginChanges();
+		if( cursor.x < 0 ) cursor.table.beginLinesChanges() else cursor.table.beginChanges();
 		if( cursor.x < 0 ) {
 			// delete lines
 			var y = y2;
@@ -977,7 +968,7 @@ class Editor extends Component {
 
 			while( y >= y1 && y < cursor.table.lines.length) {
 				var line = cursor.table.lines[y];
-				if(!cursor.table.lines[y].element.hasClass("filtered")) {
+				if(!line.filtered) {
 					sheet.deleteLine(line.index);
 					needRefresh = true;
 				}
@@ -990,8 +981,9 @@ class Editor extends Component {
 			// delete cells
 			for (y in y1...y2+1) {
 				var line = cursor.table.lines[y];
-				if (line.element.hasClass("filtered"))
+				if (line.filtered)
 					continue;
+				line.create();
 				var moveCursor = false;
 				for (x in x1...x2+1) {
 					var c = line.columns[x];
@@ -1022,22 +1014,21 @@ class Editor extends Component {
 			updateFilters();
 		}
 		else {
+			var filterChanged = false;
 			for (l in modifiedLines) {
 				var prevFiltered = l.filtered;
 				l.filtered = isLineFilteredByStatus(l) || isLineFilteredBySearch(l.table, l);
-				if (prevFiltered == l.filtered)
-					continue;
-				if (l.filtered)
-					l.hide();
-				else
-					l.create();
+				if (prevFiltered != l.filtered)
+					filterChanged = true;
 			}
+			if (filterChanged)
+				cursor.table.refreshRows();
 
 		}
 	}
 
 	public function changeObject( line : Line, column : cdb.Data.Column, value : Dynamic ) {
-		beginChanges();
+		line.beginChanges(getCellMergeKey(line, column));
 		var prev = Reflect.field(line.obj, column.name);
 		if( value == null ) {
 			formulas.setForValue(line.obj, line.table.sheet, column, null);
@@ -1051,21 +1042,34 @@ class Editor extends Component {
 		endChanges();
 	}
 
+	// the successive changes of a cell are one undo
+	public function getCellMergeKey( line : Line, column : cdb.Data.Column ) {
+		return line.table.sheet.getPath() + "#" + line.index + "#" + column.name;
+	}
+
 	/**
 		Call before modifying the database, allow to group several changes together.
 		Allow recursion, only last endChanges() will trigger db save and undo point creation.
+		The undo keeps a copy of the whole database : use `Line.beginChanges`, `Table.beginChanges` or `Table.beginLinesChanges`
+		instead when the changes are limited to them. Use `structure` for the changes of columns or sheets.
 	**/
 	public function beginChanges( ?structure : Bool ) {
-		if (undoState.length >= @:privateAccess undo.maxHistoryCount)
-			undoState.pop();
+		beginScope(All);
+	}
+
+	/**
+		Call before modifying what `scope` covers (it must be called BEFORE : the undo copies it then).
+		The changes with the same `merge` key in a row are a single undo.
+	**/
+	function beginScope( scope : Undo.UndoScope, ?merge : String ) {
 		if( changesDepth == 0 )
-			undoState.unshift(getState());
+			history.begin(getState(), merge);
+		history.add(scope);
 		changesDepth++;
 	}
 
 	function getState() : UndoState {
 		return {
-			data : currentValue,
 			sheet : getCurrentSheet(),
 			separatorsState: separatorsState.copy(),
 			cursor : cursor.getState(),
@@ -1096,6 +1100,7 @@ class Editor extends Component {
 				if( s.parent != null ) {
 					var t = openRec(s.parent.sheet);
 					if( t != null && s.parent.line < t.lines.length ) {
+						t.lines[s.parent.line].create();
 						var cell = t.lines[s.parent.line].cells[t.displayMode == Properties || t.displayMode == AllProperties ? 0 : s.parent.column];
 						if (cell == null)
 							return null;
@@ -1135,36 +1140,126 @@ class Editor extends Component {
 		changesDepth--;
 		if( changesDepth != 0 ) return;
 
-		var newValue = api.copy();
-		if( newValue == currentValue )
+		if( !history.end() )
 			return;
-		var state = undoState[0];
-		var newSheet = getCurrentSheet();
-		var newSaparatorsState = separatorsState;
-		currentValue = newValue;
+		dataChanged();
 		save();
-		undo.change(Custom(function(undo) {
-			var currentSheet;
-			if( undo ) {
-				undoState.shift();
-				currentValue = state.data;
-				currentSheet = state.sheet;
-				separatorsState = state.separatorsState;
-			} else {
-				undoState.unshift(state);
-				currentValue = newValue;
-				currentSheet = newSheet;
-				separatorsState = newSaparatorsState;
+	}
+
+	function dataChanged() {
+		dataVersion++;
+		searchTexts = new js.lib.WeakMap();
+		dataSearchTexts = new js.lib.WeakMap();
+	}
+
+	static function removeAccents( str : String ) {
+		var t = untyped str.toLowerCase().normalize('NFD');
+		return ~/[̀-ͯ]/g.map(t, (r) -> "");
+	}
+
+	// the searched text of a line of a sheet which is not displayed : its values, close to the text of its cells
+	function getDataSearchText( sheet : cdb.Sheet, obj : Dynamic ) : String {
+		var text = dataSearchTexts.get(obj);
+		if( text != null ) return text;
+		var buf = new StringBuf();
+		function add( sheet : cdb.Sheet, obj : Dynamic ) {
+			if( obj == null ) return;
+			for( c in sheet.columns ) {
+				var v : Dynamic = Reflect.field(obj, c.name);
+				if( v == null ) continue;
+				switch( c.type ) {
+				case TList:
+					var sub = sheet.getSub(c);
+					for( o in (v : Array<Dynamic>) ) add(sub, o);
+				case TProperties:
+					add(sheet.getSub(c), v);
+				case TRef(name):
+					buf.add(v);
+					var r = base.getSheet(name);
+					var i = r == null ? null : r.index.get(v);
+					if( i != null ) { buf.add(" "); buf.add(i.disp); }
+				case TEnum(values):
+					buf.add(values[v]);
+				case TFlags(values):
+					for( i in 0...values.length ) if( (v : Int) & (1 << i) != 0 ) { buf.add(values[i]); buf.add(" "); }
+				case TId, TString, TInt, TFloat, TFile, TGuid, TDynamic, TCustom(_):
+					buf.add(Std.string(v));
+				default:
+				}
+				buf.add(" ");
 			}
-			api.load(currentValue);
+		}
+		add(sheet, obj);
+		text = removeAccents(buf.toString());
+		dataSearchTexts.set(obj, text);
+		return text;
+	}
+
+	// the number of lines found in each sheet, on their tabs (text search only)
+	function updateSearchCounts( currentResults : Int ) {
+		if( cdbTable == null ) return;
+		if( filters.length == 0 || searchExp ) {
+			cdbTable.setSearchCounts(null);
+			return;
+		}
+		var search = [for( f in filters ) removeAccents(f)];
+		var counts = new Map();
+		for( s in cdbTable.getSheets() ) {
+			if( s == currentSheet ) {
+				counts.set(s.name, currentResults);
+				continue;
+			}
+			var n = 0;
+			for( obj in s.lines ) {
+				var text = getDataSearchText(s, obj);
+				for( f in search )
+					if( text.indexOf(f) >= 0 ) {
+						n++;
+						break;
+					}
+			}
+			counts.set(s.name, n);
+		}
+		cdbTable.setSearchCounts(counts);
+	}
+
+	/**
+		The validation of the lines of a sheet, kept until the data changes.
+	**/
+	public function getSheetStatus( sheet : cdb.Sheet ) : Array<Formulas.ValidationResult> {
+		var c = statusCache.get(sheet.name);
+		if( c != null && c.version == dataVersion && c.status.length == sheet.lines.length )
+			return c.status;
+		var status = [];
+		formulas.validateBatch(() -> for( i in 0...sheet.lines.length ) status.push(formulas.validateLine(sheet, i)));
+		statusCache.set(sheet.name, { version : dataVersion, status : status });
+		return status;
+	}
+
+	/**
+		Instead of `endChanges` for the first level of changes : restores the data as it was before them, without undo.
+	**/
+	public function cancelChanges() {
+		changesDepth--;
+		if( changesDepth != 0 ) throw "cancelChanges must end the first level of changes";
+		history.cancel();
+	}
+
+	// the data was changed by an undo or a redo
+	function onUndoApplied( sheet : String, sepState : Map<String,Bool>, state : UndoState, reloaded : Bool ) {
+		separatorsState = sepState;
+		dataChanged();
+		// the data is restored as it was, formulas included
+		for( s in base.sheets )
+			evaluatedVersion.set(s.name, dataVersion);
+		if( reloaded )
 			DataFiles.save(true); // save reloaded data
-			element.removeClass("is-cdb-editor");
-			refreshAll();
-			element.addClass("is-cdb-editor");
-			syncSheet(currentSheet);
-			refresh(state);
-			save();
-		}));
+		element.removeClass("is-cdb-editor");
+		refreshAll(false, reloaded);
+		element.addClass("is-cdb-editor");
+		syncSheet(sheet);
+		refresh(state);
+		save();
 	}
 
 	static var runningHooks = false;
@@ -1264,16 +1359,18 @@ class Editor extends Component {
 			DataFiles.load();
 		inRefreshAll = true;
 		for( e in editors ) {
+			e.dataChanged();
 			e.syncSheet(Ide.inst.database);
 			e.refresh();
 			// prevent undo over input changes
 			if( eraseUndo ) {
-				e.currentValue = e.api.copy();
 				e.undo.clear();
-				e.undoState = [];
+				e.history.clear();
 			}
 		}
 		inRefreshAll = false;
+		for( v in Ide.inst.getViews(hide.view.CdbCustomTypes) )
+			v.onDatabaseChanged();
 	}
 
 	public function getCursorId(?sheet, ?childOnly = false): String {
@@ -1678,20 +1775,32 @@ class Editor extends Component {
 
 		base.sync();
 
+		// emptied, the editor loses the scroll position : it is restored once the rows are back
+		var scrollTop = element.get(0).scrollTop;
+		for( t in tables )
+			t.saveHeights();
 		element.empty();
 		if( cursor != null ) cursor.clearMarks();
 		element.addClass('cdb');
 
 		formulas = new Formulas(this);
 		formulas.enable = ide.currentConfig.get("hide.enableDBFormulas");
-		formulas.evaluateAll(currentSheet.realSheet);
+		// the formulas give the same values while the data does not change
+		if( evaluatedVersion.get(currentSheet.name) != dataVersion ) {
+			formulas.evaluateAll(currentSheet.realSheet);
+			evaluatedVersion.set(currentSheet.name, dataVersion);
+		}
 
 		var content = new Element("<table>");
 		tables = [];
-		new Table(this, currentSheet, content, displayMode);
+		// in the document before its rows are rendered : they are measured
 		content.appendTo(element);
+		new Table(this, currentSheet, content, displayMode);
 
 		setState(state, hasFocus);
+
+		if( tables[0] != null && tables[0].virtual )
+			tables[0].restoreScroll(scrollTop);
 
 		if( cursor.table != null ) {
 			for( t in tables )
@@ -1736,6 +1845,7 @@ class Editor extends Component {
 				filters[idxSearchBar] = "";
 
 			filters[idxSearchBar] = searchText;
+			insertedWhileFiltering = [];
 
 			// Slow table refresh protection
 			if (currentSheet.lines.length > 300) {
@@ -1829,6 +1939,7 @@ class Editor extends Component {
 
 		searchBox.find(".close-search").click(function(_) {
 			filters = [];
+			insertedWhileFiltering = [];
 			searchExp = false;
 			searchHidden = true;
 			updateFilters();
@@ -1841,8 +1952,6 @@ class Editor extends Component {
 			var c = cursor.save();
 			focus();
 			cursor.load(c);
-			var hiddenSeps = element.find("table.cdb-sheet > tbody > tr").not(".head").filter(".separator").filter(".sep-hidden").find("a.toggle");
-			hiddenSeps.click();
 			cursor.scrollIntoView();
 		});
 
@@ -1857,11 +1966,6 @@ class Editor extends Component {
 			searchHidden = !searchHidden;
 			searchBox.find(".search-hidden").toggleClass("fa-eye", searchHidden);
 			searchBox.find(".search-hidden").toggleClass("fa-eye-slash", !searchHidden);
-			if (!searchHidden) {
-				var hiddenSeps = element.find("table.cdb-sheet > tbody > tr").not(".head").filter(".separator").filter(".sep-hidden").find("a.toggle");
-				hiddenSeps.click();
-				hiddenSeps.click();
-			}
 			updateFilters();
 		});
 
@@ -2202,7 +2306,7 @@ class Editor extends Component {
 				label : "Delete",
 				click : function () {
 					if( table.displayMode == Properties ) {
-						beginChanges();
+						cell.line.beginChanges();
 						changeObject(cell.line, col, base.getDefault(col,sheet));
 					} else {
 						beginChanges(true);
@@ -2220,14 +2324,14 @@ class Editor extends Component {
 			switch( col.type ) {
 			case TString, TRef(_):
 				menu.push({ label : "Display Name", click : function() {
-					beginChanges();
+					table.beginChanges();
 					props.displayColumn = (props.displayColumn == col.name ? null : col.name);
 					endChanges();
 					refresh();
 				}, checked: props.displayColumn == col.name });
 			case TTilePos:
 				menu.push({ label : "Display Icon", click : function() {
-					beginChanges();
+					table.beginChanges();
 					props.displayIcon = (props.displayIcon == col.name ? null : col.name);
 					endChanges();
 					refresh();
@@ -2240,6 +2344,7 @@ class Editor extends Component {
 				beginChanges();
 				editProps.categories = cats;
 				col.editor = editProps;
+				removeUnusedCategories();
 				endChanges();
 				refresh();
 			})});
@@ -2277,6 +2382,18 @@ class Editor extends Component {
 				refresh();
 			}});
 		}
+		if( table.displayMode == Table ) {
+			var hidden = table.getHiddenColumns();
+			menu.push({ label : "", isSeparator : true });
+			menu.push({ label : "Hide Column", enabled : Lambda.count(table.columns, c -> table.isColumnShown(c)) > 1, click : () -> table.setColumnHidden(col, true) });
+			if( hidden.length > 0 ) {
+				var show : Array<hrt.ui.HuiMenu.MenuItem> = [for( c in hidden ) { label : c.name, click : () -> table.setColumnHidden(c, false) }];
+				show.push({ label : "", isSeparator : true });
+				show.push({ label : "Show All", click : () -> table.showAllColumns() });
+				menu.push({ label : "Show Columns", menu : show });
+			}
+			menu.push({ label : "Reset Default Sizes", enabled : table.hasUserWidths(), click : () -> table.resetUserWidths() });
+		}
 		hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu);
 	}
 
@@ -2285,7 +2402,7 @@ class Editor extends Component {
 		do {
 			next += (dir == Left ? -1 : 1);
 		}
-		while (next >= 0 && next <= table.columns.length - 1 && !isColumnVisible(table.columns[next]));
+		while (next >= 0 && next <= table.columns.length - 1 && !table.isColumnShown(table.columns[next]));
 		return next;
 	}
 
@@ -2417,7 +2534,7 @@ class Editor extends Component {
 				focus();
 			}, keys : config.get("key.duplicate") },
 			{ label : "Delete", click : function() {
-				beginChanges();
+				line.table.beginChanges();
 				if (cursor.selection == null) {
 					line.table.sheet.deleteLine(line.index);
 					line.table.refresh();
@@ -2430,7 +2547,7 @@ class Editor extends Component {
 				endChanges();
 			} },
 			{ label : "Separator", enabled : !sheet.props.hide, checked : sepIndex >= 0, click : function() {
-				beginChanges();
+				line.table.beginLinesChanges();
 				if( sepIndex >= 0 ) {
 					sheet.separators.splice(sepIndex, 1);
 				} else {
@@ -2459,7 +2576,7 @@ class Editor extends Component {
 				label : "Export Localized Texts",
 				checked : !Reflect.hasField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD),
 				click : function() {
-					beginChanges();
+					line.table.beginChanges();
 					var selectedLines = cursor.getSelectedLines();
 					for (line in selectedLines) {
 						if( Reflect.hasField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD) )
@@ -2529,16 +2646,36 @@ class Editor extends Component {
 		endChanges();
 	}
 
+	// a category exists while a sheet or a column uses it : its color and its display state are removed with it
+	function removeUnusedCategories() {
+		var used = getCategories(base);
+		var ed = getEditorData(base);
+		if( ed != null && ed.categoryColors != null ) {
+			for( c in ed.categoryColors.keys() )
+				if( used.indexOf(c) < 0 )
+					ed.categoryColors.remove(c);
+			if( ed.categoryColors.keys().length == 0 )
+				Reflect.deleteField(ed, "categoryColors");
+			if( Reflect.fields(ed).length == 0 )
+				Reflect.deleteField(@:privateAccess base.data, "editor");
+		}
+		var shown : Array<String> = ide.projectState.get("dbCategories");
+		if( shown != null && Lambda.exists(shown, c -> used.indexOf(c) < 0) ) {
+			var kept = shown.filter(c -> used.indexOf(c) >= 0);
+			ide.projectState.set("dbCategories", kept.length == 0 ? null : kept);
+		}
+	}
+
 	function categoriesMenu(categories: Array<String>, setFunc : Array<String> -> Void) {
-		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [{ label : "Set...", click : function() {
-			var wstr = "";
-			if(categories != null)
-				wstr = categories.join(",");
-			wstr = ide.ask("Set Categories (comma separated)", wstr);
-			if(wstr == null)
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [{ label : "New...", click : function() {
+			var name = ide.ask("New Category");
+			if(name == null)
 				return;
-			categories = [for(s in wstr.split(",")) { var t = StringTools.trim(s); if(t.length > 0) t; }];
-			setFunc(categories.length > 0 ? categories : null);
+			name = StringTools.trim(name);
+			if(name.length == 0 || (categories != null && categories.indexOf(name) >= 0))
+				return;
+			categories = categories == null ? [name] : categories.concat([name]);
+			setFunc(categories);
 			#if editor
 			ide.initMenu();
 			#end
@@ -2564,11 +2701,113 @@ class Editor extends Component {
 		return menu;
 	}
 
+	static var CATEGORY_COLORS = ["Red", "Orange", "Yellow", "Green", "Teal", "Blue", "Purple", "Pink", "Gray"];
+
+	// in the database : "editor" is not a field of cdb.Data, kept by its json load / save
+	static function getEditorData( db : cdb.Database, create = false ) : { ?categoryColors : haxe.DynamicAccess<String> } {
+		var data = @:privateAccess db.data;
+		var ed = Reflect.field(data, "editor");
+		if( ed == null && create ) {
+			ed = {};
+			Reflect.setField(data, "editor", ed);
+		}
+		return ed;
+	}
+
+	// the zoom shown while it is chosen, not saved
+	public static var previewIconZoom : Null<Int>;
+
+	// the speed of the animations of the sub tables, 0 for none
+	public static function getAnimSpeed() : Int {
+		var speed : Null<Int> = Ide.inst.globalState.get("cdbAnimSpeed");
+		return speed == null ? 1 : speed;
+	}
+
+	public static function setAnimSpeed( speed : Int ) {
+		if( speed == 1 ) Ide.inst.globalState.remove("cdbAnimSpeed") else Ide.inst.globalState.set("cdbAnimSpeed", speed);
+	}
+
+	public static function animDuration( ms : Int ) : Int {
+		var speed = getAnimSpeed();
+		return speed == 0 ? 0 : Math.round(ms / speed);
+	}
+
+	// the zoom of the icons displayed smaller than their size, in percent
+	public static function getIconZoom() : Float {
+		var percent : Null<Int> = previewIconZoom ?? Ide.inst.projectState.get("cdbIconZoom");
+		return percent == null ? 1 : percent / 100;
+	}
+
+	public static function setIconZoom( percent : Int ) {
+		if( percent == 100 ) Ide.inst.projectState.remove("cdbIconZoom") else Ide.inst.projectState.set("cdbIconZoom", percent);
+	}
+
+	public static function getCategoryColor( cat : String ) : String {
+		var ed = getEditorData(Ide.inst.database);
+		return ed == null || ed.categoryColors == null ? null : ed.categoryColors.get(cat);
+	}
+
+	public static function setTabColor( tab : Element, color : String ) {
+		var e = tab.get(0);
+		if( e == null )
+			return;
+		e.className = ~/\bcatcolor-[^\s]+/g.replace(e.className, "");
+		e.style.removeProperty("--cat-color");
+		tab.toggleClass("cat-colored", color != null);
+		if( color == null )
+			return;
+		if( StringTools.startsWith(color, "#") )
+			e.style.setProperty("--cat-color", color);
+		else
+			tab.addClass("catcolor-" + color);
+	}
+
+	function setCategoryColor( cat : String, color : String ) {
+		beginChanges();
+		var ed = getEditorData(base, true);
+		if( ed.categoryColors == null ) ed.categoryColors = {};
+		if( color == null )
+			ed.categoryColors.remove(cat);
+		else
+			ed.categoryColors.set(cat, color);
+		if( ed.categoryColors.keys().length == 0 )
+			Reflect.deleteField(ed, "categoryColors");
+		if( Reflect.fields(ed).length == 0 )
+			Reflect.deleteField(@:privateAccess base.data, "editor");
+		endChanges();
+	}
+
+	function categoryColorMenu( categories : Array<String>, onChange : Void -> Void ) : Array<hrt.ui.HuiMenu.MenuItem> {
+		if( categories == null )
+			return [];
+		function colors( cat : String ) : Array<hrt.ui.HuiMenu.MenuItem> {
+			var current = getCategoryColor(cat);
+			function set( color : String ) {
+				setCategoryColor(cat, color);
+				onChange();
+			}
+			var custom = current != null && StringTools.startsWith(current, "#");
+			var menu : Array<hrt.ui.HuiMenu.MenuItem> = [for( c in CATEGORY_COLORS ) { label : c, checked : current == c.toLowerCase(), click : () -> set(c.toLowerCase()) }];
+			menu.push({ label : "Custom...", checked : custom, click : function() {
+				var color = ide.ask("Color of " + cat + " (#rrggbb)", custom ? current : "#");
+				if( color != null && ~/^#[0-9a-fA-F]{6}$/.match(color) )
+					set(color);
+			}});
+			menu.push({ label : "None", checked : current == null, click : () -> set(null) });
+			return menu;
+		}
+		if( categories.length == 1 )
+			return colors(categories[0]);
+		return [for( c in categories ) { label : c, menu : colors(c) }];
+	}
+
 	public function createDBSheet( ?index : Int ) {
 		var value = ide.ask("Sheet name");
 		if( value == "" || value == null ) return null;
+		beginChanges(true);
 		var s = ide.database.createSheet(value);
 		if( s == null ) {
+			endChanges();
 			ide.error("Name already exists");
 			return null;
 		}
@@ -2583,7 +2822,7 @@ class Editor extends Component {
 			props.index = index + 1;
 			sheets[idx].props.editor = props;
 		}
-		ide.saveDatabase();
+		endChanges();
 		refreshAll();
 		return s;
 	}
@@ -2634,9 +2873,13 @@ class Editor extends Component {
 					var props = getSheetProps(sheet);
 					props.categories = cats;
 					sheet.props.editor = props;
+					removeUnusedCategories();
 					endChanges();
 					onChange();
-				})},
+				}).concat([
+					{ label : "", isSeparator : true },
+					{ label : "Color", enabled : getSheetProps(sheet).categories != null, menu : categoryColorMenu(getSheetProps(sheet).categories, onChange) },
+				])},
 				{ label : "", isSeparator: true },
 
 			]);
@@ -2644,35 +2887,31 @@ class Editor extends Component {
 		if( sheet.props.dataFiles == null )
 			content = content.concat([
 				{ label : "Add Index", checked : sheet.props.hasIndex, click : function() {
-					beginChanges();
+					if( !sheet.props.hasIndex && Lambda.exists(sheet.columns, c -> c.name == "index") ) {
+						ide.error("Column 'index' already exists");
+						return;
+					}
+					beginChanges(true);
 					if( sheet.props.hasIndex ) {
 						for( o in sheet.getLines() )
 							Reflect.deleteField(o, "index");
 						sheet.props.hasIndex = false;
-					} else {
-						for( c in sheet.columns )
-							if( c.name == "index" ) {
-								ide.error("Column 'index' already exists");
-								return;
-							}
+					} else
 						sheet.props.hasIndex = true;
-					}
 					endChanges();
 				}},
 				{ label : "Add Group", checked : sheet.props.hasGroup, click : function() {
-					beginChanges();
+					if( !sheet.props.hasGroup && Lambda.exists(sheet.columns, c -> c.name == "group") ) {
+						ide.error("Column 'group' already exists");
+						return;
+					}
+					beginChanges(true);
 					if( sheet.props.hasGroup ) {
 						for( o in sheet.getLines() )
 							Reflect.deleteField(o, "group");
 						sheet.props.hasGroup = false;
-					} else {
-						for( c in sheet.columns )
-							if( c.name == "group" ) {
-								ide.error("Column 'group' already exists");
-								return;
-							}
+					} else
 						sheet.props.hasGroup = true;
-					}
 					endChanges();
 				}},
 			]);

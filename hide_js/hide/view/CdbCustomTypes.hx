@@ -23,6 +23,9 @@ class CdbCustomTypes extends hide.ui.View<{}> {
 			}
 
 			var base = ide.database;
+			// the changes are in the undo of the CDB editor, when one is opened
+			var cdbView = ide.getViews(CdbTable)[0];
+			var editor = cdbView == null ? null : @:privateAccess cdbView.editor;
 			var tpairs = base.makePairs(base.getCustomTypes(), types);
 			// check if we can remove some types used in sheets
 			for( p in tpairs )
@@ -37,6 +40,10 @@ class CdbCustomTypes extends hide.ui.View<{}> {
 							default:
 							}
 				}
+			if( editor != null ) editor.beginChanges(true);
+			function cancel() {
+				if( editor != null ) editor.cancelChanges();
+			}
 			// add new types
 			for( t in types )
 				if( !Lambda.exists(tpairs,function(p) return p.b == t) )
@@ -49,6 +56,7 @@ class CdbCustomTypes extends hide.ui.View<{}> {
 					base.updateType(p.a, p.b);
 				else {
 					try base.updateType(p.a, p.b) catch( msg : String ) {
+						cancel();
 						ide.error("Error while updating " + p.b.name + " : " + msg);
 						return;
 					}
@@ -59,8 +67,14 @@ class CdbCustomTypes extends hide.ui.View<{}> {
 			// full rebuild
 			modified = false;
 			types = null;
-			rebuild();
-			ide.saveDatabase();
+			if( editor != null ) {
+				editor.endChanges();
+				// rebuilds this view too
+				hide.comp.cdb.Editor.refreshAll(false, false);
+			} else {
+				rebuild();
+				ide.saveDatabase();
+			}
 		};
 		script.onChanged = function() {
 			var nstr = script.code;
@@ -100,6 +114,14 @@ class CdbCustomTypes extends hide.ui.View<{}> {
 			}
 			modified = typesStr != nstr;
 		};
+	}
+
+	/**
+		The database changed (undo, reload) : shows its types, unless they are being edited.
+	**/
+	public function onDatabaseChanged() {
+		if( !modified && script != null )
+			rebuild();
 	}
 
 	function set_modified(b) {
