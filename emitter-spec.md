@@ -53,7 +53,7 @@ The range (`from` / `to`) belongs to the param; a reference shares the shape onl
 ## Storage
 
 - Params are stored under their plain name (`scale`, `startSpeed`...), each component with its mode and fields.
-- Old files are upgraded on load and saved upgraded.
+- Old files are converted once by a migration tool in `hide/tools`, run over a whole project: it rewrites every old-format file, updates the files that override or point at what it changes, only touches the nodes it changes, and is idempotent. The runtime reads the new format only and rejects an old-format file with an error naming the tool.
 
 ## Upgrade
 
@@ -79,7 +79,7 @@ Rule: runtime-equivalent whenever possible, while simplifying.
 | particle shader float `c·k` | Curve `c`, from 0, to `k` |
 | particle shader vector, some components animated | animated components: Curve; the others: Constant 0 |
 
-Validation: a batch run over the games' .fx, outside the repo, that prints each param as a canonical formula before and after the upgrade and compares them (constants rounded, randoms compared by structure).
+Validation (fxbench, outside the repo): old hide on the old files against new hide on the migrated files, over the games' .fx: param values as canonical formulas (constants rounded, randoms compared by structure), animation curves sampled over time, and rendered sheets.
 
 ## UI
 
