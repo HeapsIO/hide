@@ -303,9 +303,9 @@ class ParticleInstance {
 		// PIVOT
 		if(def.pivot != VZero) {
 			evaluator.getFastVec(idx, def.pivot, t, v);
-			localMat.tx = v.x;
-			localMat.ty = v.y;
-			localMat.tz = v.z;
+			localMat.tx = v.x * localMat._11;
+			localMat.ty = v.y * localMat._22;
+			localMat.tz = v.z * localMat._33;
 		}
 
 		// ROTATION
