@@ -827,7 +827,8 @@ class FXEditor extends hide.view.FileView {
 
 		for (curve in curves){
 			var dispKey = getPath() + "/" + curve.getAbsPath(true);
-			curve.maxTime = data.duration == 0 ? 5000 : data.duration;
+			// a particle curve is over the particle life
+			curve.maxTime = hrt.prefab.fx.AnimEdit.isParticleCurve(curve) ? 1 : data.duration == 0 ? 5000 : data.duration;
 			this.curveEditor.saveDisplayKey = dispKey;
 
 			this.curveEditor.requestXZoom = function(xMin, xMax) {
@@ -1271,29 +1272,32 @@ class FXEditor extends hide.view.FileView {
 		var curvesToDraw : Array<Curve> = [];
 		var eventsToDraw : Array<IEvent> = [];
 
-		function getSection(?root : PrefabElement, depth = 0): Section {
+		// the particle curves are edited in the inspector of their emitter, shown here only when they are selected
+		function getSection(?root : PrefabElement, depth = 0, particles = false): Section {
 			var section: Section = { root:root, curves: [], children: [], events: []};
 			var eventAdded = false;
+			particles = particles || (depth == 0 && root is Curve);
+			function shown(c: Curve) return particles || !hrt.prefab.fx.AnimEdit.isParticleCurve(c);
 
-			if (root is Curve && !hrt.prefab.fx.AnimEdit.isParticleCurve(cast root))
+			if (root is Curve && shown(cast root))
 				curvesToDraw.push(cast root);
 
 			if (root is IEvent && depth == 0)
 				eventsToDraw.push(cast root);
 
 			for(child in root.children) {
-				if (child.flatten(Curve).exists(c -> !hrt.prefab.fx.AnimEdit.isParticleCurve(c))) {
+				if (child.flatten(Curve).exists(shown)) {
 					if (child is Curve) {
 						var c = Std.downcast(child, Curve);
 						curvesToDraw.push(c);
 
 						if (c.blendMode == CurveBlendMode.Blend || c.blendMode == CurveBlendMode.RandomBlend)
-							section.children.push(getSection(c,depth+1));
+							section.children.push(getSection(c,depth+1,particles));
 						else
 							section.curves.push(c);
 					}
 					else {
-						section.children.push(getSection(child,depth+1));
+						section.children.push(getSection(child,depth+1,particles));
 					}
 				}
 

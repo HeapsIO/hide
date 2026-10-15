@@ -1270,6 +1270,20 @@ class CurveEditor extends hide.comp.Component {
 		var minX = xt(0) - 1;
 
 		var maxTime = this.duration == 0 ? 5000 : this.duration;
+
+		// the time of the curves when they all have one (the particle life of the particle curves)
+		var curvesMaxTime = 0.0;
+		for (curve in curves) {
+			if (curve.maxTime > 0) {
+				curvesMaxTime = hxd.Math.max(curvesMaxTime, curve.maxTime);
+			} else {
+				curvesMaxTime = 0.0;
+				break;
+			}
+		}
+		if (curvesMaxTime > 0)
+			maxTime = curvesMaxTime;
+
 		var maxX = xt(maxTime);
 		svg.line(overlayGroup, minX, svg.element.height(), minX, 0, { stroke:'#000000', 'stroke-width':'1px' });
 		svg.line(overlayGroup, maxX, svg.element.height(), maxX, 0, { stroke:'#000000', 'stroke-width':'1px' });
