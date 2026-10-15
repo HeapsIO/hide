@@ -26,6 +26,9 @@ class Select extends Widget<Dynamic> {
 	**/
 	public var entries(default, null) : Array<SelectEntry>;
 
+	/** Only the caret is shown, the value in the tooltip **/
+	public var caretOnly = false;
+
 	public function setEntries(entries: EntriesOrStrings) {
 		this.entries = entries;
 		value = null;
@@ -53,6 +56,7 @@ class Select extends Widget<Dynamic> {
 		}
 
 		select = js.Browser.document.createElement("kit-select");
+		select.toggleClass("kit-caret-only", caretOnly);
 		text = js.Browser.document.createSpanElement();
 		select.addChild(text);
 
@@ -94,6 +98,8 @@ class Select extends Widget<Dynamic> {
 			}
 		}
 		text.get().innerText = label;
+		if (caretOnly)
+			select.get().title = label;
 		#elseif hui
 		if (select == null)
 			return;

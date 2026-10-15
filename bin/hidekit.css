@@ -720,6 +720,17 @@ kit-root kit-anim-marker.animated.key {
   :scope kit-line kit-select span {
     flex: 1 1;
   }
+  :scope kit-line kit-select.kit-caret-only {
+    flex: 0 0 auto;
+    width: auto;
+    padding-left: 0;
+  }
+  :scope kit-line kit-select.kit-caret-only span {
+    display: none;
+  }
+  :scope kit-line kit-select.kit-caret-only::after {
+    margin: 4px;
+  }
   :scope kit-line kit-select::after {
     flex: 0 0 12px;
     display: inline-block;

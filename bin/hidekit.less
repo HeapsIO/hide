@@ -822,6 +822,19 @@ kit-root {
 					flex: 1 1;
 				}
 
+				&.kit-caret-only {
+					flex: 0 0 auto;
+					width: auto;
+					padding-left: 0;
+
+					span {
+						display: none;
+					}
+					&::after {
+						margin: 4px;
+					}
+				}
+
 				&::after {
 					flex: 0 0 12px;
 					display: inline-block;

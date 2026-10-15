@@ -164,6 +164,7 @@ class EmitterEdit {
 			}
 
 			var select = new hide.kit.Select(line, "mode");
+			select.caretOnly = true;
 			var entries : Array<hide.kit.Select.SelectEntry> = [for (mode in modes) { value: mode, label: hide.kit.Macros.camelToSpaceCase(mode) }];
 			entries.push({ value: "unset", label: "Unset" });
 			select.setEntries(entries);
