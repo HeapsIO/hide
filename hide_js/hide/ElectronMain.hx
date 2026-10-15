@@ -69,6 +69,10 @@ class ElectronMain {
 		// DirectX 12 (jsdx) : Chromium must use the same GPU as the dx12 addon, shared textures can not cross adapters
 		App.commandLine.appendSwitch("force_high_performance_gpu");
 		App.commandLine.appendSwitch("ignore-gpu-blocklist");
+		// after a GPU process loss (TDR, driver crash), WebGPU is recreated (dx.Display) : Chromium would block it
+		// from the 2nd loss (3D APIs blocked for the page) and the 3rd (fallback to a GPU mode without it)
+		App.commandLine.appendSwitch("disable-domain-blocking-for-3d-apis");
+		App.commandLine.appendSwitch("disable-gpu-process-crash-limit");
 
 		if( !App.requestSingleInstanceLock() ) {
 			App.quit();

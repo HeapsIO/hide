@@ -11,9 +11,12 @@ private class Target {
 	public var busy = [false, false];
 	// written this frame, -1 when the frame is skipped
 	public var current = -1;
-	public function new( width, height ) {
+	// Display.generation at creation : recreated with the device
+	public var gen : Int;
+	public function new( width, height, gen ) {
 		this.width = width;
 		this.height = height;
+		this.gen = gen;
 	}
 }
 
@@ -28,6 +31,8 @@ class Display {
 	static var pipeline : Dynamic;
 	static var sampler : Dynamic;
 	static var format : String;
+	// incremented when the device is lost : the targets and contexts of the previous one are recreated
+	static var generation = 0;
 
 	public static function init( tries = 5 ) {
 		var gpu : Dynamic = js.Syntax.code("navigator.gpu");
@@ -47,6 +52,14 @@ class Display {
 		}).then(function( dev : Dynamic ) {
 			if( dev == null ) return;
 			device = dev;
+			// lost with the GPU process (TDR, driver crash) : a new device once it has restarted
+			dev.lost.then(function( info : Dynamic ) {
+				if( device != dev || info.reason == "destroyed" ) return;
+				js.Browser.console.warn("DX12 display : WebGPU device lost (" + info.message + "), recreating it");
+				device = null;
+				generation++;
+				init(20);
+			});
 			format = gpu.getPreferredCanvasFormat();
 			var module = device.createShaderModule({ code : "
 				struct V { @builtin(position) pos : vec4f, @location(0) uv : vec2f };
@@ -69,10 +82,12 @@ class Display {
 
 	/** before the present : records the copy of `tex` into a shared texture of the canvas, (re)created when its size changes **/
 	public static function copy( canvas : js.html.CanvasElement, tex : h3d.mat.Texture ) {
+		// nothing is shown without WebGPU : not imported in a GPU process being restarted
+		if( device == null ) return;
 		var target : Target = (cast canvas).__dxTarget;
-		if( target == null || target.width != tex.width || target.height != tex.height ) {
+		if( target == null || target.gen != generation || target.width != tex.width || target.height != tex.height ) {
 			release(canvas);
-			target = new Target(tex.width, tex.height);
+			target = new Target(tex.width, tex.height, generation);
 			(cast canvas).__dxTarget = target;
 			var sharedTexture : Dynamic = js.Syntax.code("require('electron').sharedTexture");
 			try {
@@ -123,10 +138,11 @@ class Display {
 
 	static function getContext( canvas : js.html.CanvasElement ) : Dynamic {
 		var context : Dynamic = (cast canvas).__dxContext;
-		if( context == null ) {
+		if( context == null || (cast canvas).__dxContextGen != generation ) {
 			context = canvas.getContext("webgpu");
 			context.configure({ device : device, format : format, alphaMode : "opaque" });
 			(cast canvas).__dxContext = context;
+			(cast canvas).__dxContextGen = generation;
 		}
 		return context;
 	}
@@ -156,18 +172,19 @@ class Display {
 		frame.close();
 		var i = target.current;
 		target.busy[i] = true;
-		device.queue.onSubmittedWorkDone().then(_ -> target.busy[i] = false);
+		// rejected when the device is lost : the target is then recreated
+		device.queue.onSubmittedWorkDone().then(_ -> target.busy[i] = false, _ -> {});
 	}
 
 	public static function release( canvas : js.html.CanvasElement ) {
 		var target : Target = (cast canvas).__dxTarget;
 		if( target == null ) return;
 		(cast canvas).__dxTarget = null;
-		function free() {
+		function free( _ ) {
 			for( t in target.imports ) t.release();
 			for( r in target.textures ) js.Syntax.code("__dx12.js_shared_texture_release({0})", r);
 		}
-		// after the WebGPU work reading them
-		if( device != null ) device.queue.onSubmittedWorkDone().then(_ -> free()) else free();
+		// after the WebGPU work reading them, at once when their device is lost (its promises are rejected)
+		if( device != null && target.gen == generation ) device.queue.onSubmittedWorkDone().then(free, free) else free(null);
 	}
 }
