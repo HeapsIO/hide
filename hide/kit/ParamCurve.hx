@@ -112,6 +112,13 @@ class ParamCurve extends Element {
 			}
 	}
 
+	/** New ranges, the view framed on them **/
+	public function setRanges(ranges: Array<ParamRange>) {
+		this.ranges = ranges;
+		frame();
+		refresh();
+	}
+
 	/** Scales the view around its center, keeping 0 to 1 in it **/
 	function zoom(factor: Float) {
 		var center = (minY + maxY) * 0.5, half = (maxY - minY) * 0.5 * factor;

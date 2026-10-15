@@ -264,9 +264,9 @@ class EmitterEdit {
 				bottom.cssClass = "kit-param-bounds";
 				bottom.stealLabel = false;
 				menuOwners.push(bottom);
+				// the view follows the range
 				function changed() {
-					graph.ranges = ranges();
-					graph.refresh();
+					graph.setRanges(ranges());
 				}
 				var names = to.length == 1 ? [""] : ["Min", "Max"];
 				for (j => f in to)
