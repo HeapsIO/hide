@@ -139,29 +139,55 @@ static hl_shim::Register js_reg_get_current_back_buffer_index("get_current_back_
 static hl_shim::Register js_reg_command_queue_present("command_queue_present", hl_shim::wrap<&js_command_queue_present>());
 
 // ---- textures shared with the page : each scene copies its output into them, the page draws
-// them into the canvas of the scene with WebGPU (see dx.Display)
+// them into the canvas of the scene with WebGPU (see dx.Display).
+// Owned by the page (env) creating them : released with it on reload (js_release_page).
 
-static std::map<ID3D12Resource*, HANDLE> js_shared;
+struct js_shared_texture {
+	HANDLE handle;
+	napi_env env;
+};
 
-static ID3D12Resource *js_shared_texture_create( int width, int height ) {
-	HANDLE handle = NULL;
-	ID3D12Resource *res = js_create_target(width, height, DXGI_FORMAT_R8G8B8A8_UNORM, &handle);
-	res->SetName(L"JS_SHARED");
-	js_shared[res] = handle;
-	return res;
+static std::map<ID3D12Resource*, js_shared_texture> js_shared;
+
+static napi_value js_shared_texture_create( napi_env env, napi_callback_info info ) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+	try {
+		HANDLE handle = NULL;
+		ID3D12Resource *res = js_create_target(hl_shim::arg<int>(env, argv, 0), hl_shim::arg<int>(env, argv, 1), DXGI_FORMAT_R8G8B8A8_UNORM, &handle);
+		res->SetName(L"JS_SHARED");
+		js_shared[res] = { handle, env };
+		return hl_shim::toJs(env, res);
+	} catch( hl_shim_error &e ) {
+		napi_throw_error(env, nullptr, e.msg);
+		return nullptr;
+	}
 }
 
 static HANDLE js_shared_texture_handle( ID3D12Resource *res ) {
 	auto it = js_shared.find(res);
-	return it == js_shared.end() ? NULL : it->second;
+	return it == js_shared.end() ? NULL : it->second.handle;
+}
+
+static void js_shared_texture_free( std::map<ID3D12Resource*, js_shared_texture>::iterator it ) {
+	CloseHandle(it->second.handle);
+	it->first->Release();
+	js_shared.erase(it);
 }
 
 static void js_shared_texture_release( ID3D12Resource *res ) {
 	auto it = js_shared.find(res);
-	if( it == js_shared.end() ) return;
-	CloseHandle(it->second);
-	js_shared.erase(it);
-	res->Release();
+	if( it != js_shared.end() ) js_shared_texture_free(it);
+}
+
+// env cleanup hook : the GPU is idle (present waits for it), the copies recorded since are never submitted
+static void js_release_page( void *env ) {
+	for( auto it = js_shared.begin(); it != js_shared.end(); ) {
+		auto next = std::next(it);
+		if( it->second.env == (napi_env)env ) js_shared_texture_free(it);
+		it = next;
+	}
 }
 
 // The high performance GPU (as Chromium takes it with force_high_performance_gpu) : its index in
@@ -193,7 +219,7 @@ static int js_high_performance_device() {
 }
 
 static hl_shim::Register js_reg_high_performance_device("js_high_performance_device", hl_shim::wrap<&js_high_performance_device>());
-static hl_shim::Register js_reg_shared_texture_create("js_shared_texture_create", hl_shim::wrap<&js_shared_texture_create>());
+static hl_shim::Register js_reg_shared_texture_create("js_shared_texture_create", &js_shared_texture_create);
 static hl_shim::Register js_reg_shared_texture_handle("js_shared_texture_handle", hl_shim::wrap<&js_shared_texture_handle>());
 static hl_shim::Register js_reg_shared_texture_release("js_shared_texture_release", hl_shim::wrap<&js_shared_texture_release>());
 
@@ -387,6 +413,7 @@ static void js_high_qos() {
 NAPI_MODULE_INIT() {
 	js_preload_dxil();
 	js_high_qos();
+	napi_add_env_cleanup_hook(env, js_release_page, env);
 	for( auto &p : hl_shim::registry() ) {
 		napi_value f;
 		napi_create_function(env, p.first.c_str(), NAPI_AUTO_LENGTH, p.second, nullptr, &f);
