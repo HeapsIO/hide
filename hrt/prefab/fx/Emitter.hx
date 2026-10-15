@@ -1791,7 +1791,6 @@ class Emitter extends Object3D implements ParamOwner {
 	@:group("Debug")
 	@:s @:disp("Show Debug") public var viewDebug : Bool = false;
 
-	// Params with modes (`EmitterParam`), in the order of their random slots
 	@:group("Particle Movement")
 	@:param(PVec(3, -10, 10), Particle) @:disp("Fixed Speed") public var speed : ParamValue;
 	@:param(PVec(3, -10, 10), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamValue;
@@ -1800,22 +1799,20 @@ class Emitter extends Object3D implements ParamOwner {
 	@:param(PFloat(0, 2), Multiplier, 1.) public var orbitSpeedMultiplier : ParamValue;
 	@:param(PVec(3, -10, 10), Particle) public var acceleration : ParamValue;
 	@:param(PVec(3, -10, 10), Particle) public var worldAcceleration : ParamValue;
+	@:param(PVec(3, -10, 10), Spawn) public var startSpeed : ParamValue;
+	@:param(PVec(3, -10, 10), Spawn) public var startWorldSpeed : ParamValue;
 	@:group("Particle Transform")
 	@:param(PVec(3, -10, 10), Particle) public var offset : ParamValue;
 	@:param(PFloat(0, 2), Particle, 1.) public var scale : ParamValue;
 	@:param(PFloat(0, 2), Multiplier, 1.) public var scaleMultiplier : ParamValue;
-	@:group("Limit Velocity")
-	@:param(PFloat(0, 10), Particle) public var dampen : ParamValue;
-	@:param(PFloat(0, 10), Particle) public var maxVelocity : ParamValue;
-	@:group("Particle Transform")
 	@:param(PVec(3, 0, 2), Particle, [1., 1., 1.]) public var stretch : ParamValue;
 	@:param(PFloat(0, 2), Particle) public var stretchVelocity : ParamValue;
 	/** Degrees **/
 	@:param(PVec(3, 0, 360), Particle) public var rotation : ParamValue;
 	@:param(PVec(3, -1, 1), Particle) public var pivot : ParamValue;
-	@:group("Particle Movement")
-	@:param(PVec(3, -10, 10), Spawn) public var startSpeed : ParamValue;
-	@:param(PVec(3, -10, 10), Spawn) public var startWorldSpeed : ParamValue;
+	@:group("Limit Velocity")
+	@:param(PFloat(0, 10), Particle) public var dampen : ParamValue;
+	@:param(PFloat(0, 10), Particle) public var maxVelocity : ParamValue;
 	@:group("Properties")
 	@:param(PFloat(0, 10), Spawn, 1.) public var lifeTime : ParamValue;
 

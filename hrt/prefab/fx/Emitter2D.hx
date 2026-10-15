@@ -506,7 +506,6 @@ class Emitter2D extends Object2D implements ParamOwner {
 	@:s @:disp("Use Source UV") public var animationUseSourceUVs : Bool = true;
 	@:s @:disp("Blend Frames") public var animationBlendBetweenFrames : Bool = true;
 
-	// Params with modes (`EmitterParam`), in the order of their random slots
 	@:group("Particle Movement")
 	@:param(PVec(2, -10, 10), Particle) @:disp("Fixed Speed") public var speed : ParamValue;
 	@:param(PVec(2, -10, 10), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamValue;
@@ -515,20 +514,18 @@ class Emitter2D extends Object2D implements ParamOwner {
 	@:param(PFloat(0, 2), Multiplier, 1.) public var orbitSpeedMultiplier : ParamValue;
 	@:param(PVec(2, -10, 10), Particle) public var acceleration : ParamValue;
 	@:param(PVec(2, -10, 10), Particle) public var worldAcceleration : ParamValue;
+	@:param(PVec(2, -10, 10), Spawn) public var startSpeed : ParamValue;
+	@:param(PVec(2, -10, 10), Spawn) public var startWorldSpeed : ParamValue;
 	@:group("Particle Transform")
 	@:param(PVec(2, -10, 10), Particle) public var offset : ParamValue;
 	@:param(PFloat(0, 2), Particle, 1.) public var scale : ParamValue;
 	@:param(PFloat(0, 2), Multiplier, 1.) public var scaleMultiplier : ParamValue;
-	@:group("Particle Limit Velocity")
-	@:param(PFloat(0, 10), Particle) public var dampen : ParamValue;
-	@:param(PFloat(0, 10), Particle) public var maxVelocity : ParamValue;
-	@:group("Particle Transform")
 	@:param(PVec(2, 0, 2), Particle, [1., 1.]) public var stretch : ParamValue;
 	/** Degrees. Not named `rotation`, the one of the emitter object **/
 	@:param(PFloat(0, 360), Particle) @:name("rotation") public var particleRotation : ParamValue;
-	@:group("Particle Movement")
-	@:param(PVec(2, -10, 10), Spawn) public var startSpeed : ParamValue;
-	@:param(PVec(2, -10, 10), Spawn) public var startWorldSpeed : ParamValue;
+	@:group("Particle Limit Velocity")
+	@:param(PFloat(0, 10), Particle) public var dampen : ParamValue;
+	@:param(PFloat(0, 10), Particle) public var maxVelocity : ParamValue;
 	@:group("Particle")
 	@:param(PFloat(0, 10), Spawn, 1.) public var lifeTime : ParamValue;
 
