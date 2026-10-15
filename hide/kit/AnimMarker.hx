@@ -2,8 +2,17 @@ package hide.kit;
 
 #if domkit
 
-/** After an animatable slider in its line: tells if the field is animated, and keyed at the current time **/
+/** After an animated slider in its line: tells that the field is animated, and if it is keyed at the current time **/
 class AnimMarker extends Element {
+	/** Adds the animation `menu` to the context menu of `slider`, after its own items **/
+	public static function addMenu(slider: Slider<Float>, menu: () -> Array<hrt.ui.HuiMenu.MenuItem>) {
+		var own = slider.menuItems;
+		slider.menuItems = own == null ? menu : () -> {
+			var items = own();
+			items.length == 0 ? menu() : items.concat([{ isSeparator: true }]).concat(menu());
+		};
+	}
+
 	var slider : Slider<Float>;
 	var animated : Bool;
 	var menu : () -> Array<hrt.ui.HuiMenu.MenuItem>;
@@ -20,7 +29,7 @@ class AnimMarker extends Element {
 		this.slider = slider;
 		this.animated = animated;
 		this.menu = menu;
-		slider.menuItems = menu;
+		addMenu(slider, menu);
 		var line = Std.downcast(slider.parent, Line);
 		if (line == null) {
 			line = new Line(null, slider.id + "Line");

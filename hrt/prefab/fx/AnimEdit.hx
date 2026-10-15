@@ -5,8 +5,9 @@ package hrt.prefab.fx;
 import hrt.prefab.fx.EmitterParam;
 
 /**
-	Animation curves edited from the inspector, Blender-like: a marker after an animatable field tells
-	if it is animated (and keyed at the current time), its menu animates it, inserts or removes a key.
+	Animation curves edited from the inspector, Blender-like: the context menu of an animatable field
+	animates it, inserts or removes a key; a marker after an animated field tells it is (and if it is
+	keyed at the current time).
 	An animated field shows the value at the current time of the FX, editing it sets a key there.
 	The animation curve of a field is a child of the animated prefab, named after the property.
 **/
@@ -127,17 +128,18 @@ class AnimEdit {
 				{ label: "Remove animation" + label, click: () -> removeAnimation(editor, owner, name) },
 			];
 		}
-		var marker = new hide.kit.AnimMarker(slider, curve != null, menu);
+		// not animated: only the menu
+		if (curve == null) {
+			hide.kit.AnimMarker.addMenu(slider, menu);
+			return;
+		}
+		var marker = new hide.kit.AnimMarker(slider, true, menu);
 		marker.onMarkerClick = () -> {
-			if (curve == null)
-				animate(editor, owner, name, slider.value, time());
-			else if (keyAt(curve, time()) == null)
+			if (keyAt(curve, time()) == null)
 				setKey(editor, curve, owner, time(), slider.value);
 			else if (curve.keys.length > 1)
 				setKey(editor, curve, owner, time(), null);
 		}
-		if (curve == null)
-			return;
 
 		marker.isKeyed = () -> keyAt(curve, time()) != null;
 		// the curve before the temporary edits of the field
