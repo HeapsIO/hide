@@ -979,9 +979,12 @@ class Upgrade0 {
 				setChannel(n, fit.cs, "scale", i, fit.scaleKeys[i], scale[i], SCALE_TOLERANCE * Math.max(1, Math.abs(scale[i])), fit.loop);
 			setChannel(n, fit.cr, "rotation", i, fit.rotKeys[i], rot[i], ROTATION_TOLERANCE, fit.loop);
 		}
-		warn(n, '$why: sampled to what the old runtime showed' + (fit.problem != null ? ', approximated (${fit.problem})' : ""));
+		var msg = '$why: sampled to what the old runtime showed';
+		if( fit.problem != null )
+			msg += ', approximated (${fit.problem})';
 		if( fit.nonRigid > MATRIX_TOLERANCE )
-			warn(n, 'the old runtime showed a transform that is not a scale and a rotation (the quaternion of a sheared matrix, off by ${Math.round(fit.nonRigid * 1e4) / 1e4}), the quaternion is normalized');
+			msg += ', the quaternion of the sheared matrix normalized (off by ${Math.round(fit.nonRigid * 1e4) / 1e4})';
+		warn(n, msg);
 		change(n, withScale ? "rotation and scale, sampled" : "rotation, sampled");
 	}
 
