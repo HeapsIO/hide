@@ -82,13 +82,29 @@ kit-root kit-param-curve path.extreme {
   stroke-dasharray: 4 3;
 }
 kit-root kit-param-curve line.grid {
-  stroke: #2a2a2a;
+  stroke: #333;
 }
 kit-root kit-param-curve line.zero {
   stroke: #555;
 }
+kit-root kit-param-curve text {
+  fill: #777;
+  font-size: 9px;
+  pointer-events: none;
+  user-select: none;
+}
 kit-root kit-param-curve rect.key {
   fill: #eee;
+  cursor: move;
+}
+kit-root kit-param-curve rect.key.selected {
+  fill: #f0b55a;
+}
+kit-root kit-param-curve line.tangent {
+  stroke: #999;
+}
+kit-root kit-param-curve circle.handle {
+  fill: #999;
   cursor: move;
 }
 kit-root kit-anim-marker {

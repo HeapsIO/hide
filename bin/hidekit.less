@@ -92,13 +92,29 @@ kit-root {
 			stroke-dasharray: 4 3;
 		}
 		line.grid {
-			stroke: #2a2a2a;
+			stroke: #333;
 		}
 		line.zero {
 			stroke: #555;
 		}
+		text {
+			fill: #777;
+			font-size: 9px;
+			pointer-events: none;
+			user-select: none;
+		}
 		rect.key {
 			fill: #eee;
+			cursor: move;
+		}
+		rect.key.selected {
+			fill: #f0b55a;
+		}
+		line.tangent {
+			stroke: #999;
+		}
+		circle.handle {
+			fill: #999;
 			cursor: move;
 		}
 	}
