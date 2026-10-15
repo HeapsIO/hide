@@ -43,9 +43,9 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	  (its components permuted). An object whose animation has no such form (a rotation the euler
 	  curves cannot follow, a scale the base rotation shears) gets a parent object, which takes its
 	  name, its place, its position and its animation as it is; it keeps its base rotation and scale
-	  and its content, under a new name (`<name>_base`). The paths of the file through it are updated.
-	  An object that reads its parent object, sets its own rotation or is read by its parent through its
-	  direct children keeps an approximation (`noParent`).
+	  and its content, under a new name (`<name>_base`). The paths of the file through it are updated,
+	  the ones that read the object get the child. An object that reads its parent object, sets its own
+	  rotation or is read by its parent through its direct children keeps an approximation (`noParent`).
 	- The overrides of the references are rewritten for the upgraded files they override (see
 	  `upgradeReference`), reading the other files of the project through the context.
 
@@ -690,7 +690,7 @@ class Upgrade0 {
 	/**
 		The paths of the file that go through the object `child`, now under `parent`: the curve
 		references and time remaps (prefab paths from the root), the look at targets and the
-		constraints (object paths, made of the same names).
+		constraints (object paths, see `fixObjectPath`).
 	**/
 	function rewritePaths( parent : RawNode, child : RawNode, oldChildren : Array<RawNode> ) {
 		function fix( path : String ) : String {
@@ -715,7 +715,8 @@ class Upgrade0 {
 			for( f in (n.isCurve ? ["blendParam", "remapPath"] : ["target", "object"]) ) {
 				var v : Dynamic = get(d, f);
 				if( !Std.isOfType(v, String) || StringTools.startsWith(v, "$param.") ) continue;
-				var nv = fix(v);
+				// the object a constraint moves is the parent, which carries the animation
+				var nv = n.isCurve ? fix(v) : fixObjectPath(v, parent, child, !(n.isA(hrt.prefab.l3d.Constraint) && f == "object"));
 				if( nv != v ) {
 					Reflect.setField(d, f, nv);
 					change(n, '$f path through the object moved under a parent');
@@ -724,6 +725,37 @@ class Upgrade0 {
 			for( c in n.children ) walk(c);
 		}
 		walk(root);
+	}
+
+	/**
+		An object path (`Prefab.locateObject`: object names from the scene root, the FX object first, a name
+		that is not a child searched below) that goes through `parent`, now the parent of `child`, goes through
+		`child`; one that names `parent` itself names `child` when `toChild`, the object whose world transform
+		is the one of the old object.
+	**/
+	function fixObjectPath( path : String, parent : RawNode, child : RawNode, toChild : Bool ) : String {
+		function search( n : RawNode, name : String ) : Null<RawNode> {
+			if( n.name == name && !n.isCurve ) return n;
+			for( c in n.children ) {
+				var f = search(c, name);
+				if( f != null ) return f;
+			}
+			return null;
+		}
+		var parts = path.split(".");
+		var cur : RawNode = null;
+		var out = [];
+		for( i => part in parts ) {
+			var found = cur == null ? search(root, part) : Lambda.find(cur.children, c -> c.name == part && !c.isCurve) ?? search(cur, part);
+			if( found == null ) return path;
+			out.push(part);
+			if( found == parent && (toChild || i < parts.length - 1) ) {
+				out.push(child.name);
+				found = child;
+			}
+			cur = found;
+		}
+		return out.join(".");
 	}
 
 	function upgradeObject2D( n : RawNode ) {
