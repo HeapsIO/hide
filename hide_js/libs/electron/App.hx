@@ -38,6 +38,22 @@ class App {
 		Ipc.call("app.clearCache");
 	}
 
+	/**
+		Called in the main window when Chromium's GPU process is lost (TDR, driver crash),
+		with Electron's details of the process (reason, exitCode)
+	**/
+	public static function onGpuCrash( callb : Dynamic -> Void ) {
+		Ipc.on("hide-gpu-crash", (_, details) -> callb(details));
+	}
+
+	/**
+		Zips `info` and this session's Chromium log, lost processes and crash dumps into a crash_report<date>.zip
+		in the user data and shows it in the explorer. Resolved with the zip path.
+	**/
+	public static function createCrashReport( info : String ) : js.lib.Promise<String> {
+		return cast Ipc.callAsync("app.createCrashReport", info);
+	}
+
 	public static function registerGlobalShortcut( accelerator : String, callb : Void -> Void ) {
 		if( shortcuts == null ) {
 			shortcuts = new Map();
