@@ -7,6 +7,9 @@ private class Target {
 	public var height : Int;
 	public var textures : Array<GpuResource> = [];
 	public var imports : Array<Dynamic> = [];
+	// read by WebGPU work not completed yet : neither overwritten nor released
+	public var busy = [false, false];
+	// written this frame, -1 when the frame is skipped
 	public var current = -1;
 	public function new( width, height ) {
 		this.width = width;
@@ -91,8 +94,17 @@ class Display {
 				js.Lib.rethrow();
 			}
 		}
-		// alternated : the texture Chromium may still be drawing is not overwritten
-		target.current = (target.current + 1) % target.textures.length;
+		// a texture WebGPU has finished reading, the frame is not displayed when there is none
+		var prev = target.current;
+		target.current = -1;
+		for( k in 1...target.textures.length + 1 ) {
+			var i = (prev + k) % target.textures.length;
+			if( !target.busy[i] ) {
+				target.current = i;
+				break;
+			}
+		}
+		if( target.current < 0 ) return;
 		var driver = h3d.impl.DX12Driver.inst;
 		@:privateAccess {
 			driver.transition(tex.t, COPY_SOURCE);
@@ -122,7 +134,7 @@ class Display {
 	/** after the present : draws the last copy into the canvas **/
 	public static function draw( canvas : js.html.CanvasElement ) {
 		var target : Target = (cast canvas).__dxTarget;
-		if( device == null || target == null ) return;
+		if( device == null || target == null || target.current < 0 ) return;
 		if( canvas.width != target.width ) canvas.width = target.width;
 		if( canvas.height != target.height ) canvas.height = target.height;
 		var context = getContext(canvas);
@@ -142,13 +154,20 @@ class Display {
 		pass.end();
 		device.queue.submit([enc.finish()]);
 		frame.close();
+		var i = target.current;
+		target.busy[i] = true;
+		device.queue.onSubmittedWorkDone().then(_ -> target.busy[i] = false);
 	}
 
 	public static function release( canvas : js.html.CanvasElement ) {
 		var target : Target = (cast canvas).__dxTarget;
 		if( target == null ) return;
-		for( t in target.imports ) t.release();
-		for( r in target.textures ) js.Syntax.code("__dx12.js_shared_texture_release({0})", r);
 		(cast canvas).__dxTarget = null;
+		function free() {
+			for( t in target.imports ) t.release();
+			for( r in target.textures ) js.Syntax.code("__dx12.js_shared_texture_release({0})", r);
+		}
+		// after the WebGPU work reading them
+		if( device != null ) device.queue.onSubmittedWorkDone().then(_ -> free()) else free();
 	}
 }
