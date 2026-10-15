@@ -30,9 +30,10 @@ class ElectronMain {
 	static var isCDB : Bool;
 	static var appName : String;
 	static var appTitle : String;
-	// HIDE_TEST=1 (automated testing) : replace alert/confirm popups by console logs and
-	// never activate / focus / maximize windows so they stay in the background
+	// HIDE_TEST=1 (automated testing) : replace alert/confirm popups by console logs, implies background
 	static var testMode : Bool;
+	// --background : never activate / focus / maximize windows so they stay behind the user's ones
+	static var background : Bool;
 
 	static var mainWindow : BrowserWindow;
 	static var windowStates : Map<Int, WindowState> = new Map();
@@ -49,17 +50,21 @@ class ElectronMain {
 		var env = js.Node.process.env;
 		isCDB = argv.indexOf("--cdb") >= 0 || env.get("HIDE_START_CDB") == "1" || js.node.Path.parse(js.Node.process.execPath).name.toLowerCase() == "cdb";
 		testMode = env.get("HIDE_TEST") == "1";
+		background = testMode || argv.indexOf("--background") >= 0;
 		appName = isCDB ? "CDB" : "hide";
 		appTitle = isCDB ? "CDB" : "HIDE";
 
 		App.setName(appName);
-		App.setPath("userData", js.node.Path.join(App.getPath("appData"), appName));
+		// --user-data-dir : separate instance (own profile and single instance lock)
+		if( !App.commandLine.hasSwitch("user-data-dir") )
+			App.setPath("userData", js.node.Path.join(App.getPath("appData"), appName));
 		App.commandLine.appendSwitch("js-flags", "--expose-gc --no-efficiency-mode");
-		// test mode : the windows stay behind the user's ones, they must still render (scroll, animation frames, screenshots)
-		App.commandLine.appendSwitch("disable-features", "AllowSoftwareGLFallbackDueToCrashes" + (testMode ? ",CalculateNativeWinOcclusion" : ""));
-		if( testMode ) {
+		// background : the windows stay behind the user's ones, they must still render (scroll, animation frames, timers, screenshots)
+		App.commandLine.appendSwitch("disable-features", "AllowSoftwareGLFallbackDueToCrashes" + (background ? ",CalculateNativeWinOcclusion,IntensiveWakeUpThrottling" : ""));
+		if( background ) {
 			App.commandLine.appendSwitch("disable-renderer-backgrounding");
 			App.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+			App.commandLine.appendSwitch("disable-background-timer-throttling");
 		}
 		// DirectX 12 (jsdx) : Chromium must use the same GPU as the dx12 addon, shared textures can not cross adapters
 		App.commandLine.appendSwitch("force_high_performance_gpu");
@@ -93,7 +98,7 @@ class ElectronMain {
 		App.on("second-instance", function(e, argv : Array<String>, cwd : String) {
 			if( mainWindow == null || mainWindow.isDestroyed() ) return;
 			if( mainWindow.isMinimized() ) mainWindow.restore();
-			if( !testMode ) mainWindow.focus();
+			if( !background ) mainWindow.focus();
 			send(mainWindow.webContents, "hide-app-open", filterArgv(argv, cwd));
 		});
 		App.on("open-file", function(e : Dynamic, file : String) {
@@ -166,7 +171,7 @@ class ElectronMain {
 		var win = new BrowserWindow({
 			width : opts.width == null ? 800 : opts.width,
 			height : opts.height == null ? 600 : opts.height,
-			show : show && !testMode,
+			show : show && !background,
 			title : opts.title == null ? appTitle : opts.title,
 			// ICO is only supported on Windows
 			icon : js.node.Path.join(js.Node.__dirname, "res", (isCDB ? "cdb." : "hide.") + (js.Node.process.platform == "win32" ? "ico" : "png")),
@@ -227,7 +232,7 @@ class ElectronMain {
 			cleanupWebContents(wcId);
 			state.interceptClose = false;
 		});
-		if( testMode && show )
+		if( background && show )
 			win.showInactive();
 
 		var parts = file.split("?");
@@ -380,18 +385,18 @@ class ElectronMain {
 			var size = win.getSize();
 			win.setSize(Math.round(size[0] + dw), Math.round(size[1] + dh));
 		});
-		h.set("win.maximize", (wc, id) -> if( !testMode ) getWin(wc, id).maximize());
+		h.set("win.maximize", (wc, id) -> if( !background ) getWin(wc, id).maximize());
 		h.set("win.minimize", (wc, id) -> getWin(wc, id).minimize());
 		h.set("win.restore", function(wc, id) {
 			var win = getWin(wc, id);
 			if( win.isMaximized() ) win.unmaximize() else win.restore();
 		});
-		h.set("win.setFullScreen", (wc, id, b : Bool) -> if( !testMode ) getWin(wc, id).setFullScreen(b));
+		h.set("win.setFullScreen", (wc, id, b : Bool) -> if( !background ) getWin(wc, id).setFullScreen(b));
 		h.set("win.show", function(wc, id, b : Bool) {
 			var win = getWin(wc, id);
-			if( b == false ) win.hide() else if( testMode ) win.showInactive() else win.show();
+			if( b == false ) win.hide() else if( background ) win.showInactive() else win.show();
 		});
-		h.set("win.focus", (wc, id) -> if( !testMode ) getWin(wc, id).focus());
+		h.set("win.focus", (wc, id) -> if( !background ) getWin(wc, id).focus());
 		h.set("win.blur", (wc, id) -> getWin(wc, id).blur());
 		h.set("win.close", function(wc : WebContents, id : Null<Int>, force : Bool) {
 			var win = id == null ? BrowserWindow.fromWebContents(wc) : BrowserWindow.fromId(id);

@@ -30,6 +30,10 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 
 	public var errorMessageBox : Element;
 	var unFocusedTime = 0.;
+	#if dx12
+	var output : h3d.mat.Texture;
+	var depth : h3d.mat.Texture;
+	#end
 
 	public static var cache : h3d.prim.ModelCache = new h3d.prim.ModelCache();
 
@@ -94,6 +98,17 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		}
 		if ( s3d != null )
 			s3d.dispose();
+		#if dx12
+		if( canvas != null )
+			dx.Display.release(canvas);
+		if( output != null ) {
+			window.removeResizeEvent(onWindowResize);
+			output.dispose();
+			depth.dispose();
+			output = null;
+			depth = null;
+		}
+		#end
 		if (engine != null && engine.driver != null) {
 			engine.dispose();
 			@:privateAccess engine.driver = null;
@@ -145,6 +160,16 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 				@:privateAccess window.checkResize();
 			});
 			setCurrent();
+			#if dx12
+			// the driver is shared by the scenes : each one renders into its own texture,
+			// resized with the canvas instead of the driver
+			engine.autoResize = false;
+			window.addResizeEvent(onWindowResize);
+			output = new h3d.mat.Texture(engine.width, engine.height, [Target]);
+			output.depthBuffer = h3d.mat.Texture.getDefaultDepth();
+			depth = new h3d.mat.Texture(engine.width, engine.height, output.depthBuffer.format);
+			depth.alloc();
+			#end
 			hxd.Key.initialize();
 			s2d = new h2d.Scene();
 			s3d = new h3d.scene.Scene();
@@ -161,6 +186,21 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		};
 		engine.init();
 	}
+
+	#if dx12
+	// h3d.Engine.onWindowResize, without the driver
+	function onWindowResize() {
+		var w = hxd.Math.imax(32, window.width), h = hxd.Math.imax(32, window.height);
+		if( w != engine.width || h != engine.height ) {
+			@:privateAccess engine.width = w;
+			@:privateAccess engine.height = h;
+			output.resize(w, h);
+			depth.resize(w, h);
+			depth.alloc();
+		}
+		engine.onResized();
+	}
+	#end
 
 	function get_width() {
 		return engine.width;
@@ -246,10 +286,38 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			f(dt);
 		onUpdate(dt);
 		#if dx12
-		// the driver is shared by the scenes : resized and presented for each one
-		engine.driver.resize(engine.width, engine.height);
-		engine.render(this);
+		// the driver is shared by the scenes : rendered into the output texture, displayed in the canvas.
+		// While rendering, the default depth buffer of the driver has the resource and size of this scene.
+		// the driver recreates its default depth on device loss (DX12Driver.reset)
+		output.depthBuffer = h3d.mat.Texture.getDefaultDepth();
+		// disposed by the MemoryManager on context loss
+		depth.alloc();
+		function swapDepth() @:privateAccess {
+			var d = output.depthBuffer;
+			var t = d.t, w = d.width, h = d.height;
+			d.t = depth.t;
+			d.width = depth.width;
+			d.height = depth.height;
+			depth.t = t;
+			depth.width = w;
+			depth.height = h;
+		}
+		engine.render({ render : function( e : h3d.Engine ) {
+			swapDepth();
+			try {
+				e.pushTarget(output);
+				e.clear(e.backgroundColor, 1, 0);
+				render(e);
+				e.popTarget();
+			} catch( err : haxe.Exception ) {
+				swapDepth();
+				throw err;
+			}
+			swapDepth();
+		}});
+		dx.Display.copy(canvas, output);
 		engine.driver.present();
+		dx.Display.draw(canvas);
 		@:privateAccess hxd.System.lastPresentTime = @:privateAccess engine.lastTime;
 		#else
 		engine.render(this);

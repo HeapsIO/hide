@@ -1,15 +1,26 @@
 package dx;
 
+import dx.Dx12;
+
+private class Target {
+	public var width : Int;
+	public var height : Int;
+	public var textures : Array<GpuResource> = [];
+	public var imports : Array<Dynamic> = [];
+	public var current = -1;
+	public function new( width, height ) {
+		this.width = width;
+		this.height = height;
+	}
+}
+
 /**
-	Displays the emulated swapchain in the page : the back buffers are shared textures
-	created by the addon, imported once with Electron's sharedTexture module and drawn
-	with WebGPU at each present, into the canvas of the engine rendered (see dx.Window).
+	Displays the scenes in the page : each scene renders into its own texture (see hide.comp.Scene),
+	copied into one of the two textures of its canvas shared with Chromium, imported once with
+	Electron's sharedTexture module and drawn with WebGPU into the canvas.
 **/
 class Display {
 
-	static var textures : Array<Dynamic> = [];
-	static var width = 0;
-	static var height = 0;
 	static var device : Dynamic;
 	static var pipeline : Dynamic;
 	static var sampler : Dynamic;
@@ -53,25 +64,49 @@ class Display {
 		});
 	}
 
-	/** called after the native resize : (re)imports the back buffers **/
-	public static function resize( width : Int, height : Int ) {
-		for( t in textures ) t.release();
-		textures = [];
-		var sharedTexture : Dynamic = js.Syntax.code("require('electron').sharedTexture");
-		var count : Int = js.Syntax.code("__dx12.js_back_buffer_count()");
-		for( i in 0...count ) {
-			var handle : Float = js.Syntax.code("__dx12.js_back_buffer_handle({0})", i);
-			var buf = new js.lib.DataView(new js.lib.ArrayBuffer(8));
-			hlemu.Struct.setNum64(buf, 0, handle);
-			var nodeBuf = js.Syntax.code("Buffer.from({0})", buf.buffer);
-			textures.push(sharedTexture.subtle.importSharedTexture({
-				pixelFormat : "rgba",
-				codedSize : { width : width, height : height },
-				handle : { ntHandle : nodeBuf },
-			}));
+	/** before the present : records the copy of `tex` into a shared texture of the canvas, (re)created when its size changes **/
+	public static function copy( canvas : js.html.CanvasElement, tex : h3d.mat.Texture ) {
+		var target : Target = (cast canvas).__dxTarget;
+		if( target == null || target.width != tex.width || target.height != tex.height ) {
+			release(canvas);
+			target = new Target(tex.width, tex.height);
+			(cast canvas).__dxTarget = target;
+			var sharedTexture : Dynamic = js.Syntax.code("require('electron').sharedTexture");
+			try {
+				for( i in 0...2 ) {
+					var res : GpuResource = js.Syntax.code("__dx12.js_shared_texture_create({0}, {1})", tex.width, tex.height);
+					target.textures.push(res);
+					var handle : Float = js.Syntax.code("__dx12.js_shared_texture_handle({0})", res);
+					var buf = new js.lib.DataView(new js.lib.ArrayBuffer(8));
+					hlemu.Struct.setNum64(buf, 0, handle);
+					var nodeBuf = js.Syntax.code("Buffer.from({0})", buf.buffer);
+					target.imports.push(sharedTexture.subtle.importSharedTexture({
+						pixelFormat : "rgba",
+						codedSize : { width : tex.width, height : tex.height },
+						handle : { ntHandle : nodeBuf },
+					}));
+				}
+			} catch( e : Dynamic ) {
+				release(canvas);
+				js.Lib.rethrow();
+			}
 		}
-		Display.width = width;
-		Display.height = height;
+		// alternated : the texture Chromium may still be drawing is not overwritten
+		target.current = (target.current + 1) % target.textures.length;
+		var driver = h3d.impl.DX12Driver.inst;
+		@:privateAccess {
+			driver.transition(tex.t, COPY_SOURCE);
+			driver.flushTransitions();
+			var dst = driver.tmp.dstTextureLocation;
+			var src = driver.tmp.srcTextureLocation;
+			dst.res = target.textures[target.current];
+			dst.type = SUBRESOURCE_INDEX;
+			dst.subResourceIndex = 0;
+			src.res = tex.t.res;
+			src.type = SUBRESOURCE_INDEX;
+			src.subResourceIndex = 0;
+			driver.frame.commandList.copyTextureRegion(dst, 0, 0, 0, src, null);
+		}
 	}
 
 	static function getContext( canvas : js.html.CanvasElement ) : Dynamic {
@@ -84,17 +119,14 @@ class Display {
 		return context;
 	}
 
-	/** called after the native present : draws the presented buffer into the canvas **/
-	public static function present() {
-		if( device == null ) return;
-		var index : Int = js.Syntax.code("__dx12.js_presented_buffer()");
-		var tex = textures[index];
-		if( tex == null ) return;
-		var canvas = @:privateAccess Window.windows[0].canvas;
-		if( canvas.width != width ) canvas.width = width;
-		if( canvas.height != height ) canvas.height = height;
+	/** after the present : draws the last copy into the canvas **/
+	public static function draw( canvas : js.html.CanvasElement ) {
+		var target : Target = (cast canvas).__dxTarget;
+		if( device == null || target == null ) return;
+		if( canvas.width != target.width ) canvas.width = target.width;
+		if( canvas.height != target.height ) canvas.height = target.height;
 		var context = getContext(canvas);
-		var frame : Dynamic = tex.getVideoFrame();
+		var frame : Dynamic = target.imports[target.current].getVideoFrame();
 		var ext = device.importExternalTexture({ source : frame });
 		var bind = device.createBindGroup({ layout : pipeline.getBindGroupLayout(0), entries : [
 			{ binding : 0, resource : sampler },
@@ -110,5 +142,13 @@ class Display {
 		pass.end();
 		device.queue.submit([enc.finish()]);
 		frame.close();
+	}
+
+	public static function release( canvas : js.html.CanvasElement ) {
+		var target : Target = (cast canvas).__dxTarget;
+		if( target == null ) return;
+		for( t in target.imports ) t.release();
+		for( r in target.textures ) js.Syntax.code("__dx12.js_shared_texture_release({0})", r);
+		(cast canvas).__dxTarget = null;
 	}
 }
