@@ -108,7 +108,8 @@ kit-root kit-param-curve circle.handle {
   cursor: move;
 }
 kit-root kit-line.kit-param-bounds kit-slider {
-  flex: 0 0 70px;
+  flex: 0 1 70px;
+  min-width: 0;
 }
 kit-root kit-line.kit-param-bounds kit-button {
   flex: 0 0 24px;
@@ -353,6 +354,9 @@ kit-root kit-anim-marker.animated.key {
     color: #AAA;
     font-style: italic;
     font-variant-numeric: tabular-nums;
+  }
+  :scope kit-collapse-line > kit-line {
+    max-width: none;
   }
   :scope kit-collapse-line > kit-line::before {
     display: block;
@@ -626,6 +630,7 @@ kit-root kit-anim-marker.animated.key {
     gap: 4px;
     min-width: 0;
     min-height: 22px;
+    max-width: calc(120px + 4px + 260px + 8px + 2px);
   }
   :scope kit-line:hover {
     background-color: hsl(from var(--inspector-bg) h s calc(l + var(--line-hover-highlight)));

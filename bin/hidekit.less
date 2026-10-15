@@ -121,7 +121,8 @@ kit-root {
 
 	// the from / to fields of a particle curve: narrow, at the left of the curve
 	kit-line.kit-param-bounds kit-slider {
-		flex: 0 0 70px;
+		flex: 0 1 70px;
+		min-width: 0;
 	}
 	// the swap button between the from fields (left) and the to fields (right)
 	kit-line.kit-param-bounds kit-button {
@@ -203,6 +204,10 @@ kit-root {
 		@separator-color: #333333;
 
 		@section-padding: 8px;
+
+		// the label of a line, and the most its widgets take after it (the rest of the panel stays empty)
+		@label-width: 120px;
+		@content-max-width: 260px;
 
 		// needed for range background
 		--widget-bg: @widget-bg;
@@ -430,6 +435,9 @@ kit-root {
 					font-variant-numeric: tabular-nums;
 			}
 			> kit-line {
+				// the header of a collapsible item (list) spans the panel
+				max-width: none;
+
 				&::before {
 					display: block;
 					content: "";
@@ -706,6 +714,8 @@ kit-root {
 			gap: 4px;
 			min-width: 0;
 			min-height: @widget-height;
+			// the label, the gap after it, the widgets, the paddings
+			max-width: calc(@label-width + 4px + @content-max-width + @section-padding + 2px);
 
 			kit-label {
 				font-variant-numeric: tabular-nums;
@@ -739,7 +749,7 @@ kit-root {
 			}
 
 			.first {
-				flex: 0 0 120px;
+				flex: 0 0 @label-width;
 				text-align: right;
 				margin-left: 0;
 			}
