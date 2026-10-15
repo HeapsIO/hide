@@ -4301,6 +4301,9 @@ hide-popover hide-content {
   background-color: #ee6666;
   color: black;
 }
+.hide-root > .status-bar.error .game-launcher {
+  display: none;
+}
 .hide-root > .status-bar .build {
   margin-left: auto;
   flex-grow: 0;
