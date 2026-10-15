@@ -124,6 +124,10 @@ kit-root {
 		flex: 0 1 70px;
 		min-width: 0;
 	}
+	// a particle curve and its from / to fields take the whole width, no label
+	kit-line.kit-param-curve-line, kit-line.kit-param-bounds {
+		max-width: none;
+	}
 	// the swap button between the from fields (left) and the to fields (right)
 	kit-line.kit-param-bounds kit-button {
 		flex: 0 0 24px;

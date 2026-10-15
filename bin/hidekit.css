@@ -111,6 +111,10 @@ kit-root kit-line.kit-param-bounds kit-slider {
   flex: 0 1 70px;
   min-width: 0;
 }
+kit-root kit-line.kit-param-curve-line,
+kit-root kit-line.kit-param-bounds {
+  max-width: none;
+}
 kit-root kit-line.kit-param-bounds kit-button {
   flex: 0 0 24px;
   margin: 0 auto;

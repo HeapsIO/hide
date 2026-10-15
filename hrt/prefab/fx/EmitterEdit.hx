@@ -260,7 +260,8 @@ class EmitterEdit {
 				var graph = new hide.kit.ParamCurve(parent, id + "Curve" + suffix, owner, shapeFunction(owner, s), ranges(), editableCurve(owner, s));
 				var bounds = new hide.kit.Line(parent, id + "Bounds" + suffix);
 				bounds.cssClass = "kit-param-bounds";
-				bounds.stealLabel = false;
+				// no label: the fields are under the ends of the curve
+				bounds.full = true;
 				menuOwners.push(bounds);
 				// the view follows the range
 				function changed() {

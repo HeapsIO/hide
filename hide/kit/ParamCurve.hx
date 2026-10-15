@@ -44,6 +44,7 @@ class ParamCurve extends Element {
 		this.shape = shape;
 		this.ranges = ranges;
 		this.curve = curve;
+		cssClass = "kit-param-curve-line";
 		frame();
 	}
 
@@ -63,7 +64,8 @@ class ParamCurve extends Element {
 			buttons.appendChild(button);
 		}
 		e.appendChild(buttons);
-		setupPropLine(null, cast e);
+		// no label: the curve takes the width of the line
+		setupPropLine(null, cast e, false);
 		new hide.comp.ResizeObserver((_, _) -> refresh()).observe(cast svg);
 		svg.addEventListener("pointerdown", onPointerDown);
 		svg.addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
