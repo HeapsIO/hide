@@ -268,22 +268,44 @@ class Element {
 		}
 	}
 
-	/** Items added to the context menu of this element and of the line it is in **/
+	/**
+		Items added to the context menu of this element and of the line it is in: when the line is
+		clicked on this element, or on the label of the line if this is its first element with items
+	**/
 	public var menuItems : Null<() -> Array<hrt.ui.HuiMenu.MenuItem>> = null;
 
-	function collectMenuItems(out: Array<hrt.ui.HuiMenu.MenuItem>) {
-		if (menuItems != null)
-			for (item in menuItems())
-				out.push(item);
-		for (c in children)
-			if (!(c is Category))
-				c.collectMenuItems(out);
+	function hasMenuItems() : Bool {
+		return menuItems != null || Lambda.exists(children, c -> !(c is Category) && c.hasMenuItems());
 	}
 
-	function getEditMenuContent() : Array<hrt.ui.HuiMenu.MenuItem> {
+	/** The items of this element and of its children under `target` (all of them without a target) **/
+	function collectMenuItems(out: Array<hrt.ui.HuiMenu.MenuItem>, ?target: Dynamic) {
+		if (menuItems != null) {
+			var items = menuItems();
+			// the items of each element apart
+			if (items.length > 0 && out.length > 0 && out[out.length - 1].isSeparator != true && items[0].isSeparator != true)
+				out.push({ isSeparator: true });
+			for (item in items)
+				out.push(item);
+		}
+		var from = [for (c in children) if (!(c is Category)) c];
+		#if js
+		if (target != null) {
+			var hit = from.filter(c -> c.native != null && c.native.get().contains(target));
+			// out of the children (the label of the line): the first one with items, the label is its own
+			if (hit.length == 0)
+				hit = [for (c in from) if (c.hasMenuItems()) c].slice(0, 1);
+			from = hit;
+		}
+		#end
+		for (c in from)
+			c.collectMenuItems(out, target);
+	}
+
+	function getEditMenuContent(?target: Dynamic) : Array<hrt.ui.HuiMenu.MenuItem> {
 		var items = [];
 		if (!(this is Category))
-			collectMenuItems(items);
+			collectMenuItems(items, target);
 		if (items.length > 0)
 			items.push({isSeparator: true});
 		return items.concat([
@@ -318,7 +340,7 @@ class Element {
 			e.preventDefault();
 			e.stopPropagation();
 
-			hide.comp.ContextMenu.createFromEvent(e, getEditMenuContent());
+			hide.comp.ContextMenu.createFromEvent(e, getEditMenuContent(e.target));
 		});
 		#elseif hui
 		var element = Std.downcast(el.get(), hrt.ui.HuiElement);

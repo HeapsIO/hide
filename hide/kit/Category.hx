@@ -95,8 +95,8 @@ class Category extends Widget<Null<Bool>> {
 		#end
 	}
 
-	override function getEditMenuContent() : Array<hrt.ui.HuiMenu.MenuItem> {
-		var content = super.getEditMenuContent();
+	override function getEditMenuContent(?target: Dynamic) : Array<hrt.ui.HuiMenu.MenuItem> {
+		var content = super.getEditMenuContent(target);
 		content.unshift({isSeparator: true});
 		content.unshift({label: "Collapse", click: collapse});
 		content.unshift({label: "Collapse All", click: root.collapse.bind()});

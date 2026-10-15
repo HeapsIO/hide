@@ -6,6 +6,8 @@ class Line extends Element {
 	@:attr public var label: String;
 	@:attr public var multiline: Bool = false;
 	@:attr public var full: Bool = false;
+	/** If set, the label of the first widget of the line is shown in the label of the line **/
+	public var stealLabel = true;
 
 	var decorationsLeft: Array<Element> = null;
 
@@ -43,7 +45,7 @@ class Line extends Element {
 				labelElement.addChild(span);
 			}
 
-			if (!multiline) {
+			if (!multiline && stealLabel) {
 				stealChildLabel(labelElement);
 			}
 		}
