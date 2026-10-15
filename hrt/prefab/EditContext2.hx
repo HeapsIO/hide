@@ -167,7 +167,7 @@ abstract class EditContext2 {
 		#if (editor || editor_hl)
 		@:privateAccess p.editorTempLoad(data);
 		#else
-		p.load(data);
+		@:privateAccess p.load(data);
 		#end
 	}
 
