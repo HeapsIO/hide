@@ -148,11 +148,22 @@ class EmitterEdit {
 			return;
 		}
 
+		// constant components on one line
+		var compact = dim > 1 && Lambda.foreach(value, m -> m != null && m.match(MConstant(_)));
+		var compactLine = null;
+		if (compact) {
+			compactLine = new hide.kit.Line(parent, def.name);
+			compactLine.label = label;
+		}
 		for (i in 0...dim) {
 			var comp = EmitterParam.COMPONENTS[i];
 			var id = def.name + (dim == 1 ? "" : comp.toUpperCase());
-			var line = new hide.kit.Line(parent, id);
-			line.label = dim == 1 ? label : label + " " + comp.toUpperCase();
+			var suffix = compact ? comp.toUpperCase() : "";
+			var line = compactLine;
+			if (line == null) {
+				line = new hide.kit.Line(parent, id);
+				line.label = dim == 1 ? label : label + " " + comp.toUpperCase();
+			}
 			var m = value[i];
 			if (m == null) {
 				var add = new hide.kit.Button(line, "add", "+");
@@ -163,8 +174,10 @@ class EmitterEdit {
 				continue;
 			}
 
-			var select = new hide.kit.Select(line, "mode");
+			var select = new hide.kit.Select(line, "mode" + suffix);
 			select.caretOnly = true;
+			if (compact)
+				select.label = comp.toUpperCase();
 			var entries : Array<hide.kit.Select.SelectEntry> = [for (mode in modes) { value: mode, label: hide.kit.Macros.camelToSpaceCase(mode) }];
 			entries.push({ value: "unset", label: "Unset" });
 			select.setEntries(entries);
@@ -226,7 +239,7 @@ class EmitterEdit {
 			switch (m) {
 				case MConstant(v):
 					make = () -> MConstant(v);
-					slider(line, "value", "", v, x -> v = x, animKey());
+					slider(line, "value" + suffix, "", v, x -> v = x, animKey());
 				case MRange(min, max):
 					make = () -> MRange(min, max);
 					slider(line, "min", "Min", min, x -> min = x, animKey("min"));
