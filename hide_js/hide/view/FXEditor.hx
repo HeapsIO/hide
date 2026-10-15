@@ -1282,8 +1282,7 @@ class FXEditor extends hide.view.FileView {
 				eventsToDraw.push(cast root);
 
 			for(child in root.children) {
-				// particle curves are edited in the inspector of their emitter
-				if (Lambda.exists(child.flatten(Curve), c -> !hrt.prefab.fx.AnimEdit.isParticleCurve(c))) {
+				if (child.flatten(Curve).exists(c -> !hrt.prefab.fx.AnimEdit.isParticleCurve(c))) {
 					if (child is Curve) {
 						var c = Std.downcast(child, Curve);
 						curvesToDraw.push(c);

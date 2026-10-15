@@ -850,6 +850,7 @@ class Prefab {
 		var p = this;
 		while (parts.length > 0 && p != null) {
 			var name = parts.shift();
+			// TODO: why did we need to change this?
 			// `name-N` is the Nth child of that name (`getUniqueName`), a name can have a dash: the exact name first
 			var found = Lambda.find(p.children, o -> o.name == name);
 			var dash = name.lastIndexOf("-");
