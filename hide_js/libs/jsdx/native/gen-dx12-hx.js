@@ -29,14 +29,6 @@ rep(`	public inline function setName( name : String ) {
 		b.free();
 	}`);
 
-// display the emulated swapchain after present
-rep(`	public function present( vsync : Bool ) {}`, `	public function present( vsync : Bool ) {
-		present_native(vsync);
-		dx.Display.present();
-	}
-	@:hlNative("dx12","command_queue_present")
-	function present_native( vsync : Bool ) {}`);
-
 // GPU addresses and descriptor handles : haxe.Int64 (exact), the offset computed in Int64
 rep(`abstract Address(Int64) from Int64 {
 
@@ -111,16 +103,6 @@ rep(`	public static function create( win : Window, flags : DriverInitFlags, ?dev
 		if( name != null ) name.free();
 		dx.Display.init();
 		return d;
-	}`);
-
-rep(`	public static function resize( directQueue : CommandQueue, width : Int, height : Int, bufferCount : Int, format : DxgiFormat ) {
-	}`, `	public static function resize( directQueue : CommandQueue, width : Int, height : Int, bufferCount : Int, format : DxgiFormat ) {
-		resizeNative(directQueue, width, height, bufferCount, format);
-		dx.Display.resize(width, height);
-	}
-
-	@:hlNative("dx12", "resize")
-	static function resizeNative( directQueue : CommandQueue, width : Int, height : Int, bufferCount : Int, format : DxgiFormat ) {
 	}`);
 
 // see Dx12Macros : JS can't take the address of the size local variable

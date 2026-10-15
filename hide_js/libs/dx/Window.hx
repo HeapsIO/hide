@@ -2,8 +2,8 @@ package dx;
 
 /**
 	JS replacement of hldx's dx.Window, as used by the DX12 driver : the window is the canvas of
-	the current hxd.Window, where the back buffers are displayed. The driver is shared by the engines
-	of all the canvas (see h3d.Engine) : it is resized and presented for the engine rendered.
+	the current hxd.Window. The driver is shared by the engines of all the canvas (see h3d.Engine),
+	each scene is displayed in its canvas by dx.Display.
 **/
 class Window {
 

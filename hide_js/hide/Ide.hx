@@ -1670,6 +1670,8 @@ class Ide extends hide.tools.IdeData {
 				var props : h3d.scene.pbr.Renderer.RenderProps = renderer.props;
 				var prevForceDirectDiscard = props.forceDirectDiscard;
 
+				// setOutputTarget() restores the size of the default depth, not the scene's (dx12 : shared driver)
+				var prevWidth = scene.engine.width, prevHeight = scene.engine.height;
 				scene.engine.backgroundColor &= 0x00FFFFFF;
 				scene.s3d.setOutputTarget(scene.engine, renderTexture);
 				renderer.skyMode = Hide;
@@ -1677,6 +1679,8 @@ class Ide extends hide.tools.IdeData {
 
 				scene.s3d.render(scene.engine);
 				scene.s3d.setOutputTarget();
+				@:privateAccess scene.engine.width = prevWidth;
+				@:privateAccess scene.engine.height = prevHeight;
 
 				scene.engine.backgroundColor = prevBackgroundColor;
 				renderer.skyMode = prevSkyMode;
@@ -1718,9 +1722,12 @@ class Ide extends hide.tools.IdeData {
 
 				var renderTexture = new h3d.mat.Texture(Std.int(textureRes * scene.s3d.camera.screenRatio), textureRes, [Target]);
 				renderTexture.depthBuffer = new h3d.mat.Texture(renderTexture.width, renderTexture.height, Depth24Stencil8);
+				var prevWidth = scene.engine.width, prevHeight = scene.engine.height;
 				scene.s3d.setOutputTarget(scene.engine, renderTexture);
 				scene.s3d.render(scene.engine);
 				scene.s3d.setOutputTarget();
+				@:privateAccess scene.engine.width = prevWidth;
+				@:privateAccess scene.engine.height = prevHeight;
 
 				var pixels = renderTexture.capturePixels();
 				var absPath = getPath(path);
