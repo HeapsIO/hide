@@ -154,7 +154,7 @@ class Ide extends hide.tools.IdeData {
 			if( s.work_area.y + s.work_area.height > yMax )
 				yMax = s.work_area.y + s.work_area.height;
 		}
-		if( subView == null ) {
+		if( subView == null && !thumbnailMode ) {
 			var wp : WindowPos = globalState.get("windowPos");
 			if( wp != null ) {
 				if( wp.w > 400 && wp.h > 300 )
