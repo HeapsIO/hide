@@ -48,10 +48,14 @@ class Modal2 extends Component {
 		return title;
 	}
 
-	public function new(?parent, title: String, saveKey: String) {
-		saveDisplayKey = saveKey ?? "genericPopover";
+	/**
+		`saveKey` : stores the size, null for none.
+		`dismissable` : closed by Escape, a click outside or the title bar button, else only by `close()`
+	**/
+	public function new(?parent, title: String, saveKey: Null<String>, dismissable = true) {
+		saveDisplayKey = saveKey;
 		super(parent, new Element(
-			'<hide-popover popover="auto">
+			'<hide-popover popover="${dismissable ? "auto" : "manual"}">
 				<title-bar>
 					<div id="title"></div>
 					<button id="close"><i class="ico ico-close"></i></button>
@@ -64,6 +68,7 @@ class Modal2 extends Component {
 		this.title = title;
 		var closeButton = titleBar.find("#close");
 		closeButton.click((e) -> close());
+		if( !dismissable ) closeButton.remove();
 		content = element.find('hide-content');
 
 		var size = getDisplayState("size");

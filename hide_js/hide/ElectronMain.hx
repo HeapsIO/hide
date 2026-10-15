@@ -36,6 +36,7 @@ class ElectronMain {
 	static var background : Bool;
 
 	static var mainWindow : BrowserWindow;
+	static var quitting = false;
 	static var windowStates : Map<Int, WindowState> = new Map();
 	static var sharedRefs : Map<Int, Dynamic> = new Map();
 	static var sharedRefId = 0;
@@ -79,6 +80,7 @@ class ElectronMain {
 			return;
 		}
 
+		initCrashLogs();
 		initHandlers();
 
 		IpcMain.on("hide-sync", function(e : Dynamic, cmd : String, args : haxe.extern.Rest<Dynamic>) {
@@ -114,6 +116,7 @@ class ElectronMain {
 			if( mainWindow != null ) send(mainWindow.webContents, "hide-app-open", [uri]);
 		});
 		App.on("before-quit", function() {
+			quitting = true;
 			for( s in windowStates ) s.forceClose = true;
 		});
 		App.on("window-all-closed", () -> App.quit());
@@ -152,6 +155,96 @@ class ElectronMain {
 
 	static function send( wc : WebContents, channel : String, args : haxe.extern.Rest<Dynamic> ) {
 		if( wc != null && !wc.isDestroyed() ) wc.send(channel, ...args);
+	}
+
+	// ---------------- crash reports : in the user data, zipped by createCrashReport
+
+	// logs/logs_<date>_<time> in the user data
+	static var sessionLogs : String;
+
+	/**
+		Chromium's log (GPU process errors : device removed reasons...), the lost child processes
+		and the crash dumps of all the processes, in a folder per session. The GPU process losses are shown by the main window.
+		A .crashed file marks the sessions where a process crashed. The folders are deleted after two weeks.
+	**/
+	static function initCrashLogs() {
+		function remove( path : String ) {
+			try {
+				if( sys.FileSystem.isDirectory(path) ) {
+					for( f in sys.FileSystem.readDirectory(path) ) remove(js.node.Path.join(path, f));
+					sys.FileSystem.deleteDirectory(path);
+				} else
+					sys.FileSystem.deleteFile(path);
+			} catch( e : Dynamic ) {}
+		}
+		var logs = js.node.Path.join(App.getPath("userData"), "logs");
+		if( sys.FileSystem.exists(logs) ) {
+			var limit = Date.now().getTime() - 14 * 24 * 3600 * 1000.;
+			for( f in sys.FileSystem.readDirectory(logs) ) {
+				var path = js.node.Path.join(logs, f);
+				if( sys.FileSystem.stat(path).mtime.getTime() < limit ) remove(path);
+			}
+		}
+		sessionLogs = js.node.Path.join(logs, "logs_" + DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S"));
+		sys.FileSystem.createDirectory(sessionLogs);
+		// --enable-logging given on the command line (stderr when testing) : kept
+		if( !App.commandLine.hasSwitch("enable-logging") ) {
+			App.commandLine.appendSwitch("enable-logging", "file");
+			App.commandLine.appendSwitch("log-file", js.node.Path.join(sessionLogs, "chromium.log"));
+			// warnings and errors : the console messages of the pages are not logged
+			App.commandLine.appendSwitch("log-level", "1");
+		}
+		App.setPath("crashDumps", js.node.Path.join(sessionLogs, "Crashpad"));
+		CrashReporter.start({ uploadToServer : false });
+		var crashed = false;
+		function logGone( text : String, reason : String ) {
+			js.node.Fs.appendFileSync(js.node.Path.join(sessionLogs, "process-gone.log"), DateTools.format(Date.now(), "%Y-%m-%d %H:%M:%S") + " " + text + "\n");
+			if( reason != "clean-exit" && !crashed ) {
+				crashed = true;
+				js.node.Fs.writeFileSync(js.node.Path.join(sessionLogs, ".crashed"), "");
+			}
+		}
+		App.on("child-process-gone", function(_, details : Dynamic) {
+			logGone(details.type + " " + details.reason + ", exit code " + details.exitCode + (details.name != null ? " (" + details.name + ")" : ""), details.reason);
+			if( details.type == "GPU" && details.reason != "clean-exit" && !quitting && mainWindow != null )
+				send(mainWindow.webContents, "hide-gpu-crash", details);
+		});
+		App.on("render-process-gone", function(_, wc : WebContents, details : Dynamic) {
+			logGone("renderer " + details.reason + ", exit code " + details.exitCode + " (" + wc.getURL() + ")", details.reason);
+		});
+	}
+
+	/** zips the session logs, its crash dumps and `info` in the user data, shows the zip in the explorer **/
+	static function createCrashReport( info : String ) : js.lib.Promise<String> {
+		return App.getGPUInfo("basic").then(function( gpu : Dynamic ) {
+			var entries = new List<haxe.zip.Entry>();
+			function add( name : String, data : js.node.Buffer, time : Date ) {
+				var bytes = data.hxToBytes();
+				var compressed = js.node.Zlib.deflateRawSync(data).hxToBytes();
+				entries.add({ fileName : name, fileSize : bytes.length, fileTime : time, compressed : true, dataSize : compressed.length, data : compressed, crc32 : haxe.crypto.Crc32.make(bytes) });
+			}
+			function addDir( dir : String, prefix : String, ext : String ) {
+				if( !sys.FileSystem.exists(dir) ) return;
+				for( f in sys.FileSystem.readDirectory(dir) ) {
+					var path = js.node.Path.join(dir, f);
+					if( StringTools.endsWith(f, ext) && !sys.FileSystem.isDirectory(path) )
+						add(prefix + f, js.node.Fs.readFileSync(path), sys.FileSystem.stat(path).mtime);
+				}
+			}
+			var versions = js.Node.process.versions;
+			var text = info + "\nElectron " + versions.get("electron") + ", Chrome " + versions.get("chrome") + "\n\nGPU : " + haxe.Json.stringify(gpu, "\t") + "\n";
+			add("info.txt", js.node.Buffer.from(text), Date.now());
+			addDir(sessionLogs, "", ".log");
+			addDir(js.node.Path.join(App.getPath("crashDumps"), "reports"), "dumps/", ".dmp");
+			var out = new haxe.io.BytesOutput();
+			new haxe.zip.Writer(out).write(entries);
+			var dir = js.node.Path.join(App.getPath("userData"), "reports");
+			if( !sys.FileSystem.exists(dir) ) sys.FileSystem.createDirectory(dir);
+			var file = js.node.Path.join(dir, "crash_report_" + DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S") + ".zip");
+			js.node.Fs.writeFileSync(file, js.node.Buffer.hxFromBytes(out.getBytes()));
+			Shell.showItemInFolder(file);
+			return file;
+		});
 	}
 
 	static function getWin( wc : WebContents, id : Null<Int> ) {
@@ -312,6 +405,7 @@ class ElectronMain {
 		// app
 		h.set("app.quit", (wc) -> App.quit());
 		h.set("app.clearCache", (wc : WebContents) -> wc.session.clearCache());
+		h.set("app.createCrashReport", (wc, info : String) -> createCrashReport(info));
 		h.set("shortcut.register", function(wc : WebContents, accel : String) {
 			var ok = GlobalShortcut.register(accel, () -> send(wc, "hide-shortcut", accel));
 			if( ok ) {
