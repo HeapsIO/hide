@@ -45,13 +45,41 @@ kit-root {
 		overflow: auto;
 	}
 
-	.kit-param-curve {
+	kit-param-curve {
 		flex: 1 1;
+		display: flex;
+		gap: 2px;
 		height: 90px;
-		background-color: #161616;
-		border: 1px solid #333;
-		border-radius: 3px;
+		outline: none;
 
+		svg {
+			flex: 1 1;
+			min-width: 0;
+			background-color: #161616;
+			border: 1px solid #333;
+			border-radius: 3px;
+		}
+		kit-zoom {
+			display: flex;
+			flex-direction: column;
+			gap: 2px;
+		}
+		kit-zoom span {
+			width: 12px;
+			height: 12px;
+			line-height: 11px;
+			text-align: center;
+			font-size: 11px;
+			color: #aaa;
+			background-color: #2d2d2d;
+			border: 1px solid #444;
+			border-radius: 2px;
+			cursor: pointer;
+		}
+		kit-zoom span:hover {
+			color: #fff;
+			border-color: #777;
+		}
 		path {
 			fill: none;
 			stroke: #f05a5a;
@@ -63,8 +91,11 @@ kit-root {
 			stroke-width: 1px;
 			stroke-dasharray: 4 3;
 		}
+		line.grid {
+			stroke: #2a2a2a;
+		}
 		line.zero {
-			stroke: #444;
+			stroke: #555;
 		}
 		rect.key {
 			fill: #eee;

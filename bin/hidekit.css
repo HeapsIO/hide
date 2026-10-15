@@ -35,28 +35,59 @@ kit-root .detached .is-cdb-editor {
   max-height: 500px;
   overflow: auto;
 }
-kit-root .kit-param-curve {
+kit-root kit-param-curve {
   flex: 1 1;
+  display: flex;
+  gap: 2px;
   height: 90px;
+  outline: none;
+}
+kit-root kit-param-curve svg {
+  flex: 1 1;
+  min-width: 0;
   background-color: #161616;
   border: 1px solid #333;
   border-radius: 3px;
 }
-kit-root .kit-param-curve path {
+kit-root kit-param-curve kit-zoom {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+kit-root kit-param-curve kit-zoom span {
+  width: 12px;
+  height: 12px;
+  line-height: 11px;
+  text-align: center;
+  font-size: 11px;
+  color: #aaa;
+  background-color: #2d2d2d;
+  border: 1px solid #444;
+  border-radius: 2px;
+  cursor: pointer;
+}
+kit-root kit-param-curve kit-zoom span:hover {
+  color: #fff;
+  border-color: #777;
+}
+kit-root kit-param-curve path {
   fill: none;
   stroke: #f05a5a;
 }
-kit-root .kit-param-curve path.main {
+kit-root kit-param-curve path.main {
   stroke-width: 2px;
 }
-kit-root .kit-param-curve path.extreme {
+kit-root kit-param-curve path.extreme {
   stroke-width: 1px;
   stroke-dasharray: 4 3;
 }
-kit-root .kit-param-curve line.zero {
-  stroke: #444;
+kit-root kit-param-curve line.grid {
+  stroke: #2a2a2a;
 }
-kit-root .kit-param-curve rect.key {
+kit-root kit-param-curve line.zero {
+  stroke: #555;
+}
+kit-root kit-param-curve rect.key {
   fill: #eee;
   cursor: move;
 }

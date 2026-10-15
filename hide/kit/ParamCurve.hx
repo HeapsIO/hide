@@ -8,6 +8,8 @@ typedef ParamRange = { from : Float, to : Float };
 	A particle curve of an emitter param, over the particle life: each range is drawn as
 	`lerp(from, to, shape(t))`, the first one solid, the others dashed. The keys of `curve`
 	are edited in the space of the first range: drag a key, Ctrl + click adds one, right click removes one.
+	The view shows at least 0 to 1 vertically, framed on the curve when built or with F, zoomed with
+	Shift + wheel or the +/- buttons.
 **/
 @:access(hrt.prefab.Prefab)
 class ParamCurve extends Element {
@@ -23,7 +25,6 @@ class ParamCurve extends Element {
 
 	var minY = 0.;
 	var maxY = 1.;
-	var dragging = false;
 	#if js
 	var svg : js.html.svg.SVGElement;
 	#end
@@ -34,48 +35,76 @@ class ParamCurve extends Element {
 		this.shape = shape;
 		this.ranges = ranges;
 		this.curve = curve;
+		frame();
 	}
 
 	override function makeSelf() {
 		#if js
 		var doc = js.Browser.document;
+		var e = doc.createElement("kit-param-curve");
+		e.tabIndex = 0;
 		svg = cast doc.createElementNS("http://www.w3.org/2000/svg", "svg");
-		svg.classList.add("kit-param-curve");
-		setupPropLine(null, cast svg);
+		e.appendChild(svg);
+		var buttons = doc.createElement("kit-zoom");
+		for (b in [{ label: "+", factor: 0.5 }, { label: "-", factor: 2. }]) {
+			var button = doc.createSpanElement();
+			button.innerText = b.label;
+			button.title = "Zoom " + (b.factor < 1 ? "in" : "out") + " vertically (Shift + wheel, F to frame)";
+			button.onclick = () -> zoom(b.factor);
+			buttons.appendChild(button);
+		}
+		e.appendChild(buttons);
+		setupPropLine(null, cast e);
 		new hide.comp.ResizeObserver((_, _) -> refresh()).observe(cast svg);
 		svg.addEventListener("pointerdown", onPointerDown);
 		svg.addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
 			e.preventDefault();
 			e.stopPropagation();
 		});
+		svg.addEventListener("wheel", (e: js.html.WheelEvent) -> {
+			if (!e.shiftKey)
+				return;
+			e.preventDefault();
+			e.stopPropagation();
+			zoom(e.deltaY + e.deltaX < 0 ? 1 / 1.125 : 1.125);
+		});
+		e.addEventListener("keydown", (e: js.html.KeyboardEvent) -> {
+			if (e.key != "f" || e.ctrlKey)
+				return;
+			e.preventDefault();
+			e.stopPropagation();
+			frame();
+			refresh();
+		});
 		#else
 		super.makeSelf();
 		#end
 	}
 
-	function bounds() {
-		var s = [for (i in 0...SAMPLES + 1) shape(i / SAMPLES)];
-		var lo = hxd.Math.POSITIVE_INFINITY, hi = hxd.Math.NEGATIVE_INFINITY;
+	function samples() return [for (i in 0...SAMPLES + 1) shape(i / SAMPLES)];
+
+	/** The view on the curve and 0 to 1 **/
+	function frame() {
+		minY = 0;
+		maxY = 1;
 		for (r in ranges)
-			for (v in s) {
+			for (v in samples()) {
 				var y = hxd.Math.lerp(r.from, r.to, v);
-				if (y < lo) lo = y;
-				if (y > hi) hi = y;
+				minY = Math.min(minY, y);
+				maxY = Math.max(maxY, y);
 			}
-		if (hi - lo < 1e-6) {
-			lo -= 0.5;
-			hi += 0.5;
-		}
-		var pad = (hi - lo) * 0.08;
-		// the scale stays while a key is dragged, so it doesn't move under the mouse
-		minY = dragging ? Math.min(minY, lo - pad) : lo - pad;
-		maxY = dragging ? Math.max(maxY, hi + pad) : hi + pad;
-		return s;
+	}
+
+	/** Scales the view from 0, keeping 0 to 1 in it **/
+	function zoom(factor: Float) {
+		minY = Math.min(minY * factor, 0);
+		maxY = Math.max(maxY * factor, 1);
+		refresh();
 	}
 
 	inline function toDisplay(v: Float) return hxd.Math.lerp(ranges[0].from, ranges[0].to, v);
 	inline function sx(t: Float, w: Float) return PAD + t * (w - PAD * 2);
-	inline function sy(v: Float, h: Float) return h - (v - minY) / (maxY - minY) * h;
+	inline function sy(v: Float, h: Float) return h - PAD - (v - minY) / (maxY - minY) * (h - PAD * 2);
 
 	public function refresh() {
 		#if js
@@ -84,10 +113,15 @@ class ParamCurve extends Element {
 		var w = svg.clientWidth, h = svg.clientHeight;
 		if (w <= 0 || h <= 0)
 			return;
-		var s = bounds();
+		var s = samples();
 		var out = new StringBuf();
-		if (minY < 0 && maxY > 0)
-			out.add('<line class="zero" x1="0" x2="$w" y1="${sy(0, h)}" y2="${sy(0, h)}"/>');
+		var step = 0.1;
+		while ((maxY - minY) / step > 10)
+			step *= 2;
+		for (i in Math.ceil(minY / step)...Math.floor(maxY / step) + 1) {
+			var y = sy(i * step, h);
+			out.add('<line class="${i == 0 ? "zero" : "grid"}" x1="0" x2="$w" y1="$y" y2="$y"/>');
+		}
 		for (ri => r in ranges) {
 			var d = [for (i in 0...SAMPLES + 1) (i == 0 ? "M" : "L") + sx(i / SAMPLES, w) + " " + sy(hxd.Math.lerp(r.from, r.to, s[i]), h)].join(" ");
 			out.add('<path class="${ri == 0 ? "main" : "extreme"}" d="$d"/>');
@@ -112,10 +146,11 @@ class ParamCurve extends Element {
 		var r = ranges[0];
 		var scale = r.to - r.from;
 		function time(x: Float) return hxd.Math.clamp((x - PAD) / (w - PAD * 2), 0, 1);
-		function value(y: Float) return (maxY - y / h * (maxY - minY) - r.from) / scale;
+		function value(y: Float) return (minY + (h - PAD - y) / (h - PAD * 2) * (maxY - minY) - r.from) / scale;
 
 		e.preventDefault();
 		e.stopPropagation();
+		svg.parentElement.focus();
 		if (e.button == 2) {
 			if (key != null && curve.keys.length > 1) {
 				curve.keys.remove(key);
@@ -133,7 +168,6 @@ class ParamCurve extends Element {
 			changed();
 		}
 		var k = key;
-		dragging = true;
 		svg.setPointerCapture(e.pointerId);
 		svg.onpointermove = (e: js.html.PointerEvent) -> {
 			var p = local(e);
@@ -148,7 +182,6 @@ class ParamCurve extends Element {
 			svg.onpointermove = null;
 			svg.onpointerup = null;
 			svg.releasePointerCapture(e.pointerId);
-			dragging = false;
 			commit(before);
 		}
 	}
