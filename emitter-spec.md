@@ -4,7 +4,7 @@ Scope: `Emitter` and `Emitter2D`. Editing through the new inspector only (edit2 
 
 ## Terms
 
-- **Particle curve**: a curve over the life of a particle, time in [0, 1]. Edited inline in the inspector, never shown in the timeline.
+- **Particle curve**: a curve over the life of a particle, time in [0, 1]. Edited inline in the inspector, shown in the timeline only when it is selected.
 - **Animation curve**: a curve over the FX time. Shown and edited in the timeline.
 
 ## Param groups
@@ -25,7 +25,7 @@ A shader under an emitter stores its particle params on itself, in an optional f
 
 | Mode | Label | Fields | Value |
 |---|---|---|---|
-| unset | **+** | — | default value of the param |
+| unset | Default value | — | default value of the param |
 | `Constant` | Constant | `value` | `value` |
 | `Range` | Range | `min`, `max` | `lerp(min, max, u)` |
 | `Curve` | Curve | `shape`, `from`, `to` | `lerp(from, to, s(t))` |
@@ -35,7 +35,7 @@ A shader under an emitter stores its particle params on itself, in an optional f
 - `t`: particle life in [0, 1]. `s(t)`: the shape evaluated at `t`.
 - `u`: a random in [0, 1], one draw per particle and per param component, keyed by the param. Every random field of a mode uses the same draw.
 - `from` / `to` default to 0 / 1.
-- Unset params show a **+** button; Constant offers a reset to the default value.
+- Unset and the default value are the same: an unset param shows its default value grayed out, editing it sets it, and a constant set back to its default (by hand or by a reset) is unset.
 
 ## Shapes
 
@@ -87,8 +87,10 @@ Validation (fxbench, outside the repo): old hide on the old files against new hi
 
 ## UI
 
-- Each param (or component) has a mode dropdown, restricted to the modes of its group, shown as a caret (the mode in its tooltip). The components of a vector are on one line while they are all constant.
+- Each param (or component) has a mode dropdown, restricted to the modes of its group, shown as a caret (the mode in its tooltip). It also removes the param (**Remove**, all the components of a vector) or the clicked component (**Remove X**); the right click menu of the line has the same entries. The components of a vector are on one line while they are all constant or unset.
+- The shape dropdown: **New curve**, **Reference** (the curves under the emitter), **Easing** (with thumbnails; Quart and Quint are not offered, they stay shown where they are used).
 - A curve mode made from a constant, a range or nothing goes from 0 to 1.
-- Curve modes show their particle curves in an inline curve editor. Random Curve: `from` fields at the bottom, `to` fields at the top, the shape at mid range as a solid line, the two extremes dashed. Keys are edited in display space. The editor has a Y grid (0 stronger) and shows at least 0 to 1: framed on the curve when built or with F, zoomed vertically by hand with its +/- buttons or Shift + wheel.
+- Curve modes show their particle curves in an inline curve editor. Random Curve: `from` fields at the bottom, `to` fields at the top, narrow, the shape at mid range as a solid line, the two extremes dashed. Keys are edited in display space, as in the timeline curve editor: key modes (Aligned, Free, Linear, Constant) and tangent handles, Ctrl + click adds a key, Delete removes it, right click for the key menu, double click for its time and value. The editor has a labelled Y grid in integer steps (0 stronger) and shows at least 0 to 1: framed on the curve when built or with F, zoomed vertically around its center with its +/- buttons or Shift + wheel.
 - Curve Range: two stacked curve editors.
+- The FX timeline shows the animation curves only, and a particle curve when it is selected (over the particle life, 0 to 1).
 - In the FX editor, animated properties are marked in the inspector, Blender-like.
