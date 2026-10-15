@@ -35,6 +35,52 @@ kit-root .detached .is-cdb-editor {
   max-height: 500px;
   overflow: auto;
 }
+kit-root .kit-param-curve {
+  flex: 1 1;
+  height: 90px;
+  background-color: #161616;
+  border: 1px solid #333;
+  border-radius: 3px;
+}
+kit-root .kit-param-curve path {
+  fill: none;
+  stroke: #f05a5a;
+}
+kit-root .kit-param-curve path.main {
+  stroke-width: 2px;
+}
+kit-root .kit-param-curve path.extreme {
+  stroke-width: 1px;
+  stroke-dasharray: 4 3;
+}
+kit-root .kit-param-curve line.zero {
+  stroke: #444;
+}
+kit-root .kit-param-curve rect.key {
+  fill: #eee;
+  cursor: move;
+}
+kit-root kit-anim-marker {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  margin-inline: 2px;
+  transform: rotate(45deg);
+  border: 1px solid #777;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+kit-root kit-anim-marker:hover {
+  border-color: #ccc;
+}
+kit-root kit-anim-marker.animated {
+  background-color: #6bbf59;
+  border-color: #6bbf59;
+}
+kit-root kit-anim-marker.animated.key {
+  background-color: #e8c547;
+  border-color: #e8c547;
+}
 /**
 	We use scope to avoid messing with the inner styles of complex widgets
 **/
@@ -781,50 +827,4 @@ kit-root .detached .is-cdb-editor {
     background-color: #222222;
     border-color: #333333;
   }
-}
-kit-root .kit-param-curve {
-  flex: 1 1;
-  height: 90px;
-  background-color: #161616;
-  border: 1px solid #333;
-  border-radius: 3px;
-}
-kit-root .kit-param-curve path {
-  fill: none;
-  stroke: #f05a5a;
-}
-kit-root .kit-param-curve path.main {
-  stroke-width: 2px;
-}
-kit-root .kit-param-curve path.extreme {
-  stroke-width: 1px;
-  stroke-dasharray: 4 3;
-}
-kit-root .kit-param-curve line.zero {
-  stroke: #444;
-}
-kit-root .kit-param-curve rect.key {
-  fill: #eee;
-  cursor: move;
-}
-kit-root kit-anim-marker {
-  flex: 0 0 8px;
-  width: 8px;
-  height: 8px;
-  margin-inline: 2px;
-  transform: rotate(45deg);
-  border: 1px solid #777;
-  box-sizing: border-box;
-  cursor: pointer;
-}
-kit-root kit-anim-marker:hover {
-  border-color: #ccc;
-}
-kit-root kit-anim-marker.animated {
-  background-color: #6bbf59;
-  border-color: #6bbf59;
-}
-kit-root kit-anim-marker.animated.key {
-  background-color: #e8c547;
-  border-color: #e8c547;
 }

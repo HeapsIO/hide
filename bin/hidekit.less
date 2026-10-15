@@ -44,6 +44,56 @@ kit-root {
 		max-height: 500px;
 		overflow: auto;
 	}
+
+	.kit-param-curve {
+		flex: 1 1;
+		height: 90px;
+		background-color: #161616;
+		border: 1px solid #333;
+		border-radius: 3px;
+
+		path {
+			fill: none;
+			stroke: #f05a5a;
+		}
+		path.main {
+			stroke-width: 2px;
+		}
+		path.extreme {
+			stroke-width: 1px;
+			stroke-dasharray: 4 3;
+		}
+		line.zero {
+			stroke: #444;
+		}
+		rect.key {
+			fill: #eee;
+			cursor: move;
+		}
+	}
+
+	kit-anim-marker {
+		flex: 0 0 8px;
+		width: 8px;
+		height: 8px;
+		margin-inline: 2px;
+		transform: rotate(45deg);
+		border: 1px solid #777;
+		box-sizing: border-box;
+		cursor: pointer;
+
+		&:hover {
+			border-color: #ccc;
+		}
+		&.animated {
+			background-color: #6bbf59;
+			border-color: #6bbf59;
+		}
+		&.animated.key {
+			background-color: #e8c547;
+			border-color: #e8c547;
+		}
+	}
 }
 
 /**
@@ -904,31 +954,3 @@ kit-root {
 	}
 }
 
-kit-root {
-	.kit-param-curve {
-		flex: 1 1;
-		height: 90px;
-		background-color: #161616;
-		border: 1px solid #333;
-		border-radius: 3px;
-		path { fill: none; stroke: #f05a5a; }
-		path.main { stroke-width: 2px; }
-		path.extreme { stroke-width: 1px; stroke-dasharray: 4 3; }
-		line.zero { stroke: #444; }
-		rect.key { fill: #eee; cursor: move; }
-	}
-
-	kit-anim-marker {
-		flex: 0 0 8px;
-		width: 8px;
-		height: 8px;
-		margin-inline: 2px;
-		transform: rotate(45deg);
-		border: 1px solid #777;
-		box-sizing: border-box;
-		cursor: pointer;
-		&:hover { border-color: #ccc; }
-		&.animated { background-color: #6bbf59; border-color: #6bbf59; }
-		&.animated.key { background-color: #e8c547; border-color: #e8c547; }
-	}
-}
