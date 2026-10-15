@@ -79,6 +79,15 @@ class Element {
 	**/
 	public var tooltip : String = null;
 
+	/**
+		If set, the element is shown grayed out but stays editable (a value that is not set, showing its default)
+	**/
+	public var faded(default, set) = false;
+
+	/**
+		If set, a css class added to the element, for a specific layout
+	**/
+	public var cssClass : String = null;
 
 	/**
 		Internal ID of this element that is unique between this element siblings (use getIdPath for a unique identifier in this element tree)
@@ -112,6 +121,12 @@ class Element {
 		disabled = v;
 		refreshDisabled();
 		return disabled;
+	}
+
+	function set_faded(v: Bool) {
+		faded = v;
+		native?.toggleClass("kit-faded", v);
+		return faded;
 	}
 
 	function isDisabled() {
@@ -155,6 +170,9 @@ class Element {
 
 		// call setters
 		disabled = disabled;
+		faded = faded;
+		if (cssClass != null)
+			native?.addClass(cssClass);
 
 		makeChildren();
 
