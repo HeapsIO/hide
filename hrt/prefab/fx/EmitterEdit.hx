@@ -33,7 +33,7 @@ class EmitterEdit {
 		}
 	}
 
-	/** `m` in `mode`, keeping its values: exactly when `mode` can express it, its middle otherwise **/
+	/** `m` in `mode`, keeping its values: exactly when `mode` can express it, its middle otherwise. A new curve goes from 0 to 1 **/
 	static function convert(m: Null<ParamMode>, mode: ModeKind, def: Float) : ParamMode {
 		var s = null, s2 = null, f0 = def, f1 = def, t0 = def, t1 = def;
 		switch (m) {
@@ -43,6 +43,10 @@ class EmitterEdit {
 			case MCurve(sh, from, to): s = sh; f0 = f1 = from; t0 = t1 = to;
 			case MRandomCurve(sh, a, b, c, d): s = sh; f0 = a; f1 = b; t0 = c; t1 = d;
 			case MCurveRange(a, af, at, b, bf, bt): s = a; s2 = b; f0 = af; t0 = at; f1 = bf; t1 = bt;
+		}
+		if (s == null && mode != Constant && mode != Range) {
+			f0 = f1 = 0;
+			t0 = t1 = 1;
 		}
 		s ??= SEasing(Linear);
 		return switch (mode) {
@@ -192,13 +196,13 @@ class EmitterEdit {
 			var make : () -> ParamMode = null;
 			function apply() setComp(i, make());
 			function animKey(?field: String) return def.kind == Particle ? null : EmitterParam.animKey(def, i, field);
-			function slider(parent: hide.kit.Element, sid: String, label: String, value: Float, set: Float -> Void, ?anim: String, ?changed: () -> Void) {
+			function slider(parent: hide.kit.Element, sid: String, label: String, value: Float, defaultValue: Float, set: Float -> Void, ?anim: String, ?changed: () -> Void) {
 				var s = new hide.kit.Slider<Float>(parent, sid);
 				s.label = label;
 				s.value = value;
 				s.min = range.min;
 				s.max = range.max;
-				s.defaultValue = def.def[i];
+				s.defaultValue = defaultValue;
 				s.showRange = range.min != null && range.max != null;
 				s.onFieldChange = (_) -> {
 					set(s.value);
@@ -224,9 +228,9 @@ class EmitterEdit {
 				}
 				var names = to.length == 1 ? [""] : ["Min", "Max"];
 				for (j => f in to)
-					slider(top, "to" + j, names[j], f.v, f.set, null, changed);
+					slider(top, "to" + j, names[j], f.v, 1, f.set, null, changed);
 				for (j => f in from)
-					slider(bottom, "from" + j, names[j], f.v, f.set, null, changed);
+					slider(bottom, "from" + j, names[j], f.v, 0, f.set, null, changed);
 			}
 			function shape(parent: hide.kit.Element, sid: String, s: ParamShape, set: ParamShape -> Void) {
 				shapeSelect(ctx, parent, sid, owner, s, def.name + (dim == 1 ? "" : comp.toUpperCase()), (s) -> {
@@ -239,11 +243,11 @@ class EmitterEdit {
 			switch (m) {
 				case MConstant(v):
 					make = () -> MConstant(v);
-					slider(line, "value" + suffix, "", v, x -> v = x, animKey());
+					slider(line, "value" + suffix, "", v, def.def[i], x -> v = x, animKey());
 				case MRange(min, max):
 					make = () -> MRange(min, max);
-					slider(line, "min", "Min", min, x -> min = x, animKey("min"));
-					slider(line, "max", "Max", max, x -> max = x, animKey("max"));
+					slider(line, "min", "Min", min, def.def[i], x -> min = x, animKey("min"));
+					slider(line, "max", "Max", max, def.def[i], x -> max = x, animKey("max"));
 				case MCurve(s, from, to):
 					make = () -> MCurve(s, from, to);
 					shape(line, "shape0", s, x -> s = x);
