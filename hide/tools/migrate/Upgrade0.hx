@@ -44,6 +44,8 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	  curves cannot follow, a scale the base rotation shears) gets a parent object, which takes its
 	  name, its place, its position and its animation as it is; it keeps its base rotation and scale
 	  and its content, under a new name (`<name>_base`). The paths of the file through it are updated.
+	  An object that reads its parent object, sets its own rotation or is read by its parent through its
+	  direct children keeps an approximation (`noParent`).
 	- The overrides of the references are rewritten for the upgraded files they override (see
 	  `upgradeReference`), reading the other files of the project through the context.
 
@@ -465,12 +467,16 @@ class Upgrade0 {
 		var form = cr == null ? null : TransformMath.rotationForm(rot, classes(cr));
 		var problem = cs != null && scaleMap == null ? "scale through the base rotation (shear)" : cr != null && form == null ? "rotation the euler angles cannot follow" : null;
 		if( problem != null ) {
-			if( n.parent != null && !n.isA(hrt.prefab.fx.FX) ) {
+			var kept = noParent(n);
+			if( kept == null ) {
 				insertParent(n, problem);
 				return;
 			}
-			warn(n, '$problem, the root of the FX cannot get a parent: approximated');
-			if( scaleMap == null && cs != null ) scaleMap = [for( i in 0...3 ) { src: cs.comps[i] == null ? null : i, a: scale[i], b: 0. }];
+			warn(n, '$problem, $kept: approximated');
+			if( scaleMap == null && cs != null ) {
+				var perm = TransformMath.nearestScalePermutation(rot);
+				scaleMap = [for( i in 0...3 ) { src: cs.comps[perm[i]] == null ? null : perm[i], a: scale[i], b: 0. }];
+			}
 			if( form == null && cr != null ) form = { base: rot, perm: [0, 1, 2], sign: [1., 1., 1.] };
 		}
 		if( cr != null ) {
@@ -499,6 +505,41 @@ class Upgrade0 {
 		}
 		var keys = [for( c in ch.comps ) c == null ? null : key(c)];
 		return [for( i in 0...3 ) keys[i] == null ? -1 : keys.indexOf(keys[i])];
+	}
+
+	/**
+		Why the object `n` cannot get a parent (`insertParent`), null when it can: the parent takes its
+		animation and the object keeps its world transform, but what reads the transform of its parent
+		object, sets its own rotation or reads its direct children would then see another one.
+	**/
+	function noParent( n : RawNode ) : Null<String> {
+		if( n.parent == null || n.isA(hrt.prefab.fx.FX) )
+			return "the root of the FX cannot get a parent";
+		// particles in the space of the parent object, its scale and the local position of the emitter
+		if( n.isA(hrt.prefab.fx.Emitter) )
+			return "an emitter reads its parent object";
+		if( n.isA(hrt.prefab.fx.Swarm) )
+			return "a swarm reads its parent object";
+		// the parent would turn the rotation they set
+		if( n.type == "billboard" )
+			return "a billboard sets its own rotation";
+		var lock : Array<Float> = get(n.data, "lockAxis");
+		if( n.isA(hrt.prefab.fx.LookAt) && lock != null && Lambda.exists(lock, v -> v != 0) )
+			return "a look at with a lock axis sets its own rotation";
+		// templates and shader holders: their direct children
+		for( cl in ([hrt.prefab.fx.ShaderTarget, hrt.prefab.fx.Swarm, hrt.prefab.fx.gpuemitter.GPUEmitter] : Array<Class<hrt.prefab.Prefab>>) )
+			if( n.parent.isA(cl) )
+				return 'the ${n.parent.type} reads its direct children';
+		// the animations of the leaves (`localRotation`) would take the object, which only has transform curves
+		if( !Lambda.exists(n.children, c -> !isTransformCurve(c)) ) {
+			var p = n.parent;
+			while( p != null ) {
+				if( group(p, "localRotation").length > 0 || group(p, "localPosition").length > 0 )
+					return "it would become a leaf of the local animation of " + p.name;
+				p = p.parent;
+			}
+		}
+		return null;
 	}
 
 	/**

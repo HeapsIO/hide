@@ -54,6 +54,26 @@ class TransformMath {
 		return null;
 	}
 
+	/**
+		The permutation of the scale components closest to `scalePermutation` when there is none: component `i`
+		of the scale `setTransform` reads from base rotation * scale(v) is the length of `(R[i][j] * v[j])_j`, taken
+		as `v[p[i]]` from the largest `R[i][p[i]]`.
+	**/
+	public static function nearestScalePermutation( rot : Array<Float> ) : Array<Int> {
+		var rb = rotation(rot);
+		var r = [[rb._11, rb._12, rb._13], [rb._21, rb._22, rb._23], [rb._31, rb._32, rb._33]];
+		var best = PERMS[0], bestW = -1.;
+		for( p in PERMS ) {
+			var w = 0.;
+			for( i in 0...3 ) w += r[i][p[i]] * r[i][p[i]];
+			if( w > bestW + 1e-12 ) {
+				best = p;
+				bestW = w;
+			}
+		}
+		return best;
+	}
+
 	/** The euler triples of the same rotation as `rot`: itself, the other branch, quarter turns, the gimbal family **/
 	static function triples( rot : Array<Float> ) : Array<Array<Float>> {
 		var ref = rotation(rot);
