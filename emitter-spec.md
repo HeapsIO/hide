@@ -87,7 +87,8 @@ Validation (fxbench, outside the repo): old hide on the old files against new hi
 
 ## UI
 
-- Each param (or component) has a mode dropdown, restricted to the modes of its group.
-- Curve modes show their particle curves in an inline curve editor. Random Curve: `from` fields at the bottom, `to` fields at the top, the shape at mid range as a solid line, the two extremes dashed. Keys are edited in display space.
+- Each param (or component) has a mode dropdown, restricted to the modes of its group, shown as a caret (the mode in its tooltip). The components of a vector are on one line while they are all constant.
+- A curve mode made from a constant, a range or nothing goes from 0 to 1.
+- Curve modes show their particle curves in an inline curve editor. Random Curve: `from` fields at the bottom, `to` fields at the top, the shape at mid range as a solid line, the two extremes dashed. Keys are edited in display space. The editor has a Y grid (0 stronger) and shows at least 0 to 1: framed on the curve when built or with F, zoomed vertically by hand with its +/- buttons or Shift + wheel.
 - Curve Range: two stacked curve editors.
 - In the FX editor, animated properties are marked in the inspector, Blender-like.
