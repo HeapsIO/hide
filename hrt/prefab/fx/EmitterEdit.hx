@@ -252,27 +252,36 @@ class EmitterEdit {
 			}
 
 			// a curve editor, the `to` fields on top and the `from` ones below
-			function curve(s: ParamShape, from: Array<{ v: Float, set: Float -> Void }>, to: Array<{ v: Float, set: Float -> Void }>, ranges: () -> Array<hide.kit.ParamCurve.ParamRange>, suffix: String) {
-				var top = new hide.kit.Line(parent, id + "To" + suffix);
-				top.label = "To";
-				top.cssClass = "kit-param-bounds";
-				top.stealLabel = false;
-				menuOwners.push(top);
+			/**
+				A curve editor, and below it on one line the `from` fields (the start of the particle life, at
+				the left) and the `to` ones (its end, at the right), with a button swapping them
+			**/
+			function curve(s: ParamShape, from: Array<{ v: () -> Float, set: Float -> Void }>, to: Array<{ v: () -> Float, set: Float -> Void }>, ranges: () -> Array<hide.kit.ParamCurve.ParamRange>, suffix: String) {
 				var graph = new hide.kit.ParamCurve(parent, id + "Curve" + suffix, owner, shapeFunction(owner, s), ranges(), editableCurve(owner, s));
-				var bottom = new hide.kit.Line(parent, id + "From" + suffix);
-				bottom.label = "From";
-				bottom.cssClass = "kit-param-bounds";
-				bottom.stealLabel = false;
-				menuOwners.push(bottom);
+				var bounds = new hide.kit.Line(parent, id + "Bounds" + suffix);
+				bounds.cssClass = "kit-param-bounds";
+				bounds.stealLabel = false;
+				menuOwners.push(bounds);
 				// the view follows the range
 				function changed() {
 					graph.setRanges(ranges());
 				}
-				var names = to.length == 1 ? [""] : ["Min", "Max"];
-				for (j => f in to)
-					slider(top, "to" + j, names[j], f.v, 1, f.set, null, changed);
+				var names = to.length == 1 ? [""] : [" min", " max"];
 				for (j => f in from)
-					slider(bottom, "from" + j, names[j], f.v, 0, f.set, null, changed);
+					slider(bounds, "from" + j, "", f.v(), 0, f.set, null, changed).tooltip = "From" + names[j] + ": at the birth of the particle";
+				var swap = new hide.kit.Button(bounds, "swap", "⇄");
+				swap.tooltip = "Swap from and to";
+				swap.onClick = () -> {
+					for (j in 0...from.length) {
+						var v = from[j].v();
+						from[j].set(to[j].v());
+						to[j].set(v);
+					}
+					apply();
+					rebuild();
+				}
+				for (j => f in to)
+					slider(bounds, "to" + j, "", f.v(), 1, f.set, null, changed).tooltip = "To" + names[j] + ": at the death of the particle";
 			}
 			function shape(parent: hide.kit.Element, sid: String, s: ParamShape, set: ParamShape -> Void) {
 				shapeSelect(ctx, parent, sid, owner, s, def.name + (dim == 1 ? "" : comp.toUpperCase()), (s) -> {
@@ -297,11 +306,11 @@ class EmitterEdit {
 				case MCurve(s, from, to):
 					make = () -> MCurve(s, from, to);
 					shape(line, "shape0", s, x -> s = x);
-					curve(s, [{ v: from, set: x -> from = x }], [{ v: to, set: x -> to = x }], () -> [{ from: from, to: to }], "");
+					curve(s, [{ v: () -> from, set: x -> from = x }], [{ v: () -> to, set: x -> to = x }], () -> [{ from: from, to: to }], "");
 				case MRandomCurve(s, fromMin, fromMax, toMin, toMax):
 					make = () -> MRandomCurve(s, fromMin, fromMax, toMin, toMax);
 					shape(line, "shape0", s, x -> s = x);
-					curve(s, [{ v: fromMin, set: x -> fromMin = x }, { v: fromMax, set: x -> fromMax = x }], [{ v: toMin, set: x -> toMin = x }, { v: toMax, set: x -> toMax = x }],
+					curve(s, [{ v: () -> fromMin, set: x -> fromMin = x }, { v: () -> fromMax, set: x -> fromMax = x }], [{ v: () -> toMin, set: x -> toMin = x }, { v: () -> toMax, set: x -> toMax = x }],
 						() -> [{ from: mid(fromMin, fromMax), to: mid(toMin, toMax) }, { from: fromMin, to: toMin }, { from: fromMax, to: toMax }], "");
 				case MCurveRange(a, aFrom, aTo, b, bFrom, bTo):
 					make = () -> MCurveRange(a, aFrom, aTo, b, bFrom, bTo);
@@ -309,12 +318,12 @@ class EmitterEdit {
 					lineA.label = "A";
 					menuOwners.push(lineA);
 					shape(lineA, "shape0", a, x -> a = x);
-					curve(a, [{ v: aFrom, set: x -> aFrom = x }], [{ v: aTo, set: x -> aTo = x }], () -> [{ from: aFrom, to: aTo }], "0");
+					curve(a, [{ v: () -> aFrom, set: x -> aFrom = x }], [{ v: () -> aTo, set: x -> aTo = x }], () -> [{ from: aFrom, to: aTo }], "0");
 					var lineB = new hide.kit.Line(parent, id + "Shape1");
 					lineB.label = "B";
 					menuOwners.push(lineB);
 					shape(lineB, "shape3", b, x -> b = x);
-					curve(b, [{ v: bFrom, set: x -> bFrom = x }], [{ v: bTo, set: x -> bTo = x }], () -> [{ from: bFrom, to: bTo }], "1");
+					curve(b, [{ v: () -> bFrom, set: x -> bFrom = x }], [{ v: () -> bTo, set: x -> bTo = x }], () -> [{ from: bFrom, to: bTo }], "1");
 			}
 			var menuLine = line;
 			for (o in menuOwners)

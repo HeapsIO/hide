@@ -110,6 +110,10 @@ kit-root kit-param-curve circle.handle {
 kit-root kit-line.kit-param-bounds kit-slider {
   flex: 0 0 70px;
 }
+kit-root kit-line.kit-param-bounds kit-button {
+  flex: 0 0 24px;
+  margin: 0 auto;
+}
 kit-root .kit-faded:not(kit-div),
 kit-root kit-div.kit-faded > * {
   opacity: 0.45;
@@ -651,7 +655,7 @@ kit-root kit-anim-marker.animated.key {
     display: none;
   }
   :scope kit-line .first {
-    flex: 0 0 85px;
+    flex: 0 0 120px;
     text-align: right;
     margin-left: 0;
   }
