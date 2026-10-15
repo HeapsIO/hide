@@ -2,7 +2,7 @@ package hide.tools.migrate;
 
 /**
 	Matrix helpers of the transform re-bakes of `Upgrade0`: the exact forms of an old animated transform,
-	checked at fixed values of the curves. `classes` tells, per component, which curve animates it: the
+	checked at fixed values of the curves, and the decomposition of the sampled ones. `classes` tells, per component, which curve animates it: the
 	components of the same class have the same curve (or curves with the same data), -1 when none does.
 **/
 class TransformMath {
@@ -54,24 +54,73 @@ class TransformMath {
 		return null;
 	}
 
+	/** The smallest multiple of the loop periods, 0 when there is none (or not under 16 times the longest one) **/
+	public static function commonPeriod( periods : Array<Float> ) : Float {
+		var longest = 0.;
+		for( p in periods ) if( p > longest ) longest = p;
+		if( longest <= 0 ) return 0;
+		for( k in 1...17 ) {
+			var c = longest * k;
+			if( Lambda.foreach(periods, p -> p > 0 && Math.abs(c / p - Math.round(c / p)) < 1e-6) )
+				return c;
+		}
+		return 0;
+	}
+
+	public static function scaleMatrix( s : Array<Float> ) {
+		var m = new h3d.Matrix();
+		m.initScale(s[0], s[1], s[2]);
+		return m;
+	}
+
 	/**
-		The permutation of the scale components closest to `scalePermutation` when there is none: component `i`
-		of the scale `setTransform` reads from base rotation * scale(v) is the length of `(R[i][j] * v[j])_j`, taken
-		as `v[p[i]]` from the largest `R[i][p[i]]`.
+		Scale and euler angles (radians, closest to `prev`) of a matrix (its 3x3 part), `signs` telling
+		the sign of each scale. `error`: what the rebuilt matrix misses of it.
 	**/
-	public static function nearestScalePermutation( rot : Array<Float> ) : Array<Int> {
-		var rb = rotation(rot);
-		var r = [[rb._11, rb._12, rb._13], [rb._21, rb._22, rb._23], [rb._31, rb._32, rb._33]];
-		var best = PERMS[0], bestW = -1.;
-		for( p in PERMS ) {
-			var w = 0.;
-			for( i in 0...3 ) w += r[i][p[i]] * r[i][p[i]];
-			if( w > bestW + 1e-12 ) {
-				best = p;
-				bestW = w;
+	public static function decompose( m : h3d.Matrix, prev : Array<Float>, signs : Array<Float> ) : { s : Array<Float>, r : Array<Float>, error : Float, m : h3d.Matrix } {
+		var rows = [[m._11, m._12, m._13], [m._21, m._22, m._23], [m._31, m._32, m._33]];
+		var det = m._11 * (m._22 * m._33 - m._23 * m._32) - m._12 * (m._21 * m._33 - m._23 * m._31) + m._13 * (m._21 * m._32 - m._22 * m._31);
+		var sg = [for( v in signs ) v < 0 ? -1. : 1.];
+		if( (sg[0] * sg[1] * sg[2] < 0) != (det < 0) )
+			sg = [-sg[0], -sg[1], -sg[2]];
+		var s = [for( i in 0...3 ) sg[i] * Math.sqrt(rows[i][0] * rows[i][0] + rows[i][1] * rows[i][1] + rows[i][2] * rows[i][2])];
+		var r = [for( i in 0...3 ) [for( j in 0...3 ) s[i] == 0 ? (i == j ? 1. : 0.) : rows[i][j] / s[i]]];
+		inline function closest( a : Float, ref : Float ) {
+			var tau = Math.PI * 2;
+			return a + Math.round((ref - a) / tau) * tau;
+		}
+		var cands = [];
+		var cy = Math.sqrt(r[0][0] * r[0][0] + r[0][1] * r[0][1]);
+		if( cy > 1e-6 ) {
+			var y = Math.atan2(-r[0][2], cy);
+			cands.push([Math.atan2(r[1][2], r[2][2]), y, Math.atan2(r[0][1], r[0][0])]);
+			cands.push([Math.atan2(-r[1][2], -r[2][2]), Math.PI - y, Math.atan2(-r[0][1], -r[0][0])]);
+		} else {
+			var z = prev[2];
+			if( -r[0][2] > 0 ) // y = 90
+				cands.push([z + Math.atan2(r[1][0], r[1][1]), Math.PI / 2, z]);
+			else
+				cands.push([Math.atan2(-r[1][0], r[1][1]) - z, -Math.PI / 2, z]);
+		}
+		var best = null, bestD = Math.POSITIVE_INFINITY;
+		for( c in cands ) {
+			var a = [for( i in 0...3 ) closest(c[i], prev[i])];
+			var dist = 0.;
+			for( i in 0...3 ) dist += (a[i] - prev[i]) * (a[i] - prev[i]);
+			if( dist < bestD ) {
+				bestD = dist;
+				best = a;
 			}
 		}
-		return best;
+		// error of the rebuilt matrix
+		var check = new h3d.Matrix();
+		check.initScale(s[0], s[1], s[2]);
+		check.rotate(best[0], best[1], best[2]);
+		var err = 0.;
+		var scaleRef = Math.max(1e-6, Math.max(Math.abs(s[0]), Math.max(Math.abs(s[1]), Math.abs(s[2]))));
+		for( e in [check._11 - m._11, check._12 - m._12, check._13 - m._13, check._21 - m._21, check._22 - m._22, check._23 - m._23, check._31 - m._31, check._32 - m._32, check._33 - m._33] )
+			err = Math.max(err, Math.abs(e) / scaleRef);
+		return { s: s, r: best, error: err, m: check };
 	}
 
 	/** The euler triples of the same rotation as `rot`: itself, the other branch, quarter turns, the gimbal family **/

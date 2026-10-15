@@ -1,5 +1,7 @@
 package hide.tools.migrate;
 
+import hrt.prefab.fx.Value;
+import hrt.prefab.fx.Evaluator;
 import hide.tools.migrate.Migrate.FileReport;
 import hide.tools.migrate.RawNode.get;
 import hrt.prefab.Diff.deepCopy;
@@ -9,6 +11,21 @@ private typedef ChannelMap = { src : Null<Int>, a : Float, b : Float };
 
 /** The curves of a vector property: `uniform` when one curve is all of them **/
 private typedef Channels = { uniform : Null<RawNode>, comps : Array<Null<RawNode>> };
+
+/** A sampled re-bake of the rotation (and scale) of an object, `problem` tells why it cannot stand for the old transform **/
+private typedef Resample = {
+	var cs : Null<Channels>;
+	var cr : Null<Channels>;
+	var scale : Array<Float>;
+	var rot : Array<Float>;
+	var withScale : Bool;
+	var loop : Bool;
+	var scaleKeys : Array<Array<Dynamic>>;
+	var rotKeys : Array<Array<Dynamic>>;
+	var problem : Null<String>;
+	/** How far the old runtime was from a rigid transform **/
+	var nonRigid : Float;
+}
 
 /** The mode of a param component (format 1), `shape` the path of a curve from the emitter **/
 private enum Mode {
@@ -40,20 +57,29 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	- Transforms are re-baked exactly, the curves of the rotation and scale affine in the old ones: the
 	  base rotation folded into the euler angles (from another euler triple of the same rotation, which
 	  the prefab then stores, when it takes one), the animated scale moved before the base rotation
-	  (its components permuted). An object whose animation has no such form (a rotation the euler
-	  curves cannot follow, a scale the base rotation shears) gets a parent object, which takes its
-	  name, its place, its position and its animation as it is; it keeps its base rotation and scale
-	  and its content, under a new name (`<name>_base`). The paths of the file through it are updated,
-	  the ones that read the object get the child. An object that reads its parent object, sets its own
-	  rotation or is read by its parent through its direct children keeps an approximation (`noParent`).
+	  (its components permuted). An object whose rotation the euler curves cannot follow gets a parent
+	  object, which takes its name, its place, its position and its animation as it is; it keeps its
+	  base rotation and scale and its content, under a new name (`<name>_base`). The paths of the file
+	  through it are updated, the ones that read the object get the child. A scale the base rotation
+	  shears, and an object that cannot get a parent (`noParent`), are sampled to what the old runtime
+	  showed: `setTransform` kept a scale and a quaternion of the animated matrix (a shear is lost).
 	- The overrides of the references are rewritten for the upgraded files they override (see
 	  `upgradeReference`), reading the other files of the project through the context.
 
-	It writes the data of format 1.
+	It writes the data of format 1. The sampled re-bakes evaluate the old curves with the runtime
+	(`Curve.makeVal`, `Evaluator`): they rely on it reading the old curves as the old runtime did.
 **/
 @:access(hide.tools.migrate.Migrate)
 class Upgrade0 {
 
+	/** Rotation tolerance of the sampled re-bakes, in degrees **/
+	static inline var ROTATION_TOLERANCE = 0.02;
+	/** Scale tolerance of the sampled re-bakes, relative **/
+	static inline var SCALE_TOLERANCE = 1e-4;
+	/** Error of a sampled re-bake beyond which the object gets a parent, relative to the scale of the matrix rows **/
+	static inline var MATRIX_TOLERANCE = 5e-4;
+	/** Sampling step of the re-bakes, in seconds **/
+	static inline var SAMPLE_STEP = 1.0 / 240.0;
 	/** Suffix of the name of an object moved under a parent that takes its name **/
 	static inline var BASE_SUFFIX = "_base";
 
@@ -85,6 +111,10 @@ class Upgrade0 {
 	var remapUsers : Map<RawNode, Array<RawNode>> = new Map();
 	/** The curves that hold their new values **/
 	var upgraded = new haxe.ds.ObjectMap<Dynamic, Bool>();
+	var parameters : Map<String, Float> = new Map();
+	var fxDuration : Float = 5.0;
+	var pristine : Dynamic;
+	var mirror : hrt.prefab.Prefab;
 	var fileRoot : Bool;
 
 	public function new( ctx : Null<Migrate.Context>, report : FileReport ) {
@@ -98,7 +128,8 @@ class Upgrade0 {
 		is the root of its file (the paths of the curve references start there, they are not written otherwise).
 	**/
 	public function run( data : Dynamic, fileRoot : Bool ) {
-		root = RawNode.build(data, null, []);
+		pristine = deepCopy(data);
+		root =RawNode.build(data, null, []);
 		this.fileRoot = fileRoot;
 		indexUsers(root);
 		fxPass(root);
@@ -335,12 +366,121 @@ class Upgrade0 {
 	}
 
 	// ----------------------------------------------------------------------------------------
+	// Old evaluation (sampled re-bakes)
+
+	/** The prefab of `n` in the file as it was read, loaded as plain prefabs with its curves, to evaluate them. **/
+	function mirrorOf( n : RawNode ) : Null<hrt.prefab.Prefab> {
+		if( n.origin == null )
+			return null;
+		if( mirror == null ) {
+			function strip( d : Dynamic ) : Dynamic {
+				if( get(d, "type") == "curve" ) return deepCopy(d);
+				var o : Dynamic = { name: d.name };
+				var ch : Array<Dynamic> = get(d, "children");
+				if( ch != null ) o.children = [for( c in ch ) if( c != null ) strip(c)];
+				return o;
+			}
+			mirror = @:privateAccess hrt.prefab.Prefab.createFromDynamic(strip(pristine), null, new hrt.prefab.ContextShared(null, false));
+		}
+		var p = mirror;
+		for( i in n.origin ) {
+			if( p == null || i >= p.children.length ) return null;
+			p = p.children[i];
+		}
+		return p;
+	}
+
+	/** Keys of a curve and of what it depends on, for the time span of a re-bake. **/
+	function collectSpan( n : RawNode, span : { min : Float, max : Float, loop : Bool, param : Bool }, ?keyTimes : Array<Float>, depth = 0 ) {
+		if( n == null || depth > 16 ) return;
+		var d = n.data;
+		if( get(d, "loop") == true ) span.loop = true;
+		var remap : String = get(d, "remapPath");
+		if( remap != null ) {
+			if( StringTools.startsWith(remap, "$param.") ) span.param = true;
+			else {
+				// the curve is read at the remapped time, the span is the one of the remap curve
+				collectSpan(locate(remap), span, keyTimes, depth + 1);
+				return;
+			}
+		}
+		switch( blendMode(n) ) {
+		case 3: collectSpan(locate(get(d, "blendParam")), span, keyTimes, depth + 1);
+		case 1:
+			span.param = true;
+			for( c in n.curveChildren() ) collectSpan(c, span, keyTimes, depth + 1);
+		default:
+			var keys : Array<Dynamic> = get(d, "keys");
+			if( keys == null || keys.length == 0 ) keys = [{ time: 0. }, { time: 1. }];
+			for( k in keys ) {
+				var t = num(get(k, "time"), CurveKeyDefault);
+				if( keyTimes != null ) keyTimes.push(t);
+				if( t < span.min ) span.min = t;
+				if( t > span.max ) span.max = t;
+			}
+		}
+	}
+
+	/** Linear keys fitting `values` (sampled at `times`) within `tol`. **/
+	static function fitKeys( times : Array<Float>, values : Array<Float>, tol : Float ) : Array<Dynamic> {
+		var n = times.length;
+		var keep = [for( _ in 0...n ) false];
+		keep[0] = keep[n - 1] = true;
+		var stack = [0, n - 1];
+		while( stack.length > 0 ) {
+			var b = stack.pop(), a = stack.pop();
+			var worst = -1, err = tol;
+			for( i in a + 1...b ) {
+				var f = (times[i] - times[a]) / (times[b] - times[a]);
+				var e = Math.abs(values[a] + (values[b] - values[a]) * f - values[i]);
+				if( e > err ) {
+					err = e;
+					worst = i;
+				}
+			}
+			if( worst >= 0 ) {
+				keep[worst] = true;
+				stack.push(a); stack.push(worst);
+				stack.push(worst); stack.push(b);
+			}
+		}
+		var keys = [];
+		for( i in 0...n )
+			if( keep[i] )
+				keys.push(obj(["time", times[i], "value", values[i], "mode", 2]));
+		// a constant curve is one key
+		if( keys.length == 2 && Math.abs(keys[0].value - keys[1].value) <= tol )
+			keys.pop();
+		return keys;
+	}
+
+	/** A plain curve whose keys all have the same value **/
+	static function isConstant( n : RawNode ) {
+		if( blendMode(n) != 0 || get(n.data, "remapPath") != null ) return false;
+		var keys : Array<Dynamic> = get(n.data, "keys");
+		if( keys == null || keys.length == 0 ) return false;
+		for( k in keys ) {
+			if( num(get(k, "value"), CurveKeyDefault) != num(get(keys[0], "value"), CurveKeyDefault) ) return false;
+			for( h in [get(k, "prevHandle"), get(k, "nextHandle")] )
+				if( h != null && num(get(h, "dv"), CurveKeyDefault) != 0 ) return false;
+		}
+		return true;
+	}
+
+	// ----------------------------------------------------------------------------------------
 	// FX
 
 	/** The outermost FX of the file get their animations upgraded. **/
 	function fxPass( n : RawNode ) {
 		var is2D = n.isA(hrt.prefab.fx.FX2D);
 		if( n.isA(hrt.prefab.fx.FX) || is2D ) {
+			var params : Array<Dynamic> = get(n.data, "parameters");
+			parameters = new Map();
+			if( params != null )
+				for( p in params )
+					parameters.set(get(p, "name"), num(get(p, "def"), 0));
+			// the default duration of an FX
+			fxDuration = num(get(n.data, "duration"), 5.0);
 			prepareEmitters(n);
 			process(n, is2D, false);
 			markAll(n, n, true);
@@ -465,19 +605,24 @@ class Upgrade0 {
 		}
 		// base rotation * rotation(t) as euler angles affine in the curves, from an euler triple of the base rotation
 		var form = cr == null ? null : TransformMath.rotationForm(rot, classes(cr));
-		var problem = cs != null && scaleMap == null ? "scale through the base rotation (shear)" : cr != null && form == null ? "rotation the euler angles cannot follow" : null;
+		var shear = cs != null && scaleMap == null;
+		var problem = shear ? "scale through the base rotation (shear)" : cr != null && form == null ? "rotation the euler angles cannot follow" : null;
 		if( problem != null ) {
 			var kept = noParent(n);
-			if( kept == null ) {
+			if( kept == null && !shear ) {
 				insertParent(n, problem);
 				return;
 			}
-			warn(n, '$problem, $kept: approximated');
-			if( scaleMap == null && cs != null ) {
-				var perm = TransformMath.nearestScalePermutation(rot);
-				scaleMap = [for( i in 0...3 ) { src: cs.comps[perm[i]] == null ? null : perm[i], a: scale[i], b: 0. }];
+			// the parent would show the shear the old runtime dropped, or there is none: sampled
+			var fit = resample(n, shear ? cs : null, cr, scale, rot, shear);
+			if( fit.problem != null && kept == null ) {
+				insertParent(n, fit.problem);
+				return;
 			}
-			if( form == null && cr != null ) form = { base: rot, perm: [0, 1, 2], sign: [1., 1., 1.] };
+			writeResample(n, fit, kept == null ? problem : '$problem, $kept');
+			if( !shear && cs != null )
+				applyMap(n, "scale", cs, scaleMap, "scale, with rotation");
+			return;
 		}
 		if( cr != null ) {
 			var b = form.base;
@@ -617,6 +762,261 @@ class Upgrade0 {
 			for( u in us.copy() ) dereference(u);
 		RawNode.replaceFields(node.data, d);
 		node.rebuildChildren();
+	}
+
+	/**
+		Samples the old transform of an object and fits the rotation (and the scale when `withScale`)
+		with linear keys. `problem` tells why the keys cannot stand for the old transform, null when
+		they do (checked against the old transform over the whole time span).
+	**/
+	function resample( n : RawNode, cs : Null<Channels>, cr : Null<Channels>, scale : Array<Float>, rot : Array<Float>, withScale : Bool ) : Resample {
+		var involved : Array<RawNode> = [];
+		for( ch in [cs, cr] )
+			if( ch != null )
+				for( c in ch.comps )
+					if( c != null && involved.indexOf(c) < 0 )
+						involved.push(c);
+		var span = { min: 0., max: 0., loop: false, param: false };
+		var keyTimes = [];
+		var periods = [];
+		var varyingOnce = false;
+		for( c in involved ) {
+			var cspan = { min: 0., max: 0., loop: false, param: false };
+			collectSpan(c, cspan, keyTimes);
+			if( cspan.min < span.min ) span.min = cspan.min;
+			if( cspan.max > span.max ) span.max = cspan.max;
+			if( cspan.param ) span.param = true;
+			if( cspan.loop ) {
+				span.loop = true;
+				if( periods.indexOf(cspan.max) < 0 ) periods.push(cspan.max);
+			} else if( !isConstant(c) )
+				varyingOnce = true;
+		}
+		var problem : String = null;
+		if( span.param )
+			problem = "rotation / scale curves depending on an FX parameter";
+		// all the curves loop: the re-bake loops over their common period, else it covers the FX
+		var period = TransformMath.commonPeriod(periods);
+		var loop = span.loop && !varyingOnce && period > 0 && span.min >= 0;
+		if( loop ) {
+			span.min = 0;
+			span.max = period;
+		} else {
+			var duration = fxDuration > 0 ? fxDuration : 5.0;
+			if( span.loop && span.max < duration ) span.max = duration;
+			span.max += 1;
+		}
+
+		var ev = new Evaluator();
+		for( k => v in parameters ) ev.parameters.set(k, v);
+		function val( c : Null<RawNode> ) : Null<Value> {
+			if( c == null ) return null;
+			var p = Std.downcast(mirrorOf(c), hrt.prefab.Curve);
+			return p?.makeVal();
+		}
+		var sv = cs == null ? [null, null, null] : [for( c in cs.comps ) val(c)];
+		var rv = cr == null ? [null, null, null] : [for( c in cr.comps ) val(c)];
+
+		var times = [];
+		var steps = Math.ceil((span.max - span.min) / SAMPLE_STEP);
+		if( steps > 20000 ) steps = 20000;
+		if( steps < 1 ) steps = 1;
+		for( i in 0...steps + 1 )
+			times.push(span.min + (span.max - span.min) * i / steps);
+		// the keys, and around them for the steps
+		for( t in keyTimes )
+			for( x in [t - 1e-5, t, t + 1e-5] )
+				if( x > span.min && x < span.max )
+					times.push(x);
+		times.sort(Reflect.compare);
+
+		var base = new h3d.Matrix();
+		base.initScale(withScale ? scale[0] : 1, withScale ? scale[1] : 1, withScale ? scale[2] : 1);
+		base.rotate(hxd.Math.degToRad(rot[0]), hxd.Math.degToRad(rot[1]), hxd.Math.degToRad(rot[2]));
+		var m = new h3d.Matrix(), q = new h3d.Quat(), tmp = new h3d.Matrix(), sc = new h3d.Vector();
+		function rawMatrix( t : Float, out : h3d.Matrix ) {
+			inline function f( v : Null<Value>, def : Float ) return v == null ? def : ev.getFloat(v, t);
+			var s = withScale ? [f(sv[0], 1), f(sv[1], 1), f(sv[2], 1)] : [1., 1., 1.];
+			out.initScale(s[0], s[1], s[2]);
+			out.rotate(f(rv[0], 0) * Math.PI * 2, f(rv[1], 0) * Math.PI * 2, f(rv[2], 0) * Math.PI * 2);
+			out.multiply(base, out);
+			return s;
+		}
+		// the old runtime set it with h3d.scene.Object.setTransform, which keeps a scale and a quaternion: a
+		// shear is lost, and the rotation of the previous frame stays while a scale is 0
+		function rotationAt( t : Float, depth : Int ) {
+			rawMatrix(t, tmp);
+			var sc = tmp.getScale();
+			if( Math.abs(sc.x) > hxd.Math.EPSILON && Math.abs(sc.y) > hxd.Math.EPSILON && Math.abs(sc.z) > hxd.Math.EPSILON ) {
+				tmp.prependScale(1 / sc.x, 1 / sc.y, 1 / sc.z);
+				q.initRotateMatrix(tmp);
+			} else if( depth < 60 )
+				rotationAt(t - 1 / 60, depth + 1);
+			else
+				q.initRotation(hxd.Math.degToRad(rot[0]), hxd.Math.degToRad(rot[1]), hxd.Math.degToRad(rot[2]));
+		}
+		// its scale and rotation, `out`: the quaternion of a sheared matrix is not normalized, the runtime then
+		// showed a transform that is not a scale and a rotation, the closest one is with the quaternion normalized
+		var loss = 0.;
+		function oldTransform( t : Float, out : h3d.Matrix ) {
+			rawMatrix(t, out);
+			sc.load(out.getScale());
+			rotationAt(t, 0);
+			loss = Math.max(loss, Math.abs(q.lengthSq() - 1));
+			q.normalize();
+			q.toMatrix(out);
+		}
+		// the closest scale and euler angles
+		function sampleAt( t : Float, prev : Array<Float> ) : { s : Array<Float>, r : Array<Float>, error : Float, m : h3d.Matrix } {
+			oldTransform(t, m);
+			var d = TransformMath.decompose(m, prev, [1., 1., 1.]);
+			d.s = [d.s[0] * sc.x, d.s[1] * sc.y, d.s[2] * sc.z];
+			d.m.prependScale(sc.x, sc.y, sc.z);
+			return d;
+		}
+		// samples, refined where the linear keys between two of them would miss the transform
+		var samples = [];
+		var prev = [for( r in rot ) hxd.Math.degToRad(r)];
+		for( t in times ) {
+			var d = sampleAt(t, prev);
+			prev = d.r;
+			samples.push({ t: t, d: d });
+		}
+		var rtol = hxd.Math.degToRad(ROTATION_TOLERANCE);
+		function refine( a : { t : Float, d : Dynamic }, b : { t : Float, d : Dynamic }, depth : Int, out : Array<{ t : Float, d : Dynamic }> ) {
+			if( depth > 0 && b.t - a.t > 1e-6 ) {
+				var tm = (a.t + b.t) * 0.5;
+				var dm = sampleAt(tm, a.d.r);
+				var bad = false;
+				for( i in 0...3 ) {
+					if( Math.abs(dm.r[i] - (a.d.r[i] + b.d.r[i]) * 0.5) > rtol ) bad = true;
+					var sv = (a.d.s[i] + b.d.s[i]) * 0.5;
+					if( withScale && Math.abs(dm.s[i] - sv) > SCALE_TOLERANCE * Math.max(1, Math.abs(scale[i])) ) bad = true;
+				}
+				if( bad ) {
+					var mid = { t: tm, d: (dm : Dynamic) };
+					refine(a, mid, depth - 1, out);
+					out.push(mid);
+					refine(mid, b, depth - 1, out);
+				}
+			}
+		}
+		var all = [samples[0]];
+		for( i in 1...samples.length ) {
+			refine(samples[i - 1], samples[i], 10, all);
+			all.push(samples[i]);
+		}
+		times = [for( x in all ) x.t];
+		var outS = [for( i in 0...3 ) [for( x in all ) (x.d.s[i] : Float)]];
+		var outR = [for( i in 0...3 ) [for( x in all ) hxd.Math.radToDeg(x.d.r[i])]];
+
+		var scaleKeys = [], rotKeys = [];
+		for( i in 0...3 ) {
+			scaleKeys.push(withScale ? fitKeys(times, outS[i], SCALE_TOLERANCE * Math.max(1, Math.abs(scale[i]))) : null);
+			rotKeys.push(fitKeys(times, outR[i], ROTATION_TOLERANCE));
+		}
+		var fit : Resample = { cs: cs, cr: cr, scale: scale, rot: rot, withScale: withScale, loop: loop, scaleKeys: scaleKeys, rotKeys: rotKeys, problem: problem, nonRigid: loss };
+		if( problem == null ) {
+			// the keys against the old transform, between the samples and around the keys
+			var check = [];
+			var t = span.min - 0.5;
+			// a re-bake of curves that keep looping holds until its end
+			while( t <= span.max + (span.loop && !loop ? 0 : 0.5) ) {
+				check.push(t);
+				t += SAMPLE_STEP * 0.5;
+			}
+			for( k in keyTimes ) {
+				check.push(k - 1e-4);
+				check.push(k + 1e-4);
+			}
+			// against the closest scale and rotation, the rest is reported as a loss
+			var err = fitError(fit, check, (t, out) -> out.load(sampleAt(t, [0., 0., 0.]).m));
+			if( err > MATRIX_TOLERANCE )
+				fit.problem = 'rotation the euler angles cannot follow (error ${Math.round(err * 1e4) / 1e4} with sampled keys)';
+		}
+		return fit;
+	}
+
+	/** The worst error of the re-baked keys against the old transform at `times`, relative to the scale of the matrix rows. **/
+	function fitError( fit : Resample, times : Array<Float>, oldMatrix : (Float, h3d.Matrix) -> Void ) : Float {
+		var ev = new Evaluator();
+		function curve( keys : Array<Dynamic>, base : Float ) : Value {
+			if( keys == null ) return VConst(base);
+			var isBase = keys.length == 1 && Math.abs(keys[0].value - base) <= 1e-12;
+			if( isBase ) return VConst(base);
+			var d : Dynamic = { type: "curve", name: "c", keyMode: 2, keys: deepCopy(keys) };
+			if( fit.loop ) d.loop = true;
+			var c : hrt.prefab.Curve = cast @:privateAccess hrt.prefab.Prefab.createFromDynamic(d, null, new hrt.prefab.ContextShared(null, false));
+			return c.makeVal();
+		}
+		var withScale = fit.withScale, scale = fit.scale, rot = fit.rot, sk = fit.scaleKeys, rk = fit.rotKeys;
+		var sv = [for( i in 0...3 ) withScale ? curve(sk[i], scale[i]) : VConst(scale[i])];
+		var rv = [for( i in 0...3 ) curve(rk[i], rot[i])];
+		var a = new h3d.Matrix(), b = new h3d.Matrix();
+		var worst = 0.;
+		for( t in times ) {
+			oldMatrix(t, a);
+			if( !withScale ) a.multiply(TransformMath.scaleMatrix(scale), a);
+			b.initScale(ev.getFloat(sv[0], t), ev.getFloat(sv[1], t), ev.getFloat(sv[2], t));
+			b.rotate(hxd.Math.degToRad(ev.getFloat(rv[0], t)), hxd.Math.degToRad(ev.getFloat(rv[1], t)), hxd.Math.degToRad(ev.getFloat(rv[2], t)));
+			var rows = [[a._11, a._12, a._13, b._11, b._12, b._13], [a._21, a._22, a._23, b._21, b._22, b._23], [a._31, a._32, a._33, b._31, b._32, b._33]];
+			for( r in rows ) {
+				var n = Math.max(1e-6, Math.sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2]));
+				for( j in 0...3 ) {
+					var e = Math.abs(r[j] - r[j + 3]) / Math.max(1, n);
+					if( e > worst ) worst = e;
+				}
+			}
+		}
+		return worst;
+	}
+
+	/** Writes a sampled re-bake, `why` the object has no exact form, warned to list the object **/
+	function writeResample( n : RawNode, fit : Resample, why : String ) {
+		var withScale = fit.withScale, scale = fit.scale, rot = fit.rot;
+		for( i in 0...3 ) {
+			if( withScale )
+				setChannel(n, fit.cs, "scale", i, fit.scaleKeys[i], scale[i], SCALE_TOLERANCE * Math.max(1, Math.abs(scale[i])), fit.loop);
+			setChannel(n, fit.cr, "rotation", i, fit.rotKeys[i], rot[i], ROTATION_TOLERANCE, fit.loop);
+		}
+		warn(n, '$why: sampled to what the old runtime showed' + (fit.problem != null ? ', approximated (${fit.problem})' : ""));
+		if( fit.nonRigid > MATRIX_TOLERANCE )
+			warn(n, 'the old runtime showed a transform that is not a scale and a rotation (the quaternion of a sheared matrix, off by ${Math.round(fit.nonRigid * 1e4) / 1e4}), the quaternion is normalized');
+		change(n, withScale ? "rotation and scale, sampled" : "rotation, sampled");
+	}
+
+	/** Sets the curve of component `i` of `prop` to `keys`, or none when it is the base value. **/
+	function setChannel( n : RawNode, ch : Null<Channels>, prop : String, i : Int, keys : Array<Dynamic>, base : Float, tol : Float, loop : Bool ) {
+		var isBase = keys.length == 1 && Math.abs(keys[0].value - base) <= tol;
+		var cur = ch == null || ch.uniform != null ? null : ch.comps[i];
+		if( ch != null && ch.uniform != null && i == 0 ) {
+			// the components get their own curves, the uniform one is not read anymore: disable it
+			// unless something references it
+			var u = ch.uniform;
+			if( !users.exists(u) || users.get(u).length == 0 )
+				RawNode.setField(u.data, "enabled", false);
+			markUpgraded(u);
+		}
+		if( isBase && cur == null )
+			return;
+		if( cur != null && users.exists(cur) && users.get(cur).length > 0 ) {
+			// keep the shared curve for its users
+			for( u in users.get(cur).copy() )
+				dereference(u);
+		}
+		var d : Dynamic = cur != null ? cur.data : newCurve(freeName(n, prop + ":" + COMPONENTS[i]));
+		if( isBase )
+			keys = [obj(["time", 0., "value", base, "mode", 2])];
+		for( f in ["blendMode", "blendParam", "remapPath", "scale", "offset", "loop", "previewKeys", "children"] )
+			Reflect.deleteField(d, f);
+		RawNode.setField(d, "keyMode", 2);
+		RawNode.setField(d, "keys", keys);
+		if( loop && !isBase ) RawNode.setField(d, "loop", true);
+		upgraded.set(d, true);
+		if( cur == null )
+			n.addChild(d);
+		else
+			cur.children = [];
 	}
 
 	/**
