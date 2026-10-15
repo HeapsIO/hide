@@ -3,7 +3,7 @@
 	"url" : "https://github.com/heapsio/hide",
 	"license" : "BSD",
     "description" : "Heaps IDE",
-    "version" : "0.1.0",
+    "version": "2.0.0-beta",
 	"releasenote" : "",
 	"contributors" : ["ncannasse"],
 	"dependencies" : { "heaps" : "" }
