@@ -1,5 +1,7 @@
 package hide.tools.migrate;
 
+import hrt.prefab.fx.FX;
+
 typedef Change = { path : String, kind : String };
 
 typedef FileReport = {
@@ -50,8 +52,6 @@ typedef ProjectResult = {
 @:keep
 class Migrate {
 
-	public static inline var VERSION = 1;
-
 	public static var STEPS : Map<Int, (data : Dynamic, root : Bool, report : FileReport) -> Void> = [
 		0 => (data, root, report) -> new Upgrade0(null, report).run(data, root),
 	];
@@ -74,18 +74,16 @@ class Migrate {
 
 	/** Upgrades in place the root of FX data from `version`, `root` when it is the root of its file. **/
 	public static function upgradeTree( data : Dynamic, version : Int, root : Bool, report : FileReport ) {
-		if( VERSION != hrt.prefab.fx.FX.VERSION )
-			throw 'The migration module upgrades to version $VERSION, hrt reads version ${hrt.prefab.fx.FX.VERSION}';
-		for( v in version...VERSION )
+		for( v in version...FX.VERSION )
 			STEPS.get(v)(data, root, report);
 		// the FX inside are upgraded with it
 		function mark( d : Dynamic ) {
-			if( isFX(d) ) RawNode.setField(d, "version", VERSION);
+			if( isFX(d) ) RawNode.setField(d, "version", FX.VERSION);
 			var children : Array<Dynamic> = Reflect.field(d, "children");
 			if( children != null ) for( c in children ) mark(c);
 		}
 		mark(data);
-		RawNode.setField(data, "version", VERSION);
+		RawNode.setField(data, "version", FX.VERSION);
 	}
 
 	static function isA( d : Dynamic, cl : Class<hrt.prefab.Prefab> ) {
@@ -104,7 +102,7 @@ class Migrate {
 			if( d == null || !Reflect.isObject(d) ) return;
 			if( isFX(d) || isEmitter(d) ) {
 				var v = versionOf(d);
-				if( v != VERSION ) {
+				if( v != FX.VERSION ) {
 					upgradeTree(d, v, d == data, report);
 					changed = true;
 				}
@@ -131,7 +129,7 @@ class Migrate {
 	}
 
 	/** Migrates a project given as its files (resource path => text), in memory **/
-	public static function migrateTexts( files : Map<String, String> ) : ProjectResult {
+	static function migrateTexts( files : Map<String, String> ) : ProjectResult {
 		return run(new ProjectContext(null, null, files));
 	}
 
@@ -167,7 +165,7 @@ class Migrate {
 		upgradeTree(data, version, root, report);
 		if( !warned ) {
 			warned = true;
-			log('[hide] FX data of version $version is upgraded to version $VERSION on load. Migrate the project once with the migration tool (hide/migrate.hxml).');
+			log('[hide] FX data of version $version is upgraded to version ${FX.VERSION} on load. Migrate the project once with the migration tool (hide/migrate.hxml).');
 		}
 		for( w in report.warnings )
 			log('[hide] warning: $w');

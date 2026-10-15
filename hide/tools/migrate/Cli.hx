@@ -2,24 +2,12 @@ package hide.tools.migrate;
 
 import hide.tools.migrate.Migrate;
 
-/**
-	The migration tool: upgrades the FX data of a project to the current version.
-
-	```
-	haxe migrate.hxml                          # in hide, builds migrate.hl
-	hl migrate.hl <res dir>                    # dry run: what would change
-	hl migrate.hl <res dir> --out <dir>        # writes the migrated files there (same relative paths)
-	hl migrate.hl <res dir> --in-place         # rewrites the files of the project
-	```
-
-	A game with its own prefab classes builds the tool with them (they tell which prefabs are
-	objects, shaders...): `--macro include("mygame.prefab")` in migrate.hxml.
-**/
+/** The migration tool, see `usage` **/
 class Cli {
 
 	static function usage() {
 		Sys.println("usage: hl migrate.hl <res dir> [--out <dir> | --in-place] [--report <file>] [--verbose]
-Upgrades the FX data of the prefab files of a project (" + Migrate.EXTENSIONS.join(", ") + ") to version " + Migrate.VERSION + ".
+Upgrades the FX data of the prefab files of a project (" + Migrate.EXTENSIONS.join(", ") + ") to version " + hrt.prefab.fx.FX.VERSION + ".
 With no option, a dry run: lists the files that would change, the changes and the warnings.
   --out <dir>      write the migrated files to <dir>, under their path in the res dir
   --in-place       rewrite the files of the project
@@ -87,7 +75,7 @@ With no option, a dry run: lists the files that would change, the changes and th
 				var k = ~/ [^ ]+ ->| of [^ ]+/g.replace(c.kind, "");
 				kinds.set(k, (kinds.get(k) ?? 0) + 1);
 			}
-		line('# FX data version ${Migrate.VERSION} migration of $res\n');
+		line('# FX data version ${hrt.prefab.fx.FX.VERSION} migration of $res\n');
 		line('${result.files.length} files, ${changed.length} to change.\n');
 		var keys = [for( k in kinds.keys() ) k];
 		keys.sort(Reflect.compare);

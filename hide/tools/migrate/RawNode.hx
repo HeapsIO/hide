@@ -26,7 +26,7 @@ class RawNode {
 		n.type = get(data, "type");
 		n.cls = classOf(n.type);
 		n.isCurve = n.cls != null && hrt.prefab.Prefab.isOfType(n.cls, hrt.prefab.Curve);
-		n.name = loadedName(n, parent);
+		n.name = loadedName(n);
 		var children : Array<Dynamic> = get(data, "children");
 		if( children != null )
 			for( c in children )
@@ -36,7 +36,7 @@ class RawNode {
 	}
 
 	/** Mirrors `Curve.load` (game build): a `.` in the name of a curve becomes `:`. **/
-	static function loadedName( n : RawNode, parent : RawNode ) : String {
+	static function loadedName( n : RawNode ) : String {
 		var name : String = get(n.data, "name") ?? "";
 		return n.isCurve ? StringTools.replace(name, ".", ":") : name;
 	}

@@ -1,5 +1,4 @@
-# The prefab format migration tool: upgrades the files of a project saved in an older prefab
-# format (see hide/tools/migrate/Cli.hx). Usage: hl migrate.hl <res dir> [--out <dir> | --in-place]
+# The FX data migration tool, usage: hl migrate.hl --help
 # A game with its own prefab classes adds their packages here: --macro include("mygame.prefab")
 -cp .
 -lib heaps

@@ -3,12 +3,29 @@ package hide.tools.migrate;
 import hrt.prefab.fx.Value;
 import hrt.prefab.fx.Evaluator;
 import hide.tools.migrate.Migrate.FileReport;
+import hide.tools.migrate.RawNode.get;
+import hrt.prefab.Diff.deepCopy;
 
 /** A component of a vector property after the upgrade: `a * old[src] + b`, the value of the prefab when `src` is null **/
 private typedef ChannelMap = { src : Null<Int>, a : Float, b : Float };
 
 /** The curves of a vector property: `uniform` when one curve is all of them **/
 private typedef Channels = { uniform : Null<RawNode>, comps : Array<Null<RawNode>> };
+
+/** A sampled re-bake of the rotation (and scale) of an object, `problem` tells why it cannot stand for the old transform **/
+private typedef Resample = {
+	var cs : Null<Channels>;
+	var cr : Null<Channels>;
+	var scale : Array<Float>;
+	var rot : Array<Float>;
+	var withScale : Bool;
+	var loop : Bool;
+	var scaleKeys : Array<Array<Dynamic>>;
+	var rotKeys : Array<Array<Dynamic>>;
+	var problem : Null<String>;
+	/** How far the old runtime was from a rigid transform **/
+	var nonRigid : Float;
+}
 
 /** The mode of a param component (format 1), `shape` the path of a curve from the emitter **/
 private enum Mode {
@@ -32,7 +49,7 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	Upgrade of the prefab format 0 to 1, on the raw data of one file:
 
 	- Emitter params with modes (`Emitter`, `Emitter2D`, the particle shaders), from the base value,
-	  random amount and curves by name of the old params (see `emitter-spec.md`, Upgrade).
+	  random amount and curves by name of the old params.
 	- Animation curves hold the value they animate: the constants the old FX composed them with are
 	  baked into them (exactly when the old value is linear in the curve), and the ones of the emitter
 	  params are named after what they animate (`startSpeed:x:min`, `scaleMultiplier`).
@@ -46,28 +63,26 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	- The overrides of the references are rewritten for the upgraded files they override (see
 	  `upgradeReference`), reading the other files of the project through the context.
 
-	Every step is frozen: it writes the data of format 1, whatever the current format of hrt is.
+	It writes the data of format 1. The sampled re-bakes evaluate the old curves with the runtime
+	(`Curve.makeVal`, `Evaluator`): they rely on it reading the old curves as the old runtime did.
 **/
+@:access(hide.tools.migrate.Migrate)
 class Upgrade0 {
 
 	/** Rotation tolerance of the sampled re-bakes, in degrees **/
-	public static var ROTATION_TOLERANCE = 0.02;
+	static inline var ROTATION_TOLERANCE = 0.02;
 	/** Scale tolerance of the sampled re-bakes, relative **/
-	public static var SCALE_TOLERANCE = 1e-4;
+	static inline var SCALE_TOLERANCE = 1e-4;
 	/** Error of a sampled re-bake beyond which the object gets a parent, relative to the scale of the matrix rows **/
-	public static var MATRIX_TOLERANCE = 5e-4;
+	static inline var MATRIX_TOLERANCE = 5e-4;
 	/** Sampling step of the re-bakes, in seconds **/
-	public static var SAMPLE_STEP = 1.0 / 240.0;
+	static inline var SAMPLE_STEP = 1.0 / 240.0;
 	/** Suffix of the name of an object moved under a parent that takes its name **/
-	public static var BASE_SUFFIX = "_base";
-
-	static inline function get( d : Dynamic, f : String ) : Dynamic return Reflect.field(d, f);
+	static inline var BASE_SUFFIX = "_base";
 
 	static function num( v : Dynamic, def : Float ) : Float {
 		return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : def;
 	}
-
-	static function deepCopy( v : Dynamic ) : Dynamic return hrt.prefab.Diff.deepCopy(v);
 
 	/** An object with its fields in this order (`[name, value, name, value...]`), as it is written **/
 	static function obj( fields : Array<Dynamic> ) : Dynamic {
@@ -91,7 +106,7 @@ class Upgrade0 {
 	var root : RawNode;
 	var users : Map<RawNode, Array<RawNode>> = new Map();
 	var remapUsers : Map<RawNode, Array<RawNode>> = new Map();
-	/** The curves that hold their new values (the `version` of the curves before the file format) **/
+	/** The curves that hold their new values **/
 	var upgraded = new haxe.ds.ObjectMap<Dynamic, Bool>();
 	var parameters : Map<String, Float> = new Map();
 	var fxDuration : Float = 5.0;
@@ -137,35 +152,32 @@ class Upgrade0 {
 	}
 
 	function isLegacy( n : RawNode ) return n.isCurve && !upgraded.exists(n.data);
+	function anyLegacy( g : Array<RawNode> ) return Lambda.exists(g, c -> isLegacy(c));
 	function markUpgraded( n : RawNode ) upgraded.set(n.data, true);
 
 	// ----------------------------------------------------------------------------------------
 	// Paths
 
-	/** Like `Prefab.locatePrefab` from the root of the file. **/
-	function locate( path : String ) : Null<RawNode> {
-		if( path == null || !fileRoot )
+	/** The child of `n` at `part` of a path, like `Prefab.locatePrefab`: the exact name first, else `name-N` for the Nth of that name **/
+	static function findChild( children : Array<RawNode>, part : String ) : Null<RawNode> {
+		var found = Lambda.find(children, c -> c.name == part);
+		var dash = part.lastIndexOf("-");
+		if( found == null && dash > 0 ) {
+			var name = part.substr(0, dash), nth = Std.parseInt(part.substr(dash + 1)) ?? 0;
+			found = Lambda.find(children, c -> c.name == name && nth-- == 0);
+		}
+		return found;
+	}
+
+	/** Like `Prefab.locatePrefab` from `base`, the root of the file by default **/
+	function locate( path : String, ?base : RawNode ) : Null<RawNode> {
+		if( path == null || (base == null && !fileRoot) )
 			return null;
-		var p = root;
+		var p = base ?? root;
 		for( part in path.split(".") ) {
-			var sub = part.split("-");
-			var nth = 0;
-			var name = part;
-			if( sub.length > 1 ) {
-				nth = Std.parseInt(sub.pop()) ?? 0;
-				name = sub[0];
-			}
-			var found = null;
-			for( c in p.children )
-				if( c.name == name ) {
-					if( nth-- == 0 ) {
-						found = c;
-						break;
-					}
-				}
-			if( found == null )
+			p = findChild(p.children, part);
+			if( p == null )
 				return null;
-			p = found;
 		}
 		return p;
 	}
@@ -197,31 +209,6 @@ class Upgrade0 {
 		return parts.join(".");
 	}
 
-	/** Like `EmitterParam.resolveCurve`, without the enabled checks **/
-	static function resolveRel( base : RawNode, path : String ) : Null<RawNode> {
-		var p = base;
-		var dashed = ~/^(.*)-([0-9]+)$/;
-		for( part in path.split(".") ) {
-			var found = null;
-			for( c in p.children )
-				if( c.name == part ) {
-					found = c;
-					break;
-				}
-			if( found == null && dashed.match(part) ) {
-				var name = dashed.matched(1), n = Std.parseInt(dashed.matched(2));
-				for( c in p.children )
-					if( c.name == name && n-- == 0 ) {
-						found = c;
-						break;
-					}
-			}
-			if( found == null ) return null;
-			p = found;
-		}
-		return p;
-	}
-
 	// ----------------------------------------------------------------------------------------
 	// Curves
 
@@ -235,10 +222,6 @@ class Upgrade0 {
 		var d : Dynamic = obj(["type", "curve", "name", name, "keyMode", 2, "keys", []]);
 		upgraded.set(d, true);
 		return d;
-	}
-
-	function addChild( parent : RawNode, data : Dynamic ) : RawNode {
-		return parent.addChild(data);
 	}
 
 	/** A name no enabled sibling has (the curves are found by name among the enabled ones) **/
@@ -354,7 +337,7 @@ class Upgrade0 {
 			d.blendParam = path;
 			if( a != 1 ) d.scale = a;
 			if( b != 0 ) d.offset = b;
-			var n = addChild(parent, d);
+			var n = parent.addChild(d);
 			var us = users.get(src);
 			if( us == null ) users.set(src, us = []);
 			us.push(n);
@@ -362,7 +345,7 @@ class Upgrade0 {
 		}
 		var d : Dynamic = deepCopy(src.data);
 		d.name = freeName(parent, name);
-		var n = addChild(parent, d);
+		var n = parent.addChild(d);
 		indexUsers(n);
 		bakeLinear(n, a, b, false);
 		upgraded.set(d, true);
@@ -371,16 +354,12 @@ class Upgrade0 {
 
 	/** Marks the old curves as upgraded. The curves of the emitters are left to them, but the root. **/
 	function markAll( n : RawNode, base : RawNode, skipEmitters : Bool ) {
-		if( n.parent != null && n.isCurve && isEmitter(n.parent) && (skipEmitters || n.parent != base) )
+		if( n.parent != null && n.isCurve && Migrate.isEmitter(n.parent.data) && (skipEmitters || n.parent != base) )
 			return;
 		if( n.isCurve )
 			markUpgraded(n);
 		for( c in n.children )
 			markAll(c, base, skipEmitters);
-	}
-
-	static function isEmitter( n : RawNode ) {
-		return n.isA(hrt.prefab.fx.Emitter) || n.isA(hrt.prefab.fx.Emitter2D);
 	}
 
 	// ----------------------------------------------------------------------------------------
@@ -513,7 +492,7 @@ class Upgrade0 {
 		made independent first (they would read the new values otherwise).
 	**/
 	function prepareEmitters( n : RawNode ) {
-		if( isEmitter(n) ) {
+		if( Migrate.isEmitter(n.data) ) {
 			for( c in n.children )
 				if( isLegacy(c) && isEmitterAnim(c.name) ) {
 					var us = users.get(c);
@@ -573,7 +552,7 @@ class Upgrade0 {
 		return sameName(prefix, "position") || sameName(prefix, "scale") || sameName(prefix, "rotation");
 	}
 
-	/** Like `FXAnimation.vectorCurves`: the curve of each component, `uniform` when one curve is all of them. **/
+	/** Like `FXAnimation.vectorAnimation`: the curve of each component, `uniform` when one curve is all of them. **/
 	static function channels( curves : Array<RawNode>, name : String, dim : Int ) : Channels {
 		if( curves.length == 1 && curves[0].name == name )
 			return { uniform: curves[0], comps: [for( _ in 0...dim ) curves[0]] };
@@ -585,36 +564,9 @@ class Upgrade0 {
 
 	static var COMPONENTS = ["x", "y", "z", "w"];
 
-	/**
-		Applies `a[i] * value + b[i]` to the curves of a vector property. A curve shared by several
-		components (`uniform`) with different factors is split into one reference per component.
-	**/
+	/** Applies `a[i] * value + b[i]` to the curves of a vector property **/
 	function bakeVector( owner : RawNode, prop : String, ch : Channels, a : Array<Float>, b : Array<Float>, kind : String ) {
-		var u = ch.uniform;
-		if( u != null ) {
-			if( !isLegacy(u) ) return;
-			var same = true;
-			for( i in 1...a.length )
-				if( a[i] != a[0] || b[i] != b[0] ) same = false;
-			if( same ) {
-				bakeLinear(u, a[0], b[0]);
-				markUpgraded(u);
-				change(u, kind + ", uniform");
-			} else {
-				// the uniform curve stays as the shape of its components
-				for( i in 0...a.length )
-					linearCopy(u, owner, prop + ":" + COMPONENTS[i], a[i], b[i]);
-				change(u, kind + ", uniform split");
-			}
-			return;
-		}
-		for( i in 0...a.length ) {
-			var c = ch.comps[i];
-			if( c == null || !isLegacy(c) ) continue;
-			bakeLinear(c, a[i], b[i]);
-			markUpgraded(c);
-			change(c, kind);
-		}
+		applyMap(owner, prop, ch, [for( i in 0...a.length ) { src: ch.comps[i] == null ? null : i, a: a[i], b: b[i] }], kind);
 	}
 
 	function upgradeObject3D( n : RawNode ) {
@@ -623,7 +575,6 @@ class Upgrade0 {
 		var scale = [num(get(d, "scaleX"), 1), num(get(d, "scaleY"), 1), num(get(d, "scaleZ"), 1)];
 		var rot = [num(get(d, "rotationX"), 0), num(get(d, "rotationY"), 0), num(get(d, "rotationZ"), 0)];
 
-		inline function anyLegacy( g : Array<RawNode> ) return Lambda.exists(g, c -> isLegacy(c));
 
 		// position: offset of the base position
 		var gp = group(n, "position");
@@ -683,7 +634,7 @@ class Upgrade0 {
 				var k = animAxes[0];
 				for( j in 0...3 ) for( sg in [1., -1.] ) {
 					if( rotMap != null ) break;
-					if( rotationMatches(rot, k, j, sg) )
+					if( TransformMath.rotationMatches(rot, k, j, sg) )
 						rotMap = [for( i in 0...3 ) i == j ? { src: k, a: 360. * sg, b: rot[i] } : { src: null, a: 0., b: rot[i] }];
 				}
 			}
@@ -717,22 +668,6 @@ class Upgrade0 {
 			return;
 		}
 		insertParent(n, fit.problem);
-	}
-
-	/** Whether base rotation * R_k(a) is the euler angles `rot` with `s * a` added to angle `j`, for any `a`. **/
-	static function rotationMatches( rot : Array<Float>, k : Int, j : Int, s : Float ) {
-		var m1 = new h3d.Matrix(), m2 = new h3d.Matrix(), r = new h3d.Matrix();
-		for( a in [0.37, 1.3, 2.9, -2.2] ) {
-			var b = [for( v in rot ) hxd.Math.degToRad(v)];
-			m1.initRotation(b[0], b[1], b[2]);
-			r.initRotation(k == 0 ? a : 0, k == 1 ? a : 0, k == 2 ? a : 0);
-			m1.multiply(m1, r);
-			b[j] += s * a;
-			m2.initRotation(b[0], b[1], b[2]);
-			for( e in [m1._11 - m2._11, m1._12 - m2._12, m1._13 - m2._13, m1._21 - m2._21, m1._22 - m2._22, m1._23 - m2._23, m1._31 - m2._31, m1._32 - m2._32, m1._33 - m2._33] )
-				if( Math.abs(e) > 1e-9 ) return false;
-		}
-		return true;
 	}
 
 	/**
@@ -793,7 +728,7 @@ class Upgrade0 {
 			}
 			var target = node;
 			if( target == null )
-				target = addChild(owner, d);
+				target = owner.addChild(d);
 			else
 				replaceData(target, d);
 			indexUsers(target);
@@ -844,7 +779,7 @@ class Upgrade0 {
 		if( span.param )
 			problem = "rotation / scale curves depending on an FX parameter";
 		// all the curves loop: the re-bake loops over their common period, else it covers the FX
-		var period = commonPeriod(periods);
+		var period = TransformMath.commonPeriod(periods);
 		var loop = span.loop && !varyingOnce && period > 0 && span.min >= 0;
 		if( loop ) {
 			span.min = 0;
@@ -882,7 +817,6 @@ class Upgrade0 {
 		base.initScale(withScale ? scale[0] : 1, withScale ? scale[1] : 1, withScale ? scale[2] : 1);
 		base.rotate(hxd.Math.degToRad(rot[0]), hxd.Math.degToRad(rot[1]), hxd.Math.degToRad(rot[2]));
 		var m = new h3d.Matrix(), q = new h3d.Quat(), tmp = new h3d.Matrix(), sc = new h3d.Vector();
-		var worst = 0.;
 		function rawMatrix( t : Float, out : h3d.Matrix ) {
 			inline function f( v : Null<Value>, def : Float ) return v == null ? def : ev.getFloat(v, t);
 			var s = withScale ? [f(sv[0], 1), f(sv[1], 1), f(sv[2], 1)] : [1., 1., 1.];
@@ -918,10 +852,9 @@ class Upgrade0 {
 		// the closest scale and euler angles
 		function sampleAt( t : Float, prev : Array<Float> ) : { s : Array<Float>, r : Array<Float>, error : Float, m : h3d.Matrix } {
 			oldTransform(t, m);
-			var d = decompose(m, prev, [1., 1., 1.]);
+			var d = TransformMath.decompose(m, prev, [1., 1., 1.]);
 			d.s = [d.s[0] * sc.x, d.s[1] * sc.y, d.s[2] * sc.z];
 			d.m.prependScale(sc.x, sc.y, sc.z);
-			if( d.error > worst ) worst = d.error;
 			return d;
 		}
 		// samples, refined where the linear keys between two of them would miss the transform
@@ -965,7 +898,7 @@ class Upgrade0 {
 			scaleKeys.push(withScale ? fitKeys(times, outS[i], SCALE_TOLERANCE * Math.max(1, Math.abs(scale[i]))) : null);
 			rotKeys.push(fitKeys(times, outR[i], ROTATION_TOLERANCE));
 		}
-		var fit = { cs: cs, cr: cr, scale: scale, rot: rot, withScale: withScale, loop: loop, scaleKeys: scaleKeys, rotKeys: rotKeys, problem: problem, nonRigid: loss };
+		var fit : Resample = { cs: cs, cr: cr, scale: scale, rot: rot, withScale: withScale, loop: loop, scaleKeys: scaleKeys, rotKeys: rotKeys, problem: problem, nonRigid: loss };
 		if( problem == null ) {
 			// the keys against the old transform, between the samples and around the keys
 			var check = [];
@@ -987,21 +920,8 @@ class Upgrade0 {
 		return fit;
 	}
 
-	/** The smallest multiple of the loop periods, 0 when there is none (or not under 16 times the longest one) **/
-	static function commonPeriod( periods : Array<Float> ) : Float {
-		var longest = 0.;
-		for( p in periods ) if( p > longest ) longest = p;
-		if( longest <= 0 ) return 0;
-		for( k in 1...17 ) {
-			var c = longest * k;
-			if( Lambda.foreach(periods, p -> p > 0 && Math.abs(c / p - Math.round(c / p)) < 1e-6) )
-				return c;
-		}
-		return 0;
-	}
-
 	/** The worst error of the re-baked keys against the old transform at `times`, relative to the scale of the matrix rows. **/
-	function fitError( fit : Dynamic, times : Array<Float>, oldMatrix : (Float, h3d.Matrix) -> Void ) : Float {
+	function fitError( fit : Resample, times : Array<Float>, oldMatrix : (Float, h3d.Matrix) -> Void ) : Float {
 		var ev = new Evaluator();
 		function curve( keys : Array<Dynamic>, base : Float ) : Value {
 			if( keys == null ) return VConst(base);
@@ -1012,16 +932,14 @@ class Upgrade0 {
 			var c : hrt.prefab.Curve = cast @:privateAccess hrt.prefab.Prefab.createFromDynamic(d, null, new hrt.prefab.ContextShared(null, false));
 			return c.makeVal();
 		}
-		var withScale : Bool = fit.withScale;
-		var scale : Array<Float> = fit.scale, rot : Array<Float> = fit.rot;
-		var sk : Array<Array<Dynamic>> = fit.scaleKeys, rk : Array<Array<Dynamic>> = fit.rotKeys;
+		var withScale = fit.withScale, scale = fit.scale, rot = fit.rot, sk = fit.scaleKeys, rk = fit.rotKeys;
 		var sv = [for( i in 0...3 ) withScale ? curve(sk[i], scale[i]) : VConst(scale[i])];
 		var rv = [for( i in 0...3 ) curve(rk[i], rot[i])];
 		var a = new h3d.Matrix(), b = new h3d.Matrix();
 		var worst = 0.;
 		for( t in times ) {
 			oldMatrix(t, a);
-			if( !withScale ) a.multiply(scaleMatrix(scale), a);
+			if( !withScale ) a.multiply(TransformMath.scaleMatrix(scale), a);
 			b.initScale(ev.getFloat(sv[0], t), ev.getFloat(sv[1], t), ev.getFloat(sv[2], t));
 			b.rotate(hxd.Math.degToRad(ev.getFloat(rv[0], t)), hxd.Math.degToRad(ev.getFloat(rv[1], t)), hxd.Math.degToRad(ev.getFloat(rv[2], t)));
 			var rows = [[a._11, a._12, a._13, b._11, b._12, b._13], [a._21, a._22, a._23, b._21, b._22, b._23], [a._31, a._32, a._33, b._31, b._32, b._33]];
@@ -1036,15 +954,8 @@ class Upgrade0 {
 		return worst;
 	}
 
-	static function scaleMatrix( s : Array<Float> ) {
-		var m = new h3d.Matrix();
-		m.initScale(s[0], s[1], s[2]);
-		return m;
-	}
-
-	function writeResample( n : RawNode, fit : Dynamic ) {
-		var withScale : Bool = fit.withScale;
-		var scale : Array<Float> = fit.scale, rot : Array<Float> = fit.rot;
+	function writeResample( n : RawNode, fit : Resample ) {
+		var withScale = fit.withScale, scale = fit.scale, rot = fit.rot;
 		for( i in 0...3 ) {
 			if( withScale )
 				setChannel(n, fit.cs, "scale", i, fit.scaleKeys[i], scale[i], SCALE_TOLERANCE * Math.max(1, Math.abs(scale[i])), fit.loop);
@@ -1086,59 +997,9 @@ class Upgrade0 {
 		if( loop && !isBase ) RawNode.setField(d, "loop", true);
 		upgraded.set(d, true);
 		if( cur == null )
-			addChild(n, d);
+			n.addChild(d);
 		else
 			cur.children = [];
-	}
-
-	/**
-		Scale and euler angles (radians, closest to `prev`) of a matrix (its 3x3 part), `signs` telling
-		the sign of each scale. `error`: what the rebuilt matrix misses of it.
-	**/
-	static function decompose( m : h3d.Matrix, prev : Array<Float>, signs : Array<Float> ) : { s : Array<Float>, r : Array<Float>, error : Float, m : h3d.Matrix } {
-		var rows = [[m._11, m._12, m._13], [m._21, m._22, m._23], [m._31, m._32, m._33]];
-		var det = m._11 * (m._22 * m._33 - m._23 * m._32) - m._12 * (m._21 * m._33 - m._23 * m._31) + m._13 * (m._21 * m._32 - m._22 * m._31);
-		var sg = [for( v in signs ) v < 0 ? -1. : 1.];
-		if( (sg[0] * sg[1] * sg[2] < 0) != (det < 0) )
-			sg = [-sg[0], -sg[1], -sg[2]];
-		var s = [for( i in 0...3 ) sg[i] * Math.sqrt(rows[i][0] * rows[i][0] + rows[i][1] * rows[i][1] + rows[i][2] * rows[i][2])];
-		var r = [for( i in 0...3 ) [for( j in 0...3 ) s[i] == 0 ? (i == j ? 1. : 0.) : rows[i][j] / s[i]]];
-		inline function closest( a : Float, ref : Float ) {
-			var tau = Math.PI * 2;
-			return a + Math.round((ref - a) / tau) * tau;
-		}
-		var cands = [];
-		var cy = Math.sqrt(r[0][0] * r[0][0] + r[0][1] * r[0][1]);
-		if( cy > 1e-6 ) {
-			var y = Math.atan2(-r[0][2], cy);
-			cands.push([Math.atan2(r[1][2], r[2][2]), y, Math.atan2(r[0][1], r[0][0])]);
-			cands.push([Math.atan2(-r[1][2], -r[2][2]), Math.PI - y, Math.atan2(-r[0][1], -r[0][0])]);
-		} else {
-			var z = prev[2];
-			if( -r[0][2] > 0 ) // y = 90
-				cands.push([z + Math.atan2(r[1][0], r[1][1]), Math.PI / 2, z]);
-			else
-				cands.push([Math.atan2(-r[1][0], r[1][1]) - z, -Math.PI / 2, z]);
-		}
-		var best = null, bestD = Math.POSITIVE_INFINITY;
-		for( c in cands ) {
-			var a = [for( i in 0...3 ) closest(c[i], prev[i])];
-			var dist = 0.;
-			for( i in 0...3 ) dist += (a[i] - prev[i]) * (a[i] - prev[i]);
-			if( dist < bestD ) {
-				bestD = dist;
-				best = a;
-			}
-		}
-		// error of the rebuilt matrix
-		var check = new h3d.Matrix();
-		check.initScale(s[0], s[1], s[2]);
-		check.rotate(best[0], best[1], best[2]);
-		var err = 0.;
-		var scaleRef = Math.max(1e-6, Math.max(Math.abs(s[0]), Math.max(Math.abs(s[1]), Math.abs(s[2]))));
-		for( e in [check._11 - m._11, check._12 - m._12, check._13 - m._13, check._21 - m._21, check._22 - m._22, check._23 - m._23, check._31 - m._31, check._32 - m._32, check._33 - m._33] )
-			err = Math.max(err, Math.abs(e) / scaleRef);
-		return { s: s, r: best, error: err, m: check };
 	}
 
 	/**
@@ -1196,7 +1057,6 @@ class Upgrade0 {
 		// the transform curves of the parent: exact bakes
 		var pos = [num(get(p, "x"), 0), num(get(p, "y"), 0), num(get(p, "z"), 0)];
 		var gp = group(pn, "position");
-		inline function anyLegacy( g : Array<RawNode> ) return Lambda.exists(g, c -> isLegacy(c));
 		if( anyLegacy(gp) )
 			bakeVector(pn, "position", channels(gp, "position", 3), [1, 1, 1], pos, "position");
 		var gr = group(pn, "rotation");
@@ -1218,49 +1078,18 @@ class Upgrade0 {
 	function rewritePaths( parent : RawNode, child : RawNode, oldChildren : Array<RawNode> ) {
 		function fix( path : String ) : String {
 			if( path == null ) return null;
-			var parts = path.split(".");
 			var p = root;
 			var out = [];
-			var i = 0;
-			while( i < parts.length ) {
-				var part = parts[i];
+			for( part in path.split(".") ) {
+				// under the parent, a part names one of the old children of the object
+				var found = findChild(p == parent ? oldChildren : p.children, part);
+				if( found == null ) return path;
 				if( p == parent ) {
-					// the next part was one of the children of the object
-					var sub = part.split("-");
-					var nth = 0, name = part;
-					if( sub.length > 1 ) {
-						nth = Std.parseInt(sub.pop()) ?? 0;
-						name = sub[0];
-					}
-					var found = null;
-					for( c in oldChildren )
-						if( c.name == name && nth-- == 0 ) {
-							found = c;
-							break;
-						}
-					if( found == null ) return path;
 					if( found.parent == child ) out.push(child.uniqueName());
 					out.push(found.uniqueName());
-					p = found;
-					i++;
-					continue;
-				}
-				var sub = part.split("-");
-				var nth = 0, name = part;
-				if( sub.length > 1 ) {
-					nth = Std.parseInt(sub.pop()) ?? 0;
-					name = sub[0];
-				}
-				var found = null;
-				for( c in p.children )
-					if( c.name == name && nth-- == 0 ) {
-						found = c;
-						break;
-					}
-				if( found == null ) return path;
-				out.push(part);
+				} else
+					out.push(part);
 				p = found;
-				i++;
 			}
 			return out.join(".");
 		}
@@ -1282,7 +1111,6 @@ class Upgrade0 {
 
 	function upgradeObject2D( n : RawNode ) {
 		var d = n.data;
-		inline function anyLegacy( g : Array<RawNode> ) return Lambda.exists(g, c -> isLegacy(c));
 		var gp = group(n, "position");
 		if( anyLegacy(gp) )
 			bakeVector(n, "position", channels(gp, "position", 2), [1, 1], [num(get(d, "x"), 0), num(get(d, "y"), 0)], "2d position");
@@ -1295,6 +1123,16 @@ class Upgrade0 {
 			var r = num(get(d, "rotation"), 0);
 			bakeVector(n, "rotation", channels(gr, "rotation", 1), [360], [r != 0 ? hxd.Math.radToDeg(r) : 0], r != 0 ? "2d rotation, base read as radians" : "2d rotation");
 		}
+	}
+
+	/** The last field of the shader `props` named `low` in lower case, the runtime finds the curves case insensitive **/
+	static function propName( props : Dynamic, low : String ) : Null<String> {
+		var name = null;
+		if( props != null )
+			for( f in Reflect.fields(props) )
+				if( f.toLowerCase() == low )
+					name = f;
+		return name;
 	}
 
 	/**
@@ -1310,13 +1148,8 @@ class Upgrade0 {
 			var low = prefix.toLowerCase();
 			if( seen.exists(low) ) continue;
 			seen.set(low, true);
-			var prop : Dynamic = null, found = false;
-			if( props != null )
-				for( f in Reflect.fields(props) )
-					if( f.toLowerCase() == low ) {
-						prop = Reflect.field(props, f);
-						found = true;
-					}
+			var f = propName(props, low);
+			var prop : Dynamic = f == null ? null : Reflect.field(props, f), found = f != null;
 			if( Std.isOfType(prop, Array) )
 				continue; // vectors and colors come from their curves
 			// the curve of a float: the first enabled one with the name of the param
@@ -1397,7 +1230,7 @@ class Upgrade0 {
 	}
 
 	function emitterPass( n : RawNode ) {
-		if( isEmitter(n) )
+		if( Migrate.isEmitter(n.data) )
 			upgradeEmitter(n);
 		for( c in n.children.copy() )
 			emitterPass(c);
@@ -1637,8 +1470,9 @@ class Upgrade0 {
 				var lo = bounds.lo, hi = bounds.hi;
 				if( hi != 0 ) {
 					renames.push({ node: c, name: key + ":max" });
+					// a reference to `c`, compensated by the bake of `c`
 					if( lo != 0 )
-						emitterCopy(e, c, key + ":min", lo / hi, lo);
+						linearCopy(c, e, key + ":min", lo, 0);
 					bakeLinear(c, hi, 0);
 				} else if( lo != 0 ) {
 					renames.push({ node: c, name: key + ":min" });
@@ -1689,29 +1523,6 @@ class Upgrade0 {
 	}
 
 	/**
-		A curve next to `src` in an emitter: a reference to it (scaled by `refScale`) by its path from the
-		root of the file when it can be written, else a copy of it scaled by `copyScale`.
-	**/
-	function emitterCopy( e : RawNode, src : RawNode, name : String, refScale : Float, copyScale : Float ) : RawNode {
-		var path = pathOf(src);
-		if( path != null ) {
-			var d = newCurve(freeName(e, name));
-			d.blendMode = 3;
-			d.blendParam = path;
-			if( refScale != 1 ) d.scale = refScale;
-			// a reference to the values `src` gets next, not compensated
-			return addChild(e, d);
-		}
-		var d : Dynamic = deepCopy(src.data);
-		d.name = freeName(e, name);
-		var n = addChild(e, d);
-		indexUsers(n);
-		bakeLinear(n, copyScale, 0, false);
-		upgraded.set(d, true);
-		return n;
-	}
-
-	/**
 		The curves of a shader under an emitter, evaluated over the particle life. The shader definition
 		is not known, the kind of a param comes from its stored value: a float was `curve * value`, a
 		vector came from its component curves alone, 0 for the others (1 for w). Colors keep their curves.
@@ -1727,14 +1538,8 @@ class Upgrade0 {
 			if( seen.exists(low) ) continue;
 			seen.set(low, true);
 			// the runtime finds the curves from the shader var name, case insensitive
-			var name = prefix;
-			var prop : Dynamic = null;
-			if( props != null )
-				for( f in Reflect.fields(props) )
-					if( f.toLowerCase() == low ) {
-						name = f;
-						prop = Reflect.field(props, f);
-					}
+			var name = propName(props, low) ?? prefix;
+			var prop : Dynamic = props == null ? null : Reflect.field(props, name);
 			var group = [for( x in s.children ) if( x.enabled() && x.isCurve && sameName(x.name.split(":")[0], name) ) x];
 			var components = Lambda.exists(group, x -> x.name.indexOf(":") >= 0);
 			var isVector = Std.isOfType(prop, Array) || (prop == null && components);
@@ -1836,7 +1641,7 @@ class Upgrade0 {
 			return;
 		}
 		// the file is already migrated (a project migrated in part), or has nothing to migrate
-		if( Migrate.versionOf(raw) == Migrate.VERSION )
+		if( Migrate.versionOf(raw) != 0 )
 			return;
 		var upgradedSource = ctx.migrated(source);
 		if( upgradedSource == null ) {
