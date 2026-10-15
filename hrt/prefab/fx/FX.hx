@@ -736,11 +736,8 @@ class FXAnimation extends h3d.scene.Object {
 		return { x: comp(":x"), y: comp(":y"), z: comp(":z") };
 	}
 
-	/**
-		The animations of an object of the FX: the curves under it named after what they animate. `local3d`
-		tells the light properties, null for none. Null when nothing is animated.
-	**/
-	public static function makeObjectAnimation(obj3d: hrt.prefab.Object3D, local3d: h3d.scene.Object) : Null<ObjectAnimation> {
+	/** The animation of an object by the curves under it, null when nothing is animated. `local3d` gives the light properties. **/
+	static function makeObjectAnimation(obj3d: hrt.prefab.Object3D, local3d: h3d.scene.Object) : Null<ObjectAnimation> {
 		var elt : PrefabElement = obj3d;
 		var anyFound = false;
 
@@ -802,7 +799,7 @@ class FXAnimation extends h3d.scene.Object {
 		return anyFound || anim.position != null || anim.scale != null || anim.rotation != null ? anim : null;
 	}
 
-	public static function evalTransform(anim: ObjectAnimation, evaluator: Evaluator, time: Float, m: h3d.Matrix) : h3d.Matrix {
+	static function evalTransform(anim: ObjectAnimation, evaluator: Evaluator, time: Float, m: h3d.Matrix) : h3d.Matrix {
 		var e = anim.elt, p = anim.position, s = anim.scale, r = anim.rotation;
 		inline function f(v: Value, base: Float) return v == null ? base : evaluator.getFloat(v, time);
 		m.initScale(f(s?.x, e.scaleX), f(s?.y, e.scaleY), f(s?.z, e.scaleZ));

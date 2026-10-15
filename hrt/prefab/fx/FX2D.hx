@@ -158,7 +158,7 @@ class FX2DAnimation extends h2d.Object {
 		this.prevTime = localTime;
 	}
 
-	public static function applyTransform(anim: ObjectAnimation, evaluator: Evaluator, time: Float) {
+	static function applyTransform(anim: ObjectAnimation, evaluator: Evaluator, time: Float) {
 		var e = anim.elt2d, o = anim.obj2d, p = anim.position, s = anim.scale, r = anim.rotation;
 		inline function f(v: Value, base: Float) return v == null ? base : evaluator.getFloat(v, time);
 		if(p != null) {
@@ -239,8 +239,8 @@ class FX2D extends Object2D implements BaseFX {
 			anims.push(anim);
 	}
 
-	/** The animations of an object of the FX: the curves under it named after what they animate. Null when nothing is animated. **/
-	public static function makeObjectAnimation(obj2d: hrt.prefab.Object2D, local2d: h2d.Object) : Null<ObjectAnimation> {
+	/** The animation of an object by the curves under it, null when nothing is animated **/
+	static function makeObjectAnimation(obj2d: hrt.prefab.Object2D, local2d: h2d.Object) : Null<ObjectAnimation> {
 		var elt : PrefabElement = obj2d;
 		// TODO: Support references?
 		var anyFound = false;
