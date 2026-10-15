@@ -165,16 +165,33 @@ class EmitterEdit {
 		var value = get() ?? [for (_ in 0...dim) null];
 		var compName = (i: Int) -> EmitterParam.COMPONENTS[i].toUpperCase();
 
-		/** Removes the param, or its component `i`, from a menu: an undo step of the inspector **/
-		function remove(line: hide.kit.Element, ?i: Int) {
-			@:privateAccess line.change({ callback: () -> i == null ? set(null) : setComp(i, null), isTemporaryEdit: false, recordUndo: true });
+		/** Changes the param from a menu: an undo step of the inspector **/
+		function menuEdit(line: hide.kit.Element, f: () -> Void) {
+			@:privateAccess line.change({ callback: f, isTemporaryEdit: false, recordUndo: true });
 			rebuild();
 		}
-		function removeItems(line: hide.kit.Element, comps: Array<Int>) : Array<hrt.ui.HuiMenu.MenuItem> {
-			var items : Array<hrt.ui.HuiMenu.MenuItem> = [{ label: "Remove", click: () -> remove(line), enabled: get() != null }];
+		/** The context menu of component `i`: its mode (an unset one shows a constant), removing it, removing the param **/
+		function compItems(line: hide.kit.Element, i: Int) : Array<hrt.ui.HuiMenu.MenuItem> {
+			var cur = get();
+			var m = cur == null ? null : cur[i];
+			var kind = m == null ? Constant : kindOf(m);
+			// a constant at its default is shown unset: nothing to remove
+			function isSet(j: Int) {
+				var c = cur == null ? null : cur[j];
+				return c != null && !(c.match(MConstant(_)) && Type.enumParameters(c)[0] == def.def[j]);
+			}
+			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
 			if (dim > 1)
-				for (i in comps)
-					items.push({ label: "Remove " + compName(i), click: () -> remove(line, i), enabled: value[i] != null });
+				items.push({ isSeparator: true, label: label + " " + compName(i) });
+			if (modes.length > 1) {
+				for (mode in modes)
+					items.push({ label: hide.kit.Macros.camelToSpaceCase(mode), radio: () -> kind == mode,
+						click: () -> menuEdit(line, () -> setComp(i, convert(m, mode, def.def[i]))) });
+				items.push({ isSeparator: true });
+			}
+			items.push({ label: dim == 1 ? "Remove" : "Remove " + compName(i), click: () -> menuEdit(line, () -> setComp(i, null)), enabled: isSet(i) });
+			if (dim > 1)
+				items.push({ label: "Remove all", click: () -> menuEdit(line, () -> set(null)), enabled: Lambda.exists([for (j in 0...dim) j], isSet) });
 			return items;
 		}
 
@@ -184,44 +201,22 @@ class EmitterEdit {
 		if (compact) {
 			compactLine = new hide.kit.Line(parent, def.name);
 			compactLine.label = label;
-			compactLine.menuItems = () -> removeItems(compactLine, [for (i in 0...dim) i]);
 		}
 		for (i in 0...dim) {
 			var comp = EmitterParam.COMPONENTS[i];
 			var id = def.name + (dim == 1 ? "" : comp.toUpperCase());
 			var suffix = compact ? comp.toUpperCase() : "";
 			var line = compactLine;
+			// the elements that have the menu of the component: its value on the line of the vector, its lines otherwise
+			var menuOwners : Array<hide.kit.Element> = [];
 			if (line == null) {
 				line = new hide.kit.Line(parent, id);
 				line.label = dim == 1 ? label : label + " " + comp.toUpperCase();
-				var l = line;
-				line.menuItems = () -> removeItems(l, [i]);
+				// the labels of the fields stay with them (Min, Max)
+				line.stealLabel = false;
+				menuOwners.push(line);
 			}
 			var m = value[i];
-
-			var select = new hide.kit.Select(line, "mode" + suffix);
-			select.caretOnly = true;
-			select.placeholder = "Default value";
-			if (compact)
-				select.label = comp.toUpperCase();
-			var entries : Array<hide.kit.Select.SelectEntry> = [for (mode in modes) { value: mode, label: hide.kit.Macros.camelToSpaceCase(mode) }];
-			if (get() != null) {
-				entries.push({ value: null, label: "", separator: true });
-				entries.push({ value: "remove", label: "Remove" });
-				if (dim > 1 && m != null)
-					entries.push({ value: "removeComp", label: "Remove " + compName(i) });
-			}
-			select.setEntries(entries);
-			select.value = m == null ? null : kindOf(m);
-			select.defaultValue = select.value;
-			select.onValueChange = (_) -> {
-				switch (select.value) {
-					case "remove": set(null);
-					case "removeComp": setComp(i, null);
-					case mode: setComp(i, convert(get() == null ? null : get()[i], mode, def.def[i]));
-				}
-				rebuild();
-			}
 
 			// the fields of the mode are the variables bound by the switch below, `make` builds the mode from them
 			var make : () -> ParamMode = null;
@@ -229,6 +224,8 @@ class EmitterEdit {
 			function animKey(?field: String) return def.kind == Particle ? null : EmitterParam.animKey(def, i, field);
 			function slider(parent: hide.kit.Element, sid: String, label: String, value: Float, defaultValue: Float, set: Float -> Void, ?anim: String, ?changed: () -> Void) {
 				var s = new hide.kit.Slider<Float>(parent, sid);
+				if (compact)
+					menuOwners.push(s);
 				s.label = label;
 				s.value = value;
 				s.min = range.min;
@@ -245,7 +242,7 @@ class EmitterEdit {
 				s.onValueChange = (temp) -> {
 					onChange(temp);
 					if (changed != null) changed();
-					// set or unset by the edit: the mode select and its remove entries change
+					// set or unset by the edit: its menu changes
 					var now = get();
 					if (!temp && (now != null && now[i] != null) != (m != null))
 						ctx.rebuildInspector();
@@ -259,10 +256,14 @@ class EmitterEdit {
 				var top = new hide.kit.Line(parent, id + "To" + suffix);
 				top.label = "To";
 				top.cssClass = "kit-param-bounds";
+				top.stealLabel = false;
+				menuOwners.push(top);
 				var graph = new hide.kit.ParamCurve(parent, id + "Curve" + suffix, owner, shapeFunction(owner, s), ranges(), editableCurve(owner, s));
 				var bottom = new hide.kit.Line(parent, id + "From" + suffix);
 				bottom.label = "From";
 				bottom.cssClass = "kit-param-bounds";
+				bottom.stealLabel = false;
+				menuOwners.push(bottom);
 				function changed() {
 					graph.ranges = ranges();
 					graph.refresh();
@@ -285,10 +286,10 @@ class EmitterEdit {
 				case null:
 					var v = def.def[i];
 					make = () -> MConstant(v);
-					slider(line, "value" + suffix, "", v, v, x -> v = x, animKey()).faded = true;
+					slider(line, "value" + suffix, compact ? compName(i) : "", v, v, x -> v = x, animKey()).faded = true;
 				case MConstant(v):
 					make = () -> MConstant(v);
-					slider(line, "value" + suffix, "", v, def.def[i], x -> v = x, animKey()).faded = v == def.def[i];
+					slider(line, "value" + suffix, compact ? compName(i) : "", v, def.def[i], x -> v = x, animKey()).faded = v == def.def[i];
 				case MRange(min, max):
 					make = () -> MRange(min, max);
 					slider(line, "min", "Min", min, def.def[i], x -> min = x, animKey("min"));
@@ -306,13 +307,18 @@ class EmitterEdit {
 					make = () -> MCurveRange(a, aFrom, aTo, b, bFrom, bTo);
 					var lineA = new hide.kit.Line(parent, id + "Shape0");
 					lineA.label = "A";
+					menuOwners.push(lineA);
 					shape(lineA, "shape0", a, x -> a = x);
 					curve(a, [{ v: aFrom, set: x -> aFrom = x }], [{ v: aTo, set: x -> aTo = x }], () -> [{ from: aFrom, to: aTo }], "0");
 					var lineB = new hide.kit.Line(parent, id + "Shape1");
 					lineB.label = "B";
+					menuOwners.push(lineB);
 					shape(lineB, "shape3", b, x -> b = x);
 					curve(b, [{ v: bFrom, set: x -> bFrom = x }], [{ v: bTo, set: x -> bTo = x }], () -> [{ from: bFrom, to: bTo }], "1");
 			}
+			var menuLine = line;
+			for (o in menuOwners)
+				o.menuItems = () -> compItems(menuLine, i);
 		}
 	}
 
