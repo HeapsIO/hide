@@ -107,6 +107,19 @@ kit-root kit-param-curve circle.handle {
   fill: #999;
   cursor: move;
 }
+kit-root kit-line.kit-param-bounds kit-slider {
+  flex: 0 0 70px;
+}
+kit-root .kit-faded:not(kit-div),
+kit-root kit-div.kit-faded > * {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+kit-root .kit-faded:not(kit-div):hover,
+kit-root kit-div.kit-faded > :hover,
+kit-root kit-div.kit-faded > :focus-within {
+  opacity: 0.8;
+}
 kit-root kit-anim-marker {
   flex: 0 0 8px;
   width: 8px;

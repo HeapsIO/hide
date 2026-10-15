@@ -119,6 +119,20 @@ kit-root {
 		}
 	}
 
+	// the from / to fields of a particle curve: narrow, at the left of the curve
+	kit-line.kit-param-bounds kit-slider {
+		flex: 0 0 70px;
+	}
+
+	// a value that is not set, its default shown (a kit-div has no box: its children are faded)
+	.kit-faded:not(kit-div), kit-div.kit-faded > * {
+		opacity: 0.45;
+		filter: grayscale(1);
+	}
+	.kit-faded:not(kit-div):hover, kit-div.kit-faded > :hover, kit-div.kit-faded > :focus-within {
+		opacity: 0.8;
+	}
+
 	kit-anim-marker {
 		flex: 0 0 8px;
 		width: 8px;

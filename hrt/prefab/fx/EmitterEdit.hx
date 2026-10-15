@@ -83,20 +83,40 @@ class EmitterEdit {
 		}
 	}
 
-	/** A select of the shapes: the curves under `owner`, a new one (named after `name`), the easings **/
+	/** The easings offered by the shape select: Quart and Quint are left out, they stay shown where they are used **/
+	static var EASINGS = Easing.ALL.filter(e -> { var s : String = e; s.indexOf("Quart") < 0 && s.indexOf("Quint") < 0; });
+
+	/** A thumbnail of `e`, as an inline svg: the same vertical scale for all, to fit the overshoot of Back and Elastic **/
+	static function easingThumbnail(e: Easing) : String {
+		final W = 36, H = 24, PAD = 3, LO = -0.4, HI = 1.4, N = 40;
+		inline function fmt(v: Float) return Math.round(v * 10) / 10;
+		function y(v: Float) return fmt(H - PAD - (v - LO) / (HI - LO) * (H - PAD * 2));
+		var points = [for (i in 0...N + 1) fmt(PAD + i / N * (W - PAD * 2)) + "," + y(e.eval(i / N))].join(" ");
+		return '<svg width="$W" height="$H" style="vertical-align: middle; margin: 1px 8px 1px 0; background: #161616; border-radius: 2px">'
+			+ '<line x1="0" x2="$W" y1="${y(0)}" y2="${y(0)}" stroke="#444"/><line x1="0" x2="$W" y1="${y(1)}" y2="${y(1)}" stroke="#444"/>'
+			+ '<polyline points="$points" fill="none" stroke="#f05a5a" stroke-width="1.5"/></svg>';
+	}
+
+	/** A select of the shapes: a new curve (named after `name`), the curves under `owner`, the easings **/
 	static function shapeSelect(ctx: EditContext2, parent: hide.kit.Element, id: String, owner: Prefab, s: ParamShape, name: String, set: ParamShape -> Void) {
 		var select = new hide.kit.Select(parent, id);
-		var entries : Array<hide.kit.Select.SelectEntry> = [for (c in shapeCurves(owner)) {
+		var curves : Array<hide.kit.Select.SelectEntry> = [for (c in shapeCurves(owner)) {
 			var path = EmitterParam.curvePath(owner, c);
 			{ value: "curve:" + path, label: path };
 		}];
 		var current = switch (s) { case SCurve(path): "curve:" + path; case SEasing(e): "ease:" + e; };
-		if (!Lambda.exists(entries, e -> e.value == current) && s.match(SCurve(_)))
-			entries.push({ value: current, label: current.substr(6) + " (missing)" });
-		entries.push({ value: "new", label: "New curve" });
-		for (e in Easing.ALL)
-			entries.push({ value: "ease:" + e, label: hide.kit.Macros.camelToSpaceCase(e) });
-		select.setEntries(entries);
+		if (!Lambda.exists(curves, e -> e.value == current) && s.match(SCurve(_)))
+			curves.push({ value: current, label: current.substr(6) + " (missing)" });
+		var easings = EASINGS.copy();
+		switch (s) {
+			case SEasing(e) if (!easings.contains(e)): easings.push(e);
+			default:
+		}
+		select.setEntries([
+			{ value: "new", label: "New curve" },
+			{ value: null, label: "Reference", children: curves },
+			{ value: null, label: "Easing", children: [for (e in easings) { value: "ease:" + e, label: hide.kit.Macros.camelToSpaceCase(e), preview: easingThumbnail(e) }] },
+		]);
 		select.value = current;
 		select.defaultValue = current;
 		select.onValueChange = (_) -> {
@@ -117,9 +137,9 @@ class EmitterEdit {
 	}
 
 	/**
-		The lines of param `def` of `owner` in `parent`, one mode per component among `modes`, unset showing
-		a `+`. `set` stores a new value, `onChange` follows each edit. The Spawn and Multiplier fields can be
-		animated (`AnimEdit`).
+		The lines of param `def` of `owner` in `parent`, one mode per component among `modes`. An unset component
+		shows its default value grayed out: editing it sets it, and a constant set back to its default is unset.
+		`set` stores a new value, `onChange` follows each edit. The Spawn and Multiplier fields can be animated (`AnimEdit`).
 	**/
 	public static function param(ctx: EditContext2, parent: hide.kit.Element, owner: Prefab, def: ModeParamDef, modes: Array<ModeKind>,
 			get: () -> Null<ParamValue>, set: Null<ParamValue> -> Void, onChange: Bool -> Void) {
@@ -134,30 +154,37 @@ class EmitterEdit {
 			ctx.rebuildInspector();
 		}
 		function setComp(i: Int, m: Null<ParamMode>) {
+			// no difference between the default value and no value
+			if (m != null && m.match(MConstant(_)) && Type.enumParameters(m)[0] == def.def[i])
+				m = null;
 			var v = get()?.copy() ?? [for (_ in 0...dim) null];
 			v[i] = m;
 			set(Lambda.exists(v, m -> m != null) ? v : null);
 		}
 
-		var value = get();
-		if (value == null) {
-			var line = new hide.kit.Line(parent, def.name);
-			line.label = label;
-			var add = new hide.kit.Button(line, "add", "+");
-			add.tooltip = "Set (default " + def.def.join(", ") + ")";
-			add.onClick = () -> {
-				set([for (d in def.def) MConstant(d)]);
-				rebuild();
-			}
-			return;
+		var value = get() ?? [for (_ in 0...dim) null];
+		var compName = (i: Int) -> EmitterParam.COMPONENTS[i].toUpperCase();
+
+		/** Removes the param, or its component `i`, from a menu: an undo step of the inspector **/
+		function remove(line: hide.kit.Element, ?i: Int) {
+			@:privateAccess line.change({ callback: () -> i == null ? set(null) : setComp(i, null), isTemporaryEdit: false, recordUndo: true });
+			rebuild();
+		}
+		function removeItems(line: hide.kit.Element, comps: Array<Int>) : Array<hrt.ui.HuiMenu.MenuItem> {
+			var items : Array<hrt.ui.HuiMenu.MenuItem> = [{ label: "Remove", click: () -> remove(line), enabled: get() != null }];
+			if (dim > 1)
+				for (i in comps)
+					items.push({ label: "Remove " + compName(i), click: () -> remove(line, i), enabled: value[i] != null });
+			return items;
 		}
 
 		// constant components on one line
-		var compact = dim > 1 && Lambda.foreach(value, m -> m != null && m.match(MConstant(_)));
+		var compact = dim > 1 && Lambda.foreach(value, m -> m == null || m.match(MConstant(_)));
 		var compactLine = null;
 		if (compact) {
 			compactLine = new hide.kit.Line(parent, def.name);
 			compactLine.label = label;
+			compactLine.menuItems = () -> removeItems(compactLine, [for (i in 0...dim) i]);
 		}
 		for (i in 0...dim) {
 			var comp = EmitterParam.COMPONENTS[i];
@@ -167,28 +194,32 @@ class EmitterEdit {
 			if (line == null) {
 				line = new hide.kit.Line(parent, id);
 				line.label = dim == 1 ? label : label + " " + comp.toUpperCase();
+				var l = line;
+				line.menuItems = () -> removeItems(l, [i]);
 			}
 			var m = value[i];
-			if (m == null) {
-				var add = new hide.kit.Button(line, "add", "+");
-				add.onClick = () -> {
-					setComp(i, MConstant(def.def[i]));
-					rebuild();
-				}
-				continue;
-			}
 
 			var select = new hide.kit.Select(line, "mode" + suffix);
 			select.caretOnly = true;
+			select.placeholder = "Default value";
 			if (compact)
 				select.label = comp.toUpperCase();
 			var entries : Array<hide.kit.Select.SelectEntry> = [for (mode in modes) { value: mode, label: hide.kit.Macros.camelToSpaceCase(mode) }];
-			entries.push({ value: "unset", label: "Unset" });
+			if (get() != null) {
+				entries.push({ value: null, label: "", separator: true });
+				entries.push({ value: "remove", label: "Remove" });
+				if (dim > 1 && m != null)
+					entries.push({ value: "removeComp", label: "Remove " + compName(i) });
+			}
 			select.setEntries(entries);
-			select.value = kindOf(m);
+			select.value = m == null ? null : kindOf(m);
 			select.defaultValue = select.value;
 			select.onValueChange = (_) -> {
-				setComp(i, select.value == "unset" ? null : convert(get()[i], select.value, def.def[i]));
+				switch (select.value) {
+					case "remove": set(null);
+					case "removeComp": setComp(i, null);
+					case mode: setComp(i, convert(get() == null ? null : get()[i], mode, def.def[i]));
+				}
 				rebuild();
 			}
 
@@ -207,21 +238,31 @@ class EmitterEdit {
 				s.onFieldChange = (_) -> {
 					set(s.value);
 					apply();
+					// a constant at its default is unset: grayed out
+					if (make().match(MConstant(_)))
+						s.faded = s.value == def.def[i];
 				}
 				s.onValueChange = (temp) -> {
 					onChange(temp);
 					if (changed != null) changed();
+					// set or unset by the edit: the mode select and its remove entries change
+					var now = get();
+					if (!temp && (now != null && now[i] != null) != (m != null))
+						ctx.rebuildInspector();
 				}
 				s.anim = anim;
+				return s;
 			}
 
 			// a curve editor, the `to` fields on top and the `from` ones below
 			function curve(s: ParamShape, from: Array<{ v: Float, set: Float -> Void }>, to: Array<{ v: Float, set: Float -> Void }>, ranges: () -> Array<hide.kit.ParamCurve.ParamRange>, suffix: String) {
 				var top = new hide.kit.Line(parent, id + "To" + suffix);
 				top.label = "To";
+				top.cssClass = "kit-param-bounds";
 				var graph = new hide.kit.ParamCurve(parent, id + "Curve" + suffix, owner, shapeFunction(owner, s), ranges(), editableCurve(owner, s));
 				var bottom = new hide.kit.Line(parent, id + "From" + suffix);
 				bottom.label = "From";
+				bottom.cssClass = "kit-param-bounds";
 				function changed() {
 					graph.ranges = ranges();
 					graph.refresh();
@@ -241,9 +282,13 @@ class EmitterEdit {
 			inline function mid(a: Float, b: Float) return (a + b) * 0.5;
 
 			switch (m) {
+				case null:
+					var v = def.def[i];
+					make = () -> MConstant(v);
+					slider(line, "value" + suffix, "", v, v, x -> v = x, animKey()).faded = true;
 				case MConstant(v):
 					make = () -> MConstant(v);
-					slider(line, "value" + suffix, "", v, def.def[i], x -> v = x, animKey());
+					slider(line, "value" + suffix, "", v, def.def[i], x -> v = x, animKey()).faded = v == def.def[i];
 				case MRange(min, max):
 					make = () -> MRange(min, max);
 					slider(line, "min", "Min", min, def.def[i], x -> min = x, animKey("min"));
