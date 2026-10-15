@@ -78,12 +78,12 @@ Rule: runtime-equivalent whenever possible, while simplifying.
 | start speed curves (FX time) | animation curves on its Spawn fields, baked |
 | scale / orbit speed over time | Multipliers, Constant or animation curve |
 | emitter param `k·c` | animation curve, `k` baked |
-| object transform curves | animation curves, re-baked to override the transform (old rotation curves in turns become degrees) to what the old runtime showed: `setTransform` dropped a shear; when the euler curves cannot follow the rotation (gimbal lock), a parent object with the original name takes the animation and the object keeps its base transform |
+| object transform curves | animation curves overriding the transform, exact affine bakes of the old ones (rotation curves in turns become degrees), no sampling: the base rotation folded into the euler angles (from another euler triple of the same rotation, then stored on the object), the animated scale moved before the base rotation (components permuted); otherwise (a rotation the euler curves cannot follow, a scale the base rotation shears) a parent object with the original name takes the animation as it is and the object keeps its base transform |
 | orbit speed (radians per second) | degrees per second |
 | particle shader float `c·k` | Curve `c`, from 0, to `k` |
 | particle shader vector, some components animated | animated components: Curve; the others: Constant 0 |
 
-Validation (fxbench, outside the repo): old hide on the old files against new hide on the migrated files, over the games' .fx: param values as canonical formulas (constants rounded, randoms compared by structure), animation curves sampled over time, and rendered sheets.
+Validation (fxbench, outside the repo): old hide on the old files against new hide on the migrated files, over the games' .fx: param values as canonical formulas (constants rounded, randoms compared by structure), animation curves sampled over time, object transforms simulated over time, and rendered sheets.
 
 ## UI
 
