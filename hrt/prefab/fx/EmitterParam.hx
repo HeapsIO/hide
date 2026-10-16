@@ -29,6 +29,12 @@ enum ParamMode {
 /** One mode per component, null when unset **/
 typedef ParamValue = Array<Null<ParamMode>>;
 
+/** A component of a particle shader param over the particle life: lerp(from, to, shape(t)), the shape `curve` (a path) or `ease` **/
+typedef ParticleCurve = { ?curve : String, ?ease : Easing, from : Float, to : Float };
+
+/** A particle shader param, a null component keeps its prop **/
+typedef ParticleShaderParam = { name : String, comps : Array<ParticleCurve> };
+
 typedef ModeParamDef = {
 	var name : String;
 	var t : hrt.prefab.Props.PropType;
@@ -83,33 +89,6 @@ class EmitterParam {
 		if( v == null || !Lambda.exists(v, m -> m != null) )
 			return null;
 		return v.length == 1 ? saveMode(v[0]) : [for( m in v ) saveMode(m)];
-	}
-
-	/** Params stored by name, `{ name: value }`, a vector is an array **/
-	public static function parseByName( v : Dynamic ) : Null<Map<String, ParamValue>> {
-		if( v == null )
-			return null;
-		var out = new Map();
-		for( name in Reflect.fields(v) ) {
-			var p : Dynamic = Reflect.field(v, name);
-			out.set(name, parse(p, Std.isOfType(p, Array) ? p.length : 1));
-		}
-		return out;
-	}
-
-	public static function saveByName( params : Null<Map<String, ParamValue>> ) : Dynamic {
-		if( params == null )
-			return null;
-		var names = [for( name in params.keys() ) name];
-		names.sort(Reflect.compare);
-		var out = {};
-		for( name in names )
-			Reflect.setField(out, name, save(params.get(name)));
-		return out;
-	}
-
-	public static function copyByName( params : Null<Map<String, ParamValue>> ) : Null<Map<String, ParamValue>> {
-		return params == null ? null : [for( k => v in params ) k => v?.copy()];
 	}
 
 	/** The components of a shader param read over the particle life: a float, or a vector that is not a color. 0 for the others. **/
@@ -212,6 +191,10 @@ class ParamBuilder {
 
 	public function new( owner : Prefab ) {
 		this.owner = owner;
+	}
+
+	public static function particleCurve( owner : Prefab, c : ParticleCurve ) : Value {
+		return curve(owner, c.curve != null ? SCurve(c.curve) : SEasing(c.ease ?? Linear), c.from, c.to);
 	}
 
 	/** The value of a shape, from 0 to 1, 1 for a missing curve **/

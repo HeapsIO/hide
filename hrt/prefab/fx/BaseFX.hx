@@ -239,13 +239,13 @@ class BaseFXTools {
 		}
 	}
 
-	/** The value of param `name` of a shader under an emitter, from its modes, an unset component keeps its prop **/
+	/** The value of param `name` of a shader under an emitter, from its curves, a null component keeps its prop **/
 	public static function makeParticleShaderValue(shader: hrt.prefab.Shader, name: String, dim: Int) : Null<Value> {
-		var value = shader.particleParams?.get(name);
-		if(value == null)
+		var p = Lambda.find(shader.particleParams, p -> p.name == name);
+		if(p == null)
 			return null;
 		var prop : Dynamic = Reflect.field(shader.props, name);
-		function comp(i: Int) return EmitterParam.ParamBuilder.fixedValue(shader, value[i], EmitterParam.baseComponent(prop, dim, i));
+		function comp(i: Int) return p.comps[i] == null ? Evaluator.vVal(EmitterParam.baseComponent(prop, dim, i)) : EmitterParam.ParamBuilder.particleCurve(shader, p.comps[i]);
 		return dim == 1 ? comp(0) : VVector(comp(0), comp(1), dim > 2 ? comp(2) : VZero, dim > 3 ? comp(3) : null);
 	}
 

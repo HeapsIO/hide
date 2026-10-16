@@ -19,30 +19,12 @@ class Shader extends Prefab {
 
 	public var shader : hxsl.Shader;
 
-	/** Under an emitter: the params over the particle life, by name (`EmitterParam`, Constant or Curve) **/
-	public var particleParams : Map<String, hrt.prefab.fx.EmitterParam.ParamValue>;
+	/** Under an emitter: the params over the particle life **/
+	@:s public var particleParams : Array<hrt.prefab.fx.EmitterParam.ParticleShaderParam> = [];
 
 	function new(parent, sh: ContextShared) {
 		super(parent, sh);
 		props = {};
-	}
-
-	override function load(obj: Dynamic) {
-		super.load(obj);
-		particleParams = hrt.prefab.fx.EmitterParam.parseByName(obj.particleParams);
-	}
-
-	override function save() : Dynamic {
-		var obj = super.save();
-		var params = hrt.prefab.fx.EmitterParam.saveByName(particleParams);
-		if( params != null )
-			obj.particleParams = params;
-		return obj;
-	}
-
-	override function copy(data: Prefab) {
-		super.copy(data);
-		particleParams = hrt.prefab.fx.EmitterParam.copyByName((cast data : Shader).particleParams);
 	}
 
 	/** The emitter whose particles get this shader: under an emitter, out of its sub-emitters and trails **/
@@ -333,15 +315,30 @@ class Shader extends Prefab {
 			return;
 		}
 
-		// the params read over the particle life have modes, see BaseFXTools.makeShaderParams
-		function setParticleParam(name: String, v: hrt.prefab.fx.EmitterParam.ParamValue) {
-			particleParams ??= [];
-			if (v != null)
-				particleParams.set(name, v);
-			else
-				particleParams.remove(name);
-			if (!particleParams.iterator().hasNext())
-				particleParams = null;
+		// the params read over the particle life have curves, see BaseFXTools.makeShaderParams; a constant is the prop
+		function getParticleParam(name: String) : hrt.prefab.fx.EmitterParam.ParamValue {
+			var p = Lambda.find(particleParams, p -> p.name == name);
+			return p == null ? null : [for (c in p.comps) c == null ? null : MCurve(c.curve != null ? SCurve(c.curve) : SEasing(c.ease ?? Linear), c.from, c.to)];
+		}
+		function setParticleParam(name: String, dim: Int, v: hrt.prefab.fx.EmitterParam.ParamValue) {
+			particleParams = particleParams.filter(p -> p.name != name);
+			var comps : Array<hrt.prefab.fx.EmitterParam.ParticleCurve> = [for (i in 0...dim) switch (v == null ? null : v[i]) {
+				case MCurve(SCurve(path), from, to): { curve: path, from: from, to: to };
+				case MCurve(SEasing(e), from, to): { ease: e, from: from, to: to };
+				case MConstant(k):
+					if (dim == 1)
+						Reflect.setField(this.props, name, k);
+					else {
+						var prop : Array<Dynamic> = Reflect.field(this.props, name);
+						if (!Std.isOfType(prop, Array))
+							Reflect.setField(this.props, name, prop = [for (j in 0...dim) hrt.prefab.fx.EmitterParam.baseComponent(prop, dim, j)]);
+						prop[i] = k;
+					}
+					null;
+				default: null;
+			}];
+			if (Lambda.exists(comps, c -> c != null))
+				particleParams.push({ name: name, comps: comps });
 		}
 		for (prop in props) {
 			var v = Lambda.find(shaderDef.data.vars, v -> v.name == prop.name);
@@ -359,7 +356,7 @@ class Shader extends Prefab {
 				default: hrt.prefab.Props.PropType.PFloat(0, 1);
 			}
 			hrt.prefab.fx.EmitterEdit.param(ctx, shaderCat, this, { name: prop.name, t: t, def: base, kind: Particle, groupName: null }, [Constant, Curve],
-				() -> particleParams?.get(prop.name), (v) -> setParticleParam(prop.name, v), refresh);
+				() -> getParticleParam(prop.name), (v) -> setParticleParam(prop.name, dim, v), refresh);
 		}
 	}
 
