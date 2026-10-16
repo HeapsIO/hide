@@ -45,7 +45,9 @@ typedef ProjectResult = {
 
 	- On a whole project, once: `migrateProject`, or the tool (`Cli`, hide/migrate.hxml). The project is
 	  migrated in memory, the files that change are written by `toText` (the prefab save of hide). The
-	  overrides of the references to the migrated files are migrated with them.
+	  overrides of the references to the migrated files are migrated with them. The upgrade reads the
+	  prefab classes (the defaults of their fields, what their curves animate): the tool of a game with
+	  its own prefabs is built with them, the prefab types the build does not have are reported as errors.
 	- On load, as a fallback, when this module is compiled in (`--macro include("hide.tools.migrate")`):
 	  it is `FX.upgrader`. FX data is then upgraded alone, in memory, once per loaded resource. The
 	  overrides of its references are kept: they are applied on the files they override, still in the

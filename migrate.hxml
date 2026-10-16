@@ -1,5 +1,8 @@
 # The FX data migration tool, usage: hl migrate.hl --help
-# A game with its own prefab classes adds their packages here: --macro include("mygame.prefab")
+# What a prefab animates, and from which values, depends on its class: a type the build does not have is
+# not upgraded (an error). A game with its own prefab classes builds the tool from its own hxml instead, with
+# its libs, class paths and prefab packages, e.g. from the game dir:
+#   haxe common.hxml -main hide.tools.migrate.Cli -hl migrate.hl
 -cp .
 -lib heaps
 -lib hscript
