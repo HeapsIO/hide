@@ -218,7 +218,7 @@ class ParamBuilder {
 	public static function shape( owner : Prefab, s : ParamShape ) : Value {
 		return switch( s ) {
 		case SCurve(path): EmitterParam.resolveCurve(owner, path)?.makeVal() ?? VConst(1.0);
-		case SEasing(e): VCurve(ShEasing(e), 0, 1);
+		case SEasing(e): VEase(e, 0, 1);
 		}
 	}
 
@@ -228,7 +228,9 @@ class ParamBuilder {
 
 	static function curve( owner : Prefab, s : ParamShape, from : Float, to : Float ) : Value {
 		return switch( shape(owner, s) ) {
-		case VCurve(sh, a, b): VCurve(sh, at(from, to, a), at(from, to, b));
+		case VEase(e, a, b): VEase(e, at(from, to, a), at(from, to, b));
+		case VCurve(c, a, b): VCurve(c, at(from, to, a), at(from, to, b));
+		case VParamCurve(c, a, b): VParamCurve(c, at(from, to, a), at(from, to, b));
 		case VConst(k): VConst(at(from, to, k));
 		default: VConst(to);
 		}
@@ -250,11 +252,17 @@ class ParamBuilder {
 		case MRandomCurve(s, f0, f1, t0, t1):
 			var rid = randomSlots++;
 			switch( shape(owner, s) ) {
-			case VCurve(sh, a, b): VRandomCurve(rid, sh, at(f0, t0, a), at(f1, t1, a), at(f0, t0, b), at(f1, t1, b));
+			case VEase(e, _, _): VRandomEase(rid, e, f0, f1, t0, t1);
+			case VCurve(c, a, b), VParamCurve(c, a, b): VRandomCurve(rid, c, at(f0, t0, a), at(f1, t1, a), at(f0, t0, b), at(f1, t1, b));
 			case VConst(k): VRandom(rid, at(f0, t0, k), at(f1, t1, k));
 			default: VRandom(rid, t0, t1);
 			}
-		case MCurveRange(a, aFrom, aTo, b, bFrom, bTo): VCurveRange(randomSlots++, curve(owner, a, aFrom, aTo), curve(owner, b, bFrom, bTo));
+		case MCurveRange(a, aFrom, aTo, b, bFrom, bTo):
+			var va = curve(owner, a, aFrom, aTo), vb = curve(owner, b, bFrom, bTo);
+			switch( [va, vb] ) {
+			case [VCurve(ca, a0, a1), VCurve(cb, b0, b1)]: VCurveRange(randomSlots++, ca, a0, a1, cb, b0, b1);
+			default: throw owner.getAbsPath(true) + ': a Curve Range needs two plain curves, not $va and $vb';
+			}
 		default: fixedValue(owner, m, def);
 		}
 	}
@@ -264,20 +272,40 @@ class ParamBuilder {
 		var c = Curve.getCurve(owner, name);
 		if( c == null )
 			return base;
-		if( c.blendMode == RandomBlend )
-			return VCurveRange(randomSlots++, VCurve(ShCurve(Std.downcast(c.children[0], Curve)), 0, 1), VCurve(ShCurve(Std.downcast(c.children[1], Curve)), 0, 1));
-		return c.makeVal();
+		if( c.blendMode != RandomBlend )
+			return c.makeVal();
+		var a = Std.downcast(c.children[0], Curve), b = Std.downcast(c.children[1], Curve);
+		if( a == null || b == null || !a.isPlain() || !b.isPlain() )
+			throw c.getAbsPath(true) + ": a random blend needs two plain curves";
+		return VCurveRange(randomSlots++, a, 0, 1, b, 0, 1);
 	}
 
 	function component( def : ModeParamDef, value : Null<ParamValue>, i : Int ) : Value {
 		var m = value == null ? null : value[i];
-		return switch( [def.kind, m] ) {
-		case [Particle, _]: comp(m, def.def[i]);
-		case [Spawn, MRange(min, max)]:
-			var a = animated(EmitterParam.animKey(def, i, "min"), VConst(min)), b = animated(EmitterParam.animKey(def, i, "max"), VConst(max));
-			a.match(VConst(_)) && b.match(VConst(_)) ? VRandom(randomSlots++, min, max) : VCurveRange(randomSlots++, a, b);
-		default: animated(EmitterParam.animKey(def, i), fixedValue(owner, m, def.def[i]));
-		}
+		return def.kind == Particle ? comp(m, def.def[i]) : animated(EmitterParam.animKey(def, i), fixedValue(owner, m, def.def[i]));
+	}
+
+	/** A Spawn param, per component: its value, or a random between its bounds, over the FX time **/
+	public function spawn( def : ModeParamDef, value : Null<ParamValue> ) : Array<SpawnValue> {
+		return [for( i in 0...def.def.length ) {
+			var m = value == null ? null : value[i];
+			var s : SpawnValue = switch( m ) {
+			case MRange(min, max):
+				function bound( field : String, v : Float ) {
+					var c = Curve.getCurve(owner, EmitterParam.animKey(def, i, field));
+					if( c != null && c.blendMode == RandomBlend )
+						throw c.getAbsPath(true) + ": a random blend on a range bound is not supported";
+					return c?.makeVal() ?? VConst(v);
+				}
+				{ rid: randomSlots++, min: bound("min", min), max: bound("max", max) };
+			default:
+				switch( animated(EmitterParam.animKey(def, i), fixedValue(owner, m, def.def[i])) ) {
+				case VCurveRange(rid, a, a0, a1, b, b0, b1): { rid: rid, min: VCurve(a, a0, a1), max: VCurve(b, b0, b1) };
+				case v: { rid: -1, min: v, max: v };
+				}
+			}
+			s;
+		}];
 	}
 
 	/** A vector is a `VVector` of 3 components, `VZero` when they are all 0, `VConst(1)` when they are all 1 **/

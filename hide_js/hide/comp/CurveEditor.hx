@@ -1666,7 +1666,7 @@ class CurveEditor extends hide.comp.Component {
 			if (pointBuffer.length != num*2)
 				pointBuffer.resize(num*2);
 
-			var v = curve.makeVal(bypassRemap);
+			var v = bypassRemap && curve.blendMode == CurveBlendMode.None ? hrt.prefab.fx.Value.VCurve(curve, 0, 1) : curve.makeVal();
 			evaluator.parameters.clear();
 			var paramName = curve.getRemapParameter();
 

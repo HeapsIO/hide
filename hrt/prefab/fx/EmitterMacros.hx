@@ -105,7 +105,7 @@ class EmitterMacros {
 			getCases.push({ values: [macro $v{key}], expr: macro this.$n });
 			setCases.push({ values: [macro $v{key}], expr: macro this.$n = v });
 			if( kind == "Spawn" )
-				spawnValues.push(macro @:pos(p) obj.$key = b.param($def, this.$n));
+				spawnValues.push(dim == 1 ? macro @:pos(p) obj.$key = b.spawn($def, this.$n)[0] : macro @:pos(p) obj.$key = b.spawn($def, this.$n));
 			else
 				particleValues.push(macro @:pos(p) d.$key = b.param($def, this.$n));
 		}

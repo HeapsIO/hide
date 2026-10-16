@@ -1,6 +1,7 @@
 package hrt.prefab.fx;
 
 import hrt.prefab.fx.Value;
+import hrt.prefab.Curve.CurveBlendMode;
 
 class Evaluator {
 	public var parameters: Map<String, Float> = [];
@@ -41,12 +42,14 @@ class Evaluator {
 		}
 	}
 
-	/** The mean of `val` over its random, at time 0 **/
-	public function getMean(val: Value) : Float {
-		return switch(val) {
-			case VRandom(_, min, max): (min + max) * 0.5;
-			default: getFloat(val, 0);
-		}
+	/** The mean of `s` over its random, at time 0 **/
+	public function getMean(s: SpawnValue) : Float {
+		return s.rid < 0 ? getFloat(s.min, 0) : (getFloat(s.min, 0) + getFloat(s.max, 0)) * 0.5;
+	}
+
+	public function getSpawn(pidx: Int, s: SpawnValue, time: Float) : Float {
+		var v = getFast(pidx, s.min, time);
+		return s.rid < 0 ? v : hxd.Math.lerp(v, getFast(pidx, s.max, time), getRandom(pidx, s.rid));
 	}
 
 	public inline function getFloat(pidx: Int=0, val: Value, time: Float) : Float {
@@ -59,39 +62,36 @@ class Evaluator {
 			case null, VZero: 0.0;
 			case VConst(v): v;
 			case VRandom(rid, min, max): hxd.Math.lerp(min, max, getRandom(pidx, rid));
-			case VCurve(s, from, to): hxd.Math.lerp(from, to, getShape(s, time));
-			case VRandomCurve(rid, s, fromMin, fromMax, toMin, toMax):
+			case VEase(e, from, to): hxd.Math.lerp(from, to, e.eval(time));
+			case VRandomEase(rid, e, fromMin, fromMax, toMin, toMax):
 				var u = getRandom(pidx, rid);
-				hxd.Math.lerp(hxd.Math.lerp(fromMin, fromMax, u), hxd.Math.lerp(toMin, toMax, u), getShape(s, time));
-			case VCurveRange(rid, a, b): hxd.Math.lerp(getFast(pidx, a, time), getFast(pidx, b, time), getRandom(pidx, rid));
+				hxd.Math.lerp(hxd.Math.lerp(fromMin, fromMax, u), hxd.Math.lerp(toMin, toMax, u), e.eval(time));
+			case VCurve(c, from, to): hxd.Math.lerp(from, to, c.getVal(time));
+			case VParamCurve(c, from, to): hxd.Math.lerp(from, to, getParamCurve(c, time));
+			case VRandomCurve(rid, c, fromMin, fromMax, toMin, toMax):
+				var u = getRandom(pidx, rid);
+				hxd.Math.lerp(hxd.Math.lerp(fromMin, fromMax, u), hxd.Math.lerp(toMin, toMax, u), c.param == null ? c.getVal(time) : getParamCurve(c, time));
+			case VCurveRange(rid, a, aFrom, aTo, b, bFrom, bTo):
+				hxd.Math.lerp(hxd.Math.lerp(aFrom, aTo, a.getVal(time)), hxd.Math.lerp(bFrom, bTo, b.getVal(time)), getRandom(pidx, rid));
 			case VVector(_), VHsl(_): throw "getFloat: vector value";
 		}
 	}
 
-	function getShape(s: CurveShape, time: Float) : Float {
-		return switch(s) {
-			case ShCurve(c): c.getVal(time);
-			case ShEasing(e): e.eval(time);
-			case ShBlend(a, b, param): hxd.Math.lerp(a.getVal(time), b.getVal(time), parameters[param] ?? 0.0);
-			case ShParamRemap(s, param): getShape(s, parameters[param] ?? 0.0);
-			case ShValueRemap(s, remap): getShape(s, getFast(0, remap, time));
-		}
+	/** A curve by an FX parameter (`Curve.param`): lerp of its two curves by it for a blend, else the curve at its value **/
+	function getParamCurve(c: Curve, time: Float) : Float {
+		var p = parameters[c.param] ?? 0.0;
+		return c.blendMode == CurveBlendMode.Blend ? hxd.Math.lerp((cast c.children[0] : Curve).getVal(time), (cast c.children[1] : Curve).getVal(time), p) : c.getVal(p);
 	}
 
 	public function getSum(val: Value, time: Float) : Float {
 		return switch(val) {
 			case VZero: 0;
 			case VConst(v): v * time;
-			case VCurve(s, from, to): from * time + (to - from) * getShapeSum(s, time);
-			default: throw "not implemented";
-		}
-	}
-
-	function getShapeSum(s: CurveShape, time: Float) : Float {
-		return switch(s) {
-			case ShCurve(c): c.getSum(time);
-			case ShBlend(a, b, param): hxd.Math.lerp(a.getSum(time), b.getSum(time), parameters[param] ?? 0.0);
-			case ShParamRemap(s, param): getShapeSum(s, parameters[param] ?? 0.0) * time;
+			case VCurve(c, from, to): from * time + (to - from) * c.getSum(time);
+			case VParamCurve(c, from, to):
+				var p = parameters[c.param] ?? 0.0;
+				var sum = c.blendMode == CurveBlendMode.Blend ? hxd.Math.lerp((cast c.children[0] : Curve).getSum(time), (cast c.children[1] : Curve).getSum(time), p) : c.getSum(p) * time;
+				from * time + (to - from) * sum;
 			default: throw "not implemented";
 		}
 	}
@@ -111,6 +111,11 @@ class Evaluator {
 				var f = getFloat(pidx, v, time);
 				vec.set(f, f, f, 1.0);
 		}
+		return vec;
+	}
+
+	public inline function getSpawnVec(pidx: Int, s: Array<SpawnValue>, time: Float, vec: h3d.Vector4) {
+		vec.set(getSpawn(pidx, s[0], time), getSpawn(pidx, s[1], time), getSpawn(pidx, s[2], time), 1.0);
 		return vec;
 	}
 

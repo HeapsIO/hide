@@ -97,10 +97,10 @@ class EmitterEdit {
 			+ '<polyline points="$points" fill="none" stroke="#f05a5a" stroke-width="1.5"/></svg>';
 	}
 
-	/** A select of the shapes: a new curve (named after `name`), the curves under `owner`, the easings **/
-	static function shapeSelect(ctx: EditContext2, parent: hide.kit.Element, id: String, owner: Prefab, s: ParamShape, name: String, set: ParamShape -> Void) {
+	/** A select of the shapes: a new curve (named after `name`), the curves under `owner`, the easings; plain curves only for `plain` **/
+	static function shapeSelect(ctx: EditContext2, parent: hide.kit.Element, id: String, owner: Prefab, s: ParamShape, name: String, plain: Bool, set: ParamShape -> Void) {
 		var select = new hide.kit.Select(parent, id);
-		var curves : Array<hide.kit.Select.SelectEntry> = [for (c in shapeCurves(owner)) {
+		var curves : Array<hide.kit.Select.SelectEntry> = [for (c in shapeCurves(owner)) if (!plain || c.isPlain()) {
 			var path = EmitterParam.curvePath(owner, c);
 			{ value: "curve:" + path, label: path };
 		}];
@@ -112,11 +112,10 @@ class EmitterEdit {
 			case SEasing(e) if (!easings.contains(e)): easings.push(e);
 			default:
 		}
-		select.setEntries([
-			{ value: "new", label: "New curve" },
-			{ value: null, label: "Reference", children: curves },
-			{ value: null, label: "Easing", children: [for (e in easings) { value: "ease:" + e, label: hide.kit.Macros.camelToSpaceCase(e), preview: easingThumbnail(e) }] },
-		]);
+		var entries : Array<hide.kit.Select.SelectEntry> = [{ value: "new", label: "New curve" }, { value: null, label: "Reference", children: curves }];
+		if (!plain || s.match(SEasing(_)))
+			entries.push({ value: null, label: "Easing", children: [for (e in easings) { value: "ease:" + e, label: hide.kit.Macros.camelToSpaceCase(e), preview: easingThumbnail(e) }] });
+		select.setEntries(entries);
 		select.value = current;
 		select.defaultValue = current;
 		select.onValueChange = (_) -> {
@@ -285,7 +284,7 @@ class EmitterEdit {
 					slider(bounds, "to" + j, "", f.v(), 1, f.set, null, changed).tooltip = "To" + names[j] + ": at the death of the particle";
 			}
 			function shape(parent: hide.kit.Element, sid: String, s: ParamShape, set: ParamShape -> Void) {
-				shapeSelect(ctx, parent, sid, owner, s, def.name + (dim == 1 ? "" : comp.toUpperCase()), (s) -> {
+				shapeSelect(ctx, parent, sid, owner, s, def.name + (dim == 1 ? "" : comp.toUpperCase()), m.match(MCurveRange(_)), (s) -> {
 					set(s);
 					apply();
 				});

@@ -344,11 +344,11 @@ class ParticleInstance {
 
 		if( life == 0 ) {
 			// START LOCAL SPEED
-			evaluator.getFastVec(idx, emitter.startSpeed, emitter.curTime, v);
+			evaluator.getSpawnVec(idx, emitter.startSpeed, emitter.curTime, v);
 			v.transform3x3(emitOrientation);
 			add(speedAccumulation, v);
 			// START WORLD SPEED
-			evaluator.getFastVec(idx, emitter.startWorldSpeed, emitter.curTime, v);
+			evaluator.getSpawnVec(idx, emitter.startWorldSpeed, emitter.curTime, v);
 			v.transform3x3(emitter.invTransform);
 			add(speedAccumulation, v);
 		}
@@ -554,7 +554,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var trails : hrt.prefab.l3d.Trails.TrailObj;
 	public var trailsTemplate : hrt.prefab.l3d.Trails;
 	// LIFE
-	public var lifeTime : Value = VConst(2.0);
+	public var lifeTime : SpawnValue;
 	public var speedFactor = 1.0;
 	public var warmUpTime = 0.0;
 	public var delay = 0.0;
@@ -580,8 +580,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var sortMode : SortMode = None;
 	public var followRotation = false;
 	public var applyMeshTransform = false;
-	public var startSpeed: Value;
-	public var startWorldSpeed: Value;
+	public var startSpeed: Array<SpawnValue>;
+	public var startWorldSpeed: Array<SpawnValue>;
 
 	// EMIT SHAPE
 	public var emitShape : EmitShape = Cylinder;
@@ -1042,7 +1042,7 @@ class EmitterObject extends h3d.scene.Object {
 			for( i in 0...count ) {
 				var part = allocInstance();
 				part.startTime = globalTime;
-				part.lifeTime = hxd.Math.max(0.01, evaluator.getFloat(part.idx, lifeTime, curTime));
+				part.lifeTime = hxd.Math.max(0.01, evaluator.getSpawn(part.idx, lifeTime, curTime));
 
 				if(useRandomColor) {
 					if (useRandomGradient) {

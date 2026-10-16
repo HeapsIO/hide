@@ -30,7 +30,7 @@ A shader under an emitter stores its particle params on itself, in an optional f
 | `Range` | Range | `min`, `max` | `lerp(min, max, u)` |
 | `Curve` | Curve | `shape`, `from`, `to` | `lerp(from, to, s(t))` |
 | `RandomCurve` | Random Curve | `shape`, `from: {min, max}`, `to: {min, max}` | `lerp(lerp(from.min, from.max, u), lerp(to.min, to.max, u), s(t))` |
-| `CurveRange` | Curve Range | `a`, `b`, each `{shape, from, to}` | `lerp(a(t), b(t), u)` |
+| `CurveRange` | Curve Range | `a`, `b`, each `{shape, from, to}`, two plain curves | `lerp(a(t), b(t), u)` |
 
 - `t`: particle life in [0, 1]. `s(t)`: the shape evaluated at `t`.
 - `u`: a random in [0, 1], one draw per particle and per param component, keyed by the param. Every random field of a mode uses the same draw.
@@ -41,15 +41,17 @@ A shader under an emitter stores its particle params on itself, in an optional f
 
 A shape is either:
 
-- a **curve**: a reference, by path, to a curve prefab in the hierarchy. A curve keeps its own options: blend between two curves by an FX parameter, time remap (by an FX parameter or by another curve), loop.
-- an **easing**: an enum, `Linear` and `{Sine, Quad, Cubic, Quart, Quint, Expo, Circ, Back, Elastic, Bounce} × {In, Out, InOut}`.
+- a **curve**: a reference, by path, to a curve prefab in the hierarchy. A curve is one of: plain keys (with loop); a blend of two plain curves by an FX parameter; plain keys remapped by an FX parameter (read at its value instead of the time); a reference to one of these (resolved when the values are built, its scale and offset folded into the range).
+- an **easing**: an enum, `Linear` and `{Sine, Quad, Cubic, Quart, Quint, Expo, Circ, Back, Elastic, Bounce} × {In, Out, InOut}`. Not in Curve Range.
 
 The range (`from` / `to`) belongs to the param; a reference shares the shape only.
+Rejected when the values are built (an error), and not offered by the curve inspector: a remap by another curve, a remapped blend or reference, a blend of curves that are not plain, an easing or a curve by a parameter in Curve Range.
 
 ## Animation curves
 
 - They set the animated value directly.
-- They hold plain keys: no range, no random. Constants of the old data are baked into the keys.
+- They hold plain keys: no range, no random. Constants of the old data are baked into the keys. They take the same curve forms as the shapes, over the FX time, and a random between two plain curves (Random Blend, on Emitter and Spawn `value` fields).
+- A Spawn param is read when the particle spawns: its value, or a random between its `min` and `max`, both at the FX time.
 - Targets: transforms, shader params outside emitters, Emitter params, Spawn `value` / `min` / `max`, Multipliers.
 - Animation curves are children of the animated prefab, found by name (the property name, `:x` / `:y` / `:z` per component, e.g. `position:x`, `emitRate`, `startSpeed:x:min`). The inspector marks properties that have one.
 
@@ -73,7 +75,8 @@ Rule: runtime-equivalent whenever possible, while simplifying.
 | `(k ± a)·c` | RandomCurve `c`, from `{0, 0}`, to `{k−a, k+a}` |
 | `k ± a + c` (rotation, offset, pivot) | RandomCurve `c`, from `{k−a, k+a}`, to `{k−a+1, k+a+1}` |
 | random between two curves | CurveRange, both curves with from 0, to 1 |
-| curve blend / time remap / loop | kept on the curve |
+| curve blend / time remap by a parameter / loop | kept on the curve |
+| time remap by another curve, remapped blend or reference, blend of curves that are not plain | migration error |
 | lifetime + lifetime random | Spawn, Range |
 | start speed curves (FX time) | animation curves on its Spawn fields, baked |
 | scale / orbit speed over time | Multipliers, Constant or animation curve |

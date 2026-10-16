@@ -616,7 +616,7 @@ class FXAnimation extends h3d.scene.Object {
 
 				if(anim.color != null) {
 					switch(anim.color) {
-						case VCurve(ShCurve(_), 0, 1):
+						case VCurve(_, 0, 1):
 							for(mat in anim.obj.getMaterials())
 								mat.color.a = evaluator.getFloat(anim.color, newTime);
 						default:
@@ -723,6 +723,7 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
+	// TRE: Move to BaseFX?
 	/** The curves `name:x`, `name:y`, `name:z`, or a single curve `name` for every component **/
 	public static function vectorAnimation(elt: PrefabElement, name: String) : Null<VectorAnimation> {
 		var curves = Curve.getCurves(elt, name);
@@ -799,6 +800,7 @@ class FXAnimation extends h3d.scene.Object {
 		return anyFound || anim.position != null || anim.scale != null || anim.rotation != null ? anim : null;
 	}
 
+	// TRE: inline up if used only once
 	static function evalTransform(anim: ObjectAnimation, evaluator: Evaluator, time: Float, m: h3d.Matrix) : h3d.Matrix {
 		var e = anim.elt, p = anim.position, s = anim.scale, r = anim.rotation;
 		inline function f(v: Value, base: Float) return v == null ? base : evaluator.getFloat(v, time);

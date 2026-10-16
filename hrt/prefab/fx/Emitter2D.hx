@@ -1,6 +1,7 @@
 package hrt.prefab.fx;
 
 import hrt.prefab.fx.Emitter;
+import hrt.prefab.fx.Value;
 import hrt.prefab.fx.EmitterParam;
 import hrt.impl.Gradient;
 
@@ -154,12 +155,12 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 			}
 
 			// START LOCAL SPEED
-			evaluator.getVector2(idx, emitter.startSpeed, emitter.curTime, tmpVec);
+			tmpVec.set(evaluator.getSpawn(idx, emitter.startSpeed[0], emitter.curTime), evaluator.getSpawn(idx, emitter.startSpeed[1], emitter.curTime));
 			tmpVec.transform2x2(m);
 			speed += tmpVec;
 
 			// START WORLD SPEED
-			evaluator.getVector2(idx, emitter.startWorldSpeed, emitter.curTime, tmpVec);
+			tmpVec.set(evaluator.getSpawn(idx, emitter.startWorldSpeed[0], emitter.curTime), evaluator.getSpawn(idx, emitter.startWorldSpeed[1], emitter.curTime));
 			tmpVec.transform2x2(emitter.invTransform);
 			speed += tmpVec;
 		}
@@ -258,7 +259,7 @@ class Emitter2DObject extends h2d.Object {
 	// Emitter parameters
 	public var instDef : InstanceDef;
 	public var seed = 0;
-	public var lifeTime : Value = VConst(2.0);
+	public var lifeTime : SpawnValue;
 	public var speedFactor = 1.0;
 	public var warmUpTime = 0.0;
 	public var delay = 0.0;
@@ -274,8 +275,8 @@ class Emitter2DObject extends h2d.Object {
 	public var emitRateChangeDelay : Float = 1.0;
 	public var emitScale : Float = 1.0;
 	public var maxCount = 20;
-	public var startSpeed: Value;
-	public var startWorldSpeed: Value;
+	public var startSpeed: Array<SpawnValue>;
+	public var startWorldSpeed: Array<SpawnValue>;
 	public var emitShape : Emit2DShape = Circle;
 	public var emitRadius : Value;
 	public var emitAngle1 : Value;
@@ -412,7 +413,7 @@ class Emitter2DObject extends h2d.Object {
 		for (_ in 0...count) {
 			var part = new Particle2DInstance(getTile(), this);
 			part.idx = instanceCounter;
-			part.lifeTime = evaluator.getFloat(part.idx, lifeTime, curTime);
+			part.lifeTime = evaluator.getSpawn(part.idx, lifeTime, curTime);
 			this.particles.push(part);
 			instanceCounter = (instanceCounter + 1) % maxCount;
 		}
