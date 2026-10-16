@@ -147,10 +147,10 @@ class EmitterEdit {
 	/**
 		The lines of param `def` of `owner` in `parent`, one mode per component among `modes`. An unset component
 		shows its default value grayed out: editing it sets it, and a constant set back to its default is unset.
-		`set` stores a new value, `onChange` follows each edit. The Spawn and Multiplier fields can be animated (`AnimEdit`).
+		`set` stores the mode of a component, `onChange` follows each edit. The Spawn and Multiplier fields can be animated (`AnimEdit`).
 	**/
 	public static function param(ctx: EditContext2, parent: hide.kit.Element, owner: Prefab, def: ModeParamDef, modes: Array<ModeKind>,
-			get: () -> Null<ParamValue>, set: Null<ParamValue> -> Void, onChange: Bool -> Void) {
+			get: Int -> ParamMode, set: (Int, ParamMode) -> Void, onChange: Bool -> Void) {
 		var dim = def.def.length;
 		var label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
 		var range = switch (def.t) {
@@ -165,12 +165,10 @@ class EmitterEdit {
 			// no difference between the default value and no value
 			if (m != null && m.match(MConstant(_)) && Type.enumParameters(m)[0] == def.def[i])
 				m = null;
-			var v = get()?.copy() ?? [for (_ in 0...dim) null];
-			v[i] = m;
-			set(Lambda.exists(v, m -> m != null) ? v : null);
+			set(i, m);
 		}
 
-		var value = get() ?? [for (_ in 0...dim) null];
+		var value = [for (i in 0...dim) get(i)];
 		var compName = (i: Int) -> EmitterParam.COMPONENTS[i].toUpperCase();
 
 		/** Changes the param from a menu: an undo step of the inspector **/
@@ -180,12 +178,11 @@ class EmitterEdit {
 		}
 		/** The context menu of component `i`: its mode (an unset one shows a constant), removing it, removing the param **/
 		function compItems(line: hide.kit.Element, i: Int) : Array<hrt.ui.HuiMenu.MenuItem> {
-			var cur = get();
-			var m = cur == null ? null : cur[i];
+			var m = get(i);
 			var kind = m == null ? Constant : kindOf(m);
 			// a constant at its default is shown unset: nothing to remove
 			function isSet(j: Int) {
-				var c = cur == null ? null : cur[j];
+				var c = get(j);
 				return c != null && !(c.match(MConstant(_)) && Type.enumParameters(c)[0] == def.def[j]);
 			}
 			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
@@ -199,7 +196,7 @@ class EmitterEdit {
 			}
 			items.push({ label: dim == 1 ? "Remove" : "Remove " + compName(i), click: () -> menuEdit(line, () -> setComp(i, null)), enabled: isSet(i) });
 			if (dim > 1)
-				items.push({ label: "Remove all", click: () -> menuEdit(line, () -> set(null)), enabled: Lambda.exists([for (j in 0...dim) j], isSet) });
+				items.push({ label: "Remove all", click: () -> menuEdit(line, () -> for (j in 0...dim) set(j, null)), enabled: Lambda.exists([for (j in 0...dim) j], isSet) });
 			return items;
 		}
 
@@ -251,8 +248,7 @@ class EmitterEdit {
 					onChange(temp);
 					if (changed != null) changed();
 					// set or unset by the edit: its menu changes
-					var now = get();
-					if (!temp && (now != null && now[i] != null) != (m != null))
+					if (!temp && (get(i) != null) != (m != null))
 						ctx.rebuildInspector();
 				}
 				s.anim = anim;
@@ -395,7 +391,7 @@ class EmitterEdit {
 		}
 
 		for (p in owner.getModeParams())
-			param(ctx, getCategory(p.groupName), emitter, p, kindModes(p.kind), () -> owner.getParam(p.name), (v) -> owner.setParam(p.name, v), (temp) -> changed(p.name, temp));
+			param(ctx, getCategory(p.groupName), emitter, p, kindModes(p.kind), (i) -> owner.getMode(p.name, i), (i, m) -> owner.setMode(p.name, i, m), (temp) -> changed(p.name, temp));
 	}
 }
 

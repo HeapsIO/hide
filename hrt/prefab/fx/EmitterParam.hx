@@ -26,8 +26,9 @@ enum ParamMode {
 	MCurveRange( a : ParamShape, aFrom : Float, aTo : Float, b : ParamShape, bFrom : Float, bTo : Float );
 }
 
-/** One mode per component, null when unset **/
-typedef ParamValue = Array<Null<ParamMode>>;
+/** A vector param, one mode per component, null when unset **/
+typedef ParamVec2 = { ?x : ParamMode, ?y : ParamMode };
+typedef ParamVec3 = { > ParamVec2, ?z : ParamMode };
 
 /** A component of a particle shader param over the particle life: lerp(from, to, shape(t)), the shape `curve` (a path) or `ease` **/
 typedef ParticleCurve = { ?curve : String, ?ease : Easing, from : Float, to : Float };
@@ -48,8 +49,8 @@ typedef ModeParamDef = {
 interface ParamOwner {
 	function getSettings() : Array<EmitterHelper.ParamDef>;
 	function getModeParams() : Array<ModeParamDef>;
-	function getParam( name : String ) : Null<ParamValue>;
-	function setParam( name : String, v : Null<ParamValue> ) : Void;
+	function getMode( name : String, comp : Int ) : ParamMode;
+	function setMode( name : String, comp : Int, m : ParamMode ) : Void;
 }
 
 class EmitterParam {
@@ -70,25 +71,34 @@ class EmitterParam {
 		}
 	}
 
-	// A constant is a plain number, the other modes an object with a `mode` field
+	// A constant is a plain number, the other modes an object with a `mode` field, a vector an object of its components
 
-	public static function parse( v : Dynamic, dim : Int ) : Null<ParamValue> {
+	public static function parseVec( v : Dynamic ) : ParamVec3 {
 		if( v == null )
 			return null;
-		var a : Array<Dynamic> = Std.isOfType(v, Array) ? v : [v];
-		var out = [], any = false;
-		for( i in 0...dim ) {
-			var m = parseMode(a[i]);
-			out.push(m);
-			if( m != null ) any = true;
-		}
-		return any ? out : null;
+		var out : ParamVec3 = { x: parseMode(v.x), y: parseMode(v.y), z: parseMode(v.z) };
+		return out.x == null && out.y == null && out.z == null ? null : out;
 	}
 
-	public static function save( v : Null<ParamValue> ) : Dynamic {
-		if( v == null || !Lambda.exists(v, m -> m != null) )
+	// a ParamVec2 or a ParamVec3
+	public static function saveVec( v : Dynamic ) : Dynamic {
+		if( v == null || (v.x == null && v.y == null && v.z == null) )
 			return null;
-		return v.length == 1 ? saveMode(v[0]) : [for( m in v ) saveMode(m)];
+		var o : Dynamic = {};
+		if( v.x != null ) o.x = saveMode(v.x);
+		if( v.y != null ) o.y = saveMode(v.y);
+		if( v.z != null ) o.z = saveMode(v.z);
+		return o;
+	}
+
+	public static function comp( v : Dynamic, i : Int ) : ParamMode {
+		return v == null ? null : i == 0 ? v.x : i == 1 ? v.y : v.z;
+	}
+
+	/** `v` with component `i` set to `m`, null when none is set **/
+	public static function withComp( v : Dynamic, i : Int, m : ParamMode ) : ParamVec3 {
+		var out : ParamVec3 = { x: i == 0 ? m : comp(v, 0), y: i == 1 ? m : comp(v, 1), z: i == 2 ? m : comp(v, 2) };
+		return out.x == null && out.y == null && out.z == null ? null : out;
 	}
 
 	/** The components of a shader param read over the particle life: a float, or a vector that is not a color. 0 for the others. **/
@@ -106,7 +116,7 @@ class EmitterParam {
 		return Std.isOfType(c, Float) || Std.isOfType(c, Int) ? c : 0.0;
 	}
 
-	static function parseMode( v : Dynamic ) : Null<ParamMode> {
+	public static function parseMode( v : Dynamic ) : Null<ParamMode> {
 		if( v == null )
 			return null;
 		if( Std.isOfType(v, Float) || Std.isOfType(v, Int) )
@@ -126,7 +136,7 @@ class EmitterParam {
 		}
 	}
 
-	static function saveMode( m : Null<ParamMode> ) : Dynamic {
+	public static function saveMode( m : Null<ParamMode> ) : Dynamic {
 		function curve( s : ParamShape, from : Float, to : Float ) : Dynamic {
 			var o : Dynamic = switch( s ) { case SCurve(path): { curve: path }; case SEasing(e): { ease: (e : String) }; };
 			if( from != 0 ) o.from = from;
@@ -187,10 +197,12 @@ class EmitterParam {
 class ParamBuilder {
 
 	var owner : Prefab;
+	var modes : ParamOwner;
 	public var randomSlots(default, null) = 0;
 
-	public function new( owner : Prefab ) {
+	public function new( owner : Prefab, ?modes : ParamOwner ) {
 		this.owner = owner;
+		this.modes = modes;
 	}
 
 	public static function particleCurve( owner : Prefab, c : ParticleCurve ) : Value {
@@ -263,15 +275,19 @@ class ParamBuilder {
 		return VCurveRange(randomSlots++, a, 0, 1, b, 0, 1);
 	}
 
-	function component( def : ModeParamDef, value : Null<ParamValue>, i : Int ) : Value {
-		var m = value == null ? null : value[i];
+	function mode( def : ModeParamDef, i : Int ) : ParamMode {
+		return modes.getMode(def.name, i);
+	}
+
+	function component( def : ModeParamDef, i : Int ) : Value {
+		var m = mode(def, i);
 		return def.kind == Particle ? comp(m, def.def[i]) : animated(EmitterParam.animKey(def, i), fixedValue(owner, m, def.def[i]));
 	}
 
 	/** A Spawn param, per component: its value, or a random between its bounds, over the FX time **/
-	public function spawn( def : ModeParamDef, value : Null<ParamValue> ) : Array<SpawnValue> {
+	public function spawn( def : ModeParamDef ) : Array<SpawnValue> {
 		return [for( i in 0...def.def.length ) {
-			var m = value == null ? null : value[i];
+			var m = mode(def, i);
 			var s : SpawnValue = switch( m ) {
 			case MRange(min, max):
 				function bound( field : String, v : Float ) {
@@ -281,7 +297,7 @@ class ParamBuilder {
 					return c?.makeVal() ?? VConst(v);
 				}
 				{ rid: randomSlots++, min: bound("min", min), max: bound("max", max) };
-			default:
+			case null, _:
 				switch( animated(EmitterParam.animKey(def, i), fixedValue(owner, m, def.def[i])) ) {
 				case VCurveRange(rid, a, a0, a1, b, b0, b1): { rid: rid, min: VCurve(a, a0, a1), max: VCurve(b, b0, b1) };
 				case v: { rid: -1, min: v, max: v };
@@ -292,10 +308,10 @@ class ParamBuilder {
 	}
 
 	/** A vector is a `VVector` of 3 components, `VZero` when they are all 0, `VConst(1)` when they are all 1 **/
-	public function param( def : ModeParamDef, value : Null<ParamValue> ) : Value {
+	public function param( def : ModeParamDef ) : Value {
 		if( def.def.length == 1 )
-			return component(def, value, 0);
-		var v = VVector(component(def, value, 0), component(def, value, 1), def.def.length > 2 ? component(def, value, 2) : VZero);
+			return component(def, 0);
+		var v = VVector(component(def, 0), component(def, 1), def.def.length > 2 ? component(def, 2) : VZero);
 		return switch( v ) {
 		case VVector(VZero, VZero, VZero): VZero;
 		case VVector(VConst(1.0), VConst(1.0), VConst(1.0)): VConst(1.0);

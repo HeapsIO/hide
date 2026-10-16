@@ -1792,29 +1792,29 @@ class Emitter extends Object3D implements ParamOwner {
 	@:s @:disp("Show Debug") public var viewDebug : Bool = false;
 
 	@:group("Particle Movement")
-	@:param(PVec(3, -10, 10), Particle) @:disp("Fixed Speed") public var speed : ParamValue;
-	@:param(PVec(3, -10, 10), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamValue;
+	@:param(PVec(3, -10, 10), Particle) @:disp("Fixed Speed") public var speed : ParamVec3;
+	@:param(PVec(3, -10, 10), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamVec3;
 	/** Degrees per second **/
-	@:param(PVec(3, -360, 360), Particle) public var orbitSpeed : ParamValue;
-	@:param(PFloat(0, 2), Multiplier, 1.) public var orbitSpeedMultiplier : ParamValue;
-	@:param(PVec(3, -10, 10), Particle) public var acceleration : ParamValue;
-	@:param(PVec(3, -10, 10), Particle) public var worldAcceleration : ParamValue;
-	@:param(PVec(3, -10, 10), Spawn) public var startSpeed : ParamValue;
-	@:param(PVec(3, -10, 10), Spawn) public var startWorldSpeed : ParamValue;
+	@:param(PVec(3, -360, 360), Particle) public var orbitSpeed : ParamVec3;
+	@:param(PFloat(0, 2), Multiplier, 1.) public var orbitSpeedMultiplier : ParamMode;
+	@:param(PVec(3, -10, 10), Particle) public var acceleration : ParamVec3;
+	@:param(PVec(3, -10, 10), Particle) public var worldAcceleration : ParamVec3;
+	@:param(PVec(3, -10, 10), Spawn) public var startSpeed : ParamVec3;
+	@:param(PVec(3, -10, 10), Spawn) public var startWorldSpeed : ParamVec3;
 	@:group("Particle Transform")
-	@:param(PVec(3, -10, 10), Particle) public var offset : ParamValue;
-	@:param(PFloat(0, 2), Particle, 1.) public var scale : ParamValue;
-	@:param(PFloat(0, 2), Multiplier, 1.) public var scaleMultiplier : ParamValue;
-	@:param(PVec(3, 0, 2), Particle, [1., 1., 1.]) public var stretch : ParamValue;
-	@:param(PFloat(0, 2), Particle) public var stretchVelocity : ParamValue;
+	@:param(PVec(3, -10, 10), Particle) public var offset : ParamVec3;
+	@:param(PFloat(0, 2), Particle, 1.) public var scale : ParamMode;
+	@:param(PFloat(0, 2), Multiplier, 1.) public var scaleMultiplier : ParamMode;
+	@:param(PVec(3, 0, 2), Particle, [1., 1., 1.]) public var stretch : ParamVec3;
+	@:param(PFloat(0, 2), Particle) public var stretchVelocity : ParamMode;
 	/** Degrees **/
-	@:param(PVec(3, 0, 360), Particle) public var rotation : ParamValue;
-	@:param(PVec(3, -1, 1), Particle) public var pivot : ParamValue;
+	@:param(PVec(3, 0, 360), Particle) public var rotation : ParamVec3;
+	@:param(PVec(3, -1, 1), Particle) public var pivot : ParamVec3;
 	@:group("Limit Velocity")
-	@:param(PFloat(0, 10), Particle) public var dampen : ParamValue;
-	@:param(PFloat(0, 10), Particle) public var maxVelocity : ParamValue;
+	@:param(PFloat(0, 10), Particle) public var dampen : ParamMode;
+	@:param(PFloat(0, 10), Particle) public var maxVelocity : ParamMode;
 	@:group("Properties")
-	@:param(PFloat(0, 10), Spawn, 1.) public var lifeTime : ParamValue;
+	@:param(PFloat(0, 10), Spawn, 1.) public var lifeTime : ParamMode;
 
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);

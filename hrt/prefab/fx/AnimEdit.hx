@@ -65,10 +65,9 @@ class AnimEdit {
 		var i = parts.length > 1 ? EmitterParam.COMPONENTS.indexOf(parts[1]) : 0;
 		if (def.kind == Particle || i < 0)
 			return null;
-		var value = emitter.getParam(def.name);
-		return switch (value == null ? null : value[i]) {
+		return switch (emitter.getMode(def.name, i)) {
 			case MRange(_): [EmitterParam.animKey(def, i, "min"), EmitterParam.animKey(def, i, "max")];
-			default: [EmitterParam.animKey(def, i)];
+			case null, _: [EmitterParam.animKey(def, i)];
 		}
 	}
 
@@ -80,8 +79,7 @@ class AnimEdit {
 		var def = emitter == null ? null : Lambda.find(emitter.getModeParams(), p -> p.name == parts[0]);
 		if (def != null) {
 			var i = parts.length > 1 ? hxd.Math.imax(0, EmitterParam.COMPONENTS.indexOf(parts[1])) : 0;
-			var value = emitter.getParam(def.name);
-			var span = EmitterParam.span(value == null ? null : value[i], def.def[i]);
+			var span = EmitterParam.span(emitter.getMode(def.name, i), def.def[i]);
 			return parts[parts.length - 1] == "min" ? span.min : span.max;
 		}
 		var comp = parts.length > 1 ? parts[1] : "x";

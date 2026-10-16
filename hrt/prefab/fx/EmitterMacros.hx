@@ -98,16 +98,23 @@ class EmitterMacros {
 			var def = macro @:pos(p) MODE_PARAMS[$v{modeParams.length}];
 			modeParams.push(macro @:pos(p) { name: $v{key}, t: ${a[0]}, def: ($a{defs} : Array<Float>), kind: hrt.prefab.fx.EmitterParam.ParamKind.$kind,
 				groupName: $v{group}, disp: ${disp == null ? macro null : disp[0]} });
-			load.push(macro @:pos(p) this.$n = hrt.prefab.fx.EmitterParam.parse(params.$key, $v{dim}));
+			if( dim == 1 ) {
+				load.push(macro @:pos(p) this.$n = hrt.prefab.fx.EmitterParam.parseMode(params.$key));
+				save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.saveMode(this.$n); if( v != null ) { params.$key = v; any = true; } });
+				getCases.push({ values: [macro $v{key}], expr: macro this.$n });
+				setCases.push({ values: [macro $v{key}], expr: macro this.$n = m });
+			} else {
+				load.push(macro @:pos(p) this.$n = hrt.prefab.fx.EmitterParam.parseVec(params.$key));
+				save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.saveVec(this.$n); if( v != null ) { params.$key = v; any = true; } });
+				getCases.push({ values: [macro $v{key}], expr: macro hrt.prefab.fx.EmitterParam.comp(this.$n, comp) });
+				setCases.push({ values: [macro $v{key}], expr: macro this.$n = hrt.prefab.fx.EmitterParam.withComp(this.$n, comp, m) });
+			}
 			unset.push(macro @:pos(p) this.$n = null);
-			save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.save(this.$n); if( v != null ) { params.$key = v; any = true; } });
-			copy.push(macro @:pos(p) this.$n = from.$n?.copy());
-			getCases.push({ values: [macro $v{key}], expr: macro this.$n });
-			setCases.push({ values: [macro $v{key}], expr: macro this.$n = v });
+			copy.push(macro @:pos(p) this.$n = from.$n);
 			if( kind == "Spawn" )
-				spawnValues.push(dim == 1 ? macro @:pos(p) obj.$key = b.spawn($def, this.$n)[0] : macro @:pos(p) obj.$key = b.spawn($def, this.$n));
+				spawnValues.push(dim == 1 ? macro @:pos(p) obj.$key = b.spawn($def)[0] : macro @:pos(p) obj.$key = b.spawn($def));
 			else
-				particleValues.push(macro @:pos(p) d.$key = b.param($def, this.$n));
+				particleValues.push(macro @:pos(p) d.$key = b.param($def));
 		}
 
 		var objCT = Context.toComplexType(Context.getType(objectType));
@@ -132,14 +139,14 @@ class EmitterMacros {
 			}
 			public function getSettings() return emitterParams;
 			public function getModeParams() return MODE_PARAMS;
-			public function getParam( name : String ) : Null<hrt.prefab.fx.EmitterParam.ParamValue> {
+			public function getMode( name : String, comp : Int ) : hrt.prefab.fx.EmitterParam.ParamMode {
 				return ${{ expr: ESwitch(macro name, getCases, macro null), pos: pos }};
 			}
-			public function setParam( name : String, v : Null<hrt.prefab.fx.EmitterParam.ParamValue> ) {
+			public function setMode( name : String, comp : Int, m : hrt.prefab.fx.EmitterParam.ParamMode ) {
 				${{ expr: ESwitch(macro name, setCases, macro throw "No param " + name), pos: pos }};
 			}
 			public function makeValues( obj : $objCT ) : hrt.prefab.fx.EmitterParam.ParamBuilder {
-				var b = new hrt.prefab.fx.EmitterParam.ParamBuilder(this);
+				var b = new hrt.prefab.fx.EmitterParam.ParamBuilder(this, this);
 				var d = new hrt.prefab.fx.Emitter.InstanceDef();
 				obj.instDef = d;
 				$b{particleValues};

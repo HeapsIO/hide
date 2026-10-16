@@ -508,27 +508,27 @@ class Emitter2D extends Object2D implements ParamOwner {
 	@:s @:disp("Blend Frames") public var animationBlendBetweenFrames : Bool = true;
 
 	@:group("Particle Movement")
-	@:param(PVec(2, -10, 10), Particle) @:disp("Fixed Speed") public var speed : ParamValue;
-	@:param(PVec(2, -10, 10), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamValue;
+	@:param(PVec(2, -10, 10), Particle) @:disp("Fixed Speed") public var speed : ParamVec2;
+	@:param(PVec(2, -10, 10), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamVec2;
 	/** Degrees per second **/
-	@:param(PFloat(-360, 360), Particle) public var orbitSpeed : ParamValue;
-	@:param(PFloat(0, 2), Multiplier, 1.) public var orbitSpeedMultiplier : ParamValue;
-	@:param(PVec(2, -10, 10), Particle) public var acceleration : ParamValue;
-	@:param(PVec(2, -10, 10), Particle) public var worldAcceleration : ParamValue;
-	@:param(PVec(2, -10, 10), Spawn) public var startSpeed : ParamValue;
-	@:param(PVec(2, -10, 10), Spawn) public var startWorldSpeed : ParamValue;
+	@:param(PFloat(-360, 360), Particle) public var orbitSpeed : ParamMode;
+	@:param(PFloat(0, 2), Multiplier, 1.) public var orbitSpeedMultiplier : ParamMode;
+	@:param(PVec(2, -10, 10), Particle) public var acceleration : ParamVec2;
+	@:param(PVec(2, -10, 10), Particle) public var worldAcceleration : ParamVec2;
+	@:param(PVec(2, -10, 10), Spawn) public var startSpeed : ParamVec2;
+	@:param(PVec(2, -10, 10), Spawn) public var startWorldSpeed : ParamVec2;
 	@:group("Particle Transform")
-	@:param(PVec(2, -10, 10), Particle) public var offset : ParamValue;
-	@:param(PFloat(0, 2), Particle, 1.) public var scale : ParamValue;
-	@:param(PFloat(0, 2), Multiplier, 1.) public var scaleMultiplier : ParamValue;
-	@:param(PVec(2, 0, 2), Particle, [1., 1.]) public var stretch : ParamValue;
+	@:param(PVec(2, -10, 10), Particle) public var offset : ParamVec2;
+	@:param(PFloat(0, 2), Particle, 1.) public var scale : ParamMode;
+	@:param(PFloat(0, 2), Multiplier, 1.) public var scaleMultiplier : ParamMode;
+	@:param(PVec(2, 0, 2), Particle, [1., 1.]) public var stretch : ParamVec2;
 	/** Degrees. Not named `rotation`, the one of the emitter object **/
-	@:param(PFloat(0, 360), Particle) @:name("rotation") public var particleRotation : ParamValue;
+	@:param(PFloat(0, 360), Particle) @:name("rotation") public var particleRotation : ParamMode;
 	@:group("Particle Limit Velocity")
-	@:param(PFloat(0, 10), Particle) public var dampen : ParamValue;
-	@:param(PFloat(0, 10), Particle) public var maxVelocity : ParamValue;
+	@:param(PFloat(0, 10), Particle) public var dampen : ParamMode;
+	@:param(PFloat(0, 10), Particle) public var maxVelocity : ParamMode;
 	@:group("Particle")
-	@:param(PFloat(0, 10), Spawn, 1.) public var lifeTime : ParamValue;
+	@:param(PFloat(0, 10), Spawn, 1.) public var lifeTime : ParamMode;
 
 	#if editor
 	var graphics : h2d.Graphics;
