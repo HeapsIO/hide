@@ -472,6 +472,12 @@ class Ide extends hide.tools.IdeData {
 				i.componentName = "hide.view.FileBrowser";
 				i.componentState = {savedLayout: "SingleTree"};
 			}
+			switch (i.componentName) {
+			case "hide.view.CdbTable", "hide.view.CdbFavorites", "hide.view.CdbCustomTypes":
+				i.componentName = "hide.view.cdb." + i.componentName.substr("hide.view.".length);
+				i.componentState.componentName = i.componentName;
+			default:
+			}
 			if( i.componentName != null && i.componentState != null && !comps.exists(i.componentName) ) {
 				i.componentState.deletedComponent = i.componentName;
 				i.componentName = "hide.view.Unknown";
@@ -583,7 +589,7 @@ class Ide extends hide.tools.IdeData {
 			initViews = null;
 			if( subView == null && views.length == 0 ) {
 				if( isCDB )
-					open("hide.view.CdbTable",{}, function(v) v.fullScreen = true);
+					open("hide.view.cdb.CdbTable",{}, function(v) v.fullScreen = true);
 				else
 					open("hide.view.FileBrowser",{savedLayout: "SingleTree"}, Left);
 			}
@@ -1486,7 +1492,7 @@ class Ide extends hide.tools.IdeData {
 		// database
 		var db = menu.find(".database");
 		db.find(".dbView").click(function(_) {
-			open("hide.view.CdbTable",{});
+			open("hide.view.cdb.CdbTable",{});
 		});
 		db.find(".dbCompress").prop("checked",database.compress).click(function(_) {
 			database.compress = !database.compress;
@@ -1525,7 +1531,7 @@ class Ide extends hide.tools.IdeData {
 		var proofing = projectState.get("dbProofread") == true;
 		db.find(".dbProofread").prop("checked", proofing).click(function(_) {
 			projectState.set("dbProofread", !proofing);
-			for( v in getViews(hide.view.CdbTable) )
+			for( v in getViews(hide.view.cdb.CdbTable) )
 				v.applyProofing();
 			initMenu();
 		});
@@ -1536,7 +1542,7 @@ class Ide extends hide.tools.IdeData {
 			loadDatabase();
 			hide.comp.cdb.Editor.refreshAll();
 			initMenu();
-			for( v in getViews(hide.view.CdbTable) )
+			for( v in getViews(hide.view.cdb.CdbTable) )
 				v.rebuild();
 		}
 		db.find(".dbCreateDiff").click(function(_) {
@@ -1557,7 +1563,7 @@ class Ide extends hide.tools.IdeData {
 			setDiff(null);
 		}).attr("disabled", databaseDiff == null ? "disabled" : null);
 		db.find(".dbCustom").click(function(_) {
-			open("hide.view.CdbCustomTypes",{});
+			open("hide.view.cdb.CdbCustomTypes",{});
 		});
 		db.find(".dbFormulasEnable").prop("checked",currentConfig.get("hide.enableDBFormulas")).click(function(_) {
 			userConfig.set("hide.enableDBFormulas", !currentConfig.get("hide.enableDBFormulas"));
@@ -1571,7 +1577,7 @@ class Ide extends hide.tools.IdeData {
 		{
 			function setCategories( cats : Array<String> ) {
 				projectState.set("dbCategories", cats);
-				for( v in getViews(hide.view.CdbTable) )
+				for( v in getViews(hide.view.cdb.CdbTable) )
 					v.applyCategories(cats);
 				initMenu();
 			}

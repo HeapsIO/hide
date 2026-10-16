@@ -6,7 +6,7 @@ import hide.Element;
 import hrt.prefab.Prefab in PrefabElement;
 import hrt.prefab.Curve;
 import hrt.prefab.fx.Event;
-import hide.view.CameraController.CamController;
+import hide.tools.CameraController.CamController;
 
 import hrt.tools.MapUtils;
 

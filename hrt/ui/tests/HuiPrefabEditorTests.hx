@@ -142,7 +142,6 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 
 	static var skipMakeTest : Array<Class<hrt.prefab.Prefab>>= [
 		hrt.shgraph.ShaderGraph, // Should not be created manually
-		hrt.texgraph.TexGraph, // Should not be created manually
 		hrt.animgraph.AnimGraph, // Should not be created manually
 		hrt.prefab.l3d.MeshGenerator, // Crashes on load ???
 		hrt.prefab.fx.gpuemitter.MeshSpawn, // crashes on load

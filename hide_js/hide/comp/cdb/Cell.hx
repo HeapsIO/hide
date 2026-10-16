@@ -1699,7 +1699,9 @@ class Cell {
 
 		formulaCompose = function() {
 			var body = getBody();
-			return body == "" ? "" : cdb.FormulaEngine.makeCode(args, body);
+			if( body == "" ) return "";
+			var code = cdb.FormulaEngine.makeCode(args, body);
+			return code == cdb.FormulaEngine.makeCode(split.args, split.body) ? value : code;
 		}
 
 		function commit() {

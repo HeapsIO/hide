@@ -1,6 +1,6 @@
 package hide.view;
 import hrt.prefab.l3d.Instance;
-import hide.view.CameraController.CamController;
+import hide.tools.CameraController.CamController;
 using Lambda;
 
 import hxd.Math;

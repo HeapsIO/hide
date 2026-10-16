@@ -1,4 +1,4 @@
-package hide.view;
+package hide.view.cdb;
 
 class CdbFavorites extends hide.ui.View<{}> {
     var favorites: Array<RefViewer.Result> = [];

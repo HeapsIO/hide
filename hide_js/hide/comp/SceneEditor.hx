@@ -27,7 +27,7 @@ import hrt.prefab.Object3D;
 import h3d.scene.Object;
 
 import hide.comp.cdb.DataFiles;
-import hide.view.CameraController;
+import hide.tools.CameraController;
 
 using hide.tools.Extensions.ArrayExtensions;
 import hide.comp.CameraControllerEditor;
@@ -984,7 +984,7 @@ class SceneEditor {
 	public var localTransform = true;
 	public var selfOnlyTransform = false;
 	public var cameraController : CameraControllerBase;
-	public var cameraController2D : hide.view.l3d.CameraController2D;
+	public var cameraController2D : hide.tools.CameraController2D;
 	public var editorDisplay(default,set) : Bool;
 	public var camera2D(default,set) : Bool = false;
 	public var objectAreSelectable = true;
@@ -994,7 +994,7 @@ class SceneEditor {
 
 	var showGizmo = true;
 	var gizmo : hrt.tools.Gizmo;
-	var gizmo2d : hide.view.l3d.Gizmo2D;
+	var gizmo2d : hrt.tools.Gizmo2D;
 	static var customPivot : CustomPivot;
 	var interactives : Map<PrefabElement, h3d.scene.Interactive> = [];
 	var interactives2d : Map<PrefabElement, h2d.Interactive> = [];
@@ -1480,7 +1480,7 @@ class SceneEditor {
 	}
 
 	function makeCamController() : CameraControllerBase {
-		var c = new hide.view.CameraController.FlightController(scene.s3d, this);
+		var c = new hide.tools.CameraController.FlightController(scene.s3d, this);
 		return c;
 	}
 
@@ -1499,7 +1499,7 @@ class SceneEditor {
 	}
 
 	function makeCamController2D() {
-		return new hide.view.l3d.CameraController2D(root2d);
+		return new hide.tools.CameraController2D(root2d);
 	}
 
 	function focusSelection() {
@@ -1966,7 +1966,7 @@ class SceneEditor {
 		};
 		updateStats();
 
-		gizmo2d = new hide.view.l3d.Gizmo2D();
+		gizmo2d = new hrt.tools.Gizmo2D();
 		scene.s2d.add(gizmo2d, 2); // over local3d
 
 		loadCam3D();

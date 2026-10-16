@@ -1,4 +1,4 @@
-package hide.view;
+package hide.tools;
 
 import hxd.Math;
 import hxd.Key as K;
