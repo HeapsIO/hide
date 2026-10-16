@@ -73,6 +73,15 @@ class EmitterEdit {
 		return (t) -> ev.getFloat(v, t);
 	}
 
+	/** The two curves of a blend shape, from 0 to 1, shown under it **/
+	static function blendFunctions(owner: Prefab, s: ParamShape) : Array<Float -> Float> {
+		return switch (ParamBuilder.shape(owner, s)) {
+			case VParamCurve(c, from, to) if (c.blendMode == Blend):
+				[for (i in 0...2) { var b : Curve = cast c.children[i]; (t) -> hxd.Math.lerp(from, to, b.getVal(t)); }];
+			default: [];
+		}
+	}
+
 	/** The curve of `s` when its keys can be edited **/
 	static function editableCurve(owner: Prefab, s: ParamShape) : Null<Curve> {
 		return switch (s) {
@@ -256,7 +265,7 @@ class EmitterEdit {
 				the left) and the `to` ones (its end, at the right), with a button swapping them
 			**/
 			function curve(s: ParamShape, from: Array<{ v: () -> Float, set: Float -> Void }>, to: Array<{ v: () -> Float, set: Float -> Void }>, ranges: () -> Array<hide.kit.ParamCurve.ParamRange>, suffix: String) {
-				var graph = new hide.kit.ParamCurve(parent, id + "Curve" + suffix, owner, shapeFunction(owner, s), ranges(), editableCurve(owner, s));
+				var graph = new hide.kit.ParamCurve(parent, id + "Curve" + suffix, owner, shapeFunction(owner, s), ranges(), editableCurve(owner, s), blendFunctions(owner, s));
 				var bounds = new hide.kit.Line(parent, id + "Bounds" + suffix);
 				bounds.cssClass = "kit-param-bounds";
 				// no label: the fields are under the ends of the curve

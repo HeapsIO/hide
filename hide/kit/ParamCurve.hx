@@ -8,7 +8,8 @@ typedef ParamRange = { from : Float, to : Float };
 
 /**
 	A particle curve of an emitter param, over the particle life: each range is drawn as
-	`lerp(from, to, shape(t))`, the first one solid, the others dashed. The keys of `curve`
+	`lerp(from, to, shape(t))`, the first one solid, the others dashed, as the `blends` (the curves of a blend,
+	in the first range). The keys of `curve`
 	are edited in the space of the first range, as in the curve editor of the timeline: drag a key or a
 	tangent handle (Ctrl: round, Shift: keep the time, Alt: keep the value), Ctrl + click adds a key,
 	Delete removes the selected one, right click on a key sets its mode, double click edits its time and value.
@@ -20,6 +21,7 @@ class ParamCurve extends Element {
 	public var shape : Float -> Float;
 	public var ranges : Array<ParamRange>;
 	public var curve : Null<hrt.prefab.Curve>;
+	public var blends : Array<Float -> Float>;
 	/** Rebuilt when the keys change **/
 	public var owner : hrt.prefab.Prefab;
 
@@ -38,12 +40,13 @@ class ParamCurve extends Element {
 	var svg : js.html.svg.SVGElement;
 	#end
 
-	public function new(parent: Element, id: String, owner: hrt.prefab.Prefab, shape: Float -> Float, ranges: Array<ParamRange>, ?curve: hrt.prefab.Curve) {
+	public function new(parent: Element, id: String, owner: hrt.prefab.Prefab, shape: Float -> Float, ranges: Array<ParamRange>, ?curve: hrt.prefab.Curve, ?blends: Array<Float -> Float>) {
 		super(parent, id);
 		this.owner = owner;
 		this.shape = shape;
 		this.ranges = ranges;
 		this.curve = curve;
+		this.blends = blends ?? [];
 		cssClass = "kit-param-curve-line";
 		frame();
 	}
@@ -100,7 +103,7 @@ class ParamCurve extends Element {
 		#end
 	}
 
-	function samples() return [for (i in 0...SAMPLES + 1) shape(i / SAMPLES)];
+	function samples(?f: Float -> Float) return [for (i in 0...SAMPLES + 1) (f ?? shape)(i / SAMPLES)];
 
 	/** The view on the curve and 0 to 1 **/
 	function frame() {
@@ -109,6 +112,12 @@ class ParamCurve extends Element {
 		for (r in ranges)
 			for (v in samples()) {
 				var y = hxd.Math.lerp(r.from, r.to, v);
+				minY = Math.min(minY, y);
+				maxY = Math.max(maxY, y);
+			}
+		for (b in blends)
+			for (v in samples(b)) {
+				var y = toDisplay(v);
 				minY = Math.min(minY, y);
 				maxY = Math.max(maxY, y);
 			}
@@ -157,10 +166,12 @@ class ParamCurve extends Element {
 			// the label above its line, below it at the top of the view
 			out.add('<text x="2" y="${y - 2 < 9 ? y + 9 : y - 2}">${i * step}</text>');
 		}
-		for (ri => r in ranges) {
-			var d = [for (i in 0...SAMPLES + 1) (i == 0 ? "M" : "L") + sx(i / SAMPLES, w) + " " + sy(hxd.Math.lerp(r.from, r.to, s[i]), h)].join(" ");
-			out.add('<path class="${ri == 0 ? "main" : "extreme"}" d="$d"/>');
-		}
+		function path(s: Array<Float>, r: ParamRange, cls: String)
+			out.add('<path class="$cls" d="${[for (i in 0...SAMPLES + 1) (i == 0 ? "M" : "L") + sx(i / SAMPLES, w) + " " + sy(hxd.Math.lerp(r.from, r.to, s[i]), h)].join(" ")}"/>');
+		for (b in blends)
+			path(samples(b), ranges[0], "extreme");
+		for (ri => r in ranges)
+			path(s, r, ri == 0 ? "main" : "extreme");
 		if (curve != null) {
 			if (!curve.keys.contains(selected))
 				selected = null;
