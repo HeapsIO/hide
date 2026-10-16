@@ -155,7 +155,7 @@ class GPUEmitter extends Object3D {
 				if (templates != null) {
 					for (t in templates) {
 						for (e in t.emitters)
-							e.remove();
+								e.remove();
 					}
 					templates = null;
 				}
@@ -165,10 +165,6 @@ class GPUEmitter extends Object3D {
 	}
 
 	function getTemplates() : Array<Template> {
-		#if editor
-		return [];
-		#end
-
 		if (templates != null)
 			return templates;
 

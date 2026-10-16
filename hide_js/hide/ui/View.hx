@@ -113,18 +113,18 @@ class View<T> extends hide.comp.Component {
 
 	#if !hl
 	public function setClipboard( v : Dynamic, ?type : String, ?opts : {} ) {
-		nw.Clipboard.get().set(ide.toJSON({ type : type == null ? viewClass : type, value : v, opts : opts }));
+		electron.Clipboard.set(ide.toJSON({ type : type == null ? viewClass : type, value : v, opts : opts }));
 	}
 
 	public function hasClipboard( ?type : String ) {
 		if( type == null ) type = viewClass;
-		var v : Dynamic = try haxe.Json.parse(nw.Clipboard.get().get()) catch( e : Dynamic ) null;
+		var v : Dynamic = try haxe.Json.parse(electron.Clipboard.get()) catch( e : Dynamic ) null;
 		return v != null && v.type == type;
 	}
 
 	public function getClipboard( ?type : String, ?opts : { ref : Dynamic } ) : Dynamic {
 		if( type == null ) type = viewClass;
-		var v : Dynamic = try haxe.Json.parse(nw.Clipboard.get().get()) catch( e : Dynamic ) null;
+		var v : Dynamic = try haxe.Json.parse(electron.Clipboard.get()) catch( e : Dynamic ) null;
 		if( v != null && opts != null ) opts.ref = v.opts;
 		return v == null || v.type != type ? null : v.value;
 	}

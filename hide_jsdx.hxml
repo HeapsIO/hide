@@ -1,0 +1,4 @@
+-D dx12
+--remap hl:hlemu
+--macro hlemu.Macros.init(["dx", "h3d.impl"])
+hide.hxml

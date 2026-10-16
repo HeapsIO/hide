@@ -13,72 +13,21 @@ typedef GameTarget = {
 	var cwd : String;
 }
 
-class GameLauncherProcess {
-	public var lines(default, null) : Array<String> = [];
-	public var exitCode(default, null) : Null<Int> = null;
-
-	var process : sys.io.Process;
-	var messages = new sys.thread.Deque<String>();
-	var pipes = new haxe.atomic.AtomicInt(2);
-	var onLine : (text: String) -> Void;
-
-	public function new(cmd: String, args: Array<String>, cwd: String, onLine: (text: String) -> Void) {
-		this.onLine = onLine;
-
-		var prevCwd = Sys.getCwd();
-		Sys.setCwd(cwd);
-		try {
-			process = new sys.io.Process(cmd, args);
-		} catch (e) {
-			Sys.setCwd(prevCwd);
-			throw e;
-		}
-		Sys.setCwd(prevCwd);
-
-		readPipe(process.stdout);
-		readPipe(process.stderr);
-	}
-
-	function readPipe(input: haxe.io.Input) {
-		sys.thread.Thread.create(() -> {
-			try {
-				while (true)
-					messages.add(input.readLine());
-			} catch (e) {}
-			pipes.sub(1);
-		});
-	}
-
-	public function update() : Bool {
-		var line = messages.pop(false);
-		while (line != null) {
-			line = StringTools.rtrim(line);
-			lines.push(line);
-			onLine(line);
-			line = messages.pop(false);
-		}
-
-		if (pipes.load() != 0)
-			return false;
-
-		exitCode = process.exitCode(true);
-		process.close();
-		return true;
-	}
-
-	public function kill() {
-		process.kill();
-	}
-}
-
 class GameLauncher {
 	static final GAME_LAUNCHER_HXML = "gameLauncher.hxml";
 
-	public static var state(default, null) : State = Idle;
+	public static var state(default, set) : State = Idle;
+	public static dynamic function onStateChange() {}
 
-	static var process : GameLauncherProcess;
+	static var process : js.node.child_process.ChildProcess;
 	static var target : GameTarget;
 	static var stopRequested = false;
+
+	static function set_state(v: State) {
+		state = v;
+		onStateChange();
+		return v;
+	}
 
 	public static function toggle() {
 		if (state == Idle)
@@ -88,18 +37,13 @@ class GameLauncher {
 	}
 
 	static function play() {
-		if (!hide.Ide.inst.isProjectValid()) {
-			hide.Ide.showError("No project opened");
-			return;
-		}
-
 		var target = try findTarget() catch (e) {
-			hide.Ide.showError(e.message);
+			hide.Ide.inst.quickError(e.message);
 			return;
 		}
 
 		if (target == null) {
-			hide.Ide.showError('No .hxml with both a -main and a -hl output found in ${hide.Ide.inst.projectDir}');
+			hide.Ide.inst.quickError('No .hxml with both a -main and a -hl output found in ${hide.Ide.inst.projectDir}');
 			return;
 		}
 
@@ -111,7 +55,6 @@ class GameLauncher {
 		stopRequested = true;
 		process.kill();
 	}
-
 
 	public static function listTargets() : Array<GameTarget> {
 		var dir = hide.Ide.inst.projectDir;
@@ -210,51 +153,63 @@ class GameLauncher {
 		target = t;
 		var hxml = haxe.io.Path.withoutDirectory(target.hxml);
 
-		hide.Ide.showInfo('Compiling ${target.main} ($hxml)');
-		if (start("haxe", [hxml], haxe.io.Path.directory(target.hxml), "haxe"))
-			state = Compiling;
+		hide.Ide.inst.quickMessage('Compiling ${target.main} ($hxml)');
+		state = Compiling;
+		start("haxe", [hxml], haxe.io.Path.directory(target.hxml), "haxe", (code, lines) -> {
+			if (stopRequested) {
+				hide.Ide.inst.quickMessage("Compilation cancelled");
+				state = Idle;
+			} else if (code != 0) {
+				hide.Ide.inst.quickError('Compilation failed :\n${excerpt(lines, 8, true)}', 10);
+				state = Idle;
+			} else {
+				run();
+			}
+		});
 	}
 
 	static function run() {
-		state = start("hl", [target.output], target.cwd, "game") ? Running : Idle;
+		state = Running;
+		start("hl", [target.output], target.cwd, "game", (code, lines) -> {
+			if (code != 0 && !stopRequested)
+				hide.Ide.inst.quickError('Game exited with code $code\n${excerpt(lines, 8, false)}', 10);
+			state = Idle;
+		});
 	}
 
-	static function start(cmd: String, args: Array<String>, cwd: String, logPrefix: String) : Bool {
-		try {
-			process = new GameLauncherProcess(cmd, args, cwd, (text) -> Sys.println('[$logPrefix] $text'));
-		} catch (e) {
-			hide.Ide.showError('Could not run "$cmd" (${e.message})');
-			return false;
+	static function start(cmd: String, args: Array<String>, cwd: String, logPrefix: String, onExit: (code: Int, lines: Array<String>) -> Void) {
+		var lines = [];
+		function readPipe(input: js.node.stream.Readable.IReadable) {
+			var pending = "";
+			function addLine(line: String) {
+				line = StringTools.rtrim(line);
+				lines.push(line);
+				js.Browser.console.log('[$logPrefix] $line');
+			}
+			input.on("data", (data: js.node.Buffer) -> {
+				var parts = (pending + data.toString()).split("\n");
+				pending = parts.pop();
+				for (line in parts)
+					addLine(line);
+			});
+			input.on("end", () -> if (pending != "") addLine(pending));
 		}
-		hide.Ide.inst.addUpdate(update);
-		return true;
-	}
 
-	static function update(dt: Float) {
-		if (!process.update())
-			return;
+		process = js.node.ChildProcess.spawn(cmd, args, {cwd: cwd});
+		readPipe(process.stdout);
+		readPipe(process.stderr);
 
-		hide.Ide.inst.removeUpdate(update);
-		var finished = process;
-		process = null;
-
-		switch (state) {
-			case Compiling if (stopRequested):
-				hide.Ide.showInfo("Compilation cancelled");
+		var error = null;
+		process.on("error", (e: js.lib.Error) -> error = e.message);
+		process.on("close", (code: Int) -> {
+			process = null;
+			if (error != null) {
+				hide.Ide.inst.quickError('Could not run "$cmd" ($error)', 10);
 				state = Idle;
-			case Compiling:
-				if (finished.exitCode != 0) {
-					hide.Ide.showError('Compilation failed :\n${excerpt(finished.lines, 8, true)}');
-					state = Idle;
-				} else {
-					run();
-				}
-			case Running:
-				if (finished.exitCode != 0 && !stopRequested)
-					hide.Ide.showWarning('Game exited with code ${finished.exitCode}\n${excerpt(finished.lines, 8, false)}');
-				state = Idle;
-			case Idle:
-		}
+			} else {
+				onExit(code, lines);
+			}
+		});
 	}
 
 	static function excerpt(lines: Array<String>, count: Int, first: Bool) {

@@ -106,9 +106,10 @@ class FileEntry {
 			children.resize(0);
 
 		if (js.node.Fs.existsSync(fullPath)) {
-			var paths = js.node.Fs.readdirSync(fullPath);
+			var entries : Array<Dynamic> = (js.node.Fs : Dynamic).readdirSync(fullPath, { withFileTypes : true });
 
-			for (path in paths) {
+			for (entry in entries) {
+				var path : String = entry.name;
 				if (StringTools.startsWith(path, "."))
 					continue;
 				var prev = oldChildren.get(path);
@@ -116,8 +117,8 @@ class FileEntry {
 					children.push(prev);
 					oldChildren.remove(path);
 				} else {
-					var info = js.node.Fs.statSync(fullPath + "/" + path);
-					var newEntry = new FileEntry(path, this, info.isDirectory() ? Dir : File);
+					var isDir : Bool = entry.isSymbolicLink() ? js.node.Fs.statSync(fullPath + "/" + path).isDirectory() : entry.isDirectory();
+					var newEntry = new FileEntry(path, this, isDir ? Dir : File);
 					newEntry.refreshChildren();
 					children.push(newEntry);
 				}
@@ -398,11 +399,11 @@ class FileManager {
 
 		windowManager = null;
 
-		untyped nw.Window.getAll((win:nw.Window) -> {
+		for (win in electron.Window.getAll()) {
 			if (win.title == "HideThumbnailGenerator") {
 				win.close(true);
 			}
-		});
+		}
 	}
 
 	function init() {
@@ -849,7 +850,7 @@ enum RenderWindowState {
 @:access(hide.tools.FileManager)
 class RenderWindowManager {
 	var state : RenderWindowState = Pending;
-	var generatorWindow : nw.Window;
+	var generatorWindow : electron.Window;
 
 	function new() {
 		state = Pending;
@@ -857,15 +858,12 @@ class RenderWindowManager {
 		// the generator socket is properly initialised
 		untyped js.Browser.window.requestIdleCallback(() -> {
 			state = Ready;
-			nw.Window.open('app.html?thumbnail=true', cast {
-					new_instance: true,
-					show: false,
-					title: "HideThumbnailGenerator"
-				}, (win: nw.Window) -> {
-					generatorWindow = win;
-				win.on("close", () -> {
-					hide.Tools.FileManager.cleanupGenerator();
-				});
+			generatorWindow = electron.Window.open('app.html?thumbnail=true&project=' + StringTools.urlEncode(hide.Ide.inst.projectDir), {
+				show: false,
+				title: "HideThumbnailGenerator"
+			});
+			generatorWindow.on("closed", () -> {
+				FileManager.inst.cleanupGenerator();
 			});
 		}, {timeout: 1000});
 	}

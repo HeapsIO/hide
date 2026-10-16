@@ -1,0 +1,19 @@
+common.hxml
+-D hide
+
+--macro include("h3d.shader")
+--macro include("h3d.anim")
+--macro include("h3d.prim")
+--macro include("h3d.scene")
+--macro include("h3d.pass")
+--macro include("h3d.mat")
+--macro include("h2d.col")
+--macro include("hxd.poly2tri")
+--macro include("hxd.clipper")
+--macro include("hxd.earcut")
+--macro include("hide.view")
+--macro include("hide.prefab")
+--macro include("hide.tools")
+--macro include("hrt")
+-dce no
+-debug

@@ -114,6 +114,9 @@ class IdeData {
 			globalState.set("recentProjects", recents);
 			globalState.set("currentProject", dir);
 		}
+		#if js
+		if( isProjectValid() ) fileWatcher.rootDir = resourceDir;
+		#end
 		projectState = isProjectValid() && !defaultConfig ? new EditorState(getProjectDataPath(projectDir) + "/editorState.json") : new EditorState();
 		config = Config.loadForProject(projectDir, resourceDir);
 		databaseFile = currentConfig.get("cdb.databaseFile") ?? "data.cdb";
@@ -178,6 +181,9 @@ class IdeData {
 			var prevPath = new haxe.io.Path(hidePath).dir;
 			if( sys.FileSystem.exists(prevPath + "/hide.js") )
 				return prevPath;
+			// packaged electron
+			if( sys.FileSystem.exists(hidePath + "/resources/app/hide.js") )
+				return hidePath + "/resources/app";
 			// nwjs launch
 			var path = Sys.getCwd().split("\\").join("/");
 			if( sys.FileSystem.exists(path+"/hide.js") )
