@@ -216,12 +216,10 @@ class Curve extends Prefab {
 		return null;
 	}
 
-	/** Plain keys: no blend, no remap **/
 	public function isPlain() {
 		return blendMode == None && (remapPath == null || remapPath == "");
 	}
 
-	/** A curve of a blend, which has plain keys only **/
 	function isBlendChild() {
 		var p = Std.downcast(parent, Curve);
 		return p != null && (p.blendMode == Blend || p.blendMode == RandomBlend);
@@ -468,7 +466,7 @@ class Curve extends Prefab {
 			}
 
 		var root = Std.downcast(getRoot(false), hrt.prefab.fx.FX);
-		if (root != null && blendParamSelect != null) {
+		if (root != null && blendParamSelect != null && blendMode == Blend) {
 			var entries = [for(p in root.parameters) { label: p.name, value: p.name }];
 			entries.insert(0, { label: "None", value: null });
 			blendParamSelect.setEntries(entries);
