@@ -13,17 +13,17 @@ enum ParamKind {
 }
 
 enum ParamShape {
-	SCurve(path : String);
-	SEasing(e : Easing);
+	Curve(path : String);
+	Easing(e : Easing);
 }
 
 /** The mode of a param component: a value, a random in a range, or over the particle life **/
 enum ParamMode {
-	MConstant( value : Float );
-	MRange( min : Float, max : Float );
-	MCurve( shape : ParamShape, from : Float, to : Float );
-	MRandomCurve( shape : ParamShape, fromMin : Float, fromMax : Float, toMin : Float, toMax : Float );
-	MCurveRange( a : ParamShape, aFrom : Float, aTo : Float, b : ParamShape, bFrom : Float, bTo : Float );
+	Constant( value : Float );
+	Range( min : Float, max : Float );
+	Curve( shape : ParamShape, from : Float, to : Float );
+	RandomCurve( shape : ParamShape, fromMin : Float, fromMax : Float, toMin : Float, toMax : Float );
+	CurveRange( a : ParamShape, aFrom : Float, aTo : Float, b : ParamShape, bFrom : Float, bTo : Float );
 }
 
 /** A vector param, one mode per component, null when unset **/
@@ -65,8 +65,8 @@ class EmitterParam {
 
 	public static function span( m : ParamMode, def : Float ) : { min : Float, max : Float } {
 		return switch( m ) {
-		case MRange(min, max): { min: min, max: max };
-		case MConstant(v): { min: v, max: v };
+		case Range(min, max): { min: min, max: max };
+		case Constant(v): { min: v, max: v };
 		case null, _: { min: def, max: def };
 		}
 	}
@@ -120,50 +120,50 @@ class EmitterParam {
 		if( v == null )
 			return null;
 		if( Std.isOfType(v, Float) || Std.isOfType(v, Int) )
-			return MConstant(v);
+			return Constant(v);
 		inline function num( v : Dynamic, def : Float ) : Float return v ?? def;
 		function shape( o : Dynamic ) : ParamShape {
 			var ease : String = o.ease;
-			return o.curve != null ? SCurve(o.curve) : SEasing(ease != null && Easing.isValid(ease) ? ease : Linear);
+			return o.curve != null ? Curve(o.curve) : Easing(ease != null && hrt.prefab.fx.Easing.isValid(ease) ? ease : Linear);
 		}
 		var from : Dynamic = v.from, to : Dynamic = v.to, a : Dynamic = v.a, b : Dynamic = v.b;
 		return switch( (v.mode : String) ) {
-		case "Range": MRange(num(v.min, 0), num(v.max, 0));
-		case "Curve": MCurve(shape(v), num(from, 0), num(to, 1));
-		case "RandomCurve": MRandomCurve(shape(v), num(from?.min, 0), num(from?.max, 0), num(to?.min, 1), num(to?.max, 1));
-		case "CurveRange": MCurveRange(shape(a), num(a.from, 0), num(a.to, 1), shape(b), num(b.from, 0), num(b.to, 1));
+		case "Range": Range(num(v.min, 0), num(v.max, 0));
+		case "Curve": Curve(shape(v), num(from, 0), num(to, 1));
+		case "RandomCurve": RandomCurve(shape(v), num(from?.min, 0), num(from?.max, 0), num(to?.min, 1), num(to?.max, 1));
+		case "CurveRange": CurveRange(shape(a), num(a.from, 0), num(a.to, 1), shape(b), num(b.from, 0), num(b.to, 1));
 		default: null;
 		}
 	}
 
 	public static function saveMode( m : ParamMode ) : Dynamic {
 		function curve( s : ParamShape, from : Float, to : Float ) : Dynamic {
-			var o : Dynamic = switch( s ) { case SCurve(path): { curve: path }; case SEasing(e): { ease: (e : String) }; };
+			var o : Dynamic = switch( s ) { case Curve(path): { curve: path }; case Easing(e): { ease: (e : String) }; };
 			if( from != 0 ) o.from = from;
 			if( to != 1 ) o.to = to;
 			return o;
 		}
 		return switch( m ) {
 		case null: null;
-		case MConstant(v): v;
-		case MRange(min, max): { mode: "Range", min: min, max: max };
-		case MCurve(s, from, to):
+		case Constant(v): v;
+		case Range(min, max): { mode: "Range", min: min, max: max };
+		case Curve(s, from, to):
 			var o = curve(s, from, to);
 			o.mode = "Curve";
 			o;
-		case MRandomCurve(s, f0, f1, t0, t1):
+		case RandomCurve(s, f0, f1, t0, t1):
 			var o = curve(s, 0, 1);
 			o.mode = "RandomCurve";
 			if( f0 != 0 || f1 != 0 ) o.from = { min: f0, max: f1 };
 			if( t0 != 1 || t1 != 1 ) o.to = { min: t0, max: t1 };
 			o;
-		case MCurveRange(a, af, at, b, bf, bt): { mode: "CurveRange", a: curve(a, af, at), b: curve(b, bf, bt) };
+		case CurveRange(a, af, at, b, bf, bt): { mode: "CurveRange", a: curve(a, af, at), b: curve(b, bf, bt) };
 		}
 	}
 
 	/** The curve at `path` under `owner` (`Prefab.locatePrefab`), null when it or a prefab on its path is disabled **/
 	public static function resolveCurve( owner : Prefab, path : String ) : Curve {
-		var curve = owner.locatePrefab(path)?.to(Curve);
+		var curve = owner.locatePrefab(path)?.to(hrt.prefab.Curve);
 		var p : Prefab = curve;
 		while( p != null && p != owner ) {
 			if( !p.enabled )
@@ -206,14 +206,14 @@ class ParamBuilder {
 	}
 
 	public static function particleCurve( owner : Prefab, c : ParticleCurve ) : Value {
-		return curve(owner, c.curve != null ? SCurve(c.curve) : SEasing(c.ease ?? Linear), c.from, c.to);
+		return curve(owner, c.curve != null ? Curve(c.curve) : Easing(c.ease ?? Linear), c.from, c.to);
 	}
 
 	/** The value of a shape, from 0 to 1, 1 for a missing curve **/
 	public static function shape( owner : Prefab, s : ParamShape ) : Value {
 		return switch( s ) {
-		case SCurve(path): EmitterParam.resolveCurve(owner, path)?.makeVal() ?? VConst(1.0);
-		case SEasing(e): VEase(e, 0, 1);
+		case Curve(path): EmitterParam.resolveCurve(owner, path)?.makeVal() ?? VConst(1.0);
+		case Easing(e): VEase(e, 0, 1);
 		}
 	}
 
@@ -235,16 +235,16 @@ class ParamBuilder {
 	public static function fixedValue( owner : Prefab, m : ParamMode, def : Float ) : Value {
 		return switch( m ) {
 		case null: Evaluator.vVal(def);
-		case MConstant(v): Evaluator.vVal(v);
-		case MCurve(s, from, to): curve(owner, s, from, to);
+		case Constant(v): Evaluator.vVal(v);
+		case Curve(s, from, to): curve(owner, s, from, to);
 		default: throw "Random mode " + m + " not supported here";
 		}
 	}
 
 	public function comp( m : ParamMode, def : Float ) : Value {
 		return switch( m ) {
-		case MRange(min, max): VRandom(randomSlots++, min, max);
-		case MRandomCurve(s, f0, f1, t0, t1):
+		case Range(min, max): VRandom(randomSlots++, min, max);
+		case RandomCurve(s, f0, f1, t0, t1):
 			var rid = randomSlots++;
 			switch( shape(owner, s) ) {
 			case VEase(e, _, _): VRandomEase(rid, e, f0, f1, t0, t1);
@@ -252,7 +252,7 @@ class ParamBuilder {
 			case VConst(k): VRandom(rid, at(f0, t0, k), at(f1, t1, k));
 			default: VRandom(rid, t0, t1);
 			}
-		case MCurveRange(a, aFrom, aTo, b, bFrom, bTo):
+		case CurveRange(a, aFrom, aTo, b, bFrom, bTo):
 			var va = curve(owner, a, aFrom, aTo), vb = curve(owner, b, bFrom, bTo);
 			switch( [va, vb] ) {
 			case [VCurve(ca, a0, a1), VCurve(cb, b0, b1)]: VCurveRange(randomSlots++, ca, a0, a1, cb, b0, b1);
@@ -264,12 +264,12 @@ class ParamBuilder {
 
 	/** The value of the animation curve `name`, `base` when there is none **/
 	public function animated( name : String, base : Value ) : Value {
-		var c = Curve.getCurve(owner, name);
+		var c = hrt.prefab.Curve.getCurve(owner, name);
 		if( c == null )
 			return base;
 		if( c.blendMode != RandomBlend )
 			return c.makeVal();
-		var a = Std.downcast(c.children[0], Curve), b = Std.downcast(c.children[1], Curve);
+		var a = Std.downcast(c.children[0], hrt.prefab.Curve), b = Std.downcast(c.children[1], hrt.prefab.Curve);
 		if( a == null || b == null || !a.isPlain() || !b.isPlain() )
 			throw c.getAbsPath(true) + ": a random blend needs two plain curves";
 		return VCurveRange(randomSlots++, a, 0, 1, b, 0, 1);
@@ -289,9 +289,9 @@ class ParamBuilder {
 		return [for( i in 0...def.def.length ) {
 			var m = mode(def, i);
 			var s : SpawnValue = switch( m ) {
-			case MRange(min, max):
+			case Range(min, max):
 				function bound( field : String, v : Float ) {
-					var c = Curve.getCurve(owner, EmitterParam.animKey(def, i, field));
+					var c = hrt.prefab.Curve.getCurve(owner, EmitterParam.animKey(def, i, field));
 					if( c != null && c.blendMode == RandomBlend )
 						throw c.getAbsPath(true) + ": a random blend on a range bound is not supported";
 					return c?.makeVal() ?? VConst(v);

@@ -66,7 +66,7 @@ class AnimEdit {
 		if (def.kind == Particle || i < 0)
 			return null;
 		return switch (emitter.getMode(def.name, i)) {
-			case MRange(_): [EmitterParam.animKey(def, i, "min"), EmitterParam.animKey(def, i, "max")];
+			case Range(_): [EmitterParam.animKey(def, i, "min"), EmitterParam.animKey(def, i, "max")];
 			case null, _: [EmitterParam.animKey(def, i)];
 		}
 	}
@@ -105,7 +105,7 @@ class AnimEdit {
 
 	public static function findCurve(owner: Prefab, name: String) : Curve {
 		// a single curve can animate all the components of a vector
-		return Curve.getCurve(owner, name, false) ?? (name.indexOf(":") > 0 ? Curve.getCurve(owner, name.split(":")[0], false) : null);
+		return hrt.prefab.Curve.getCurve(owner, name, false) ?? (name.indexOf(":") > 0 ? hrt.prefab.Curve.getCurve(owner, name.split(":")[0], false) : null);
 	}
 
 	/** Shows the animation curve `name` of `owner` on `slider`, nothing out of an FX **/

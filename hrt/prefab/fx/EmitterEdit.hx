@@ -25,11 +25,11 @@ class EmitterEdit {
 
 	static function kindOf(m: ParamMode) : ModeKind {
 		return switch (m) {
-			case MConstant(_): Constant;
-			case MRange(_): Range;
-			case MCurve(_): Curve;
-			case MRandomCurve(_): RandomCurve;
-			case MCurveRange(_): CurveRange;
+			case Constant(_): Constant;
+			case Range(_): Range;
+			case Curve(_): Curve;
+			case RandomCurve(_): RandomCurve;
+			case CurveRange(_): CurveRange;
 		}
 	}
 
@@ -38,23 +38,23 @@ class EmitterEdit {
 		var s = null, s2 = null, f0 = def, f1 = def, t0 = def, t1 = def;
 		switch (m) {
 			case null:
-			case MConstant(v): f0 = f1 = t0 = t1 = v;
-			case MRange(min, max): f0 = t0 = min; f1 = t1 = max;
-			case MCurve(sh, from, to): s = sh; f0 = f1 = from; t0 = t1 = to;
-			case MRandomCurve(sh, a, b, c, d): s = sh; f0 = a; f1 = b; t0 = c; t1 = d;
-			case MCurveRange(a, af, at, b, bf, bt): s = a; s2 = b; f0 = af; t0 = at; f1 = bf; t1 = bt;
+			case Constant(v): f0 = f1 = t0 = t1 = v;
+			case Range(min, max): f0 = t0 = min; f1 = t1 = max;
+			case Curve(sh, from, to): s = sh; f0 = f1 = from; t0 = t1 = to;
+			case RandomCurve(sh, a, b, c, d): s = sh; f0 = a; f1 = b; t0 = c; t1 = d;
+			case CurveRange(a, af, at, b, bf, bt): s = a; s2 = b; f0 = af; t0 = at; f1 = bf; t1 = bt;
 		}
 		if (s == null && mode != Constant && mode != Range) {
 			f0 = f1 = 0;
 			t0 = t1 = 1;
 		}
-		s ??= SEasing(Linear);
+		s ??= Easing(Linear);
 		return switch (mode) {
-			case Constant: MConstant((t0 + t1) * 0.5);
-			case Range: MRange(t0, t1);
-			case Curve: MCurve(s, (f0 + f1) * 0.5, (t0 + t1) * 0.5);
-			case RandomCurve: MRandomCurve(s, f0, f1, t0, t1);
-			case CurveRange: MCurveRange(s, f0, t0, s2 ?? s, f1, t1);
+			case Constant: Constant((t0 + t1) * 0.5);
+			case Range: Range(t0, t1);
+			case Curve: Curve(s, (f0 + f1) * 0.5, (t0 + t1) * 0.5);
+			case RandomCurve: RandomCurve(s, f0, f1, t0, t1);
+			case CurveRange: CurveRange(s, f0, t0, s2 ?? s, f1, t1);
 		}
 	}
 
@@ -85,15 +85,15 @@ class EmitterEdit {
 	/** The curve of `s` when its keys can be edited **/
 	static function editableCurve(owner: Prefab, s: ParamShape) : Curve {
 		return switch (s) {
-			case SCurve(path):
+			case Curve(path):
 				var c = EmitterParam.resolveCurve(owner, path);
 				c != null && c.blendMode == None ? c : null;
-			case SEasing(_): null;
+			case Easing(_): null;
 		}
 	}
 
 	/** The easings offered by the shape select: Quart and Quint are left out, they stay shown where they are used **/
-	static var EASINGS = Easing.ALL.filter(e -> { var s : String = e; s.indexOf("Quart") < 0 && s.indexOf("Quint") < 0; });
+	static var EASINGS = hrt.prefab.fx.Easing.ALL.filter(e -> { var s : String = e; s.indexOf("Quart") < 0 && s.indexOf("Quint") < 0; });
 
 	/** A thumbnail of `e`, as an inline svg: the same vertical scale for all, to fit the overshoot of Back and Elastic **/
 	static function easingThumbnail(e: Easing) : String {
@@ -113,16 +113,16 @@ class EmitterEdit {
 			var path = EmitterParam.curvePath(owner, c);
 			{ value: "curve:" + path, label: path };
 		}];
-		var current = switch (s) { case SCurve(path): "curve:" + path; case SEasing(e): "ease:" + e; };
-		if (!Lambda.exists(curves, e -> e.value == current) && s.match(SCurve(_)))
+		var current = switch (s) { case Curve(path): "curve:" + path; case Easing(e): "ease:" + e; };
+		if (!Lambda.exists(curves, e -> e.value == current) && s.match(Curve(_)))
 			curves.push({ value: current, label: current.substr(6) + " (missing)" });
 		var easings = EASINGS.copy();
 		switch (s) {
-			case SEasing(e) if (!easings.contains(e)): easings.push(e);
+			case Easing(e) if (!easings.contains(e)): easings.push(e);
 			default:
 		}
 		var entries : Array<hide.kit.Select.SelectEntry> = [{ value: "new", label: "New curve" }, { value: null, label: "Reference", children: curves }];
-		if (!plain || s.match(SEasing(_)))
+		if (!plain || s.match(Easing(_)))
 			entries.push({ value: null, label: "Easing", children: [for (e in easings) { value: "ease:" + e, label: hide.kit.Macros.camelToSpaceCase(e), preview: easingThumbnail(e) }] });
 		select.setEntries(entries);
 		select.value = current;
@@ -135,10 +135,10 @@ class EmitterEdit {
 					c.name = AnimEdit.newCurveName(owner, name + "Curve");
 					c.addKey(0, 0, Linear);
 					c.addKey(1, 1, Linear);
-					set(SCurve(EmitterParam.curvePath(owner, c)));
+					set(Curve(EmitterParam.curvePath(owner, c)));
 				});
 			} else
-				set(StringTools.startsWith(v, "curve:") ? SCurve(v.substr(6)) : SEasing(v.substr(5)));
+				set(StringTools.startsWith(v, "curve:") ? Curve(v.substr(6)) : Easing(v.substr(5)));
 			ctx.rebuildPrefab(owner);
 			ctx.rebuildInspector();
 		}
@@ -163,7 +163,7 @@ class EmitterEdit {
 		}
 		function setComp(i: Int, m: ParamMode) {
 			// no difference between the default value and no value
-			if (m != null && m.match(MConstant(_)) && Type.enumParameters(m)[0] == def.def[i])
+			if (m != null && m.match(Constant(_)) && Type.enumParameters(m)[0] == def.def[i])
 				m = null;
 			set(i, m);
 		}
@@ -183,7 +183,7 @@ class EmitterEdit {
 			// a constant at its default is shown unset: nothing to remove
 			function isSet(j: Int) {
 				var c = get(j);
-				return c != null && !(c.match(MConstant(_)) && Type.enumParameters(c)[0] == def.def[j]);
+				return c != null && !(c.match(Constant(_)) && Type.enumParameters(c)[0] == def.def[j]);
 			}
 			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
 			if (dim > 1)
@@ -201,7 +201,7 @@ class EmitterEdit {
 		}
 
 		// constant components on one line
-		var compact = dim > 1 && Lambda.foreach(value, m -> m == null || m.match(MConstant(_)));
+		var compact = dim > 1 && Lambda.foreach(value, m -> m == null || m.match(Constant(_)));
 		var compactLine = null;
 		if (compact) {
 			compactLine = new hide.kit.Line(parent, def.name);
@@ -241,7 +241,7 @@ class EmitterEdit {
 					set(s.value);
 					apply();
 					// a constant at its default is unset: grayed out
-					if (make().match(MConstant(_)))
+					if (make().match(Constant(_)))
 						s.faded = s.value == def.def[i];
 				}
 				s.onValueChange = (temp) -> {
@@ -289,7 +289,7 @@ class EmitterEdit {
 					slider(bounds, "to" + j, "", f.v(), 1, f.set, null, changed).tooltip = "To" + names[j] + ": at the death of the particle";
 			}
 			function shape(parent: hide.kit.Element, sid: String, s: ParamShape, set: ParamShape -> Void) {
-				shapeSelect(ctx, parent, sid, owner, s, def.name + (dim == 1 ? "" : comp.toUpperCase()), m.match(MCurveRange(_)), (s) -> {
+				shapeSelect(ctx, parent, sid, owner, s, def.name + (dim == 1 ? "" : comp.toUpperCase()), m.match(CurveRange(_)), (s) -> {
 					set(s);
 					apply();
 				});
@@ -299,26 +299,26 @@ class EmitterEdit {
 			switch (m) {
 				case null:
 					var v = def.def[i];
-					make = () -> MConstant(v);
+					make = () -> Constant(v);
 					slider(line, "value" + suffix, compact ? compName(i) : "", v, v, x -> v = x, animKey()).faded = true;
-				case MConstant(v):
-					make = () -> MConstant(v);
+				case Constant(v):
+					make = () -> Constant(v);
 					slider(line, "value" + suffix, compact ? compName(i) : "", v, def.def[i], x -> v = x, animKey()).faded = v == def.def[i];
-				case MRange(min, max):
-					make = () -> MRange(min, max);
+				case Range(min, max):
+					make = () -> Range(min, max);
 					slider(line, "min", "Min", min, def.def[i], x -> min = x, animKey("min"));
 					slider(line, "max", "Max", max, def.def[i], x -> max = x, animKey("max"));
-				case MCurve(s, from, to):
-					make = () -> MCurve(s, from, to);
+				case Curve(s, from, to):
+					make = () -> Curve(s, from, to);
 					shape(line, "shape0", s, x -> s = x);
 					curve(s, [{ v: () -> from, set: x -> from = x }], [{ v: () -> to, set: x -> to = x }], () -> [{ from: from, to: to }], "");
-				case MRandomCurve(s, fromMin, fromMax, toMin, toMax):
-					make = () -> MRandomCurve(s, fromMin, fromMax, toMin, toMax);
+				case RandomCurve(s, fromMin, fromMax, toMin, toMax):
+					make = () -> RandomCurve(s, fromMin, fromMax, toMin, toMax);
 					shape(line, "shape0", s, x -> s = x);
 					curve(s, [{ v: () -> fromMin, set: x -> fromMin = x }, { v: () -> fromMax, set: x -> fromMax = x }], [{ v: () -> toMin, set: x -> toMin = x }, { v: () -> toMax, set: x -> toMax = x }],
 						() -> [{ from: mid(fromMin, fromMax), to: mid(toMin, toMax) }, { from: fromMin, to: toMin }, { from: fromMax, to: toMax }], "");
-				case MCurveRange(a, aFrom, aTo, b, bFrom, bTo):
-					make = () -> MCurveRange(a, aFrom, aTo, b, bFrom, bTo);
+				case CurveRange(a, aFrom, aTo, b, bFrom, bTo):
+					make = () -> CurveRange(a, aFrom, aTo, b, bFrom, bTo);
 					var lineA = new hide.kit.Line(parent, id + "Shape0");
 					lineA.label = "A";
 					menuOwners.push(lineA);
