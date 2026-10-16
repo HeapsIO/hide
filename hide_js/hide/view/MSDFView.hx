@@ -218,7 +218,7 @@ class MSDFView extends FileView {
 
 		var scale = Math.min(1,Math.min((contentWidth - 20) / bmp.tile.width, (contentHeight - 20) / bmp.tile.height));
 
-		var cam2d = Std.downcast(cam, hide.view.l3d.CameraController2D);
+		var cam2d = Std.downcast(cam, hide.tools.CameraController2D);
 		if (cam2d != null) {
 			@:privateAccess cam2d.curPos.set(bmp.tile.width / 2, bmp.tile.width / 2, (1 / bmp.tile.width) * 500);
 		}
@@ -242,7 +242,7 @@ class MSDFView extends FileView {
 		shader.texture = texture;
 		shader.blur = 1.0;
 		shader.comparisonFactor = 0.5;
-		this.cam = new hide.view.l3d.CameraController2D(scene.s2d);
+		this.cam = new hide.tools.CameraController2D(scene.s2d);
 
 		var texMemSize = element.find(".tex-weight");
 		texMemSize.text('Texture weight : ${@:privateAccess floatToStringPrecision(texture.mem.memSize(texture) / (1024 * 1024)) } mb');
@@ -349,7 +349,7 @@ class MSDFView extends FileView {
 	}
 
 	public function updateSliderVisual() {
-		var cam2d = Std.downcast(cam, hide.view.l3d.CameraController2D);
+		var cam2d = Std.downcast(cam, hide.tools.CameraController2D);
 		if (cam2d != null && sliderBmp != null) {
 			var oldWidth = sliderBmp.getSize().width;
 			@:privateAccess sliderBmp.scaleX = (1 / (cam2d.curPos.z)) * 2;
@@ -392,7 +392,7 @@ class MSDFView extends FileView {
 		shader.texture = texture;
 		shader.blur = 1.0;
 		shader.comparisonFactor = 0.5;
-		this.cam = new hide.view.l3d.CameraController2D(scene.s2d);
+		this.cam = new hide.tools.CameraController2D(scene.s2d);
 
 		var texMemSize = element.find(".tex-weight");
 		texMemSize.text('Texture weight : ${@:privateAccess floatToStringPrecision(texture.mem.memSize(texture) / (1024 * 1024)) } mb');

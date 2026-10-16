@@ -75,7 +75,7 @@ class Editor extends Component {
 	var statusCache : Map<String, { version : Int, status : Array<Formulas.ValidationResult> }> = [];
 	// the version of the data when the formulas of a sheet were evaluated, by sheet name
 	var evaluatedVersion : Map<String, Int> = [];
-	var cdbTable : hide.view.CdbTable;
+	var cdbTable : hide.view.cdb.CdbTable;
 	var separatorsState : Map<String, Bool> = [];
 	// the measured heights of the rows of the virtual tables, by sheet path
 	var rowHeights : Map<String, { lines : Array<Float>, seps : Array<Float>, line : Float, sep : Float }> = [];
@@ -1369,7 +1369,7 @@ class Editor extends Component {
 			}
 		}
 		inRefreshAll = false;
-		for( v in Ide.inst.getViews(hide.view.CdbCustomTypes) )
+		for( v in Ide.inst.getViews(hide.view.cdb.CdbCustomTypes) )
 			v.onDatabaseChanged();
 	}
 
@@ -1696,8 +1696,8 @@ class Editor extends Component {
 			sheet = cursor.table.sheet;
 		var path: Path = [Id(sheet.idCol.name, id, sheet.idCol.name)];
 
-		ide.open("hide.view.CdbFavorites", null, function(view) {
-			var favoritesView : hide.view.CdbFavorites = cast view;
+		ide.open("hide.view.cdb.CdbFavorites", null, function(view) {
+			var favoritesView : hide.view.cdb.CdbFavorites = cast view;
 			favoritesView.addFavorite({
 				text: sheet.name+"."+id,
 				goto: () -> openReference2(sheet, path),
@@ -1720,11 +1720,11 @@ class Editor extends Component {
 	}
 
 	public static function openReference2(rootSheet : cdb.Sheet, path: Path) {
-		hide.Ide.inst.open("hide.view.CdbTable", {}, null, function(view) Std.downcast(view,hide.view.CdbTable).goto2(rootSheet,path));
+		hide.Ide.inst.open("hide.view.cdb.CdbTable", {}, null, function(view) Std.downcast(view,hide.view.cdb.CdbTable).goto2(rootSheet,path));
 	}
 
 	function openReference( s : cdb.Sheet, line : Int, column : Int, ?scriptLine: Int ) {
-		ide.open("hide.view.CdbTable", {}, function(view) Std.downcast(view,hide.view.CdbTable).goto(s,line,column,scriptLine));
+		ide.open("hide.view.cdb.CdbTable", {}, function(view) Std.downcast(view,hide.view.cdb.CdbTable).goto(s,line,column,scriptLine));
 	}
 
 	public function syncSheet( ?base, ?name ) {
