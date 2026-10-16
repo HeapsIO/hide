@@ -33,7 +33,7 @@ class TransformMath {
 		rotation, for any value `v` of the curves. Null when there is none: the base rotation shears the
 		animated scale.
 	**/
-	public static function scalePermutation( rot : Array<Float>, classes : Array<Int> ) : Null<Array<Int>> {
+	public static function scalePermutation( rot : Array<Float>, classes : Array<Int> ) : Array<Int> {
 		var rb = rotation(rot);
 		var a = new h3d.Matrix(), b = new h3d.Matrix();
 		for( p in PERMS ) {
@@ -148,7 +148,7 @@ class TransformMath {
 		(`base[j]` alone when no curve animates component `perm[j]`), `base` an euler triple of the base rotation,
 		for any value `r` of the curves (degrees). Null when there is none.
 	**/
-	public static function rotationForm( rot : Array<Float>, classes : Array<Int> ) : Null<{ base : Array<Float>, perm : Array<Int>, sign : Array<Float> }> {
+	public static function rotationForm( rot : Array<Float>, classes : Array<Int> ) : { base : Array<Float>, perm : Array<Int>, sign : Array<Float> } {
 		var rb = rotation(rot);
 		var a = new h3d.Matrix();
 		var signs = [for( k in 0...8 ) [k & 1 == 0 ? 1. : -1., k & 2 == 0 ? 1. : -1., k & 4 == 0 ? 1. : -1.]];

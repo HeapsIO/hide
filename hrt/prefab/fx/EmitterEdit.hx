@@ -34,7 +34,7 @@ class EmitterEdit {
 	}
 
 	/** `m` in `mode`, keeping its values: exactly when `mode` can express it, its middle otherwise. A new curve goes from 0 to 1 **/
-	static function convert(m: Null<ParamMode>, mode: ModeKind, def: Float) : ParamMode {
+	static function convert(m: ParamMode, mode: ModeKind, def: Float) : ParamMode {
 		var s = null, s2 = null, f0 = def, f1 = def, t0 = def, t1 = def;
 		switch (m) {
 			case null:
@@ -83,7 +83,7 @@ class EmitterEdit {
 	}
 
 	/** The curve of `s` when its keys can be edited **/
-	static function editableCurve(owner: Prefab, s: ParamShape) : Null<Curve> {
+	static function editableCurve(owner: Prefab, s: ParamShape) : Curve {
 		return switch (s) {
 			case SCurve(path):
 				var c = EmitterParam.resolveCurve(owner, path);
@@ -161,7 +161,7 @@ class EmitterEdit {
 			onChange(false);
 			ctx.rebuildInspector();
 		}
-		function setComp(i: Int, m: Null<ParamMode>) {
+		function setComp(i: Int, m: ParamMode) {
 			// no difference between the default value and no value
 			if (m != null && m.match(MConstant(_)) && Type.enumParameters(m)[0] == def.def[i])
 				m = null;

@@ -63,11 +63,11 @@ class EmitterParam {
 		return field == null ? k : k + ":" + field;
 	}
 
-	public static function span( m : Null<ParamMode>, def : Float ) : { min : Float, max : Float } {
+	public static function span( m : ParamMode, def : Float ) : { min : Float, max : Float } {
 		return switch( m ) {
 		case MRange(min, max): { min: min, max: max };
 		case MConstant(v): { min: v, max: v };
-		default: { min: def, max: def };
+		case null, _: { min: def, max: def };
 		}
 	}
 
@@ -116,7 +116,7 @@ class EmitterParam {
 		return Std.isOfType(c, Float) || Std.isOfType(c, Int) ? c : 0.0;
 	}
 
-	public static function parseMode( v : Dynamic ) : Null<ParamMode> {
+	public static function parseMode( v : Dynamic ) : ParamMode {
 		if( v == null )
 			return null;
 		if( Std.isOfType(v, Float) || Std.isOfType(v, Int) )
@@ -136,7 +136,7 @@ class EmitterParam {
 		}
 	}
 
-	public static function saveMode( m : Null<ParamMode> ) : Dynamic {
+	public static function saveMode( m : ParamMode ) : Dynamic {
 		function curve( s : ParamShape, from : Float, to : Float ) : Dynamic {
 			var o : Dynamic = switch( s ) { case SCurve(path): { curve: path }; case SEasing(e): { ease: (e : String) }; };
 			if( from != 0 ) o.from = from;
@@ -162,7 +162,7 @@ class EmitterParam {
 	}
 
 	/** The curve at `path` under `owner` (`Prefab.locatePrefab`), null when it or a prefab on its path is disabled **/
-	public static function resolveCurve( owner : Prefab, path : String ) : Null<Curve> {
+	public static function resolveCurve( owner : Prefab, path : String ) : Curve {
 		var curve = owner.locatePrefab(path)?.to(Curve);
 		var p : Prefab = curve;
 		while( p != null && p != owner ) {
@@ -177,7 +177,7 @@ class EmitterParam {
 		return curve;
 	}
 
-	public static function curvePath( owner : Prefab, curve : Curve ) : Null<String> {
+	public static function curvePath( owner : Prefab, curve : Curve ) : String {
 		var parts = [];
 		var p : Prefab = curve;
 		while( p != owner ) {
@@ -232,7 +232,7 @@ class ParamBuilder {
 	}
 
 	/** The value of a component without randomness: unset, Constant or Curve **/
-	public static function fixedValue( owner : Prefab, m : Null<ParamMode>, def : Float ) : Value {
+	public static function fixedValue( owner : Prefab, m : ParamMode, def : Float ) : Value {
 		return switch( m ) {
 		case null: Evaluator.vVal(def);
 		case MConstant(v): Evaluator.vVal(v);
@@ -241,7 +241,7 @@ class ParamBuilder {
 		}
 	}
 
-	public function comp( m : Null<ParamMode>, def : Float ) : Value {
+	public function comp( m : ParamMode, def : Float ) : Value {
 		return switch( m ) {
 		case MRange(min, max): VRandom(randomSlots++, min, max);
 		case MRandomCurve(s, f0, f1, t0, t1):
@@ -258,7 +258,7 @@ class ParamBuilder {
 			case [VCurve(ca, a0, a1), VCurve(cb, b0, b1)]: VCurveRange(randomSlots++, ca, a0, a1, cb, b0, b1);
 			default: throw owner.getAbsPath(true) + ': a Curve Range needs two plain curves, not $va and $vb';
 			}
-		default: fixedValue(owner, m, def);
+		case null, _: fixedValue(owner, m, def);
 		}
 	}
 

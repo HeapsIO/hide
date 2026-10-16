@@ -20,7 +20,7 @@ typedef ParamRange = { from : Float, to : Float };
 class ParamCurve extends Element {
 	public var shape : Float -> Float;
 	public var ranges : Array<ParamRange>;
-	public var curve : Null<hrt.prefab.Curve>;
+	public var curve : hrt.prefab.Curve;
 	public var blends : Array<Float -> Float>;
 	/** Rebuilt when the keys change **/
 	public var owner : hrt.prefab.Prefab;
@@ -34,8 +34,8 @@ class ParamCurve extends Element {
 
 	var minY = 0.;
 	var maxY = 1.;
-	var selected : Null<hrt.prefab.Curve.CurveKey>;
-	var lastClick : Null<{ key: hrt.prefab.Curve.CurveKey, time: Float }>;
+	var selected : hrt.prefab.Curve.CurveKey;
+	var lastClick : { key: hrt.prefab.Curve.CurveKey, time: Float };
 	#if js
 	var svg : js.html.svg.SVGElement;
 	#end

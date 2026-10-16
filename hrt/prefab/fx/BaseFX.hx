@@ -218,7 +218,7 @@ class BaseFXTools {
 	}
 
 	/** The value of the curves of param `name` **/
-	public static function makeShaderParamValue(basePrefab: hrt.prefab.Prefab, name: String, type: hxsl.Ast.Type) : Null<Value> {
+	public static function makeShaderParamValue(basePrefab: hrt.prefab.Prefab, name: String, type: hxsl.Ast.Type) : Value {
 		var curves = Curve.getCurves(basePrefab, name);
 		if(curves == null || curves.length == 0)
 			return null;
@@ -240,7 +240,7 @@ class BaseFXTools {
 	}
 
 	/** The value of param `name` of a shader under an emitter, from its curves, a null component keeps its prop **/
-	public static function makeParticleShaderValue(shader: hrt.prefab.Shader, name: String, dim: Int) : Null<Value> {
+	public static function makeParticleShaderValue(shader: hrt.prefab.Shader, name: String, dim: Int) : Value {
 		var p = Lambda.find(shader.particleParams, p -> p.name == name);
 		if(p == null)
 			return null;

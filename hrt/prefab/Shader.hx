@@ -28,7 +28,7 @@ class Shader extends Prefab {
 	}
 
 	/** The emitter whose particles get this shader: under an emitter, out of its sub-emitters and trails **/
-	public function getParticleEmitter() : Null<hrt.prefab.fx.Emitter> {
+	public function getParticleEmitter() : hrt.prefab.fx.Emitter {
 		var p = parent;
 		while (p != null && !(p is hrt.prefab.fx.Emitter) && !(p is hrt.prefab.l3d.Trails))
 			p = p.parent;

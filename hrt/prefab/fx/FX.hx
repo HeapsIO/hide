@@ -725,7 +725,7 @@ class FXAnimation extends h3d.scene.Object {
 
 	// TRE: Move to BaseFX?
 	/** The curves `name:x`, `name:y`, `name:z`, or a single curve `name` for every component **/
-	public static function vectorAnimation(elt: PrefabElement, name: String) : Null<VectorAnimation> {
+	public static function vectorAnimation(elt: PrefabElement, name: String) : VectorAnimation {
 		var curves = Curve.getCurves(elt, name);
 		if(curves == null || curves.length == 0)
 			return null;
@@ -738,7 +738,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	/** The animation of an object by the curves under it, null when nothing is animated. `local3d` gives the light properties. **/
-	static function makeObjectAnimation(obj3d: hrt.prefab.Object3D, local3d: h3d.scene.Object) : Null<ObjectAnimation> {
+	static function makeObjectAnimation(obj3d: hrt.prefab.Object3D, local3d: h3d.scene.Object) : ObjectAnimation {
 		var elt : PrefabElement = obj3d;
 		var anyFound = false;
 

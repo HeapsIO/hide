@@ -15,7 +15,7 @@ import hrt.prefab.fx.EmitterParam;
 class AnimEdit {
 
 	/** The time and the evaluator of the FX `p` is in, null out of an FX **/
-	public static function getFX(p: Prefab) : Null<{ time: Float, evaluator: Evaluator }> {
+	public static function getFX(p: Prefab) : { time: Float, evaluator: Evaluator } {
 		if (p.findParent(Prefab, c -> c is BaseFX, true) == null)
 			return null;
 		var root = p.getRoot();
@@ -54,7 +54,7 @@ class AnimEdit {
 		The names of the animation curves of the property `prop` of an emitter (`emitRate`, `startSpeed:x`...):
 		the value, or the min and max of a range. Null when `prop` is not one of its params.
 	**/
-	public static function animKeys(owner: Prefab, prop: String) : Null<Array<String>> {
+	public static function animKeys(owner: Prefab, prop: String) : Array<String> {
 		var emitter : ParamOwner = owner is ParamOwner ? cast owner : null;
 		if (emitter == null)
 			return null;
@@ -103,7 +103,7 @@ class AnimEdit {
 		return null;
 	}
 
-	public static function findCurve(owner: Prefab, name: String) : Null<Curve> {
+	public static function findCurve(owner: Prefab, name: String) : Curve {
 		// a single curve can animate all the components of a vector
 		return Curve.getCurve(owner, name, false) ?? (name.indexOf(":") > 0 ? Curve.getCurve(owner, name.split(":")[0], false) : null);
 	}

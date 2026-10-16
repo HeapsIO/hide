@@ -18,14 +18,14 @@ class EmitterMacros {
 
 	#if macro
 
-	static function meta( f : Field, name : String ) : Null<Array<Expr>> {
+	static function meta( f : Field, name : String ) : Array<Expr> {
 		for( m in f.meta )
 			if( m.name == name )
 				return m.params;
 		return null;
 	}
 
-	static function propType( f : Field, t : ComplexType, init : Null<Expr> ) : Expr {
+	static function propType( f : Field, t : ComplexType, init : Expr ) : Expr {
 		var explicit = meta(f, ":t");
 		if( explicit != null )
 			return explicit[0];

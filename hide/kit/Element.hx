@@ -272,7 +272,7 @@ class Element {
 		Items added to the context menu of this element and of the line it is in: when the line is
 		clicked on this element, or on the label of the line if this is its first element with items
 	**/
-	public var menuItems : Null<() -> Array<hrt.ui.HuiMenu.MenuItem>> = null;
+	public var menuItems : () -> Array<hrt.ui.HuiMenu.MenuItem> = null;
 
 	function hasMenuItems() : Bool {
 		return menuItems != null || Lambda.exists(children, c -> !(c is Category) && c.hasMenuItems());

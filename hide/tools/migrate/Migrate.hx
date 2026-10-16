@@ -19,9 +19,9 @@ typedef FileReport = {
 /** The files of a project, for the overrides of the references of a file **/
 interface Context {
 	/** The data of the file `path` as it is stored, a fresh copy, null if there is none **/
-	function readRaw( path : String ) : Null<Dynamic>;
+	function readRaw( path : String ) : Dynamic;
 	/** The data of the file `path` migrated, a fresh copy, null if there is none **/
-	function migrated( path : String ) : Null<Dynamic>;
+	function migrated( path : String ) : Dynamic;
 	/** Migrates `data` as if it was the file `path` **/
 	function upgradeAs( data : Dynamic, path : String ) : Dynamic;
 }
@@ -186,7 +186,7 @@ private class ProjectContext implements Context {
 	var results = new Map<String, FileResult>();
 	var inProgress = new Map<String, Bool>();
 
-	public function new( dir : Null<String>, extensions : Null<Array<String>>, ?files : Map<String, String> ) {
+	public function new( dir : String, extensions : Array<String>, ?files : Map<String, String> ) {
 		if( files != null ) {
 			for( path => text in files ) {
 				texts.set(path, text);
@@ -211,7 +211,7 @@ private class ProjectContext implements Context {
 		scan("");
 	}
 
-	function text( path : String ) : Null<String> {
+	function text( path : String ) : String {
 		if( texts.exists(path) || dir == null ) return texts.get(path);
 		var full = dir + "/" + path;
 		var t = sys.FileSystem.exists(full) ? sys.io.File.getContent(full) : null;
@@ -219,12 +219,12 @@ private class ProjectContext implements Context {
 		return t;
 	}
 
-	public function readRaw( path : String ) : Null<Dynamic> {
+	public function readRaw( path : String ) : Dynamic {
 		var t = text(path);
 		return t == null ? null : try haxe.Json.parse(t) catch( e : Dynamic ) null;
 	}
 
-	public function result( path : String ) : Null<FileResult> {
+	public function result( path : String ) : FileResult {
 		var r = results.get(path);
 		if( r != null ) return r;
 		var data = readRaw(path);
@@ -243,7 +243,7 @@ private class ProjectContext implements Context {
 		return r;
 	}
 
-	public function migrated( path : String ) : Null<Dynamic> {
+	public function migrated( path : String ) : Dynamic {
 		var r = try result(path) catch( e : Dynamic ) {
 			errors.push('$path: $e');
 			null;

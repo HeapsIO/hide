@@ -11,7 +11,7 @@ class RawNode {
 	/** The name the prefab gets once loaded (curves: `.` becomes `:`) **/
 	public var name : String;
 	public var type : String;
-	public var cls : Null<Class<hrt.prefab.Prefab>>;
+	public var cls : Class<hrt.prefab.Prefab>;
 	public var isCurve : Bool;
 	/** The child indices of the node from the root, in the data as it was read. Null for a node made by the upgrade. **/
 	public var origin : Array<Int>;
@@ -46,7 +46,7 @@ class RawNode {
 		this.name = isCurve ? StringTools.replace(name, ".", ":") : name;
 	}
 
-	public static function classOf( type : String ) : Null<Class<hrt.prefab.Prefab>> {
+	public static function classOf( type : String ) : Class<hrt.prefab.Prefab> {
 		if( type == null ) return null;
 		var info = @:privateAccess hrt.prefab.Prefab.getPrefabInfoByName(type);
 		return info?.prefabClass;
