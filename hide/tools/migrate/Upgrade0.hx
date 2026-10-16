@@ -150,8 +150,35 @@ class Upgrade0 {
 		report.warnings.push('$file ${node.path()}: $msg');
 	}
 
+	function fail( node : RawNode, msg : String ) {
+		report.errors.push('$file ${node.path()}: $msg');
+	}
+
 	function change( node : RawNode, kind : String ) {
 		report.changes.push({ path: node.path(), kind: kind });
+	}
+
+	/** Fresh instances of the prefab classes, by type, for the defaults of their fields **/
+	static var defaults = new Map<String, hrt.prefab.Prefab>();
+
+	/**
+		The field `name` (the exact name first, else in any case) of the prefab of `n` once loaded: its
+		value in the data, else the default of its class. Null when the class has no such field, or is
+		not known to this build.
+	**/
+	static function fieldOf( n : RawNode, name : String ) : Dynamic {
+		if( n.cls == null )
+			return null;
+		var fields = Type.getInstanceFields(n.cls);
+		var f = fields.indexOf(name) >= 0 ? name : Lambda.find(fields, f -> f.toLowerCase() == name.toLowerCase());
+		if( f == null )
+			return null;
+		if( Reflect.hasField(n.data, f) )
+			return get(n.data, f);
+		var inst = defaults.get(n.type);
+		if( inst == null )
+			defaults.set(n.type, inst = Type.createInstance(n.cls, [null, new hrt.prefab.ContextShared(null, false)]));
+		return Reflect.field(inst, f);
 	}
 
 	function isLegacy( n : RawNode ) return n.isCurve && !upgraded.exists(n.data);
@@ -519,6 +546,9 @@ class Upgrade0 {
 	}
 
 	function process( n : RawNode, is2D : Bool, inEmitter : Bool ) {
+		// what its curves animate, and from which values, depends on its class
+		if( n.cls == null && Lambda.exists(n.children, c -> c.isCurve && c.enabled()) )
+			fail(n, 'prefab type ${n.type} unknown to this build: its curves are not upgraded (the migration must be built with the prefab classes of the game, see hide/migrate.hxml)');
 		if( !is2D && !inEmitter && n.isA(hrt.prefab.Object3D) )
 			upgradeObject3D(n);
 		if( is2D && n.isA(hrt.prefab.Object2D) )
@@ -574,10 +604,9 @@ class Upgrade0 {
 
 	function upgradeObject3D( n : RawNode ) {
 		var d = n.data;
-		var pos = [num(get(d, "x"), 0), num(get(d, "y"), 0), num(get(d, "z"), 0)];
-		var scale = [num(get(d, "scaleX"), 1), num(get(d, "scaleY"), 1), num(get(d, "scaleZ"), 1)];
-		var rot = [num(get(d, "rotationX"), 0), num(get(d, "rotationY"), 0), num(get(d, "rotationZ"), 0)];
-
+		var pos = [for( f in ["x", "y", "z"] ) num(fieldOf(n, f), 0)];
+		var scale = [for( f in ["scaleX", "scaleY", "scaleZ"] ) num(fieldOf(n, f), 1)];
+		var rot = [for( f in ["rotationX", "rotationY", "rotationZ"] ) num(fieldOf(n, f), 0)];
 
 		// position: offset of the base position
 		var gp = group(n, "position");
@@ -1162,17 +1191,16 @@ class Upgrade0 {
 	}
 
 	function upgradeObject2D( n : RawNode ) {
-		var d = n.data;
 		var gp = group(n, "position");
 		if( anyLegacy(gp) )
-			bakeVector(n, "position", channels(gp, "position", 2), [1, 1], [num(get(d, "x"), 0), num(get(d, "y"), 0)], "2d position");
+			bakeVector(n, "position", channels(gp, "position", 2), [1, 1], [num(fieldOf(n, "x"), 0), num(fieldOf(n, "y"), 0)], "2d position");
 		var gs = group(n, "scale");
 		if( anyLegacy(gs) )
-			bakeVector(n, "scale", channels(gs, "scale", 2), [num(get(d, "scaleX"), 1), num(get(d, "scaleY"), 1)], [0, 0], "2d scale");
+			bakeVector(n, "scale", channels(gs, "scale", 2), [num(fieldOf(n, "scaleX"), 1), num(fieldOf(n, "scaleY"), 1)], [0, 0], "2d scale");
 		var gr = group(n, "rotation");
 		if( anyLegacy(gr) ) {
 			// the old code added the rotation of the prefab, in degrees, to the radians of the curve
-			var r = num(get(d, "rotation"), 0);
+			var r = num(fieldOf(n, "rotation"), 0);
 			bakeVector(n, "rotation", channels(gr, "rotation", 1), [360], [r != 0 ? hxd.Math.radToDeg(r) : 0], r != 0 ? "2d rotation, base read as radians" : "2d rotation");
 		}
 	}
@@ -1188,11 +1216,28 @@ class Upgrade0 {
 	}
 
 	/**
-		A float param was `curve * value` (the stored value when it is a number, 1 for another value).
-		The kind of a param comes from its stored value: the shader definition is not known.
+		The value of shader param `name` the old `makeShaderParams` started from: the stored one (`props`),
+		else the field of the prefab of that name. Null when there is neither: it was then the default of
+		the param in the shader, whose definition is not known here.
+	**/
+	static function shaderValue( n : RawNode, name : String ) : Dynamic {
+		var props : Dynamic = get(n.data, "props");
+		var f = propName(props, name.toLowerCase());
+		var prop : Dynamic = f == null ? null : Reflect.field(props, f);
+		return prop ?? fieldOf(n, f ?? name);
+	}
+
+	static function isNumber( v : Dynamic ) return Std.isOfType(v, Float) || Std.isOfType(v, Int);
+
+	function unknownBase( n : RawNode, name : String ) {
+		fail(n, 'shader param $name: no stored value nor field, its base value is the default of the param in the shader, which the migration does not know: not upgradable, its curve is kept as the value');
+	}
+
+	/**
+		A float param was `curve * value` (the value when it is a number, 1 for another value).
+		The kind of a param comes from its value: the shader definition is not known.
 	**/
 	function upgradeShader( n : RawNode ) {
-		var props : Dynamic = get(n.data, "props");
 		var seen = new Map();
 		for( c in n.children ) {
 			if( !c.isCurve || !c.enabled() || !isLegacy(c) ) continue;
@@ -1200,24 +1245,19 @@ class Upgrade0 {
 			var low = prefix.toLowerCase();
 			if( seen.exists(low) ) continue;
 			seen.set(low, true);
-			var f = propName(props, low);
-			var prop : Dynamic = f == null ? null : Reflect.field(props, f), found = f != null;
-			if( Std.isOfType(prop, Array) )
+			var value : Dynamic = shaderValue(n, prefix);
+			if( Std.isOfType(value, Array) )
 				continue; // vectors and colors come from their curves
 			// the curve of a float: the first enabled one with the name of the param
 			var curve = Lambda.find(n.children, x -> x.isCurve && x.enabled() && sameName(x.name, prefix));
 			if( curve == null || !isLegacy(curve) ) continue;
-			if( !found ) {
+			if( value == null ) {
 				var hasComponents = Lambda.exists(n.children, x -> x.isCurve && x.enabled() && x.name.indexOf(":") >= 0 && sameName(x.name.split(":")[0], prefix));
-				if( hasComponents ) continue;
-				warn(curve, "shader param without a stored value, taken as a float of default 0");
-				bakeLinear(curve, 0, 0);
-				change(curve, "shader float, no value");
+				if( !hasComponents )
+					unknownBase(curve, prefix);
 				continue;
 			}
-			var isNumber = Std.isOfType(prop, Float) || Std.isOfType(prop, Int);
-			if( !isNumber ) continue;
-			var k : Float = prop;
+			var k : Float = isNumber(value) ? value : 1;
 			bakeLinear(curve, k, 0);
 			change(curve, k == 1 ? "shader float, value 1" : "shader float");
 		}
@@ -1591,7 +1631,7 @@ class Upgrade0 {
 			seen.set(low, true);
 			// the runtime finds the curves from the shader var name, case insensitive
 			var name = propName(props, low) ?? prefix;
-			var prop : Dynamic = props == null ? null : Reflect.field(props, name);
+			var prop : Dynamic = shaderValue(s, name);
 			var group = [for( x in s.children ) if( x.enabled() && x.isCurve && sameName(x.name.split(":")[0], name) ) x];
 			var components = Lambda.exists(group, x -> x.name.indexOf(":") >= 0);
 			var isVector = Std.isOfType(prop, Array) || (prop == null && components);
@@ -1611,13 +1651,10 @@ class Upgrade0 {
 				// component curves on a float are not read
 				if( x == null )
 					continue;
-				// the old code multiplied by the value when it is a number, by 1 otherwise, and a missing
-				// value is the default of the param: 0 for a float
-				var isNumber = Std.isOfType(prop, Float) || Std.isOfType(prop, Int);
-				var base = isNumber ? num(prop, 0) : prop != null ? 1.0 : 0.0;
+				// the old code multiplied by the value when it is a number, by 1 otherwise
 				if( prop == null )
-					warn(s, '$name: no stored value, taken as a float of default 0');
-				out.set(name, [MCurve(x.uniqueName(), 0, base)]);
+					unknownBase(x, name);
+				out.set(name, [MCurve(x.uniqueName(), 0, isNumber(prop) ? num(prop, 0) : 1.0)]);
 			}
 		}
 		if( !out.iterator().hasNext() )

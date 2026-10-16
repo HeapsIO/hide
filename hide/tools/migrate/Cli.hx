@@ -16,6 +16,8 @@ With no option, a dry run: lists the files that would change, the changes and th
 	}
 
 	static function main() {
+		// the heaps watchdog would stop a project that takes more than 30s
+		hxd.System.allowTimeout = false;
 		var args = Sys.args();
 		var res : String = null, out : String = null, inPlace = false, reportFile : String = null, verbose = false;
 		var i = 0;
@@ -56,13 +58,14 @@ With no option, a dry run: lists the files that would change, the changes and th
 			Sys.println('${changed.length} files written to $dir');
 		} else
 			Sys.println("dry run, nothing written (--out <dir> or --in-place to write)");
-		var parents = 0, warnings = 0;
+		var parents = 0, warnings = 0, errors = result.errors.length;
 		for( f in result.files ) {
 			parents += f.report.parents.length;
 			warnings += f.report.warnings.length;
+			errors += f.report.errors.length;
 		}
-		Sys.println('${result.files.length} files read, ${changed.length} changed, $parents objects moved under a parent, $warnings warnings, ${result.errors.length} errors, ${Math.round((haxe.Timer.stamp() - t0) * 10) / 10}s');
-		Sys.exit(result.errors.length > 0 ? 1 : 0);
+		Sys.println('${result.files.length} files read, ${changed.length} changed, $parents objects moved under a parent, $warnings warnings, $errors errors, ${Math.round((haxe.Timer.stamp() - t0) * 10) / 10}s');
+		Sys.exit(errors > 0 ? 1 : 0);
 	}
 
 	public static function report( res : String, result : ProjectResult, verbose : Bool ) : String {
@@ -95,9 +98,11 @@ With no option, a dry run: lists the files that would change, the changes and th
 			line("\n## Warnings\n");
 			for( w in warnings ) line('- $w');
 		}
-		if( result.errors.length > 0 ) {
+		var errors = result.errors.concat([for( f in result.files ) for( e in f.report.errors ) e]);
+		if( errors.length > 0 ) {
 			line("\n## Errors\n");
-			for( e in result.errors ) line('- $e');
+			line("What could not be upgraded, left as it is.\n");
+			for( e in errors ) line('- $e');
 		}
 		line("\n## Files\n");
 		for( f in changed ) {

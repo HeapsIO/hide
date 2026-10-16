@@ -10,6 +10,8 @@ typedef FileReport = {
 	var changes : Array<Change>;
 	/** Old data approximated or left as it is **/
 	var warnings : Array<String>;
+	/** Old data that cannot be upgraded, left as it is **/
+	var errors : Array<String>;
 	/** `path`: the parent, at the original path of the object; `child`: the new name of the object **/
 	var parents : Array<{ path : String, child : String, reason : String }>;
 }
@@ -64,7 +66,7 @@ class Migrate {
 	}
 
 	public static function newReport( file : String ) : FileReport {
-		return { file: file, changes: [], warnings: [], parents: [] };
+		return { file: file, changes: [], warnings: [], errors: [], parents: [] };
 	}
 
 	public static function versionOf( data : Dynamic ) : Int {
@@ -169,6 +171,8 @@ class Migrate {
 		}
 		for( w in report.warnings )
 			log('[hide] warning: $w');
+		for( e in report.errors )
+			log('[hide] error: $e');
 	}
 }
 
