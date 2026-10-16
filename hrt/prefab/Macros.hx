@@ -231,6 +231,24 @@ class Macros {
 
 		// Transform enum -> strings for json
 		function custommFilter(type:Type, source:Expr, sourceType:Type, defaultValue: Expr) : Expr {
+			switch (type) {
+				// a null optional field is not saved
+				case TAnonymous(a):
+					var sets = [for (f in a.get().fields) {
+						var name = f.name;
+						var e = deepCopyRec(f.type, macro @:pos(source.pos) _o.$name, f.type, null, custommFilter);
+						f.meta.has(":optional") ? macro @:pos(source.pos) if (_o.$name != null) _r.$name = $e : macro @:pos(source.pos) _r.$name = $e;
+					}];
+					return macro @:pos(source.pos) {
+						var _o = $e{source};
+						if (_o == null) null else {
+							var _r : Dynamic = {};
+							$b{sets};
+							_r;
+						}
+					}
+				default:
+			}
 			switch (sourceType) {
 				case TEnum(t, _):
 					return macro haxe.EnumTools.EnumValueTools.getName($e{source});
