@@ -19,7 +19,7 @@ Scope: `Emitter` and `Emitter2D`. Editing through the new inspector only (edit2 
 
 Vector params have one mode per component. Rotations are in degrees, rotation speeds (orbit speed) in degrees per second.
 Particle shaders get their per-particle randomness on the GPU, from the emitter's `particleRandom`.
-A shader under an emitter stores its particle params on itself, in an optional field only used under an emitter: the same mode data as the emitter params, so the curve gives the value (shape: curve or easing, `from` / `to`).
+A shader under an emitter stores its particle params on itself, in a field only used under an emitter: per param, a curve per component, which gives the value (shape: curve or easing, `from` / `to`); a component without curve keeps the prop.
 
 ## Modes
 
@@ -57,7 +57,7 @@ Rejected when the values are built (an error), and not offered by the curve insp
 
 ## Storage
 
-- Params are stored under their plain name (`scale`, `startSpeed`...), each component with its mode and fields.
+- Params are stored under their plain name (`scale`, `startSpeed`...): a mode, or for a vector an object of the modes of its components (`x`, `y`, `z`, an unset one left out).
 - Old files are converted once by a migration tool in `hide/tools`, run over a whole project: it rewrites every old-format file, updates the files that override or point at what it changes, only touches the nodes it changes, and is idempotent. Loading an old-format file still works as a fallback: the same migration code upgrades it in memory, alone (no fixes in other files), with a warning recommending the tool.
 - Every FX file carries a format `version` at its root (no version = 0, the old format); everything inside the file, including its Reference overrides, follows it. Upgrade steps are keyed by version. A project is always migrated as a whole.
 
