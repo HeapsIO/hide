@@ -500,21 +500,81 @@ class Upgrade0 {
 		}
 	}
 
-	/** Linear keys fitting `values` (sampled at `times`) within `tol`. **/
+	/**
+		Keys fitting `values` (sampled at `times`) within `tol`: the fewest of a linear fit, a smooth one,
+		and a smooth one broken at the kinks of the samples (`fitWith`).
+	**/
 	static function fitKeys( times : Array<Float>, values : Array<Float>, tol : Float ) : Array<Dynamic> {
+		// a time sampled twice once
+		var keep = [for( i in 0...times.length ) i == 0 || times[i] > times[i - 1]];
+		times = [for( i in 0...keep.length ) if( keep[i] ) times[i]];
+		values = [for( i in 0...keep.length ) if( keep[i] ) values[i]];
+		var best : Array<Dynamic> = null;
+		for( mode in 0...3 ) {
+			var keys = fitWith(times, values, tol, mode);
+			if( best == null || keys.length < best.length ) best = keys;
+		}
+		return best;
+	}
+
+	/**
+		A fit adding a key where it misses the most. `mode` 0: linear keys. 1: a cubic between two keys,
+		the slope of the samples at its keys, handles at a third of the segment in time, so the time stays
+		linear and the value is the Hermite cubic (`Curve.getVal` reads it at steps of 1/32 of the segment,
+		linearly between them), checked between the samples too; a line between two consecutive samples, a
+		jump is a Constant key before it. 2: the same, the tangents broken at the kinks.
+	**/
+	static function fitWith( times : Array<Float>, values : Array<Float>, tol : Float, mode : Int ) : Array<Dynamic> {
 		var n = times.length;
-		var keep = [for( _ in 0...n ) false];
-		keep[0] = keep[n - 1] = true;
-		var stack = [0, n - 1];
+		inline function slope( i : Int ) return (values[i + 1] - values[i]) / (times[i + 1] - times[i]);
+		// much steeper than the samples around it
+		var jump = [for( i in 0...n - 1 ) mode > 0 && n > 2 && Math.abs(values[i + 1] - values[i]) > tol
+			&& (i == 0 || Math.abs(slope(i)) > 8 * Math.abs(slope(i - 1))) && (i == n - 2 || Math.abs(slope(i)) > 8 * Math.abs(slope(i + 1)))];
+		// a change of slope much sharper than the ones around it
+		inline function bend( i : Int ) return i < 1 || i > n - 2 ? 0. : Math.abs(slope(i) - slope(i - 1));
+		var kink = [for( i in 0...n ) mode == 2 && i > 0 && i < n - 1 && !jump[i] && !jump[i - 1]
+			&& bend(i) * (times[i + 1] - times[i - 1]) > tol * 0.1 && bend(i) > 4 * Math.max(bend(i - 2), bend(i + 2))];
+		var mL = [], mR = [];
+		for( i in 0...n ) {
+			var l = i > 0 && !jump[i - 1], r = i < n - 1 && !jump[i];
+			if( l && r && !kink[i] ) {
+				var m = (slope(i - 1) * (times[i + 1] - times[i]) + slope(i) * (times[i] - times[i - 1])) / (times[i + 1] - times[i - 1]);
+				mL.push(m);
+				mR.push(m);
+			} else {
+				mL.push(l ? slope(i - 1) : r ? slope(i) : 0.);
+				mR.push(r ? slope(i) : l ? slope(i - 1) : 0.);
+			}
+		}
+		function at( a : Int, b : Int, t : Float ) {
+			var seg = times[b] - times[a];
+			if( mode == 0 )
+				return values[a] + (values[b] - values[a]) * (t - times[a]) / seg;
+			inline function h( u : Float ) {
+				var u2 = u * u, u3 = u2 * u;
+				return (2 * u3 - 3 * u2 + 1) * values[a] + (u3 - 2 * u2 + u) * seg * mR[a] + (3 * u2 - 2 * u3) * values[b] + (u3 - u2) * seg * mL[b];
+			}
+			var f = (t - times[a]) / seg * 32, k = Math.floor(f);
+			return hxd.Math.lerp(h(k / 32), h((k + 1) / 32), f - k);
+		}
+		var keep = [for( i in 0...n ) i == 0 || i == n - 1 || jump[i] || (i > 0 && jump[i - 1]) || kink[i]];
+		var stack = [], prev = 0;
+		for( i in 1...n )
+			if( keep[i] ) {
+				stack.push(prev); stack.push(i);
+				prev = i;
+			}
 		while( stack.length > 0 ) {
 			var b = stack.pop(), a = stack.pop();
+			if( b == a + 1 ) continue;
 			var worst = -1, err = tol;
-			for( i in a + 1...b ) {
-				var f = (times[i] - times[a]) / (times[b] - times[a]);
-				var e = Math.abs(values[a] + (values[b] - values[a]) * f - values[i]);
+			for( i in a...b ) {
+				var e = i == a ? 0 : Math.abs(at(a, b, times[i]) - values[i]);
+				if( mode > 0 )
+					e = Math.max(e, Math.abs(at(a, b, (times[i] + times[i + 1]) * 0.5) - (values[i] + values[i + 1]) * 0.5));
 				if( e > err ) {
 					err = e;
-					worst = i;
+					worst = i == a ? a + 1 : i;
 				}
 			}
 			if( worst >= 0 ) {
@@ -523,13 +583,23 @@ class Upgrade0 {
 				stack.push(worst); stack.push(b);
 			}
 		}
-		var keys = [];
-		for( i in 0...n )
-			if( keep[i] )
-				keys.push(obj(["time", times[i], "value", values[i], "mode", 2]));
+		var idx = [for( i in 0...n ) if( keep[i] ) i];
 		// a constant curve is one key
-		if( keys.length == 2 && Math.abs(keys[0].value - keys[1].value) <= tol )
-			keys.pop();
+		if( idx.length == 2 && Math.abs(values[0] - values[n - 1]) <= tol )
+			return [obj(["time", times[0], "value", values[0], "mode", 2])];
+		var keys = [];
+		for( j => i in idx ) {
+			var k : Dynamic = obj(["time", times[i], "value", values[i], "mode", mode == 0 ? 2 : i < n - 1 && jump[i] ? 3 : mL[i] != mR[i] ? 1 : 0]);
+			if( mode > 0 && j > 0 && idx[j - 1] < i - 1 ) {
+				var dt = (times[i] - times[idx[j - 1]]) / 3;
+				k.prevHandle = obj(["dt", -dt, "dv", -mL[i] * dt]);
+			}
+			if( mode > 0 && j < idx.length - 1 && idx[j + 1] > i + 1 ) {
+				var dt = (times[idx[j + 1]] - times[i]) / 3;
+				k.nextHandle = obj(["dt", dt, "dv", mR[i] * dt]);
+			}
+			keys.push(k);
+		}
 		return keys;
 	}
 
