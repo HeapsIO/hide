@@ -142,6 +142,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		window.propagateKeyEvents = true;
 		window.setCurrent();
 		h3d.impl.MemoryManager.enableTrackAlloc(Ide.inst.currentConfig.get("hide.trackGpuAlloc"));
+		hxd.res.TextureStream.ENABLED = Ide.inst.currentConfig.get("hide.textureStreaming");
 		engine = @:privateAccess new h3d.Engine();
 		@:privateAccess engine.resCache.set(Scene, this);
 		engine.backgroundColor = 0xFF111111;
