@@ -321,9 +321,8 @@ class ElectronMain {
 		win.on("leave-full-screen", () -> dispatchWinEvent(id, "leave-fullscreen"));
 
 		win.webContents.on("destroyed", () -> cleanupWebContents(wcId));
-		// not prevented : the page also gets the key (F12 is used by DomkitEditor)
 		win.webContents.on("before-input-event", function(e : Dynamic, input : Dynamic) {
-			if( input.type == "keyDown" && (input.key == "F12" || (input.control && input.shift && input.code == "KeyI")) )
+			if( input.type == "keyDown" && input.control && input.shift && input.code == "KeyI" )
 				win.webContents.toggleDevTools();
 		});
 		// page reload : forget what the previous page had registered
