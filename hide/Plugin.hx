@@ -1,6 +1,7 @@
 package hide;
 #if macro
 import haxe.macro.Compiler in C;
+import haxe.macro.Compiler.PackageRule;
 import haxe.macro.Context;
 #end
 
@@ -115,6 +116,16 @@ class Plugin {
 				C.define(d, "1");
 			C.addClassPath(hidePath+"/hide_js");
 			C.addClassPath(hidePath+"/hide_js/libs");
+			if( Context.defined("dx12") ) {
+				// no macro API for --remap
+				if( !C.getConfiguration().packageRules.get("hl").match(Remap("hlemu")) )
+					Context.fatalError("-D dx12 flag also need a --remap hl:hlemu build argument", Context.currentPos());
+				// hlemu.Macros.init(), which is not in the macro class path
+				for( p in ["dx", "h3d.impl"] )
+					C.addGlobalMetadata(p, "@:build(hlemu.Macros.build())", true, true, false);
+				for( e in ["dx", "hlemu"] )
+					C.exclude(e);
+			}
 		} else
 			C.addClassPath(hidePath+"/hide_hl");
 
