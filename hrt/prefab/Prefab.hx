@@ -1,4 +1,5 @@
 package hrt.prefab;
+using Lambda;
 
 typedef PrefabField = {
 	var name : String;
@@ -850,9 +851,8 @@ class Prefab {
 		var p = this;
 		while (parts.length > 0 && p != null) {
 			var name = parts.shift();
-			// TODO: why did we need to change this?
-			// `name-N` is the Nth child of that name (`getUniqueName`), a name can have a dash: the exact name first
-			var found = Lambda.find(p.children, o -> o.name == name);
+			// support name-with-dash-index
+			var found = p.children.find(o -> o.name == name);
 			var dash = name.lastIndexOf("-");
 			if (found == null && dash > 0) {
 				var chooseNth = Std.parseInt(name.substr(dash + 1)) ?? 0;

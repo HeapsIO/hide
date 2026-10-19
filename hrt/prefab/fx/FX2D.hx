@@ -158,6 +158,7 @@ class FX2DAnimation extends h2d.Object {
 		this.prevTime = localTime;
 	}
 
+	// TRE: inline above if used once
 	static function applyTransform(anim: ObjectAnimation, evaluator: Evaluator, time: Float) {
 		var e = anim.elt2d, o = anim.obj2d, p = anim.position, s = anim.scale, r = anim.rotation;
 		inline function f(v: Value, base: Float) return v == null ? base : evaluator.getFloat(v, time);
