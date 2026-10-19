@@ -80,6 +80,9 @@ class ElectronMain {
 			return;
 		}
 
+		// leftover of the nw.js version, git can't remove it because of its untracked files
+		js.Lib.require("fs").rm(js.node.Path.join(js.node.Path.dirname(js.Node.process.execPath), "package.nw"), { recursive : true, force : true }, (_) -> {});
+
 		initCrashLogs();
 		initHandlers();
 
