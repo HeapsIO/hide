@@ -2,6 +2,7 @@ package hide.tools.migrate;
 
 import hrt.prefab.fx.Value;
 import hrt.prefab.fx.Evaluator;
+import hrt.prefab.fx.EmitterParam.ParamShape;
 import hide.tools.migrate.Migrate.FileReport;
 import hide.tools.migrate.RawNode.get;
 import hrt.prefab.Diff.deepCopy;
@@ -10,12 +11,12 @@ import hrt.prefab.Diff.deepCopy;
 private typedef ChannelMap = { src : Null<Int>, a : Float, b : Float };
 
 /** The curves of a vector property: `uniform` when one curve is all of them **/
-private typedef Channels = { uniform : Null<RawNode>, comps : Array<Null<RawNode>> };
+private typedef Channels = { uniform : RawNode, comps : Array<RawNode> };
 
 /** A sampled re-bake of the rotation (and scale) of an object, `problem` tells why it cannot stand for the old transform **/
 private typedef Resample = {
-	var cs : Null<Channels>;
-	var cr : Null<Channels>;
+	var cs : Channels;
+	var cr : Channels;
 	var scale : Array<Float>;
 	var rot : Array<Float>;
 	var withScale : Bool;
@@ -24,20 +25,20 @@ private typedef Resample = {
 	var input : String;
 	var scaleKeys : Array<Array<Dynamic>>;
 	var rotKeys : Array<Array<Dynamic>>;
-	var problem : Null<String>;
+	var problem : String;
 	/** Why the keys only stand for the old transform at the default of the parameters **/
-	var approx : Null<String>;
+	var approx : String;
 	/** How far the old runtime was from a rigid transform **/
 	var nonRigid : Float;
 }
 
-/** The mode of a param component (format 1), `shape` the path of a curve from the emitter **/
+/** The mode of a param component (format 1), a curve shape by its path from the emitter **/
 private enum Mode {
 	MConstant( v : Float );
 	MRange( min : Float, max : Float );
-	MCurve( shape : String, from : Float, to : Float );
-	MRandomCurve( shape : String, fromMin : Float, fromMax : Float, toMin : Float, toMax : Float );
-	MCurveRange( a : String, aFrom : Float, aTo : Float, b : String, bFrom : Float, bTo : Float );
+	MCurve( shape : ParamShape, from : Float, to : Float );
+	MRandomCurve( shape : ParamShape, fromMin : Float, fromMax : Float, toMin : Float, toMax : Float );
+	MCurveRange( a : ParamShape, aFrom : Float, aTo : Float, b : ParamShape, bFrom : Float, bTo : Float );
 }
 
 private enum abstract Group(Int) {
@@ -88,6 +89,9 @@ class Upgrade0 {
 	/** Suffix of the name of an object moved under a parent that takes its name **/
 	static inline var BASE_SUFFIX = "_base";
 
+	/** A particle curve this close to an easing (relative to its range, see `EasingFit`) becomes that easing, 0 keeps the curves **/
+	public static var EASING_TOLERANCE = 0.05;
+
 	static function num( v : Dynamic, def : Float ) : Float {
 		return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : def;
 	}
@@ -122,7 +126,7 @@ class Upgrade0 {
 	var mirror : hrt.prefab.Prefab;
 	var fileRoot : Bool;
 
-	public function new( ctx : Null<Migrate.Context>, report : FileReport ) {
+	public function new( ctx : Migrate.Context, report : FileReport ) {
 		this.ctx = ctx;
 		this.file = report.file;
 		this.report = report;
@@ -137,6 +141,7 @@ class Upgrade0 {
 		root =RawNode.build(data, null, []);
 		this.fileRoot = fileRoot;
 		indexUsers(root);
+		checkInputs(root);
 		fxPass(root);
 		emitterPass(root);
 	}
@@ -194,7 +199,7 @@ class Upgrade0 {
 	// Paths
 
 	/** The child of `n` at `part` of a path, like `Prefab.locatePrefab`: the exact name first, else `name-N` for the Nth of that name **/
-	static function findChild( children : Array<RawNode>, part : String ) : Null<RawNode> {
+	static function findChild( children : Array<RawNode>, part : String ) : RawNode {
 		var found = Lambda.find(children, c -> c.name == part);
 		var dash = part.lastIndexOf("-");
 		if( found == null && dash > 0 ) {
@@ -205,7 +210,7 @@ class Upgrade0 {
 	}
 
 	/** Like `Prefab.locatePrefab` from `base`, the root of the file by default **/
-	function locate( path : String, ?base : RawNode ) : Null<RawNode> {
+	function locate( path : String, ?base : RawNode ) : RawNode {
 		if( path == null || (base == null && !fileRoot) )
 			return null;
 		var p = base ?? root;
@@ -218,7 +223,7 @@ class Upgrade0 {
 	}
 
 	/** The path of `node` from the root (`locate`), null if it cannot be written as one. **/
-	function pathOf( node : RawNode ) : Null<String> {
+	function pathOf( node : RawNode ) : String {
 		if( !fileRoot )
 			return null;
 		var parts = [];
@@ -265,6 +270,22 @@ class Upgrade0 {
 		while( Lambda.exists(parent.children, c -> c.enabled() && sameName(c.name, n)) )
 			n = name + "_" + (i++);
 		return n;
+	}
+
+	/** The curves the runtime does not read (`Curve.makeVal`): a remap by another curve, a remapped blend or reference, a blend of curves that are not plain **/
+	function checkInputs( n : RawNode ) {
+		if( n.isCurve ) {
+			var remap : String = get(n.data, "remapPath"), b = blendMode(n);
+			inline function plain( c : RawNode ) return blendMode(c) == 0 && (get(c.data, "remapPath") ?? "") == "";
+			if( remap != null && remap != "" && !StringTools.startsWith(remap, "$param.") )
+				fail(n, "time remap by another curve, not supported");
+			else if( remap != null && remap != "" && (b == 1 || b == 3) )
+				fail(n, "time remap of a blend or a reference, not supported");
+			if( (b == 1 || b == 2) && !Lambda.foreach(n.curveChildren().slice(0, 2), c -> plain(c)) )
+				fail(n, "blend of curves that are not plain, not supported");
+		}
+		for( c in n.children )
+			checkInputs(c);
 	}
 
 	function indexUsers( n : RawNode ) {
@@ -401,7 +422,7 @@ class Upgrade0 {
 	// Old evaluation (sampled re-bakes)
 
 	/** The prefab of `n` in the file as it was read, loaded as plain prefabs with its curves, to evaluate them. **/
-	function mirrorOf( n : RawNode ) : Null<hrt.prefab.Prefab> {
+	function mirrorOf( n : RawNode ) : hrt.prefab.Prefab {
 		if( n.origin == null )
 			return null;
 		if( mirror == null ) {
@@ -595,7 +616,7 @@ class Upgrade0 {
 	}
 
 	/** Mirrors `Shader.getParticleEmitter`: the shaders under an emitter are evaluated over the particle life. **/
-	static function particleEmitter( n : RawNode ) : Null<RawNode> {
+	static function particleEmitter( n : RawNode ) : RawNode {
 		var p = n.parent;
 		while( p != null ) {
 			if( p.isA(hrt.prefab.fx.Emitter) ) return p;
@@ -717,7 +738,7 @@ class Upgrade0 {
 		animation and the object keeps its world transform, but what reads the transform of its parent
 		object, sets its own rotation or reads its direct children would then see another one.
 	**/
-	function noParent( n : RawNode ) : Null<String> {
+	function noParent( n : RawNode ) : String {
 		if( n.parent == null || n.isA(hrt.prefab.fx.FX) )
 			return "the root of the FX cannot get a parent";
 		// particles in the space of the parent object, its scale and the local position of the emitter
@@ -831,7 +852,7 @@ class Upgrade0 {
 		the old transform, null when they do (checked against the old transform over the whole span).
 		Curves read at several inputs are sampled over one of them, the others at their default (`approx`).
 	**/
-	function resample( n : RawNode, cs : Null<Channels>, cr : Null<Channels>, scale : Array<Float>, rot : Array<Float>, withScale : Bool ) : Resample {
+	function resample( n : RawNode, cs : Channels, cr : Channels, scale : Array<Float>, rot : Array<Float>, withScale : Bool ) : Resample {
 		var involved : Array<RawNode> = [];
 		for( ch in [cs, cr] )
 			if( ch != null )
@@ -880,7 +901,7 @@ class Upgrade0 {
 
 		var ev = new Evaluator();
 		for( k => v in parameters ) ev.parameters.set(k, v);
-		function val( c : Null<RawNode> ) : Null<Value> {
+		function val( c : RawNode ) : Value {
 			if( c == null ) return null;
 			var p = Std.downcast(mirrorOf(c), hrt.prefab.Curve);
 			return p?.makeVal();
@@ -912,7 +933,7 @@ class Upgrade0 {
 				ev.parameters.set(input, x);
 				t = 0;
 			}
-			inline function f( v : Null<Value>, def : Float ) return v == null ? def : ev.getFloat(v, t);
+			inline function f( v : Value, def : Float ) return v == null ? def : ev.getFloat(v, t);
 			var s = withScale ? [f(sv[0], 1), f(sv[1], 1), f(sv[2], 1)] : [1., 1., 1.];
 			out.initScale(s[0], s[1], s[2]);
 			out.rotate(f(rv[0], 0) * Math.PI * 2, f(rv[1], 0) * Math.PI * 2, f(rv[2], 0) * Math.PI * 2);
@@ -1086,7 +1107,7 @@ class Upgrade0 {
 	}
 
 	/** Sets the curve of component `i` of `prop` to `keys` over `input` (see `Resample`), or none when it is the base value. **/
-	function setChannel( n : RawNode, ch : Null<Channels>, prop : String, i : Int, keys : Array<Dynamic>, base : Float, tol : Float, loop : Bool, input : String ) {
+	function setChannel( n : RawNode, ch : Channels, prop : String, i : Int, keys : Array<Dynamic>, base : Float, tol : Float, loop : Bool, input : String ) {
 		var isBase = keys.length == 1 && Math.abs(keys[0].value - base) <= tol;
 		var cur = ch == null || ch.uniform != null ? null : ch.comps[i];
 		if( ch != null && ch.uniform != null && i == 0 ) {
@@ -1235,7 +1256,7 @@ class Upgrade0 {
 		is the one of the old object.
 	**/
 	function fixObjectPath( path : String, parent : RawNode, child : RawNode, toChild : Bool ) : String {
-		function search( n : RawNode, name : String ) : Null<RawNode> {
+		function search( n : RawNode, name : String ) : RawNode {
 			if( n.name == name && !n.isCurve ) return n;
 			for( c in n.children ) {
 				var f = search(c, name);
@@ -1275,7 +1296,7 @@ class Upgrade0 {
 	}
 
 	/** The last field of the shader `props` named `low` in lower case, the runtime finds the curves case insensitive **/
-	static function propName( props : Dynamic, low : String ) : Null<String> {
+	static function propName( props : Dynamic, low : String ) : String {
 		var name = null;
 		if( props != null )
 			for( f in Reflect.fields(props) )
@@ -1420,6 +1441,8 @@ class Upgrade0 {
 			change(e, "orbit speed in degrees per second");
 		}
 
+		easeModes(e, params);
+
 		// format 1: the settings are fields of the emitter, the params with modes are in `params`
 		var old = new Map();
 		for( d in defs ) {
@@ -1450,6 +1473,74 @@ class Upgrade0 {
 				upgradeParticleShader(s);
 	}
 
+	/**
+		The curves of the modes of `owner` (an emitter, a particle shader) that are within `EASING_TOLERANCE` of
+		an easing become that easing, the bounds of the mode remapped to its ends. A curve no mode reads any
+		more is removed, unless another curve reads it, it is under a curve (a blend), or a sibling has its
+		name (paths by index).
+	**/
+	function easeModes( owner : RawNode, params : Map<String, Array<Null<Mode>>> ) {
+		if( EASING_TOLERANCE <= 0 )
+			return;
+		var fits = new Map<String, Null<EasingFit.EasingMatch>>();
+		function fitOf( path : String ) {
+			if( fits.exists(path) )
+				return fits.get(path);
+			var n = locate(path, owner);
+			var f = null;
+			if( n != null && n.isCurve && n.enabled() && blendMode(n) == 0 && get(n.data, "remapPath") == null && n.children.length == 0 ) {
+				var c = Std.downcast(@:privateAccess hrt.prefab.Prefab.createFromDynamic(deepCopy(n.data), null, new hrt.prefab.ContextShared(null, false)), hrt.prefab.Curve);
+				if( c != null )
+					f = EasingFit.fit(c, EASING_TOLERANCE);
+			}
+			fits.set(path, f);
+			return f;
+		}
+		inline function lerp( a : Float, b : Float, k : Float ) return a + (b - a) * k;
+		// lerp(from, to, lerp(f.a, f.b, ease)) = lerp(lerp(from, to, f.a), lerp(from, to, f.b), ease)
+		function ease( s : ParamShape, from : Float, to : Float, set : (ParamShape, Float, Float) -> Void ) {
+			switch( s ) {
+			case Curve(path):
+				var f = fitOf(path);
+				if( f != null ) set(Easing(f.ease), lerp(from, to, f.a), lerp(from, to, f.b));
+			case Easing(_):
+			}
+		}
+		for( name => v in params )
+			for( i in 0...v.length ) {
+				var m = v[i];
+				switch( m ) {
+				// a Curve Range only takes curves
+				case null, MConstant(_), MRange(_), MCurveRange(_):
+				case MCurve(s, f, t):
+					ease(s, f, t, (s, f, t) -> m = MCurve(s, f, t));
+				case MRandomCurve(s, f0, f1, t0, t1):
+					ease(s, 0, 1, (e, a, b) -> m = MRandomCurve(e, lerp(f0, t0, a), lerp(f1, t1, a), lerp(f0, t0, b), lerp(f1, t1, b)));
+				}
+				v[i] = m;
+			}
+		var used = new Map();
+		for( v in params )
+			for( m in v )
+				switch( m ) {
+				case MCurve(Curve(p), _), MRandomCurve(Curve(p), _): used.set(p, true);
+				case MCurveRange(a, _, _, b, _, _):
+					switch( a ) { case Curve(p): used.set(p, true); default: }
+					switch( b ) { case Curve(p): used.set(p, true); default: }
+				case null, _:
+				}
+		for( path => f in fits ) {
+			if( f == null ) continue;
+			var n = locate(path, owner);
+			change(n, 'curve as easing ${(f.ease : String)}, ${Math.round(f.error * 1000) / 10}% from it');
+			if( used.exists(path) || n.parent.isCurve || (users.get(n)?.length ?? 0) > 0|| (remapUsers.get(n)?.length ?? 0) > 0 ||Lambda.exists(n.parent.children, c -> c != n && c.name == n.name) )
+				continue;
+			var arr : Array<Dynamic> = get(n.parent.data, "children");
+			arr.remove(n.data);
+			n.parent.children.remove(n);
+		}
+	}
+
 	/** The shaders the particles of `e` get (`Shader.getParticleEmitter`) **/
 	static function particleShaders( e : RawNode, ?out : Array<RawNode> ) : Array<RawNode> {
 		if( out == null ) out = [];
@@ -1461,7 +1552,7 @@ class Upgrade0 {
 		return out;
 	}
 
-	static function isUnset( v : Array<Null<Mode>> ) {
+	static function isUnset( v : Array<Mode> ) {
 		for( m in v ) if( m != null ) return false;
 		return true;
 	}
@@ -1473,13 +1564,13 @@ class Upgrade0 {
 		curve multiplied the value, or was added to it for the rotation, offset and pivot; a curve in
 		RandomBlend mode replaced it by a random between its two child curves.
 	**/
-	function upgradeParams( e : RawNode, props : Dynamic, defs : Array<ParamDef>, additive : Array<String> ) : Map<String, Array<Null<Mode>>> {
-		var params = new Map<String, Array<Null<Mode>>>();
+	function upgradeParams( e : RawNode, props : Dynamic, defs : Array<ParamDef>, additive : Array<String> ) : Map<String, Array<Mode>> {
+		var params = new Map<String, Array<Mode>>();
 		// the life time was already a plain value
 		var life : Dynamic = get(props, "lifeTime");
 		if( Std.isOfType(life, Float) || Std.isOfType(life, Int) )
 			params.set("lifeTime", [MConstant(life)]);
-		inline function findCurve( name : String ) : Null<RawNode> {
+		inline function findCurve( name : String ) : RawNode {
 			return Lambda.find(e.children, c -> c.isCurve && c.enabled() && sameName(c.name, name));
 		}
 		for( d in defs ) {
@@ -1488,7 +1579,7 @@ class Upgrade0 {
 			var randField : Dynamic = get(props, legacyRand(old));
 			var dim = d.def.length;
 			var cur = params.get(d.name);
-			var out : Array<Null<Mode>> = [for( i in 0...dim ) cur == null ? null : cur[i]];
+			var out : Array<Mode> = [for( i in 0...dim ) cur == null ? null : cur[i]];
 			var changed = false;
 			for( i in 0...dim ) {
 				var suffix = dim == 1 ? "" : ":" + COMPONENTS[i];
@@ -1505,7 +1596,7 @@ class Upgrade0 {
 				var ci = findCurve(old + suffix);
 				var ri = findCurve(old + suffix + ":rand");
 				var isBlend = ci != null && blendMode(ci) == 2;
-				var mode : Null<Mode> = null;
+				var mode : Mode = null;
 				if( d.group != Particle ) {
 					// the curves of these params are animation curves over the FX time (`upgradeEmitterAnims`)
 					if( ri != null )
@@ -1520,11 +1611,11 @@ class Upgrade0 {
 					}
 				} else {
 					var isAdditive = Lambda.exists(additive, a -> old.indexOf(a) >= 0);
-					var curve = ci == null ? null : ci.uniqueName();
+					var curve = ci == null ? null : Curve(ci.uniqueName());
 					if( ri != null && ci == null ) {
 						// the random amount follows a curve: k + a * random * curve(t)
 						var a = rand ?? 1.0;
-						mode = MRandomCurve(ri.uniqueName(), k, k, k - a, k + a);
+						mode = MRandomCurve(Curve(ri.uniqueName()), k, k, k - a, k + a);
 					} else {
 						if( ri != null )
 							warn(e, '${old + suffix}:rand: a random curve next to a curve has no equivalent, ignored');
@@ -1536,7 +1627,7 @@ class Upgrade0 {
 							else if( !sub[0].enabled() || !sub[1].enabled() )
 								warn(e, '${old + suffix}: disabled child curve of a random blend');
 							inline function path( j : Int ) return ci.uniqueName() + "." + (j < sub.length ? sub[j].uniqueName() : "0");
-							mode = MCurveRange(path(0), 0, 1, path(1), 0, 1);
+							mode = MCurveRange(Curve(path(0)), 0, 1, Curve(path(1)), 0, 1);
 						} else if( curve != null ) {
 							if( isAdditive )
 								mode = hasRand ? MRandomCurve(curve, k - rand, k + rand, k - rand + 1, k + rand + 1) : MCurve(curve, k, k + 1);
@@ -1570,8 +1661,8 @@ class Upgrade0 {
 		`(k ± a) * curve` gets one curve per bound (the second one a reference to the first).
 	**/
 	function upgradeEmitterAnims( e : RawNode, settings : Array<{ name : String, value : Float }>, defs : Array<ParamDef>,
-		params : Map<String, Array<Null<Mode>>> ) {
-		inline function find( name : String ) : Null<RawNode> {
+		params : Map<String, Array<Mode>> ) {
+		inline function find( name : String ) : RawNode {
 			return Lambda.find(e.children, c -> c.isCurve && c.enabled() && sameName(c.name, name));
 		}
 		inline function isBlend( n : RawNode ) return blendMode(n) == 2;
@@ -1591,14 +1682,14 @@ class Upgrade0 {
 			if( d.group == Particle || d.name == "lifeTime" ) continue;
 			var dim = d.def.length;
 			var value = params.get(d.name);
-			var out : Array<Null<Mode>> = [for( i in 0...dim ) value == null ? null : value[i]];
+			var out : Array<Mode> = [for( i in 0...dim ) value == null ? null : value[i]];
 			var changed = false;
 			for( i in 0...dim ) {
 				var suffix = dim == 1 ? "" : ":" + COMPONENTS[i];
 				var key = d.name + suffix;
 				var m = out[i];
-				var bounds = switch( m ) { case MRange(lo, hi): { lo: lo, hi: hi }; default: null; };
-				var k = switch( m ) { case MConstant(v): v; default: d.def[i]; };
+				var bounds = switch( m ) { case MRange(lo, hi): { lo: lo, hi: hi }; case null, _: null; };
+				var k = switch( m ) { case MConstant(v): v; case null, _: d.def[i]; };
 				var c = find(d.old + suffix);
 				if( c == null || !isLegacy(c) ) continue;
 				if( d.group == Multiplier ) {
@@ -1690,7 +1781,7 @@ class Upgrade0 {
 	**/
 	function upgradeParticleShader( s : RawNode ) {
 		var props : Dynamic = get(s.data, "props");
-		var out = new Map<String, Array<Null<Mode>>>();
+		var out = new Map<String, Array<Mode>>();
 		var seen = new Map();
 		for( c in s.children ) {
 			if( !c.enabled() || !c.isCurve ) continue;
@@ -1708,12 +1799,17 @@ class Upgrade0 {
 				continue;
 			if( isVector ) {
 				var dim = Std.isOfType(prop, Array) ? hxd.Math.imin((prop : Array<Dynamic>).length, 4) : 4;
-				var v : Array<Null<Mode>> = [];
+				var v : Array<Mode> = [];
+				// a component without curve was 0 (1 for w): its prop
+				var base : Array<Dynamic> = [for( k in 0...dim ) Std.isOfType(prop, Array) ? (prop : Array<Dynamic>)[k] : 0.];
 				for( k in 0...dim ) {
 					var suffix = ":" + COMPONENTS[k];
 					var x = Lambda.find(group, x -> StringTools.endsWith(x.name.toLowerCase(), suffix));
-					v.push(x != null ? MCurve(x.uniqueName(), 0, 1) : MConstant(k == 3 ? 1 : 0));
+					v.push(x != null ? MCurve(Curve(x.uniqueName()), 0, 1) : null);
+					if( x == null ) base[k] = k == 3 ? 1. : 0.;
 				}
+				if( props == null ) RawNode.setField(s.data, "props", props = {});
+				Reflect.setField(props, name, base);
 				out.set(name, v);
 			} else {
 				var x = Lambda.find(s.children, x -> x.isCurve && x.enabled() && sameName(x.name, name));
@@ -1723,50 +1819,62 @@ class Upgrade0 {
 				// the old code multiplied by the value when it is a number, by 1 otherwise
 				if( prop == null )
 					unknownBase(x, name);
-				out.set(name, [MCurve(x.uniqueName(), 0, isNumber(prop) ? num(prop, 0) : 1.0)]);
+				out.set(name, [MCurve(Curve(x.uniqueName()), 0, isNumber(prop) ? num(prop, 0) : 1.0)]);
 			}
 		}
 		if( !out.iterator().hasNext() )
 			return;
+		easeModes(s, out);
 		var names = [for( k in out.keys() ) k];
 		names.sort(Reflect.compare);
-		var params : Dynamic = {};
-		for( n in names )
-			Reflect.setField(params, n, saveValue(out.get(n)));
-		RawNode.setField(s.data, "particleParams", params);
+		function comp( m : Mode ) : Dynamic {
+			return switch( m ) {
+			case MCurve(Curve(path), from, to): obj(["curve", path, "from", from, "to", to]);
+			case MCurve(Easing(e), from, to): obj(["ease", (e : String), "from", from, "to", to]);
+			case null, _: null;
+			}
+		}
+		RawNode.setField(s.data, "particleParams", [for( n in names ) obj(["name", n, "comps", [for( m in out.get(n) ) comp(m)]])]);
 		change(s, "particle shader params with modes");
 	}
 
-	// Format 1 of the modes, `EmitterParam.save`: a constant is a plain number, the other modes an object with a `mode` field.
+	// Format 1 of the modes, `EmitterParam.saveMode`: a constant is a plain number, the other modes an object with a `mode` field, a vector an object of its components.
 
-	static function saveValue( v : Array<Null<Mode>> ) : Dynamic {
+	static function saveValue( v : Array<Mode> ) : Dynamic {
 		if( v == null || isUnset(v) )
 			return null;
 		if( v.length == 1 )
 			return saveMode(v[0]);
-		return [for( m in v ) saveMode(m)];
+		var o : Dynamic = {};
+		for( i => m in v )
+			if( m != null )
+				Reflect.setField(o, COMPONENTS[i], saveMode(m));
+		return o;
 	}
 
-	static function saveMode( m : Null<Mode> ) : Dynamic {
+	static function saveMode( m : Mode ) : Dynamic {
 		inline function span( o : Dynamic, from : Float, to : Float ) {
 			if( from != 0 ) o.from = from;
 			if( to != 1 ) o.to = to;
+		}
+		function shape( fields : Array<Dynamic>, s : ParamShape ) : Dynamic {
+			return obj(fields.concat(switch( s ) { case Curve(path): ["curve", path]; case Easing(e): ["ease", (e : String)]; }));
 		}
 		return switch( m ) {
 		case null: null;
 		case MConstant(v): v;
 		case MRange(min, max): obj(["mode", "Range", "min", min, "max", max]);
 		case MCurve(s, from, to):
-			var o : Dynamic = obj(["mode", "Curve", "curve", s]);
+			var o : Dynamic = shape(["mode", "Curve"], s);
 			span(o, from, to);
 			o;
 		case MRandomCurve(s, f0, f1, t0, t1):
-			var o : Dynamic = obj(["mode", "RandomCurve", "curve", s]);
+			var o : Dynamic = shape(["mode", "RandomCurve"], s);
 			if( f0 != 0 || f1 != 0 ) o.from = obj(["min", f0, "max", f1]);
 			if( t0 != 1 || t1 != 1 ) o.to = obj(["min", t0, "max", t1]);
 			o;
 		case MCurveRange(a, af, at, b, bf, bt):
-			var oa : Dynamic = obj(["curve", a]), ob : Dynamic = obj(["curve", b]);
+			var oa : Dynamic = shape([], a), ob : Dynamic = shape([], b);
 			span(oa, af, at);
 			span(ob, bf, bt);
 			obj(["mode", "CurveRange", "a", oa, "b", ob]);

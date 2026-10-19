@@ -6,13 +6,14 @@ import hide.tools.migrate.Migrate;
 class Cli {
 
 	static function usage() {
-		Sys.println("usage: hl migrate.hl <res dir> [--out <dir> | --in-place] [--report <file>] [--verbose]
+		Sys.println("usage: hl migrate.hl <res dir> [--out <dir> | --in-place] [--report <file>] [--verbose] [--no-easing]
 Upgrades the FX data of the prefab files of a project (" + Migrate.EXTENSIONS.join(", ") + ") to version " + hrt.prefab.fx.FX.VERSION + ".
 With no option, a dry run: lists the files that would change, the changes and the warnings.
   --out <dir>      write the migrated files to <dir>, under their path in the res dir
   --in-place       rewrite the files of the project
   --report <file>  write the full report (markdown) to <file>
-  --verbose        list every change of every file");
+  --verbose        list every change of every file
+  --no-easing      keep the particle curves close to an easing (" + Upgrade0.EASING_TOLERANCE * 100 + "% by default) as they are");
 	}
 
 	static function main() {
@@ -28,6 +29,7 @@ With no option, a dry run: lists the files that would change, the changes and th
 			case "--in-place": inPlace = true;
 			case "--report": reportFile = args[i++];
 			case "--verbose": verbose = true;
+			case "--no-easing": Upgrade0.EASING_TOLERANCE = 0;
 			case "--help", "-h": usage(); return;
 			default:
 				if( StringTools.startsWith(a, "-") || res != null ) {
