@@ -87,12 +87,7 @@ abstract CommandQueue(Resource) {
 	public function executeCommandLists( commandLists : hl.CArray<CommandList>, count : Int ) {}
 	public function signal( fence : Fence, value : Int64 ) {}
 	public function wait( fence : Fence, value : Int64 ) {}
-	public function present( vsync : Bool ) {
-		present_native(vsync);
-		dx.Display.present();
-	}
-	@:hlNative("dx12","command_queue_present")
-	function present_native( vsync : Bool ) {}
+	public function present( vsync : Bool ) {}
 	public function suspend() {}
 	public function resume() {}
 	@:hlNative("dx12","command_queue_get_timestamp_frequency")
@@ -1825,12 +1820,6 @@ class Dx12 {
 	}
 
 	public static function resize( directQueue : CommandQueue, width : Int, height : Int, bufferCount : Int, format : DxgiFormat ) {
-		resizeNative(directQueue, width, height, bufferCount, format);
-		dx.Display.resize(width, height);
-	}
-
-	@:hlNative("dx12", "resize")
-	static function resizeNative( directQueue : CommandQueue, width : Int, height : Int, bufferCount : Int, format : DxgiFormat ) {
 	}
 
 	public static function updateSubResource( commandList : CommandList, dst : GpuResource, src : GpuResource, srcOffset : Int64, first : Int, count : Int, data : SubResourceData ) : Bool {

@@ -1,9 +1,9 @@
 // Node-API build of hldx's dx12.cpp, compiled unmodified against the hl.h shim.
 //
 // On top of the original primitives:
-// - the swapchain is emulated with shared textures, displayed by the page
+// - the swapchain is emulated with textures, not displayed
 //   (resize, get_back_buffer, get_current_back_buffer_index, command_queue_present)
-// - js_* : access to the shared back buffers for the page
+// - js_* : textures shared with the page, where the scenes are displayed
 // - mem_* : raw memory access, used by hlemu.Bytes / structs on the JS side
 
 #include "dx12.cpp"
@@ -38,10 +38,7 @@ struct js_swapchain {
 	ID3D12Device *device; // a queue address can be reused
 	int count;
 	int index;
-	int presented;
-	int presentCount;
 	ID3D12Resource *buffers[JS_MAX_BUFFERS];
-	HANDLE handles[JS_MAX_BUFFERS];
 	ID3D12Fence *fence;
 	UINT64 fenceValue;
 };
@@ -53,11 +50,31 @@ static HANDLE js_event = NULL;
 static void js_release_buffers( js_swapchain *sc ) {
 	for( int i = 0; i < sc->count; i++ ) {
 		if( sc->buffers[i] ) sc->buffers[i]->Release();
-		if( sc->handles[i] ) CloseHandle(sc->handles[i]);
 		sc->buffers[i] = NULL;
-		sc->handles[i] = NULL;
 	}
 	sc->count = 0;
+}
+
+// a render target in the COMMON layout (== PRESENT) ; with shared, an NT handle for Chromium
+static ID3D12Resource *js_create_target( int width, int height, DXGI_FORMAT format, HANDLE *shared ) {
+	D3D12_HEAP_PROPERTIES heap = {};
+	heap.Type = D3D12_HEAP_TYPE_DEFAULT;
+	D3D12_RESOURCE_DESC desc = {};
+	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	desc.Width = width;
+	desc.Height = height;
+	desc.DepthOrArraySize = 1;
+	desc.MipLevels = 1;
+	desc.Format = format;
+	desc.SampleDesc.Count = 1;
+	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+	// simultaneous access: the texture stays in the COMMON layout, readable by Chromium's
+	// D3D11 device without a cross-API barrier
+	if( shared ) desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
+	ID3D12Resource *res = NULL;
+	CHKERR(static_driver->device->CreateCommittedResource(&heap, shared ? D3D12_HEAP_FLAG_SHARED : D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, NULL, IID_PPV_ARGS(&res)));
+	if( shared ) CHKERR(static_driver->device->CreateSharedHandle(res, NULL, GENERIC_ALL, NULL, shared));
+	return res;
 }
 
 static js_swapchain *js_select( ID3D12CommandQueue *q ) {
@@ -67,7 +84,6 @@ static js_swapchain *js_select( ID3D12CommandQueue *q ) {
 		if( sc->fence ) sc->fence->Release();
 		*sc = {};
 		sc->device = static_driver->device;
-		sc->presented = -1;
 		CHKERR(sc->device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&sc->fence)));
 	}
 	js_cur = sc;
@@ -80,31 +96,15 @@ static js_swapchain *js_current() {
 }
 
 static void js_resize( ID3D12CommandQueue *directQueue, int width, int height, int buffer_count, DXGI_FORMAT format ) {
-	dx_driver *drv = static_driver;
 	js_swapchain *sc = js_select(directQueue);
 	if( buffer_count > JS_MAX_BUFFERS ) hl_error("too many back buffers");
 	js_release_buffers(sc);
-	D3D12_HEAP_PROPERTIES heap = {};
-	heap.Type = D3D12_HEAP_TYPE_DEFAULT;
-	D3D12_RESOURCE_DESC desc = {};
-	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	desc.Width = width;
-	desc.Height = height;
-	desc.DepthOrArraySize = 1;
-	desc.MipLevels = 1;
-	desc.Format = format;
-	desc.SampleDesc.Count = 1;
-	// simultaneous access: the texture stays in the COMMON layout (== PRESENT), readable
-	// by Chromium's D3D11 device without a cross-API barrier
-	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
 	for( int i = 0; i < buffer_count; i++ ) {
-		CHKERR(drv->device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_SHARED, &desc, D3D12_RESOURCE_STATE_COMMON, NULL, IID_PPV_ARGS(&sc->buffers[i])));
-		CHKERR(drv->device->CreateSharedHandle(sc->buffers[i], NULL, GENERIC_ALL, NULL, &sc->handles[i]));
+		sc->buffers[i] = js_create_target(width, height, format, NULL);
 		sc->buffers[i]->SetName(L"JS_BACKBUFFER");
 	}
 	sc->count = buffer_count;
 	sc->index = 0;
-	sc->presented = -1;
 }
 
 // like IDXGISwapChain::GetBuffer, the caller owns a reference
@@ -120,7 +120,7 @@ static int js_get_current_back_buffer_index() {
 }
 
 // No shared fence with Chromium: wait for the GPU so that the page can display the
-// buffer as soon as present returns.
+// shared textures as soon as present returns.
 static void js_command_queue_present( ID3D12CommandQueue *q, bool vsync ) {
 	js_swapchain *sc = js_select(q);
 	if( !js_event ) js_event = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -130,8 +130,6 @@ static void js_command_queue_present( ID3D12CommandQueue *q, bool vsync ) {
 		WaitForSingleObject(js_event, INFINITE);
 	}
 	if( sc->count == 0 ) return;
-	sc->presented = sc->index;
-	sc->presentCount++;
 	sc->index = (sc->index + 1) % sc->count;
 }
 
@@ -140,12 +138,57 @@ static hl_shim::Register js_reg_get_back_buffer("get_back_buffer", hl_shim::wrap
 static hl_shim::Register js_reg_get_current_back_buffer_index("get_current_back_buffer_index", hl_shim::wrap<&js_get_current_back_buffer_index>());
 static hl_shim::Register js_reg_command_queue_present("command_queue_present", hl_shim::wrap<&js_command_queue_present>());
 
-// ---- page access to the back buffers
+// ---- textures shared with the page : each scene copies its output into them, the page draws
+// them into the canvas of the scene with WebGPU (see dx.Display).
+// Owned by the page (env) creating them : released with it on reload (js_release_page).
 
-static int js_back_buffer_count() { return js_current()->count; }
-static HANDLE js_back_buffer_handle( int index ) { js_swapchain *sc = js_current(); return index >= 0 && index < sc->count ? sc->handles[index] : NULL; }
-static int js_presented_buffer() { return js_current()->presented; }
-static int js_present_count() { return js_current()->presentCount; }
+struct js_shared_texture {
+	HANDLE handle;
+	napi_env env;
+};
+
+static std::map<ID3D12Resource*, js_shared_texture> js_shared;
+
+static napi_value js_shared_texture_create( napi_env env, napi_callback_info info ) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+	try {
+		HANDLE handle = NULL;
+		ID3D12Resource *res = js_create_target(hl_shim::arg<int>(env, argv, 0), hl_shim::arg<int>(env, argv, 1), DXGI_FORMAT_R8G8B8A8_UNORM, &handle);
+		res->SetName(L"JS_SHARED");
+		js_shared[res] = { handle, env };
+		return hl_shim::toJs(env, res);
+	} catch( hl_shim_error &e ) {
+		napi_throw_error(env, nullptr, e.msg);
+		return nullptr;
+	}
+}
+
+static HANDLE js_shared_texture_handle( ID3D12Resource *res ) {
+	auto it = js_shared.find(res);
+	return it == js_shared.end() ? NULL : it->second.handle;
+}
+
+static void js_shared_texture_free( std::map<ID3D12Resource*, js_shared_texture>::iterator it ) {
+	CloseHandle(it->second.handle);
+	it->first->Release();
+	js_shared.erase(it);
+}
+
+static void js_shared_texture_release( ID3D12Resource *res ) {
+	auto it = js_shared.find(res);
+	if( it != js_shared.end() ) js_shared_texture_free(it);
+}
+
+// env cleanup hook : the GPU is idle (present waits for it), the copies recorded since are never submitted
+static void js_release_page( void *env ) {
+	for( auto it = js_shared.begin(); it != js_shared.end(); ) {
+		auto next = std::next(it);
+		if( it->second.env == (napi_env)env ) js_shared_texture_free(it);
+		it = next;
+	}
+}
 
 // The high performance GPU (as Chromium takes it with force_high_performance_gpu) : its index in
 // list_devices (the hardware adapters in the order of DXGI), -1 when it is unknown. The page passes
@@ -176,10 +219,9 @@ static int js_high_performance_device() {
 }
 
 static hl_shim::Register js_reg_high_performance_device("js_high_performance_device", hl_shim::wrap<&js_high_performance_device>());
-static hl_shim::Register js_reg_back_buffer_count("js_back_buffer_count", hl_shim::wrap<&js_back_buffer_count>());
-static hl_shim::Register js_reg_back_buffer_handle("js_back_buffer_handle", hl_shim::wrap<&js_back_buffer_handle>());
-static hl_shim::Register js_reg_presented_buffer("js_presented_buffer", hl_shim::wrap<&js_presented_buffer>());
-static hl_shim::Register js_reg_present_count("js_present_count", hl_shim::wrap<&js_present_count>());
+static hl_shim::Register js_reg_shared_texture_create("js_shared_texture_create", &js_shared_texture_create);
+static hl_shim::Register js_reg_shared_texture_handle("js_shared_texture_handle", hl_shim::wrap<&js_shared_texture_handle>());
+static hl_shim::Register js_reg_shared_texture_release("js_shared_texture_release", hl_shim::wrap<&js_shared_texture_release>());
 
 // ---- raw memory
 
@@ -371,6 +413,7 @@ static void js_high_qos() {
 NAPI_MODULE_INIT() {
 	js_preload_dxil();
 	js_high_qos();
+	napi_add_env_cleanup_hook(env, js_release_page, env);
 	for( auto &p : hl_shim::registry() ) {
 		napi_value f;
 		napi_create_function(env, p.first.c_str(), NAPI_AUTO_LENGTH, p.second, nullptr, &f);

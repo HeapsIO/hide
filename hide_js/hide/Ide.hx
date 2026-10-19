@@ -154,7 +154,7 @@ class Ide extends hide.tools.IdeData {
 			if( s.work_area.y + s.work_area.height > yMax )
 				yMax = s.work_area.y + s.work_area.height;
 		}
-		if( subView == null ) {
+		if( subView == null && !thumbnailMode ) {
 			var wp : WindowPos = globalState.get("windowPos");
 			if( wp != null ) {
 				if( wp.w > 400 && wp.h > 300 )
@@ -228,6 +228,10 @@ class Ide extends hide.tools.IdeData {
 				}
 				if( sys.FileSystem.exists(arg) ) openFile(arg);
 			}
+		});
+
+		electron.App.onGpuCrash(function(details) {
+			if( !hasReloaded ) showGpuCrash(details);
 		});
 
 		var body = js.Browser.document.body;
@@ -1670,6 +1674,8 @@ class Ide extends hide.tools.IdeData {
 				var props : h3d.scene.pbr.Renderer.RenderProps = renderer.props;
 				var prevForceDirectDiscard = props.forceDirectDiscard;
 
+				// setOutputTarget() restores the size of the default depth, not the scene's (dx12 : shared driver)
+				var prevWidth = scene.engine.width, prevHeight = scene.engine.height;
 				scene.engine.backgroundColor &= 0x00FFFFFF;
 				scene.s3d.setOutputTarget(scene.engine, renderTexture);
 				renderer.skyMode = Hide;
@@ -1677,6 +1683,8 @@ class Ide extends hide.tools.IdeData {
 
 				scene.s3d.render(scene.engine);
 				scene.s3d.setOutputTarget();
+				@:privateAccess scene.engine.width = prevWidth;
+				@:privateAccess scene.engine.height = prevHeight;
 
 				scene.engine.backgroundColor = prevBackgroundColor;
 				renderer.skyMode = prevSkyMode;
@@ -1718,9 +1726,12 @@ class Ide extends hide.tools.IdeData {
 
 				var renderTexture = new h3d.mat.Texture(Std.int(textureRes * scene.s3d.camera.screenRatio), textureRes, [Target]);
 				renderTexture.depthBuffer = new h3d.mat.Texture(renderTexture.width, renderTexture.height, Depth24Stencil8);
+				var prevWidth = scene.engine.width, prevHeight = scene.engine.height;
 				scene.s3d.setOutputTarget(scene.engine, renderTexture);
 				scene.s3d.render(scene.engine);
 				scene.s3d.setOutputTarget();
+				@:privateAccess scene.engine.width = prevWidth;
+				@:privateAccess scene.engine.height = prevHeight;
 
 				var pixels = renderTexture.capturePixels();
 				var absPath = getPath(path);
@@ -2042,6 +2053,36 @@ class Ide extends hide.tools.IdeData {
 		}
 
 		return out;
+	}
+
+	var gpuCrash : hide.comp.Modal.Modal2;
+
+	/** the GPU process was lost (TDR, driver crash) : the display recovers, but it should be reported **/
+	function showGpuCrash( details : Dynamic ) {
+		if( gpuCrash != null ) return;
+		gpuCrash = new hide.comp.Modal.Modal2(new Element("body"), "The GPU crashed", null, false);
+		gpuCrash.element.addClass("gpu-crash");
+		var panel = new Element('<div>
+			<p>The GPU process of Chromium was lost (${details.reason}, exit code ${details.exitCode}). The display has recovered, but this crash should be reported.</p>
+			<p>Create a report and send it to the tools programmers, with what you were doing.</p>
+			<p class="path"></p>
+			<div class="buttons">
+				<fancy-button class="create"><span class="label">Create report</span></fancy-button>
+				<fancy-separator></fancy-separator>
+				<fancy-button class="close"><span class="label">Close</span></fancy-button>
+			</div>
+		</div>').appendTo(gpuCrash.content);
+		panel.find(".create").click(function(_) {
+			var driver = #if dx12 "dx12" #else "webgl" #end;
+			electron.App.createCrashReport('hide $driver ${getGitCommitHashAndDate()}\nProject : $currentProject\n').then(
+				(file) -> panel.find(".path").text("Report created : " + file),
+				(e) -> panel.find(".path").text("Report failed : " + e)
+			);
+		});
+		panel.find(".close").click(function(_) {
+			gpuCrash.close();
+			gpuCrash = null;
+		});
 	}
 
 

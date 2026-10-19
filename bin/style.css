@@ -3960,11 +3960,14 @@ hide-popover {
   min-height: 100px;
   border: none;
   padding: 0;
+  background-color: #181818;
+  border-radius: 5px;
+  box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
 }
 hide-popover title-bar {
-  padding: 2px;
+  padding: 4px;
   background-color: #000000;
   display: flex;
   height: 20px;
@@ -3993,6 +3996,23 @@ hide-popover hide-content {
   flex: 1 1;
   min-height: 0;
   padding: 0;
+}
+hide-popover.gpu-crash {
+  max-width: 600px;
+  resize: none;
+}
+hide-popover.gpu-crash::backdrop {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+hide-popover.gpu-crash hide-content {
+  padding: 0 15px 15px 15px;
+}
+hide-popover.gpu-crash .path {
+  user-select: text;
+}
+hide-popover.gpu-crash .buttons {
+  display: flex;
+  justify-content: flex-end;
 }
 .hide-tileselect {
   min-height: 0;
@@ -4300,6 +4320,9 @@ hide-popover hide-content {
 .hide-root > .status-bar.error {
   background-color: #ee6666;
   color: black;
+}
+.hide-root > .status-bar.error .game-launcher {
+  display: none;
 }
 .hide-root > .status-bar .build {
   margin-left: auto;

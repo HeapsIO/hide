@@ -8,13 +8,14 @@ typedef Rectangle = { x : Int, y : Int, width : Int, height : Int };
 
 @:jsRequire("electron", "app")
 extern class App {
-	static var commandLine : { function appendSwitch( name : String, ?value : String ) : Void; };
+	static var commandLine : { function appendSwitch( name : String, ?value : String ) : Void; function hasSwitch( name : String ) : Bool; };
 	static var isPackaged : Bool;
 	static function setName( name : String ) : Void;
 	static function getPath( name : String ) : String;
 	static function setPath( name : String, path : String ) : Void;
 	static function getAppPath() : String;
 	static function requestSingleInstanceLock() : Bool;
+	static function getGPUInfo( infoType : String ) : js.lib.Promise<Dynamic>;
 	static function whenReady() : js.lib.Promise<Dynamic>;
 	static function quit() : Void;
 	static function on( event : String, callb : haxe.Constraints.Function ) : Void;
@@ -63,6 +64,7 @@ extern class WebContents {
 	function send( channel : String, args : haxe.extern.Rest<Dynamic> ) : Void;
 	function isDestroyed() : Bool;
 	function isCrashed() : Bool;
+	function getURL() : String;
 	function openDevTools( ?options : Dynamic ) : Void;
 	function toggleDevTools() : Void;
 	function setDevToolsWebContents( wc : WebContents ) : Void;
@@ -114,6 +116,16 @@ extern class GlobalShortcut {
 	static function register( accelerator : String, callb : Void -> Void ) : Bool;
 	static function unregister( accelerator : String ) : Void;
 	static function unregisterAll() : Void;
+}
+
+@:jsRequire("electron", "crashReporter")
+extern class CrashReporter {
+	static function start( options : Dynamic ) : Void;
+}
+
+@:jsRequire("electron", "shell")
+extern class Shell {
+	static function showItemInFolder( path : String ) : Void;
 }
 
 @:jsRequire("electron", "session")

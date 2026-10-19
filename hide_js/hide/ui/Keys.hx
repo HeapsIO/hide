@@ -79,8 +79,17 @@ class Keys {
 		return false;
 	}
 
+	static var warnedKeys = new Map<String, Bool>();
+
 	static public function matchJsEvent(shortcutName : String, event: js.html.KeyboardEvent, config : Config.ReadOnlyConfig) {
 		var keyCode : String = config.get("key."+shortcutName);
+		if( keyCode == null ) {
+			if( !warnedKeys.exists(shortcutName) ) {
+				warnedKeys.set(shortcutName, true);
+				js.Browser.console.warn("Key not defined key." + shortcutName);
+			}
+			return false;
+		}
 
 		var split = keyCode.split("-");
 		for (part in split) {
