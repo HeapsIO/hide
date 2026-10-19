@@ -203,10 +203,6 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	}
 
 	function dispatch(ctx : h3d.scene.RenderContext) {
-		#if editor
-		return;
-		#end
-
 		var p = dataPasses;
 		particleCounter.reset();
 

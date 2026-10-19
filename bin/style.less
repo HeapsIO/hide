@@ -4656,12 +4656,15 @@ hide-popover {
 	min-height: 100px;
 	border: none;
 	padding: 0;
+	background-color: #181818;
+	border-radius: 5px;
+	box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.5);
 
 	display: flex;
 	flex-direction: column;
 
 	title-bar {
-		padding: 2px;
+		padding: 4px;
 		background-color: #000000;
 		display: flex;
 		height: 20px;
@@ -4695,6 +4698,24 @@ hide-popover {
 		flex: 1 1;
 		min-height: 0; // Allow the inner element to shrink, used to make the inner content scrollable
 		padding: 0;
+	}
+
+	&.gpu-crash {
+		max-width: 600px;
+		resize: none;
+		&::backdrop {
+			background-color: rgba(0,0,0,0.7);
+		}
+		hide-content {
+			padding: 0 15px 15px 15px;
+		}
+		.path {
+			user-select: text;
+		}
+		.buttons {
+			display: flex;
+			justify-content: flex-end;
+		}
 	}
 }
 
@@ -5058,6 +5079,7 @@ hide-popover {
 		flex-shrink: 0;
 
 		display: flex;
+		position: relative;
 
 		font-family: var(--default-font);
 
@@ -5065,11 +5087,69 @@ hide-popover {
 		&.error {
 			background-color: #ee6666;
 			color: black;
+
+			.game-launcher {
+				display: none;
+			}
 		}
 
 		.build {
 			margin-left: auto;
 			flex-grow: 0;
+		}
+
+		.game-launcher {
+			display: flex;
+			align-items: center;
+			gap: 2px;
+			position: absolute;
+			left: 50%;
+			top: 0px;
+			height: 100%;
+			transform: translateX(-50%);
+
+			.play-btn, .target-btn {
+				display: flex;
+				align-items: center;
+				gap: 4px;
+				height: 14px;
+				padding: 0px 4px;
+				border-radius: 2px;
+				cursor: pointer;
+
+				&:hover {
+					background-color: #3a3a3a;
+				}
+			}
+
+			.play-btn .icon {
+				color: #6fbf73;
+			}
+
+			.target-btn.disabled {
+				opacity: 0.5;
+				cursor: default;
+
+				&:hover {
+					background-color: transparent;
+				}
+			}
+
+			&.compiling .play-btn {
+				background-color: #444;
+
+				.icon {
+					color: #e6c84a;
+				}
+			}
+
+			&.running .play-btn {
+				background-color: #3c78c8;
+
+				.icon {
+					color: #fff;
+				}
+			}
 		}
 
 		.error-suppressed {

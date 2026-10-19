@@ -6,6 +6,7 @@ private typedef Watch = {
 	path : String,
 	events : Array<FileWatchEvent>,
 	#if js
+	rooted : Bool,
 	w : js.node.fs.FSWatcher,
 	lastStat : js.node.fs.Stats,
 	#else
@@ -22,27 +23,53 @@ class FileWatcher {
 	var ide : hide.Ide;
 	var watches : Map<String, Watch> = new Map();
 	var timer : haxe.Timer;
+	#if js
+	public var rootDir : String;
+	var rootWatcher : js.node.fs.FSWatcher;
+	var rootWatches : Map<String, Watch> = new Map();
+	#end
 
 	public function new() {
 		ide = hide.Ide.inst;
 	}
 
+	inline function isWatching( w : Watch ) {
+		#if js
+		return w.rooted || w.w != null;
+		#else
+		return w.w != null;
+		#end
+	}
+
+	function closeWatch( w : Watch ) {
+		#if js
+		if( w.rooted ) {
+			w.rooted = false;
+			rootWatches.remove(getRootKey(w.path));
+			return;
+		}
+		#end
+		if( w.w != null ) {
+			w.w.close();
+			w.w = null;
+		}
+	}
+
 	public function pause() {
 		for( w in watches )
-			if( w.w != null ) {
+			if( isWatching(w) ) {
 				var sign = getSignature(w.path);
 				if( sign != null ) {
 					for( f in w.events )
 						f.ignoreCheck = sign;
 				}
-				w.w.close();
-				w.w = null;
+				closeWatch(w);
 			}
 	}
 
 	public function resume() {
 		for( w in watches )
-			if( w.w == null && w.events.length > 0 ) {
+			if( !isWatching(w) && w.events.length > 0 ) {
 				try initWatch(w) catch( e : Dynamic ) {
 					// file does not exists, trigger a delayed event
 					haxe.Timer.delay(function() {
@@ -90,9 +117,16 @@ class FileWatcher {
 			timer = null;
 		}
 		for( w in watches )
-			if( w.w != null )
-				w.w.close();
+			closeWatch(w);
 		watches = new Map();
+		#if js
+		if( rootWatcher != null ) {
+			rootWatcher.close();
+			rootWatcher = null;
+		}
+
+		rootDir = null;
+		#end
 	}
 
 	public function register( path : String, updateFun, ?checkDelete : Bool, ?element : Element ) : FileWatchEvent {
@@ -129,7 +163,7 @@ class FileWatcher {
 			}
 		if( w.events.length == 0 ) {
 			watches.remove(path);
-			if( w.w != null ) w.w.close();
+			closeWatch(w);
 		}
 	}
 
@@ -140,7 +174,7 @@ class FileWatcher {
 					w.events.remove(e);
 			if( w.events.length == 0 ) {
 				watches.remove(path);
-				if( w.w != null ) w.w.close();
+				closeWatch(w);
 			}
 		}
 	}
@@ -206,28 +240,16 @@ class FileWatcher {
 	function initWatch( w : Watch ) {
 		#if js
 		w.lastStat = js.node.Fs.statSync(w.path);
-		w.w = js.node.Fs.watch(w.path, {persistent: true}, function(k:String, file:String) {
-			if( w.isDir && k == "change" ) return;
-			if( k == "change" ) {
-				// for an unknown reason (maybe SVN ?), sometimes changes are triggered without the file being actually changed.
-				// we check that here
-				var oldStat = w.lastStat;
-				w.lastStat = js.node.Fs.statSync(w.path);
-				if (w.lastStat.mtime.getTime() <= oldStat.mtime.getTime() &&
-					w.lastStat.ctime.getTime() <= oldStat.ctime.getTime()) {
-					return;
-				}
-				w.wasChanged = true;
-			} else if( !w.isDir && js.node.Fs.existsSync(w.path) ) {
-				// replaced by another file (SVN update writes a temp file then renames it)
-				w.lastStat = js.node.Fs.statSync(w.path);
-				w.wasChanged = true;
-			}
-			if( w.changed ) return;
-			w.changed = true;
-			w.version++;
-			haxe.Timer.delay(onEventChanged.bind(w),100);
-		});
+		w.isDir = w.lastStat.isDirectory();
+		var key = getRootKey(w.path);
+		if( key != null ) {
+			if( rootWatcher == null )
+				rootWatcher = js.node.Fs.watch(rootDir, { persistent : true, recursive : true }, onRootEvent);
+			w.rooted = true;
+			rootWatches.set(key, w);
+			return;
+		}
+		w.w = js.node.Fs.watch(w.path, (k, file) -> onWatchEvent(w, k));
 		#else
 		w.w = new hl.uv.Fs(w.path, function(ev) {
 			if( w.isDir && ev == Change ) return;
@@ -240,6 +262,63 @@ class FileWatcher {
 		#end
 	}
 
+	#if js
+	function getRootKey( path : String ) {
+		if( rootDir == null )
+			return null;
+		var key = path.split("\\").join("/").toLowerCase();
+		while( StringTools.endsWith(key, "/") )
+			key = key.substr(0, -1);
+		var root = rootDir.toLowerCase();
+		return key == root || StringTools.startsWith(key, root + "/") ? key : null;
+	}
+
+	function onRootEvent( k : String, file : String ) {
+		if( file == null ) {
+			for( w in rootWatches ) {
+				var st = try js.node.Fs.statSync(w.path) catch( e : Dynamic ) null;
+				if( st == null )
+					onWatchEvent(w, "rename");
+				else if( st.mtime.getTime() > w.lastStat.mtime.getTime() || st.ctime.getTime() > w.lastStat.ctime.getTime() ) {
+					if( w.isDir ) w.lastStat = st;
+					onWatchEvent(w, w.isDir ? "rename" : "change");
+				}
+			}
+			return;
+		}
+		var key = (rootDir + "/" + file.split("\\").join("/")).toLowerCase();
+		var w = rootWatches.get(key);
+		if( w != null )
+			onWatchEvent(w, k);
+		var dir = rootWatches.get(key.substr(0, key.lastIndexOf("/")));
+		if( dir != null && dir.isDir )
+			onWatchEvent(dir, k);
+	}
+
+	function onWatchEvent( w : Watch, k : String ) {
+		if( w.isDir && k == "change" ) return;
+		if( k == "change" ) {
+			// for an unknown reason (maybe SVN ?), sometimes changes are triggered without the file being actually changed.
+			// we check that here
+			var oldStat = w.lastStat;
+			w.lastStat = js.node.Fs.statSync(w.path);
+			if (w.lastStat.mtime.getTime() <= oldStat.mtime.getTime() &&
+				w.lastStat.ctime.getTime() <= oldStat.ctime.getTime()) {
+				return;
+			}
+			w.wasChanged = true;
+		} else if( !w.isDir && js.node.Fs.existsSync(w.path) ) {
+			// replaced by another file (SVN update writes a temp file then renames it)
+			w.lastStat = js.node.Fs.statSync(w.path);
+			w.wasChanged = true;
+		}
+		if( w.changed ) return;
+		w.changed = true;
+		w.version++;
+		haxe.Timer.delay(onEventChanged.bind(w),100);
+	}
+	#end
+
 	function getWatches( path : String ) {
 		var w = watches.get(path);
 		if( w == null ) {
@@ -249,11 +328,12 @@ class FileWatcher {
 				events : [],
 				w : null,
 				changed : false,
-				isDir : try sys.FileSystem.isDirectory(fullPath) catch( e : Dynamic ) false,
+				isDir : #if js false #else try sys.FileSystem.isDirectory(fullPath) catch( e : Dynamic ) false #end,
 				wasChanged : false,
 				version : 0,
 				#if js
 				lastStat: null,
+				rooted : false,
 				#end
 			};
 			try initWatch(w) catch( e : Dynamic ) {

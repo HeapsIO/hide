@@ -109,9 +109,6 @@ class App extends hxd.App {
 		if (hxd.Key.isPressed(hxd.Key.F10)) {
 			toggleFPSGraph();
 		}
-		if (hxd.Key.isPressed(hxd.Key.F5)) {
-			hide.tools.GameLauncher.toggle();
-		}
 	}
 
 	public function toggleProfiler() {

@@ -139,7 +139,7 @@ class DragAndDrop {
 			tmpDrag.data = [];
 			var list = [];
 			for (file in e.dataTransfer.files) {
-				var fe = FileManager.inst.getFileEntry(untyped file.path);
+				var fe = FileManager.inst.getFileEntry(electron.App.getPathForFile(file));
 				if (fe != null) {
 					list.push(fe);
 				}

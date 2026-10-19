@@ -61,7 +61,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     env:
-      nwjs-version: v0.101.2
+      electron-version: v44.7.0
     steps:
     - uses: actions/checkout@v6
     - name: Download js
@@ -73,33 +73,30 @@ jobs:
       run: sudo apt-get install p7zip-full
     - name: Windows
       run: |
-        wget -O nwjs-win.zip https://dl.nwjs.io/${{env.nwjs-version}}/nwjs-sdk-${{env.nwjs-version}}-win-x64.zip
-        unzip nwjs-win.zip
+        wget -O electron-win.zip https://github.com/electron/electron/releases/download/${{env.electron-version}}/electron-${{env.electron-version}}-win32-x64.zip
         mkdir -p zips
         cp -r bin zips/windows
-        cp -r nwjs-sdk-${{env.nwjs-version}}-win-x64 zips/windows/nwjs
+        unzip -q electron-win.zip -d zips/windows/electron
         cd zips/windows
         7z a -mm=Deflate -mx=9 ../windows.zip *
         cd ../..
         rm -rf zips/windows
     - name: Linux
       run: |
-        wget -O nwjs-linux.tar.gz https://dl.nwjs.io/${{env.nwjs-version}}/nwjs-sdk-${{env.nwjs-version}}-linux-x64.tar.gz
-        tar -xvzf nwjs-linux.tar.gz
+        wget -O electron-linux.zip https://github.com/electron/electron/releases/download/${{env.electron-version}}/electron-${{env.electron-version}}-linux-x64.zip
         mkdir -p zips
         cp -r bin zips/linux
-        cp -r nwjs-sdk-${{env.nwjs-version}}-linux-x64 zips/linux/nwjs
+        unzip -q electron-linux.zip -d zips/linux/electron
         cd zips/linux
         7z a -mm=Deflate -mx=9 ../linux.zip *
         cd ../..
         rm -rf zips/linux
     - name: Mac
       run: |
-        wget -O nwjs-mac.zip https://dl.nwjs.io/${{env.nwjs-version}}/nwjs-sdk-${{env.nwjs-version}}-osx-x64.zip
-        unzip nwjs-mac.zip
+        wget -O electron-mac.zip https://github.com/electron/electron/releases/download/${{env.electron-version}}/electron-${{env.electron-version}}-darwin-x64.zip
         mkdir -p zips/mac
-        cp -r nwjs-sdk-${{env.nwjs-version}}-osx-x64/nwjs.app zips/mac/nwjs.app
-        cp -r bin zips/mac/nwjs.app/Contents/Resources/app.nw
+        unzip -q electron-mac.zip -d zips/mac
+        cp -r bin zips/mac/Electron.app/Contents/Resources/app
         cd zips/mac
         7z a -mm=Deflate -mx=9 ../mac.zip *
         cd ../..
