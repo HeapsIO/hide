@@ -370,7 +370,7 @@ class Cell {
 		if( !html.containsHtml )
 			elementHtml.textContent = html.str;
 		else
-			elementHtml.innerHTML = "<div class='cell-root' style='max-height: ${MAX_HEIGHT_FIT}px; overflow-y:auto; overflow-x:hidden;'>" + html.str + "</div>";
+			elementHtml.innerHTML = '<div class="cell-root" style="max-height: ${MAX_HEIGHT_FIT}px; overflow-y:auto; overflow-x:hidden;">' + html.str + "</div>";
 		#if js
 		if( html.containsHtml )
 			observeFit(cast elementHtml.firstElementChild);

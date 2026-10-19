@@ -830,6 +830,7 @@ class Table extends Component {
 			var gap = 0.;
 			var spacerCount = 0;
 			var shown : Array<Row> = [];
+			var fresh : Array<js.html.Element> = [];
 			for( r in rows ) {
 				if( !want[r.index] ) {
 					gap += rowHeight(r);
@@ -847,6 +848,7 @@ class Table extends Component {
 					attachedNew = true;
 					if( r.line != null ) r.line.create();
 					body.insertBefore(e, cur);
+					fresh.push(e);
 				} else if( e != cur ) {
 					// the elements inserted after the row (sub table...) move with it
 					var extra = [];
@@ -869,6 +871,13 @@ class Table extends Component {
 				shown.push(null);
 			}
 			if( !virtual ) break;
+
+			// fit the new cells before measuring them : their observer runs after this frame's layout
+			var roots = [];
+			for( e in fresh )
+				for( c in e.querySelectorAll(".cell-root") )
+					roots.push((cast c : js.html.Element));
+			@:privateAccess Cell.fitRoots(roots);
 
 			// (offsetTop is rounded)
 			var changed = false;
