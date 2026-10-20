@@ -104,7 +104,7 @@
   },
   "dependencies": {
     "marked": "14.0.0",
-    "dompurify": "3.4.15"
+    "dompurify": "3.4.16"
   },
   "vscodeCommitId": "6a598d4a13031703d483d103c1d934a36ad27971",
   "monacoCommitId": "d61824269f1377111d34306e4a47172327777083"
