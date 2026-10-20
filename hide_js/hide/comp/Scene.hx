@@ -1,5 +1,14 @@
 package hide.comp;
 
+typedef SceneErrorMessage = {
+	title : String,
+	?details : String,
+	/** Adds a button to go to the source of the error **/
+	?goTo : Void -> Void,
+	/** Defaults to true **/
+	?log : Bool,
+}
+
 class Scene extends hide.comp.Component implements h3d.IDrawable {
 
 	static var UID = 0;
@@ -28,7 +37,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 
 	var currentRenderProps: hrt.prefab.Reference;
 
-	public var errorMessageBox : Element;
+	public var errorMessageBox : js.html.DivElement;
 	var unFocusedTime = 0.;
 	#if dx12
 	var output : h3d.mat.Texture;
@@ -85,8 +94,9 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			}
 		});
 
-		errorMessageBox = new Element('<div class="error-message"></div>');
-		errorMessageBox.appendTo(element);
+		errorMessageBox = js.Browser.document.createDivElement();
+		errorMessageBox.className = "error-message";
+		element.get(0).append(errorMessageBox);
 		clearErrorMessage();
 
 		untyped canvas.__scene = this;
@@ -221,21 +231,75 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	public var enableNewErrorSystem = false;
 	var errorMessageTimer : haxe.Timer;
 	var errorThisFrame: Bool = false;
+	var currentError : SceneErrorMessage;
+	var errorDetailsShown = false;
 
-	function setErrorMessage(s: String, log = true) {
-		if (log)
-			js.Browser.console.error(s);
-		errorMessageBox.html(StringTools.replace(s, "\n", "<br/>"));
-		errorMessageBox.css("visibility", "visible");
+	function setErrorMessage(error: SceneErrorMessage) {
+		var fullText = error.details != null ? error.title + "\n" + error.details : error.title;
+		if (error.log ?? true)
+			js.Browser.console.error(fullText);
 		errorThisFrame = true;
+
+		// Called every frame : only rebuild the dom when the error changes, so the buttons stay clickable
+		var prev = currentError;
+		currentError = error;
+		if (prev != null && prev.title == error.title && prev.details == error.details && (prev.goTo == null) == (error.goTo == null))
+			return;
+
+		var doc = js.Browser.document;
+		errorMessageBox.innerHTML = "";
+		errorMessageBox.style.visibility = "visible";
+
+		var title = doc.createDivElement();
+		title.innerText = error.title;
+		errorMessageBox.append(title);
+
+		var buttons = doc.createDivElement();
+		buttons.className = "buttons";
+		errorMessageBox.append(buttons);
+
+		function addButton(label: String, onClick: Void -> Void) {
+			var button = doc.createElement("fancy-button");
+			var span = doc.createSpanElement();
+			span.className = "label";
+			span.innerText = label;
+			button.append(span);
+			button.onclick = (_) -> onClick();
+			buttons.append(button);
+			return span;
+		}
+
+		if (error.goTo != null)
+			addButton("Go To Source", () -> currentError?.goTo());
+
+		if (error.details != null) {
+			var pre = doc.createPreElement();
+			pre.textContent = error.details;
+			var more : js.html.SpanElement = null;
+			function refresh() {
+				more.innerText = errorDetailsShown ? "Less Info" : "More Info";
+				if (errorDetailsShown)
+					title.after(pre);
+				else
+					pre.remove();
+			}
+			more = addButton("", () -> { errorDetailsShown = !errorDetailsShown; refresh(); });
+			refresh();
+		}
+
+		addButton("Copy Error", () -> {
+			ide.setClipboard(fullText);
+			ide.quickMessage("Error copied to clipboard");
+		});
 	}
 
 	function preOnReady() {
 	}
 
 	function clearErrorMessage() {
-		errorMessageBox.html("");
-		errorMessageBox.css("visibility", "collapse");
+		currentError = null;
+		errorMessageBox.innerHTML = "";
+		errorMessageBox.style.visibility = "collapse";
 	}
 
 	public function init( ?root : h3d.scene.Object ) {
@@ -356,7 +420,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	public dynamic function errorHandler(e:haxe.Exception) : Null<haxe.Exception> {
 		if (!enableNewErrorSystem)
 			return e;
-		setErrorMessage(e.toString());
+		setErrorMessage({ title: e.toString() });
 		return null;
 	}
 

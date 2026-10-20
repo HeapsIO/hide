@@ -597,7 +597,7 @@ class Prefab extends hide.view.FileView {
 
 		var scene = sceneEditor?.scene;
 		if (scene != null && @:privateAccess scene.errorThisFrame) {
-			var error = scene.errorMessageBox.get(0).innerText;
+			var error = @:privateAccess scene.currentError.title;
 			if (!ide.confirm('The scene has rendering errors :\n$error\n\nThe prefab might not load in game. Save anyway?'))
 				return;
 		}

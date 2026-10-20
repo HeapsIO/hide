@@ -462,6 +462,36 @@ input[type=checkbox] {
 
 		font-weight: bold;
 		font-family: var(--default-font);
+
+		> pre {
+			text-align: left;
+			font-family: monospace;
+			font-weight: normal;
+			white-space: pre;
+			overflow: auto;
+			max-height: 20em;
+			margin: 0.5em 1em;
+			padding: 0.5em;
+			background-color: white;
+			border: solid 1px black;
+			user-select: text;
+		}
+
+		> .buttons {
+			display: flex;
+			justify-content: center;
+			gap: 0.5em;
+			margin-top: 0.5em;
+
+			> fancy-button {
+				border-radius: 3px;
+				background-color: #222222;
+
+				&:hover {
+					background-color: #555;
+				}
+			}
+		}
 	}
 }
 

@@ -74,7 +74,7 @@ class Ide extends hide.tools.IdeData {
 		hxd.System.getClipboardText = () -> electron.Clipboard.get(Text);
 		hxd.System.setClipboardText = (text) -> { electron.Clipboard.set(text, Text); return true; };
 		var shaderErrors = new Map<String, Bool>();
-		h3d.pass.Output.onShaderError = (msg, p) -> {
+		h3d.pass.Output.onShaderError = (msg : String, p) -> {
 			var text = msg + " (" + p.obj.name + ")";
 			var key = p.shader?.id + ":" + text;
 			if (!shaderErrors.exists(key)) {
@@ -82,8 +82,11 @@ class Ide extends hide.tools.IdeData {
 				js.Browser.console.warn(text);
 			}
 			var s = hide.comp.Scene.getCurrent();
-			if (s != null)
-				@:privateAccess s.setErrorMessage(text, false);
+			if (s != null) {
+				var nl = msg.indexOf("\n");
+				var title = (nl < 0 ? msg : msg.substr(0, nl)) + " (" + p.obj.name + ")";
+				@:privateAccess s.setErrorMessage({ title: title, details: nl < 0 ? null : msg.substr(nl + 1), log: false });
+			}
 		};
 		#if dx12
 		hide.tools.NativeMeshTools.init();
