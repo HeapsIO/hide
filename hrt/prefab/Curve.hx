@@ -775,21 +775,7 @@ class Curve extends Prefab {
 	}
 
 	static inline function checkName(a: String, b: String) {
-		return a == b || sameName(a, a.length, b);
-	}
-
-	/** The first `len` chars of `a` are `b`, ignoring case: `a.substr(0, len).toLowerCase() == b.toLowerCase()` without allocating **/
-	static function sameName(a: String, len: Int, b: String) {
-		if(b.length != len) return false;
-		for(i in 0...len) {
-			var ca = StringTools.fastCodeAt(a, i), cb = StringTools.fastCodeAt(b, i);
-			if(ca == cb) continue;
-			if(ca >= 128 || cb >= 128) return a.substr(0, len).toLowerCase() == b.toLowerCase();
-			if(ca >= 'A'.code && ca <= 'Z'.code) ca += 32;
-			if(cb >= 'A'.code && cb <= 'Z'.code) cb += 32;
-			if(ca != cb) return false;
-		}
-		return true;
+		return a == b || a.toLowerCase() == b.toLowerCase();
 	}
 
 	public static function getCurve(parent : Prefab, name: String, onlyEnabled=true) {
@@ -814,7 +800,8 @@ class Curve extends Prefab {
 			if (parent.shared.editor?.isHidden(c)) continue;
 			#end
 			var idx = c.name.indexOf(":");
-			if(!sameName(c.name, idx >= 0 ? idx : c.name.length, prefix))
+			var curvePrefix = (idx >= 0) ? c.name.substr(0, idx) : c.name;
+			if(!checkName(curvePrefix, prefix))
 				continue;
 			var curve = c.to(Curve);
 			if(curve == null) continue;
