@@ -35,6 +35,7 @@ class Display {
 	static var generation = 0;
 
 	public static function init( tries = 5 ) {
+		if( device != null ) return;
 		var gpu : Dynamic = js.Syntax.code("navigator.gpu");
 		if( gpu == null ) {
 			js.Browser.console.error("DX12 display : no WebGPU in this page, nothing is shown");
