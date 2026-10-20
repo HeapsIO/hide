@@ -62,10 +62,6 @@ class Evaluator {
 			case null, VZero: 0.0;
 			case VConst(v): v;
 			case VRandom(rid, min, max): hxd.Math.lerp(min, max, getRandom(pidx, rid));
-			case VEase(e, from, to): hxd.Math.lerp(from, to, e.eval(time));
-			case VRandomEase(rid, e, fromMin, fromMax, toMin, toMax):
-				var u = getRandom(pidx, rid);
-				hxd.Math.lerp(hxd.Math.lerp(fromMin, fromMax, u), hxd.Math.lerp(toMin, toMax, u), e.eval(time));
 			case VCurve(c, from, to): hxd.Math.lerp(from, to, c.getVal(time));
 			case VParamCurve(c, from, to): hxd.Math.lerp(from, to, getParamCurve(c, time));
 			case VRandomCurve(rid, c, fromMin, fromMax, toMin, toMax):

@@ -2,7 +2,6 @@ package hide.tools.migrate;
 
 import hrt.prefab.fx.Value;
 import hrt.prefab.fx.Evaluator;
-import hrt.prefab.fx.EmitterParam.ParamShape;
 import hide.tools.migrate.Migrate.FileReport;
 import hide.tools.migrate.RawNode.get;
 import hrt.prefab.Diff.deepCopy;
@@ -32,13 +31,13 @@ private typedef Resample = {
 	var nonRigid : Float;
 }
 
-/** The mode of a param component (format 1), a curve shape by its path from the emitter **/
+/** The mode of a param component (format 1), a curve by its path from the emitter **/
 private enum Mode {
 	MConstant( v : Float );
 	MRange( min : Float, max : Float );
-	MCurve( shape : ParamShape, from : Float, to : Float );
-	MRandomCurve( shape : ParamShape, fromMin : Float, fromMax : Float, toMin : Float, toMax : Float );
-	MCurveRange( a : ParamShape, aFrom : Float, aTo : Float, b : ParamShape, bFrom : Float, bTo : Float );
+	MCurve( curve : String, from : Float, to : Float );
+	MRandomCurve( curve : String, fromMin : Float, fromMax : Float, toMin : Float, toMax : Float );
+	MCurveRange( a : String, aFrom : Float, aTo : Float, b : String, bFrom : Float, bTo : Float );
 }
 
 private enum abstract Group(Int) {
@@ -88,9 +87,6 @@ class Upgrade0 {
 	static inline var SAMPLE_STEP = 1.0 / 240.0;
 	/** Suffix of the name of an object moved under a parent that takes its name **/
 	static inline var BASE_SUFFIX = "_base";
-
-	/** A particle curve this close to an easing (relative to its range, see `EasingFit`) becomes that easing, 0 keeps the curves **/
-	public static var EASING_TOLERANCE = 0.05;
 
 	static function num( v : Dynamic, def : Float ) : Float {
 		return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : def;
@@ -1511,8 +1507,6 @@ class Upgrade0 {
 			change(e, "orbit speed in degrees per second");
 		}
 
-		easeModes(e, params);
-
 		// format 1: the settings are fields of the emitter, the params with modes are in `params`
 		var old = new Map();
 		for( d in defs ) {
@@ -1541,74 +1535,6 @@ class Upgrade0 {
 		if( !is2D )
 			for( s in particleShaders(e) )
 				upgradeParticleShader(s);
-	}
-
-	/**
-		The curves of the modes of `owner` (an emitter, a particle shader) that are within `EASING_TOLERANCE` of
-		an easing become that easing, the bounds of the mode remapped to its ends. A curve no mode reads any
-		more is removed, unless another curve reads it, it is under a curve (a blend), or a sibling has its
-		name (paths by index).
-	**/
-	function easeModes( owner : RawNode, params : Map<String, Array<Null<Mode>>> ) {
-		if( EASING_TOLERANCE <= 0 )
-			return;
-		var fits = new Map<String, Null<EasingFit.EasingMatch>>();
-		function fitOf( path : String ) {
-			if( fits.exists(path) )
-				return fits.get(path);
-			var n = locate(path, owner);
-			var f = null;
-			if( n != null && n.isCurve && n.enabled() && blendMode(n) == 0 && get(n.data, "remapPath") == null && n.children.length == 0 ) {
-				var c = Std.downcast(@:privateAccess hrt.prefab.Prefab.createFromDynamic(deepCopy(n.data), null, new hrt.prefab.ContextShared(null, false)), hrt.prefab.Curve);
-				if( c != null )
-					f = EasingFit.fit(c, EASING_TOLERANCE);
-			}
-			fits.set(path, f);
-			return f;
-		}
-		inline function lerp( a : Float, b : Float, k : Float ) return a + (b - a) * k;
-		// lerp(from, to, lerp(f.a, f.b, ease)) = lerp(lerp(from, to, f.a), lerp(from, to, f.b), ease)
-		function ease( s : ParamShape, from : Float, to : Float, set : (ParamShape, Float, Float) -> Void ) {
-			switch( s ) {
-			case Curve(path):
-				var f = fitOf(path);
-				if( f != null ) set(Easing(f.ease), lerp(from, to, f.a), lerp(from, to, f.b));
-			case Easing(_):
-			}
-		}
-		for( name => v in params )
-			for( i in 0...v.length ) {
-				var m = v[i];
-				switch( m ) {
-				// a Curve Range only takes curves
-				case null, MConstant(_), MRange(_), MCurveRange(_):
-				case MCurve(s, f, t):
-					ease(s, f, t, (s, f, t) -> m = MCurve(s, f, t));
-				case MRandomCurve(s, f0, f1, t0, t1):
-					ease(s, 0, 1, (e, a, b) -> m = MRandomCurve(e, lerp(f0, t0, a), lerp(f1, t1, a), lerp(f0, t0, b), lerp(f1, t1, b)));
-				}
-				v[i] = m;
-			}
-		var used = new Map();
-		for( v in params )
-			for( m in v )
-				switch( m ) {
-				case MCurve(Curve(p), _), MRandomCurve(Curve(p), _): used.set(p, true);
-				case MCurveRange(a, _, _, b, _, _):
-					switch( a ) { case Curve(p): used.set(p, true); default: }
-					switch( b ) { case Curve(p): used.set(p, true); default: }
-				case null, _:
-				}
-		for( path => f in fits ) {
-			if( f == null ) continue;
-			var n = locate(path, owner);
-			change(n, 'curve as easing ${(f.ease : String)}, ${Math.round(f.error * 1000) / 10}% from it');
-			if( used.exists(path) || n.parent.isCurve || (users.get(n)?.length ?? 0) > 0|| (remapUsers.get(n)?.length ?? 0) > 0 ||Lambda.exists(n.parent.children, c -> c != n && c.name == n.name) )
-				continue;
-			var arr : Array<Dynamic> = get(n.parent.data, "children");
-			arr.remove(n.data);
-			n.parent.children.remove(n);
-		}
 	}
 
 	/** The shaders the particles of `e` get (`Shader.getParticleEmitter`) **/
@@ -1681,11 +1607,11 @@ class Upgrade0 {
 					}
 				} else {
 					var isAdditive = Lambda.exists(additive, a -> old.indexOf(a) >= 0);
-					var curve = ci == null ? null : Curve(ci.uniqueName());
+					var curve = ci?.uniqueName();
 					if( ri != null && ci == null ) {
 						// the random amount follows a curve: k + a * random * curve(t)
 						var a = rand ?? 1.0;
-						mode = MRandomCurve(Curve(ri.uniqueName()), k, k, k - a, k + a);
+						mode = MRandomCurve(ri.uniqueName(), k, k, k - a, k + a);
 					} else {
 						if( ri != null )
 							warn(e, '${old + suffix}:rand: a random curve next to a curve has no equivalent, ignored');
@@ -1697,7 +1623,7 @@ class Upgrade0 {
 							else if( !sub[0].enabled() || !sub[1].enabled() )
 								warn(e, '${old + suffix}: disabled child curve of a random blend');
 							inline function path( j : Int ) return ci.uniqueName() + "." + (j < sub.length ? sub[j].uniqueName() : "0");
-							mode = MCurveRange(Curve(path(0)), 0, 1, Curve(path(1)), 0, 1);
+							mode = MCurveRange(path(0), 0, 1, path(1), 0, 1);
 						} else if( curve != null ) {
 							if( isAdditive )
 								mode = hasRand ? MRandomCurve(curve, k - rand, k + rand, k - rand + 1, k + rand + 1) : MCurve(curve, k, k + 1);
@@ -1875,7 +1801,7 @@ class Upgrade0 {
 				for( k in 0...dim ) {
 					var suffix = ":" + COMPONENTS[k];
 					var x = Lambda.find(group, x -> StringTools.endsWith(x.name.toLowerCase(), suffix));
-					v.push(x != null ? MCurve(Curve(x.uniqueName()), 0, 1) : null);
+					v.push(x != null ? MCurve(x.uniqueName(), 0, 1) : null);
 					if( x == null ) base[k] = k == 3 ? 1. : 0.;
 				}
 				if( props == null ) RawNode.setField(s.data, "props", props = {});
@@ -1889,18 +1815,16 @@ class Upgrade0 {
 				// the old code multiplied by the value when it is a number, by 1 otherwise
 				if( prop == null )
 					unknownBase(x, name);
-				out.set(name, [MCurve(Curve(x.uniqueName()), 0, isNumber(prop) ? num(prop, 0) : 1.0)]);
+				out.set(name, [MCurve(x.uniqueName(), 0, isNumber(prop) ? num(prop, 0) : 1.0)]);
 			}
 		}
 		if( !out.iterator().hasNext() )
 			return;
-		easeModes(s, out);
 		var names = [for( k in out.keys() ) k];
 		names.sort(Reflect.compare);
 		function comp( m : Mode ) : Dynamic {
 			return switch( m ) {
-			case MCurve(Curve(path), from, to): obj(["curve", path, "from", from, "to", to]);
-			case MCurve(Easing(e), from, to): obj(["ease", (e : String), "from", from, "to", to]);
+			case MCurve(path, from, to): obj(["curve", path, "from", from, "to", to]);
 			case null, _: null;
 			}
 		}
@@ -1927,8 +1851,8 @@ class Upgrade0 {
 			if( from != 0 ) o.from = from;
 			if( to != 1 ) o.to = to;
 		}
-		function shape( fields : Array<Dynamic>, s : ParamShape ) : Dynamic {
-			return obj(fields.concat(switch( s ) { case Curve(path): ["curve", path]; case Easing(e): ["ease", (e : String)]; }));
+		function shape( fields : Array<Dynamic>, path : String ) : Dynamic {
+			return obj(fields.concat(["curve", path]));
 		}
 		return switch( m ) {
 		case null: null;

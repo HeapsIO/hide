@@ -33,8 +33,8 @@ class EmitterEdit {
 		}
 	}
 
-	/** `m` in `mode`, keeping its values: exactly when `mode` can express it, its middle otherwise. A new curve goes from 0 to 1 **/
-	static function convert(m: ParamMode, mode: ModeKind, def: Float) : ParamMode {
+	/** `m` in `mode`, keeping its values: exactly when `mode` can express it, its middle otherwise. A new curve (`newCurve`) goes from 0 to 1 **/
+	static function convert(m: ParamMode, mode: ModeKind, def: Float, newCurve: () -> String) : ParamMode {
 		var s = null, s2 = null, f0 = def, f1 = def, t0 = def, t1 = def;
 		switch (m) {
 			case null:
@@ -47,8 +47,8 @@ class EmitterEdit {
 		if (s == null && mode != Constant && mode != Range) {
 			f0 = f1 = 0;
 			t0 = t1 = 1;
+			s = newCurve();
 		}
-		s ??= Easing(Linear);
 		return switch (mode) {
 			case Constant: Constant((t0 + t1) * 0.5);
 			case Range: Range(t0, t1);
@@ -67,14 +67,14 @@ class EmitterEdit {
 		}];
 	}
 
-	static function shapeFunction(owner: Prefab, s: ParamShape) : Float -> Float {
+	static function shapeFunction(owner: Prefab, s: String) : Float -> Float {
 		var v = ParamBuilder.shape(owner, s);
 		var ev = AnimEdit.getFX(owner)?.evaluator ?? new Evaluator();
 		return (t) -> ev.getFloat(v, t);
 	}
 
 	/** The two curves of a blend shape, from 0 to 1, shown under it **/
-	static function blendFunctions(owner: Prefab, s: ParamShape) : Array<Float -> Float> {
+	static function blendFunctions(owner: Prefab, s: String) : Array<Float -> Float> {
 		return switch (ParamBuilder.shape(owner, s)) {
 			case VParamCurve(c, from, to) if (c.blendMode == Blend):
 				[for (i in 0...2) { var b : Curve = cast c.children[i]; (t) -> hxd.Math.lerp(from, to, b.getVal(t)); }];
@@ -82,63 +82,39 @@ class EmitterEdit {
 		}
 	}
 
-	/** The curve of `s` when its keys can be edited **/
-	static function editableCurve(owner: Prefab, s: ParamShape) : Curve {
-		return switch (s) {
-			case Curve(path):
-				var c = EmitterParam.resolveCurve(owner, path);
-				c != null && c.blendMode == None ? c : null;
-			case Easing(_): null;
-		}
+	/** The curve at `path` when its keys can be edited **/
+	static function editableCurve(owner: Prefab, path: String) : Curve {
+		var c = EmitterParam.resolveCurve(owner, path);
+		return c != null && c.blendMode == None ? c : null;
 	}
 
-	/** The easings offered by the shape select: Quart and Quint are left out, they stay shown where they are used **/
-	static var EASINGS = hrt.prefab.fx.Easing.ALL.filter(e -> { var s : String = e; s.indexOf("Quart") < 0 && s.indexOf("Quint") < 0; });
-
-	/** A thumbnail of `e`, as an inline svg: the same vertical scale for all, to fit the overshoot of Back and Elastic **/
-	static function easingThumbnail(e: Easing) : String {
-		final W = 36, H = 24, PAD = 3, LO = -0.4, HI = 1.4, N = 40;
-		inline function fmt(v: Float) return Math.round(v * 10) / 10;
-		function y(v: Float) return fmt(H - PAD - (v - LO) / (HI - LO) * (H - PAD * 2));
-		var points = [for (i in 0...N + 1) fmt(PAD + i / N * (W - PAD * 2)) + "," + y(e.eval(i / N))].join(" ");
-		return '<svg width="$W" height="$H" style="vertical-align: middle; margin: 1px 8px 1px 0; background: #161616; border-radius: 2px">'
-			+ '<line x1="0" x2="$W" y1="${y(0)}" y2="${y(0)}" stroke="#444"/><line x1="0" x2="$W" y1="${y(1)}" y2="${y(1)}" stroke="#444"/>'
-			+ '<polyline points="$points" fill="none" stroke="#f05a5a" stroke-width="1.5"/></svg>';
+	/** A new linear curve from 0 to 1 under `owner`, named after `name`: its path **/
+	static function newCurve(owner: Prefab, name: String) : String {
+		var c = new Curve(owner, owner.shared);
+		c.name = AnimEdit.newCurveName(owner, name + "Curve");
+		c.addKey(0, 0, Linear);
+		c.addKey(1, 1, Linear);
+		return EmitterParam.curvePath(owner, c);
 	}
 
-	/** A select of the shapes: a new curve (named after `name`), the curves under `owner`, the easings; plain curves only for `plain` **/
-	static function shapeSelect(ctx: EditContext2, parent: hide.kit.Element, id: String, owner: Prefab, s: ParamShape, name: String, plain: Bool, set: ParamShape -> Void) {
+	/** A select of the curves: a new one (named after `name`), the curves under `owner`; plain curves only for `plain` **/
+	static function shapeSelect(ctx: EditContext2, parent: hide.kit.Element, id: String, owner: Prefab, path: String, name: String, plain: Bool, set: String -> Void) {
 		var select = new hide.kit.Select(parent, id);
 		var curves : Array<hide.kit.Select.SelectEntry> = [for (c in shapeCurves(owner)) if (!plain || c.isPlain()) {
 			var path = EmitterParam.curvePath(owner, c);
-			{ value: "curve:" + path, label: path };
+			{ value: path, label: path };
 		}];
-		var current = switch (s) { case Curve(path): "curve:" + path; case Easing(e): "ease:" + e; };
-		if (!Lambda.exists(curves, e -> e.value == current) && s.match(Curve(_)))
-			curves.push({ value: current, label: current.substr(6) + " (missing)" });
-		var easings = EASINGS.copy();
-		switch (s) {
-			case Easing(e) if (!easings.contains(e)): easings.push(e);
-			default:
-		}
-		var entries : Array<hide.kit.Select.SelectEntry> = [{ value: "new", label: "New curve" }, { value: null, label: "Reference", children: curves }];
-		if (!plain || s.match(Easing(_)))
-			entries.push({ value: null, label: "Easing", children: [for (e in easings) { value: "ease:" + e, label: hide.kit.Macros.camelToSpaceCase(e), preview: easingThumbnail(e) }] });
-		select.setEntries(entries);
-		select.value = current;
-		select.defaultValue = current;
+		if (path != null && !Lambda.exists(curves, e -> e.value == path))
+			curves.push({ value: path, label: path + " (missing)" });
+		select.setEntries([{ value: "new", label: "New curve" }, { value: null, label: "Reference", children: curves }]);
+		select.value = path;
+		select.defaultValue = path;
 		select.onValueChange = (_) -> {
 			var v : String = select.value;
-			if (v == "new") {
-				AnimEdit.editTree(ctx, owner, () -> {
-					var c = new Curve(owner, owner.shared);
-					c.name = AnimEdit.newCurveName(owner, name + "Curve");
-					c.addKey(0, 0, Linear);
-					c.addKey(1, 1, Linear);
-					set(Curve(EmitterParam.curvePath(owner, c)));
-				});
-			} else
-				set(StringTools.startsWith(v, "curve:") ? Curve(v.substr(6)) : Easing(v.substr(5)));
+			if (v == "new")
+				AnimEdit.editTree(ctx, owner, () -> set(newCurve(owner, name)));
+			else
+				set(v);
 			ctx.rebuildPrefab(owner);
 			ctx.rebuildInspector();
 		}
@@ -191,7 +167,15 @@ class EmitterEdit {
 			if (modes.length > 1) {
 				for (mode in modes)
 					items.push({ label: hide.kit.Macros.camelToSpaceCase(mode), radio: () -> kind == mode,
-						click: () -> menuEdit(line, () -> setComp(i, convert(m, mode, def.def[i]))) });
+						click: () -> {
+							// from a mode without a curve, a new one: the curve and the mode in one undo step
+							if (mode != Constant && mode != Range && (m == null || m.match(Constant(_) | Range(_)))) {
+								var curveName = def.name + (dim == 1 ? "" : compName(i));
+								AnimEdit.editTree(ctx, owner, () -> setComp(i, convert(m, mode, def.def[i], () -> newCurve(owner, curveName))));
+								rebuild();
+							} else
+								menuEdit(line, () -> setComp(i, convert(m, mode, def.def[i], () -> null)));
+						} });
 				items.push({ isSeparator: true });
 			}
 			items.push({ label: dim == 1 ? "Remove" : "Remove " + compName(i), click: () -> menuEdit(line, () -> setComp(i, null)), enabled: isSet(i) });
@@ -260,7 +244,7 @@ class EmitterEdit {
 				A curve editor, and below it on one line the `from` fields (the start of the particle life, at
 				the left) and the `to` ones (its end, at the right), with a button swapping them
 			**/
-			function curve(s: ParamShape, from: Array<{ v: () -> Float, set: Float -> Void }>, to: Array<{ v: () -> Float, set: Float -> Void }>, ranges: () -> Array<hide.kit.ParamCurve.ParamRange>, suffix: String) {
+			function curve(s: String, from: Array<{ v: () -> Float, set: Float -> Void }>, to: Array<{ v: () -> Float, set: Float -> Void }>, ranges: () -> Array<hide.kit.ParamCurve.ParamRange>, suffix: String) {
 				var graph = new hide.kit.ParamCurve(parent, id + "Curve" + suffix, owner, shapeFunction(owner, s), ranges(), editableCurve(owner, s), blendFunctions(owner, s));
 				var bounds = new hide.kit.Line(parent, id + "Bounds" + suffix);
 				bounds.cssClass = "kit-param-bounds";
@@ -288,7 +272,7 @@ class EmitterEdit {
 				for (j => f in to)
 					slider(bounds, "to" + j, "", f.v(), 1, f.set, null, changed).tooltip = "To" + names[j] + ": at the death of the particle";
 			}
-			function shape(parent: hide.kit.Element, sid: String, s: ParamShape, set: ParamShape -> Void) {
+			function shape(parent: hide.kit.Element, sid: String, s: String, set: String -> Void) {
 				shapeSelect(ctx, parent, sid, owner, s, def.name + (dim == 1 ? "" : comp.toUpperCase()), m.match(CurveRange(_)), (s) -> {
 					set(s);
 					apply();

@@ -6,10 +6,6 @@ enum Value {
 	VConst(v: Float);
 	// lerp(min, max, u)
 	VRandom(rid: Int, min: Float, max: Float);
-	// lerp(from, to, e(t))
-	VEase(e: Easing, from: Float, to: Float);
-	// lerp(lerp(fromMin, fromMax, u), lerp(toMin, toMax, u), e(t))
-	VRandomEase(rid: Int, e: Easing, fromMin: Float, fromMax: Float, toMin: Float, toMax: Float);
 	// lerp(from, to, c(t)), c with plain keys
 	VCurve(c: Curve, from: Float, to: Float);
 	// lerp(from, to, c(t)), c a blend or a remap by an FX parameter (`Evaluator.getParamCurve`)

@@ -318,15 +318,14 @@ class Shader extends Prefab {
 		// the params read over the particle life have curves, see BaseFXTools.makeShaderParams; a constant is the prop
 		function getParticleCurve(name: String, i: Int) : hrt.prefab.fx.EmitterParam.ParamMode {
 			var c = Lambda.find(particleParams, p -> p.name == name)?.comps[i];
-			return c == null ? null : Curve(c.curve != null ? Curve(c.curve) : Easing(c.ease ?? Linear), c.from, c.to);
+			return c == null ? null : Curve(c.curve, c.from, c.to);
 		}
 		function setParticleCurve(name: String, dim: Int, i: Int, m: hrt.prefab.fx.EmitterParam.ParamMode) {
 			var p = Lambda.find(particleParams, p -> p.name == name);
 			if (p == null)
 				particleParams.push(p = { name: name, comps: [for (_ in 0...dim) null] });
 			p.comps[i] = switch (m) {
-				case Curve(Curve(path), from, to): { curve: path, from: from, to: to };
-				case Curve(Easing(e), from, to): { ease: e, from: from, to: to };
+				case Curve(path, from, to): { curve: path, from: from, to: to };
 				case Constant(k):
 					if (dim == 1)
 						Reflect.setField(this.props, name, k);

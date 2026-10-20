@@ -19,7 +19,7 @@ Scope: `Emitter` and `Emitter2D`. Editing through the new inspector only (edit2 
 
 Vector params have one mode per component. Rotations are in degrees, rotation speeds (orbit speed) in degrees per second.
 Particle shaders get their per-particle randomness on the GPU, from the emitter's `particleRandom`.
-A shader under an emitter stores its particle params on itself, in a field only used under an emitter: per param, a curve per component, which gives the value (shape: curve or easing, `from` / `to`); a component without curve keeps the prop.
+A shader under an emitter stores its particle params on itself, in a field only used under an emitter: per param, a curve per component, which gives the value (`curve`, `from` / `to`); a component without curve keeps the prop.
 
 ## Modes
 
@@ -39,13 +39,10 @@ A shader under an emitter stores its particle params on itself, in a field only 
 
 ## Shapes
 
-A shape is either:
-
-- a **curve**: a reference, by path, to a curve prefab in the hierarchy. A curve is one of: plain keys (with loop); a blend of two plain curves by an FX parameter; plain keys remapped by an FX parameter (read at its value instead of the time); a reference to one of these (resolved when the values are built, its scale and offset folded into the range).
-- an **easing**: an enum, `Linear` and `{Sine, Quad, Cubic, Quart, Quint, Expo, Circ, Back, Elastic, Bounce} × {In, Out, InOut}`. Not in Curve Range.
+A shape is a **curve**: a reference, by path, to a curve prefab in the hierarchy. A curve is one of: plain keys (with loop); a blend of two plain curves by an FX parameter; plain keys remapped by an FX parameter (read at its value instead of the time); a reference to one of these (resolved when the values are built, its scale and offset folded into the range).
 
 The range (`from` / `to`) belongs to the param; a reference shares the shape only.
-Rejected when the values are built (an error), and not offered by the curve inspector: a remap by another curve, a remapped blend or reference, a blend of curves that are not plain, an easing or a curve by a parameter in Curve Range.
+Rejected when the values are built (an error), and not offered by the curve inspector: a remap by another curve, a remapped blend or reference, a blend of curves that are not plain, a curve by a parameter in Curve Range.
 
 ## Animation curves
 
@@ -91,8 +88,8 @@ Validation (fxbench, outside the repo): old hide on the old files against new hi
 ## UI
 
 - The right click menu of a param component (on its field, or on the label of its line) switches its mode, restricted to the modes of its group, and removes it (**Remove X**) or the whole param (**Remove all**). The components of a vector are on one line while they are all constant or unset.
-- The shape dropdown: **New curve**, **Reference** (the curves under the emitter), **Easing** (with thumbnails; Quart and Quint are not offered, they stay shown where they are used).
-- A curve mode made from a constant, a range or nothing goes from 0 to 1.
+- The shape dropdown: **New curve**, **Reference** (the curves under the emitter).
+- A curve mode made from a constant, a range or nothing gets a new linear curve, from 0 to 1.
 - Curve modes show their particle curves in an inline curve editor. Below the editor, on one line, the `from` fields at the left (the birth of the particle) and the `to` ones at the right (its death), a button between them swapping them. Random Curve: the shape at mid range as a solid line, the two extremes dashed. Keys are edited in display space, as in the timeline curve editor: key modes (Aligned, Free, Linear, Constant) and tangent handles, Ctrl + click adds a key, Delete removes it, right click for the key menu, double click for its time and value. The editor has a labelled Y grid in integer steps (0 stronger) and shows at least 0 to 1: framed on the curve when built or with F, zoomed vertically around its center with its +/- buttons or Shift + wheel.
 - Curve Range: two stacked curve editors.
 - The FX timeline shows the animation curves only, and a particle curve when it is selected (over the particle life, 0 to 1).

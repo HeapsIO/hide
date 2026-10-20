@@ -12,26 +12,21 @@ enum ParamKind {
 	Multiplier;
 }
 
-enum ParamShape {
-	Curve(path : String);
-	Easing(e : Easing);
-}
-
-/** The mode of a param component: a value, a random in a range, or over the particle life **/
+/** The mode of a param component: a value, a random in a range, or over the particle life (a curve by its path from the owner) **/
 enum ParamMode {
 	Constant( value : Float );
 	Range( min : Float, max : Float );
-	Curve( shape : ParamShape, from : Float, to : Float );
-	RandomCurve( shape : ParamShape, fromMin : Float, fromMax : Float, toMin : Float, toMax : Float );
-	CurveRange( a : ParamShape, aFrom : Float, aTo : Float, b : ParamShape, bFrom : Float, bTo : Float );
+	Curve( curve : String, from : Float, to : Float );
+	RandomCurve( curve : String, fromMin : Float, fromMax : Float, toMin : Float, toMax : Float );
+	CurveRange( a : String, aFrom : Float, aTo : Float, b : String, bFrom : Float, bTo : Float );
 }
 
 /** A vector param, one mode per component, null when unset **/
 typedef ParamVec2 = { ?x : ParamMode, ?y : ParamMode };
 typedef ParamVec3 = { > ParamVec2, ?z : ParamMode };
 
-/** A component of a particle shader param over the particle life: lerp(from, to, shape(t)), the shape `curve` (a path) or `ease` **/
-typedef ParticleCurve = { ?curve : String, ?ease : Easing, from : Float, to : Float };
+/** A component of a particle shader param over the particle life: lerp(from, to, curve(t)), `curve` a path **/
+typedef ParticleCurve = { curve : String, from : Float, to : Float };
 
 /** A particle shader param, a null component keeps its prop **/
 typedef ParticleShaderParam = { name : String, comps : Array<ParticleCurve> };
@@ -122,10 +117,7 @@ class EmitterParam {
 		if( Std.isOfType(v, Float) || Std.isOfType(v, Int) )
 			return Constant(v);
 		inline function num( v : Dynamic, def : Float ) : Float return v ?? def;
-		function shape( o : Dynamic ) : ParamShape {
-			var ease : String = o.ease;
-			return o.curve != null ? Curve(o.curve) : Easing(ease != null && hrt.prefab.fx.Easing.isValid(ease) ? ease : Linear);
-		}
+		function shape( o : Dynamic ) : String return o.curve;
 		var from : Dynamic = v.from, to : Dynamic = v.to, a : Dynamic = v.a, b : Dynamic = v.b;
 		return switch( (v.mode : String) ) {
 		case "Range": Range(num(v.min, 0), num(v.max, 0));
@@ -137,8 +129,8 @@ class EmitterParam {
 	}
 
 	public static function saveMode( m : ParamMode ) : Dynamic {
-		function curve( s : ParamShape, from : Float, to : Float ) : Dynamic {
-			var o : Dynamic = switch( s ) { case Curve(path): { curve: path }; case Easing(e): { ease: (e : String) }; };
+		function curve( s : String, from : Float, to : Float ) : Dynamic {
+			var o : Dynamic = { curve: s };
 			if( from != 0 ) o.from = from;
 			if( to != 1 ) o.to = to;
 			return o;
@@ -206,24 +198,20 @@ class ParamBuilder {
 	}
 
 	public static function particleCurve( owner : Prefab, c : ParticleCurve ) : Value {
-		return curve(owner, c.curve != null ? Curve(c.curve) : Easing(c.ease ?? Linear), c.from, c.to);
+		return curve(owner, c.curve, c.from, c.to);
 	}
 
-	/** The value of a shape, from 0 to 1, 1 for a missing curve **/
-	public static function shape( owner : Prefab, s : ParamShape ) : Value {
-		return switch( s ) {
-		case Curve(path): EmitterParam.resolveCurve(owner, path)?.makeVal() ?? VConst(1.0);
-		case Easing(e): VEase(e, 0, 1);
-		}
+	/** The value of the curve at `path`, from 0 to 1, 1 for a missing curve **/
+	public static function shape( owner : Prefab, path : String ) : Value {
+		return EmitterParam.resolveCurve(owner, path)?.makeVal() ?? VConst(1.0);
 	}
 
 	static inline function at( from : Float, to : Float, k : Float ) {
 		return k == 0 ? from : k == 1 ? to : from + (to - from) * k;
 	}
 
-	static function curve( owner : Prefab, s : ParamShape, from : Float, to : Float ) : Value {
+	static function curve( owner : Prefab, s : String, from : Float, to : Float ) : Value {
 		return switch( shape(owner, s) ) {
-		case VEase(e, a, b): VEase(e, at(from, to, a), at(from, to, b));
 		case VCurve(c, a, b): VCurve(c, at(from, to, a), at(from, to, b));
 		case VParamCurve(c, a, b): VParamCurve(c, at(from, to, a), at(from, to, b));
 		case VConst(k): VConst(at(from, to, k));
@@ -247,7 +235,6 @@ class ParamBuilder {
 		case RandomCurve(s, f0, f1, t0, t1):
 			var rid = randomSlots++;
 			switch( shape(owner, s) ) {
-			case VEase(e, _, _): VRandomEase(rid, e, f0, f1, t0, t1);
 			case VCurve(c, a, b), VParamCurve(c, a, b): VRandomCurve(rid, c, at(f0, t0, a), at(f1, t1, a), at(f0, t0, b), at(f1, t1, b));
 			case VConst(k): VRandom(rid, at(f0, t0, k), at(f1, t1, k));
 			default: VRandom(rid, t0, t1);
