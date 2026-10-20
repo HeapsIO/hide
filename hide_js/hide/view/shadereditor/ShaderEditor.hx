@@ -638,10 +638,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var validNameCheck = ~/^[_a-zA-Z][_a-zA-Z0-9]*$/;
 
 	function renameVariable(variable: ShaderGraphVariable, newName: String) {
-		if (!validNameCheck.match(newName))
+		if (!hrt.shgraph.CustomVarChooser.isValidVariableName(newName))
 		{
 			variableList.refresh();
-			ide.quickError('"$newName" is not a valid variable name (must start with _ or a letter, and only contains letters, numbers and underscores)');
+			ide.quickError('"$newName" is not a valid variable name (must start with _ or a letter, contain only alphanumeric characters, and cannot be a reserved keyword)');
 			return;
 		}
 
@@ -811,10 +811,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	function renameParameter(item: Parameter, name: String) : Void {
-		if (!validNameCheck.match(name))
+		if (!hrt.shgraph.CustomVarChooser.isValidVariableName(name))
 		{
 			parametersList.refresh();
-			ide.quickError('"$name" is not a valid parameter name (must start with _ or a letter, and only contains letters, numbers and underscores)');
+			ide.quickError('"$name" is not a valid parameter name (must start with _ or a letter, contain only alphanumeric characters, and cannot be a reserved keyword)');
 			return;
 		}
 
