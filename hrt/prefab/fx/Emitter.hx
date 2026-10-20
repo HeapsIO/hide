@@ -524,6 +524,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var particles : PartArray;
 	public var particlesCount : Int;
 	public var listHead : ParticleInstance;
+	// the particles added at the head of the list since the last depth sort
+	var newInstances = 0;
 	public var batch : h3d.scene.MeshBatch;
 	public var customAnims : Array<BaseFX.CustomAnimation>;
 
@@ -954,6 +956,7 @@ class EmitterObject extends h3d.scene.Object {
 		if(listHead != null)
 			listHead.prev = p;
 		listHead = p;
+		newInstances++;
 		instanceCounter = (instanceCounter + 1) % maxCount;
 		checkList();
 		return p;
@@ -1453,9 +1456,8 @@ class EmitterObject extends h3d.scene.Object {
 
 	function depthSort() {
 		checkList();
-		listHead = haxe.ds.ListSort.sort(listHead, sortZ);
-		if(listHead != null)
-			listHead.prev = null;  // The `prev` of the head is set to the tail of the sorted list.
+		listHead = EmitterHelper.depthSort(listHead, newInstances, numInstances * 2, sortZ);
+		newInstances = 0;
 		checkList();
 	}
 
