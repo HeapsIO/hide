@@ -117,13 +117,12 @@ class EmitterParam {
 		if( Std.isOfType(v, Float) || Std.isOfType(v, Int) )
 			return Constant(v);
 		inline function num( v : Dynamic, def : Float ) : Float return v ?? def;
-		function shape( o : Dynamic ) : String return o.curve;
 		var from : Dynamic = v.from, to : Dynamic = v.to, a : Dynamic = v.a, b : Dynamic = v.b;
 		return switch( (v.mode : String) ) {
 		case "Range": Range(num(v.min, 0), num(v.max, 0));
-		case "Curve": Curve(shape(v), num(from, 0), num(to, 1));
-		case "RandomCurve": RandomCurve(shape(v), num(from?.min, 0), num(from?.max, 0), num(to?.min, 1), num(to?.max, 1));
-		case "CurveRange": CurveRange(shape(a), num(a.from, 0), num(a.to, 1), shape(b), num(b.from, 0), num(b.to, 1));
+		case "Curve": Curve(v.curve, num(from, 0), num(to, 1));
+		case "RandomCurve": RandomCurve(v.curve, num(from?.min, 0), num(from?.max, 0), num(to?.min, 1), num(to?.max, 1));
+		case "CurveRange": CurveRange(a.curve, num(a.from, 0), num(a.to, 1), b.curve, num(b.from, 0), num(b.to, 1));
 		default: null;
 		}
 	}
@@ -202,7 +201,7 @@ class ParamBuilder {
 	}
 
 	/** The value of the curve at `path`, from 0 to 1, 1 for a missing curve **/
-	public static function shape( owner : Prefab, path : String ) : Value {
+	public static function curveValue( owner : Prefab, path : String ) : Value {
 		return EmitterParam.resolveCurve(owner, path)?.makeVal() ?? VConst(1.0);
 	}
 
@@ -211,7 +210,7 @@ class ParamBuilder {
 	}
 
 	static function curve( owner : Prefab, s : String, from : Float, to : Float ) : Value {
-		return switch( shape(owner, s) ) {
+		return switch( curveValue(owner, s) ) {
 		case VCurve(c, a, b): VCurve(c, at(from, to, a), at(from, to, b));
 		case VParamCurve(c, a, b): VParamCurve(c, at(from, to, a), at(from, to, b));
 		case VConst(k): VConst(at(from, to, k));
@@ -234,7 +233,7 @@ class ParamBuilder {
 		case Range(min, max): VRandom(randomSlots++, min, max);
 		case RandomCurve(s, f0, f1, t0, t1):
 			var rid = randomSlots++;
-			switch( shape(owner, s) ) {
+			switch( curveValue(owner, s) ) {
 			case VCurve(c, a, b), VParamCurve(c, a, b): VRandomCurve(rid, c, at(f0, t0, a), at(f1, t1, a), at(f0, t0, b), at(f1, t1, b));
 			case VConst(k): VRandom(rid, at(f0, t0, k), at(f1, t1, k));
 			default: VRandom(rid, t0, t1);

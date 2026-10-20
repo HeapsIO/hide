@@ -41,7 +41,7 @@ class EmitterMacros {
 			case EArrayDecl(v): macro PVec($v{v.length}, $min, $max);
 			default: Context.error("A vector setting needs its default", f.pos);
 			}
-		case TPath({ sub: "GradientData" }): macro PGradient;
+		case TPath({ name: "GradientData" } | { sub: "GradientData" }): macro PGradient;
 		case TPath(p): macro PEnum($i{p.sub ?? p.name});
 		default: Context.error("Unsupported setting type", f.pos);
 		}

@@ -109,7 +109,18 @@ class FX2DAnimation extends h2d.Object {
 		this.localTime = time;
 
 		for(anim in objects) {
-			applyTransform(anim, evaluator, time);
+			var e = anim.elt2d, o = anim.obj2d, p = anim.position, s = anim.scale, r = anim.rotation;
+			inline function f(v: Value, base: Float) return v == null ? base : evaluator.getFloat(v, time);
+			if(p != null) {
+				o.x = f(p.x, e.x);
+				o.y = f(p.y, e.y);
+			}
+			if(s != null) {
+				o.scaleX = f(s.x, e.scaleX);
+				o.scaleY = f(s.y, e.scaleY);
+			}
+			if(r != null)
+				o.rotation = hxd.Math.degToRad(f(r.x, e.rotation));
 
 			if(anim.visibility != null)
 				anim.obj2d.visible = anim.elt2d.visible && evaluator.getFloat(anim.visibility, time) > 0.5;
@@ -156,22 +167,6 @@ class FX2DAnimation extends h2d.Object {
 		Event.updateEvents(events, time, prevTime, duration);
 
 		this.prevTime = localTime;
-	}
-
-	// TRE: inline above if used once
-	static function applyTransform(anim: ObjectAnimation, evaluator: Evaluator, time: Float) {
-		var e = anim.elt2d, o = anim.obj2d, p = anim.position, s = anim.scale, r = anim.rotation;
-		inline function f(v: Value, base: Float) return v == null ? base : evaluator.getFloat(v, time);
-		if(p != null) {
-			o.x = f(p.x, e.x);
-			o.y = f(p.y, e.y);
-		}
-		if(s != null) {
-			o.scaleX = f(s.x, e.scaleX);
-			o.scaleY = f(s.y, e.scaleY);
-		}
-		if(r != null)
-			o.rotation = hxd.Math.degToRad(f(r.x, e.rotation));
 	}
 
 	override function sync( ctx : h2d.RenderContext ) {
@@ -240,7 +235,7 @@ class FX2D extends Object2D implements BaseFX {
 			anims.push(anim);
 	}
 
-	/** The animation of an object by the curves under it, null when nothing is animated **/
+	/** Null when nothing is animated **/
 	static function makeObjectAnimation(obj2d: hrt.prefab.Object2D, local2d: h2d.Object) : ObjectAnimation {
 		var elt : PrefabElement = obj2d;
 		// TODO: Support references?
@@ -265,9 +260,9 @@ class FX2D extends Object2D implements BaseFX {
 		var anim : ObjectAnimation = {
 			elt2d: obj2d,
 			obj2d: local2d,
-			position: FX.FXAnimation.vectorAnimation(elt, "position"),
-			scale: FX.FXAnimation.vectorAnimation(elt, "scale"),
-			rotation: FX.FXAnimation.vectorAnimation(elt, "rotation"),
+			position: hrt.prefab.fx.BaseFX.BaseFXTools.vectorAnimation(elt, "position"),
+			scale: hrt.prefab.fx.BaseFX.BaseFXTools.vectorAnimation(elt, "scale"),
+			rotation: hrt.prefab.fx.BaseFX.BaseFXTools.vectorAnimation(elt, "rotation"),
 			color: makeColor("color"),
 			visibility: makeVal("visibility", null),
 		};

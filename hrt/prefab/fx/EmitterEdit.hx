@@ -58,8 +58,8 @@ class EmitterEdit {
 		}
 	}
 
-	/** The curves under `owner` that can be a shape: not an object channel nor an animation curve **/
-	static function shapeCurves(owner: Prefab) : Array<Curve> {
+	/** The curves under `owner` a param can use: not an object channel nor an animation curve **/
+	static function paramCurves(owner: Prefab) : Array<Curve> {
 		return [for (c in owner.children) {
 			var curve = Std.downcast(c, hrt.prefab.Curve);
 			if (curve != null && AnimEdit.isParticleCurve(curve))
@@ -67,22 +67,21 @@ class EmitterEdit {
 		}];
 	}
 
-	static function shapeFunction(owner: Prefab, s: String) : Float -> Float {
-		var v = ParamBuilder.shape(owner, s);
+	static function curveFunction(owner: Prefab, s: String) : Float -> Float {
+		var v = ParamBuilder.curveValue(owner, s);
 		var ev = AnimEdit.getFX(owner)?.evaluator ?? new Evaluator();
 		return (t) -> ev.getFloat(v, t);
 	}
 
-	/** The two curves of a blend shape, from 0 to 1, shown under it **/
+	/** The two curves of a blend, from 0 to 1, shown under it **/
 	static function blendFunctions(owner: Prefab, s: String) : Array<Float -> Float> {
-		return switch (ParamBuilder.shape(owner, s)) {
+		return switch (ParamBuilder.curveValue(owner, s)) {
 			case VParamCurve(c, from, to) if (c.blendMode == Blend):
 				[for (i in 0...2) { var b : Curve = cast c.children[i]; (t) -> hxd.Math.lerp(from, to, b.getVal(t)); }];
 			default: [];
 		}
 	}
 
-	/** The curve at `path` when its keys can be edited **/
 	static function editableCurve(owner: Prefab, path: String) : Curve {
 		var c = EmitterParam.resolveCurve(owner, path);
 		return c != null && c.blendMode == None ? c : null;
@@ -98,9 +97,9 @@ class EmitterEdit {
 	}
 
 	/** A select of the curves: a new one (named after `name`), the curves under `owner`; plain curves only for `plain` **/
-	static function shapeSelect(ctx: EditContext2, parent: hide.kit.Element, id: String, owner: Prefab, path: String, name: String, plain: Bool, set: String -> Void) {
+	static function curveSelect(ctx: EditContext2, parent: hide.kit.Element, id: String, owner: Prefab, path: String, name: String, plain: Bool, set: String -> Void) {
 		var select = new hide.kit.Select(parent, id);
-		var curves : Array<hide.kit.Select.SelectEntry> = [for (c in shapeCurves(owner)) if (!plain || c.isPlain()) {
+		var curves : Array<hide.kit.Select.SelectEntry> = [for (c in paramCurves(owner)) if (!plain || c.isPlain()) {
 			var path = EmitterParam.curvePath(owner, c);
 			{ value: path, label: path };
 		}];
@@ -147,12 +146,10 @@ class EmitterEdit {
 		var value = [for (i in 0...dim) get(i)];
 		var compName = (i: Int) -> EmitterParam.COMPONENTS[i].toUpperCase();
 
-		/** Changes the param from a menu: an undo step of the inspector **/
 		function menuEdit(line: hide.kit.Element, f: () -> Void) {
 			@:privateAccess line.change({ callback: f, isTemporaryEdit: false, recordUndo: true });
 			rebuild();
 		}
-		/** The context menu of component `i`: its mode (an unset one shows a constant), removing it, removing the param **/
 		function compItems(line: hide.kit.Element, i: Int) : Array<hrt.ui.HuiMenu.MenuItem> {
 			var m = get(i);
 			var kind = m == null ? Constant : kindOf(m);
@@ -192,15 +189,14 @@ class EmitterEdit {
 			compactLine.label = label;
 		}
 		for (i in 0...dim) {
-			var comp = EmitterParam.COMPONENTS[i];
-			var id = def.name + (dim == 1 ? "" : comp.toUpperCase());
-			var suffix = compact ? comp.toUpperCase() : "";
+			var id = def.name + (dim == 1 ? "" : compName(i));
+			var suffix = compact ? compName(i) : "";
 			var line = compactLine;
 			// the elements that have the menu of the component: its value on the line of the vector, its lines otherwise
 			var menuOwners : Array<hide.kit.Element> = [];
 			if (line == null) {
 				line = new hide.kit.Line(parent, id);
-				line.label = dim == 1 ? label : label + " " + comp.toUpperCase();
+				line.label = dim == 1 ? label : label + " " + compName(i);
 				// the labels of the fields stay with them (Min, Max)
 				line.stealLabel = false;
 				menuOwners.push(line);
@@ -239,13 +235,12 @@ class EmitterEdit {
 				return s;
 			}
 
-			// a curve editor, the `to` fields on top and the `from` ones below
 			/**
 				A curve editor, and below it on one line the `from` fields (the start of the particle life, at
 				the left) and the `to` ones (its end, at the right), with a button swapping them
 			**/
 			function curve(s: String, from: Array<{ v: () -> Float, set: Float -> Void }>, to: Array<{ v: () -> Float, set: Float -> Void }>, ranges: () -> Array<hide.kit.ParamCurve.ParamRange>, suffix: String) {
-				var graph = new hide.kit.ParamCurve(parent, id + "Curve" + suffix, owner, shapeFunction(owner, s), ranges(), editableCurve(owner, s), blendFunctions(owner, s));
+				var graph = new hide.kit.ParamCurve(parent, id + "Curve" + suffix, owner, curveFunction(owner, s), ranges(), editableCurve(owner, s), blendFunctions(owner, s));
 				var bounds = new hide.kit.Line(parent, id + "Bounds" + suffix);
 				bounds.cssClass = "kit-param-bounds";
 				// no label: the fields are under the ends of the curve
@@ -272,8 +267,8 @@ class EmitterEdit {
 				for (j => f in to)
 					slider(bounds, "to" + j, "", f.v(), 1, f.set, null, changed).tooltip = "To" + names[j] + ": at the death of the particle";
 			}
-			function shape(parent: hide.kit.Element, sid: String, s: String, set: String -> Void) {
-				shapeSelect(ctx, parent, sid, owner, s, def.name + (dim == 1 ? "" : comp.toUpperCase()), m.match(CurveRange(_)), (s) -> {
+			function select(parent: hide.kit.Element, sid: String, s: String, set: String -> Void) {
+				curveSelect(ctx, parent, sid, owner, s, def.name + (dim == 1 ? "" : compName(i)), m.match(CurveRange(_)), (s) -> {
 					set(s);
 					apply();
 				});
@@ -294,24 +289,24 @@ class EmitterEdit {
 					slider(line, "max", "Max", max, def.def[i], x -> max = x, animKey("max"));
 				case Curve(s, from, to):
 					make = () -> Curve(s, from, to);
-					shape(line, "shape0", s, x -> s = x);
+					select(line, "curve0", s, x -> s = x);
 					curve(s, [{ v: () -> from, set: x -> from = x }], [{ v: () -> to, set: x -> to = x }], () -> [{ from: from, to: to }], "");
 				case RandomCurve(s, fromMin, fromMax, toMin, toMax):
 					make = () -> RandomCurve(s, fromMin, fromMax, toMin, toMax);
-					shape(line, "shape0", s, x -> s = x);
+					select(line, "curve0", s, x -> s = x);
 					curve(s, [{ v: () -> fromMin, set: x -> fromMin = x }, { v: () -> fromMax, set: x -> fromMax = x }], [{ v: () -> toMin, set: x -> toMin = x }, { v: () -> toMax, set: x -> toMax = x }],
 						() -> [{ from: mid(fromMin, fromMax), to: mid(toMin, toMax) }, { from: fromMin, to: toMin }, { from: fromMax, to: toMax }], "");
 				case CurveRange(a, aFrom, aTo, b, bFrom, bTo):
 					make = () -> CurveRange(a, aFrom, aTo, b, bFrom, bTo);
-					var lineA = new hide.kit.Line(parent, id + "Shape0");
+					var lineA = new hide.kit.Line(parent, id + "LineA");
 					lineA.label = "A";
 					menuOwners.push(lineA);
-					shape(lineA, "shape0", a, x -> a = x);
+					select(lineA, "curve0", a, x -> a = x);
 					curve(a, [{ v: () -> aFrom, set: x -> aFrom = x }], [{ v: () -> aTo, set: x -> aTo = x }], () -> [{ from: aFrom, to: aTo }], "0");
-					var lineB = new hide.kit.Line(parent, id + "Shape1");
+					var lineB = new hide.kit.Line(parent, id + "LineB");
 					lineB.label = "B";
 					menuOwners.push(lineB);
-					shape(lineB, "shape3", b, x -> b = x);
+					select(lineB, "curve1", b, x -> b = x);
 					curve(b, [{ v: () -> bFrom, set: x -> bFrom = x }], [{ v: () -> bTo, set: x -> bTo = x }], () -> [{ from: bFrom, to: bTo }], "1");
 			}
 			var menuLine = line;
@@ -328,8 +323,6 @@ class EmitterEdit {
 	public static function edit(ctx: EditContext2, owner: ParamOwner, settings: Array<EmitterHelper.ParamDef>, refresh: Array<String>, ?onChange: String -> Void) {
 		var emitter : Prefab = cast owner;
 		function changed(name: String, temp: Bool) {
-			if (name == "useRandomGradient")
-				Reflect.setField(emitter, "randomGradient", Reflect.field(emitter, name) ? hrt.impl.Gradient.getDefaultGradientData() : null);
 			if (onChange != null)
 				onChange(name);
 			ctx.rebuildPrefab(emitter);
@@ -355,7 +348,7 @@ class EmitterEdit {
 					var vec : Array<Float> = Reflect.field(emitter, p.name);
 					for (i in 0...n) {
 						var s = new hide.kit.Slider<Float>(line, p.name + i);
-						s.label = ["X", "Y", "Z", "W"][i];
+						s.label = EmitterParam.COMPONENTS[i].toUpperCase();
 						s.value = vec[i];
 						s.min = min;
 						s.max = max;

@@ -44,7 +44,6 @@ class AnimEdit {
 		return !isChannel(top.name) && !isParamName(emitter, top.name);
 	}
 
-	/** If `name` is the name of an animation curve of an emitter param **/
 	static function isParamName(emitter: ParamOwner, name: String) {
 		var base = name?.split(":")[0];
 		return Lambda.exists(emitter.getSettings(), p -> p.animate == true && p.name == base) || Lambda.exists(emitter.getModeParams(), p -> p.kind != Particle && p.name == base);
@@ -192,7 +191,6 @@ class AnimEdit {
 		editor.recordUndo(apply, [owner]);
 	}
 
-	/** A name for a new curve under `owner` that no sibling has **/
 	public static function newCurveName(owner: Prefab, base: String) {
 		var name = base, i = 1;
 		while (Lambda.exists(owner.children, c -> c.name != null && c.name.toLowerCase() == name.toLowerCase()))

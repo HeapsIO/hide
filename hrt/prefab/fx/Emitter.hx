@@ -441,7 +441,6 @@ class ParticleInstance {
 		if(def.orbitSpeed != VZero) {
 			evaluator.getFastVec(idx, def.orbitSpeed, t, v);
 
-			// degrees per second
 			var factorOverTime = evaluator.getFast(idx, def.orbitSpeedMultiplier, emitter.curTime);
 			v.scale3(factorOverTime * (Math.PI / 180.0));
 
@@ -1776,7 +1775,7 @@ class Emitter extends Object3D implements ParamOwner {
 	@:s @:disp("Random Gradient") public var useRandomGradient : Bool = false;
 	@:s @:disp("Color 1") public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
 	@:s @:disp("Color 2") public var randomColor2 : Array<Float> = [1., 1., 1., 1.];
-	@:s @:disp("Gradient") public var randomGradient : hrt.impl.Gradient.GradientData;
+	@:s @:disp("Gradient") public var randomGradient : GradientData;
 
 	@:group("Sprite Sheet Animation")
 	@:s @:t(PFile(["jpg", "png"])) @:disp("Sheet") public var spriteSheet : String;
@@ -2059,6 +2058,8 @@ class Emitter extends Object3D implements ParamOwner {
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
 		super.edit2(ctx);
 		EmitterEdit.edit(ctx, this, getVisibleParams(), REFRESH_PARAMS, (pname) -> {
+			if (pname == "useRandomGradient")
+				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
 			if (pname == "warmUpTime" && warmUpTime < 0) {
 				warmUpTime = 0;
 				ctx.quickError("Warm up time can no longer be negative. Use the Delay property instead");

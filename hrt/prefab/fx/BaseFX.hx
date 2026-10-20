@@ -217,7 +217,6 @@ class BaseFXTools {
 		return ret;
 	}
 
-	/** The value of the curves of param `name` **/
 	public static function makeShaderParamValue(basePrefab: hrt.prefab.Prefab, name: String, type: hxsl.Ast.Type) : Value {
 		var curves = Curve.getCurves(basePrefab, name);
 		if(curves == null || curves.length == 0)
@@ -239,7 +238,7 @@ class BaseFXTools {
 		}
 	}
 
-	/** The value of param `name` of a shader under an emitter, from its curves, a null component keeps its prop **/
+	/** A null component keeps its prop **/
 	public static function makeParticleShaderValue(shader: hrt.prefab.Shader, name: String, dim: Int) : Value {
 		var p = Lambda.find(shader.particleParams, p -> p.name == name);
 		if(p == null)
@@ -272,6 +271,19 @@ class BaseFXTools {
 		}
 
 		return ret;
+	}
+
+	/** The curves `name:x`, `name:y`, `name:z`, or a single curve `name` for every component **/
+	public static function vectorAnimation(elt: PrefabElement, name: String) : VectorAnimation {
+		var curves = Curve.getCurves(elt, name);
+		if(curves == null || curves.length == 0)
+			return null;
+		if(curves.length == 1 && curves[0].name == name) {
+			var v = curves[0].makeVal();
+			return { x: v, y: v, z: v };
+		}
+		inline function comp(suffix: String) return Lambda.find(curves, c -> StringTools.endsWith(c.name.toLowerCase(), suffix))?.makeVal();
+		return { x: comp(":x"), y: comp(":y"), z: comp(":z") };
 	}
 
 	static var emptyParams : Array<String> = [];

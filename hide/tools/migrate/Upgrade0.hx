@@ -703,7 +703,7 @@ class Upgrade0 {
 		return sameName(prefix, "position") || sameName(prefix, "scale") || sameName(prefix, "rotation");
 	}
 
-	/** Like `FXAnimation.vectorAnimation`: the curve of each component, `uniform` when one curve is all of them. **/
+	/** Like `BaseFXTools.vectorAnimation`: the curve of each component, `uniform` when one curve is all of them. **/
 	static function channels( curves : Array<RawNode>, name : String, dim : Int ) : Channels {
 		if( curves.length == 1 && curves[0].name == name )
 			return { uniform: curves[0], comps: [for( _ in 0...dim ) curves[0]] };

@@ -3,7 +3,6 @@ import hrt.prefab.fx.BaseFX.AdditionalProperies;
 import hrt.prefab.Curve;
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.fx.BaseFX.ObjectAnimation;
-import hrt.prefab.fx.BaseFX.VectorAnimation;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
 import hrt.prefab.fx.Event;
 
@@ -574,8 +573,15 @@ class FXAnimation extends h3d.scene.Object {
 	function syncAnims(newTime: Float, dt: Float) {
 		if(objAnims != null) {
 			for(anim in objAnims) {
-				if(anim.obj != null && (anim.scale != null || anim.rotation != null || anim.position != null))
-					anim.obj.setTransform(evalTransform(anim, evaluator, newTime, tempMat));
+				if(anim.obj != null && (anim.scale != null || anim.rotation != null || anim.position != null)) {
+					var e = anim.elt, p = anim.position, s = anim.scale, r = anim.rotation;
+					inline function f(v: Value, base: Float) return v == null ? base : evaluator.getFloat(v, newTime);
+					var m = tempMat;
+					m.initScale(f(s?.x, e.scaleX), f(s?.y, e.scaleY), f(s?.z, e.scaleZ));
+					m.rotate(hxd.Math.degToRad(f(r?.x, e.rotationX)), hxd.Math.degToRad(f(r?.y, e.rotationY)), hxd.Math.degToRad(f(r?.z, e.rotationZ)));
+					m.translate(f(p?.x, e.x), f(p?.y, e.y), f(p?.z, e.z));
+					anim.obj.setTransform(m);
+				}
 
 				// Animations that are only applied on local transforms of leafs objects
 				if (anim.localRotation != null || anim.localPosition != null) {
@@ -723,21 +729,7 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
-	// TRE: Move to BaseFX?
-	/** The curves `name:x`, `name:y`, `name:z`, or a single curve `name` for every component **/
-	public static function vectorAnimation(elt: PrefabElement, name: String) : VectorAnimation {
-		var curves = Curve.getCurves(elt, name);
-		if(curves == null || curves.length == 0)
-			return null;
-		if(curves.length == 1 && curves[0].name == name) {
-			var v = curves[0].makeVal();
-			return { x: v, y: v, z: v };
-		}
-		inline function comp(suffix: String) return Lambda.find(curves, c -> StringTools.endsWith(c.name.toLowerCase(), suffix))?.makeVal();
-		return { x: comp(":x"), y: comp(":y"), z: comp(":z") };
-	}
-
-	/** The animation of an object by the curves under it, null when nothing is animated. `local3d` gives the light properties. **/
+	/** Null when nothing is animated **/
 	static function makeObjectAnimation(obj3d: hrt.prefab.Object3D, local3d: h3d.scene.Object) : ObjectAnimation {
 		var elt : PrefabElement = obj3d;
 		var anyFound = false;
@@ -788,9 +780,9 @@ class FXAnimation extends h3d.scene.Object {
 		var anim : ObjectAnimation = {
 			elt: obj3d,
 			obj: local3d,
-			position: vectorAnimation(elt, "position"),
-			scale: vectorAnimation(elt, "scale"),
-			rotation: vectorAnimation(elt, "rotation"),
+			position: hrt.prefab.fx.BaseFX.BaseFXTools.vectorAnimation(elt, "position"),
+			scale: hrt.prefab.fx.BaseFX.BaseFXTools.vectorAnimation(elt, "scale"),
+			rotation: hrt.prefab.fx.BaseFX.BaseFXTools.vectorAnimation(elt, "rotation"),
 			localPosition: makeVector("localPosition", 0.0),
 			localRotation: makeVector("localRotation", 0.0),
 			color: makeColor("color"),
@@ -798,16 +790,6 @@ class FXAnimation extends h3d.scene.Object {
 			additionalProperies: ap,
 		};
 		return anyFound || anim.position != null || anim.scale != null || anim.rotation != null ? anim : null;
-	}
-
-	// TRE: inline up if used only once
-	static function evalTransform(anim: ObjectAnimation, evaluator: Evaluator, time: Float, m: h3d.Matrix) : h3d.Matrix {
-		var e = anim.elt, p = anim.position, s = anim.scale, r = anim.rotation;
-		inline function f(v: Value, base: Float) return v == null ? base : evaluator.getFloat(v, time);
-		m.initScale(f(s?.x, e.scaleX), f(s?.y, e.scaleY), f(s?.z, e.scaleZ));
-		m.rotate(hxd.Math.degToRad(f(r?.x, e.rotationX)), hxd.Math.degToRad(f(r?.y, e.rotationY)), hxd.Math.degToRad(f(r?.z, e.rotationZ)));
-		m.translate(f(p?.x, e.x), f(p?.y, e.y), f(p?.z, e.z));
-		return m;
 	}
 
 	function initEmitters(elt: PrefabElement) {

@@ -77,7 +77,7 @@ class Curve extends Prefab {
 	public var selected : Bool = false;
 
 	var refCurve : Curve = null;
-	/** The FX parameter `makeVal` found it is read by: its blend or its remap, null for plain keys **/
+	/** The FX parameter of its blend or remap, set by `makeVal` **/
 	public var param(default, null) : String;
 
 	#if !editor
@@ -225,7 +225,6 @@ class Curve extends Prefab {
 		return p != null && (p.blendMode == Blend || p.blendMode == RandomBlend);
 	}
 
-	/** The value of the curve, from 0 to 1: `VCurve` for plain keys, `VParamCurve` read at an FX parameter, a reference resolved **/
 	public function makeVal() : Value {
 		param = null;
 		var remap = getRemapParameter();

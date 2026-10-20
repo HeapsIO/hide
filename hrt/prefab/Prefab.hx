@@ -1,5 +1,4 @@
 package hrt.prefab;
-using Lambda;
 
 typedef PrefabField = {
 	var name : String;
@@ -852,7 +851,7 @@ class Prefab {
 		while (parts.length > 0 && p != null) {
 			var name = parts.shift();
 			// support name-with-dash-index
-			var found = p.children.find(o -> o.name == name);
+			var found = Lambda.find(p.children, o -> o.name == name);
 			var dash = name.lastIndexOf("-");
 			if (found == null && dash > 0) {
 				var chooseNth = Std.parseInt(name.substr(dash + 1)) ?? 0;

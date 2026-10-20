@@ -220,7 +220,6 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		if (def.orbitSpeed != VZero) {
 			var orbitSpeed = evaluator.getFloat(idx, def.orbitSpeed, t);
 
-			// degrees per second
 			var factorOverTime = evaluator.getFloat(idx, def.orbitSpeedMultiplier, emitter.curTime);
 			orbitSpeed *= factorOverTime * (Math.PI / 180.0);
 
@@ -497,7 +496,7 @@ class Emitter2D extends Object2D implements ParamOwner {
 	@:s @:disp("Random Gradient") public var useRandomGradient : Bool = false;
 	@:s @:disp("Color 1") public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
 	@:s @:disp("Color 2") public var randomColor2 : Array<Float> = [1., 1., 1., 1.];
-	@:s @:disp("Gradient") public var randomGradient : hrt.impl.Gradient.GradientData;
+	@:s @:disp("Gradient") public var randomGradient : GradientData;
 	@:s @:t(PFile(["jpg", "png"])) @:disp("Sheet") public var spriteSheet : String;
 	@:s @:range(0) @:disp("Frames") public var frameCount : Int = 0;
 	@:s @:range(1) @:disp("Divisions X") public var frameDivisionX : Int = 1;
@@ -702,6 +701,8 @@ class Emitter2D extends Object2D implements ParamOwner {
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
 		super.edit2(ctx);
 		EmitterEdit.edit(ctx, this, getVisibleParams(), REFRESH_PARAMS, (pname) -> {
+			if (pname == "useRandomGradient")
+				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
 			if (pname == "spriteType" && spriteType != SpriteType.SpriteSheet)
 				spriteSheet = null;
 		});
