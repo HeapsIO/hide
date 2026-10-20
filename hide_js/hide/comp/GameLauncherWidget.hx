@@ -53,9 +53,10 @@ class GameLauncherWidget extends Component {
 			return [{label: "No .hxml with -main and -hl found at the project root", enabled: false}];
 
 		var current = GameLauncher.getCurrentHxml();
+		var project = GameLauncher.getProjectHxml();
 		return [
 			for (t in targets) {
-				label: haxe.io.Path.withoutDirectory(t.hxml),
+				label: haxe.io.Path.withoutDirectory(t.hxml) + (t.hxml == project ? " (project default)" : ""),
 				tooltip: '${t.main} -> ${StringTools.replace(t.output, ide.projectDir + "/", "")}',
 				checked: t.hxml == current,
 				click: () -> {
