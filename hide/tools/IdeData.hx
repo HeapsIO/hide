@@ -105,11 +105,14 @@ class IdeData {
 	function setProject( dir : String ) {
 		fileWatcher.dispose();
 		dbWatcher = null;
-		if( dir != currentProject ) {
+		dir = dir.split("\\").join("/");
+		if( dir != projectDir ) {
 			projectOverride = null;
-			var recents = recentProjects;
-			recents.remove(dir);
-			recents.unshift(dir);
+			var recents = [dir];
+			for( p in recentProjects ) {
+				p = p.split("\\").join("/");
+				if( recents.indexOf(p) < 0 ) recents.push(p);
+			}
 			if( recents.length > 10 ) recents.pop();
 			globalState.set("recentProjects", recents);
 			globalState.set("currentProject", dir);
