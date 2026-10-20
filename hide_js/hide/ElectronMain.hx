@@ -166,8 +166,8 @@ class ElectronMain {
 	static var sessionLogs : String;
 
 	/**
-		Chromium's log (GPU process errors : device removed reasons...), the lost child processes
-		and the crash dumps of all the processes, in a folder per session. The GPU process losses are shown by the main window.
+		Chromium's log (GPU process errors : device removed reasons...), the lost child processes,
+		the DX12 device removals of the renderers (hide-dx12.log) and the crash dumps of all the processes, in a folder per session. The GPU process losses are shown by the main window.
 		A .crashed file marks the sessions where a process crashed. The folders are deleted after two weeks.
 	**/
 	static function initCrashLogs() {
@@ -190,6 +190,8 @@ class ElectronMain {
 		}
 		sessionLogs = js.node.Path.join(logs, "logs_" + DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S"));
 		sys.FileSystem.createDirectory(sessionLogs);
+		// inherited by the renderers : the DX12 addon logs there (device removals)
+		js.Node.process.env.set("HIDE_SESSION_LOGS", sessionLogs);
 		// --enable-logging given on the command line (stderr when testing) : kept
 		if( !App.commandLine.hasSwitch("enable-logging") ) {
 			App.commandLine.appendSwitch("enable-logging", "file");
@@ -350,6 +352,13 @@ class ElectronMain {
 			win.on("unresponsive", () -> write("unresponsive"));
 			win.on("responsive", () -> write("responsive"));
 			win.on("closed", () -> write("closed"));
+		} else {
+			// Chromium logs the console at the INFO level, below log-level : the warnings and errors are kept here
+			var log = js.node.Path.join(sessionLogs, "console.log");
+			win.webContents.on("console-message", function( e : Dynamic ) {
+				if( e.level == "warning" || e.level == "error" )
+					js.node.Fs.appendFileSync(log, DateTools.format(Date.now(), "%Y-%m-%d %H:%M:%S") + " " + e.level + " " + e.message + " (" + e.sourceId + ":" + e.lineNumber + ")\n");
+			});
 		}
 		var fileUrl : String = js.Lib.require("url").pathToFileURL(js.node.Path.join(js.Node.__dirname, parts[0])).href;
 		win.loadURL(parts[1] == null ? fileUrl : fileUrl + "?" + parts[1]);
