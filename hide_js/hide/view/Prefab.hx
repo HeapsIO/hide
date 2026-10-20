@@ -240,6 +240,16 @@ class Prefab extends hide.view.FileView {
 	function createEditor() {
 		sceneEditor = new PrefabSceneEditor(this);
 		sceneEditor.onSceneReady = onSceneReady;
+		sceneEditor.scene.onSceneGoto = (contextObject) -> {
+			var obj = Std.downcast((contextObject : Dynamic), h3d.scene.Object);
+			while (obj != null) {
+				var p = data.find(hrt.prefab.Object3D, (p) -> p.local3d == obj);
+				if (p != null)
+					return () -> sceneEditor.selectElements([p]);
+				obj = obj.parent;
+			}
+			return null;
+		};
 		for (callback in sceneReadyDelayed) {
 			sceneEditor.delayReady(callback);
 		}

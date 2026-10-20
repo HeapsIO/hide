@@ -85,7 +85,7 @@ class Ide extends hide.tools.IdeData {
 			if (s != null) {
 				var nl = msg.indexOf("\n");
 				var title = (nl < 0 ? msg : msg.substr(0, nl)) + " (" + p.obj.name + ")";
-				@:privateAccess s.setErrorMessage({ title: title, details: nl < 0 ? null : msg.substr(nl + 1), log: false });
+				@:privateAccess s.setErrorMessage({ title: title, details: nl < 0 ? null : msg.substr(nl + 1), contextObject: p.obj, log: false });
 			}
 		};
 		#if dx12

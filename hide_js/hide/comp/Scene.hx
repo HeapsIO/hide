@@ -3,8 +3,8 @@ package hide.comp;
 typedef SceneErrorMessage = {
 	title : String,
 	?details : String,
-	/** Adds a button to go to the source of the error **/
-	?goTo : Void -> Void,
+	/** Passed to `Scene.onSceneGoto` **/
+	?contextObject : Any,
 	/** Defaults to true **/
 	?log : Bool,
 }
@@ -238,12 +238,15 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		var fullText = error.details != null ? error.title + "\n" + error.details : error.title;
 		if (error.log ?? true)
 			js.Browser.console.error(fullText);
-		errorThisFrame = true;
 
-		// Called every frame : only rebuild the dom when the error changes, so the buttons stay clickable
+		// Called several times per frame (e.g. once per failing pass) : only show the first error of the frame,
+		// and only rebuild the dom when it changes, so the buttons stay clickable
+		if (errorThisFrame)
+			return;
+		errorThisFrame = true;
 		var prev = currentError;
 		currentError = error;
-		if (prev != null && prev.title == error.title && prev.details == error.details && (prev.goTo == null) == (error.goTo == null))
+		if (prev != null && prev.title == error.title && prev.details == error.details && prev.contextObject == error.contextObject)
 			return;
 
 		var doc = js.Browser.document;
@@ -269,8 +272,9 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			return span;
 		}
 
-		if (error.goTo != null)
-			addButton("Go To Source", () -> currentError?.goTo());
+		var goTo = error.contextObject != null ? onSceneGoto(error.contextObject) : null;
+		if (goTo != null)
+			addButton("Go To", goTo);
 
 		if (error.details != null) {
 			var pre = doc.createPreElement();
@@ -291,6 +295,11 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			ide.setClipboard(fullText);
 			ide.quickMessage("Error copied to clipboard");
 		});
+	}
+
+	/** Returns a callback that goes to the source of an error, or null to hide the "Go To" button **/
+	public dynamic function onSceneGoto(contextObject : Any) : Null<Void -> Void> {
+		return null;
 	}
 
 	function preOnReady() {
