@@ -76,7 +76,7 @@ class Ide extends hide.tools.IdeData {
 		var shaderErrors = new Map<String, Bool>();
 		h3d.pass.Output.onShaderError = (msg, p) -> {
 			var text = msg + " (" + p.obj.name + ")";
-			var key = p.shader.id + ":" + text;
+			var key = p.shader?.id + ":" + text;
 			if (!shaderErrors.exists(key)) {
 				shaderErrors.set(key, true);
 				js.Browser.console.warn(text);
@@ -93,7 +93,8 @@ class Ide extends hide.tools.IdeData {
 		h3d.impl.Driver.setShaderCache(new h3d.impl.ShaderCache(cacheDir + "/shadercache.dx12", Binary));
 		#end
 		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || electron.App.name == "CDB";
-		isDebugger = Sys.getEnv("HIDE_DEBUG") == "1";
+		isDebugger = electron.App.isDebuggerAttached();
+		electron.App.onDebuggerChange((b) -> isDebugger = b);
 
 		var thumb = StringTools.contains(js.Browser.window.location.href, "thumbnail");
 		if (thumb) {

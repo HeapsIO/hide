@@ -128,6 +128,7 @@ class ElectronMain {
 		App.whenReady().then(function(_) {
 			Menu.setApplicationMenu(null);
 			try Session.defaultSession.setSpellCheckerLanguages(["en-US", "fr-FR"]) catch( e : Dynamic ) {}
+			watchDebuggers();
 			mainWindow = createWindow("app.html", {});
 			mainWindow.on("closed", function() {
 				mainWindow = null;
@@ -158,6 +159,45 @@ class ElectronMain {
 
 	static function send( wc : WebContents, channel : String, args : haxe.extern.Rest<Dynamic> ) {
 		if( wc != null && !wc.isDestroyed() ) wc.send(channel, ...args);
+	}
+
+	// ---------------- debuggers : CDP clients (VSCode, DevTools) attached to the pages
+
+	// CDP target id => page
+	static var cdpPages : Map<String, { url : String, attached : Bool }> = new Map();
+
+	static function isDebuggerAttached( wc : WebContents ) {
+		var url = wc.getURL();
+		for( p in cdpPages )
+			if( p.attached && p.url == url )
+				return true;
+		return false;
+	}
+
+	/** follows the pages of the --remote-debugging-port server, sends "hide-debugger" to the windows when a client attaches or detaches **/
+	static function watchDebuggers() {
+		var port = App.commandLine.getSwitchValue("remote-debugging-port");
+		if( port == "" || port == "0" )
+			return;
+		js.Lib.global.fetch('http://127.0.0.1:$port/json/version').then((r) -> r.json()).then(function( v : Dynamic ) {
+			var ws = new js.html.WebSocket(v.webSocketDebuggerUrl);
+			ws.onopen = () -> ws.send(haxe.Json.stringify({ id : 1, method : "Target.setDiscoverTargets", params : { discover : true } }));
+			ws.onmessage = function( m : js.html.MessageEvent ) {
+				var msg : Dynamic = haxe.Json.parse(m.data);
+				var info : Dynamic = msg.params?.targetInfo;
+				if( msg.method == "Target.targetDestroyed" )
+					cdpPages.remove(msg.params.targetId);
+				if( info == null || info.type != "page" )
+					return;
+				var prev = cdpPages.get(info.targetId);
+				cdpPages.set(info.targetId, { url : info.url, attached : info.attached });
+				if( prev != null && prev.attached == info.attached && prev.url == info.url )
+					return;
+				for( w in BrowserWindow.getAllWindows() )
+					if( w.webContents.getURL() == info.url )
+						send(w.webContents, "hide-debugger", isDebuggerAttached(w.webContents));
+			};
+		}, (e) -> js.Browser.console.warn("Debugger watch failed : " + e));
 	}
 
 	// ---------------- crash reports : in the user data, zipped by createCrashReport
@@ -431,6 +471,7 @@ class ElectronMain {
 
 		// app
 		h.set("app.quit", (wc) -> App.quit());
+		h.set("app.isDebuggerAttached", (wc) -> isDebuggerAttached(wc));
 		h.set("app.clearCache", (wc : WebContents) -> wc.session.clearCache());
 		h.set("app.createCrashReport", (wc, info : String) -> createCrashReport(info));
 		h.set("shortcut.register", function(wc : WebContents, accel : String) {

@@ -78,6 +78,12 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			e.preventDefault();
 			return false;
 		};
+		canvas.addEventListener("keydown", function(e: js.html.KeyboardEvent) {
+			if (e.altKey && e.shiftKey && !e.ctrlKey && e.code == "KeyK") {
+				e.preventDefault();
+				openDebugMenu();
+			}
+		});
 
 		errorMessageBox = new Element('<div class="error-message"></div>');
 		errorMessageBox.appendTo(element);
@@ -352,6 +358,40 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			return e;
 		setErrorMessage(e.toString());
 		return null;
+	}
+
+	var debugObjects : Map<String, h3d.scene.Object> = [];
+
+	function openDebugMenu() {
+		if (s3d == null)
+			return;
+		function item(name: String, make: () -> h3d.scene.Object) : Array<hrt.ui.HuiMenu.MenuItem> {
+			var obj = debugObjects.get(name);
+			return [
+				{ label: "Add " + name, enabled: obj == null, click: () -> {
+					var o = make();
+					o.name = "Debug " + name;
+					s3d.addChild(o);
+					debugObjects.set(name, o);
+				}},
+				{ label: "Clear " + name, enabled: obj != null, click: () -> {
+					obj.remove();
+					debugObjects.remove(name);
+				}},
+			];
+		}
+		var items = item("missing buffer", () -> new h3d.scene.Mesh(new h3d.prim.Cube(1, 1, 1, true)));
+		items.push({ isSeparator: true });
+		items = items.concat(item("missing shader variable", () -> {
+			var cube = new h3d.prim.Cube(1, 1, 1, true);
+			cube.addNormals();
+			var mesh = new h3d.scene.Mesh(cube);
+			mesh.material.mainPass.addShader(new hrt.shader.UVDebug());
+			mesh;
+		}));
+		items.push({ isSeparator: true });
+		items = items.concat(item("throwing sync", () -> new ThrowingSyncObject()));
+		ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, items);
 	}
 
 	var loadQueue : Array<Void->Void> = [];
@@ -993,5 +1033,11 @@ class Preview2DCamController extends h2d.Object {
 			return;
 
 		cam.setScale(zoom, zoom);
+	}
+}
+
+private class ThrowingSyncObject extends h3d.scene.Object {
+	override function sync(ctx: h3d.scene.RenderContext) {
+		throw "Debug sync error";
 	}
 }
