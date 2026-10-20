@@ -14,7 +14,7 @@ class CdbCustomTypes extends hide.ui.View<{}> {
 			tl.push("enum " + t.name + " {\n" + ide.database.typeCasesToString(t, "\t") + "\n}");
 
 		var typesStr = tl.join("\n\n");
-		script = new hide.comp.CodeEditor(typesStr, "hx", element);
+		script = new hide.comp.CodeEditor(typesStr, "haxe", element);
 		script.onSave = function() {
 			if( !modified ) return;
 			if( types == null ) {
