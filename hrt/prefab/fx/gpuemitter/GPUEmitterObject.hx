@@ -198,7 +198,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			emitInstance();
 	}
 
-	function createUpdateParamShader() {
+	function createUpdateParamShader() : Dynamic {
 		return { shader : null, params : null, size : null };
 	}
 

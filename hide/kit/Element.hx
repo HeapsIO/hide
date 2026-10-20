@@ -114,13 +114,13 @@ class Element {
 		return disabled;
 	}
 
-	function isDisabled() {
+	function isDisabled() : Bool {
 		if (parent != null)
 			return disabled || parent.getChildDisabled();
 		return disabled;
 	}
 
-	function getChildDisabled() {
+	function getChildDisabled() : Bool {
 		return isDisabled();
 	}
 

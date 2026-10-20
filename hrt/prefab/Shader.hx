@@ -138,7 +138,7 @@ class Shader extends Prefab {
 		return targetMaterial == null || targetMaterial == mat.name;
 	}
 
-	function iterMaterials(callb, filterObj : (obj : h3d.scene.Object) -> Bool = null, onlyTarget = false) {
+	function iterMaterials(callb : (h3d.scene.Object, h3d.mat.Material) -> Void, filterObj : (obj : h3d.scene.Object) -> Bool = null, onlyTarget = false) {
 		if (parent == null)
 			return;
 		var parent = parent;

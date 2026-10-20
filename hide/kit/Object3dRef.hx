@@ -21,7 +21,7 @@ class Object3dRef extends Widget<String> {
 	#if js
 	var select: NativeElement;
 	var text: NativeElement;
-	var dropdown = null;
+	var dropdown : Null<hide.comp.ContextMenu> = null;
 	#elseif hui
 	var select: hrt.ui.HuiSelect;
 	#end

@@ -151,8 +151,8 @@ class Object3D extends Prefab {
 	}
 
 	#if editor
-    var polys3D = null;
-    var boundingSphere = null;
+    var polys3D : Null<Array<{ col : h3d.col.PolygonBuffer, mat : h3d.Matrix }>> = null;
+    var boundingSphere : Null<h3d.col.Sphere> = null;
 	var useAutoCollide = false;
 	#end
 

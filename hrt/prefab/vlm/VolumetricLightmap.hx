@@ -275,7 +275,7 @@ class VolumetricLightmap extends Object3D {
 
 	}
 
-	public function startBake(ctx : hide.prefab.EditContext, ?onEnd){
+	public function startBake(ctx : hide.prefab.EditContext, ?onEnd : () -> Void){
 		maxOrderBaked = order;
 		volumetricLightmap.lastBakedProbeIndex = -1;
 		var s3d = @:privateAccess local3d.getScene();

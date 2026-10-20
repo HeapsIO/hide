@@ -60,7 +60,7 @@ class TileSelector extends Component {
 	}
 
 
-	public function new(file,size,?parent,?el) {
+	public function new(file:String,size:{width: Int, height: Int},?parent:Element,?el:Element) {
 		super(parent,el);
 		element.addClass("hide-tileselect");
 		this.file = file;

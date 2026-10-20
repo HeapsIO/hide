@@ -706,7 +706,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		return t;
 	}
 
-	function loadHMD( path : String, isAnimation : Bool, reload = false ) {
+	function loadHMD( path : String, isAnimation : Bool, reload = false ) : hxd.fmt.hmd.Library {
 		checkCurrent();
 		var fullPath = ide.getPath(path);
 		var key = fullPath;

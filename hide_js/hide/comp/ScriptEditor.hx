@@ -86,9 +86,9 @@ class ScriptCache {
 		hide.Ide.inst.localStorage.setItem("script_cache_ok", ok.join(";"));
 	}
 
-	static var CONFIG_HASH = null;
-	static var LAST_API = null;
-	static var LAST_FILES = null;
+	static var CONFIG_HASH : Null<String> = null;
+	static var LAST_API : Dynamic = null;
+	static var LAST_FILES : Null<Array<String>> = null;
 	static var CHECK_CACHE : ScriptCache;
 
 	static function hashString( str : String ) {
@@ -142,9 +142,9 @@ class ScriptCache {
 		return error;
 	}
 
-	static var TYPES_SAVE = new Map();
-	static var LAST_API_FILES = null;
-	static var LAST_API_TYPES = null;
+	static var TYPES_SAVE : Map<String,ScriptCache> = new Map();
+	static var LAST_API_FILES : Dynamic = null;
+	static var LAST_API_TYPES : Null<ScriptCache> = null;
 
 	public static function loadApiFiles( config : hide.Config.ReadOnlyConfig ) {
 		var files = config.get("script.api.files");
@@ -166,7 +166,7 @@ class ScriptCache {
 
 class ScriptChecker {
 
-	static var ERROR_SAVE = new Map();
+	static var ERROR_SAVE : Map<String,Bool> = new Map();
 	static var TYPE_CHECK_HOOKS : Array<ScriptChecker->Void> = [];
 	var ide : hide.Ide;
 	var api : ScriptCache;

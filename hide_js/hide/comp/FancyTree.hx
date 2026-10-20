@@ -371,7 +371,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		return childrenData;
 	}
 
-	public function ensureVisible(data) {
+	public function ensureVisible(data : TreeItem) {
 
 	}
 
@@ -634,7 +634,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		}
 	}
 
-	var lastHeight = null;
+	var lastHeight : Null<Int> = null;
 
 	// Never call this function directly, instead call queueRefresh();
 	function onRefreshInternal() {

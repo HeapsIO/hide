@@ -51,7 +51,7 @@ class Table extends Component {
 
 	static final reorderLineKey = "x-cdb.reorder";
 
-	public function new(editor, sheet, root, mode) {
+	public function new(editor:Editor, sheet:cdb.Sheet, root:Element, mode:DisplayMode) {
 		super(null,root);
 		this.displayMode = mode;
 		this.editor = editor;

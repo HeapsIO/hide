@@ -1083,7 +1083,7 @@ class Prefab {
 	static var reverseRegistry : Map<String, String> = new Map();
 	static var extensionRegistry : Map<String, String> = new Map();
 
-	static var NULL_CHILDREN = [];
+	static var NULL_CHILDREN : Array<Prefab> = [];
 
 	/**
 		Register the given prefab class with the given typeName in the prefab regsitry.

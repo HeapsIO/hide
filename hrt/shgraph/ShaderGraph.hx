@@ -747,7 +747,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		}
 	}
 
-	var allParameters = [];
+	var allParameters : Array<Dynamic> = [];
 	var current_param_id = 0;
 	public var parametersAvailable : Map<Int, Parameter> = [];
 
@@ -898,7 +898,7 @@ class $className extends hxsl.Shader {
 class Graph {
 
 	var cachedGen : ShaderNodeDef = null;
-	var allParamDefaultValue = [];
+	var allParamDefaultValue : Array<Dynamic> = [];
 	var current_node_id = 0;
 	var nodes : Map<Int, ShaderNode> = [];
 

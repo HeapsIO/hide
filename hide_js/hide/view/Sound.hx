@@ -7,7 +7,7 @@ class Sound extends FileView {
 		element.html('<audio ${ide.initializing ? '' : 'autoplay="autoplay"'} controls="controls"><source src="file://${getPath()}"/></audio>');
 	}
 
-	static var _ = {
+	static var _ : Dynamic = {
 		Extension.registerExtension(Sound,["wav"],{ icon : "volume-up", name: "Sound" });
 		Extension.registerExtension(Sound,["mp3","ogg"],{ icon : "music", name: "Sound" });
 	};

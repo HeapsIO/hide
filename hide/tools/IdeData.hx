@@ -255,7 +255,7 @@ class IdeData {
 		return path.substring(0, path.lastIndexOf("/"));
 	}
 
-	var lastDBContent = null;
+	var lastDBContent : Null<String> = null;
 	var lastStats: Null<sys.FileStat> = null;
 	function loadDatabase( ?checkExists, retries: Int = 0) {
 

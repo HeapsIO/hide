@@ -116,7 +116,7 @@ class Spline extends hrt.prefab.Object3D {
 	var editMode = false;
 
 	var selected = -1;
-	var opened = [];
+	var opened : Array<Int> = [];
 
 	var splineUpdateRequested : Bool = false;
 	var interactive : h2d.Interactive;
