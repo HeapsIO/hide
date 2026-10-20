@@ -1450,10 +1450,44 @@ class EmitterObject extends h3d.scene.Object {
 
 	function depthSort() {
 		checkList();
-		listHead = haxe.ds.ListSort.sort(listHead, sortZ);
-		if(listHead != null)
-			listHead.prev = null;  // The `prev` of the head is set to the tail of the sorted list.
+		if(!insertionSort(numInstances * 2)) {
+			listHead = haxe.ds.ListSort.sort(listHead, sortZ);
+			if(listHead != null)
+				listHead.prev = null;  // The `prev` of the head is set to the tail of the sorted list.
+		}
 		checkList();
+	}
+
+	/**
+		Stable sort by `sortZ`, the order of `ListSort.sort`: the particles are about in order from the last
+		frame, a few moves sort them. False once more than `budget` steps were taken (the camera turned):
+		the list then holds every particle, partly sorted.
+	**/
+	function insertionSort(budget: Int) : Bool {
+		var cur = listHead == null ? null : listHead.next;
+		while(cur != null) {
+			var next = cur.next;
+			var p = cur.prev;
+			// a particle goes before the ones strictly closer than it, as in the merge of `ListSort.sort`
+			if(p.distToCam < cur.distToCam) {
+				p.next = next;
+				if(next != null)
+					next.prev = p;
+				while(p.prev != null && p.prev.distToCam < cur.distToCam && --budget >= 0)
+					p = p.prev;
+				cur.prev = p.prev;
+				cur.next = p;
+				if(p.prev != null)
+					p.prev.next = cur;
+				else
+					listHead = cur;
+				p.prev = cur;
+				if(budget < 0)
+					return false;
+			}
+			cur = next;
+		}
+		return true;
 	}
 
 	function updateMeshBatch() {
