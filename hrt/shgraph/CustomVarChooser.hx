@@ -5,6 +5,8 @@ using hxsl.Ast;
 #if editor
 class CustomVarChooser extends hide.comp.Component {
 	public var variable : TVar = null;
+	public var isValid(get, never) : Bool;
+	inline function get_isValid() : Bool return variable != null;
 
 	public static var validNamePattern = ~/^[_a-zA-Z][_a-zA-Z0-9]*$/;
 	public static var reservedKeywords = [
@@ -92,7 +94,8 @@ class CustomVarChooser extends hide.comp.Component {
 			textInput.val(initialName);
 		}
 
-		var currentType = initialType ?? availableTypes[select.val()];
+		// Ensure currentType is always a supported type from availableTypes
+		var currentType = selectedKey != null ? availableTypes[selectedKey] : availableTypes[select.val()];
 		if( initialName != null && initialName != "" && currentType != null && isValidVariableName(initialName) ) {
 			variable = makeVariable(initialName, currentType);
 		}
@@ -106,7 +109,6 @@ class CustomVarChooser extends hide.comp.Component {
 				variable = null;
 				textInput.addClass("error");
 				textInput.attr("title", 'Invalid variable name (must start with _ or a letter, contain only alphanumeric characters, and cannot be a reserved keyword)');
-				onChange(null);
 				return;
 			}
 
