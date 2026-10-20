@@ -216,8 +216,9 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	var errorMessageTimer : haxe.Timer;
 	var errorThisFrame: Bool = false;
 
-	function setErrorMessage(s: String) {
-		js.Browser.console.error(s);
+	function setErrorMessage(s: String, log = true) {
+		if (log)
+			js.Browser.console.error(s);
 		errorMessageBox.html(StringTools.replace(s, "\n", "<br/>"));
 		errorMessageBox.css("visibility", "visible");
 		errorThisFrame = true;
@@ -279,6 +280,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			dt = 1;
 		} else
 			unFocusedTime = 0;
+		errorThisFrame = false;
 		setCurrent();
 		sevents.checkEvents();
 		s2d.setElapsedTime(dt);
@@ -331,7 +333,6 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		if ( ide.isDebugger )
 			doSync();
 		else {
-			errorThisFrame = false;
 			try {
 				doSync();
 			} catch (e:haxe.Exception) {
@@ -340,9 +341,9 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 					js.Lib.rethrow();
 				}
 			}
-			if (!errorThisFrame) {
-				clearErrorMessage();
-			}
+		}
+		if (!errorThisFrame) {
+			clearErrorMessage();
 		}
 	}
 

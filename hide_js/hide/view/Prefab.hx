@@ -595,6 +595,13 @@ class Prefab extends hide.view.FileView {
 		if( !canSave() )
 			return;
 
+		var scene = sceneEditor?.scene;
+		if (scene != null && @:privateAccess scene.errorThisFrame) {
+			var error = scene.errorMessageBox.get(0).innerText;
+			if (!ide.confirm('The scene has rendering errors :\n$error\n\nThe prefab might not load in game. Save anyway?'))
+				return;
+		}
+
 		if (remoteEditMode) {
 			currentSign = Std.string(Std.parseInt(currentSign) + 1);
 			var localVersion = currentSign;
