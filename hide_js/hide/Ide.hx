@@ -193,6 +193,12 @@ class Ide extends hide.tools.IdeData {
 			mouseX = e.x;
 			mouseY = e.y;
 		});
+		js.Browser.window.addEventListener("contextmenu", function(e : js.html.MouseEvent) {
+			if (e.defaultPrevented || js.Browser.document.querySelector(".context-menu2:popover-open") != null)
+				return;
+			e.preventDefault();
+			hide.comp.ContextMenu.createFromEvent(e, [{ label : "Reload App", click : reload }]);
+		});
 		window.on('maximize', function() {
 			if(fullscreen) return;
 			maximized = true;
