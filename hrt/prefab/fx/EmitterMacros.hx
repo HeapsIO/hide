@@ -52,7 +52,7 @@ class EmitterMacros {
 		var pos = Context.currentPos();
 		var settings = [], modeParams = [];
 		var load = [], unset = [], save = [], copy = [], getCases = [], setCases = [];
-		var particleValues = [], settingValues = [], spawnValues = [];
+		var particleValues = [], settingValues = [], settingApply = [], spawnValues = [], spawnApply = [];
 		var group = "Params";
 
 		for( f in fields ) {
@@ -70,8 +70,10 @@ class EmitterMacros {
 						animate: $v{animate}, disp: ${disp == null ? macro null : disp[0]} });
 					if( init != null && init.expr.match(EArrayDecl(_)) )
 						save.push(macro @:pos(p) if( haxe.Json.stringify(this.$n) == haxe.Json.stringify($init) ) Reflect.deleteField(data, $v{n}));
-					if( animate )
-						settingValues.push(macro @:pos(p) obj.$n = b.animated($v{n}, hrt.prefab.fx.Evaluator.vVal(this.$n)));
+					if( animate ) {
+						settingApply.push(macro @:pos(p) obj.$n = v.settings[$v{settingValues.length}]);
+						settingValues.push(macro @:pos(p) v.settings.push(b.animated($v{n}, hrt.prefab.fx.Evaluator.vVal(this.$n))));
+					}
 				default:
 				}
 				continue;
@@ -110,12 +112,27 @@ class EmitterMacros {
 			}
 			unset.push(macro @:pos(p) this.$n = null);
 			copy.push(macro @:pos(p) this.$n = from.$n);
-			if( kind == "Spawn" )
-				spawnValues.push(dim == 1 ? macro @:pos(p) obj.$key = b.spawn($def)[0] : macro @:pos(p) obj.$key = b.spawn($def));
-			else
+			if( kind == "Spawn" ) {
+				var i = spawnValues.length;
+				spawnApply.push(dim == 1 ? macro @:pos(p) obj.$key = v.spawn[$v{i}][0] : macro @:pos(p) obj.$key = v.spawn[$v{i}]);
+				spawnValues.push(macro @:pos(p) v.spawn.push(b.spawn($def)));
+			} else
 				particleValues.push(macro @:pos(p) d.$key = b.param($def));
 		}
 
+		// out of the editor the values are built once, by the source of the clones (the prefab of a loaded resource): they only depend on
+		// its data, a load resets them (a resource reload); in the editor the data is edited in place, they are built at each make
+		var share = !Context.defined("editor") && !Context.defined("editor_hl");
+		var reset = share ? macro { sharedValues = null; valuesFrom = null; } : macro {};
+		// lazy: the errors of the params come at make, as in the editor
+		var copyValues = share ? macro { sharedValues = from.sharedValues; valuesFrom = from.sharedValues == null ? from : null; } : macro {};
+		var getValues = share ? macro {
+			if( sharedValues == null ) {
+				sharedValues = valuesFrom != null ? valuesFrom.getValues() : buildValues();
+				valuesFrom = null;
+			}
+			return sharedValues;
+		} : macro return buildValues();
 		var objCT = Context.toComplexType(Context.getType(objectType));
 		var selfType = Context.toComplexType(Context.getLocalType());
 		// the statics first, the ones of the class can use them
@@ -125,6 +142,7 @@ class EmitterMacros {
 		}).fields;
 		var methods = (macro class {
 			function loadParams( data : Dynamic ) {
+				$reset;
 				var params : Dynamic = data.params;
 				if( params == null ) $b{unset} else $b{load};
 			}
@@ -135,6 +153,7 @@ class EmitterMacros {
 			}
 			function copyParams( from : $selfType ) {
 				$b{copy};
+				$copyValues;
 			}
 			public function getSettings() return emitterParams;
 			public function getModeParams() return MODE_PARAMS;
@@ -144,16 +163,31 @@ class EmitterMacros {
 			public function setMode( name : String, comp : Int, m : hrt.prefab.fx.EmitterParam.ParamMode ) {
 				${{ expr: ESwitch(macro name, setCases, macro throw "No param " + name), pos: pos }};
 			}
-			public function makeValues( obj : $objCT ) : hrt.prefab.fx.EmitterParam.ParamBuilder {
+			function buildValues() : hrt.prefab.fx.EmitterParam.EmitterValues {
 				var b = new hrt.prefab.fx.EmitterParam.ParamBuilder(this, this);
 				var d = new hrt.prefab.fx.Emitter.InstanceDef();
-				obj.instDef = d;
 				$b{particleValues};
+				var v = new hrt.prefab.fx.EmitterParam.EmitterValues(d);
 				$b{settingValues};
 				$b{spawnValues};
-				return b;
+				v.randomSlots = b.randomSlots;
+				return v;
+			}
+			public function getValues() : hrt.prefab.fx.EmitterParam.EmitterValues {
+				$getValues;
+			}
+			public function makeValues( obj : $objCT ) : hrt.prefab.fx.EmitterParam.EmitterValues {
+				var v = getValues();
+				obj.instDef = v.def;
+				$b{settingApply};
+				$b{spawnApply};
+				return v;
 			}
 		}).fields;
+		if( share ) {
+			methods.push({ name: "sharedValues", access: [], kind: FVar(macro : hrt.prefab.fx.EmitterParam.EmitterValues), pos: pos });
+			methods.push({ name: "valuesFrom", access: [], kind: FVar(selfType), pos: pos });
+		}
 		return statics.concat(fields).concat(methods);
 	}
 	#end
