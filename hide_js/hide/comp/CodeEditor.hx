@@ -22,6 +22,12 @@ class CodeEditor extends Component {
 			(monaco.Languages : Dynamic).typescript.javascriptDefaults.setModeConfiguration({ completionItems : false });
 			(monaco.Languages : Dynamic).html.htmlDefaults.setModeConfiguration({ completionItems : false });
 			(monaco.Languages : Dynamic).css.lessDefaults.setModeConfiguration({ completionItems : false });
+			// override the built-in paste (Ctrl+V and context menu) : it relies on execCommand("paste"), which Electron blocks
+			monaco.ScriptEditor.registerCommand("editor.action.clipboardPasteAction", function() {
+				for( e in monaco.ScriptEditor.getEditors() )
+					if( e.hasTextFocus() )
+						e.trigger("keyboard", "paste", { text : hide.Ide.inst.getClipboard() });
+			});
 		}
 
 		super(parent,root);
