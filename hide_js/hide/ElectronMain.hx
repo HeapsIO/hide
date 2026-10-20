@@ -335,6 +335,22 @@ class ElectronMain {
 			win.showInactive();
 
 		var parts = file.split("?");
+		// thumbnail generator : its console, load errors and losses in logs/logs_thumb_<date>_<time>
+		if( parts[1] != null && parts[1].indexOf("thumbnail=true") >= 0 ) {
+			var dir = js.node.Path.join(js.node.Path.dirname(sessionLogs), "logs_thumb_" + DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S"));
+			sys.FileSystem.createDirectory(dir);
+			var log = js.node.Path.join(dir, "thumb.log");
+			function write( text : String ) {
+				js.node.Fs.appendFileSync(log, DateTools.format(Date.now(), "%Y-%m-%d %H:%M:%S") + " " + text + "\n");
+			}
+			win.webContents.on("console-message", (e : Dynamic) -> write(e.level + " " + e.message + " (" + e.sourceId + ":" + e.lineNumber + ")"));
+			win.webContents.on("did-fail-load", (_, code : Int, desc : String, url : String) -> write("load failed " + code + " " + desc + " " + url));
+			win.webContents.on("preload-error", (_, path : String, err : Dynamic) -> write("preload error " + path + " " + err));
+			win.webContents.on("render-process-gone", (_, details : Dynamic) -> write("renderer " + details.reason + ", exit code " + details.exitCode));
+			win.on("unresponsive", () -> write("unresponsive"));
+			win.on("responsive", () -> write("responsive"));
+			win.on("closed", () -> write("closed"));
+		}
 		var fileUrl : String = js.Lib.require("url").pathToFileURL(js.node.Path.join(js.Node.__dirname, parts[0])).href;
 		win.loadURL(parts[1] == null ? fileUrl : fileUrl + "?" + parts[1]);
 		return win;
