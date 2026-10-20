@@ -312,7 +312,23 @@ class ParticleInstance {
 		if(def.rotation != VZero) {
 			evaluator.getFastVec(idx, def.rotation, t, v);
 			v.scale3(Math.PI / 180.0);
-			localMat.rotate(v.x, v.y, v.z);
+			if(v.x == 0 && v.y == 0) {
+				// about z only, as most particles: what `rotate` gives (the terms it adds are zeros), without
+				// its 4 other sin/cos and the full multiply
+				var c = Math.cos(v.z);
+				var s = Math.sin(v.z);
+				var m = localMat;
+				var a = m._11, b = m._12;
+				m._11 = a * c - b * s; m._12 = a * s + b * c;
+				a = m._21; b = m._22;
+				m._21 = a * c - b * s; m._22 = a * s + b * c;
+				a = m._31; b = m._32;
+				m._31 = a * c - b * s; m._32 = a * s + b * c;
+				a = m._41; b = m._42;
+				m._41 = a * c - b * s; m._42 = a * s + b * c;
+			}
+			else
+				localMat.rotate(v.x, v.y, v.z);
 		}
 
 		//OFFSET
