@@ -8,7 +8,7 @@ typedef ParamDef = {
 
 class EmitterHelper {
 
-	/** `m.rotate(0, 0, angle)`: the same matrix (the terms `rotate` adds are zeros), without its 4 other sin/cos and the full multiply **/
+	/** `m.rotate(0, 0, angle)` without the 4 other sin/cos and the full multiply **/
 	public static inline function rotateZ( m : h3d.Matrix, angle : Float ) {
 		var c = Math.cos(angle);
 		var s = Math.sin(angle);
@@ -22,12 +22,7 @@ class EmitterHelper {
 		m._41 = a * c - b * s; m._42 = a * s + b * c;
 	}
 
-	/**
-		Sorts the list of `head` by `cmp` as `ListSort.sort` does (stable: the same order), its new head returned, its
-		`prev` null. Its first `k` nodes are the particles added since the last sort, at any depth: sorted apart, then
-		merged in. The others are about in order from the last sort: an insertion sort, `ListSort.sort` past `budget`
-		moves (the camera turned). Exact whatever `k`: on equal keys, the first nodes stay first.
-	**/
+	/** `ListSort.sort` (same stable order) of a list about in order but for its first `k` nodes, the particles added since the last sort **/
 	public static inline function depthSort<T:{prev:T, next:T}>( head : T, k : Int, budget : Int, cmp : T -> T -> Int ) : T {
 		var rest = head;
 		for( i in 0...k ) {
@@ -46,7 +41,6 @@ class EmitterHelper {
 		return merge(fresh, insertionSort(rest, budget, cmp), cmp);
 	}
 
-	/** `ListSort.sort` of a list about in order: a node goes before the ones it goes before in the merge (`cmp(p, cur) > 0`) **/
 	static inline function insertionSort<T:{prev:T, next:T}>( head : T, budget : Int, cmp : T -> T -> Int ) : T {
 		var cur = head == null ? null : head.next;
 		while( cur != null ) {
@@ -78,7 +72,6 @@ class EmitterHelper {
 		return head;
 	}
 
-	/** The stable merge of two sorted lists, `a` first on equal keys **/
 	static inline function merge<T:{prev:T, next:T}>( a : T, b : T, cmp : T -> T -> Int ) : T {
 		var head : T = null, tail : T = null;
 		while( a != null || b != null ) {

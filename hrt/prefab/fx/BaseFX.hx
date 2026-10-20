@@ -153,7 +153,6 @@ class ShaderDynAnimation extends ShaderAnimation {
 	}
 }
 
-/** The animated components of a vector, the others keep the value of the prefab **/
 typedef VectorAnimation = { ?x: Value, ?y: Value, ?z: Value };
 
 typedef ObjectAnimation = {
@@ -188,7 +187,6 @@ interface BaseFX {
 class BaseFXTools {
 	public static var useAutoPerInstance = true;
 
-	/** `particle`: a shader under an emitter, its params are over the particle life **/
 	public static function makeShaderParams(basePrefab: hrt.prefab.Prefab, shaderDef: hxsl.SharedShader, particle = false) {
 		if(shaderDef == null)
 			return null;
@@ -228,7 +226,6 @@ class BaseFXTools {
 				var curve = Curve.getCurve(basePrefab, name);
 				if(curve != null)
 					return curve.makeVal();
-				// component curves on a float are not read
 				var prop = Reflect.field(basePrefab.props, name);
 				if (prop == null)
 					prop = Reflect.field(basePrefab, name);
@@ -238,7 +235,6 @@ class BaseFXTools {
 		}
 	}
 
-	/** A null component keeps its prop **/
 	public static function makeParticleShaderValue(shader: hrt.prefab.Shader, name: String, dim: Int) : Value {
 		var p = Lambda.find(shader.particleParams, p -> p.name == name);
 		if(p == null)
@@ -273,7 +269,6 @@ class BaseFXTools {
 		return ret;
 	}
 
-	/** The curves `name:x`, `name:y`, `name:z`, or a single curve `name` for every component **/
 	public static function vectorAnimation(elt: PrefabElement, name: String) : VectorAnimation {
 		var curves = Curve.getCurves(elt, name);
 		if(curves == null || curves.length == 0)

@@ -18,7 +18,6 @@ class Evaluator {
 		}
 	}
 
-	/** `slots` randoms for each of `count` particles **/
 	public function allocRandom(count: Int, slots: Int) {
 		this.slots = slots;
 		randValues = [for(_ in 0...count * slots) 0.];
@@ -42,7 +41,6 @@ class Evaluator {
 		}
 	}
 
-	/** The mean of `s` over its random, at time 0 **/
 	public function getMean(s: SpawnValue) : Float {
 		return s.rid < 0 ? getFloat(s.min, 0) : (getFloat(s.min, 0) + getFloat(s.max, 0)) * 0.5;
 	}
@@ -73,7 +71,6 @@ class Evaluator {
 		}
 	}
 
-	/** A curve by an FX parameter (`Curve.param`): lerp of its two curves by it for a blend, else the curve at its value **/
 	function getParamCurve(c: Curve, time: Float) : Float {
 		var p = parameters[c.param] ?? 0.0;
 		return c.blendMode == CurveBlendMode.Blend ? hxd.Math.lerp((cast c.children[0] : Curve).getVal(time), (cast c.children[1] : Curve).getVal(time), p) : c.getVal(p);

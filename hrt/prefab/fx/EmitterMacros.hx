@@ -47,7 +47,6 @@ class EmitterMacros {
 		}
 	}
 
-	/** `objectType`: the path of the class of the emitter object **/
 	public static function build( objectType : String ) : Array<Field> {
 		var fields = Context.getBuildFields();
 		var pos = Context.currentPos();

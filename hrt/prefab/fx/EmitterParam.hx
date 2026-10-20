@@ -4,15 +4,11 @@ import hrt.prefab.Curve;
 import hrt.prefab.fx.Value;
 
 enum ParamKind {
-	/** Constant or Range, read when the particle spawns **/
 	Spawn;
-	/** Every mode, over the particle life **/
 	Particle;
-	/** Constant, read every frame **/
 	Multiplier;
 }
 
-/** The mode of a param component: a value, a random in a range, or over the particle life (a curve by its path from the owner) **/
 enum ParamMode {
 	Constant( value : Float );
 	Range( min : Float, max : Float );
@@ -21,14 +17,11 @@ enum ParamMode {
 	CurveRange( a : String, aFrom : Float, aTo : Float, b : String, bFrom : Float, bTo : Float );
 }
 
-/** A vector param, one mode per component, null when unset **/
 typedef ParamVec2 = { ?x : ParamMode, ?y : ParamMode };
 typedef ParamVec3 = { > ParamVec2, ?z : ParamMode };
 
-/** A component of a particle shader param over the particle life: lerp(from, to, curve(t)), `curve` a path **/
 typedef ParticleCurve = { curve : String, from : Float, to : Float };
 
-/** A particle shader param, a null component keeps its prop **/
 typedef ParticleShaderParam = { name : String, comps : Array<ParticleCurve> };
 
 typedef ModeParamDef = {
@@ -40,7 +33,6 @@ typedef ModeParamDef = {
 	var ?disp : String;
 }
 
-/** An emitter: its settings, its params with modes and their values **/
 interface ParamOwner {
 	function getSettings() : Array<EmitterHelper.ParamDef>;
 	function getModeParams() : Array<ModeParamDef>;
@@ -52,7 +44,6 @@ class EmitterParam {
 
 	public static var COMPONENTS = ["x", "y", "z", "w"];
 
-	/** The name of an animation curve, `startSpeed:x:min`: the param, its component for a vector, the bound of a range **/
 	public static function animKey( def : ModeParamDef, comp : Int, ?field : String ) {
 		var k = def.def.length == 1 ? def.name : def.name + ":" + COMPONENTS[comp];
 		return field == null ? k : k + ":" + field;
@@ -75,7 +66,6 @@ class EmitterParam {
 		return out.x == null && out.y == null && out.z == null ? null : out;
 	}
 
-	// a ParamVec2 or a ParamVec3
 	public static function saveVec( v : Dynamic ) : Dynamic {
 		if( v == null || (v.x == null && v.y == null && v.z == null) )
 			return null;
@@ -90,13 +80,11 @@ class EmitterParam {
 		return v == null ? null : i == 0 ? v.x : i == 1 ? v.y : v.z;
 	}
 
-	/** `v` with component `i` set to `m`, null when none is set **/
 	public static function withComp( v : Dynamic, i : Int, m : ParamMode ) : ParamVec3 {
 		var out : ParamVec3 = { x: i == 0 ? m : comp(v, 0), y: i == 1 ? m : comp(v, 1), z: i == 2 ? m : comp(v, 2) };
 		return out.x == null && out.y == null && out.z == null ? null : out;
 	}
 
-	/** The components of a shader param read over the particle life: a float, or a vector that is not a color. 0 for the others. **/
 	public static function particleDim( v : hxsl.Ast.TVar ) : Int {
 		return switch( v.type ) {
 		case TVec(n, VFloat) if( v.name.toLowerCase().indexOf("color") < 0 ): n;
@@ -105,7 +93,6 @@ class EmitterParam {
 		}
 	}
 
-	/** Component `i` of the value `prop` of a shader param of `dim` components, 0 when it is not a number **/
 	public static function baseComponent( prop : Dynamic, dim : Int, i : Int ) : Float {
 		var c : Dynamic = dim == 1 ? prop : Std.isOfType(prop, Array) ? prop[i] : null;
 		return Std.isOfType(c, Float) || Std.isOfType(c, Int) ? c : 0.0;
@@ -152,7 +139,7 @@ class EmitterParam {
 		}
 	}
 
-	/** The curve at `path` under `owner` (`Prefab.locatePrefab`), null when it or a prefab on its path is disabled **/
+	/** Null when the curve or a prefab on its path is disabled **/
 	public static function resolveCurve( owner : Prefab, path : String ) : Curve {
 		var curve = owner.locatePrefab(path)?.to(hrt.prefab.Curve);
 		var p : Prefab = curve;
@@ -181,10 +168,6 @@ class EmitterParam {
 	}
 }
 
-/**
-	Builds the values of the params of an emitter. Each random component takes the next random
-	slot, a random per particle drawn by the emitter.
-**/
 class ParamBuilder {
 
 	var owner : Prefab;
@@ -200,7 +183,7 @@ class ParamBuilder {
 		return curve(owner, c.curve, c.from, c.to);
 	}
 
-	/** The value of the curve at `path`, from 0 to 1, 1 for a missing curve **/
+	/** 1 for a missing curve **/
 	public static function curveValue( owner : Prefab, path : String ) : Value {
 		return EmitterParam.resolveCurve(owner, path)?.makeVal() ?? VConst(1.0);
 	}
@@ -218,7 +201,6 @@ class ParamBuilder {
 		}
 	}
 
-	/** The value of a component without randomness: unset, Constant or Curve **/
 	public static function fixedValue( owner : Prefab, m : ParamMode, def : Float ) : Value {
 		return switch( m ) {
 		case null: Evaluator.vVal(def);
@@ -248,7 +230,6 @@ class ParamBuilder {
 		}
 	}
 
-	/** The value of the animation curve `name`, `base` when there is none **/
 	public function animated( name : String, base : Value ) : Value {
 		var c = hrt.prefab.Curve.getCurve(owner, name);
 		if( c == null )
@@ -270,7 +251,6 @@ class ParamBuilder {
 		return def.kind == Particle ? comp(m, def.def[i]) : animated(EmitterParam.animKey(def, i), fixedValue(owner, m, def.def[i]));
 	}
 
-	/** A Spawn param, per component: its value, or a random between its bounds, over the FX time **/
 	public function spawn( def : ModeParamDef ) : Array<SpawnValue> {
 		return [for( i in 0...def.def.length ) {
 			var m = mode(def, i);
@@ -293,7 +273,6 @@ class ParamBuilder {
 		}];
 	}
 
-	/** A vector is a `VVector` of 3 components, `VZero` when they are all 0, `VConst(1)` when they are all 1 **/
 	public function param( def : ModeParamDef ) : Value {
 		if( def.def.length == 1 )
 			return component(def, 0);

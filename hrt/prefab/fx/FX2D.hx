@@ -235,7 +235,6 @@ class FX2D extends Object2D implements BaseFX {
 			anims.push(anim);
 	}
 
-	/** Null when nothing is animated **/
 	static function makeObjectAnimation(obj2d: hrt.prefab.Object2D, local2d: h2d.Object) : ObjectAnimation {
 		var elt : PrefabElement = obj2d;
 		// TODO: Support references?

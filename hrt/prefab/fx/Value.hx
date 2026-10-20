@@ -1,6 +1,5 @@
 package hrt.prefab.fx;
 
-/** One value per param mode, `u` a random in [0, 1] of the particle, one per slot `rid` **/
 enum Value {
 	VZero;
 	VConst(v: Float);
@@ -19,7 +18,7 @@ enum Value {
 	VHsl(h: Value, s: Value, l: Value, a: Value);
 }
 
-/** A Spawn param component, read when a particle spawns: `min` alone when `rid` < 0, else lerp(min, max, u), both over the FX time **/
+/** `min` alone when `rid` < 0, else lerp(min, max, u) **/
 @:structInit class SpawnValue {
 	public var rid : Int;
 	public var min : Value;

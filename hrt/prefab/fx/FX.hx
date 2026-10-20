@@ -729,7 +729,6 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
-	/** Null when nothing is animated **/
 	static function makeObjectAnimation(obj3d: hrt.prefab.Object3D, local3d: h3d.scene.Object) : ObjectAnimation {
 		var elt : PrefabElement = obj3d;
 		var anyFound = false;

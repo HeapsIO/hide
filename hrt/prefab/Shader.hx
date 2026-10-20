@@ -19,7 +19,6 @@ class Shader extends Prefab {
 
 	public var shader : hxsl.Shader;
 
-	/** Under an emitter: the params over the particle life **/
 	@:s public var particleParams : Array<hrt.prefab.fx.EmitterParam.ParticleShaderParam> = [];
 
 	function new(parent, sh: ContextShared) {
@@ -27,7 +26,7 @@ class Shader extends Prefab {
 		props = {};
 	}
 
-	/** The emitter whose particles get this shader: under an emitter, out of its sub-emitters and trails **/
+	/** Not the one of a trail or a sub-emitter it is under **/
 	public function getParticleEmitter() : hrt.prefab.fx.Emitter {
 		var p = parent;
 		while (p != null && !(p is hrt.prefab.fx.Emitter) && !(p is hrt.prefab.l3d.Trails))
@@ -305,7 +304,6 @@ class Shader extends Prefab {
 			<category("Shader") id="shaderCat"/>
 		);
 		if (getParticleEmitter() == null) {
-			// out of the emitters, the float params can be animated over the FX time
 			var animated = findParent(hrt.prefab.fx.Emitter) == null;
 			for (prop in props) {
 				var slider = Std.downcast(shaderCat.buildProp(prop, this.props), hide.kit.Slider);
@@ -315,7 +313,6 @@ class Shader extends Prefab {
 			return;
 		}
 
-		// the params read over the particle life have curves, see BaseFXTools.makeShaderParams; a constant is the prop
 		function getParticleCurve(name: String, i: Int) : hrt.prefab.fx.EmitterParam.ParamMode {
 			var c = Lambda.find(particleParams, p -> p.name == name)?.comps[i];
 			return c == null ? null : Curve(c.curve, c.from, c.to);
@@ -348,7 +345,6 @@ class Shader extends Prefab {
 				shaderCat.buildProp(prop, this.props);
 				continue;
 			}
-			// an unset component keeps the value of the prop
 			var value : Dynamic = Reflect.field(this.props, prop.name);
 			var base = [for (i in 0...dim) hrt.prefab.fx.EmitterParam.baseComponent(value, dim, i)];
 			var t : hrt.prefab.Props.PropType = switch (prop.t) {

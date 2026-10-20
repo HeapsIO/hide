@@ -182,7 +182,6 @@ abstract class EditContext2 {
 	}
 
 	#if domkit
-	/** Shows on `slider` the animation curve `name` of `prefab` (`Slider.anim`) **/
 	public function bindAnimation(slider: hide.kit.Slider<Float>, prefab: Prefab, name: String) {
 		hrt.prefab.fx.AnimEdit.bind(this, slider, prefab, name);
 	}

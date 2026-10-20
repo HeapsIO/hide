@@ -12,7 +12,6 @@ enum abstract ModeKind(String) to String {
 	var CurveRange;
 }
 
-/** Inspector of the params with modes, of the emitters and of the particle shaders **/
 class EmitterEdit {
 
 	static function kindModes(kind: ParamKind) : Array<ModeKind> {
@@ -33,7 +32,6 @@ class EmitterEdit {
 		}
 	}
 
-	/** `m` in `mode`, keeping its values: exactly when `mode` can express it, its middle otherwise. A new curve (`newCurve`) goes from 0 to 1 **/
 	static function convert(m: ParamMode, mode: ModeKind, def: Float, newCurve: () -> String) : ParamMode {
 		var s = null, s2 = null, f0 = def, f1 = def, t0 = def, t1 = def;
 		switch (m) {
@@ -58,7 +56,6 @@ class EmitterEdit {
 		}
 	}
 
-	/** The curves under `owner` a param can use: not an object channel nor an animation curve **/
 	static function paramCurves(owner: Prefab) : Array<Curve> {
 		return [for (c in owner.children) {
 			var curve = Std.downcast(c, hrt.prefab.Curve);
@@ -73,7 +70,6 @@ class EmitterEdit {
 		return (t) -> ev.getFloat(v, t);
 	}
 
-	/** The two curves of a blend, from 0 to 1, shown under it **/
 	static function blendFunctions(owner: Prefab, s: String) : Array<Float -> Float> {
 		return switch (ParamBuilder.curveValue(owner, s)) {
 			case VParamCurve(c, from, to) if (c.blendMode == Blend):
@@ -87,7 +83,6 @@ class EmitterEdit {
 		return c != null && c.blendMode == None ? c : null;
 	}
 
-	/** A new linear curve from 0 to 1 under `owner`, named after `name`: its path **/
 	static function newCurve(owner: Prefab, name: String) : String {
 		var c = new Curve(owner, owner.shared);
 		c.name = AnimEdit.newCurveName(owner, name + "Curve");
@@ -96,7 +91,6 @@ class EmitterEdit {
 		return EmitterParam.curvePath(owner, c);
 	}
 
-	/** A select of the curves: a new one (named after `name`), the curves under `owner`; plain curves only for `plain` **/
 	static function curveSelect(ctx: EditContext2, parent: hide.kit.Element, id: String, owner: Prefab, path: String, name: String, plain: Bool, set: String -> Void) {
 		var select = new hide.kit.Select(parent, id);
 		var curves : Array<hide.kit.Select.SelectEntry> = [for (c in paramCurves(owner)) if (!plain || c.isPlain()) {
@@ -119,11 +113,6 @@ class EmitterEdit {
 		}
 	}
 
-	/**
-		The lines of param `def` of `owner` in `parent`, one mode per component among `modes`. An unset component
-		shows its default value grayed out: editing it sets it, and a constant set back to its default is unset.
-		`set` stores the mode of a component, `onChange` follows each edit. The Spawn and Multiplier fields can be animated (`AnimEdit`).
-	**/
 	public static function param(ctx: EditContext2, parent: hide.kit.Element, owner: Prefab, def: ModeParamDef, modes: Array<ModeKind>,
 			get: Int -> ParamMode, set: (Int, ParamMode) -> Void, onChange: Bool -> Void) {
 		var dim = def.def.length;
@@ -153,7 +142,6 @@ class EmitterEdit {
 		function compItems(line: hide.kit.Element, i: Int) : Array<hrt.ui.HuiMenu.MenuItem> {
 			var m = get(i);
 			var kind = m == null ? Constant : kindOf(m);
-			// a constant at its default is shown unset: nothing to remove
 			function isSet(j: Int) {
 				var c = get(j);
 				return c != null && !(c.match(Constant(_)) && Type.enumParameters(c)[0] == def.def[j]);
@@ -181,7 +169,6 @@ class EmitterEdit {
 			return items;
 		}
 
-		// constant components on one line
 		var compact = dim > 1 && Lambda.foreach(value, m -> m == null || m.match(Constant(_)));
 		var compactLine = null;
 		if (compact) {
@@ -192,12 +179,10 @@ class EmitterEdit {
 			var id = def.name + (dim == 1 ? "" : compName(i));
 			var suffix = compact ? compName(i) : "";
 			var line = compactLine;
-			// the elements that have the menu of the component: its value on the line of the vector, its lines otherwise
 			var menuOwners : Array<hide.kit.Element> = [];
 			if (line == null) {
 				line = new hide.kit.Line(parent, id);
 				line.label = dim == 1 ? label : label + " " + compName(i);
-				// the labels of the fields stay with them (Min, Max)
 				line.stealLabel = false;
 				menuOwners.push(line);
 			}
@@ -220,7 +205,6 @@ class EmitterEdit {
 				s.onFieldChange = (_) -> {
 					set(s.value);
 					apply();
-					// a constant at its default is unset: grayed out
 					if (make().match(Constant(_)))
 						s.faded = s.value == def.def[i];
 				}
@@ -235,18 +219,12 @@ class EmitterEdit {
 				return s;
 			}
 
-			/**
-				A curve editor, and below it on one line the `from` fields (the start of the particle life, at
-				the left) and the `to` ones (its end, at the right), with a button swapping them
-			**/
 			function curve(s: String, from: Array<{ v: () -> Float, set: Float -> Void }>, to: Array<{ v: () -> Float, set: Float -> Void }>, ranges: () -> Array<hide.kit.ParamCurve.ParamRange>, suffix: String) {
 				var graph = new hide.kit.ParamCurve(parent, id + "Curve" + suffix, owner, curveFunction(owner, s), ranges(), editableCurve(owner, s), blendFunctions(owner, s));
 				var bounds = new hide.kit.Line(parent, id + "Bounds" + suffix);
 				bounds.cssClass = "kit-param-bounds";
-				// no label: the fields are under the ends of the curve
 				bounds.full = true;
 				menuOwners.push(bounds);
-				// the view follows the range
 				function changed() {
 					graph.setRanges(ranges());
 				}
@@ -315,11 +293,6 @@ class EmitterEdit {
 		}
 	}
 
-	/**
-		The inspector of an emitter: its `settings` (the `@:animate` ones can be animated) and its params
-		with modes, grouped in categories. A change of a `refresh` setting rebuilds the inspector,
-		`onChange(name)` follows each edit.
-	**/
 	public static function edit(ctx: EditContext2, owner: ParamOwner, settings: Array<EmitterHelper.ParamDef>, refresh: Array<String>, ?onChange: String -> Void) {
 		var emitter : Prefab = cast owner;
 		function changed(name: String, temp: Bool) {

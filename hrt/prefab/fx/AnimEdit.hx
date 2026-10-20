@@ -4,17 +4,9 @@ package hrt.prefab.fx;
 
 import hrt.prefab.fx.EmitterParam;
 
-/**
-	Animation curves edited from the inspector, Blender-like: the context menu of an animatable field
-	animates it, inserts or removes a key; a marker after an animated field tells it is (and if it is
-	keyed at the current time).
-	An animated field shows the value at the current time of the FX, editing it sets a key there.
-	The animation curve of a field is a child of the animated prefab, named after the property.
-**/
 @:access(hrt.prefab.Prefab)
 class AnimEdit {
 
-	/** The time and the evaluator of the FX `p` is in, null out of an FX **/
 	public static function getFX(p: Prefab) : { time: Float, evaluator: Evaluator } {
 		if (p.findParent(Prefab, c -> c is BaseFX, true) == null)
 			return null;
@@ -26,14 +18,12 @@ class AnimEdit {
 		return anim2d == null ? null : { time: anim2d.localTime, evaluator: @:privateAccess anim2d.evaluator };
 	}
 
-	/** Curves under emitters named after them animate the emitter object **/
 	static var CHANNELS = ["position", "rotation", "scale", "color", "visibility", "localposition", "localrotation"];
 
 	public static function isChannel(name: String) {
 		return name != null && CHANNELS.contains(name.split(":")[0].toLowerCase());
 	}
 
-	/** A curve over the particle life, edited in the inspector of its emitter: under an emitter and not one of its animation curves **/
 	public static function isParticleCurve(curve: Curve) {
 		var top : Prefab = curve;
 		while (top.parent is Curve)
@@ -49,10 +39,6 @@ class AnimEdit {
 		return Lambda.exists(emitter.getSettings(), p -> p.animate == true && p.name == base) || Lambda.exists(emitter.getModeParams(), p -> p.kind != Particle && p.name == base);
 	}
 
-	/**
-		The names of the animation curves of the property `prop` of an emitter (`emitRate`, `startSpeed:x`...):
-		the value, or the min and max of a range. Null when `prop` is not one of its params.
-	**/
 	public static function animKeys(owner: Prefab, prop: String) : Array<String> {
 		var emitter : ParamOwner = owner is ParamOwner ? cast owner : null;
 		if (emitter == null)
@@ -70,7 +56,6 @@ class AnimEdit {
 		}
 	}
 
-	/** The current value of what the animation curve `key` of `owner` animates, null when it is not known (colors, visibility...) **/
 	public static function currentValue(owner: Prefab, key: String) : Null<Float> {
 		inline function num(v: Dynamic) : Null<Float> return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : null;
 		var parts = key.split(":");
@@ -107,7 +92,6 @@ class AnimEdit {
 		return hrt.prefab.Curve.getCurve(owner, name, false) ?? (name.indexOf(":") > 0 ? hrt.prefab.Curve.getCurve(owner, name.split(":")[0], false) : null);
 	}
 
-	/** Shows the animation curve `name` of `owner` on `slider`, nothing out of an FX **/
 	public static function bind(editor: EditContext2, slider: hide.kit.Slider<Float>, owner: Prefab, name: String) {
 		if (getFX(owner) == null)
 			return;
@@ -125,7 +109,6 @@ class AnimEdit {
 				{ label: "Remove animation" + label, click: () -> removeAnimation(editor, owner, name) },
 			];
 		}
-		// not animated: only the menu
 		if (curve == null) {
 			hide.kit.AnimMarker.addMenu(slider, menu);
 			return;
@@ -165,10 +148,6 @@ class AnimEdit {
 		slider.value = value();
 	}
 
-	/**
-		Applies `f`, that changes `owner` and the curves under it, as an undo step: the data of `owner`
-		and its list of children are restored on undo
-	**/
 	public static function editTree(editor: EditContext2, owner: Prefab, f: () -> Void) {
 		var before = Diff.deepCopy(owner.save()), childrenBefore = owner.children.copy();
 		f();
@@ -216,7 +195,7 @@ class AnimEdit {
 		return curve.findKey(time, 0.5 / 60);
 	}
 
-	/** Sets the key at `time` to `value`, or removes it when `value` is null **/
+	/** Removes the key when `value` is null **/
 	public static function setKey(editor: EditContext2, curve: Curve, owner: Prefab, time: Float, value: Null<Float>) {
 		var before = Diff.deepCopy(curve.save());
 		var key = keyAt(curve, time);
