@@ -76,15 +76,28 @@ class GameLauncher {
 		var hxml : String = hide.Ide.inst.currentConfig.get(GAME_LAUNCHER_HXML);
 		if (hxml == null)
 			return listTargets()[0]?.hxml;
-		return haxe.io.Path.normalize(haxe.io.Path.isAbsolute(hxml) ? hxml : hide.Ide.inst.projectDir + "/" + hxml);
+		return toAbsolutePath(hxml);
+	}
+
+	public static function getProjectHxml() : Null<String> {
+		var hxml : String = hide.Ide.inst.projectConfig.get(GAME_LAUNCHER_HXML);
+		return hxml != null ? toAbsolutePath(hxml) : null;
 	}
 
 	public static function setCurrentHxml(hxml: String) {
+		hide.Ide.inst.projectUserConfig.set(GAME_LAUNCHER_HXML, hxml == getProjectHxml() ? null : toConfigPath(hxml));
+	}
+
+	static function toAbsolutePath(hxml: String) {
+		return haxe.io.Path.normalize(haxe.io.Path.isAbsolute(hxml) ? hxml : hide.Ide.inst.projectDir + "/" + hxml);
+	}
+
+	static function toConfigPath(hxml: String) {
 		var dir = hide.Ide.inst.projectDir + "/";
 		hxml = hxml.split("\\").join("/");
 		if (StringTools.startsWith(hxml.toLowerCase(), dir.toLowerCase()))
 			hxml = hxml.substr(dir.length);
-		hide.Ide.inst.projectUserConfig.set(GAME_LAUNCHER_HXML, hxml);
+		return hxml;
 	}
 
 	static function findTarget() : Null<GameTarget> {

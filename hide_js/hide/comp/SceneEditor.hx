@@ -1082,6 +1082,7 @@ class SceneEditor {
 		var sceneEl = new Element('<div class="heaps-scene"></div>');
 		scene = new hide.comp.Scene(view.config, null, sceneEl);
 		scene.editor = this;
+		scene.enableNewErrorSystem = true;
 		scene.onReady = onSceneReadyInternal;
 		scene.onResize = function() {
 			if( cameraController2D != null ) cameraController2D.toTarget();

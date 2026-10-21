@@ -28,6 +28,7 @@ class UserSettings extends Settings {
 		var performance = new hide.view.settings.Settings.Categorie("Performance");
 		performance.add("Track gpu alloc", new Element('<input type="checkbox"/>'), ide.currentConfig.get("hide.trackGpuAlloc"), (v) -> ide.userConfig.set("hide.trackGpuAlloc", v));
 		performance.add("Slow scene update when not focused", new Element('<input type="checkbox"/>'), ide.currentConfig.get("hide.unfocusCPUSavingMode"), (v) -> ide.userConfig.set("hide.unfocusCPUSavingMode", v));
+		performance.add("Texture streaming", new Element('<input type="checkbox"/>'), ide.currentConfig.get("hide.textureStreaming"), (v) -> { ide.userConfig.set("hide.textureStreaming", v); hxd.res.TextureStream.ENABLED = v; });
 		categories.push(performance);
 
 		var sceneEditor = new hide.view.settings.Settings.Categorie("Scene Editor");

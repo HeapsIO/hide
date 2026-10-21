@@ -240,6 +240,16 @@ class Prefab extends hide.view.FileView {
 	function createEditor() {
 		sceneEditor = new PrefabSceneEditor(this);
 		sceneEditor.onSceneReady = onSceneReady;
+		sceneEditor.scene.onSceneGoto = (contextObject) -> {
+			var obj = Std.downcast((contextObject : Dynamic), h3d.scene.Object);
+			while (obj != null) {
+				var p = data.find(hrt.prefab.Object3D, (p) -> p.local3d == obj);
+				if (p != null)
+					return () -> sceneEditor.selectElements([p]);
+				obj = obj.parent;
+			}
+			return null;
+		};
 		for (callback in sceneReadyDelayed) {
 			sceneEditor.delayReady(callback);
 		}
@@ -594,6 +604,13 @@ class Prefab extends hide.view.FileView {
 	override function save() {
 		if( !canSave() )
 			return;
+
+		var scene = sceneEditor?.scene;
+		if (scene != null && @:privateAccess scene.errorThisFrame) {
+			var error = @:privateAccess scene.currentError.title;
+			if (!ide.confirm('The scene has rendering errors :\n$error\n\nThe prefab might not load in game. Save anyway?'))
+				return;
+		}
 
 		if (remoteEditMode) {
 			currentSign = Std.string(Std.parseInt(currentSign) + 1);

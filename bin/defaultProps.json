@@ -59,7 +59,7 @@
 	"key.view.fullScreen" : "F11",
 	"key.view.refresh" : "F5",
 	"key.view.refreshApp" : "Ctrl-F5",
-	"key.gameLauncher.toggle" : "Shift-F5",
+	"key.gameLauncher.toggle" : "Ctrl-F5",
 	"key.view.reopenLastClosedTab" : "Ctrl-Shift-T",
 
 	// File tree

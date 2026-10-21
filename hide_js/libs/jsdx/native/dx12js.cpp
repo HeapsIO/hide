@@ -20,12 +20,131 @@ static FARPROC WINAPI loadExeHook( unsigned int event, DelayLoadInfo *info ) {
 }
 decltype(__pfnDliNotifyHook2) __pfnDliNotifyHook2 = loadExeHook;
 
+// hide-dx12.log in the session logs (HIDE_SESSION_LOGS, set by the main process), in %TEMP% without it.
+// Opened in append mode, the line starts with the time.
+static FILE *js_log_open() {
+	char file[MAX_PATH];
+	DWORD n = GetEnvironmentVariableA("HIDE_SESSION_LOGS", file, MAX_PATH);
+	if( n > 0 && n < MAX_PATH - 32 )
+		strcat_s(file, "\\");
+	else {
+		n = GetTempPathA(MAX_PATH, file);
+		if( n == 0 || n >= MAX_PATH - 32 ) return NULL;
+	}
+	FILE *f = NULL;
+	if( strcat_s(file, "hide-dx12.log") != 0 || fopen_s(&f, file, "a") != 0 ) return NULL;
+	SYSTEMTIME t;
+	GetLocalTime(&t);
+	fprintf(f, "%04d-%02d-%02d %02d:%02d:%02d.%03d ", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond, t.wMilliseconds);
+	return f;
+}
+
+// ---- device removal : its reason and the DRED data (last GPU operations, page fault) are logged
+
+// before the device creation : the settings apply to the devices created after
+static void js_enable_dred() {
+	ID3D12DeviceRemovedExtendedDataSettings *s = NULL;
+	if( FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(&s))) ) return;
+	s->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+	s->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+	s->Release();
+}
+
+static const char *js_removed_reason_name( HRESULT r ) {
+	switch( r ) {
+	case DXGI_ERROR_DEVICE_HUNG: return "DEVICE_HUNG";
+	case DXGI_ERROR_DEVICE_REMOVED: return "DEVICE_REMOVED";
+	case DXGI_ERROR_DEVICE_RESET: return "DEVICE_RESET";
+	case DXGI_ERROR_DRIVER_INTERNAL_ERROR: return "DRIVER_INTERNAL_ERROR";
+	case DXGI_ERROR_INVALID_CALL: return "INVALID_CALL";
+	default: return "?";
+	}
+}
+
+static void js_log_breadcrumbs( FILE *f, ID3D12DeviceRemovedExtendedData *dred ) {
+	static const char *ops[] = {
+		"SetMarker", "BeginEvent", "EndEvent", "DrawInstanced", "DrawIndexedInstanced", "ExecuteIndirect", "Dispatch",
+		"CopyBufferRegion", "CopyTextureRegion", "CopyResource", "CopyTiles", "ResolveSubresource", "ClearRenderTargetView",
+		"ClearUnorderedAccessView", "ClearDepthStencilView", "ResourceBarrier", "ExecuteBundle", "Present", "ResolveQueryData",
+		"BeginSubmission", "EndSubmission",
+	};
+	D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT out = {};
+	if( FAILED(dred->GetAutoBreadcrumbsOutput(&out)) ) {
+		fprintf(f, "  no breadcrumbs\n");
+		return;
+	}
+	for( auto n = out.pHeadAutoBreadcrumbNode; n; n = n->pNext ) {
+		UINT done = n->pLastBreadcrumbValue ? *n->pLastBreadcrumbValue : 0;
+		fprintf(f, "  list %ls on queue %ls : %u / %u operations completed\n", n->pCommandListDebugNameW ? n->pCommandListDebugNameW : L"?",
+			n->pCommandQueueDebugNameW ? n->pCommandQueueDebugNameW : L"?", done, n->BreadcrumbCount);
+		if( done >= n->BreadcrumbCount ) continue;
+		// the operations around the first one not completed
+		UINT start = done > 16 ? done - 16 : 0;
+		UINT end = done + 16 < n->BreadcrumbCount ? done + 16 : n->BreadcrumbCount;
+		for( UINT i = start; i < end; i++ ) {
+			int op = n->pCommandHistory[i];
+			if( op >= 0 && op < (int)(sizeof(ops) / sizeof(ops[0])) )
+				fprintf(f, "    %u %s%s\n", i, ops[op], i == done ? " <- not completed" : "");
+			else
+				fprintf(f, "    %u op %d%s\n", i, op, i == done ? " <- not completed" : "");
+		}
+	}
+}
+
+static void js_log_page_fault( FILE *f, ID3D12DeviceRemovedExtendedData *dred ) {
+	D3D12_DRED_PAGE_FAULT_OUTPUT out = {};
+	if( FAILED(dred->GetPageFaultAllocationOutput(&out)) || out.PageFaultVA == 0 ) {
+		fprintf(f, "  no page fault\n");
+		return;
+	}
+	fprintf(f, "  page fault at 0x%llx\n", (unsigned long long)out.PageFaultVA);
+	for( auto n = out.pHeadExistingAllocationNode; n; n = n->pNext )
+		fprintf(f, "    existing %ls (type %d)\n", n->ObjectNameW ? n->ObjectNameW : L"?", (int)n->AllocationType);
+	for( auto n = out.pHeadRecentFreedAllocationNode; n; n = n->pNext )
+		fprintf(f, "    recently freed %ls (type %d)\n", n->ObjectNameW ? n->ObjectNameW : L"?", (int)n->AllocationType);
+}
+
+// once per device, the first time it is found removed
+static void js_log_removed() {
+	static ID3D12Device *logged = NULL;
+	ID3D12Device *dev = static_driver ? static_driver->device : NULL;
+	if( dev == NULL || dev == logged ) return;
+	HRESULT reason = dev->GetDeviceRemovedReason();
+	if( reason == S_OK ) return;
+	logged = dev;
+	FILE *f = js_log_open();
+	if( !f ) return;
+	fprintf(f, "device removed : 0x%08X %s\n", (unsigned)reason, js_removed_reason_name(reason));
+	ID3D12DeviceRemovedExtendedData *dred = NULL;
+	if( SUCCEEDED(dev->QueryInterface(IID_PPV_ARGS(&dred))) ) {
+		js_log_breadcrumbs(f, dred);
+		js_log_page_fault(f, dred);
+		dred->Release();
+	} else
+		fprintf(f, "  no DRED data\n");
+	fprintf(f, "\n");
+	fclose(f);
+}
+
 // the pages of the renderer process share the addon : they use the same device
 
 static dx_driver *js_create( HWND window, DriverInitFlag flags, uchar *dev_desc ) {
-	if( static_driver && static_driver->device && static_driver->device->GetDeviceRemovedReason() == S_OK )
-		return static_driver;
-	return HL_NAME(create)(window, flags, dev_desc);
+	if( static_driver && static_driver->device ) {
+		if( static_driver->device->GetDeviceRemovedReason() == S_OK )
+			return static_driver;
+		js_log_removed();
+	}
+	js_enable_dred();
+	dx_driver *drv = HL_NAME(create)(window, flags, dev_desc);
+	// D3D12CreateDevice returns the existing device of the adapter while it is referenced, even removed
+	if( drv && drv->device->GetDeviceRemovedReason() != S_OK ) {
+		FILE *f = js_log_open();
+		if( f ) {
+			fprintf(f, "device recreated : still removed, the removed device is still referenced\n\n");
+			fclose(f);
+		}
+	}
+	return drv;
 }
 
 static hl_shim::Register js_reg_create("create", hl_shim::wrap<&js_create>());
@@ -129,6 +248,7 @@ static void js_command_queue_present( ID3D12CommandQueue *q, bool vsync ) {
 		sc->fence->SetEventOnCompletion(sc->fenceValue, js_event);
 		WaitForSingleObject(js_event, INFINITE);
 	}
+	js_log_removed();
 	if( sc->count == 0 ) return;
 	sc->index = (sc->index + 1) % sc->count;
 }
@@ -296,7 +416,7 @@ static hl_shim::Register mem_reg_address("mem_address", &mem_address);
 //
 // A copy from a released heap (or past the end of one) crashes in the GPU driver and takes the
 // tool down. The live heaps are kept with their CPU range : a bad copy throws a JS exception
-// instead, and is logged with its JS stack in %TEMP%\hide-dx12.log.
+// instead, and is logged with its JS stack in hide-dx12.log (js_log_open).
 
 struct js_heap_range { uintptr_t start; size_t bytes; };
 static std::map<ID3D12DescriptorHeap*, js_heap_range> js_heaps;
@@ -313,7 +433,7 @@ static ID3D12DescriptorHeap *js_descriptor_heap_create( D3D12_DESCRIPTOR_HEAP_DE
 	return heap;
 }
 
-// a JS error, logged with its stack in %TEMP%\hide-dx12.log
+// a JS error, logged with its stack in hide-dx12.log
 static napi_value js_log( napi_env env, const char *msg ) {
 	napi_value text, err, stack;
 	napi_create_string_utf8(env, msg, NAPI_AUTO_LENGTH, &text);
@@ -322,13 +442,9 @@ static napi_value js_log( napi_env env, const char *msg ) {
 	size_t len;
 	if( napi_get_named_property(env, err, "stack", &stack) == napi_ok )
 		napi_get_value_string_utf8(env, stack, trace, sizeof(trace), &len);
-	char file[MAX_PATH];
-	DWORD n = GetTempPathA(MAX_PATH, file);
-	FILE *f = NULL;
-	if( n > 0 && n < MAX_PATH - 32 && strcat_s(file, "hide-dx12.log") == 0 && fopen_s(&f, file, "a") == 0 && f ) {
-		SYSTEMTIME t;
-		GetLocalTime(&t);
-		fprintf(f, "%04d-%02d-%02d %02d:%02d:%02d.%03d %s\n\n", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond, t.wMilliseconds, trace);
+	FILE *f = js_log_open();
+	if( f ) {
+		fprintf(f, "%s\n\n", trace);
 		fclose(f);
 	}
 	return err;

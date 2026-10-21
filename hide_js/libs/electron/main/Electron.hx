@@ -8,7 +8,7 @@ typedef Rectangle = { x : Int, y : Int, width : Int, height : Int };
 
 @:jsRequire("electron", "app")
 extern class App {
-	static var commandLine : { function appendSwitch( name : String, ?value : String ) : Void; function hasSwitch( name : String ) : Bool; };
+	static var commandLine : { function appendSwitch( name : String, ?value : String ) : Void; function hasSwitch( name : String ) : Bool; function getSwitchValue( name : String ) : String; };
 	static var isPackaged : Bool;
 	static function setName( name : String ) : Void;
 	static function getPath( name : String ) : String;

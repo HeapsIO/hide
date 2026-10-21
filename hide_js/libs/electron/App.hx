@@ -54,6 +54,20 @@ class App {
 		return cast Ipc.callAsync("app.createCrashReport", info);
 	}
 
+	/**
+		True if a debugger (VSCode, DevTools) is attached to this window through --remote-debugging-port
+	**/
+	public static function isDebuggerAttached() : Bool {
+		return Ipc.call("app.isDebuggerAttached");
+	}
+
+	/**
+		Called when a debugger attaches to or detaches from this window
+	**/
+	public static function onDebuggerChange( callb : Bool -> Void ) {
+		Ipc.on("hide-debugger", (_, attached : Bool) -> callb(attached));
+	}
+
 	public static function registerGlobalShortcut( accelerator : String, callb : Void -> Void ) {
 		if( shortcuts == null ) {
 			shortcuts = new Map();

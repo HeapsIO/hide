@@ -59,6 +59,7 @@ class IdeData {
 		"hide.autoSavePrefab" => false,
 		"hide.colorPickerEscUndo" => true,
 		"hide.trackGpuAlloc" => false,
+		"hide.textureStreaming" => false,
 		"hide.svnShowVersionedFiles" => true,
 		"hide.svnShowModifiedFiles" => true,
 		"hide.unfocusCPUSavingMode" => true,

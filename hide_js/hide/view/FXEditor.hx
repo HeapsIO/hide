@@ -372,6 +372,13 @@ class FXEditor extends hide.view.FileView {
 		// Save render props
 		sceneEditor.saveRenderProps();
 
+		var scene = sceneEditor?.scene;
+		if (scene != null && @:privateAccess scene.errorThisFrame) {
+			var error = @:privateAccess scene.currentError.title;
+			if (!ide.confirm('The scene has rendering errors :\n$error\n\nThe FX might not load in game. Save anyway?'))
+				return;
+		}
+
 		@:privateAccess var content = ide.toJSON(cast(data, hrt.prefab.Prefab).editorDiscSerialize());
 		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
@@ -440,6 +447,16 @@ class FXEditor extends hide.view.FileView {
 		var tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this);
 		sceneEditor.onSceneReady = onSceneReady;
+		sceneEditor.scene.onSceneGoto = (contextObject) -> {
+			var obj = Std.downcast((contextObject : Dynamic), h3d.scene.Object);
+			while (obj != null) {
+				var p = cast(data, hrt.prefab.Prefab).find(hrt.prefab.Object3D, (p) -> p.local3d == obj);
+				if (p != null)
+					return () -> sceneEditor.selectElements([p]);
+				obj = obj.parent;
+			}
+			return null;
+		};
 
 		for (callback in sceneReadyDelayed) {
 			sceneEditor.delayReady(callback);

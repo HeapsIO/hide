@@ -830,6 +830,7 @@ class Table extends Component {
 			var gap = 0.;
 			var spacerCount = 0;
 			var shown : Array<Row> = [];
+			var fresh : Array<js.html.Element> = [];
 			for( r in rows ) {
 				if( !want[r.index] ) {
 					gap += rowHeight(r);
@@ -847,6 +848,7 @@ class Table extends Component {
 					attachedNew = true;
 					if( r.line != null ) r.line.create();
 					body.insertBefore(e, cur);
+					fresh.push(e);
 				} else if( e != cur ) {
 					// the elements inserted after the row (sub table...) move with it
 					var extra = [];
@@ -869,6 +871,13 @@ class Table extends Component {
 				shown.push(null);
 			}
 			if( !virtual ) break;
+
+			// fit the new cells before measuring them : their observer runs after this frame's layout
+			var roots = [];
+			for( e in fresh )
+				for( c in e.querySelectorAll(".cell-root") )
+					roots.push((cast c : js.html.Element));
+			@:privateAccess Cell.fitRoots(roots);
 
 			// (offsetTop is rounded)
 			var changed = false;
@@ -1159,31 +1168,28 @@ class Table extends Component {
 		// add/edit properties
 		var end = new Element("<tr>").appendTo(element);
 		end = new Element("<td>").attr("colspan", "2").appendTo(end);
-		var sel = new Element("<select class='insertField default-cursor'>").appendTo(end);
-		new Element("<option>").attr("value", "").text("--- Choose ---").appendTo(sel);
-		var canInsert = false;
+		var btn = new Element("<fancy-button class='insertField dropdown fancy-small'><span class='label'>Add property</span></fancy-button>").appendTo(end);
+		var choices = [];
 		available.sort((c1, c2) -> (c1.name > c2.name ? 1 : -1));
 		for( c in available )
-			if( canEditColumn(c.name) ) {
-				var opt = J("<option>").attr("value",c.name).text(c.name).appendTo(sel);
-				if( c.documentation != null ) opt.attr("title", c.documentation);
-				canInsert = true;
-			}
+			if( canEditColumn(c.name) )
+				choices.push({ label : c.name, value : c.name, tooltip : c.documentation });
 		if( editor.view == null )
-			J("<option>").attr("value","$new").text("New property...").appendTo(sel);
-		else if( !canInsert )
+			choices.push({ label : "New property...", value : "$new", tooltip : null });
+		if( choices.length == 0 )
 			end.remove();
-		sel.on("mousedown", function(e) {
-			e.preventDefault();
-			openPropertyChooser();
-		});
-		sel.change(function(e) {
-			var v = Element.getVal(sel);
-			if( v == "" )
-				return;
-			sel.val("");
-			editor.element.focus();
-			chooseProperty(v);
+		btn.click(function(_) {
+			var chosen = null;
+			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
+			for( c in choices ) {
+				if( c.value == "$new" && items.length > 0 ) items.push({ isSeparator : true });
+				items.push({ label : c.label, tooltip : c.tooltip, click : () -> chosen = c.value });
+			}
+			var menu = hide.comp.ContextMenu.createDropdown(btn.get(0), items, { search : Visible, noIcons : true });
+			menu.onClose = function() {
+				editor.element.focus();
+				if( chosen != null ) chooseProperty(chosen);
+			};
 		});
 	}
 
@@ -1295,66 +1301,7 @@ class Table extends Component {
 	}
 
 	function openPropertyChooser() {
-		var ins = element.find("select.insertField");
-		var options = [for( o in ins.find("option").elements() ) o];
-		options.shift().hide();
-		var newProp = Lambda.find(options, o -> Element.getVal(o) == "$new");
-		if( newProp != null ) options.remove(newProp);
-		if( options.length == 0 && newProp == null ) return;
-		ins.off();
-		var filter = new Element('<input type="text" class="insertFilter" placeholder="Search property..." spellcheck="false"/>').insertBefore(ins);
-		var shown = [];
-		var index = 0;
-		var closed = false;
-		function select( i : Int ) {
-			index = i;
-			ins.val(shown.length == 0 ? "" : Element.getVal(shown[index]));
-		}
-		function update() {
-			var f = StringTools.trim(filter.val()).toLowerCase();
-			shown = [];
-			for( o in options ) {
-				var ok = f == "" || o.text().toLowerCase().indexOf(f) >= 0;
-				o.toggle(ok);
-				if( ok ) shown.push(o);
-			}
-			if( newProp != null ) shown.push(newProp);
-			ins.attr("size", hxd.Math.imax(shown.length, 2));
-			select(0);
-		}
-		function close( ?choice : String ) {
-			if( closed ) return;
-			closed = true;
-			refresh();
-			editor.element.focus();
-			if( choice != null ) chooseProperty(choice);
-		}
-		ins.on("mousedown", function(e) {
-			e.preventDefault();
-			var o = new Element(e.target).closest("option");
-			if( o.length > 0 ) close(Element.getVal(o));
-		});
-		filter.on("input", function(_) update());
-		filter.blur(function(_) close());
-		filter.keydown(function(e) {
-			switch( e.keyCode ) {
-			case hxd.Key.ESCAPE:
-				close();
-			case hxd.Key.UP:
-				if( index > 0 ) select(index - 1);
-			case hxd.Key.DOWN:
-				if( index < shown.length - 1 ) select(index + 1);
-			case hxd.Key.ENTER:
-				if( shown.length > 0 ) close(Element.getVal(shown[index]));
-			default:
-				e.stopPropagation();
-				return;
-			}
-			e.stopPropagation();
-			e.preventDefault();
-		});
-		update();
-		filter.focus();
+		element.find("fancy-button.insertField").click();
 	}
 
 	public function moveLines(lines : Array<Line>, delta : Int) {

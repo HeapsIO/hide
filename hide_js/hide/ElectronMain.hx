@@ -128,6 +128,7 @@ class ElectronMain {
 		App.whenReady().then(function(_) {
 			Menu.setApplicationMenu(null);
 			try Session.defaultSession.setSpellCheckerLanguages(["en-US", "fr-FR"]) catch( e : Dynamic ) {}
+			watchDebuggers();
 			mainWindow = createWindow("app.html", {});
 			mainWindow.on("closed", function() {
 				mainWindow = null;
@@ -160,14 +161,53 @@ class ElectronMain {
 		if( wc != null && !wc.isDestroyed() ) wc.send(channel, ...args);
 	}
 
+	// ---------------- debuggers : CDP clients (VSCode, DevTools) attached to the pages
+
+	// CDP target id => page
+	static var cdpPages : Map<String, { url : String, attached : Bool }> = new Map();
+
+	static function isDebuggerAttached( wc : WebContents ) {
+		var url = wc.getURL();
+		for( p in cdpPages )
+			if( p.attached && p.url == url )
+				return true;
+		return false;
+	}
+
+	/** follows the pages of the --remote-debugging-port server, sends "hide-debugger" to the windows when a client attaches or detaches **/
+	static function watchDebuggers() {
+		var port = App.commandLine.getSwitchValue("remote-debugging-port");
+		if( port == "" || port == "0" )
+			return;
+		js.Lib.global.fetch('http://127.0.0.1:$port/json/version').then((r) -> r.json()).then(function( v : Dynamic ) {
+			var ws = new js.html.WebSocket(v.webSocketDebuggerUrl);
+			ws.onopen = () -> ws.send(haxe.Json.stringify({ id : 1, method : "Target.setDiscoverTargets", params : { discover : true } }));
+			ws.onmessage = function( m : js.html.MessageEvent ) {
+				var msg : Dynamic = haxe.Json.parse(m.data);
+				var info : Dynamic = msg.params?.targetInfo;
+				if( msg.method == "Target.targetDestroyed" )
+					cdpPages.remove(msg.params.targetId);
+				if( info == null || info.type != "page" )
+					return;
+				var prev = cdpPages.get(info.targetId);
+				cdpPages.set(info.targetId, { url : info.url, attached : info.attached });
+				if( prev != null && prev.attached == info.attached && prev.url == info.url )
+					return;
+				for( w in BrowserWindow.getAllWindows() )
+					if( w.webContents.getURL() == info.url )
+						send(w.webContents, "hide-debugger", isDebuggerAttached(w.webContents));
+			};
+		}, (e) -> js.Browser.console.warn("Debugger watch failed : " + e));
+	}
+
 	// ---------------- crash reports : in the user data, zipped by createCrashReport
 
 	// logs/logs_<date>_<time> in the user data
 	static var sessionLogs : String;
 
 	/**
-		Chromium's log (GPU process errors : device removed reasons...), the lost child processes
-		and the crash dumps of all the processes, in a folder per session. The GPU process losses are shown by the main window.
+		Chromium's log (GPU process errors : device removed reasons...), the lost child processes,
+		the DX12 device removals of the renderers (hide-dx12.log) and the crash dumps of all the processes, in a folder per session. The GPU process losses are shown by the main window.
 		A .crashed file marks the sessions where a process crashed. The folders are deleted after two weeks.
 	**/
 	static function initCrashLogs() {
@@ -190,6 +230,8 @@ class ElectronMain {
 		}
 		sessionLogs = js.node.Path.join(logs, "logs_" + DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S"));
 		sys.FileSystem.createDirectory(sessionLogs);
+		// inherited by the renderers : the DX12 addon logs there (device removals)
+		js.Node.process.env.set("HIDE_SESSION_LOGS", sessionLogs);
 		// --enable-logging given on the command line (stderr when testing) : kept
 		if( !App.commandLine.hasSwitch("enable-logging") ) {
 			App.commandLine.appendSwitch("enable-logging", "file");
@@ -335,6 +377,29 @@ class ElectronMain {
 			win.showInactive();
 
 		var parts = file.split("?");
+		// thumbnail generator : its console, load errors and losses in logs/logs_thumb_<date>_<time>
+		if( parts[1] != null && parts[1].indexOf("thumbnail=true") >= 0 ) {
+			var dir = js.node.Path.join(js.node.Path.dirname(sessionLogs), "logs_thumb_" + DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S"));
+			sys.FileSystem.createDirectory(dir);
+			var log = js.node.Path.join(dir, "thumb.log");
+			function write( text : String ) {
+				js.node.Fs.appendFileSync(log, DateTools.format(Date.now(), "%Y-%m-%d %H:%M:%S") + " " + text + "\n");
+			}
+			win.webContents.on("console-message", (e : Dynamic) -> write(e.level + " " + e.message + " (" + e.sourceId + ":" + e.lineNumber + ")"));
+			win.webContents.on("did-fail-load", (_, code : Int, desc : String, url : String) -> write("load failed " + code + " " + desc + " " + url));
+			win.webContents.on("preload-error", (_, path : String, err : Dynamic) -> write("preload error " + path + " " + err));
+			win.webContents.on("render-process-gone", (_, details : Dynamic) -> write("renderer " + details.reason + ", exit code " + details.exitCode));
+			win.on("unresponsive", () -> write("unresponsive"));
+			win.on("responsive", () -> write("responsive"));
+			win.on("closed", () -> write("closed"));
+		} else {
+			// Chromium logs the console at the INFO level, below log-level : the warnings and errors are kept here
+			var log = js.node.Path.join(sessionLogs, "console.log");
+			win.webContents.on("console-message", function( e : Dynamic ) {
+				if( e.level == "warning" || e.level == "error" )
+					js.node.Fs.appendFileSync(log, DateTools.format(Date.now(), "%Y-%m-%d %H:%M:%S") + " " + e.level + " " + e.message + " (" + e.sourceId + ":" + e.lineNumber + ")\n");
+			});
+		}
 		var fileUrl : String = js.Lib.require("url").pathToFileURL(js.node.Path.join(js.Node.__dirname, parts[0])).href;
 		win.loadURL(parts[1] == null ? fileUrl : fileUrl + "?" + parts[1]);
 		return win;
@@ -406,6 +471,7 @@ class ElectronMain {
 
 		// app
 		h.set("app.quit", (wc) -> App.quit());
+		h.set("app.isDebuggerAttached", (wc) -> isDebuggerAttached(wc));
 		h.set("app.clearCache", (wc : WebContents) -> wc.session.clearCache());
 		h.set("app.createCrashReport", (wc, info : String) -> createCrashReport(info));
 		h.set("shortcut.register", function(wc : WebContents, accel : String) {

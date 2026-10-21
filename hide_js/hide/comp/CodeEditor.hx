@@ -22,6 +22,13 @@ class CodeEditor extends Component {
 			(monaco.Languages : Dynamic).typescript.javascriptDefaults.setModeConfiguration({ completionItems : false });
 			(monaco.Languages : Dynamic).html.htmlDefaults.setModeConfiguration({ completionItems : false });
 			(monaco.Languages : Dynamic).css.lessDefaults.setModeConfiguration({ completionItems : false });
+			HaxeLanguage.register();
+			// override the built-in paste (Ctrl+V and context menu) : it relies on execCommand("paste"), which Electron blocks
+			monaco.ScriptEditor.registerCommand("editor.action.clipboardPasteAction", function() {
+				for( e in monaco.ScriptEditor.getEditors() )
+					if( e.hasTextFocus() )
+						e.trigger("keyboard", "paste", { text : hide.Ide.inst.getClipboard() });
+			});
 		}
 
 		super(parent,root);
@@ -219,7 +226,7 @@ class CodeEditor extends Component {
 
 	public function setCursor( line : Int, ?column = 0 ) {
 		editor.setPosition({ lineNumber : line + 1, column: column + 1 });
-		var lineHeight = editor.getOption(67 /*lineHeight*/);
+		var lineHeight = editor.getOption(75 /*lineHeight*/);
 		editor.setScrollTop((line + 1) * lineHeight);
 	}
 

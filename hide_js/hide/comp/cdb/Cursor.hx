@@ -196,7 +196,13 @@ class Cursor {
 			var targetLineIdx = Std.parseInt(path.split('@')[0].split(':')[1]);
 			for (cIdx => c in curTable.columns) {
 				if (c.name == targetCol) {
-					var cell = curTable.lines[targetLineIdx].cells[ curTable.displayMode == Properties || curTable.displayMode == AllProperties ? 0 : cIdx];
+					var line = curTable.lines[targetLineIdx];
+					if( line == null || line.filtered )
+						return null;
+					line.create();
+					var cell = line.cells[ curTable.displayMode == Properties || curTable.displayMode == AllProperties ? 0 : cIdx];
+					if( cell == null )
+						return null;
 					if( cell.line.subTable == null && (cell.column.type == TList || cell.column.type == TProperties || cell.column.type == TPolymorph) )
 						cell.open(true);
 
@@ -216,12 +222,18 @@ class Cursor {
 		var newPath = state.sheet.split('@');
 		newPath.shift();
 		var t = newPath.length > 0 ? getTable(newPath.join("@")) : null;
+		var x = state.x;
+		var y = state.y;
 		if (t == null) {
+			if (newPath.length > 0) {
+				x = 0;
+				y = 0;
+			}
 			for (table in editor.tables)
 				if (table.sheet.name == rootSheet)
 					t = table;
 		}
-		set(t, state.x, state.y, null, true, true, false);
+		set(t, x, y, null, true, true, false);
 	}
 
 

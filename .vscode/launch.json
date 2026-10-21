@@ -12,7 +12,7 @@
             "cwd": "${workspaceFolder}/bin",
             "runtimeExecutable": "${workspaceFolder}/bin/electron/electron.exe",
             "args": [".", "--remote-debugging-port=9222"],
-            "env": {"HIDE_DEBUG":"1", "ELECTRON_RUN_AS_NODE": null},
+            "env": {"ELECTRON_RUN_AS_NODE": null},
             "outputCapture": "std",
             "sourceMaps": true,
             "presentation": { "hidden": true }
@@ -24,7 +24,7 @@
             "cwd": "${workspaceFolder}/bin",
             "runtimeExecutable": "${workspaceFolder}/bin/electron/electron.exe",
             "args": [".", "--remote-debugging-port=9222", "--cdb"],
-            "env": {"HIDE_DEBUG":"1", "ELECTRON_RUN_AS_NODE": null},
+            "env": {"ELECTRON_RUN_AS_NODE": null},
             "outputCapture": "std",
             "sourceMaps": true,
             "presentation": { "hidden": true }

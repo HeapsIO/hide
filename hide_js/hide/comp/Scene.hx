@@ -1,5 +1,14 @@
 package hide.comp;
 
+typedef SceneErrorMessage = {
+	title : String,
+	?details : String,
+	/** Passed to `Scene.onSceneGoto` **/
+	?contextObject : Any,
+	/** Defaults to true **/
+	?log : Bool,
+}
+
 class Scene extends hide.comp.Component implements h3d.IDrawable {
 
 	static var UID = 0;
@@ -28,7 +37,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 
 	var currentRenderProps: hrt.prefab.Reference;
 
-	public var errorMessageBox : Element;
+	public var errorMessageBox : js.html.DivElement;
 	var unFocusedTime = 0.;
 	#if dx12
 	var output : h3d.mat.Texture;
@@ -78,9 +87,16 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			e.preventDefault();
 			return false;
 		};
+		canvas.addEventListener("keydown", function(e: js.html.KeyboardEvent) {
+			if (e.altKey && e.shiftKey && !e.ctrlKey && e.code == "KeyK") {
+				e.preventDefault();
+				openDebugMenu();
+			}
+		});
 
-		errorMessageBox = new Element('<div class="error-message"></div>');
-		errorMessageBox.appendTo(element);
+		errorMessageBox = js.Browser.document.createDivElement();
+		errorMessageBox.className = "error-message";
+		element.get(0).append(errorMessageBox);
 		clearErrorMessage();
 
 		untyped canvas.__scene = this;
@@ -142,6 +158,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		window.propagateKeyEvents = true;
 		window.setCurrent();
 		h3d.impl.MemoryManager.enableTrackAlloc(Ide.inst.currentConfig.get("hide.trackGpuAlloc"));
+		hxd.res.TextureStream.ENABLED = Ide.inst.currentConfig.get("hide.textureStreaming");
 		engine = @:privateAccess new h3d.Engine();
 		@:privateAccess engine.resCache.set(Scene, this);
 		engine.backgroundColor = 0xFF111111;
@@ -214,20 +231,84 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	public var enableNewErrorSystem = false;
 	var errorMessageTimer : haxe.Timer;
 	var errorThisFrame: Bool = false;
+	var currentError : SceneErrorMessage;
+	var errorDetailsShown = false;
 
-	function setErrorMessage(s: String) {
-		js.Browser.console.error(s);
-		errorMessageBox.html(StringTools.replace(s, "\n", "<br/>"));
-		errorMessageBox.css("visibility", "visible");
+	function setErrorMessage(error: SceneErrorMessage) {
+		var fullText = error.details != null ? error.title + "\n" + error.details : error.title;
+		if (error.log ?? true)
+			js.Browser.console.error(fullText);
+
+		// Called several times per frame (e.g. once per failing pass) : only show the first error of the frame,
+		// and only rebuild the dom when it changes, so the buttons stay clickable
+		if (errorThisFrame)
+			return;
 		errorThisFrame = true;
+		var prev = currentError;
+		currentError = error;
+		if (prev != null && prev.title == error.title && prev.details == error.details && prev.contextObject == error.contextObject)
+			return;
+
+		var doc = js.Browser.document;
+		errorMessageBox.innerHTML = "";
+		errorMessageBox.style.visibility = "visible";
+
+		var title = doc.createDivElement();
+		title.innerText = error.title;
+		errorMessageBox.append(title);
+
+		var buttons = doc.createDivElement();
+		buttons.className = "buttons";
+		errorMessageBox.append(buttons);
+
+		function addButton(label: String, onClick: Void -> Void) {
+			var button = doc.createElement("fancy-button");
+			var span = doc.createSpanElement();
+			span.className = "label";
+			span.innerText = label;
+			button.append(span);
+			button.onclick = (_) -> onClick();
+			buttons.append(button);
+			return span;
+		}
+
+		var goTo = error.contextObject != null ? onSceneGoto(error.contextObject) : null;
+		if (goTo != null)
+			addButton("Go To", goTo);
+
+		if (error.details != null) {
+			var pre = doc.createPreElement();
+			pre.textContent = error.details;
+			var more : js.html.SpanElement = null;
+			function refresh() {
+				more.innerText = errorDetailsShown ? "Less Info" : "More Info";
+				if (errorDetailsShown)
+					title.after(pre);
+				else
+					pre.remove();
+			}
+			more = addButton("", () -> { errorDetailsShown = !errorDetailsShown; refresh(); });
+			refresh();
+		}
+
+		addButton("Copy Error", () -> {
+			ide.setClipboard(fullText);
+			ide.quickMessage("Error copied to clipboard");
+		});
+	}
+
+	/** Returns a callback that goes to the source of an error, or null to hide the "Go To" button **/
+	public dynamic function onSceneGoto(contextObject : Any) : Null<Void -> Void> {
+		return null;
 	}
 
 	function preOnReady() {
 	}
 
 	function clearErrorMessage() {
-		errorMessageBox.html("");
-		errorMessageBox.css("visibility", "collapse");
+		currentError = null;
+		errorMessageBox.innerHTML = "";
+		errorMessageBox.style.visibility = "collapse";
 	}
 
 	public function init( ?root : h3d.scene.Object ) {
@@ -278,6 +359,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			dt = 1;
 		} else
 			unFocusedTime = 0;
+		errorThisFrame = false;
 		setCurrent();
 		sevents.checkEvents();
 		s2d.setElapsedTime(dt);
@@ -330,7 +412,6 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		if ( ide.isDebugger )
 			doSync();
 		else {
-			errorThisFrame = false;
 			try {
 				doSync();
 			} catch (e:haxe.Exception) {
@@ -339,17 +420,51 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 					js.Lib.rethrow();
 				}
 			}
-			if (!errorThisFrame) {
-				clearErrorMessage();
-			}
+		}
+		if (!errorThisFrame) {
+			clearErrorMessage();
 		}
 	}
 
 	public dynamic function errorHandler(e:haxe.Exception) : Null<haxe.Exception> {
 		if (!enableNewErrorSystem)
 			return e;
-		setErrorMessage(e.toString());
+		setErrorMessage({ title: e.toString() });
 		return null;
+	}
+
+	var debugObjects : Map<String, h3d.scene.Object> = [];
+
+	function openDebugMenu() {
+		if (s3d == null)
+			return;
+		function item(name: String, make: () -> h3d.scene.Object) : Array<hrt.ui.HuiMenu.MenuItem> {
+			var obj = debugObjects.get(name);
+			return [
+				{ label: "Add " + name, enabled: obj == null, click: () -> {
+					var o = make();
+					o.name = "Debug " + name;
+					s3d.addChild(o);
+					debugObjects.set(name, o);
+				}},
+				{ label: "Clear " + name, enabled: obj != null, click: () -> {
+					obj.remove();
+					debugObjects.remove(name);
+				}},
+			];
+		}
+		var items = item("missing buffer", () -> new h3d.scene.Mesh(new h3d.prim.Cube(1, 1, 1, true)));
+		items.push({ isSeparator: true });
+		items = items.concat(item("missing shader variable", () -> {
+			var cube = new h3d.prim.Cube(1, 1, 1, true);
+			cube.addNormals();
+			var mesh = new h3d.scene.Mesh(cube);
+			mesh.material.mainPass.addShader(new hrt.shader.UVDebug());
+			mesh;
+		}));
+		items.push({ isSeparator: true });
+		items = items.concat(item("throwing sync", () -> new ThrowingSyncObject()));
+		ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, items);
 	}
 
 	var loadQueue : Array<Void->Void> = [];
@@ -991,5 +1106,11 @@ class Preview2DCamController extends h2d.Object {
 			return;
 
 		cam.setScale(zoom, zoom);
+	}
+}
+
+private class ThrowingSyncObject extends h3d.scene.Object {
+	override function sync(ctx: h3d.scene.RenderContext) {
+		throw "Debug sync error";
 	}
 }

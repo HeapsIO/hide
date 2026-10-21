@@ -126,6 +126,26 @@ class Plugin {
 				for( e in ["dx", "hlemu"] )
 					C.exclude(e);
 			}
+			// js-classic outputs root types as globals : prefix them so they can't overwrite browser globals (e.g. Data.Element)
+			Context.onGenerate(function(types) {
+				for( t in types ) {
+					var b : haxe.macro.Type.BaseType = switch( t ) {
+					case TInst(c, _): c.get();
+					case TEnum(e, _): e.get();
+					default: null;
+					}
+					if( b == null || b.isExtern || b.meta.has(":native") )
+						continue;
+					// abstract impls are generated with the abstract path
+					var path : haxe.macro.Type.BaseType = switch( t ) {
+					case TInst(_.get().kind => KAbstractImpl(a), _): a.get();
+					default: b;
+					}
+					// excluded types are referenced from hide.js under their own name
+					if( path.pack.length == 0 && !EXCLUDES.contains(path.name) )
+						b.meta.add(":native", [macro $v{"$plugin_" + path.name}], b.pos);
+				}
+			});
 		} else
 			C.addClassPath(hidePath+"/hide_hl");
 
