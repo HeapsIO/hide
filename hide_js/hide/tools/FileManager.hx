@@ -189,7 +189,7 @@ class FileManager {
 	public var fileRoot: FileEntry;
 	var fileIndex : Map<String, FileEntry> = [];
 
-	public static final thumbnailGeneratorPort = 9669;
+	@:allow(hide.Ide) public static var thumbnailGeneratorPort(default, null) = 9669;
 	public static final thumbnailGeneratorUrl = "localhost";
 
 	public static var inst(get, default) : FileManager;
@@ -858,7 +858,7 @@ class RenderWindowManager {
 		// the generator socket is properly initialised
 		untyped js.Browser.window.requestIdleCallback(() -> {
 			state = Ready;
-			generatorWindow = electron.Window.open('app.html?thumbnail=true&project=' + StringTools.urlEncode(hide.Ide.inst.projectDir), {
+			generatorWindow = electron.Window.open('app.html?thumbnail=true&project=' + StringTools.urlEncode(hide.Ide.inst.projectDir) + '&thumbnailPort=' + FileManager.thumbnailGeneratorPort, {
 				show: false,
 				title: "HideThumbnailGenerator"
 			});

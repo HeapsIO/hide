@@ -145,7 +145,7 @@ class ElectronMain {
 		if( cwd == null ) cwd = js.Node.process.cwd();
 		var out = [];
 		for( a in argv.slice(1) ) {
-			if( StringTools.startsWith(a, "--project-dir=") || a == "--default-config" ) {
+			if( StringTools.startsWith(a, "--project-dir=") || StringTools.startsWith(a, "--hide-thumbnail-port=") || a == "--default-config" ) {
 				out.push(a);
 				continue;
 			}

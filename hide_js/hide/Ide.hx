@@ -138,6 +138,8 @@ class Ide extends hide.tools.IdeData {
 				projectOverride = a.substr(pre.length);
 			else if( a == "--default-config" )
 				defaultConfig = true;
+			else if( StringTools.startsWith(a, "--hide-thumbnail-port=") )
+				hide.tools.FileManager.thumbnailGeneratorPort = Std.parseInt(a.substr("--hide-thumbnail-port=".length));
 		}
 		initConfig(cwd);
 		var current = currentProject;
@@ -160,6 +162,9 @@ class Ide extends hide.tools.IdeData {
 			var project = vars.get("project");
 			if( thumbnailMode && project != null )
 				current = project;
+			var port = vars.get("thumbnailPort");
+			if( thumbnailMode && port != null )
+				hide.tools.FileManager.thumbnailGeneratorPort = Std.parseInt(port);
 		}
 
 		var xMax = 1;
@@ -2132,9 +2137,28 @@ class CustomLoader extends hxd.res.Loader {
 		if( i == null ) {
 			i = Type.createInstance(c, [fs.get(path)]);
 			// i = new hxd.res.Image(fs.get(path));
+			// streamed images are registered in a static list never purged : thumbnails load at full resolution
+			var img = hide.Ide.inst.thumbnailMode ? Std.downcast((i : hxd.res.Resource), hxd.res.Image) : null;
+			if( img != null )
+				img.disableStreaming = true;
 			@:privateAccess engine.resCache.set(getKey(path), i);
 		}
 		return i;
+	}
+
+	override function cleanCache() {
+		var engine = h3d.Engine.getCurrent();
+		for (k in pathKeys) {
+			var res = Std.downcast(@:privateAccess engine.resCache.get(k), hxd.res.Resource);
+			if (res == null)
+				continue;
+			@:privateAccess engine.resCache.remove(k);
+			res.entry.unwatch(engine.id);
+			var img = Std.downcast(res, hxd.res.Image);
+			if (img != null)
+				@:privateAccess img.tex?.dispose();
+		}
+		super.cleanCache();
 	}
 
 }

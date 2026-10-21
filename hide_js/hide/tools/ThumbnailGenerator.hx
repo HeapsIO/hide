@@ -63,6 +63,7 @@ class ThumbnailGenerator {
 	final renderRes = 512;
 
 	var waitingAsyncLoad = false;
+	var idleTimer : haxe.Timer;
 
 	var sceneRoot : h3d.scene.Object;
 
@@ -170,6 +171,8 @@ class ThumbnailGenerator {
 	**/
 	public function renderMiniature(path: String, onReady: hide.tools.FileManager.MiniatureReadyCallback) {
 		miniaturesToRender.push({path: path, cb: onReady, priority: 0});
+		idleTimer?.stop();
+		idleTimer = null;
 		if (!queued) {
 			haxe.Timer.delay(processMiniature, 1);
 		}
@@ -461,9 +464,6 @@ class ThumbnailGenerator {
 
 					var path = convertAndWriteThumbnail(toRender.path, renderTexture);
 
-					// restore renderTexture original size
-					renderTexture.resize(512, 512);
-
 					toRender.cb(path);
 
 					if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
@@ -485,6 +485,42 @@ class ThumbnailGenerator {
 		//renderCanvas.s2d.removeChildren();
 	}
 
+	/** Frees the GPU memory of the least recently rendered textures, reloaded on their next use **/
+	@:access(h3d.mat.Texture)
+	@:access(h3d.impl.MemoryManager)
+	function evictTextures() {
+		var mem = renderCanvas.engine.mem;
+		var budget : Float = Ide.inst.currentConfig.get("thumbnail.textureBudgetMB", 1024) * 1024 * 1024;
+		if (mem.texMemory <= budget)
+			return;
+		var textures = mem.textures.copy();
+		textures.sort((a, b) -> a.lastFrame - b.lastFrame);
+		for (t in textures) {
+			if (mem.texMemory <= budget || t.lastFrame == h3d.mat.Texture.PREVENT_AUTO_DISPOSE)
+				break;
+			if (t.realloc != null)
+				t.dispose();
+		}
+	}
+
+	function clearCaches() {
+		idleTimer = null;
+		renderCanvas.engine.setCurrent();
+		@:privateAccess {
+			for (c in renderCanvas.cleanup)
+				c();
+			renderCanvas.cleanup = [];
+			for (t in renderCanvas.texCache)
+				t.dispose();
+			renderCanvas.texCache.clear();
+			for (hmd in renderCanvas.hmdCache)
+				hmd.dispose();
+			renderCanvas.hmdCache.clear();
+			renderCanvas.pathsMap.clear();
+		}
+		hxd.res.Loader.currentInstance.cleanCache();
+	}
+
 	function processMiniature() {
 		if (!ready || renderCanvas.s3d == null || waitingAsyncLoad) {
 			haxe.Timer.delay(processMiniature, 1);
@@ -500,8 +536,12 @@ class ThumbnailGenerator {
 		while(haxe.Timer.stamp() - startTime < 0.33) {
 
 			if (miniaturesToRender.length == 0) {
+				idleTimer?.stop();
+				idleTimer = haxe.Timer.delay(clearCaches, 2000);
 				return;
 			}
+
+			evictTextures();
 
 			if (prioDirty) {
 				miniaturesToRender.sort((a, b) -> Reflect.compare(a.priority, b.priority));
