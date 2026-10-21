@@ -235,7 +235,7 @@ class ContextMenu {
     function refreshPos() {
         // Make sure the menu never goes out of bounds
         var rect = rootElement.getBoundingClientRect();
-        // the window of the menu, the main one or a window it opened
+
         var window = rootElement.ownerDocument.defaultView;
         var y = originalPos.y + Std.parseInt(window.getComputedStyle(rootElement).getPropertyValue("--offset-y"));
         var x = originalPos.x + Std.parseInt(window.getComputedStyle(rootElement).getPropertyValue("--offset-x"));
