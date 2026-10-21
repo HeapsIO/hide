@@ -153,11 +153,35 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 		super(parent);
 		this.editor = editor;
 
-		element.append(new Element("<p>Viewport Overlays</p>"));
 		element.addClass("settings-popup");
 		element.css("max-width", "300px");
-
 		element.append(new Element('
+			<div class="overlays-header">
+				<div class="tb-group small">
+					<div class="button2"><div class="icon ico ico-eye"></div></div>
+				</div>
+				<p>Viewport Overlays</p>
+			</div>'
+		));
+
+		var content = new Element('<div class="overlays-content"></div>').appendTo(element);
+		var overlaysBtn = element.find(".button2");
+		var toolbarBtn = parent.closest(".hide-toolbar2").find("#showViewportOverlays");
+		function refreshOverlaysState() {
+			var v = editor.showOverlays;
+			overlaysBtn.get(0).toggleAttribute("checked", v);
+			content.toggleClass("disabled", !v);
+		}
+
+		overlaysBtn.click(function(e) {
+			if (e.button == 0) {
+				toolbarBtn.get(0).click();
+				refreshOverlaysState();
+			}
+		});
+		refreshOverlaysState();
+
+		content.append(new Element('
 			<h2>Guides</h2>
 			<div class="form-grid" id="guidesGroup"></div>
 			<h2>Selection</h2>
@@ -195,7 +219,7 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 		}
 
 		{
-			var group = element.find("#guidesGroup");
+			var group = content.find("#guidesGroup");
 			addButton("Grid", "th", "gridToggle", () -> editor.updateGrid()).appendTo(group);
 			addButton("Joints", "share-alt", "jointsToggle", () -> editor.updateJointsVisibility()).appendTo(group);
 			addButton("Colliders", "codepen", "colliderToggle", () -> editor.updateCollidersVisibility()).appendTo(group);
@@ -226,21 +250,21 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 		}
 
 		{
-			var group = element.find("#selectionGroup");
+			var group = content.find("#selectionGroup");
 			addButton("Gizmo", "arrows-alt", "showGizmo", () -> editor.updateGizmoVisibility()).appendTo(group);
 			addButton("Outline", "dot-circle-o", "showOutlines", () -> editor.updateOutlineVisibility()).appendTo(group);
 		}
 
 
 		{
-			var group = element.find("#debug");
+			var group = content.find("#debug");
 			var btn = addButton("Scene Info", "info-circle", "sceneInformationToggle", () -> editor.updateStatusTextVisibility()).appendTo(group);
 			addButton("Wireframe", "connectdevelop", "wireframeToggle", () -> editor.updateWireframe()).appendTo(group);
 			addButton("Disable Scene Render", "eye-slash", "tog-scene-render", () -> {}).appendTo(group);
 		}
 
 
-		var allIcons = element.find("#allIcons");
+		var allIcons = content.find("#allIcons");
 		function refreshIconMenu() {
 			var visible = editor.ide.currentConfig.get("sceneeditor.iconVisibility");
 			if (visible) {
@@ -251,7 +275,7 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 		}
 
 		{
-			var group = element.find("#showIconGroup");
+			var group = content.find("#showIconGroup");
 			addButton("3D Icons", "image", "iconVisibility", () -> {refreshIconMenu(); editor.updateIconsVisibility();}).appendTo(group);
 
 			allIcons.css("margin-left", "3px");
@@ -1982,10 +2006,10 @@ class SceneEditor {
 		selectElements([], NoHistory);
 		this.camera2D = camera2D;
 
-		updateViewportOverlays();
-
 		outlineRfx = new hrt.prefab.rfx.Outline(null, null);
 		scene.s3d.renderer.effects.push(outlineRfx);
+
+		updateViewportOverlays();
 
 		makeGuide2d();
 

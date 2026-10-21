@@ -3599,6 +3599,17 @@ div.popup {
 .settings-popup {
 	padding: 8px;
 
+	.overlays-header {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.overlays-content.disabled {
+		opacity: 0.4;
+		pointer-events: none;
+	}
+
 	p {
 		margin-top: 0;
 		margin-bottom: 0;
