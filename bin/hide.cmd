@@ -1,3 +1,3 @@
 @cd %~dp0
 set ELECTRON_RUN_AS_NODE=
-@electron\electron.exe --remote-debugging-port=9222 . %*
+@start "" electron\electron.exe --remote-debugging-port=9222 . %*
