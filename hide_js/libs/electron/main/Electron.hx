@@ -68,6 +68,7 @@ extern class WebContents {
 	function openDevTools( ?options : Dynamic ) : Void;
 	function toggleDevTools() : Void;
 	function setDevToolsWebContents( wc : WebContents ) : Void;
+	function setWindowOpenHandler( handler : Dynamic -> Dynamic ) : Void;
 	static function fromId( id : Int ) : Null<WebContents>;
 }
 

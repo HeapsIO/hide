@@ -308,6 +308,17 @@ class ElectronMain {
 				send(WebContents.fromId(wcId), "hide-win-event", winId, event);
 	}
 
+	static function windowIcon() {
+		return js.node.Path.join(js.Node.__dirname, "res", (isCDB ? "cdb." : "hide.") + (js.Node.process.platform == "win32" ? "ico" : "png"));
+	}
+
+	static function initDevToolsKeys( win : BrowserWindow ) {
+		win.webContents.on("before-input-event", function(e : Dynamic, input : Dynamic) {
+			if( input.type == "keyDown" && input.control && input.shift && input.code == "KeyI" )
+				win.webContents.toggleDevTools();
+		});
+	}
+
 	static function createWindow( file : String, opts : CreateWindowOptions ) {
 		var show = opts.show != false;
 		var win = new BrowserWindow({
@@ -315,8 +326,7 @@ class ElectronMain {
 			height : opts.height == null ? 600 : opts.height,
 			show : show && !background,
 			title : opts.title == null ? appTitle : opts.title,
-			// ICO is only supported on Windows
-			icon : js.node.Path.join(js.Node.__dirname, "res", (isCDB ? "cdb." : "hide.") + (js.Node.process.platform == "win32" ? "ico" : "png")),
+			icon : windowIcon(),
 			backgroundColor : "#222222",
 			webPreferences : {
 				nodeIntegration : true,
@@ -363,9 +373,22 @@ class ElectronMain {
 		win.on("leave-full-screen", () -> dispatchWinEvent(id, "leave-fullscreen"));
 
 		win.webContents.on("destroyed", () -> cleanupWebContents(wcId));
-		win.webContents.on("before-input-event", function(e : Dynamic, input : Dynamic) {
-			if( input.type == "keyDown" && input.control && input.shift && input.code == "KeyI" )
-				win.webContents.toggleDevTools();
+		initDevToolsKeys(win);
+		win.webContents.setWindowOpenHandler((details : Dynamic) -> {
+			action : "allow",
+			overrideBrowserWindowOptions : {
+				parent : win,
+				show : !background,
+				useContentSize : true,
+				backgroundColor : "#222222",
+				icon : windowIcon(),
+			},
+		});
+		win.webContents.on("did-create-window", function(child : BrowserWindow, details : Dynamic) {
+			child.setMenu(null);
+			initDevToolsKeys(child);
+			if( background )
+				child.showInactive();
 		});
 		// page reload : forget what the previous page had registered
 		win.webContents.on("did-start-navigation", function(e : Dynamic) {
