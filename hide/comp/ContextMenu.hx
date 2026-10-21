@@ -143,7 +143,7 @@ class ContextMenu {
         var nearest : js.html.Element = if (parentMenu != null) {
                 parentElement;
             } else if (parentElement != null) {
-                parentElement.closest("[popover]") ?? js.Browser.document.body;
+                parentElement.closest("[popover]") ?? parentElement.ownerDocument.body;
             } else {
                 js.Browser.document.body;
             };
@@ -235,13 +235,15 @@ class ContextMenu {
     function refreshPos() {
         // Make sure the menu never goes out of bounds
         var rect = rootElement.getBoundingClientRect();
-        var y = originalPos.y + Std.parseInt(js.Browser.window.getComputedStyle(rootElement).getPropertyValue("--offset-y"));
-        var x = originalPos.x + Std.parseInt(js.Browser.window.getComputedStyle(rootElement).getPropertyValue("--offset-x"));
+        // the window of the menu, the main one or a window it opened
+        var window = rootElement.ownerDocument.defaultView;
+        var y = originalPos.y + Std.parseInt(window.getComputedStyle(rootElement).getPropertyValue("--offset-y"));
+        var x = originalPos.x + Std.parseInt(window.getComputedStyle(rootElement).getPropertyValue("--offset-x"));
 
 
-        if (y + rect.height > js.Browser.window.innerHeight) {
+        if (y + rect.height > window.innerHeight) {
             if (parentMenu != null) {
-                y = js.Browser.window.innerHeight - rect.height;
+                y = window.innerHeight - rect.height;
             } else {
                 y = originalPos.y - rect.height;
                 if (options.placementHeight != null) {
@@ -254,7 +256,7 @@ class ContextMenu {
             y = 0;
         }
 
-        if (x + rect.width > js.Browser.window.innerWidth) {
+        if (x + rect.width > window.innerWidth) {
             if (parentMenu != null) {
                 x = parentMenu.rootElement.getBoundingClientRect().left - rect.width;
             } else {
