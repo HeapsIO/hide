@@ -507,8 +507,7 @@ class VolumetricLighting extends RendererFX {
 
 	static function getNoiseTex() : h3d.mat.Texture {
 		var resCache = @:privateAccess h3d.Engine.getCurrent().resCache;
-		// not a String key : on JS the ObjectMap can't tag a string, a new texture would be created each frame
-		var tex : h3d.mat.Texture = resCache.get(VolumetricLighting);
+		var tex : h3d.mat.Texture = resCache.get("volumetricNoise");
 		if ( tex != null && !tex.isDisposed() )
 			return tex;
 		var rands : Array<Int> = [];
@@ -530,7 +529,7 @@ class VolumetricLighting extends RendererFX {
 		tex = new h3d.mat.Texture(pix.width, pix.height, [], RGBA);
 		tex.uploadPixels(pix);
 		tex.wrap = Repeat;
-		resCache.set(VolumetricLighting, tex);
+		resCache.set("volumetricNoise", tex);
 		return tex;
 	}
 
