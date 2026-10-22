@@ -1,6 +1,6 @@
 package hide.tools;
 
-typedef RenderInfo = {path: String, cb: hide.tools.FileManager.MiniatureReadyCallback, priority: Int};
+typedef RenderInfo = {path: String, cb: hide.tools.FileManager.MiniatureReadyCallback, priority: Int, ?thumbPath: String};
 /**
 	Handle recieving messages separated by `\n` characters by a socket, correctly buffering the data
 **/
@@ -63,6 +63,8 @@ class ThumbnailGenerator {
 	final renderRes = 512;
 
 	var waitingAsyncLoad = false;
+	var asyncJob = 0;
+	static final asyncLoadTimeout = 2000;
 	var idleTimer : haxe.Timer;
 
 	var sceneRoot : h3d.scene.Object;
@@ -180,6 +182,7 @@ class ThumbnailGenerator {
 
 	public static final thumbRoot = ".tmp/";
 	public static final thumbExt = "jpg";
+	static final errorThumbnail = js.Node.__dirname + "/res/icons/ThumbnailError.jpg";
 
 	static function getThumbnailPath(basePath: String) : haxe.io.Path {
 		var hash = getThumbnailHash(basePath);
@@ -266,104 +269,97 @@ class ThumbnailGenerator {
 		ctx.scene = renderCanvas;
 
 		var ext = toRender.path.split(".").pop().toLowerCase();
+		var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
 
-		var abort = false;
 		if (ext == "fbx") {
-			try {
-				var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
-				var model = new hrt.prefab.Model(null, null);
-				model.source = cut;
-				model.make(ctx);
-			} catch(e) {
-				trace('miniature render fail for ${toRender.path} : $e');
-				abort = true;
-			}
+			var model = new hrt.prefab.Model(null, null);
+			model.source = cut;
+			model.make(ctx);
 		} else if (ext == "prefab" || ext == "l3d" || ext == "fx") {
-			try {
-				var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
-				var prefab = hxd.res.Loader.currentInstance.load(cut).toPrefab().loadBypassCache();
+			var prefab = hxd.res.Loader.currentInstance.load(cut).toPrefab().loadBypassCache();
 
-				// Remove all editor only prefabs
-				var toRemove = prefab.findAll(hrt.prefab.Prefab, (p) -> p.editorOnly == true, true);
-				for (r in toRemove) {
-					r.remove();
-				}
+			// Remove all editor only prefabs
+			var toRemove = prefab.findAll(hrt.prefab.Prefab, (p) -> p.editorOnly == true, true);
+			for (r in toRemove) {
+				r.remove();
+			}
 
-				var prefab = prefab.make(ctx);
+			var prefab = prefab.make(ctx);
 
-				if (ext == "fx") {
-					var fx = prefab.find(hrt.prefab.fx.FX, true, false);
-					if (fx != null) {
-						var fxAnim = Std.downcast(fx.local3d, hrt.prefab.fx.FX.FXAnimation);
-						// Forward the animations a little bit to show something more usefull
-						if (fxAnim != null) {
-							var duration = fxAnim.duration;
-							fxAnim.seek(duration * 0.25);
-						}
+			if (ext == "fx") {
+				var fx = prefab.find(hrt.prefab.fx.FX, true, false);
+				if (fx != null) {
+					var fxAnim = Std.downcast(fx.local3d, hrt.prefab.fx.FX.FXAnimation);
+					// Forward the animations a little bit to show something more usefull
+					if (fxAnim != null) {
+						var duration = fxAnim.duration;
+						fxAnim.seek(duration * 0.25);
 					}
 				}
-
-			} catch (e) {
-				hide.Ide.inst.quickError('miniature render fail for ${toRender.path} : $e');
-				abort = true;
 			}
 		} else if (ext == "shgraph") {
-			try {
-				var spherePrim = new h3d.prim.Sphere(1.0, 32, 32, 1);
-				spherePrim.addNormals();
-				spherePrim.addUVs();
-				spherePrim.addTangents();
+			var spherePrim = new h3d.prim.Sphere(1.0, 32, 32, 1);
+			spherePrim.addNormals();
+			spherePrim.addUVs();
+			spherePrim.addTangents();
 
-				var sphere = new h3d.scene.Mesh(spherePrim, sceneRoot);
+			var sphere = new h3d.scene.Mesh(spherePrim, sceneRoot);
 
-				var shgraph = new hrt.prefab.DynamicShader(null, null);
-				var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
-				shgraph.source = cut;
-				ctx = new hide.prefab.ContextShared(null, sphere);
-				shgraph.makeShader();
-				for (m in sphere.getMaterials()) {
-					@:privateAccess shgraph.applyShader(sphere, m, shgraph.shader);
-				}
-			} catch(e) {
-				hide.Ide.inst.quickError('miniature render fail for ${toRender.path} : $e');
-				abort = true;
-			}
-		}
-		if (!abort) {
-			try {
-				renderCanvas.s3d.camera.setFovX(25, 1.0);
-				var downscale = 1.0;
-				// FX have usually large bounds. Scale them down
-				var fx = sceneRoot.find((f) -> Std.downcast(f, hrt.prefab.fx.FX.FXAnimation));
-				if (fx != null)
-					downscale = 0.5;
-				renderCanvas.resetCamera2(sceneRoot, downscale, 1000.0);
-
-				renderTexture.clear(0,0);
-
-				@:privateAccess renderCanvas.doSync();
-
-				engine.pushTarget(renderTexture);
-				engine.clear();
-				renderCanvas.s3d.render(engine);
-				engine.popTarget();
-
-				renderCanvas.s3d.removeChildren();
-				renderCanvas.s2d.removeChildren();
-
-				var path = convertAndWriteThumbnail(toRender.path, renderTexture);
-				toRender.cb(path);
-			}
-			catch (e) {
-				hide.Ide.inst.quickError('miniature render fail for ${toRender.path} : $e');
-				abort = true;
+			var shgraph = new hrt.prefab.DynamicShader(null, null);
+			shgraph.source = cut;
+			ctx = new hide.prefab.ContextShared(null, sphere);
+			shgraph.makeShader();
+			for (m in sphere.getMaterials()) {
+				@:privateAccess shgraph.applyShader(sphere, m, shgraph.shader);
 			}
 		}
 
-		if (abort) {
+		renderCanvas.s3d.camera.setFovX(25, 1.0);
+		var downscale = 1.0;
+		// FX have usually large bounds. Scale them down
+		var fx = sceneRoot.find((f) -> Std.downcast(f, hrt.prefab.fx.FX.FXAnimation));
+		if (fx != null)
+			downscale = 0.5;
+		renderCanvas.resetCamera2(sceneRoot, downscale, 1000.0);
+
+		renderTexture.clear(0,0);
+
+		@:privateAccess renderCanvas.doSync();
+
+		engine.pushTarget(renderTexture);
+		engine.clear();
+		renderCanvas.s3d.render(engine);
+		engine.popTarget();
+
+		renderCanvas.s3d.removeChildren();
+		renderCanvas.s2d.removeChildren();
+
+		convertAndWriteThumbnail(toRender.thumbPath, renderTexture);
+		toRender.cb(toRender.thumbPath);
+	}
+
+	function runJob(toRender: RenderInfo, job: Void -> Void) {
+		try job() catch (e) fail(toRender, e);
+	}
+
+	/**
+		Logs the error and writes the error image as the thumbnail, so the file is not rendered again until it changes
+	**/
+	function fail(toRender: RenderInfo, error: Dynamic) {
+		asyncJob++;
+		waitingAsyncLoad = false;
+		js.html.Console.warn('${toRender.path} : $error');
+		var written = null;
+		try {
+			if (toRender.thumbPath != null) {
+				saveThumbnail(toRender.thumbPath, sys.io.File.getBytes(errorThumbnail));
+				written = toRender.thumbPath;
+			}
 			resetScene();
-			toRender.cb(null);
+		} catch (e) {
+			js.html.Console.warn('${toRender.path} : $e');
 		}
+		toRender.cb(written);
 	}
 
 	function resetScene() {
@@ -374,16 +370,16 @@ class ThumbnailGenerator {
 		renderCanvas.s2d = new h2d.Scene();
 	}
 
-	function convertAndWriteThumbnail(basePath: String, texture: h3d.mat.Texture) {
-		var path = getThumbnailPath(basePath).toString();
-		path = StringTools.replace(path, "\\", "/");
-
+	function saveThumbnail(path: String, bytes: haxe.io.Bytes) {
 		var dir = path.split("/");
 		dir.pop();
 		var dirPath = dir.join("/") + "/";
 		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(dirPath)))
 			sys.FileSystem.createDirectory( hide.Ide.inst.getPath(dirPath));
+		sys.io.File.saveBytes(path, bytes);
+	}
 
+	function convertAndWriteThumbnail(path: String, texture: h3d.mat.Texture) {
 		var pixels = texture.capturePixels();
 		pixels.convert(ARGB);
 		//sys.io.File.saveBytes(path, renderTexture.capturePixels().toPNG());
@@ -396,8 +392,7 @@ class ThumbnailGenerator {
 			quality: 50
 		});
 
-		sys.io.File.saveBytes(path, bytes.getBytes());
-		return path;
+		saveThumbnail(path, bytes.getBytes());
 	}
 
 	function handleTexture(toRender: RenderInfo) {
@@ -405,82 +400,80 @@ class ThumbnailGenerator {
 		if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
 			js.html.Console.log('handleTexture ${toRender.path}');
 
-		try {
-			var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
-			var img = hxd.res.Loader.currentInstance.load(cut).toTexture();
+		var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
+		var img = hxd.res.Loader.currentInstance.load(cut).toTexture();
 
-			waitingAsyncLoad = true;
-			img.waitLoad(() -> {
-				try {
-					if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
-						js.html.Console.log('handleTexture waitLoad finished (${toRender.path})');
-					renderCanvas.engine.setCurrent();
-
-					waitingAsyncLoad = false;
-					var width = img.width;
-					var height = img.height;
-
-					final size = 512;
-
-					if (width > height) {
-						height = hxd.Math.floor(height / width * size);
-						width = size;
-					} else if (width < height) {
-						width = hxd.Math.floor(width / height * size);
-						height = size;
-					} else {
-						width = size;
-						height = size;
-					}
-
-					renderCanvas.s3d.removeChildren();
-					renderCanvas.s2d.removeChildren();
-
-					var bg = new h2d.Bitmap(h2d.Tile.fromColor(0), renderCanvas.s2d);
-					bg.width = size;
-					bg.height = size;
-
-					var bmp = new h2d.Bitmap(h2d.Tile.fromTexture(img), renderCanvas.s2d);
-					bmp.width = width;
-					bmp.height = height;
-					bmp.x = (size - width) / 2;
-					bmp.y = (size - height) / 2;
-
-					bmp.blendMode = None;
-
-					var shader = new hide.view.GraphEditor.PreviewShaderAlpha();
-					bmp.addShader(shader);
-
-					var engine = renderCanvas.engine;
-
-					@:privateAccess renderCanvas.doSync();
-
-					renderTexture.clear(0,1.0);
-
-					engine.pushTarget(renderTexture);
-					engine.clear(0);
-					renderCanvas.render(engine);
-					engine.popTarget();
-
-					var path = convertAndWriteThumbnail(toRender.path, renderTexture);
-
-					toRender.cb(path);
-
-					if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
-						js.html.Console.log('handleTexture DONE (${toRender.path})');
-				} catch (e) {
-					waitingAsyncLoad = false;
-					resetScene();
-					toRender.cb(null);
-					js.html.Console.warn('handleTexture ERR : $e (${toRender.path})');
-				}
-			});
-		} catch (e) {
+		waitingAsyncLoad = true;
+		var job = ++asyncJob;
+		// a load that never completes must not block the queue
+		var timeout = haxe.Timer.delay(() -> {
+			if (job == asyncJob)
+				fail(toRender, 'texture load timed out after ${asyncLoadTimeout}ms');
+		}, asyncLoadTimeout);
+		img.waitLoad(() -> {
+			if (job != asyncJob)
+				return;
+			asyncJob++;
+			timeout.stop();
 			waitingAsyncLoad = false;
-			toRender.cb(null);
-			resetScene();
-			js.html.Console.warn('handleTexture ERR : $e (${toRender.path})');
-		}
+			runJob(toRender, () -> {
+				if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
+					js.html.Console.log('handleTexture waitLoad finished (${toRender.path})');
+				renderCanvas.engine.setCurrent();
+
+				var width = img.width;
+				var height = img.height;
+
+				final size = 512;
+
+				if (width > height) {
+					height = hxd.Math.floor(height / width * size);
+					width = size;
+				} else if (width < height) {
+					width = hxd.Math.floor(width / height * size);
+					height = size;
+				} else {
+					width = size;
+					height = size;
+				}
+
+				renderCanvas.s3d.removeChildren();
+				renderCanvas.s2d.removeChildren();
+
+				var bg = new h2d.Bitmap(h2d.Tile.fromColor(0), renderCanvas.s2d);
+				bg.width = size;
+				bg.height = size;
+
+				var bmp = new h2d.Bitmap(h2d.Tile.fromTexture(img), renderCanvas.s2d);
+				bmp.width = width;
+				bmp.height = height;
+				bmp.x = (size - width) / 2;
+				bmp.y = (size - height) / 2;
+
+				bmp.blendMode = None;
+
+				var shader = new hide.view.GraphEditor.PreviewShaderAlpha();
+				bmp.addShader(shader);
+
+				var engine = renderCanvas.engine;
+
+				@:privateAccess renderCanvas.doSync();
+
+				renderTexture.clear(0,1.0);
+
+				engine.pushTarget(renderTexture);
+				engine.clear(0);
+				renderCanvas.render(engine);
+				engine.popTarget();
+
+				convertAndWriteThumbnail(toRender.thumbPath, renderTexture);
+
+				toRender.cb(toRender.thumbPath);
+
+				if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
+					js.html.Console.log('handleTexture DONE (${toRender.path})');
+			});
+		});
 
 		//renderCanvas.s2d.removeChildren();
 	}
@@ -550,41 +543,36 @@ class ThumbnailGenerator {
 
 			var toRender = miniaturesToRender.pop();
 
-			// Check thumbnail cache
+			runJob(toRender, () -> {
+				var thumbnailPath = getThumbnailPath(toRender.path);
+				toRender.thumbPath = StringTools.replace(thumbnailPath.toString(), "\\", "/");
 
-			var thumbnailPath = getThumbnailPath(toRender.path);
-			var thumbnailPathString = thumbnailPath.toString();
+				// Check thumbnail cache
+				if (!Ide.inst.currentConfig.get("hide.filebrowserDebugIgnoreThumbnailCache") && sys.FileSystem.exists(toRender.thumbPath)) {
+					toRender.cb(toRender.thumbPath);
+					return;
+				}
 
-			var shouldGenerate = true;
-			if (!Ide.inst.currentConfig.get("hide.filebrowserDebugIgnoreThumbnailCache") && sys.FileSystem.exists(thumbnailPathString)) {
-				shouldGenerate = false;
-				sendSuccess(toRender.path, thumbnailPathString);
-				continue;
-			} else {
 				// remove previous thumbnails for this file
-				try {
-					var filesDir = sys.FileSystem.readDirectory(thumbnailPath.dir);
+				if (sys.FileSystem.isDirectory(thumbnailPath.dir)) {
 					var commonPart = toRender.path.split("/").pop() + "_thumb_";
-
-					for (file in filesDir) {
+					for (file in sys.FileSystem.readDirectory(thumbnailPath.dir)) {
 						if (StringTools.startsWith(file, commonPart)) {
 							sys.FileSystem.deleteFile(thumbnailPath.dir + "/" + file);
 						}
 					}
-				} catch(e) {
-
 				}
-			}
 
-			var ext = toRender.path.split(".").pop().toLowerCase();
-			switch(ext) {
-				case "prefab" | "fbx" | "l3d" | "fx" | "shgraph":
-					handleModel(toRender);
-				case "png" | "dds" | "jpg" | "jpeg":
-					handleTexture(toRender);
-				default:
-					toRender.cb(null);
-			}
+				var ext = toRender.path.split(".").pop().toLowerCase();
+				switch(ext) {
+					case "prefab" | "fbx" | "l3d" | "fx" | "shgraph":
+						handleModel(toRender);
+					case "png" | "dds" | "jpg" | "jpeg":
+						handleTexture(toRender);
+					default:
+						toRender.cb(null);
+				}
+			});
 
 			if (waitingAsyncLoad) {
 				break;
