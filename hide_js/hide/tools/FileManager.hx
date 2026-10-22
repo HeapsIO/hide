@@ -493,12 +493,13 @@ class FileManager {
 						return;
 						//throw "Generated a thumbnail for a file not registered";
 					}
+					onReadyCallbacks.remove(message.originalPath);
 					var file = getFileEntry(message.originalPath);
-					file.iconPath = message.thumbnailPath;
+					if (file != null)
+						file.iconPath = message.thumbnailPath;
 					for (cb in cbs) {
 						cb(message.thumbnailPath);
 					}
-					onReadyCallbacks.remove(message.originalPath);
 				default:
 					throw "Unknown message type " + message.type;
 			}
