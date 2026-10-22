@@ -34,7 +34,9 @@ class CullingContainer extends Object3D {
 
 	#if editor
 	function createDebugSphere() {
-		prim = new h3d.prim.GeoSphere(2);
+		var sphere = new h3d.prim.GeoSphere(2);
+		sphere.addNormals();
+		prim = sphere;
 		m = new h3d.scene.Mesh(prim, null, this.local3d.parent);
 		m.x = x;
 		m.y = y;
