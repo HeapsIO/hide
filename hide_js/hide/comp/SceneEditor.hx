@@ -3302,6 +3302,19 @@ class SceneEditor {
 		var localTransform = new Map<hrt.prefab.Object3D, h3d.Matrix>();
 		var initialCentroid = new h3d.Matrix();
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
+
+		function getParentAbs(obj3d : hrt.prefab.Object3D) {
+			if (obj3d.local3d != null && obj3d.local3d.follow != null) {
+				var follow = obj3d.local3d.follow.getAbsPos();
+				return obj3d.local3d.followPositionOnly ? h3d.Matrix.T(follow.tx, follow.ty, follow.tz) : follow.clone();
+			}
+
+			var parent3d = Std.downcast(obj3d.parent, hrt.prefab.Object3D);
+			if (parent3d == null)
+				parent3d = Std.downcast(obj3d.shared.parentPrefab, hrt.prefab.Object3D);
+			return parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
+		}
+
 		gizmo.shouldSnap = () -> { return this.snapForceOnGrid; };
 		gizmo.snap = gizmoSnap;
 		gizmo.onStartMove = (handle : hrt.tools.Gizmo.Handle) -> {
@@ -3315,7 +3328,9 @@ class SceneEditor {
 			initialTransform.clear();
 			for (o in obj3ds) {
 				initialTransform.set(o, o.getTransform().clone());
-				initialAbs.set(o, o.getAbsPos(true).clone());
+				var abs = o.getTransform();
+				abs.multiply(abs, getParentAbs(o));
+				initialAbs.set(o, abs);
 			}
 			initialCentroid.load(gizmo.getAbsPos());
 		};
@@ -3324,11 +3339,7 @@ class SceneEditor {
 				return;
 
 			for (obj3d in obj3ds) {
-				var parent3d = Std.downcast(obj3d.parent, hrt.prefab.Object3D);
-				if (parent3d == null)
-					parent3d = Std.downcast(obj3d.shared.parentPrefab, hrt.prefab.Object3D);
-				var parentAbs = parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
-				var parentInv = parentAbs.getInverse();
+				var parentInv = getParentAbs(obj3d).getInverse();
 				localTransform.set(obj3d, obj3d.getTransform().clone());
 
 				var trs = new h3d.Matrix();
