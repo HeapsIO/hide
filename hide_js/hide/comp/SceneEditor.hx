@@ -2183,7 +2183,7 @@ class SceneEditor {
 		function sanitizeReparent(target: hrt.prefab.Prefab, elements: Array<hrt.prefab.Prefab>) {
 			// Avoid moving target onto itelf
 			for (prefab in elements.copy()) {
-				if (target.findParent((p) -> p == prefab, true) != null) {
+				if (target.findParent((p) -> p == prefab, true, true) != null) {
 					elements.remove(prefab);
 				}
 			}
@@ -5346,8 +5346,11 @@ class SceneEditor {
 			if (prevParent == toPrefab && prevIndex < index)
 				offset--; // fix offset
 			offset++;
+			// skip the instances of Edit references, they keep their own context
+			var prevShared = prefab.shared;
 			for (p in prefab.flatten(null, null))
-				p.shared = toPrefab.shared;
+				if (p.shared == prevShared)
+					p.shared = toPrefab.shared;
 			var obj3d = prefab.to(Object3D);
 			var preserveTransform = Std.isOfType(toPrefab, hrt.prefab.fx.Emitter) || Std.isOfType(prevParent, hrt.prefab.fx.Emitter);
 			var prevTransform = null;
