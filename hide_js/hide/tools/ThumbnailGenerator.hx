@@ -184,6 +184,7 @@ class ThumbnailGenerator {
 		idleTimer?.stop();
 		idleTimer = null;
 		if (!queued) {
+			queued = true;
 			haxe.Timer.delay(processMiniature, 1);
 		}
 	}
@@ -590,6 +591,7 @@ class ThumbnailGenerator {
 		}
 
 		if (miniaturesToRender.length > 0 || waitingAsyncLoad) {
+			queued = true;
 			haxe.Timer.delay(processMiniature, 1);
 		}
 	}

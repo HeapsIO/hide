@@ -546,6 +546,8 @@ class FileManager {
 					}
 					if (message.thumbnailPath != null)
 						retries = 0;
+					else
+						failedPaths.set(message.originalPath, true);
 					var cbs = onReadyCallbacks.get(message.originalPath);
 					if (cbs == null) {
 						return;
