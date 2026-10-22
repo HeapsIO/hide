@@ -837,6 +837,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 		}
 
+		fancyGallery?.remove();
 		fancyGallery = new hide.comp.FancyGallery<FileEntry>(null, browserLayout.find(".right fancy-gallery"));
 		fancyGallery.getItems = () -> {
 			return currentSearch;
@@ -975,6 +976,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 		syncGallerySearchFullPath();
 
+		// onDisplay runs again on rebuild : don't register twice
+		FileManager.inst.onFileChangeHandlers.remove(onFileChange);
+		FileManager.inst.onVCSStatusUpdateHandlers.remove(refreshVCS);
 		FileManager.inst.onFileChangeHandlers.push(onFileChange);
 		FileManager.inst.onVCSStatusUpdateHandlers.push(refreshVCS);
 
@@ -1030,6 +1034,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	override function destroy() {
 		super.destroy();
 		FileManager.inst.onFileChangeHandlers.remove(onFileChange);
+		FileManager.inst.onVCSStatusUpdateHandlers.remove(refreshVCS);
+		fancyGallery?.remove();
 	}
 
 	function createNew( directoryFullPath : String, ext : Extension.ExtensionDesc, isGallery: Bool) {

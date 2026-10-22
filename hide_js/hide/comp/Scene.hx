@@ -126,6 +126,14 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		}
 		#end
 		if (engine != null && engine.driver != null) {
+			// TextureStream keeps the streamed images in a static list until their stream changes
+			for (r in @:privateAccess engine.resCache) {
+				var img = Std.downcast(r, hxd.res.Image);
+				if (img?.stream != null) {
+					img.stream.cancel();
+					@:privateAccess img.stream = null;
+				}
+			}
 			engine.dispose();
 			@:privateAccess engine.driver = null;
 		}

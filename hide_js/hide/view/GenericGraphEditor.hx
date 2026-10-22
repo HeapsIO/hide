@@ -38,6 +38,11 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
         graphEditor.centerView();
     }
 
+    override function destroy() {
+        graphEditor?.remove();
+        super.destroy();
+    }
+
     function initGraphEditor() {
         if (graphEditor != null) {
             graphEditor.remove();

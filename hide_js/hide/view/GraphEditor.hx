@@ -104,6 +104,7 @@ class GraphEditor extends hide.comp.Component {
 	public var currentUndoBuffer : UndoBuffer = [];
 
 	var contextMenu : hide.comp.ContextMenu = null;
+	var onDocumentPointerUp : js.html.PointerEvent -> Void;
 
 
 
@@ -227,8 +228,8 @@ class GraphEditor extends hide.comp.Component {
 			mouseMoveFunction(e);
 		});
 
-		var document = new Element(js.Browser.document);
-		document.on("pointerup", function(e) {
+		// removed by remove() : it would keep the editor alive after its view is closed
+		onDocumentPointerUp = function(e : js.html.PointerEvent) {
 			if(timerUpdateView != null)
 				stopUpdateViewPosition();
 			if (e.button == 0) {
@@ -276,7 +277,8 @@ class GraphEditor extends hide.comp.Component {
 				isPanning = false;
 				return;
 			}
-		});
+		};
+		js.Browser.document.addEventListener("pointerup", onDocumentPointerUp);
 
 		// Zoom control
 		heapsScene.on("wheel", function(e) {
@@ -302,6 +304,11 @@ class GraphEditor extends hide.comp.Component {
 		updateMatrix();
 
 		haxe.Timer.delay(reloadInternal, 100);
+	}
+
+	override public function remove() {
+		js.Browser.document.removeEventListener("pointerup", onDocumentPointerUp);
+		super.remove();
 	}
 
 	public function createMiniPreviewScene() {

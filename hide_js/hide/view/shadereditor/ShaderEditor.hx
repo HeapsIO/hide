@@ -573,6 +573,11 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		return true;
 	}
 
+	override function destroy() {
+		graphEditor?.remove();
+		super.destroy();
+	}
+
 	function setDomain(domain : hrt.shgraph.ShaderGraph.Domain, recordUndo : Bool) {
 		if (shaderGraph.getGraph(domain) == currentGraph)
 			return;
