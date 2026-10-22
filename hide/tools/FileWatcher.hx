@@ -297,19 +297,18 @@ class FileWatcher {
 
 	function onWatchEvent( w : Watch, k : String ) {
 		if( w.isDir && k == "change" ) return;
-		if( k == "change" ) {
-			// for an unknown reason (maybe SVN ?), sometimes changes are triggered without the file being actually changed.
-			// we check that here
+		var st = w.isDir ? null : try js.node.Fs.statSync(w.path) catch( e : Dynamic ) null;
+		if( k == "change" && st != null ) {
 			var oldStat = w.lastStat;
-			w.lastStat = js.node.Fs.statSync(w.path);
-			if (w.lastStat.mtime.getTime() <= oldStat.mtime.getTime() &&
-				w.lastStat.ctime.getTime() <= oldStat.ctime.getTime()) {
+			w.lastStat = st;
+			if (st.mtime.getTime() <= oldStat.mtime.getTime() &&
+				st.ctime.getTime() <= oldStat.ctime.getTime()) {
 				return;
 			}
 			w.wasChanged = true;
-		} else if( !w.isDir && js.node.Fs.existsSync(w.path) ) {
+		} else if( st != null ) {
 			// replaced by another file (SVN update writes a temp file then renames it)
-			w.lastStat = js.node.Fs.statSync(w.path);
+			w.lastStat = st;
 			w.wasChanged = true;
 		}
 		if( w.changed ) return;
