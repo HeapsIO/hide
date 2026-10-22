@@ -1,58 +1,6 @@
 package hide.tools;
 
 typedef RenderInfo = {path: String, cb: hide.tools.FileManager.MiniatureReadyCallback, priority: Int, ?thumbPath: String};
-/**
-	Handle recieving messages separated by `\n` characters by a socket, correctly buffering the data
-**/
-class MessageHandler {
-	var socket: hxd.net.Socket;
-	var bufferedData : haxe.io.Bytes;
-	var bufferSize = 0;
-	static final maxBufferSize = 16384;
-
-	public function new(socket: hxd.net.Socket, callback: (content: String) -> Void) {
-		this.socket = socket;
-		bufferedData = haxe.io.Bytes.alloc(maxBufferSize);
-		bufferSize = 0;
-
-		socket.onData = () -> {
-			while(socket.input.available > 0) {
-				var read = hxd.Math.imin(maxBufferSize - bufferSize, socket.input.available);
-				if (read == 0) {
-					throw "message too long";
-				}
-
-				socket.input.readFullBytes(bufferedData, bufferSize, read);
-				bufferSize += read;
-
-				var last = 0;
-				var pos = 0;
-
-				// split on newLines
-				while(pos < bufferSize) {
-					if (bufferedData.get(pos) == 10) {
-						var command = bufferedData.getString(last, pos-last);
-						callback(command);
-						last = pos+1;
-					}
-					pos ++;
-				}
-
-				if (last > 0) {
-					var remaining = bufferSize - last;
-					if (remaining > 0) {
-						bufferedData.blit(0, bufferedData, last, remaining);
-						bufferSize = remaining;
-					} else {
-						bufferSize = 0;
-					}
-				} else if (bufferSize == maxBufferSize) {
-					throw "message too long";
-				}
-			}
-		}
-	}
-}
 
 @:access(hide.tools.FileManager)
 class ThumbnailGenerator {
@@ -69,32 +17,25 @@ class ThumbnailGenerator {
 
 	var sceneRoot : h3d.scene.Object;
 
-	var socket : hxd.net.Socket = null;
+	var port : js.html.MessagePort = null;
 	var ready : Bool = false;
 
 	function sendSuccess(originalPath: String, finalPath: String) {
-		var message = {
+		port.postMessage({
 			type: hide.tools.FileManager.GenToManagerCommand.success,
 			data: ({
 				originalPath: originalPath,
 				thumbnailPath: finalPath,
 			}:hide.tools.FileManager.GenToManagerSuccessMessage)
-		};
-		var serialized = haxe.Json.stringify(message);
-		socket.out.writeString(serialized + "\n");
+		});
 	}
 
 	function sendStart(path: String) {
-		var message = {
+		port.postMessage({
 			type: hide.tools.FileManager.GenToManagerCommand.start,
 			path: path,
-		};
-		socket.out.writeString(haxe.Json.stringify(message) + "\n");
+		});
 	}
-
-	var bufferedData : haxe.io.Bytes;
-	var bufferSize = 0;
-	static final maxBufferSize = 16384;
 
 	function new() {
 		if (Ide.inst.currentConfig.get("hide.filebrowserDebugShowWindow")) {
@@ -103,18 +44,6 @@ class ThumbnailGenerator {
 			electron.Window.get().hide();
 		}
 		electron.Window.get().resizeTo(128,128);
-
-		bufferedData = haxe.io.Bytes.alloc(maxBufferSize);
-
-		socket = new hxd.net.Socket();
-		socket.timeout = 5000;
-
-		// Destroy the generator if any error occurs
-		socket.onError = (msg) -> {
-			electron.Window.get().close(true);
-		}
-
-		var handler = new MessageHandler(socket, handleCommand);
 
 		var cont = new Element('<div style="width: 512px; height: 512px; z-index: 10000; position: absolute; top:0; left: 0;"></div>').appendTo(js.Browser.document.body);
 		renderCanvas = new hide.comp.Scene(hide.Ide.inst.currentConfig, cont, null);
@@ -139,20 +68,15 @@ class ThumbnailGenerator {
 			haxe.Timer.delay(() -> {
 				this.ready = true;
 
-				socket.connect(hide.tools.FileManager.thumbnailGeneratorUrl, hide.tools.FileManager.thumbnailGeneratorPort, () -> {
+				electron.Window.connectOpener((p) -> {
+					port = p;
+					port.onmessage = (e : js.html.MessageEvent) -> handleCommand(e.data);
 				});
-
 			}, 1);
 		};
 	}
 
-	function handleCommand(command: String) {
-		var message : Dynamic = {};
-		try {
-			message = haxe.Json.parse(command);
-		} catch (e) {
-			return;
-		}
+	function handleCommand(message: Dynamic) {
 		switch((message.type:FileManager.ManagerToGenCommand)) {
 			case queue:
 				if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))

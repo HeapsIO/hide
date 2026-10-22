@@ -62,6 +62,7 @@ extern class WebContents {
 	var session(default, null) : Session;
 	function on( event : String, callb : haxe.Constraints.Function ) : Void;
 	function send( channel : String, args : haxe.extern.Rest<Dynamic> ) : Void;
+	function postMessage( channel : String, message : Dynamic, ?transfer : Array<MessagePortMain> ) : Void;
 	function isDestroyed() : Bool;
 	function isCrashed() : Bool;
 	function getURL() : String;
@@ -69,6 +70,17 @@ extern class WebContents {
 	function toggleDevTools() : Void;
 	function setDevToolsWebContents( wc : WebContents ) : Void;
 	static function fromId( id : Int ) : Null<WebContents>;
+}
+
+@:jsRequire("electron", "MessageChannelMain")
+extern class MessageChannelMain {
+	var port1(default, null) : MessagePortMain;
+	var port2(default, null) : MessagePortMain;
+	function new() : Void;
+}
+
+extern class MessagePortMain {
+	function close() : Void;
 }
 
 @:jsRequire("electron", "Menu")

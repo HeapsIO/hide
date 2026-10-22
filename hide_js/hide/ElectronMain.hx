@@ -145,7 +145,7 @@ class ElectronMain {
 		if( cwd == null ) cwd = js.Node.process.cwd();
 		var out = [];
 		for( a in argv.slice(1) ) {
-			if( StringTools.startsWith(a, "--project-dir=") || StringTools.startsWith(a, "--hide-thumbnail-port=") || a == "--default-config" ) {
+			if( StringTools.startsWith(a, "--project-dir=") || a == "--default-config" ) {
 				out.push(a);
 				continue;
 			}
@@ -361,6 +361,7 @@ class ElectronMain {
 		win.on("restore", () -> dispatchWinEvent(id, "restore"));
 		win.on("enter-full-screen", () -> dispatchWinEvent(id, "enter-fullscreen"));
 		win.on("leave-full-screen", () -> dispatchWinEvent(id, "leave-fullscreen"));
+		win.webContents.on("render-process-gone", () -> dispatchWinEvent(id, "crashed"));
 
 		win.webContents.on("destroyed", () -> cleanupWebContents(wcId));
 		win.webContents.on("before-input-event", function(e : Dynamic, input : Dynamic) {
@@ -593,6 +594,15 @@ class ElectronMain {
 		h.set("win.callParent", function(wc, name : String, param : Dynamic) {
 			var opener = windowStates.get(getWin(wc, null).id).opener;
 			if( opener != null ) send(WebContents.fromId(opener), "hide-parent-call", name, param);
+		});
+		h.set("win.connectOpener", function(wc : WebContents) {
+			var win = getWin(wc, null);
+			var opener = windowStates.get(win.id).opener;
+			var openerWc = opener == null ? null : WebContents.fromId(opener);
+			if( openerWc == null || openerWc.isDestroyed() ) throw "Window has no opener";
+			var channel = new MessageChannelMain();
+			openerWc.postMessage("hide-port", win.id, [channel.port1]);
+			wc.postMessage("hide-port", null, [channel.port2]);
 		});
 
 		// values shared between windows (must be serializable)

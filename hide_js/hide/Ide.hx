@@ -138,8 +138,6 @@ class Ide extends hide.tools.IdeData {
 				projectOverride = a.substr(pre.length);
 			else if( a == "--default-config" )
 				defaultConfig = true;
-			else if( StringTools.startsWith(a, "--hide-thumbnail-port=") )
-				hide.tools.FileManager.thumbnailGeneratorPort = Std.parseInt(a.substr("--hide-thumbnail-port=".length));
 		}
 		initConfig(cwd);
 		var current = currentProject;
@@ -162,9 +160,6 @@ class Ide extends hide.tools.IdeData {
 			var project = vars.get("project");
 			if( thumbnailMode && project != null )
 				current = project;
-			var port = vars.get("thumbnailPort");
-			if( thumbnailMode && port != null )
-				hide.tools.FileManager.thumbnailGeneratorPort = Std.parseInt(port);
 		}
 
 		var xMax = 1;
