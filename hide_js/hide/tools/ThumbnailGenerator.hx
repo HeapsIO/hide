@@ -292,11 +292,12 @@ class ThumbnailGenerator {
 		if (shaderError != null)
 			throw 'shader error : $shaderError';
 
-		renderCanvas.s3d.removeChildren();
-		renderCanvas.s2d.removeChildren();
-
+		// the capture executes the render : the objects can't be disposed before
 		convertAndWriteThumbnail(toRender.thumbPath, renderTexture);
 		toRender.cb(toRender.thumbPath);
+
+		renderCanvas.s3d.removeChildren();
+		renderCanvas.s2d.removeChildren();
 	}
 
 	function runJob(toRender: RenderInfo, job: Void -> Void) {

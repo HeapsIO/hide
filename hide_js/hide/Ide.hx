@@ -196,7 +196,6 @@ class Ide extends hide.tools.IdeData {
 		loadProject();
 
 		if (thumbnailMode) {
-			thumbnailInit();
 			hxd.System.setLoop(mainLoop);
 			return;
 		}
@@ -863,6 +862,8 @@ class Ide extends hide.tools.IdeData {
 			h3d.mat.MaterialSetup.current = render;
 
 			if (thumbnailMode) {
+				// after the plugins : the generator scene must use the project renderer
+				thumbnailInit();
 				return;
 			}
 			initMenu();
