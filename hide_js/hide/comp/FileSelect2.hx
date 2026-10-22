@@ -31,7 +31,7 @@ class FileSelect2 extends Component {
 					ide.chooseFile(extensions, function(path) {
 						this.path = path;
 						onChange();
-					}, false, path);
+					}, false, path ?? "");
 				} else {
 					ide.chooseDirectory(function(path) {
 						this.path = path;
