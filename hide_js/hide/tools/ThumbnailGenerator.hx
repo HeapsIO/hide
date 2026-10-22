@@ -1,11 +1,12 @@
 package hide.tools;
 
-typedef RenderInfo = {path: String, cb: hide.tools.FileManager.MiniatureReadyCallback, priority: Int, ?thumbPath: String};
+typedef RenderInfo = {path: String, cb: hide.tools.FileManager.MiniatureReadyCallback, priority: Int, ?thumbPath: String, ?started: Bool};
 
 @:access(hide.tools.FileManager)
 class ThumbnailGenerator {
 	var miniaturesToRender : Array<RenderInfo> = [];
 	var prioDirty = false;
+	var sceneContainer : js.html.DivElement;
 	var renderCanvas : hide.comp.Scene;
 	var renderTexture : h3d.mat.Texture;
 	final renderRes = 512;
@@ -32,10 +33,11 @@ class ThumbnailGenerator {
 		});
 	}
 
-	function sendStart(path: String) {
+	function sendStart(toRender: RenderInfo) {
+		toRender.started = true;
 		port.postMessage({
 			type: hide.tools.FileManager.GenToManagerCommand.start,
-			path: path,
+			path: toRender.path,
 		});
 	}
 
@@ -47,18 +49,34 @@ class ThumbnailGenerator {
 		}
 		electron.Window.get().resizeTo(128,128);
 
-		var cont = new Element('<div style="width: 512px; height: 512px; z-index: 10000; position: absolute; top:0; left: 0;"></div>').appendTo(js.Browser.document.body);
-		renderCanvas = new hide.comp.Scene(hide.Ide.inst.currentConfig, cont, null);
-		renderCanvas.enableNewErrorSystem = true;
-		renderCanvas.errorHandler = (e) -> {
-			// do nothing;
-			return null;
-		}
-		renderCanvas.autoUpdate = false;
 		h3d.pass.Output.onShaderError = (msg : String, p) -> {
 			if (shaderError == null)
 				shaderError = msg + " (" + p.obj.name + ")";
 		};
+		createScene();
+	}
+
+	/**
+		Creates the render scene, replacing the previous one : a failed render can leave it in any state.
+		Disposing it frees all its GPU resources and its resource cache.
+	**/
+	function createScene() {
+		ready = false;
+		// the scene of a failed render may throw while disposed : the new one must still be created
+		try {
+			renderCanvas?.dispose();
+		} catch (e) {
+			js.html.Console.warn('thumbnail scene dispose failed : $e');
+		}
+		sceneContainer?.remove();
+
+		sceneContainer = js.Browser.document.createDivElement();
+		sceneContainer.style.cssText = "width: 512px; height: 512px; z-index: 10000; position: absolute; top:0; left: 0;";
+		js.Browser.document.body.appendChild(sceneContainer);
+		renderCanvas = new hide.comp.Scene(hide.Ide.inst.currentConfig, new Element(sceneContainer), null);
+		renderCanvas.enableNewErrorSystem = true;
+		renderCanvas.errorHandler = (e) -> null;
+		renderCanvas.autoUpdate = false;
 		renderCanvas.onReady = () -> {
 			renderCanvas.engine.setCurrent();
 
@@ -69,15 +87,15 @@ class ThumbnailGenerator {
 
 			sceneRoot = new h3d.scene.Object(renderCanvas.s3d);
 
-			renderCanvas.errorHandler = (e) -> null;
-
 			haxe.Timer.delay(() -> {
 				this.ready = true;
 
-				electron.Window.connectOpener((p) -> {
-					port = p;
-					port.onmessage = (e : js.html.MessageEvent) -> handleCommand(e.data);
-				});
+				if (port == null) {
+					electron.Window.connectOpener((p) -> {
+						port = p;
+						port.onmessage = (e : js.html.MessageEvent) -> handleCommand(e.data);
+					});
+				}
 			}, 1);
 		};
 	}
@@ -298,34 +316,13 @@ class ThumbnailGenerator {
 				saveThumbnail(toRender.thumbPath, sys.io.File.getBytes(errorThumbnail));
 				written = toRender.thumbPath;
 			}
-			resetScene();
 		} catch (e) {
 			js.html.Console.warn('${toRender.path} : $e');
 		}
 		toRender.cb(written);
-	}
-
-	/**
-		Puts the scene back in a clean state after a failed render
-	**/
-	function resetScene() {
-		var engine = renderCanvas.engine;
-		engine.setCurrent();
-		// an exception between pushTarget and popTarget leaves the target on the stack
-		while (engine.getCurrentTarget() != null)
-			engine.popTarget();
-		@:privateAccess {
-			// h2d keeps its own stacks, checked at the end of the next render
-			renderCanvas.s2d.ctx.targetsStackIndex = 0;
-			renderCanvas.s2d.ctx.cameraStackIndex = 0;
-			// pass lists of the interrupted frame, or a pass missing from the next frame would draw stale objects
-			renderCanvas.s3d.renderer.passObjects.clear();
-			// done() clears the current context : the interrupted render may have left another one current
-			renderCanvas.s3d.ctx.setCurrent();
-			renderCanvas.s3d.ctx.done();
-		}
-		renderCanvas.s3d.removeChildren();
-		renderCanvas.s2d.removeChildren();
+		// errors before the render (thumbnail path, config) leave the scene untouched
+		if (toRender.started)
+			createScene();
 	}
 
 	function saveThumbnail(path: String, bytes: haxe.io.Bytes) {
@@ -428,6 +425,9 @@ class ThumbnailGenerator {
 
 				toRender.cb(toRender.thumbPath);
 
+				renderCanvas.s3d.removeChildren();
+				renderCanvas.s2d.removeChildren();
+
 				if (Ide.inst.currentConfig.get("hide.filebrowserDebugServerCommands"))
 					js.html.Console.log('handleTexture DONE (${toRender.path})');
 			});
@@ -456,6 +456,9 @@ class ThumbnailGenerator {
 
 	function clearCaches() {
 		idleTimer = null;
+		// a recreated scene starts with empty caches
+		if (!ready)
+			return;
 		renderCanvas.engine.setCurrent();
 		@:privateAccess {
 			for (c in renderCanvas.cleanup)
@@ -524,17 +527,18 @@ class ThumbnailGenerator {
 				var ext = toRender.path.split(".").pop().toLowerCase();
 				switch(ext) {
 					case "prefab" | "fbx" | "l3d" | "fx" | "shgraph":
-						sendStart(toRender.path);
+						sendStart(toRender);
 						handleModel(toRender);
 					case "png" | "dds" | "jpg" | "jpeg":
-						sendStart(toRender.path);
+						sendStart(toRender);
 						handleTexture(toRender);
 					default:
 						toRender.cb(null);
 				}
 			});
 
-			if (waitingAsyncLoad) {
+			// a failed job recreates the scene : wait for it
+			if (waitingAsyncLoad || !ready) {
 				break;
 			}
 		}

@@ -123,6 +123,8 @@ class Display {
 		if( target.current < 0 ) return;
 		var driver = h3d.impl.DX12Driver.inst;
 		@:privateAccess {
+			// the copy runs with the frame : tex must not be released before
+			driver.markUsed(tex);
 			driver.transition(tex.t, COPY_SOURCE);
 			driver.flushTransitions();
 			var dst = driver.tmp.dstTextureLocation;
