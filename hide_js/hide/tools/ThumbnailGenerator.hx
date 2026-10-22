@@ -228,11 +228,14 @@ class ThumbnailGenerator {
 
 		var ext = toRender.path.split(".").pop().toLowerCase();
 		var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
+		// freed after the capture : the scene is kept between renders
+		var made : hrt.prefab.Prefab = null;
+		var madePrim : h3d.prim.Primitive = null;
 
 		if (ext == "fbx") {
 			var model = new hrt.prefab.Model(null, null);
 			model.source = cut;
-			model.make(ctx);
+			made = model.make(ctx);
 		} else if (ext == "prefab" || ext == "l3d" || ext == "fx") {
 			var prefab = hxd.res.Loader.currentInstance.load(cut).toPrefab().loadBypassCache();
 
@@ -243,6 +246,7 @@ class ThumbnailGenerator {
 			}
 
 			var prefab = prefab.make(ctx);
+			made = prefab;
 
 			if (ext == "fx") {
 				var fx = prefab.find(hrt.prefab.fx.FX, true, false);
@@ -262,8 +266,10 @@ class ThumbnailGenerator {
 			spherePrim.addTangents();
 
 			var sphere = new h3d.scene.Mesh(spherePrim, sceneRoot);
+			madePrim = spherePrim;
 
 			var shgraph = new hrt.prefab.DynamicShader(null, null);
+			made = shgraph;
 			shgraph.source = cut;
 			ctx = new hide.prefab.ContextShared(null, sphere);
 			shgraph.makeShader();
@@ -298,6 +304,10 @@ class ThumbnailGenerator {
 
 		renderCanvas.s3d.removeChildren();
 		renderCanvas.s2d.removeChildren();
+		// GPU resources of the prefabs (gradients, generated textures...), as when SceneEditor reloads
+		made?.dispose();
+		madePrim?.dispose();
+		hrt.impl.Gradient.purgeEditorCache();
 	}
 
 	function runJob(toRender: RenderInfo, job: Void -> Void) {
