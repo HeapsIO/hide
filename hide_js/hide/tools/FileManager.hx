@@ -2,6 +2,7 @@ package hide.tools;
 
 
 enum abstract GenToManagerCommand(String) {
+	var start;
 	var success;
 }
 
@@ -213,6 +214,12 @@ class FileManager {
 	var retries = 0;
 	static final maxRetries = 5;
 
+	var currentJob : String = null;
+	var jobTimer : haxe.Timer = null;
+	static final jobTimeout = 20000;
+	// files that crashed or hung the generator, skipped until they change
+	var failedPaths : Map<String, Bool> = [];
+
 	static function get_inst() {
 		if (inst == null) {
 			inst = new FileManager();
@@ -364,8 +371,10 @@ class FileManager {
 			}
 			generatorSocket = remoteSocket;
 			generatorSocket.onError = (msg) -> {
+				if (generatorSocket != remoteSocket)
+					return;
 				hide.Ide.inst.quickError("Generator socket error : " + msg);
-				cleanupGenerator();
+				onGeneratorLost("generator socket error : " + msg);
 			}
 
 			var handler = new hide.tools.ThumbnailGenerator.MessageHandler(generatorSocket, processThumbnailGeneratorMessage);
@@ -406,6 +415,34 @@ class FileManager {
 		}
 	}
 
+	/**
+		The generator crashed or hung : the file it was rendering is skipped until it changes, and the generator is restarted
+	**/
+	function onGeneratorLost(reason: String) {
+		jobTimer?.stop();
+		jobTimer = null;
+		var path = currentJob;
+		currentJob = null;
+		cleanupGenerator();
+
+		if (path != null) {
+			js.html.Console.warn('Thumbnail generator error : $path : $reason');
+			failedPaths.set(path, true);
+			var file = getFileEntry(path);
+			if (file != null)
+				file.iconPath = null;
+			var cbs = onReadyCallbacks.get(path);
+			onReadyCallbacks.remove(path);
+			if (cbs != null) {
+				for (cb in cbs)
+					cb(null);
+			}
+		}
+
+		if (onReadyCallbacks.iterator().hasNext())
+			checkWindowReady();
+	}
+
 	function init() {
 		// kill server when page is reloaded
 		js.Browser.window.addEventListener('beforeunload', () -> { cleanupGenerator(); cleanupServer(); });
@@ -436,6 +473,7 @@ class FileManager {
 	function fileChangeInternal(entry: FileEntry) {
 		// invalidate thumbnail
 		entry.iconPath = null;
+		failedPaths.remove(entry.getPath());
 
 		if (!js.node.Fs.existsSync(entry.getPath()) && entry.parent != null) {
 			fileEntryRefreshDelay.queue(entry.parent);
@@ -494,9 +532,20 @@ class FileManager {
 	function processThumbnailGeneratorMessage(message: String) {
 		try {
 			var message = haxe.Json.parse(message);
-			switch(message.type) {
+			switch((message.type:GenToManagerCommand)) {
+				case start:
+					currentJob = message.path;
+					jobTimer?.stop();
+					jobTimer = haxe.Timer.delay(() -> onGeneratorLost('thumbnail generation timed out after ${jobTimeout}ms'), jobTimeout);
 				case success:
 					var message : GenToManagerSuccessMessage = message.data;
+					if (message.originalPath == currentJob) {
+						currentJob = null;
+						jobTimer?.stop();
+						jobTimer = null;
+					}
+					if (message.thumbnailPath != null)
+						retries = 0;
 					var cbs = onReadyCallbacks.get(message.originalPath);
 					if (cbs == null) {
 						return;
@@ -523,11 +572,11 @@ class FileManager {
 		onReady is called back with the path of the loaded miniature, or null if the miniature couldn't be loaded
 	**/
 	function renderMiniature(file: FileEntry, onReady: MiniatureReadyCallback) {
-		if (retries >= maxRetries) {
+		var path = file.getPath();
+		if (retries >= maxRetries || failedPaths.exists(path)) {
 			onReady(null);
 			return;
 		}
-		var path = file.getPath();
 		var ext = path.split(".").pop().toLowerCase();
 		switch(ext) {
 			case "prefab" | "fbx" | "l3d" | "fx" | "shgraph" | "jpg" | "jpeg" | "png" | "dds":
@@ -863,7 +912,10 @@ class RenderWindowManager {
 				title: "HideThumbnailGenerator"
 			});
 			generatorWindow.on("closed", () -> {
-				FileManager.inst.cleanupGenerator();
+				// a previous generator closing after its replacement was started
+				if (FileManager.inst.windowManager != this)
+					return;
+				FileManager.inst.onGeneratorLost("generator window closed");
 			});
 		}, {timeout: 1000});
 	}

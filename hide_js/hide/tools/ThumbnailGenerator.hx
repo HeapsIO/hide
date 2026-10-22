@@ -84,6 +84,14 @@ class ThumbnailGenerator {
 		socket.out.writeString(serialized + "\n");
 	}
 
+	function sendStart(path: String) {
+		var message = {
+			type: hide.tools.FileManager.GenToManagerCommand.start,
+			path: path,
+		};
+		socket.out.writeString(haxe.Json.stringify(message) + "\n");
+	}
+
 	var bufferedData : haxe.io.Bytes;
 	var bufferSize = 0;
 	static final maxBufferSize = 16384;
@@ -566,8 +574,10 @@ class ThumbnailGenerator {
 				var ext = toRender.path.split(".").pop().toLowerCase();
 				switch(ext) {
 					case "prefab" | "fbx" | "l3d" | "fx" | "shgraph":
+						sendStart(toRender.path);
 						handleModel(toRender);
 					case "png" | "dds" | "jpg" | "jpeg":
+						sendStart(toRender.path);
 						handleTexture(toRender);
 					default:
 						toRender.cb(null);
