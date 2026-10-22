@@ -543,12 +543,20 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		return dynamicType;
 	}
 
+	#if !release
+	override public function clearCaches() {
+		super.clearCaches();
+		cachedDef = null;
+		shaderGraphCache.remove(this.shared.prefabSource);
+	}
+	#end
+
 	public function compile(options: {?previewDomain: Domain, ?explicitVarNames: Bool}) : hrt.prefab.Cache.ShaderDef {
 		var previewDomain = options.previewDomain;
-		#if !editor
-		if ( cachedDef != null )
+		// only the default shader is cached : the shader editor variants are compiled each time
+		var isDefault = previewDomain == null && options.explicitVarNames != true;
+		if ( isDefault && cachedDef != null )
 			return cachedDef;
-		#end
 
 		var inits : Array<{variable: TVar, value: Dynamic}>= [];
 
@@ -709,7 +717,10 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		@:privateAccess shared.data = shaderData;
 		@:privateAccess shared.initialize();
 
-		cachedDef = {shader : shared, inits: inits};
+		var def : hrt.prefab.Cache.ShaderDef = {shader : shared, inits: inits};
+		if (!isDefault)
+			return def;
+		cachedDef = def;
 
 		var lastTime = 0.0;
 		#if (!release && (sys || nodejs))

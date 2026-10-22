@@ -23,6 +23,9 @@ class Resource extends hxd.res.Resource {
 			if( prefab != null ) {
 				var data = try loadData() catch( e : Dynamic ) return; // parsing error (conflict ?)
 				prefab.reload(data);
+				#if !release
+				prefab.clearCaches();
+				#end
 				reloadedVersion ++;
 				onPrefabLoaded(prefab);
 			}
@@ -52,8 +55,14 @@ class Resource extends hxd.res.Resource {
 	public function load() : Prefab {
 		if(prefab != null && cacheVersion == CACHE_VERSION )
 			return prefab;
+		var reloaded = prefab != null;
 		prefab = loadBypassCache();
 		cacheVersion = CACHE_VERSION;
+		#if !release
+		// not on the first load : the caches are still valid if the file didn't change
+		if( reloaded )
+			prefab.clearCaches();
+		#end
 		onPrefabLoaded(prefab);
 		if( !isWatched ) watch(function() {}); // auto lib reload
 		return cast prefab;

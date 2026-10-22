@@ -2093,6 +2093,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		needRecompile = false;
 		try {
 			var start = Timer.stamp();
+			// the graph was edited : the cached shader is outdated
+			shaderGraph.clearCaches();
 			compiledShader = shaderGraph.compile({});
 			compiledShaderPreview = shaderGraph.compile({previewDomain: currentGraph.domain});
 			bitmapToShader.clear();
