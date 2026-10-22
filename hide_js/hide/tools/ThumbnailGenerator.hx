@@ -16,6 +16,8 @@ class ThumbnailGenerator {
 	var idleTimer : haxe.Timer;
 
 	var sceneRoot : h3d.scene.Object;
+	// first shader error of the current model : the objects using it are skipped instead of throwing
+	var shaderError : String = null;
 
 	var port : js.html.MessagePort = null;
 	var ready : Bool = false;
@@ -53,6 +55,10 @@ class ThumbnailGenerator {
 			return null;
 		}
 		renderCanvas.autoUpdate = false;
+		h3d.pass.Output.onShaderError = (msg : String, p) -> {
+			if (shaderError == null)
+				shaderError = msg + " (" + p.obj.name + ")";
+		};
 		renderCanvas.onReady = () -> {
 			renderCanvas.engine.setCurrent();
 
@@ -184,6 +190,7 @@ class ThumbnailGenerator {
 
 	function handleModel(toRender: RenderInfo) {
 		renderCanvas.engine.setCurrent();
+		shaderError = null;
 
 		renderCanvas.s3d.removeChildren();
 		renderCanvas.s2d.removeChildren();
@@ -264,6 +271,9 @@ class ThumbnailGenerator {
 		renderCanvas.s3d.render(engine);
 		engine.popTarget();
 
+		if (shaderError != null)
+			throw 'shader error : $shaderError';
+
 		renderCanvas.s3d.removeChildren();
 		renderCanvas.s2d.removeChildren();
 
@@ -295,12 +305,27 @@ class ThumbnailGenerator {
 		toRender.cb(written);
 	}
 
+	/**
+		Puts the scene back in a clean state after a failed render
+	**/
 	function resetScene() {
-		renderCanvas.s3d.dispose();
-		renderCanvas.s2d.dispose();
-
-		renderCanvas.s3d = new h3d.scene.Scene();
-		renderCanvas.s2d = new h2d.Scene();
+		var engine = renderCanvas.engine;
+		engine.setCurrent();
+		// an exception between pushTarget and popTarget leaves the target on the stack
+		while (engine.getCurrentTarget() != null)
+			engine.popTarget();
+		@:privateAccess {
+			// h2d keeps its own stacks, checked at the end of the next render
+			renderCanvas.s2d.ctx.targetsStackIndex = 0;
+			renderCanvas.s2d.ctx.cameraStackIndex = 0;
+			// pass lists of the interrupted frame, or a pass missing from the next frame would draw stale objects
+			renderCanvas.s3d.renderer.passObjects.clear();
+			// done() clears the current context : the interrupted render may have left another one current
+			renderCanvas.s3d.ctx.setCurrent();
+			renderCanvas.s3d.ctx.done();
+		}
+		renderCanvas.s3d.removeChildren();
+		renderCanvas.s2d.removeChildren();
 	}
 
 	function saveThumbnail(path: String, bytes: haxe.io.Bytes) {
