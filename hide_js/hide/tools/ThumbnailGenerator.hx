@@ -429,7 +429,8 @@ class ThumbnailGenerator {
 
 				engine.pushTarget(renderTexture);
 				engine.clear(0);
-				renderCanvas.render(engine);
+				// the 3D scene is empty : its renderer would still run all its passes
+				renderCanvas.s2d.render(engine);
 				engine.popTarget();
 
 				convertAndWriteThumbnail(toRender.thumbPath, renderTexture);
@@ -471,6 +472,8 @@ class ThumbnailGenerator {
 		if (!ready)
 			return;
 		renderCanvas.engine.setCurrent();
+		// the render props use textures of the loader cache : a render after the cleanup would reallocate them, out of any cache
+		renderCanvas.setRenderProps(null);
 		@:privateAccess {
 			for (c in renderCanvas.cleanup)
 				c();
