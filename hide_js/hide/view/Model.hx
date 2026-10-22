@@ -486,6 +486,13 @@ class Model extends FileView {
 		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
 	}
 
+	override function destroy() {
+		for (s in shapesEditor)
+			s.remove();
+		shapesEditor.clear();
+		super.destroy();
+	}
+
 	override function save() {
 		if(!modified) return;
 
