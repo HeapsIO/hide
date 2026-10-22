@@ -2369,12 +2369,10 @@ class Model extends FileView {
 			sceneEditor.cameraController.toTarget();
 		}
 
-		// Reset parent obj of shapeEditors
-		for (s in shapesEditor) {
-			var objName = s.rootDebugObj.name;
-			s.rootDebugObj.remove();
-			s.rootDebugObj = obj.getObjectByName(objName);
-		}
+		// Shape editors reference the previous model, selection creates new ones
+		for (s in shapesEditor)
+			s.remove();
+		shapesEditor.clear();
 	}
 
 	function changeAnim(offset: Int) : Void {
