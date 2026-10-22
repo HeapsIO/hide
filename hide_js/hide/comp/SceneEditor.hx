@@ -2074,7 +2074,7 @@ class SceneEditor {
 			var path = p.getUniqueName();
 			var parent = p.parent;
 			while(parent != null) {
-				path += parent.getUniqueName() + "/" + path;
+				path = parent.getUniqueName() + "/" + path;
 				parent = parent.parent ?? parent.shared.parentPrefab;
 			}
 			return path;
