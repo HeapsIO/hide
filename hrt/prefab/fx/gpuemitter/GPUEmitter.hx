@@ -65,8 +65,6 @@ class GPUEmitter extends Object3D {
 	@:s var align : Align = FaceCam;
 	@:s var speedMode : SpeedMode = Normal;
 
-	var templates : Array<Template> = null;
-
 	override function makeObject(parent3d : h3d.scene.Object) {
 		var obj = super.makeObject(parent3d);
 
@@ -90,6 +88,10 @@ class GPUEmitter extends Object3D {
 				maxStartSpeed : maxStartSpeed,
 			}
 		}
+
+		#if (js && !dx12)
+		return obj;
+		#end
 
 		for (t in getTemplates()) {
 			var invTemplate = new h3d.Matrix();
@@ -151,24 +153,12 @@ class GPUEmitter extends Object3D {
 				<slider min={0.01} field={minStartSpeed}/>
 				<slider min={0.01} field={maxStartSpeed}/>
 			</category>, null, function(isTemp) {
-				// Remove old emitters
-				if (templates != null) {
-					for (t in templates) {
-						for (e in t.emitters)
-								e.remove();
-					}
-					templates = null;
-				}
-
 				ctx.rebuildPrefab(this);
 			});
 	}
 
 	function getTemplates() : Array<Template> {
-		if (templates != null)
-			return templates;
-
-		templates = [];
+		var templates = [];
 		for (c in children) {
 			if (Std.isOfType(c, hrt.prefab.Shader))
 				continue;

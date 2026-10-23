@@ -113,7 +113,6 @@ class RelativeTransformSimulation extends SimulationShader {
 	override function updateInstance(?propName) {
 		super.updateInstance(propName);
 
-		#if !editor
 		var s = Std.downcast(shader, RelativeTransformSimulationShader);
 		if ( s.curveTexture != null )
 			s.curveTexture.dispose();
@@ -162,7 +161,6 @@ class RelativeTransformSimulation extends SimulationShader {
 		}
 
 		s.curveTexture.uploadPixels(pixels);
-		#end
 	}
 
 	override function postMakeInstance() {
