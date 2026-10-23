@@ -2509,6 +2509,7 @@ class SceneEditor {
 		function refresh(tree : FancyTree<hrt.prefab.Prefab>) @:privateAccess {
 			var selection = tree.getSelectedItems();
 			tree.rebuildTree();
+			selection = selection.filter(p -> tree.itemMap.exists(cast p));
 			var datas = [for (p in selection) tree.itemMap.get(cast p)];
 			if (datas != null) {
 				for (idx => d in datas) {
@@ -2534,6 +2535,7 @@ class SceneEditor {
 				sceneTree.rebuildTree();
 				renderPropsTree.rebuildTree();
 				var tree = selectInSceneTree ? sceneTree : renderPropsTree;
+				selection = selection.filter(p -> @:privateAccess tree.itemMap.exists(cast p));
 				var datas = [for (p in selection) @:privateAccess tree.itemMap.get(cast p)];
 				if (datas != null) {
 					for (idx => d in datas) {
