@@ -2091,6 +2091,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		if (!needRecompile)
 			return;
 		needRecompile = false;
+		hide.tools.CrashReport.log("compile shader graph " + state.path);
 		try {
 			var start = Timer.stamp();
 			// the graph was edited : the cached shader is outdated

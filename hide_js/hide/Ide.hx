@@ -252,8 +252,13 @@ class Ide extends hide.tools.IdeData {
 		});
 
 		electron.App.onGpuCrash(function(details) {
+			var lost = 'GPU process lost (${details.reason}, exit code ${details.exitCode})';
+			hide.tools.CrashReport.log(lost);
+			hide.tools.CrashReport.logGpu(lost);
 			if( !hasReloaded ) showGpuCrash(details);
 		});
+		if( subView == null )
+			hide.tools.CrashReport.startGpuLog();
 
 		var body = js.Browser.document.body;
 		window.on("focus", function() {
@@ -1812,6 +1817,7 @@ class Ide extends hide.tools.IdeData {
 	public function openFile( file : String, ?onCreate, ?onOpen) {
 		var ext = Extension.getExtension(file);
 		if( ext == null ) return;
+		hide.tools.CrashReport.log("open " + file);
 		// look if already open
 		var path = makeRelative(file);
 		for( v in views )
@@ -2096,8 +2102,7 @@ class Ide extends hide.tools.IdeData {
 			</div>
 		</div>').appendTo(gpuCrash.content);
 		panel.find(".create").click(function(_) {
-			var driver = #if dx12 "dx12" #else "webgl" #end;
-			electron.App.createCrashReport('hide $driver ${getGitCommitHashAndDate()}\nProject : $currentProject\n').then(
+			electron.App.createCrashReport(hide.tools.CrashReport.getInfo()).then(
 				(file) -> panel.find(".path").text("Report created : " + file),
 				(e) -> panel.find(".path").text("Report failed : " + e)
 			);
