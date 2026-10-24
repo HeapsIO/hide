@@ -345,14 +345,14 @@ class View<T> extends hide.comp.Component {
 	#end
 
 	public static var viewClasses = new Map<String,{ name : String, cl : Class<View<Dynamic>>, options : ViewOptions }>();
-	public static function register<T>( cl : Class<View<T>>, ?options : ViewOptions ) : Dynamic {
+	public static function register<T>( cl : Class<View<T>>, ?options : ViewOptions ) : Bool {
 		var name = Type.getClassName(cl);
 		if( options == null )
 			options = {}
 		if( options.position == null )
 			options.position = Center;
 		viewClasses.set(name, { name : name, cl : cl, options : options });
-		return null;
+		return true;
 	}
 
 }

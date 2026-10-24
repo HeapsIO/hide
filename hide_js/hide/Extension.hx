@@ -15,7 +15,7 @@ typedef ExtensionDesc = {
 class Extension {
 	public static var EXTENSIONS = new Map<String, ExtensionDesc>();
 
-	public static function registerExtension<T>( c : Class<hide.ui.View<T>>, extensions : Array<String>, ?options : ExtensionOptions ) : Dynamic {
+	public static function registerExtension<T>( c : Class<hide.ui.View<T>>, extensions : Array<String>, ?options : ExtensionOptions ) : Bool {
 		hide.ui.View.register(c);
 		for (e in extensions) {
 			var registered = EXTENSIONS.get(e);
@@ -32,7 +32,7 @@ class Extension {
 				Reflect.setField(registered.options, field, Reflect.field(options, field));
 			}
 		}
-		return null;
+		return true;
 	}
 
 	public static function getExtension( file : String ) {

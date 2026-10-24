@@ -201,9 +201,9 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 	/**
 		For hide-plugin: add/modify game-specific hide command control
 	**/
-	public static function registerCommandView( name : String, cl : Class<RemoteConsoleCommand> ) : Dynamic {
+	public static function registerCommandView( name : String, cl : Class<RemoteConsoleCommand> ) : Bool {
 		commandViews.set(name, cl);
-		return null;
+		return true;
 	}
 
 	static var _ = init();
