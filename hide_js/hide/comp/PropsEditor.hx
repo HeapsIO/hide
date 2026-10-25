@@ -61,7 +61,7 @@ class PropsEditor extends Component {
 	// 	return false;
 	// }
 
-	public function addMaterial( m : h3d.mat.Material, ?parent : Element, ?onChange : String -> Void ) {
+	public function addMaterial( m : h3d.mat.Material, ?parent : Element, ?onChange ) {
 		var def = m.editProps();
 		def = add(def, m.props, function(name) {
 			m.refreshProps();

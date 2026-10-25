@@ -7,7 +7,7 @@ class TextureSelect extends FileSelect {
 	public var area(default, set) : { x : Int, y : Int, width : Int, height : Int };
 	var preview : Element;
 
-	public function new(?parent:Element,?root:Element, handleDrop: Bool = true) {
+	public function new(?parent,?root, handleDrop: Bool = true) {
 		preview = new Element("<div class='texture-preview'>");
 		super(IMG_EXTS, parent, root, handleDrop);
 		preview.insertAfter(element);
@@ -24,7 +24,7 @@ class TextureSelect extends FileSelect {
 		return v;
 	}
 
-	override function set_path(p:String) : String {
+	override function set_path(p:String) {
 		super.set_path(p);
 		if( p == null )
 			value = null;

@@ -8,7 +8,7 @@ class SubTable extends Table {
 	// null for simple variants and the empty-poly picker, so getRealSheet() stays stable across edits
 	public var polyVal(default,null) : { col : cdb.Data.Column, obj : Dynamic };
 
-	public function new(editor:Editor, cell:Cell) {
+	public function new(editor, cell:Cell) {
 		this.editor = editor;
 		this.cell = cell;
 		parent = cell.table;

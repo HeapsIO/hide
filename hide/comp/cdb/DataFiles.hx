@@ -538,7 +538,7 @@ class DataFiles {
 		return p;
 	}
 	#else
-	static function loadPrefab(file:String) : hrt.prefab.Prefab {
+	static function loadPrefab(file:String) {
 		var path = getPath(file);
 		var content = sys.io.File.getContent(path);
 		var parsed = haxe.Json.parse(content);
@@ -789,7 +789,7 @@ class DataFiles {
 		return obj;
 	}
 
-	public static function save( ?onSaveBase : Void -> Void, ?force : Bool, ?prevSheetNames : Map<String,String> ) {
+	public static function save( ?onSaveBase, ?force, ?prevSheetNames : Map<String,String> ) {
 		var ide = Ide.inst;
 		var temp = [];
 		var titles = [];

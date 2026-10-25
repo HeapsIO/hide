@@ -6,7 +6,7 @@ class TextureSelect2 extends FileSelect2 {
 	public var value(default, set) : h3d.mat.Texture;
 	public var area(default, set) : { x : Int, y : Int, width : Int, height : Int };
 
-	public function new(?parent:Element,?root:Element, handleDrop: Bool = true) {
+	public function new(?parent,?root, handleDrop: Bool = true) {
 		super(IMG_EXTS, parent, root, handleDrop);
 	}
 
@@ -16,7 +16,7 @@ class TextureSelect2 extends FileSelect2 {
 		return v;
 	}
 
-	override function set_path(p:String) : String {
+	override function set_path(p:String) {
 		super.set_path(p);
 		if( p == null )
 			value = null;

@@ -257,7 +257,7 @@ class IdeData {
 
 	var lastDBContent : Null<String> = null;
 	var lastStats: Null<sys.FileStat> = null;
-	function loadDatabase( ?checkExists : Bool, retries: Int = 0) {
+	function loadDatabase( ?checkExists, retries: Int = 0) {
 
 
 		var exists = fileExists(databaseFile);
@@ -376,7 +376,7 @@ class IdeData {
 		}, 0);
 	}
 
-	public function saveDatabase( ?forcePrefabs : Bool ) {
+	public function saveDatabase( ?forcePrefabs ) {
 		if (readOnlyConfig)
 			return;
 		#if js

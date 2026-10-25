@@ -1642,7 +1642,7 @@ class GraphEditor extends hide.comp.Component {
 		commitUndo();
 	}
 
-	function createCurve(packedOutput: Null<Int>, packedInput: Null<Int>, ?distance : Float, ?x : Float, ?y : Float, ?isDraft : Bool) : hide.Element {
+	function createCurve(packedOutput: Null<Int>, packedInput: Null<Int>, ?distance : Float, ?x : Float, ?y : Float, ?isDraft : Bool) {
 		x = x ?? 0.0;
 		y = y ?? 0.0;
 		var startX = lX(x);

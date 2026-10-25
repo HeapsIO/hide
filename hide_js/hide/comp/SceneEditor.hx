@@ -2473,7 +2473,7 @@ class SceneEditor {
 		view.rebuild();
 	}
 
-	function refreshTree(target: Tree, ?callb : () -> Void) {
+	function refreshTree(target: Tree, ?callb) {
 		if (treeRefreshing) {
 			queueRefresh ??= [];
 			if (callb != null)

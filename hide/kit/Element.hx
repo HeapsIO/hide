@@ -114,7 +114,7 @@ class Element {
 		return disabled;
 	}
 
-	function isDisabled() : Bool {
+	function isDisabled() {
 		if (parent != null)
 			return disabled || parent.getChildDisabled();
 		return disabled;

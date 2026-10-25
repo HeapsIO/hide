@@ -7,7 +7,7 @@ class FileSelect extends Component {
 	public var disabled(default, set) = false;
 	public var directory : Bool = false;
 
-	public function new(extensions:Array<String>,?parent:Element,?root:Element, handleDragAndDrop=true) {
+	public function new(extensions,?parent,?root, handleDragAndDrop=true) {
 		if( root == null )
 			root = new Element("<input>");
 		super(parent,root);
@@ -130,7 +130,7 @@ class FileSelect extends Component {
 		return null;
 	}
 
-	function set_path(p:String) : String {
+	function set_path(p:String) {
 		// We need to do this comparison since sys.FileSystem.exists() is case insensitive on Windows
 		var fullPath = ide.getPath(p);
 		var exists = false;
