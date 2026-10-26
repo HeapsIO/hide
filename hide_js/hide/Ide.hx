@@ -11,8 +11,8 @@ enum MessageKind {
 typedef WindowPos = { x : Int, y : Int, w : Int, h : Int, max : Bool };
 
 typedef LayoutState = {
-	var content : Any;
-	var fullScreen : { name : String, state : Any };
+	var zones : haxe.DynamicAccess<{ views : Array<Dynamic>, selected : Int }>;
+	var sizes : { left : Float, right : Float, bottom : Float };
 }
 
 class IdeCache {
@@ -38,9 +38,12 @@ class Ide extends hide.tools.IdeData {
 	public var localStorage(get,never) : js.html.Storage;
 
 	var window : electron.Window;
-	var layout : golden.Layout;
+	var zones : Map<hide.ui.View.DisplayPosition, hide.html.comp.TabViewContainer>;
+	var middleZones : hide.html.comp.SplitContainer;
+	var layoutSizes : { left : Float, right : Float, bottom : Float };
+	var hasSavedSizes : Bool;
+	var saveLayoutTimer : haxe.Timer;
 
-	var currentLayout : { name : String, state : LayoutState };
 	var currentFullScreen(default,set) : hide.ui.View<Dynamic>;
 	var maximized : Bool;
 	var fullscreen : Bool;
@@ -49,7 +52,6 @@ class Ide extends hide.tools.IdeData {
 	var lastClosedTabStates : Array<Dynamic> = [];
 
 	var renderers : Array<h3d.mat.MaterialSetup>;
-	var subView : { component : String, state : Dynamic };
 	var scripts : Map<String,Array<Void->Void>> = new Map();
 	var hasReloaded = false;
 	public var thumbnailMode : Bool = false;
@@ -58,7 +60,6 @@ class Ide extends hide.tools.IdeData {
 
 	var hideRoot : hide.Element;
 	var statusBar : hide.Element;
-	var goldenContainer : hide.Element;
 	var statusIcons : hide.Element;
 
 	public var show3DIcons = true;
@@ -156,11 +157,6 @@ class Ide extends hide.tools.IdeData {
 				var p = p.split("=");
 				vars.set(p[0],StringTools.urlDecode(p[1]));
 			}
-			var sub = vars.get("subView");
-			if( sub != null ) {
-				var state = electron.App.getShared(Std.parseInt(vars.get("sid")));
-				subView = { component : sub, state : state };
-			}
 			// the editor state is written by the main window in another process : it can be read while partially written
 			var project = vars.get("project");
 			if( thumbnailMode && project != null )
@@ -175,7 +171,7 @@ class Ide extends hide.tools.IdeData {
 			if( s.work_area.y + s.work_area.height > yMax )
 				yMax = s.work_area.y + s.work_area.height;
 		}
-		if( subView == null && !thumbnailMode ) {
+		if( !thumbnailMode ) {
 			var wp : WindowPos = globalState.get("windowPos");
 			if( wp != null ) {
 				if( wp.w > 400 && wp.h > 300 )
@@ -262,8 +258,7 @@ class Ide extends hide.tools.IdeData {
 			hide.tools.CrashReport.logGpu(lost);
 			if( !hasReloaded ) showGpuCrash(details);
 		});
-		if( subView == null )
-			hide.tools.CrashReport.startGpuLog();
+		hide.tools.CrashReport.startGpuLog();
 
 		var body = js.Browser.document.body;
 		window.on("focus", function() {
@@ -314,8 +309,6 @@ class Ide extends hide.tools.IdeData {
 			e.stopPropagation();
 			return true;
 		}
-
-		if( subView != null ) body.className +=" hide-subview";
 
 		// dispatch global keys based on mouse position
 		new Element(body).keydown(function(e) {
@@ -384,150 +377,64 @@ class Ide extends hide.tools.IdeData {
 			wp.w = window.width;
 			wp.h = window.height;
 		}
-		if( subView == null )
-			globalState.set("windowPos", wp);
+		globalState.set("windowPos", wp);
 
 		for (v in views)
 			v.onResize();
 	}
 
-	public function getOrInitTarget(position: hide.ui.View.DisplayPosition) : golden.ContentItem {
-		if (layout.root == null)
-			return null;
-		var target = layout.root.getItemsById(position)[0];
-		if (target != null) {
-			target.config.content ??= [];
-			return target;
-		}
-
-		var parent : golden.ContentItem = null;
-		var config : golden.Config.ItemConfig;
-		var index : Int = null;
-		var rootRow = layout.root.contentItems[0];
-		switch(position) {
-			case Left:
-				config = {
-					type: Stack,
-				};
-				parent = rootRow;
-				index = 0;
-			case Center:
-				config = {
-					type: Stack,
-					isClosable: false,
-					width: 1500,
-					height: 800,
-				};
-				parent = getOrInitTarget(MiddleColumnInternal);
-				index = 0;
-			case Bottom:
-				config = {
-					type: Stack,
-				};
-				parent = getOrInitTarget(MiddleColumnInternal);
-				index = parent.contentItems.length;
-			case Right:
-				config = {
-					type: Stack,
-				};
-				parent = rootRow;
-				index = parent.contentItems.length;
-			case MiddleColumnInternal:
-				config = {
-					type: Column,
-					isClosable: false,
-				}
-				parent = rootRow;
-				index = hxd.Math.iclamp(1, 0, parent.contentItems.length);
-		}
-
-		config.id = position;
-		parent.addChild(config, index);
-		var target = layout.root.getItemsById(position)[0];
-
-		return target;
-	}
-
-	function initLayout( ?state : { name : String, state : LayoutState } ) {
+	function initLayout() {
 		initializing = true;
 
-		if( layout != null ) {
-			layout.destroy();
-			layout = null;
-		}
-
-		var emptyLayout : LayoutState = { content : [], fullScreen : null };
-
-		if( state == null ) {
-			var emptyLayout : LayoutState = {
-				content: [{type: golden.Config.ItemType.Row, isClosable: false, id: "content_root"}], fullScreen : null,
-			};
-
-
-			var layoutName = isCDB ? "CDB" : "Default";
-			var layouts = getLayouts();
-			for( i => p in layouts.copy() ) {
-				if( p.name == layoutName ) {
-					if( p.state.content == null || (p.state.content:Array<Dynamic>)[0]?.id != "content_root") {
-						layouts.splice(i, 1);
-						continue;
-					};
-					state = p;
-				}
-			}
-
-			if( state == null ) {
-				state = { name : layoutName, state : emptyLayout };
-				layouts.push(state);
-			}
-			projectState.set("layouts", layouts);
-		}
-
-		if( subView != null )
-			state = { name : "SubView", state : emptyLayout };
-
-		currentLayout = state;
-
-		var goldenConfig : golden.Config = {
-			content: state.state.content,
-			settings: {
-				// Default to false
-				reorderEnabled : currentConfig.get('layout.reorderEnabled', true) == true,
-				constrainDragToHeader : currentConfig.get('layout.constrainDragToHeader', true) == true,
-				showPopoutIcon : currentConfig.get('layout.showPopoutIcon') == true,
-				showMaximiseIcon : currentConfig.get('layout.showMaximiseIcon') == true
-			}
-		};
-
-		var comps = new Map();
-		for( vcl in hide.ui.View.viewClasses )
-			comps.set(vcl.name, true);
-		function checkRec(i:golden.Config.ItemConfig) {
-			if (i.componentName == 'hide.view.FileTree' && i.componentState?.legacy == null) {
-				i.componentName = "hide.view.FileBrowser";
-				i.componentState = {savedLayout: "SingleTree"};
-			}
-			switch (i.componentName) {
-			case "hide.view.CdbTable", "hide.view.CdbFavorites", "hide.view.CdbCustomTypes":
-				i.componentName = "hide.view.cdb." + i.componentName.substr("hide.view.".length);
-				i.componentState.componentName = i.componentName;
-			default:
-			}
-			if( i.componentName != null && i.componentState != null && !comps.exists(i.componentName) ) {
-				i.componentState.deletedComponent = i.componentName;
-				i.componentName = "hide.view.Unknown";
-			}
-			if( i.content != null ) for( i in i.content ) checkRec(i);
-		}
-		for( i in goldenConfig.content ) checkRec(i);
+		if( projectState.get("layouts") != null )
+			projectState.remove("layouts"); // golden layouts
+		var state : LayoutState = isCDB ? null : projectState.get("layout");
+		layoutSizes = state?.sizes ?? { left : 350, right : 350, bottom : 300 };
+		hasSavedSizes = state?.sizes != null;
 
 		if (hideRoot != null) {
+			for( v in views.copy() )
+				v.destroy();
 			hideRoot.remove();
 			hideRoot = null;
 		}
 		hideRoot = new Element('<div class="hide-root"></div>').appendTo(new Element("body"));
 
-		goldenContainer = new Element('<div class="golden-layout-root"></div>').appendTo(hideRoot);
+		function onResize(_) {
+			for( pos => z in zones ) {
+				if( z.hidden )
+					continue;
+				switch( pos ) {
+				case Left: layoutSizes.left = z.offsetWidth;
+				case Right: layoutSizes.right = z.offsetWidth;
+				case Bottom: layoutSizes.bottom = z.offsetHeight;
+				default:
+				}
+			}
+			hasSavedSizes = true;
+			onLayoutChanged();
+		}
+		hide.html.Html.build(hideRoot.get(0),
+			<hide-split-container id="layout-root" class="layout-root">
+				<hide-tab-view-container id="content_left" anchor="previous" size={layoutSizes.left} auto-hide-empty/>
+				<hide-split-container id="middle-zones" direction="vertical">
+					<hide-tab-view-container id="content_center"/>
+					<hide-tab-view-container id="content_bottom" anchor="next" size={layoutSizes.bottom} auto-hide-empty/>
+				</hide-split-container>
+				<hide-tab-view-container id="content_right" anchor="next" size={layoutSizes.right} auto-hide-empty/>
+			</hide-split-container>
+		);
+		this.middleZones = middleZones;
+		zones = new Map();
+		for( z in [content_left, content_center, content_bottom, content_right] ) {
+			zones.set(z.id, z);
+			new js.html.MutationObserver((_, _) -> {
+				refreshZones();
+				onLayoutChanged();
+			}).observe(z, { childList : true });
+		}
+		layoutRoot.addEventListener("split-resize", onResize);
+		middleZones.addEventListener("split-resize", onResize);
 
 		statusBar = new Element('<div class="status-bar"></div>').appendTo(hideRoot);
 		statusIcons = new Element('<div id="status-icons"></div>').appendTo(statusBar);
@@ -540,107 +447,109 @@ class Ide extends hide.tools.IdeData {
 			new Element('<span class="build">hide $driver $commitHash</span>').appendTo(statusBar);
 		}
 
-		layout = new golden.Layout(goldenConfig, goldenContainer.get(0));
-
-
-
-		var resizeTimer : haxe.Timer = null;
-		var observer = new hide.comp.ResizeObserver((elts, observer) -> {
-			if (resizeTimer != null) {
-				resizeTimer.stop();
-			}
-
-			resizeTimer = new haxe.Timer(20);
-			resizeTimer.run = () -> {
-				var rect = goldenContainer.get(0).getBoundingClientRect();
-				layout.updateSize(Std.int(rect.width), Std.int(rect.height));
-				resizeTimer.stop();
-				resizeTimer = null;
-			};
-			});
-		observer.observe(goldenContainer.get(0));
-
 		var initViews = [];
-		function initView(view:hide.ui.View<Dynamic>) {
-			if( isDebugger ) view.rebuild() else try view.rebuild() catch( e : Dynamic ) error(view+":"+e);
-		}
-		for( vcl in hide.ui.View.viewClasses )
-			layout.registerComponent(vcl.name,function(cont,state) {
-				var view = Type.createInstance(vcl.cl,[state]);
-				view.setContainer(cont);
-				if( initializing )
+		if( state != null ) {
+			var order : Array<hide.ui.View.DisplayPosition> = [Left, Center, Bottom, Right];
+			for( pos in order ) {
+				var z = state.zones.get(pos);
+				if( z == null )
+					continue;
+				var selected = null;
+				for( i => s in z.views ) {
+					// RefViewer content is not saved
+					if( s.componentName == "hide.view.RefViewer" )
+						continue;
+					var view = addView(s, pos);
 					initViews.push(view);
-				else
-					initView(view);
-			});
-
-		layout.init();
-		layout.on('stateChanged', onLayoutChanged);
-
-		// remove dangling RefViewers
-		for (v in views) {
-			if (v.state.componentName == "hide.view.RefViewer") {
-				v.close();
+					if( i == z.selected )
+						selected = view;
+				}
+				selected?.activate();
 			}
 		}
-
-
-		getOrInitTarget(Center);
+		refreshZones();
 
 		// register a global shortcut that break in the debugger
 		// on Alt+F1. Usefull to debug UI elements that are temporary
 		// Note : the debugger window must be open for this to work
 		electron.App.registerGlobalShortcut("Alt+F1", () -> js.Lib.debug());
 
-		var waitCount = 0;
-		function waitInit() {
-			waitCount++;
-			if( !layout.isInitialised ) {
-				if( waitCount > 20 ) {
-					// timeout : error recovery if invalid component
-					state.state = emptyLayout;
-					initLayout();
-					return;
-				}
-				haxe.Timer.delay(waitInit, 50);
-				return;
+		initializing = false;
+		for( v in initViews )
+			initView(v);
+		if( views.length == 0 ) {
+			if( isCDB )
+				open("hide.view.cdb.CdbTable",{}, function(v) v.fullScreen = true);
+			else
+				open("hide.view.FileBrowser",{savedLayout: "SingleTree"}, Left);
+		}
+		if( firstInit ) {
+			firstInit = false;
+			for( file in electron.App.argv ) {
+				if( !sys.FileSystem.exists(file) ) continue;
+				openFile(file);
 			}
-			if( state.state.fullScreen != null ) {
-				var fs = state.state.fullScreen;
-				var found = [for( v in views ) if( v.viewClass == fs.name ) v];
-				if( found.length == 1 )
-					found[0].fullScreen = true;
-				else {
-					for( f in found )
-						if( haxe.Json.stringify(f.state) == haxe.Json.stringify(fs.state) ) {
-							f.fullScreen = true;
-							break;
-						}
-				}
-			}
-			initializing = false;
-			for( v in initViews )
-				initView(v);
-			initViews = null;
-			if( subView == null && views.length == 0 ) {
-				if( isCDB )
-					open("hide.view.cdb.CdbTable",{}, function(v) v.fullScreen = true);
-				else
-					open("hide.view.FileBrowser",{savedLayout: "SingleTree"}, Left);
-			}
-			if( firstInit ) {
-				firstInit = false;
-				for( file in electron.App.argv ) {
-					if( !sys.FileSystem.exists(file) ) continue;
-					openFile(file);
-				}
-				if( subView != null )
-					open(subView.component, subView.state);
-			}
-		};
-		waitInit();
+		}
 
 		hxd.System.setLoop(mainLoop);
+	}
+
+	/**
+		Creates the view of `state` in the zone `position`, or in its registered one if it can't be docked there.
+	**/
+	function addView( state : Dynamic, position : hide.ui.View.DisplayPosition ) {
+		var name : String = state.componentName;
+		if( !hide.ui.View.viewClasses.exists(name) ) {
+			state.deletedComponent = name;
+			name = "hide.view.Unknown";
+		}
+		var view = hide.ui.View.createView(name, state);
+		var zone = zones.get(position);
+		if( zone == null || !@:privateAccess zone.canDropPane(view.element[0], null) )
+			zone = zones.get(view.defaultOptions.position);
+
+		var width = view.defaultOptions.width;
+		var pos : hide.ui.View.DisplayPosition = zone.id;
+		if( width != null && !hasSavedSizes && zone.children.length == 0 && (pos == Left || pos == Right) ) {
+			zone.setAttribute("size", "" + width);
+			if( pos == Left ) layoutSizes.left = width else layoutSizes.right = width;
+		}
+
+		zone.addView(view);
+		return view;
+	}
+
+	function initView( view : hide.ui.View<Dynamic> ) {
+		if( isDebugger ) view.rebuild() else try view.rebuild() catch( e : Dynamic ) error(view+":"+e);
+	}
+
+	/**
+		Hides the zones of the other views in fullscreen. Empty side zones hide themselves.
+	**/
+	function refreshZones() {
+		if( zones == null )
+			return;
+		for( zone in zones ) {
+			if( zone.hasAttribute("auto-hide-empty") && zone.children.length == 0 )
+				continue;
+			var hidden = currentFullScreen != null && currentFullScreen.container != zone;
+			if( zone.hidden != hidden )
+				zone.hidden = hidden;
+		}
+		var hidden = zones.get(Center).hidden && zones.get(Bottom).hidden;
+		if( middleZones.hidden != hidden )
+			middleZones.hidden = hidden;
+	}
+
+	/**
+		Closes all the views and goes back to the default layout.
+	**/
+	function resetLayout() {
+		for( v in views.copy() )
+			if( !v.close() )
+				return;
+		projectState.remove("layout");
+		initLayout();
 	}
 
 	function mainLoop() {
@@ -668,31 +577,42 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	function set_currentFullScreen(v) {
-		var old = currentFullScreen;
+		if( v == currentFullScreen )
+			return v;
 		currentFullScreen = v;
-		if( old != null ) old.fullScreen = false;
-		onLayoutChanged();
+		if( !isCDB )
+			setFullscreen(v != null);
+		refreshZones();
 		return v;
 	}
 
 	function onLayoutChanged() {
-		if( initializing || !currentConfig.get("hide.autoSaveLayout") || isCDB )
+		// views are only destroyed when closed
+		for( v in views )
+			if( !v.element[0].isConnected )
+				js.Browser.console.warn(v + " was removed from the layout without being closed");
+		if( initializing || isCDB || zones == null || saveLayoutTimer != null )
 			return;
-		currentLayout.state = saveLayout();
-		if( subView == null ) projectState.set("layouts", getLayouts());
-	}
-
-	function getLayouts() : Array<{ name : String, state : LayoutState }> {
-		return projectState.get("layouts", []);
+		saveLayoutTimer = haxe.Timer.delay(function() {
+			saveLayoutTimer = null;
+			projectState.set("layout", saveLayout());
+		}, 100);
 	}
 
 	function saveLayout() : LayoutState {
-		return {
-			content : layout.toConfig().content,
-			fullScreen : currentFullScreen == null ? null : { name : currentFullScreen.viewClass, state : currentFullScreen.state }
-		};
+		var state : LayoutState = { zones : {}, sizes : layoutSizes };
+		for( pos => zone in zones ) {
+			var views = [];
+			var selected = 0;
+			for( i => v in zone.views ) {
+				if( v.isActive() )
+					selected = i;
+				views.push(v.state);
+			}
+			state.zones.set(pos, { views : views, selected : selected });
+		}
+		return state;
 	}
-
 
 	public function setClipboard( data : String, type: electron.Clipboard.ClipboardType = Text ) {
 		electron.Clipboard.set(data, type);
@@ -1444,8 +1364,6 @@ class Ide extends hide.tools.IdeData {
 
 	public function initMenu() {
 
-		if( subView != null ) return;
-
 		var menuHTML = "<content>"+new Element("#mainmenu").html() + currentConfig.get("menu.extra")+"</content>";
 		var menu = new Element(menuHTML);
 
@@ -1642,31 +1560,7 @@ class Ide extends hide.tools.IdeData {
 			});
 		}
 
-		// layout
-		var layouts = menu.find(".layout .content");
-		layouts.html("");
-		for( l in getLayouts() ) {
-			if( l.name == "Default" ) continue;
-			new Element("<menu>").attr("label",l.name).addClass(l.name).appendTo(layouts).click(function(_) {
-				initLayout(l);
-			});
-		}
-		menu.find(".layout .autosave").click(function(_) {
-			userConfig.set("hide.autoSaveLayout", !currentConfig.get("hide.autoSaveLayout"));
-		}).prop("checked",currentConfig.get("hide.autoSaveLayout"));
-
-		menu.find(".layout .saveas").click(function(_) {
-			var name = ask("Please enter a layout name:");
-			if( name == null || name == "" ) return;
-			var layouts = getLayouts();
-			layouts.push({ name : name, state : saveLayout() });
-			projectState.set("layouts", layouts);
-			initMenu();
-		});
-		menu.find(".layout .save").click(function(_) {
-			currentLayout.state = saveLayout();
-			projectState.set("layouts", getLayouts());
-		});
+		menu.get(0).querySelector(".layout .reset").addEventListener("click", (_) -> resetLayout());
 
 		menu.find(".capture-transparentBG").click(function(_) {
 					var currentView : hide.ui.View<Dynamic> = null;
@@ -1827,47 +1721,15 @@ class Ide extends hide.tools.IdeData {
 		var path = makeRelative(file);
 		for( v in views )
 			if( Type.getClassName(Type.getClass(v)) == ext.component && v.state.path == path ) {
-				if( v.container.tab != null ) {
-					v.container.parent.parent.setActiveContentItem(v.container.parent);
-					if (onOpen != null ) onOpen(v);
-				}
+				v.activate();
+				if (onOpen != null ) onOpen(v);
 				return;
 			}
 		open(ext.component, { path : path }, onCreate, onOpen);
 	}
 
-	public function openSubView<T>( component : Class<hide.ui.View<T>>, state : T, events : {} ) {
-		// state is sent to the sub window, events are called back through IPC
-		if( subViewEvents == null ) {
-			subViewEvents = [];
-			electron.Window.onOpenerCall(function(name, param) {
-				for( events in subViewEvents ) {
-					var f = Reflect.field(events, name);
-					if( f != null ) Reflect.callMethod(events, f, [param]);
-				}
-			});
-		}
-		if( subViewEvents.indexOf(events) < 0 ) subViewEvents.push(events);
-		var id = electron.App.setShared(state);
-		var compName = Type.getClassName(component);
-		electron.Window.open("app.html?subView="+compName+"&sid="+id);
-	}
-
-	var subViewEvents : Array<{}>;
-
-	public function callParentView( name : String, param : Dynamic ) {
-		if( subView != null ) electron.Window.callOpener(name, param);
-	}
-
-	public function closeInspector() {
-		var inspector = layout.root.getItemsById("inspector")[0];
-		if (inspector != null) {
-			inspector.remove();
-		}
-	}
-
 	public function open( component : String, state : Dynamic, ?onCreate : hide.ui.View<Dynamic> -> Void, ?onOpen : hide.ui.View<Dynamic> -> Void, ?positionOverride: hide.ui.View.DisplayPosition ) {
-		if (layout.root == null)
+		if (zones == null)
 			return;
 		if( state == null ) state = {};
 
@@ -1885,41 +1747,11 @@ class Ide extends hide.tools.IdeData {
 			}
 		}
 
-		var options = viewConfig.options;
-
-		var target = getOrInitTarget(positionOverride ?? options.position ?? Center);
-
-		var needResize = options.width != null;
-		target.on("componentCreated", function(c) {
-			target.off("componentCreated");
-			var view : hide.ui.View<Dynamic> = untyped c.origin.__view;
-			if( onCreate != null ) onCreate(view);
-			if ( onOpen != null ) onOpen(view);
-			if( needResize ) {
-				// when opening restricted size after free size
-				haxe.Timer.delay(function() {
-					view.container.setSize(options.width, view.container.height);
-				},0);
-			} else {
-				// when opening free size after restricted size
-				var v0 = views[0];
-				if( views.length == 2 && views[1] == view && v0.defaultOptions.width != null )
-					haxe.Timer.delay(function() {
-						v0.container.setSize(v0.defaultOptions.width, v0.container.height);
-					},0);
-			}
-		});
-		var config : golden.Config.ItemConfig = {
-			type : Component,
-			componentName : component,
-			componentState : state,
-		};
-
-		if (options.id != null) {
-			config.id = options.id;
-		}
-
-		target.addChild(config);
+		var view = addView(state, positionOverride ?? viewConfig.options.position);
+		view.activate();
+		initView(view);
+		if( onCreate != null ) onCreate(view);
+		if ( onOpen != null ) onOpen(view);
 	}
 
 	public function reopenLastClosedTab() {

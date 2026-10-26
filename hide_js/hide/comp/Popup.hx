@@ -74,9 +74,6 @@ class Popup extends Component {
 			searchBar.keyup((e) -> onSearchChanged(searchBar));
 		}
 
-		var body = parent.closest(".lm_content");
-		if (body.length == 0) body = new Element("body");
-
 		timer = new haxe.Timer(500);
 		timer.run = function() {
 			if( parent.closest("body").length == 0 ) {

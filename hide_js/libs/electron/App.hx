@@ -93,12 +93,4 @@ class App {
 		return Ipc.WebUtils.getPathForFile(file);
 	}
 
-	public static function setShared( value : Dynamic ) : Int {
-		return Ipc.call("shared.set", value);
-	}
-
-	public static function getShared( id : Int ) : Dynamic {
-		return Ipc.call("shared.get", id);
-	}
-
 }

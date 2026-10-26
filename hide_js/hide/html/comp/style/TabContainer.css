@@ -1,0 +1,104 @@
+:host {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	position: relative;
+}
+
+:host(.transientDrop) {
+	--split-override-size: 50px;
+	background: #52749c;
+	> .header {
+		opacity: 0.5;
+	}
+}
+
+/* Overlay : an outline on the host would be covered by the view */
+:host(.drop)::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	outline: 1px solid #08f;
+	outline-offset: -1px;
+	pointer-events: none;
+	z-index: 1;
+}
+
+.header {
+	display: flex;
+	flex-shrink: 0;
+	height: 18px;
+	background: #111;
+}
+
+.tabs {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	gap: 2px;
+	padding-top: 2px;
+}
+
+.more {
+	display: flex;
+	padding: 0px 4px;
+	align-items: center;
+	font-size: 1.1em;
+	cursor: pointer;
+	color: #aaa;
+
+	&:hover {
+		color: #fff;
+	}
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+.tab {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+	padding-left: 6px;
+	cursor: pointer;
+	white-space: nowrap;
+	color: #aaa;
+	background: #333;
+
+	border-radius: 5px 5px 0 0;
+
+	&[hidden] {
+		display: none;
+	}
+
+	&:hover {
+		color: #fff;
+	}
+
+	&.selected {
+		background: #555;
+		color: #fff;
+	}
+}
+
+.close {
+	margin-left: 3px;
+	opacity: 0.5;
+	height: 14px;
+	text-align: center;
+	aspect-ratio: 1/1;
+
+	&:hover {
+		opacity: 1;
+		background-color: #444;
+	}
+}
+
+slot {
+	display: block;
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}

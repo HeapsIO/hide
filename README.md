@@ -161,3 +161,10 @@ class CustomView extends FileView {
 
 }
 ```
+
+### UI components
+HIDE has two kinds of UI components:
+- `hide.html.WebComponent` : standalone, reusable custom elements (containers, widgets) created with `create()` or `hide.html.Html.build`.
+- `hide.comp.Component` : general purpose and complex parts owning a root `element`. Views are components.
+
+Eligible `hide.comp.Component`s may be converted to web components later.

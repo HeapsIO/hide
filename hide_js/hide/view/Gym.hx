@@ -334,6 +334,32 @@ class Gym extends hide.ui.View<{}> {
 				});
 			}
 		}
+
+		{
+			var toolbar = section(element, "Html");
+			hide.html.Html.build(toolbar.get(0),
+				<hide-split-container style="height: 500px">
+					<hide-tab-container anchor="previous" size="250">
+						<div label="Scene">Scene tree</div>
+						<div label="Files">Files</div>
+					</hide-tab-container>
+					<hide-split-container direction="vertical">
+						<hide-tab-container>
+							<div label="Viewport">
+								<button onclick={() -> logs.append(js.Browser.document.createDivElement())}>Add log tab</button>
+							</div>
+						</hide-tab-container>
+						<hide-tab-container id="logs" anchor="next" size="150">
+							for (i in 0...3)
+								<div label={'Log $i'}>Log content</div>
+						</hide-tab-container>
+					</hide-split-container>
+					<hide-tab-container anchor="next" size="300">
+						<div label="Properties">Properties</div>
+					</hide-tab-container>
+				</hide-split-container>
+			);
+		}
 	}
 
 	function rethrowTest1() {

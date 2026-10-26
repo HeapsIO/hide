@@ -40,10 +40,6 @@ body {
 	overflow: hidden;
 }
 
-.lm_header .lm_tab {
-	font-family: var(--default-font), Serif !important;
-}
-
 #message-container {
 	pointer-events: none;
 	z-index: 9999;
@@ -3230,36 +3226,13 @@ input[type=checkbox] {
 	}
 }
 
-/* Golden Layout Fixes */
-
-.lm_header .lm_tabs {
-	z-index : var(--default-layer);
-}
-
-.lm_dropTargetIndicator {
-	box-shadow : none;
-}
-span.lm_title { display: inline-block; padding: 0px 10px; }
-li.lm_tab { padding-left: 0px !important; padding-right: 15px !important; }
-div.lm_close_tab { top : 0px !important; right : 0px !important; width : 15px !important; height : 18px !important; }
-div.lm_close_tab:hover { background-color : #555 !important; }
-
-body.hide-subview {
-	.lm_header .lm_tab {
-		padding-right: 10px;
-	}
-	.lm_close_tab, .lm_controls {
-		display : none;
-	}
-}
-
-.lm_header .lm_tabdropdown_list .lm_tab {
+.hide-view {
+	display: block;
+	position: relative;
 	width: 100%;
-}
-
-.lm_header .lm_tabdropdown_list .lm_tab .lm_title {
-	width: unset;
-	max-width: 500px;
+	height: 100%;
+	overflow: hidden;
+	background: #222222;
 }
 
 .visibility-toggle, .visibility-large-toggle {
@@ -5082,7 +5055,7 @@ hide-popover {
 	height: 100vh;
 	width: 100vw;
 
-	> .golden-layout-root {
+	> .layout-root {
 		flex-grow: 1;
 		background-color: #000000;
 		min-height: 0;
@@ -6124,7 +6097,10 @@ blend-space-2d-root {
 			background-color: #333;
 			padding: var(--basic-padding);
 			border-radius: var(--basic-border-radius);
+		}
 
+		> :not(summary) {
+			outline: 1px solid black;
 		}
 
 		padding: 1em;
@@ -6666,11 +6642,6 @@ fancy-tooltip {
 		mask-image: url("res/icons/svg/star.svg");
 		color: #fcbf07;
 	}
-}
-
-.lm_tabdropdown_list {
-	z-index: 9999 !important;
-	background-color: #111111;
 }
 
 .ref-viewer {

@@ -4,8 +4,6 @@
 	<meta charset="utf-8" />
 </head>
 <body>
-<link rel="stylesheet" type="text/css" href="libs/goldenlayout-base.css"/>
-<link rel="stylesheet" type="text/css" href="libs/goldenlayout-dark-theme.css"/>
 <link rel="stylesheet" type="text/css" href="common.css"/>
 <link rel="stylesheet" type="text/css" href="style.css"/>
 <link rel="stylesheet" type="text/css" href="hidekit.css"/>
@@ -15,7 +13,7 @@
 <link rel="stylesheet" data-name="vs/editor/editor.main" href="libs/monaco/min/vs/editor/editor.main.css">
 
 <script>
-	// Electron defines a global "module" : hide it so jQuery, goldenlayout and monaco
+	// Electron defines a global "module" : hide it so jQuery and monaco
 	// register themselves as browser globals instead of CommonJS / node modules
 	var nodeModule = window.module;
 	// DirectX 12 addon used by hide.js when built with -D dx12 (hide_dx12.hxml, see hide_js/libs/jsdx/native/build.bat)
@@ -29,7 +27,6 @@
 </script>
 <script src="libs/jquery-3.2.1.js"></script>
 <script src="libs/jquery.ui.position.js"></script>
-<script src="libs/goldenlayout.js"></script>
 <script src="libs/spectrum.js"></script>
 
 <!-- Toggle the following line to enable webgl debugging at the cost of performance -->
@@ -128,13 +125,7 @@
 		<menu label="Enable Compression" class="dbCompress" type="checkbox"></menu>
 	</menu>
 	<menu label="Layout" class="layout">
-		<div class="content">
-		</div>
-		<separator></separator>
-		<menu label="Keep on close" class="autosave" type="checkbox"></menu>
-		<menu label="Save" class="save"></menu>
-		<menu label="Save As..." class="saveas"></menu>
-		<menu label="Manage" class="manage" disabled="disabled"></menu>
+		<menu label="Reset Layout" class="reset"></menu>
 	</menu>
 	<menu label="Tools" class="tools">
 		<menu label="Analysis" class="analysis">

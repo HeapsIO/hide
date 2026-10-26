@@ -79,8 +79,7 @@ class Dropdown extends Component {
 			super(parent, root);
 		}
 		else {
-			var body = root.closest(".lm_content");
-			if (body.length == 0) body = new Element("body");
+			var body = new Element(root.get(0).closest(".hide-view") ?? js.Browser.document.body);
 			anchor = parent;
 			super(body, root);
 		}

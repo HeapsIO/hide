@@ -1,0 +1,22 @@
+:host {
+	display: grid;
+	overflow: hidden;
+}
+
+slot {
+	display: contents;
+}
+
+.splitter {
+	background: #444;
+	cursor: col-resize;
+	touch-action: none;
+
+	&:hover {
+		background: #08f;
+	}
+
+	:host([direction=vertical]) & {
+		cursor: row-resize;
+	}
+}

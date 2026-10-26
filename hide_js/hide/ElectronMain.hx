@@ -38,8 +38,6 @@ class ElectronMain {
 	static var mainWindow : BrowserWindow;
 	static var quitting = false;
 	static var windowStates : Map<Int, WindowState> = new Map();
-	static var sharedRefs : Map<Int, Dynamic> = new Map();
-	static var sharedRefId = 0;
 	// window id => subscriber webContents id => events
 	static var subscriptions : Map<Int, Map<Int, Array<String>>> = new Map();
 	// webContents id => accelerators
@@ -621,10 +619,6 @@ class ElectronMain {
 			if( item == null ) return;
 			for( k => v in props ) Reflect.setField(item, k, v);
 		});
-		h.set("win.callParent", function(wc, name : String, param : Dynamic) {
-			var opener = windowStates.get(getWin(wc, null).id).opener;
-			if( opener != null ) send(WebContents.fromId(opener), "hide-parent-call", name, param);
-		});
 		h.set("win.connectOpener", function(wc : WebContents) {
 			var win = getWin(wc, null);
 			var opener = windowStates.get(win.id).opener;
@@ -634,14 +628,6 @@ class ElectronMain {
 			openerWc.postMessage("hide-port", win.id, [channel.port1]);
 			wc.postMessage("hide-port", null, [channel.port2]);
 		});
-
-		// values shared between windows (must be serializable)
-		h.set("shared.set", function(wc, value : Dynamic) {
-			var id = sharedRefId++;
-			sharedRefs.set(id, value);
-			return id;
-		});
-		h.set("shared.get", (wc, id : Int) -> sharedRefs.get(id));
 
 		// dialogs
 		h.set("dialog.open", function(wc, o : Dynamic) {

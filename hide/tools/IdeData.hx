@@ -52,7 +52,6 @@ class IdeData {
 
 	/** Default values of the user preferences, set in the defaults layer of the configs **/
 	public var defaultUserConfig : Map<String, Dynamic> = [
-		"hide.autoSaveLayout" => true,
 		"hide.enableDBFormulas" => true,
 		"hide.closeSearchOnFileOpen" => false,
 		"hide.typingDebounceThreshold" => 300,

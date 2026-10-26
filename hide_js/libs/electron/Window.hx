@@ -154,17 +154,6 @@ class Window {
 	}
 
 	/**
-		Call a function on the page that opened this window
-	**/
-	public static function callOpener( name : String, param : Dynamic ) {
-		Ipc.call("win.callParent", name, param);
-	}
-
-	public static function onOpenerCall( callb : String -> Dynamic -> Void ) {
-		Ipc.on("hide-parent-call", function(_, name : String, param : Dynamic) callb(name, param));
-	}
-
-	/**
 		Open a direct message channel with the page that opened this window, which receives the other end in its Window.onConnect
 	**/
 	public static function connectOpener( onConnect : js.html.MessagePort -> Void ) {

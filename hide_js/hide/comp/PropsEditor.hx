@@ -514,7 +514,7 @@ class PropsField extends Component {
 
 	public function new(props, el, context) {
 		super(null,el);
-		viewRoot = element.closest(".lm_content");
+		viewRoot = new Element(element.get(0).closest(".hide-view"));
 		this.props = props;
 		this.context = context;
 		var f = element;
