@@ -49,9 +49,10 @@ class ThumbnailGenerator {
 		}
 		electron.Window.get().resizeTo(128,128);
 
-		h3d.pass.Output.onShaderError = (msg : String, p) -> {
+		h3d.impl.RenderError.onRenderError = (_, msg : String) -> {
+			var p = Std.downcast(h3d.impl.RenderContext.get(), h3d.scene.RenderContext)?.drawPass;
 			if (shaderError == null)
-				shaderError = msg + " (" + p.obj.name + ")";
+				shaderError = msg + (p == null ? "" : " (" + p.obj.name + ")");
 		};
 		createScene();
 	}

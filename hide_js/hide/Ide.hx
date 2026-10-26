@@ -74,9 +74,15 @@ class Ide extends hide.tools.IdeData {
 		hxd.System.getClipboardText = () -> electron.Clipboard.get(Text);
 		hxd.System.setClipboardText = (text) -> { electron.Clipboard.set(text, Text); return true; };
 		var shaderErrors = new Map<String, Bool>();
-		h3d.pass.Output.onShaderError = (msg : String, p) -> {
-			var text = msg + " (" + p.obj.name + ")";
-			var key = p.shader?.id + ":" + text;
+		h3d.impl.RenderError.onRenderError = (error, msg : String) -> {
+			var p = Std.downcast(h3d.impl.RenderContext.get(), h3d.scene.RenderContext)?.drawPass;
+			var objName = p == null ? "" : " (" + p.obj.name + ")";
+			var text = msg + objName;
+			var shader = switch( error ) {
+				case Shader(s): s;
+				default: p?.shader;
+			}
+			var key = shader?.id + ":" + text;
 			if (!shaderErrors.exists(key)) {
 				shaderErrors.set(key, true);
 				js.Browser.console.warn(text);
@@ -84,8 +90,8 @@ class Ide extends hide.tools.IdeData {
 			var s = hide.comp.Scene.getCurrent();
 			if (s != null) {
 				var nl = msg.indexOf("\n");
-				var title = (nl < 0 ? msg : msg.substr(0, nl)) + " (" + p.obj.name + ")";
-				@:privateAccess s.setErrorMessage({ title: title, details: nl < 0 ? null : msg.substr(nl + 1), contextObject: p.obj, log: false });
+				var title = (nl < 0 ? msg : msg.substr(0, nl)) + objName;
+				@:privateAccess s.setErrorMessage({ title: title, details: nl < 0 ? null : msg.substr(nl + 1), contextObject: p?.obj, log: false });
 			}
 		};
 		#if dx12
