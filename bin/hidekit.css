@@ -5,19 +5,6 @@
 	background-color: var(--inspector-bg);
 	overflow-y: auto;
 
-	&::-webkit-scrollbar {
-		width: 7px;
-		height: 7px;
-		background: transparent;
-	}
-	&::-webkit-scrollbar-track {
-		background: transparent;
-	}
-	&::-webkit-scrollbar-thumb {
-		background-color: #555;
-		border-radius: 20px;
-		border: transparent;
-	}
 	border-right: 1px solid #444;
 
 	> div {
@@ -246,20 +233,6 @@ kit-root {
 
 			max-height: 400px;
 			overflow: auto;
-
-			&::-webkit-scrollbar {
-				width: 7px;
-				height: 7px;
-				background: transparent;
-			}
-			&::-webkit-scrollbar-track {
-				background: transparent;
-			}
-			&::-webkit-scrollbar-thumb {
-				background-color: #555;
-				border-radius: 20px;
-				border: transparent;
-			}
 
 			> div {
 				border-right: 1px solid #444;

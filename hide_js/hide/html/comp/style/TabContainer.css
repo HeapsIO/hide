@@ -10,7 +10,7 @@
 	--hover-feedback-border: var(--theme-accent);
 	--hover-transient-background: color-mix(in oklch, var(--theme-accent), var(--theme-base) 30%);
 
-	--background: var(--theme-surface-0);
+	--tab-background: var(--theme-surface-0);
 	--border-radius: 5px;
 
 	border-radius: 0 0 var(--border-radius) var(--border-radius);
@@ -94,7 +94,7 @@
 	&.selected {
 		/* border-top: 2px solid var(--theme-accent); */
 
-		background: var(--background);
+		background: var(--tab-background);
 ;
 		color: #fff;
 	}
@@ -118,5 +118,5 @@ slot {
 	flex: 1;
 	min-height: 0;
 	overflow: auto;
-	background-color: var(--background);
+	background-color: var(--tab-background);
 }
