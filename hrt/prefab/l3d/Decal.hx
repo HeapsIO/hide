@@ -25,7 +25,7 @@ class Decal extends Object3D {
 	@:s var centered : Bool = true;
 	@:s var autoAlpha : Bool = true;
 	@:c var blendMode : h2d.BlendMode = Alpha;
-	@:s var drawOrder : String;
+	@:s var drawOrder : Int;
 	@:s var normalFade : Bool = false;
 	@:s var normalFadeStart : Float = 0;
 	@:s var normalFadeEnd : Float = 1;
@@ -45,6 +45,9 @@ class Decal extends Object3D {
 	}
 
 	override function load( obj : Dynamic ) {
+		// backward compat for when drawOrder was saved as a string while being an int
+		if (obj.drawOrder is String)
+			obj.drawOrder = Std.parseInt(obj.drawOrder) ?? 0;
 		super.load(obj);
 		if( obj.blendMode != null )
 			blendMode = h2d.BlendMode.createByIndex(obj.blendMode);
@@ -149,7 +152,7 @@ class Decal extends Object3D {
 		}
 
 		mesh.material.mainPass.setBlendMode(blendMode);
-		mesh.material.mainPass.layer = Std.parseInt(drawOrder);
+		mesh.material.mainPass.layer = drawOrder;
 
 		inline function commonSetup(shader: h3d.shader.pbr.VolumeDecal.BaseDecal) {
 			shader.fadePower = fadePower;
@@ -450,7 +453,7 @@ class Decal extends Object3D {
 
 			var layers : Array< { name : String, value : Int }> = hide.Ide.inst.currentConfig.get("material.drawOrder", []);
 
-			ctx.properties.add(new hide.Element('
+			var e = new hide.Element('
 			<div class="decal">
 				<div class="group" name="Decal">
 					<dl>
@@ -473,8 +476,8 @@ class Decal extends Object3D {
 
 						<dt>Draw Order</dt>
 						<dd>
-							<select field="drawOrder">
-								<option value="" selected disabled hidden>Default</option>
+							<select class="drawOrder">
+								<option value="0" selected disabled hidden>Default</option>
 								${[for( i in 0...layers.length ) '<option value="${layers[i].value}">${layers[i].name}</option>'].join("")}
 							</select>
 						</dd>
@@ -490,7 +493,8 @@ class Decal extends Object3D {
 					<dt>Normal end</dt><dd> <input type="range" min="0" max="1" field="normalFadeEnd"/></dd>
 				</div>
 			</div>
-			'),this, function(pname) {
+			');
+			ctx.properties.add(e, this, function(pname) {
 				if( pname == "renderMode" ) {
 					clearSelection();
 					ctx.rebuildPrefab(this);
@@ -498,6 +502,14 @@ class Decal extends Object3D {
 				}
 				else
 					ctx.onChange(this, pname);
+			});
+
+			var select = e.find(".drawOrder");
+			select.val('${drawOrder}');
+
+			select.change((event) -> {
+				var v = Std.parseInt(select.val());
+				ctx.makeChanges(this, () -> drawOrder = v);
 			});
 		}
 
