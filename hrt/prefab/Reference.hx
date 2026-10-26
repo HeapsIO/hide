@@ -672,7 +672,7 @@ class Reference extends Object3D {
 					// and swap it with the clone
 					for (childIndex => prefab in parents[i].children) {
 						if (prefab != selectedRef) continue;
-						parents[i].removeChild(parents[i].children[i]);
+						parents[i].removeChild(prefab);
 						parents[i].addChildAt(clones[i], childIndex);
 						break;
 					}
@@ -685,7 +685,7 @@ class Reference extends Object3D {
 					// and swap it with the original prefab
 					for (childIndex => prefab in parents[i].children) {
 						if (prefab != clones[i]) continue;
-						parents[i].removeChild(parents[i].children[i]);
+						parents[i].removeChild(prefab);
 						parents[i].addChildAt(selectedRef, childIndex);
 						break;
 					}
