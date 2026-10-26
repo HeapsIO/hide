@@ -192,8 +192,7 @@ class App extends hxd.App {
 				background: background
 			});
 		}
-		h3d.impl.DX12Driver.ENABLE_PSO_CONFIG_CACHE = true;
-		h3d.impl.DX12Driver.PSO_CONFIG_CACHE_PATH = h3d.impl.DX12Driver.PSO_CONFIG_CACHE_OUTPUT_PATH = "bin_hl/psoconfig.dx12";
+		h3d.impl.PipelineCache.PipelineConfigCache.set(new h3d.impl.PipelineCache.PipelineConfigCache("bin_hl/psoconfig.dx12"));
 		h3d.impl.Driver.setShaderCache(new h3d.impl.ShaderCache("bin_hl/shadercache.dx12", Binary));
 		#end
 		super();
@@ -217,4 +216,4 @@ class App extends hxd.App {
 	static public function defer(f: Void->Void) : Void {
 		hide.Ide.inst.app.defered.push(f);
 	}
-}
+}

@@ -91,8 +91,7 @@ class Ide extends hide.tools.IdeData {
 		#if dx12
 		hide.tools.NativeMeshTools.init();
 		var cacheDir = js.Node.__dirname + "/jsdx";
-		h3d.impl.DX12Driver.ENABLE_PSO_CONFIG_CACHE = true;
-		h3d.impl.DX12Driver.PSO_CONFIG_CACHE_PATH = h3d.impl.DX12Driver.PSO_CONFIG_CACHE_OUTPUT_PATH = cacheDir + "/psoconfig.dx12";
+		h3d.impl.PipelineCache.PipelineConfigCache.set(new h3d.impl.PipelineCache.PipelineConfigCache(cacheDir + "/psoconfig.dx12"));
 		h3d.impl.Driver.setShaderCache(new h3d.impl.ShaderCache(cacheDir + "/shadercache.dx12", Binary));
 		#end
 		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || electron.App.name == "CDB";
