@@ -91,8 +91,7 @@ class Ide extends hide.tools.IdeData {
 		#if dx12
 		hide.tools.NativeMeshTools.init();
 		var cacheDir = js.Node.__dirname + "/jsdx";
-		h3d.impl.DX12Driver.ENABLE_PSO_CONFIG_CACHE = true;
-		h3d.impl.DX12Driver.PSO_CONFIG_CACHE_PATH = h3d.impl.DX12Driver.PSO_CONFIG_CACHE_OUTPUT_PATH = cacheDir + "/psoconfig.dx12";
+		h3d.impl.PipelineCache.PipelineConfigCache.set(new h3d.impl.PipelineCache.PipelineConfigCache(cacheDir + "/psoconfig.dx12"));
 		h3d.impl.Driver.setShaderCache(new h3d.impl.ShaderCache(cacheDir + "/shadercache.dx12", Binary));
 		#end
 		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || electron.App.name == "CDB";
@@ -196,7 +195,6 @@ class Ide extends hide.tools.IdeData {
 		loadProject();
 
 		if (thumbnailMode) {
-			thumbnailInit();
 			hxd.System.setLoop(mainLoop);
 			return;
 		}
@@ -253,8 +251,13 @@ class Ide extends hide.tools.IdeData {
 		});
 
 		electron.App.onGpuCrash(function(details) {
+			var lost = 'GPU process lost (${details.reason}, exit code ${details.exitCode})';
+			hide.tools.CrashReport.log(lost);
+			hide.tools.CrashReport.logGpu(lost);
 			if( !hasReloaded ) showGpuCrash(details);
 		});
+		if( subView == null )
+			hide.tools.CrashReport.startGpuLog();
 
 		var body = js.Browser.document.body;
 		window.on("focus", function() {
@@ -863,6 +866,8 @@ class Ide extends hide.tools.IdeData {
 			h3d.mat.MaterialSetup.current = render;
 
 			if (thumbnailMode) {
+				// after the plugins : the generator scene must use the project renderer
+				thumbnailInit();
 				return;
 			}
 			initMenu();
@@ -1811,6 +1816,7 @@ class Ide extends hide.tools.IdeData {
 	public function openFile( file : String, ?onCreate, ?onOpen) {
 		var ext = Extension.getExtension(file);
 		if( ext == null ) return;
+		hide.tools.CrashReport.log("open " + file);
 		// look if already open
 		var path = makeRelative(file);
 		for( v in views )
@@ -2095,8 +2101,7 @@ class Ide extends hide.tools.IdeData {
 			</div>
 		</div>').appendTo(gpuCrash.content);
 		panel.find(".create").click(function(_) {
-			var driver = #if dx12 "dx12" #else "webgl" #end;
-			electron.App.createCrashReport('hide $driver ${getGitCommitHashAndDate()}\nProject : $currentProject\n').then(
+			electron.App.createCrashReport(hide.tools.CrashReport.getInfo()).then(
 				(file) -> panel.find(".path").text("Report created : " + file),
 				(e) -> panel.find(".path").text("Report failed : " + e)
 			);
@@ -2132,9 +2137,28 @@ class CustomLoader extends hxd.res.Loader {
 		if( i == null ) {
 			i = Type.createInstance(c, [fs.get(path)]);
 			// i = new hxd.res.Image(fs.get(path));
+			// streamed images are registered in a static list never purged : thumbnails load at full resolution
+			var img = hide.Ide.inst.thumbnailMode ? Std.downcast((i : hxd.res.Resource), hxd.res.Image) : null;
+			if( img != null )
+				img.disableStreaming = true;
 			@:privateAccess engine.resCache.set(getKey(path), i);
 		}
 		return i;
+	}
+
+	override function cleanCache() {
+		var engine = h3d.Engine.getCurrent();
+		for (k in pathKeys) {
+			var res = Std.downcast(@:privateAccess engine.resCache.get(k), hxd.res.Resource);
+			if (res == null)
+				continue;
+			@:privateAccess engine.resCache.remove(k);
+			res.entry.unwatch(engine.id);
+			var img = Std.downcast(res, hxd.res.Image);
+			if (img != null)
+				@:privateAccess img.tex?.dispose();
+		}
+		super.cleanCache();
 	}
 
 }

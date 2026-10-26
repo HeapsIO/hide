@@ -149,6 +149,25 @@ static dx_driver *js_create( HWND window, DriverInitFlag flags, uchar *dev_desc 
 
 static hl_shim::Register js_reg_create("create", hl_shim::wrap<&js_create>());
 
+// "ok", "no device" or "removed 0x<reason> <name>" (then logged with its DRED data)
+static napi_value js_device_state( napi_env env, napi_callback_info info ) {
+	char text[64] = "no device";
+	if( static_driver && static_driver->device ) {
+		HRESULT reason = static_driver->device->GetDeviceRemovedReason();
+		if( reason == S_OK )
+			strcpy_s(text, "ok");
+		else {
+			js_log_removed();
+			sprintf_s(text, "removed 0x%08X %s", (unsigned)reason, js_removed_reason_name(reason));
+		}
+	}
+	napi_value v;
+	napi_create_string_utf8(env, text, NAPI_AUTO_LENGTH, &v);
+	return v;
+}
+
+static hl_shim::Register js_reg_device_state("js_device_state", &js_device_state);
+
 // ---- swapchain emulation : one per command queue (driver), selected by resize / present
 
 #define JS_MAX_BUFFERS 8

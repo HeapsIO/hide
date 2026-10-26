@@ -2,6 +2,7 @@ package hide.tools;
 
 
 enum abstract GenToManagerCommand(String) {
+	var start;
 	var success;
 }
 
@@ -189,9 +190,6 @@ class FileManager {
 	public var fileRoot: FileEntry;
 	var fileIndex : Map<String, FileEntry> = [];
 
-	public static final thumbnailGeneratorPort = 9669;
-	public static final thumbnailGeneratorUrl = "localhost";
-
 	public static var inst(get, default) : FileManager;
 	public var onFileChangeHandlers: Array<(entry: FileEntry) -> Void> = [];
 	public var onVCSStatusUpdateHandlers: Array<() -> Void> = [];
@@ -202,9 +200,7 @@ class FileManager {
 
 	var onReadyCallbacks : Map<String, Array<MiniatureReadyCallback>> = [];
 
-	var serverSocket : hxd.net.Socket = null;
-	var generatorSocket : hxd.net.Socket = null;
-	var pendingMessages : Array<String> = [];
+	var generatorPort : js.html.MessagePort = null;
 	var ignorePatterns: Array<EReg> = [];
 
 
@@ -212,6 +208,12 @@ class FileManager {
 
 	var retries = 0;
 	static final maxRetries = 5;
+
+	var currentJob : String = null;
+	var jobTimer : haxe.Timer = null;
+	static final jobTimeout = 20000;
+	// files that crashed or hung the generator, skipped until they change
+	var failedPaths : Map<String, Bool> = [];
 
 	static function get_inst() {
 		if (inst == null) {
@@ -228,30 +230,6 @@ class FileManager {
 	public static function onBeforeReload() {
 		if (inst != null) {
 			inst.cleanupGenerator();
-			inst.cleanupServer();
-		}
-	}
-
-
-	var pendingMessageQueued = false;
-	function queueProcessPendingMessages() {
-		if (!pendingMessageQueued) {
-			haxe.Timer.delay(processPendingMessages, 10);
-			pendingMessageQueued = true;
-		}
-	}
-	function processPendingMessages() {
-		pendingMessageQueued = false;
-		if (!checkWindowReady()) {
-			return;
-		}
-		var len = hxd.Math.imin(300, pendingMessages.length);
-		for (i in 0 ... len) {
-			generatorSocket.out.writeString(pendingMessages[i]);
-		}
-		pendingMessages.splice(0, len);
-		if (pendingMessages.length > 0) {
-			queueProcessPendingMessages();
 		}
 	}
 
@@ -348,49 +326,22 @@ class FileManager {
 		return path;
 	}
 
-	function setupServer() {
-		if (serverSocket != null)
-			throw "Server already exists";
+	function onGeneratorConnected(port: js.html.MessagePort) {
+		generatorPort = port;
+		generatorPort.onmessage = (e : js.html.MessageEvent) -> processThumbnailGeneratorMessage(e.data);
 
-		serverSocket = new hxd.net.Socket();
-		serverSocket.onError = (msg) -> {
-			hide.Ide.inst.quickError("FileManager socket error : " + msg);
-			cleanupGenerator();
-			cleanupServer();
-		}
-		serverSocket.bind(thumbnailGeneratorUrl, thumbnailGeneratorPort, (remoteSocket) -> {
-			if (generatorSocket != null) {
-				generatorSocket.close();
-			}
-			generatorSocket = remoteSocket;
-			generatorSocket.onError = (msg) -> {
-				hide.Ide.inst.quickError("Generator socket error : " + msg);
-				cleanupGenerator();
-			}
+		trace("Thumbnail generator connected");
 
-			var handler = new hide.tools.ThumbnailGenerator.MessageHandler(generatorSocket, processThumbnailGeneratorMessage);
-
-			trace("Thumbnail generator connected");
-
-			// resend command that weren't completed
-			for (path => _ in onReadyCallbacks) {
-				sendGenerateCommand(path);
-			}
-
-		});
-	}
-
-	function cleanupServer() {
-		if (serverSocket != null) {
-			serverSocket.close();
-			serverSocket = null;
+		// resend command that weren't completed
+		for (path => _ in onReadyCallbacks) {
+			sendGenerateCommand(path);
 		}
 	}
 
 	function cleanupGenerator() {
-		if (generatorSocket != null) {
-			generatorSocket.close();
-			generatorSocket = null;
+		if (generatorPort != null) {
+			generatorPort.close();
+			generatorPort = null;
 		}
 
 		if (windowManager != null && windowManager.generatorWindow != null) {
@@ -406,9 +357,37 @@ class FileManager {
 		}
 	}
 
+	/**
+		The generator crashed or hung : the file it was rendering is skipped until it changes, and the generator is restarted
+	**/
+	function onGeneratorLost(reason: String) {
+		jobTimer?.stop();
+		jobTimer = null;
+		var path = currentJob;
+		currentJob = null;
+		cleanupGenerator();
+
+		if (path != null) {
+			js.html.Console.warn('Thumbnail generator error : $path : $reason');
+			failedPaths.set(path, true);
+			var file = getFileEntry(path);
+			if (file != null)
+				file.iconPath = null;
+			var cbs = onReadyCallbacks.get(path);
+			onReadyCallbacks.remove(path);
+			if (cbs != null) {
+				for (cb in cbs)
+					cb(null);
+			}
+		}
+
+		if (onReadyCallbacks.iterator().hasNext())
+			checkWindowReady();
+	}
+
 	function init() {
-		// kill server when page is reloaded
-		js.Browser.window.addEventListener('beforeunload', () -> { cleanupGenerator(); cleanupServer(); });
+		// kill generator when page is reloaded
+		js.Browser.window.addEventListener('beforeunload', () -> cleanupGenerator());
 
 		svnEnabled = hide.Ide.inst.isSVNAvailable();
 
@@ -417,7 +396,6 @@ class FileManager {
 		for(pat in exclPatterns)
 			ignorePatterns.push(new EReg(pat, "i"));
 
-		setupServer();
 		checkWindowReady();
 		initFileSystem();
 	}
@@ -436,6 +414,7 @@ class FileManager {
 	function fileChangeInternal(entry: FileEntry) {
 		// invalidate thumbnail
 		entry.iconPath = null;
+		failedPaths.remove(entry.getPath());
 
 		if (!js.node.Fs.existsSync(entry.getPath()) && entry.parent != null) {
 			fileEntryRefreshDelay.queue(entry.parent);
@@ -491,28 +470,41 @@ class FileManager {
 	}
 
 
-	function processThumbnailGeneratorMessage(message: String) {
+	function processThumbnailGeneratorMessage(message: Dynamic) {
 		try {
-			var message = haxe.Json.parse(message);
-			switch(message.type) {
+			switch((message.type:GenToManagerCommand)) {
+				case start:
+					currentJob = message.path;
+					jobTimer?.stop();
+					jobTimer = haxe.Timer.delay(() -> onGeneratorLost('thumbnail generation timed out after ${jobTimeout}ms'), jobTimeout);
 				case success:
 					var message : GenToManagerSuccessMessage = message.data;
+					if (message.originalPath == currentJob) {
+						currentJob = null;
+						jobTimer?.stop();
+						jobTimer = null;
+					}
+					if (message.thumbnailPath != null)
+						retries = 0;
+					else
+						failedPaths.set(message.originalPath, true);
 					var cbs = onReadyCallbacks.get(message.originalPath);
 					if (cbs == null) {
 						return;
 						//throw "Generated a thumbnail for a file not registered";
 					}
+					onReadyCallbacks.remove(message.originalPath);
 					var file = getFileEntry(message.originalPath);
-					file.iconPath = message.thumbnailPath;
+					if (file != null)
+						file.iconPath = message.thumbnailPath;
 					for (cb in cbs) {
 						cb(message.thumbnailPath);
 					}
-					onReadyCallbacks.remove(message.originalPath);
 				default:
 					throw "Unknown message type " + message.type;
 			}
 		} catch(e) {
-			hide.Ide.inst.quickError("Thumb Generator invalid message : " + e + "\n" + message);
+			hide.Ide.inst.quickError("Thumb Generator invalid message : " + e + "\n" + haxe.Json.stringify(message));
 		}
 	}
 
@@ -523,11 +515,11 @@ class FileManager {
 		onReady is called back with the path of the loaded miniature, or null if the miniature couldn't be loaded
 	**/
 	function renderMiniature(file: FileEntry, onReady: MiniatureReadyCallback) {
-		if (retries >= maxRetries) {
+		var path = file.getPath();
+		if (retries >= maxRetries || failedPaths.exists(path)) {
 			onReady(null);
 			return;
 		}
-		var path = file.getPath();
 		var ext = path.split(".").pop().toLowerCase();
 		switch(ext) {
 			case "prefab" | "fbx" | "l3d" | "fx" | "shgraph" | "jpg" | "jpeg" | "png" | "dds":
@@ -561,8 +553,6 @@ class FileManager {
 	}
 
 	public function checkWindowReady() {
-		if (serverSocket == null)
-			return false;
 		if (windowManager == null) {
 			if (retries < maxRetries) {
 				retries ++;
@@ -574,13 +564,7 @@ class FileManager {
 			}
 			return false;
 		}
-		if (windowManager.state == Pending) {
-			return false;
-		}
-		if (windowManager.state == Ready && generatorSocket != null) {
-			return true;
-		}
-		return false;
+		return generatorPort != null;
 	}
 
 	public function clearRenderQueue() {
@@ -588,41 +572,33 @@ class FileManager {
 		if (!checkWindowReady()) {
 			return;
 		}
-		var message = {
+		generatorPort.postMessage({
 			type: ManagerToGenCommand.clear,
-		};
-		var cmd = haxe.Json.stringify(message) + "\n";
-		generatorSocket.out.writeString(cmd);
-		pendingMessages = [];
+		});
 	}
 
 	public function setPriority(path: String, newPriority: Int) {
 		if (!onReadyCallbacks.exists(path)) {
 			return;
 		}
-		if (retries >= maxRetries)
+		// not sent before the generator is connected : the priorities are reset when it connects
+		if (!checkWindowReady())
 			return;
-		var message = {
+		generatorPort.postMessage({
 			type: ManagerToGenCommand.prio,
 			path: path,
 			prio: newPriority
-		};
-		var cmd = haxe.Json.stringify(message) + "\n";
-		pendingMessages.push(cmd);
-		queueProcessPendingMessages();
+		});
 	}
 
 	function sendGenerateCommand(path: String) {
 		if (!checkWindowReady()) {
 			return;
 		}
-		var message = {
+		generatorPort.postMessage({
 			type: ManagerToGenCommand.queue,
 			path: path,
-		};
-		var cmd = haxe.Json.stringify(message) + "\n";
-		pendingMessages.push(cmd);
-		queueProcessPendingMessages();
+		});
 	}
 
 	public static function doRename(operations: Array<{from: String, to: String}>) {
@@ -841,31 +817,32 @@ class FileManager {
 }
 
 
-enum RenderWindowState {
-	Pending;
-	Ready;
-}
-
 @:allow(hide.tools.FileManager)
 @:access(hide.tools.FileManager)
 class RenderWindowManager {
-	var state : RenderWindowState = Pending;
 	var generatorWindow : electron.Window;
 
 	function new() {
-		state = Pending;
-		// wait that the browser is idle before creating the rendering window, so
-		// the generator socket is properly initialised
-		untyped js.Browser.window.requestIdleCallback(() -> {
-			state = Ready;
-			generatorWindow = electron.Window.open('app.html?thumbnail=true&project=' + StringTools.urlEncode(hide.Ide.inst.projectDir), {
-				show: false,
-				title: "HideThumbnailGenerator"
+		generatorWindow = electron.Window.open('app.html?thumbnail=true&project=' + StringTools.urlEncode(hide.Ide.inst.projectDir), {
+			show: false,
+			title: "HideThumbnailGenerator"
+		});
+		generatorWindow.onConnect((port) -> {
+			// a previous generator connecting after its replacement was started
+			if (FileManager.inst.windowManager != this) {
+				port.close();
+				return;
+			}
+			FileManager.inst.onGeneratorConnected(port);
+		});
+		for (event in ["closed", "crashed"]) {
+			generatorWindow.on(event, () -> {
+				// a previous generator closing after its replacement was started
+				if (FileManager.inst.windowManager != this)
+					return;
+				FileManager.inst.onGeneratorLost('generator window $event');
 			});
-			generatorWindow.on("closed", () -> {
-				FileManager.inst.cleanupGenerator();
-			});
-		}, {timeout: 1000});
+		}
 	}
 
 

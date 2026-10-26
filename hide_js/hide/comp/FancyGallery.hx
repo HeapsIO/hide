@@ -28,6 +28,8 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 	var selection : Map<{}, Bool> = [];
 
 	var tooltip : FancyTooltip;
+	var onDocumentKeyDown : js.html.KeyboardEvent -> Void;
+	var onDocumentKeyUp : js.html.KeyboardEvent -> Void;
 
 	var lastHeight : Float = 0;
 	var mouseOver : Bool = false;
@@ -60,6 +62,14 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		else
 			queueRefresh();
 		return currentVisible;
+	}
+
+	/** Removes the document listeners and the tooltip, appended to the body **/
+	override public function remove() {
+		js.Browser.document.removeEventListener("keydown", onDocumentKeyDown);
+		js.Browser.document.removeEventListener("keyup", onDocumentKeyUp);
+		tooltip.remove();
+		super.remove();
 	}
 
 	public function new(parent: Element, el: Element) {
@@ -110,16 +120,18 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 			tooltip.hide();
 		}
 
-		js.Browser.document.addEventListener("keydown", (e: js.html.KeyboardEvent) -> {
+		onDocumentKeyDown = (e: js.html.KeyboardEvent) -> {
 			if (mouseOver && e.key == "Alt") {
 				tooltip.show();
 			}
-		});
-		js.Browser.document.addEventListener("keyup", (e: js.html.KeyboardEvent) -> {
+		};
+		onDocumentKeyUp = (e: js.html.KeyboardEvent) -> {
 			if (e.key == "Alt") {
 				tooltip.hide();
 			}
-		});
+		};
+		js.Browser.document.addEventListener("keydown", onDocumentKeyDown);
+		js.Browser.document.addEventListener("keyup", onDocumentKeyUp);
 
 		var resizeObserver = new hide.comp.ResizeObserver((_, _) -> {
 			queueRefresh();

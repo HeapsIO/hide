@@ -153,11 +153,35 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 		super(parent);
 		this.editor = editor;
 
-		element.append(new Element("<p>Viewport Overlays</p>"));
 		element.addClass("settings-popup");
 		element.css("max-width", "300px");
-
 		element.append(new Element('
+			<div class="overlays-header">
+				<div class="tb-group small">
+					<div class="button2"><div class="icon ico ico-eye"></div></div>
+				</div>
+				<p>Viewport Overlays</p>
+			</div>'
+		));
+
+		var content = new Element('<div class="overlays-content"></div>').appendTo(element);
+		var overlaysBtn = element.find(".button2");
+		var toolbarBtn = parent.closest(".hide-toolbar2").find("#showViewportOverlays");
+		function refreshOverlaysState() {
+			var v = editor.showOverlays;
+			overlaysBtn.get(0).toggleAttribute("checked", v);
+			content.toggleClass("disabled", !v);
+		}
+
+		overlaysBtn.click(function(e) {
+			if (e.button == 0) {
+				toolbarBtn.get(0).click();
+				refreshOverlaysState();
+			}
+		});
+		refreshOverlaysState();
+
+		content.append(new Element('
 			<h2>Guides</h2>
 			<div class="form-grid" id="guidesGroup"></div>
 			<h2>Selection</h2>
@@ -195,7 +219,7 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 		}
 
 		{
-			var group = element.find("#guidesGroup");
+			var group = content.find("#guidesGroup");
 			addButton("Grid", "th", "gridToggle", () -> editor.updateGrid()).appendTo(group);
 			addButton("Joints", "share-alt", "jointsToggle", () -> editor.updateJointsVisibility()).appendTo(group);
 			addButton("Colliders", "codepen", "colliderToggle", () -> editor.updateCollidersVisibility()).appendTo(group);
@@ -226,21 +250,21 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 		}
 
 		{
-			var group = element.find("#selectionGroup");
+			var group = content.find("#selectionGroup");
 			addButton("Gizmo", "arrows-alt", "showGizmo", () -> editor.updateGizmoVisibility()).appendTo(group);
 			addButton("Outline", "dot-circle-o", "showOutlines", () -> editor.updateOutlineVisibility()).appendTo(group);
 		}
 
 
 		{
-			var group = element.find("#debug");
+			var group = content.find("#debug");
 			var btn = addButton("Scene Info", "info-circle", "sceneInformationToggle", () -> editor.updateStatusTextVisibility()).appendTo(group);
 			addButton("Wireframe", "connectdevelop", "wireframeToggle", () -> editor.updateWireframe()).appendTo(group);
 			addButton("Disable Scene Render", "eye-slash", "tog-scene-render", () -> {}).appendTo(group);
 		}
 
 
-		var allIcons = element.find("#allIcons");
+		var allIcons = content.find("#allIcons");
 		function refreshIconMenu() {
 			var visible = editor.ide.currentConfig.get("sceneeditor.iconVisibility");
 			if (visible) {
@@ -251,7 +275,7 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 		}
 
 		{
-			var group = element.find("#showIconGroup");
+			var group = content.find("#showIconGroup");
 			addButton("3D Icons", "image", "iconVisibility", () -> {refreshIconMenu(); editor.updateIconsVisibility();}).appendTo(group);
 
 			allIcons.css("margin-left", "3px");
@@ -1982,10 +2006,10 @@ class SceneEditor {
 		selectElements([], NoHistory);
 		this.camera2D = camera2D;
 
-		updateViewportOverlays();
-
 		outlineRfx = new hrt.prefab.rfx.Outline(null, null);
 		scene.s3d.renderer.effects.push(outlineRfx);
+
+		updateViewportOverlays();
 
 		makeGuide2d();
 
@@ -2050,7 +2074,7 @@ class SceneEditor {
 			var path = p.getUniqueName();
 			var parent = p.parent;
 			while(parent != null) {
-				path += parent.getUniqueName() + "/" + path;
+				path = parent.getUniqueName() + "/" + path;
 				parent = parent.parent ?? parent.shared.parentPrefab;
 			}
 			return path;
@@ -2159,7 +2183,7 @@ class SceneEditor {
 		function sanitizeReparent(target: hrt.prefab.Prefab, elements: Array<hrt.prefab.Prefab>) {
 			// Avoid moving target onto itelf
 			for (prefab in elements.copy()) {
-				if (target.findParent((p) -> p == prefab, true) != null) {
+				if (target.findParent((p) -> p == prefab, true, true) != null) {
 					elements.remove(prefab);
 				}
 			}
@@ -2485,6 +2509,7 @@ class SceneEditor {
 		function refresh(tree : FancyTree<hrt.prefab.Prefab>) @:privateAccess {
 			var selection = tree.getSelectedItems();
 			tree.rebuildTree();
+			selection = selection.filter(p -> tree.itemMap.exists(cast p));
 			var datas = [for (p in selection) tree.itemMap.get(cast p)];
 			if (datas != null) {
 				for (idx => d in datas) {
@@ -2510,6 +2535,7 @@ class SceneEditor {
 				sceneTree.rebuildTree();
 				renderPropsTree.rebuildTree();
 				var tree = selectInSceneTree ? sceneTree : renderPropsTree;
+				selection = selection.filter(p -> @:privateAccess tree.itemMap.exists(cast p));
 				var datas = [for (p in selection) @:privateAccess tree.itemMap.get(cast p)];
 				if (datas != null) {
 					for (idx => d in datas) {
@@ -3278,6 +3304,19 @@ class SceneEditor {
 		var localTransform = new Map<hrt.prefab.Object3D, h3d.Matrix>();
 		var initialCentroid = new h3d.Matrix();
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
+
+		function getParentAbs(obj3d : hrt.prefab.Object3D) {
+			if (obj3d.local3d != null && obj3d.local3d.follow != null) {
+				var follow = obj3d.local3d.follow.getAbsPos();
+				return obj3d.local3d.followPositionOnly ? h3d.Matrix.T(follow.tx, follow.ty, follow.tz) : follow.clone();
+			}
+
+			var parent3d = Std.downcast(obj3d.parent, hrt.prefab.Object3D);
+			if (parent3d == null)
+				parent3d = Std.downcast(obj3d.shared.parentPrefab, hrt.prefab.Object3D);
+			return parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
+		}
+
 		gizmo.shouldSnap = () -> { return this.snapForceOnGrid; };
 		gizmo.snap = gizmoSnap;
 		gizmo.onStartMove = (handle : hrt.tools.Gizmo.Handle) -> {
@@ -3291,7 +3330,9 @@ class SceneEditor {
 			initialTransform.clear();
 			for (o in obj3ds) {
 				initialTransform.set(o, o.getTransform().clone());
-				initialAbs.set(o, o.getAbsPos(true).clone());
+				var abs = o.getTransform();
+				abs.multiply(abs, getParentAbs(o));
+				initialAbs.set(o, abs);
 			}
 			initialCentroid.load(gizmo.getAbsPos());
 		};
@@ -3300,11 +3341,7 @@ class SceneEditor {
 				return;
 
 			for (obj3d in obj3ds) {
-				var parent3d = Std.downcast(obj3d.parent, hrt.prefab.Object3D);
-				if (parent3d == null)
-					parent3d = Std.downcast(obj3d.shared.parentPrefab, hrt.prefab.Object3D);
-				var parentAbs = parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
-				var parentInv = parentAbs.getInverse();
+				var parentInv = getParentAbs(obj3d).getInverse();
 				localTransform.set(obj3d, obj3d.getTransform().clone());
 
 				var trs = new h3d.Matrix();
@@ -5311,8 +5348,11 @@ class SceneEditor {
 			if (prevParent == toPrefab && prevIndex < index)
 				offset--; // fix offset
 			offset++;
+			// skip the instances of Edit references, they keep their own context
+			var prevShared = prefab.shared;
 			for (p in prefab.flatten(null, null))
-				p.shared = toPrefab.shared;
+				if (p.shared == prevShared)
+					p.shared = toPrefab.shared;
 			var obj3d = prefab.to(Object3D);
 			var preserveTransform = Std.isOfType(toPrefab, hrt.prefab.fx.Emitter) || Std.isOfType(prevParent, hrt.prefab.fx.Emitter);
 			var prevTransform = null;

@@ -11,7 +11,7 @@ typedef WindowOptions = {
 	Handle on an Electron BrowserWindow.
 
 	Events : close, closed, maximize, minimize, restore, move, resize, focus, blur, show, hide,
-	enter-fullscreen, leave-fullscreen.
+	enter-fullscreen, leave-fullscreen, crashed (renderer process gone).
 
 	Listening to "close" on the current window prevents it from closing : `close(true)`
 	must then be called to actually close it.
@@ -33,6 +33,7 @@ class Window {
 
 	var listeners : Map<String, Array<Void -> Void>> = new Map();
 	var menuItems : Map<String, MenuItem> = new Map();
+	var connectListener : js.html.MessagePort -> Void;
 
 	function new( id : Int ) {
 		this.id = id;
@@ -71,6 +72,13 @@ class Window {
 		l.push(callb);
 	}
 
+	/**
+		Called with the port of a message channel when this window, opened by the current page, calls connectOpener
+	**/
+	public function onConnect( callb : js.html.MessagePort -> Void ) {
+		connectListener = callb;
+	}
+
 	function dispatch( event : String ) {
 		var l = listeners.get(event);
 		if( l == null ) return;
@@ -104,6 +112,13 @@ class Window {
 		Ipc.on("hide-menu-click", function(_, itemId : String) {
 			var item = current == null ? null : current.menuItems.get(itemId);
 			if( item != null ) item.click();
+		});
+		// a child window calling connectOpener (the window's own end is received by connectOpener)
+		Ipc.on("hide-port", function(e : Dynamic, id : Null<Int>) {
+			if( id == null ) return;
+			var w = windows.get(id);
+			var port : js.html.MessagePort = e.ports[0];
+			if( w != null && w.connectListener != null ) w.connectListener(port) else port.close();
 		});
 	}
 
@@ -147,6 +162,14 @@ class Window {
 
 	public static function onOpenerCall( callb : String -> Dynamic -> Void ) {
 		Ipc.on("hide-parent-call", function(_, name : String, param : Dynamic) callb(name, param));
+	}
+
+	/**
+		Open a direct message channel with the page that opened this window, which receives the other end in its Window.onConnect
+	**/
+	public static function connectOpener( onConnect : js.html.MessagePort -> Void ) {
+		Ipc.on("hide-port", function(e : Dynamic, winId : Null<Int>) if( winId == null ) onConnect(e.ports[0]));
+		Ipc.call("win.connectOpener");
 	}
 
 }

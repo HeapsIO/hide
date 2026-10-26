@@ -14,6 +14,8 @@ class GradientSkyShader extends h3d.shader.ScreenShader {
 		@param var gradient : Sampler2D;
 		@param var tod : Float;
 		@param var intensity : Float;
+		@const var USE_SATURATION : Bool;
+		@param var saturation : Float;
 		var normal : Vec3;
 		var skyDir : Vec3;
 		function fragment() {
@@ -27,7 +29,10 @@ class GradientSkyShader extends h3d.shader.ScreenShader {
 			var p = vec4(uvToScreen(calculatedUV), 0.5, 1.) * camera.inverseViewProj;
 			skyDir = (p.xyz / p.w - camera.position).normalize();
 			var color = gradient.get(vec2(saturate(skyDir.z), fract(tod))).rgb;
-			pixelColor = vec4(color * color * intensity, 1.);
+			color *= color;
+			if( USE_SATURATION )
+				color = mix(vec3(color.dot(vec3(0.2126, 0.7152, 0.0722))), color, saturation);
+			pixelColor = vec4(color * intensity, 1.);
 		}
 	}
 }
@@ -62,6 +67,7 @@ class GradientSky extends RendererFX {
 	@:s public var keyframes : Array<GradientSkyKey> = [];
 	@:s public var intensity = 1.;
 	@:s public var tod = 0.;
+	public var saturation = 1.;
 
 	public var texture(get, never) : h3d.mat.Texture;
 	var baked : h3d.mat.Texture;
@@ -103,6 +109,8 @@ class GradientSky extends RendererFX {
 		fx.shader.gradient = tex;
 		fx.shader.tod = tod;
 		fx.shader.intensity = intensity;
+		fx.shader.USE_SATURATION = saturation != 1;
+		fx.shader.saturation = saturation;
 		var props = pbr.pbrProps;
 		var prevIsScreen = props.isScreen;
 		props.isScreen = true;
@@ -144,6 +152,7 @@ class GradientSky extends RendererFX {
 		var c = new GradientSky(null, null);
 		c.tod = s1.tod;
 		c.intensity = s1.intensity;
+		c.saturation = s1.saturation;
 		var from = s1.bake();
 		var to = s2.bake();
 		if( from != null && to != null ) {
@@ -158,6 +167,7 @@ class GradientSky extends RendererFX {
 			c.baked = from ?? to;
 		return { effect : cast c, setFactor : (f : Float) -> {
 			c.intensity = hxd.Math.lerp(s1.intensity, s2.intensity, f);
+			c.saturation = hxd.Math.lerp(s1.saturation, s2.saturation, f);
 			c.blendFactor = f;
 			c.blendDirty = true;
 		}, dispose : c.dispose };

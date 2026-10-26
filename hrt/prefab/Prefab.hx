@@ -334,6 +334,14 @@ class Prefab {
 		}
 	}
 
+	#if !release
+	/**
+		The prefab data has been loaded again from its file : clears the static caches built from its previous version.
+	**/
+	public function clearCaches() {
+	}
+	#end
+
 	public function addChild(child: Prefab) : Void {
 		inline addChildAt(child, children.length);
 	}

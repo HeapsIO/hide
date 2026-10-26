@@ -204,6 +204,8 @@ class ElectronMain {
 
 	// logs/logs_<date>_<time> in the user data
 	static var sessionLogs : String;
+	// logs/logs_thumb_<date>_<time> of the thumbnail generators of this session
+	static var thumbLogs : Array<String> = [];
 
 	/**
 		Chromium's log (GPU process errors : device removed reasons...), the lost child processes,
@@ -259,9 +261,35 @@ class ElectronMain {
 		});
 	}
 
-	/** zips the session logs, its crash dumps and `info` in the user data, shows the zip in the explorer **/
+	/** zips the session logs, its crash dumps, `info` and the Windows GPU events in the user data, shows the zip in the explorer **/
 	static function createCrashReport( info : String ) : js.lib.Promise<String> {
-		return App.getGPUInfo("basic").then(function( gpu : Dynamic ) {
+		// Windows version and the events of the last day : GPU driver (Display 4101 : driver reset by a TDR),
+		// LiveKernelEvent reports (141 : TDR, its dump in LiveKernelReports/WATCHDOG, only readable as admin)
+		function getWindowsInfo() {
+			var os : Dynamic = js.Lib.require("os");
+			var buf = new StringBuf();
+			buf.add(os.version() + " " + os.release() + "\n");
+
+			function query( log : String, filter : String ) : String {
+				var q = '*[System[$filter and TimeCreated[timediff(@SystemTime) <= 86400000]]]';
+				// written in the ANSI code page when redirected
+				return try new js.html.TextDecoder("windows-1252").decode(cast js.node.ChildProcess.execSync('wevtutil qe $log "/q:$q" /f:text /rd:true /c:100', { timeout : 10000 })) catch( e : Dynamic ) "query failed : " + e + "\n";
+			}
+			buf.add("\nGPU driver events of the last 24 hours :\n");
+			buf.add(query("System", "Provider[@Name='Display' or @Name='amdkmdag' or @Name='nvlddmkm' or @Name='igfx']"));
+
+			buf.add("\nLiveKernelEvent reports of the last 24 hours :\n");
+			for( e in query("Application", "Provider[@Name='Windows Error Reporting'] and (EventID=1001)").split("Event[") )
+				if( e.indexOf("LiveKernelEvent") >= 0 )
+					buf.add("Event[" + e);
+			return buf.toString();
+		}
+
+		// "basic" right after a GPU process restart has no active device and no DX12 support.
+		// "complete" can fail or never answer without a GPU process : "basic" then
+		var timeout = new js.lib.Promise<Dynamic>((_, reject) -> haxe.Timer.delay(() -> reject("timeout"), 5000));
+		var gpuInfo = js.lib.Promise.race([App.getGPUInfo("complete"), timeout]).catchError(_ -> App.getGPUInfo("basic"));
+		return gpuInfo.then(function( gpu : Dynamic ) {
 			var entries = new List<haxe.zip.Entry>();
 			function add( name : String, data : js.node.Buffer, time : Date ) {
 				var bytes = data.hxToBytes();
@@ -279,7 +307,10 @@ class ElectronMain {
 			var versions = js.Node.process.versions;
 			var text = info + "\nElectron " + versions.get("electron") + ", Chrome " + versions.get("chrome") + "\n\nGPU : " + haxe.Json.stringify(gpu, "\t") + "\n";
 			add("info.txt", js.node.Buffer.from(text), Date.now());
+			add("windows.txt", js.node.Buffer.from(getWindowsInfo()), Date.now());
 			addDir(sessionLogs, "", ".log");
+			for( dir in thumbLogs )
+				addDir(dir, js.node.Path.basename(dir) + "/", ".log");
 			addDir(js.node.Path.join(App.getPath("crashDumps"), "reports"), "dumps/", ".dmp");
 			var out = new haxe.io.BytesOutput();
 			new haxe.zip.Writer(out).write(entries);
@@ -371,6 +402,7 @@ class ElectronMain {
 		win.on("restore", () -> dispatchWinEvent(id, "restore"));
 		win.on("enter-full-screen", () -> dispatchWinEvent(id, "enter-fullscreen"));
 		win.on("leave-full-screen", () -> dispatchWinEvent(id, "leave-fullscreen"));
+		win.webContents.on("render-process-gone", () -> dispatchWinEvent(id, "crashed"));
 
 		win.webContents.on("destroyed", () -> cleanupWebContents(wcId));
 		initDevToolsKeys(win);
@@ -404,6 +436,8 @@ class ElectronMain {
 		if( parts[1] != null && parts[1].indexOf("thumbnail=true") >= 0 ) {
 			var dir = js.node.Path.join(js.node.Path.dirname(sessionLogs), "logs_thumb_" + DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S"));
 			sys.FileSystem.createDirectory(dir);
+			// two generators created in the same second share it
+			if( thumbLogs.indexOf(dir) < 0 ) thumbLogs.push(dir);
 			var log = js.node.Path.join(dir, "thumb.log");
 			function write( text : String ) {
 				js.node.Fs.appendFileSync(log, DateTools.format(Date.now(), "%Y-%m-%d %H:%M:%S") + " " + text + "\n");
@@ -616,6 +650,15 @@ class ElectronMain {
 		h.set("win.callParent", function(wc, name : String, param : Dynamic) {
 			var opener = windowStates.get(getWin(wc, null).id).opener;
 			if( opener != null ) send(WebContents.fromId(opener), "hide-parent-call", name, param);
+		});
+		h.set("win.connectOpener", function(wc : WebContents) {
+			var win = getWin(wc, null);
+			var opener = windowStates.get(win.id).opener;
+			var openerWc = opener == null ? null : WebContents.fromId(opener);
+			if( openerWc == null || openerWc.isDestroyed() ) throw "Window has no opener";
+			var channel = new MessageChannelMain();
+			openerWc.postMessage("hide-port", win.id, [channel.port1]);
+			wc.postMessage("hide-port", null, [channel.port2]);
 		});
 
 		// values shared between windows (must be serializable)

@@ -177,6 +177,7 @@ class View<T> extends hide.comp.Component {
 		container.on("show", function(_) {
 			// we are dragging the container tab
 			if( container.parent.parent.config == null ) return;
+			hide.tools.CrashReport.log("show " + this);
 			haxe.Timer.delay(onActivate,0);
 		});
 		container.on("hide", function(_) {
@@ -303,6 +304,7 @@ class View<T> extends hide.comp.Component {
 	}
 
 	function destroy() {
+		hide.tools.CrashReport.log("close " + this);
 		for( w in watches.copy() )
 			ide.fileWatcher.unregister(w.path, w.callb);
 		watches = [];
