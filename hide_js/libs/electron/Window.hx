@@ -85,7 +85,7 @@ class Window {
 		for( f in l.copy() ) f();
 	}
 
-	public function showDevTools() Ipc.call("win.openDevTools", id);
+	public function toggleDevTools() Ipc.call("win.toggleDevTools", id);
 	public function moveTo( x : Int, y : Int ) Ipc.call("win.moveTo", id, x, y);
 	public function resizeTo( w : Int, h : Int ) Ipc.call("win.resizeTo", id, w, h);
 	public function resizeBy( dw : Int, dh : Int ) Ipc.call("win.resizeBy", id, dw, dh);

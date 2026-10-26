@@ -395,10 +395,6 @@ class ElectronMain {
 		win.webContents.on("render-process-gone", () -> dispatchWinEvent(id, "crashed"));
 
 		win.webContents.on("destroyed", () -> cleanupWebContents(wcId));
-		win.webContents.on("before-input-event", function(e : Dynamic, input : Dynamic) {
-			if( input.type == "keyDown" && input.control && input.shift && input.code == "KeyI" )
-				win.webContents.toggleDevTools();
-		});
 		// page reload : forget what the previous page had registered
 		win.webContents.on("did-start-navigation", function(e : Dynamic) {
 			if( !e.isMainFrame || e.isSameDocument ) return;
@@ -460,6 +456,7 @@ class ElectronMain {
 					enabled : it.enabled != false,
 				};
 				if( it.type == "checkbox" ) m.checked = it.checked == true;
+				if( it.accelerator != null ) m.accelerator = it.accelerator;
 				if( it.submenu != null )
 					m.submenu = menuFromTemplate(wc, it.submenu);
 				else {
@@ -604,7 +601,7 @@ class ElectronMain {
 			if( force ) windowStates.get(win.id).forceClose = true;
 			win.close();
 		});
-		h.set("win.openDevTools", (wc, id) -> getWin(wc, id).webContents.openDevTools());
+		h.set("win.toggleDevTools", (wc, id) -> getWin(wc, id).webContents.toggleDevTools());
 		h.set("win.setMenu", function(wc : WebContents, items : Array<Dynamic>) {
 			var win = getWin(wc, null);
 			var template = items == null ? null : menuFromTemplate(wc, items);

@@ -1505,7 +1505,7 @@ class Ide extends hide.tools.IdeData {
 		// view
 		if( !sys.FileSystem.exists(resourceDir) )
 			menu.find(".view").remove();
-		menu.find(".debug").click(function(_) window.showDevTools());
+		menu.get(0).querySelector(".view .debug").addEventListener("click", (_) -> window.toggleDevTools());
 		var comps = menu.find("[component]");
 		for( c in comps.elements() ) {
 			var cname = c.attr("component");
