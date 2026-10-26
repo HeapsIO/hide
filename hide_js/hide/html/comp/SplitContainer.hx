@@ -12,6 +12,7 @@ import js.html.*;
 	A child's `--min-panel-size` CSS property (registered, not inherited) sets its minimum size (read on rebuild and drag start).
 	An anchored child's `--split-override-size` CSS property (same rules) replaces its pixel size while set.
 	When space runs out, stretching children keep their minimum first.
+	The CSS `gap` separates children (read on rebuild and drag start), `--splitter-hitbox` sets the draggable width centered on it.
 	Dispatches `split-resize` with the pane sizes (px for anchored panes, fr otherwise) as detail when a drag ends.
 **/
 @:keep
@@ -25,6 +26,7 @@ class SplitContainer extends WebComponent {
 	var sizes = new js.lib.WeakMap<Float>();
 	var mins = new js.lib.WeakMap<Float>();
 	var overrides = new js.lib.WeakMap<Float>();
+	var gap = "0px";
 	var observer : MutationObserver;
 
 	public function new() {
@@ -88,6 +90,11 @@ class SplitContainer extends WebComponent {
 	}
 
 	function readStyles() {
+		// The splitters can't measure the gap themselves: it is outside of any grid area
+		gap = window.getComputedStyle(this).getPropertyValue(isVertical() ? "row-gap" : "column-gap");
+		if (gap == "normal")
+			gap = "0px";
+
 		for (p in panes) {
 			var style = window.getComputedStyle(p);
 			mins.set(p, Std.parseFloat(style.getPropertyValue("--min-panel-size")));
@@ -110,7 +117,7 @@ class SplitContainer extends WebComponent {
 			else
 				stretchMin += mins.get(p);
 		// Space left to anchored panes once stretching panes have their minimum
-		var free = '(100% - ${stretchMin}px - ${panes.length - 1} * var(--splitter-size, 4px))';
+		var free = '(100% - ${stretchMin}px - ${panes.length - 1} * $gap)';
 		var tracks = [for (p in panes) {
 			var min = mins.get(p);
 			if (!isAnchored(p))
@@ -121,16 +128,19 @@ class SplitContainer extends WebComponent {
 				var size = overrides.get(p);
 				'minmax($softMin, ${Math.isNaN(size) ? sizes.get(p) : size}px)';
 			}
-		}].join(" var(--splitter-size, 4px) ");
+		}].join(" ");
 		var main = isVertical() ? "rows" : "columns";
 		var cross = isVertical() ? "columns" : "rows";
-		layout.textContent = ':host { grid-template-$main: $tracks; grid-template-$cross: minmax(0, 1fr); }';
+		layout.textContent = ':host { grid-template-$main: $tracks; grid-template-$cross: minmax(0, 1fr); --gap: $gap; }';
 	}
 
 	function splitter(i : Int) {
 		var el = document.createDivElement();
 		el.className = "splitter";
 		el.setAttribute("part", "splitter");
+		// Absolutely positioned against the area of the pane after it
+		el.style.setProperty(isVertical() ? "grid-row" : "grid-column", '${i + 2}');
+
 		el.onpointerdown = (e : PointerEvent) -> {
 			e.preventDefault();
 			el.setPointerCapture(e.pointerId);

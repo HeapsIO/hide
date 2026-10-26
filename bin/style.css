@@ -2,6 +2,33 @@
 	interpolate-size: allow-keywords;
 }
 
+:root {
+	--theme-crust: oklch(0.183 0.020 284.204);
+
+
+	--theme-surface-0: oklch(20.904% 0 0);
+	--theme-mantle: oklch(0.216 0 0);
+	--theme-base: oklch(0.243 0 0);
+	--theme-surface-0: oklch(0.324 0 0);
+	--theme-surface-1: oklch(0.404 0 0);
+	--theme-surface-2: oklch(0.477 0.034 278.643);
+
+	--theme-text: oklch(0.879 0.043 272.277);
+	--theme-foreground: oklch(94.027% 0.00845 271.33);
+
+	/* --theme-blue: oklch(0.766 0.111 259.885); */
+	--theme-blue: #08f;
+
+	/* Derived colors */
+	--theme-accent: var(--theme-blue);
+
+	--theme-color-border: var(--theme-surface-0);
+
+	@function --hover(--c <color>) returns <color> {
+		result: color-mix(in oklch, var(--c), var(--theme-foreground) 6%);
+	}
+}
+
 @font-face {
 	font-family: 'FontAwesome';
 	src: url('libs/fontawesome-webfont.eot?v=4.7.0');
@@ -31,7 +58,7 @@
 body {
 	margin : 0;
 	padding : 0;
-	background-color : black;
+	background-color : var(--theme-base);
 	user-select:none;
 
 	max-width: 100vw;
