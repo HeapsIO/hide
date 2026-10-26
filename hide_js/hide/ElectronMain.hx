@@ -15,6 +15,8 @@ typedef CreateWindowOptions = {
 	?width : Int,
 	?height : Int,
 	?opener : Int,
+	// replaced by the page's own title bar (hide.ui.TitleBar), the native buttons are drawn over it
+	?customTitleBar : Bool,
 }
 
 /**
@@ -25,7 +27,10 @@ typedef CreateWindowOptions = {
 **/
 class ElectronMain {
 
-	static var MIMES = ["text" => "text/plain", "html" => "text/html", "rtf" => "text/rtf", "png" => "image/png", "jpeg" => "image/jpeg"];
+	// same as .title-bar in style.css
+	static inline var TITLE_BAR_HEIGHT = 30;
+
+	static var MIMES =["text" => "text/plain", "html" => "text/html", "rtf" => "text/rtf", "png" => "image/png", "jpeg" => "image/jpeg"];
 
 	static var isCDB : Bool;
 	static var appName : String;
@@ -127,7 +132,7 @@ class ElectronMain {
 			Menu.setApplicationMenu(null);
 			try Session.defaultSession.setSpellCheckerLanguages(["en-US", "fr-FR"]) catch( e : Dynamic ) {}
 			watchDebuggers();
-			mainWindow = createWindow("app.html", {});
+			mainWindow = createWindow("app.html", { customTitleBar : Sys.systemName() != "Mac" });
 			mainWindow.on("closed", function() {
 				mainWindow = null;
 				App.quit();
@@ -347,6 +352,9 @@ class ElectronMain {
 			// ICO is only supported on Windows
 			icon : js.node.Path.join(js.Node.__dirname, "res", (isCDB ? "cdb." : "hide.") + (js.Node.process.platform == "win32" ? "ico" : "png")),
 			backgroundColor : "#222222",
+			// the native menu is hidden, its accelerators still work
+			titleBarStyle : opts.customTitleBar ? "hidden" : "default",
+			titleBarOverlay : opts.customTitleBar ? ({ height : TITLE_BAR_HEIGHT } : Dynamic) : false,
 			webPreferences : {
 				nodeIntegration : true,
 				nodeIntegrationInWorker : true,
@@ -600,6 +608,7 @@ class ElectronMain {
 			win.close();
 		});
 		h.set("win.toggleDevTools", (wc, id) -> getWin(wc, id).webContents.toggleDevTools());
+		h.set("win.setTitleBarOverlay", (wc, id, color : String, symbolColor : String) -> getWin(wc, id).setTitleBarOverlay({ color : color, symbolColor : symbolColor, height : TITLE_BAR_HEIGHT }));
 		h.set("win.setMenu", function(wc : WebContents, items : Array<Dynamic>) {
 			var win = getWin(wc, null);
 			var template = items == null ? null : menuFromTemplate(wc, items);

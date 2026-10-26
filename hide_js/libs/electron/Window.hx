@@ -86,6 +86,8 @@ class Window {
 	}
 
 	public function toggleDevTools() Ipc.call("win.toggleDevTools", id);
+	/** colors of the native buttons drawn over a custom title bar, as #rrggbb **/
+	public function setTitleBarOverlay( color : String, symbolColor : String ) Ipc.call("win.setTitleBarOverlay", id, color, symbolColor);
 	public function moveTo( x : Int, y : Int ) Ipc.call("win.moveTo", id, x, y);
 	public function resizeTo( w : Int, h : Int ) Ipc.call("win.resizeTo", id, w, h);
 	public function resizeBy( dw : Int, dh : Int ) Ipc.call("win.resizeBy", id, dw, dh);

@@ -68,6 +68,7 @@ class Ide extends hide.tools.IdeData {
 	static var firstInit = true;
 
 	var customMenus : Array<electron.MenuItem> = [];
+	var titleBar : hide.ui.TitleBar;
 
 	function new() {
 		super();
@@ -137,6 +138,9 @@ class Ide extends hide.tools.IdeData {
 	function startup() {
 		inst = this;
 		window = electron.Window.get();
+		// see ElectronMain customTitleBar
+		if( !thumbnailMode && Sys.systemName() != "Mac" )
+			titleBar = new hide.ui.TitleBar(window);
 		var cwd = Sys.getCwd();
 		for( a in electron.App.argv ) {
 			var pre = "--project-dir=";
@@ -1343,12 +1347,12 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function setProgress( ?text : String ) {
-		if( text != null ) {
-			window.title = text;
-			return;
+		if( text == null ) {
+			var title = currentConfig.get("hide.windowTitle");
+			text = title != null ? title : ((isCDB ? "CastleDB" : "HIDE") + " - " + projectDir);
 		}
-		var title = currentConfig.get("hide.windowTitle");
-		window.title = title != null ? title : ((isCDB ? "CastleDB" : "HIDE") + " - " + projectDir);
+		window.title = text;
+		titleBar?.setTitle(text);
 	}
 
 	public function runCommand(cmd, ?callb:String->Void) {
@@ -1701,6 +1705,7 @@ class Ide extends hide.tools.IdeData {
 		}
 
 		window.menu = finalMenu;
+		titleBar?.setMenu(finalMenu);
 	}
 
 	public function showFileInResources(path: String) {
