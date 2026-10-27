@@ -15,14 +15,18 @@ class TitleBar {
 		var element = doc.createDivElement();
 		element.classList.add("title-bar");
 
+		var left = doc.createDivElement();
+		left.classList.add("left");
+		element.appendChild(left);
+
 		var icon = doc.createImageElement();
 		icon.classList.add("icon");
 		icon.src = "res/" + (hide.Ide.inst.isCDB ? "cdb" : "hide") + ".png";
-		element.appendChild(icon);
+		left.appendChild(icon);
 
 		menuBar = doc.createDivElement();
 		menuBar.classList.add("menu-bar");
-		element.appendChild(menuBar);
+		left.appendChild(menuBar);
 
 		title = doc.createDivElement();
 		title.classList.add("title");
@@ -74,8 +78,10 @@ class TitleBar {
 		function convert( menu : electron.Menu ) : Array<hrt.ui.HuiMenu.MenuItem> {
 			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
 			for( i in menu.items ) {
-				if( i.type == Separator ) {
-					items.push({ isSeparator : true });
+				if( i.type == Separator) {
+					if (items.length > 0) {
+						items.push({ isSeparator : true });
+					}
 					continue;
 				}
 				items.push({

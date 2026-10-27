@@ -40,7 +40,7 @@
 .header {
 	display: flex;
 	flex-shrink: 0;
-	height: 24px;
+	height: 28px;
 	background: var(--theme-crust);
 }
 
@@ -75,6 +75,8 @@
 	align-items: center;
 	flex-shrink: 0;
 	padding-left: 6px;
+	padding-right: 2px;
+	gap: 6px;
 	cursor: pointer;
 	white-space: nowrap;
 	color: #aaa;
@@ -101,15 +103,18 @@
 }
 
 .close {
-	margin-left: 3px;
+	display: flex;
+    justify-content: center;
+    align-items: flex-end;
 	opacity: 0.5;
 	height: 14px;
-	text-align: center;
 	aspect-ratio: 1/1;
 
 	&:hover {
+		color: #FFF;
 		opacity: 1;
 		background-color: #444;
+		border-radius: 10px;
 	}
 }
 

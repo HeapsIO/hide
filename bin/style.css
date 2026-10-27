@@ -9,7 +9,7 @@
 	--theme-surface-0: oklch(20.904% 0 0);
 	--theme-mantle: oklch(0.216 0 0);
 	--theme-base: oklch(0.243 0 0);
-	--theme-surface-0: oklch(0.324 0 0);
+	--theme-surface-0: oklch(0.300 0 0);
 	--theme-surface-1: oklch(0.404 0 0);
 	--theme-surface-2: oklch(0.477 0.034 278.643);
 
@@ -528,6 +528,8 @@ input[type=checkbox] {
 .hide-scene {
 	position:absolute;
 	cursor: default;
+
+	border-radius: 5px;
 }
 
 .hide-scene-layer {
@@ -3263,6 +3265,7 @@ input[type=checkbox] {
 .hide-view {
 	display: block;
 	position: relative;
+	box-sizing: border-box;
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
@@ -5063,11 +5066,11 @@ hide-popover {
 
 /* hide.ui.TitleBar */
 .title-bar {
-	display: flex;
+	/* equal side columns center the title in the window */
+	display: grid;
+	grid-template-columns: 1fr minmax(0, auto) 1fr;
 	align-items: center;
 	height: 30px; /* ElectronMain.TITLE_BAR_HEIGHT */
-	/* space of the native window buttons */
-	padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw));
 	box-sizing: border-box;
 
 	background-color: var(--theme-crust);
@@ -5077,13 +5080,20 @@ hide-popover {
 
 	-webkit-app-region: drag;
 
-	> .icon {
+	> .left {
+		display: flex;
+		align-items: center;
+		height: 100%;
+		min-width: 0;
+	}
+
+	.icon {
 		width: 16px;
 		height: 16px;
 		margin-left: 8px;
 	}
 
-	> .menu-bar {
+	.menu-bar {
 		display: flex;
 		height: 100%;
 		padding-left: 4px;
@@ -5104,13 +5114,18 @@ hide-popover {
 	}
 
 	> .title {
-		flex: 1;
-		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		text-align: center;
 		opacity: 0.6;
+	}
+
+	/* space of the native window buttons */
+	&::after {
+		content: "";
+		justify-self: end;
+		width: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw));
 	}
 
 	~ .hide-root {
@@ -5130,7 +5145,7 @@ hide-popover {
 
 	> .layout-root {
 		flex-grow: 1;
-		background-color: #000000;
+		background-color: var(--theme-crust);
 		min-height: 0;
 		min-width: 0;
 
@@ -5144,8 +5159,8 @@ hide-popover {
 		padding-right: 4px;
 
 		height: 16px;
-		background-color: #202020;
-		border-top: 1px solid #333;
+		background-color: var(--theme-mantle);
+		border-top: 1px solid var(--theme-crust);
 		flex-shrink: 0;
 
 		display: flex;
@@ -6483,6 +6498,7 @@ fancy-tree-item {
 	display: flex;
 
 	&:hover {
+		background-color: rgba(255,255,255,0.1);
 		--highlight: 10;
 		cursor: pointer;
 
@@ -6590,6 +6606,9 @@ fancy-tree-item {
 
 	&.selected {
 		--background: var(--selection) !important;
+		&:hover {
+			background-color: var(--selection);
+		}
 	}
 }
 

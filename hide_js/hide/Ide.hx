@@ -898,7 +898,7 @@ class Ide extends hide.tools.IdeData {
 		css.each(function(i, e) : Void {
 			var link : js.html.LinkElement = cast e;
 			if (path == null || StringTools.contains(link.href, path)) {
-				link.href = link.href + "?" + haxe.Timer.stamp();
+				link.href = link.href.split("?")[0] + "?" + haxe.Timer.stamp();
 			}
 		});
 	}
