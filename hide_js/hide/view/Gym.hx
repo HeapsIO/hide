@@ -70,18 +70,14 @@ class Gym extends hide.ui.View<{}> {
 					<fancy-button>
 						<span class="ico ico-eye"></span>
 					</fancy-button>
-					<fancy-button class="compact">
-						<span class="ico ico-chevron-down"></span>
-					</fancy-button>
+					<fancy-button class="compact"></fancy-button>
 
 					<fancy-separator></fancy-separator>
 
 					<fancy-button class="selected">
 						<span class="ico ico-eye"></span>
 					</fancy-button>
-					<fancy-button class="compact">
-						<span class="ico ico-chevron-down"></span>
-					</fancy-button>
+					<fancy-button class="compact"></fancy-button>
 				</fancy-toolbar>
 				'));
 
@@ -107,9 +103,7 @@ class Gym extends hide.ui.View<{}> {
 						<span class="ico ico-gear"></span>
 						<span class="label">Options</span>
 					</fancy-button>
-					<fancy-button class="compact">
-						<span class="ico ico-chevron-down"></span>
-					</fancy-button>
+					<fancy-button class="compact"></fancy-button>
 			'));
 
 
@@ -432,19 +426,19 @@ class Gym extends hide.ui.View<{}> {
 					<h1>Icon and dropdown aside</h1>
 					<hide-group>
 						<hide-button><span class="ico ico-eye"></span></hide-button>
-						<hide-button class="small-dropdown" onclick={openDropdown}><span class="ico ico-chevron-down"></span></hide-button>
+						<hide-button class="small-dropdown" onclick={openDropdown}></hide-button>
 					</hide-group>
 
 					<h1>With dropdown</h1>
 					<hide-toolbar>
-						<hide-button onclick={openDropdown}><span class="label">Options</span><span class="ico ico-chevron-down"></span></hide-button>
-						<hide-button onclick={openDropdown}><span class="ico ico-filter"></span><span class="ico ico-chevron-down"></span></hide-button>
+						<hide-button class="dropdown" onclick={openDropdown}><span class="label">Options</span></hide-button>
+						<hide-button class="dropdown" onclick={openDropdown}><span class="ico ico-filter"></span></hide-button>
 					</hide-toolbar>
 
 					<h1>Icon text and dropdown aside</h1>
 					<hide-group>
 						<hide-button><span class="ico ico-gear"></span><span class="label">Options</span></hide-button>
-						<hide-button class="small-dropdown" onclick={openDropdown}><span class="ico ico-chevron-down"></span></hide-button>
+						<hide-button class="small-dropdown" onclick={openDropdown}></hide-button>
 					</hide-group>
 
 					<h1>Toolbar</h1>

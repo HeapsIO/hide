@@ -3,7 +3,7 @@ package hide.html.comp;
 import hide.html.WebComponent;
 
 /**
-	Button showing its children (`.ico`, `.label`) in a row. Classes : `small-square`, `medium-square`, `quiet`, `small-dropdown` (narrow arrow button next to another one).
+	Button showing its children (`.ico`, `.label`) in a row. Classes : `small-square`, `medium-square`, `quiet`, `dropdown` (adds an arrow after the children), `small-dropdown` (narrow arrow button next to another one).
 	Setting `oncheck(event, checked)` makes it a toggle : a click flips the `checked` attribute.
 **/
 @:keep

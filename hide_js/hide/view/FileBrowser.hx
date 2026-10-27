@@ -423,9 +423,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 							<span class="ico ico-filter"></span>
 						</fancy-button>
 
-						<fancy-button class="compact bnt-filter-dropdown" title="Choose filters">
-							<span class="ico ico-chevron-down"></span>
-						</fancy-button>
+						<fancy-button class="compact bnt-filter-dropdown" title="Choose filters"></fancy-button>
 
 						<fancy-separator></fancy-separator>
 

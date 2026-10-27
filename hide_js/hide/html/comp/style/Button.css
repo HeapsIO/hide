@@ -70,6 +70,12 @@
 	min-width: 0;
 	padding-left: 4px;
 	padding-right: 4px;
+}
+
+:host(.dropdown)::after,
+:host(.small-dropdown)::after {
+	content: "\f078";
+	font: normal normal normal 14px/1 FontAwesome;
 	font-size: 0.7em;
 }
 

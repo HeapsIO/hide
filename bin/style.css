@@ -5718,6 +5718,12 @@ fancy-button {
 		}
 	}
 
+	&.compact::after {
+		font-family: "FontAwesome";
+		content: "\f078";
+		font-size: 0.7em;
+	}
+
 	&.disabled {
 		pointer-events: none;
 		color: #666;

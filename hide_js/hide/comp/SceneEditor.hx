@@ -166,7 +166,7 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 
 		var content = new Element('<div class="overlays-content"></div>').appendTo(element);
 		var overlaysBtn = element.find(".button2");
-		var toolbarBtn = parent.closest(".hide-toolbar2").find("#showViewportOverlays");
+		var toolbarBtn = parent.closest(".hide-toolbar2, hide-toolbar").find("#showViewportOverlays");
 		function refreshOverlaysState() {
 			var v = editor.showOverlays;
 			overlaysBtn.get(0).toggleAttribute("checked", v);
