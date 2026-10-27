@@ -195,7 +195,9 @@ class Ide extends hide.tools.IdeData {
 
 		if( !sys.FileSystem.exists(current) || !sys.FileSystem.isDirectory(current) ) {
 			if( current != "" ) js.Browser.alert(current+" no longer exists");
-			current = cwd;
+			// no project : forced empty without forgetting the saved one
+			projectOverride = "";
+			current = "";
 		}
 
 		setProject(current);
@@ -485,7 +487,9 @@ class Ide extends hide.tools.IdeData {
 		for( v in initViews )
 			initView(v);
 		if( views.length == 0 ) {
-			if( isCDB )
+			if( !isProjectValid() )
+				open("hide.view.NoProject", {}, Center);
+			else if( isCDB )
 				open("hide.view.cdb.CdbTable",{}, function(v) v.fullScreen = true);
 			else
 				open("hide.view.FileBrowser",{savedLayout: "SingleTree"}, Left);
@@ -1447,6 +1451,16 @@ class Ide extends hide.tools.IdeData {
 		js.node.ChildProcess.exec(c, function(e:js.node.ChildProcess.ChildProcessExecError,_,_) callb(e == null ? null : e.message));
 	}
 
+	function chooseProject() {
+		chooseDirectory(function(dir) {
+			if( dir == null ) return;
+			if( StringTools.endsWith(dir,"/res") || StringTools.endsWith(dir,"\\res") )
+				dir = dir.substr(0,-4);
+			setProject(dir);
+			reload();
+		}, true);
+	}
+
 	public function addCustomMenu(item: electron.MenuItem) {
 		customMenus.push(item);
 	}
@@ -1472,15 +1486,7 @@ class Ide extends hide.tools.IdeData {
 				reload(); // Reload stylesheets
 			});
 		}
-		menu.find(".project .open").click(function(_) {
-			chooseDirectory(function(dir) {
-				if( dir == null ) return;
-				if( StringTools.endsWith(dir,"/res") || StringTools.endsWith(dir,"\\res") )
-					dir = dir.substr(0,-4);
-				setProject(dir);
-				reload();
-			}, true);
-		});
+		menu.find(".project .open").click((_) -> chooseProject());
 		menu.find(".project .clear").click(function(_) {
 			globalState.set("recentProjects", []);
 			initMenu();
