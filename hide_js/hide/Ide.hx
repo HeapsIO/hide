@@ -1431,7 +1431,6 @@ class Ide extends hide.tools.IdeData {
 		}
 
 		// view
-		menu.find(".view").remove();
 		menu.get(0).querySelector(".view .debug").addEventListener("click", (_) -> window.toggleDevTools());
 		var comps = menu.find("[component]");
 		for( c in comps.elements() ) {
