@@ -3262,7 +3262,7 @@ input[type=checkbox] {
 	}
 }
 
-.hide-view {
+:where(.hide-view) {
 	display: block;
 	position: relative;
 	box-sizing: border-box;
