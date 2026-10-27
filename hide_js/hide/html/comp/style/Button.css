@@ -1,6 +1,7 @@
 :host {
 	--button-background: var(--theme-surface-1);
 	--button-foreground: var(--theme-foreground);
+	--button-size: 28px;
 
 	display: inline-flex;
 	flex-direction: row;
@@ -10,9 +11,10 @@
 
 	gap: 4px;
 
-	min-height: 20px;
-	min-width: 20px;
-	padding: 8px 10px;
+	height: var(--button-size);
+	min-width: var(--button-size);
+	overflow-y: clip;
+	padding: 0 6px;
 	box-sizing: border-box;
 
 	border-radius: 4px;
@@ -24,6 +26,8 @@
 	color: var(--button-foreground);
 	cursor: pointer;
 	user-select: none;
+
+	font-size: 12px;
 }
 
 :host(:hover) {
@@ -41,25 +45,16 @@
 }
 
 :host(.small-square) {
+	--button-size: 16px;
 	padding: 0;
-	width: 16px;
-	height: 16px;
-	min-width: 0;
-	min-height: 0;
+	font-size: 9px;
+
 }
 
 :host(.medium-square) {
-	padding: 2px;
-	width: 20px;
-	height: 20px;
-}
-
-:host(.small-square) ::slotted(.ico), :host(.medium-square) ::slotted(.ico) {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 16px;
-	height: 16px;
+	--button-size: 20px;
+	font-size: 12px;
+	padding: 0 2px;
 }
 
 :host(.quiet) {
