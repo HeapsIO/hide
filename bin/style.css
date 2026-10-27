@@ -10,7 +10,7 @@
 	--theme-mantle: oklch(0.216 0 0);
 	--theme-base: oklch(0.243 0 0);
 	--theme-surface-0: oklch(0.300 0 0);
-	--theme-surface-1: oklch(0.404 0 0);
+	--theme-surface-1: oklch(0.333 0 0);
 	--theme-surface-2: oklch(0.477 0.034 278.643);
 
 	--theme-text: oklch(0.879 0.043 272.277);
@@ -21,6 +21,7 @@
 
 	/* Derived colors */
 	--theme-accent: var(--theme-blue);
+	--theme-accent-dimmed: color-mix(in oklch, var(--theme-blue), var(--theme-crust) 10%);
 
 	--theme-color-border: var(--theme-surface-0);
 
@@ -6172,6 +6173,8 @@ blend-space-2d-root {
 .hide-gym {
 	padding: 2em;
 	box-sizing: border-box;
+	height: 100%;
+	overflow: auto;
 
 	h1 {
 		font-size: 1.1em;

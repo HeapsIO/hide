@@ -360,6 +360,109 @@ class Gym extends hide.ui.View<{}> {
 				</hide-split-container>
 			);
 		}
+
+		{
+			function buttons(parent : js.html.Element) {
+				hide.html.Html.build(parent,
+					<div style="display: contents">
+						<hide-group>
+							<hide-button><span class="ico ico-pencil"></span></hide-button>
+							<hide-button><span class="ico ico-eraser"></span></hide-button>
+							<hide-button checked><span class="ico ico-paint-brush"></span></hide-button>
+						</hide-group>
+						<hide-button><span class="ico ico-gear"></span></hide-button>
+						<hide-button><span class="label">Options</span></hide-button>
+						<hide-button><span class="ico ico-gear"></span><span class="label">Options</span></hide-button>
+						<hide-button class="small-square"><span class="ico ico-filter"></span></hide-button>
+						<hide-button class="medium-square"><span class="ico ico-filter"></span></hide-button>
+						<hide-button class="quiet"><span class="ico ico-gear"></span></hide-button>
+						<hide-button class="quiet"><span class="label">Options</span></hide-button>
+						<hide-button class="quiet"><span class="ico ico-gear"></span><span class="label">Options</span></hide-button>
+
+						<hide-button class="transparent"><span class="ico ico-gear"></span></hide-button>
+						<hide-button class="transparent"><span class="label">Options</span></hide-button>
+						<hide-button class="transparent" checked><span class="label">Options</span></hide-button>
+						<hide-button class="transparent"><span class="ico ico-gear"></span><span class="label">Options</span></hide-button>
+
+						<hide-button class="quiet transparent"><span class="ico ico-gear"></span></hide-button>
+						<hide-button class="quiet transparent"><span class="label">Options</span></hide-button>
+						<hide-button class="quiet transparent" checked><span class="label">Options</span></hide-button>
+						<hide-button class="quiet transparent"><span class="ico ico-gear"></span><span class="label">Options</span></hide-button>
+
+					</div>
+				);
+			}
+
+			var toolbar = section(element, "Toolbar");
+			hide.html.Html.build(toolbar.get(0), <hide-toolbar id="bar"></hide-toolbar>);
+			buttons(bar);
+
+			var hideButtons = section(element, "Hide Buttons");
+			hide.html.Html.build(hideButtons.get(0), <div id="flex" style="display: flex; flex-direction: row; border: 1px solid red"></div>);
+			buttons(flex);
+
+			function openDropdown(e : js.html.MouseEvent) {
+				hide.comp.ContextMenu.createDropdown(cast e.currentTarget, getContextMenuContent(), {});
+			}
+
+			hide.html.Html.build(hideButtons.get(0),
+				<div>
+					<h1>Size</h1>
+					<hide-toolbar>
+						<hide-button class="small-square"><span class="ico ico-gear"></span></hide-button>
+						<hide-button class="medium-square"><span class="ico ico-gear"></span></hide-button>
+						<hide-button><span class="ico ico-gear"></span></hide-button>
+					</hide-toolbar>
+
+					<h1>Button</h1>
+					<hide-button><span class="ico ico-gear"></span></hide-button>
+
+					<h1>Quiet</h1>
+					<hide-button class="quiet"><span class="ico ico-gear"></span></hide-button>
+
+					<h1>Text button</h1>
+					<hide-button><span class="label">Options</span></hide-button>
+
+					<h1>Icon and text button</h1>
+					<hide-button><span class="ico ico-gear"></span><span class="label">Options</span></hide-button>
+
+					<h1>Icon and really long text button</h1>
+					<hide-button><span class="ico ico-gear"></span><span class="label">Lorem ispum sit dolor amet</span></hide-button>
+
+					<h1>Icon and dropdown aside</h1>
+					<hide-group>
+						<hide-button><span class="ico ico-eye"></span></hide-button>
+						<hide-button class="small-dropdown" onclick={openDropdown}><span class="ico ico-chevron-down"></span></hide-button>
+					</hide-group>
+
+					<h1>With dropdown</h1>
+					<hide-toolbar>
+						<hide-button onclick={openDropdown}><span class="label">Options</span><span class="ico ico-chevron-down"></span></hide-button>
+						<hide-button onclick={openDropdown}><span class="ico ico-filter"></span><span class="ico ico-chevron-down"></span></hide-button>
+					</hide-toolbar>
+
+					<h1>Icon text and dropdown aside</h1>
+					<hide-group>
+						<hide-button><span class="ico ico-gear"></span><span class="label">Options</span></hide-button>
+						<hide-button class="small-dropdown" onclick={openDropdown}><span class="ico ico-chevron-down"></span></hide-button>
+					</hide-group>
+
+					<h1>Toolbar</h1>
+					<hide-toolbar>
+						<hide-group>
+							<hide-button><span class="ico ico-home"></span></hide-button>
+							<hide-button><span class="ico ico-clipboard"></span></hide-button>
+							<hide-button><span class="ico ico-gear"></span></hide-button>
+						</hide-group>
+						<hide-group>
+							<hide-button><span class="ico ico-pencil"></span></hide-button>
+							<hide-button><span class="ico ico-eraser"></span></hide-button>
+							<hide-button><span class="ico ico-paint-brush"></span></hide-button>
+						</hide-group>
+					</hide-toolbar>
+				</div>
+			);
+		}
 	}
 
 	function rethrowTest1() {
