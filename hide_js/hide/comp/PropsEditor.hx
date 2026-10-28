@@ -907,6 +907,9 @@ class PropsField extends Component {
 				if( f.is("[type=number]") )
 					newVal = Std.parseFloat(newVal);
 
+				if( f.is("[type=int]") )
+					newVal = Std.parseInt(newVal);
+
 				if( enumValue != null )
 					newVal = Type.createEnum(enumValue, newVal);
 

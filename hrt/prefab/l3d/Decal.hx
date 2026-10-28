@@ -476,7 +476,7 @@ class Decal extends Object3D {
 
 						<dt>Draw Order</dt>
 						<dd>
-							<select class="drawOrder">
+							<select field="drawOrder" type="int">
 								<option value="0" selected disabled hidden>Default</option>
 								${[for( i in 0...layers.length ) '<option value="${layers[i].value}">${layers[i].name}</option>'].join("")}
 							</select>
@@ -502,14 +502,6 @@ class Decal extends Object3D {
 				}
 				else
 					ctx.onChange(this, pname);
-			});
-
-			var select = e.find(".drawOrder");
-			select.val('${drawOrder}');
-
-			select.change((event) -> {
-				var v = Std.parseInt(select.val());
-				ctx.makeChanges(this, () -> drawOrder = v);
 			});
 		}
 
