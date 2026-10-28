@@ -13,7 +13,6 @@ class PbrMaterial extends AnyPropsEditor<h3d.mat.PbrMaterial> {
 			value: layer.value,
 			label: layer.name,
 		}];
-		drawOrder.unshift({value: null, label: "Default"});
 
 		root.build(
 			<root>
