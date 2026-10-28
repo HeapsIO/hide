@@ -126,6 +126,8 @@ class Plugin {
 				for( e in ["dx", "hlemu"] )
 					C.exclude(e);
 			}
+			@:privateAccess hide.html.DomPatch.init();
+			@:privateAccess hide.html.WebComponentMacro.init();
 			// js-classic outputs root types as globals : prefix them so they can't overwrite browser globals (e.g. Data.Element)
 			Context.onGenerate(function(types) {
 				for( t in types ) {

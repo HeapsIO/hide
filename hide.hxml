@@ -10,6 +10,8 @@ hide_common.hxml
 -js bin/hide.js
 -main hide.Ide
 --macro hide.tools.Macros.includeShaderSources()
+--macro hide.html.DomPatch.init()
+--macro hide.html.WebComponentMacro.init()
 cdb.ConstLoader
 
 #-D shader_debug_dump

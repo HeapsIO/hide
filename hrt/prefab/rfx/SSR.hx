@@ -181,6 +181,9 @@ class SSRShader extends h3d.shader.ScreenShader {
 
 class SSR extends RendererFX {
 
+	public static var REFERENCE_WIDTH = 2560;
+	public static var REFERENCE_HEIGHT = 1440;
+
 	public var ssrPass : h3d.pass.ScreenFx<SSRShader>;
 
 	var blurPass = new h3d.pass.Blur();
@@ -237,7 +240,7 @@ class SSR extends RendererFX {
 		ssrShader.minCosAngle = Math.cos(hxd.Math.degToRad(minAngle));
 		var resRescale = 1.0;
 		if ( !support4K )
-			resRescale = hxd.Math.max(1.0, hxd.Math.max(ssrShader.texSize.x / 2560, ssrShader.texSize.y / 1440));
+			resRescale = hxd.Math.max(1.0, hxd.Math.max(ssrShader.texSize.x / REFERENCE_WIDTH, ssrShader.texSize.y / REFERENCE_HEIGHT));
 		ssrShader.rayMarchingResolution = hxd.Math.clamp(rayMarchingResolution / resRescale);
 
 		ssrShader.cameraView = r.ctx.camera.mcam;

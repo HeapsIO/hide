@@ -85,7 +85,9 @@ class Window {
 		for( f in l.copy() ) f();
 	}
 
-	public function showDevTools() Ipc.call("win.openDevTools", id);
+	public function toggleDevTools() Ipc.call("win.toggleDevTools", id);
+	/** colors of the native buttons drawn over a custom title bar, as #rrggbb **/
+	public function setTitleBarOverlay( color : String, symbolColor : String ) Ipc.call("win.setTitleBarOverlay", id, color, symbolColor);
 	public function moveTo( x : Int, y : Int ) Ipc.call("win.moveTo", id, x, y);
 	public function resizeTo( w : Int, h : Int ) Ipc.call("win.resizeTo", id, w, h);
 	public function resizeBy( dw : Int, dh : Int ) Ipc.call("win.resizeBy", id, dw, dh);
@@ -155,17 +157,6 @@ class Window {
 
 	public static function openSub( x : Float, y : Float, width : Float, height : Float ) : js.html.Window {
 		return js.Browser.window.open("", "", 'popup=true,left=$x,top=$y,width=$width,height=$height');
-	}
-
-	/**
-		Call a function on the page that opened this window
-	**/
-	public static function callOpener( name : String, param : Dynamic ) {
-		Ipc.call("win.callParent", name, param);
-	}
-
-	public static function onOpenerCall( callb : String -> Dynamic -> Void ) {
-		Ipc.on("hide-parent-call", function(_, name : String, param : Dynamic) callb(name, param));
 	}
 
 	/**

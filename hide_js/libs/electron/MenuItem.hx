@@ -6,7 +6,7 @@ enum abstract MenuItemType(String) {
 	var Separator = "separator";
 }
 
-typedef MenuItemOptions = { label : String, ?type : MenuItemType, ?submenu : Menu };
+typedef MenuItemOptions = { label : String, ?type : MenuItemType, ?submenu : Menu, ?accelerator : String };
 
 class MenuItem {
 
@@ -20,12 +20,14 @@ class MenuItem {
 	public var enabled(default, set) : Bool = true;
 
 	var attached = false;
+	var accelerator : String;
 
 	public function new( options : MenuItemOptions ) {
 		id = "m" + (UID++);
 		label = options.label;
 		type = options.type == null ? Normal : options.type;
 		submenu = options.submenu;
+		accelerator = options.accelerator;
 	}
 
 	public dynamic function click() {
@@ -50,6 +52,7 @@ class MenuItem {
 			type : type,
 			checked : checked,
 			enabled : enabled,
+			accelerator : accelerator,
 			submenu : submenu == null ? null : @:privateAccess submenu.toTemplate(all),
 		};
 	}

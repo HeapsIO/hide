@@ -1,0 +1,127 @@
+:host {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	position: relative;
+	/* margin: 2px;
+	border-radius: 5px;
+	border: 1px solid var(--theme-color-border); */
+
+	--hover-feedback-border: var(--theme-accent);
+	--hover-transient-background: color-mix(in oklch, var(--theme-accent), var(--theme-base) 30%);
+
+	--tab-background: var(--theme-surface-0);
+	--border-radius: 5px;
+
+	border-radius: 0 0 var(--border-radius) var(--border-radius);
+
+
+}
+
+:host(.transientDrop) {
+	--split-override-size: 50px;
+	background: var(--hover-transient-background);
+	> .header {
+		opacity: 0.5;
+	}
+}
+
+/* Overlay : an outline on the host would be covered by the view */
+:host(.drop)::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	outline: 1px solid var(--hover-feedback-border);
+	outline-offset: -1px;
+	pointer-events: none;
+	z-index: 1;
+}
+
+.header {
+	display: flex;
+	flex-shrink: 0;
+	height: 28px;
+	background: var(--theme-crust);
+}
+
+.tabs {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	gap: 1px;
+	padding-top: 2px;
+}
+
+.more {
+	display: flex;
+	padding: 0px 4px;
+	align-items: center;
+	font-size: 1.1em;
+	cursor: pointer;
+	color: #aaa;
+
+	&:hover {
+		color: #fff;
+	}
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+.tab {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+	padding-left: 6px;
+	padding-right: 2px;
+	gap: 6px;
+	cursor: pointer;
+	white-space: nowrap;
+	color: #aaa;
+	/* background: var(--theme-surface-0); */
+	/* border-top: 2px solid transparent; */
+
+	border-radius: var(--border-radius) var(--border-radius) 0 0;
+
+	&[hidden] {
+		display: none;
+	}
+
+	&:hover {
+		color: #fff;
+	}
+
+	&.selected {
+		/* border-top: 2px solid var(--theme-accent); */
+
+		background: var(--tab-background);
+;
+		color: #fff;
+	}
+}
+
+.close {
+	display: flex;
+    justify-content: center;
+    align-items: flex-end;
+	opacity: 0.5;
+	height: 14px;
+	aspect-ratio: 1/1;
+
+	&:hover {
+		color: #FFF;
+		opacity: 1;
+		background-color: #444;
+		border-radius: 10px;
+	}
+}
+
+slot {
+	display: block;
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	background-color: var(--tab-background);
+}

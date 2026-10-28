@@ -5,21 +5,17 @@ enum abstract DisplayPosition(String) from String to String {
 	var Center = "content_center";
 	var Right = "content_right";
 	var Bottom = "content_bottom";
-	var MiddleColumnInternal = "content_middle_internal";
 }
 
-typedef ViewOptions = { ?position : DisplayPosition, ?width : Int, ?id: String }
+typedef ViewOptions = { ?position : DisplayPosition, ?width : Int }
 
-@:keepSub @:allow(hide.Ide)
+@:keepSub @:allow(hide.Ide) @:allow(hide.html.comp.TabViewContainer)
 class View<T> extends hide.comp.Component {
 
-	#if !hl
-	var container : golden.Container;
-	var containerView : golden.ContentItem;
+	var container : hide.html.comp.TabViewContainer;
 	public var fullScreen(get,set) : Bool;
 	var contentWidth(get,never) : Int;
 	var contentHeight(get,never) : Int;
-	#end
 	var watches : Array<{ keep : Bool, path : String, callb : Void -> Void }> = [];
 	public var keys(get,null) : Keys;
 	public var state(default, null) : T;
@@ -38,12 +34,11 @@ class View<T> extends hide.comp.Component {
 
 	public function new(state:T) {
 		super(null,null);
-		element = null;
+		element[0].classList.add("hide-view");
+		(element[0] : Dynamic).__view = this;
 		this.state = state;
 		ide = Ide.inst;
-		#if !hl
 		@:privateAccess ide.currentFullScreen = null;
-		#end
 	}
 
 	public function watch( filePath : String, onChange : Void -> Void, ?opts : { ?checkDelete : Bool, ?keepOnRebuild : Bool } ) {
@@ -111,7 +106,6 @@ class View<T> extends hide.comp.Component {
 		}
 	}
 
-	#if !hl
 	public function setClipboard( v : Dynamic, ?type : String, ?opts : {} ) {
 		electron.Clipboard.set(ide.toJSON({ type : type == null ? viewClass : type, value : v, opts : opts }));
 	}
@@ -130,7 +124,7 @@ class View<T> extends hide.comp.Component {
 	}
 
 	function syncTitle() {
-		container.setTitle(getTitle());
+		element[0].setAttribute("label", getTitle());
 	}
 
 	function isKeysLocked( e : js.jquery.Event ) {
@@ -167,48 +161,21 @@ class View<T> extends hide.comp.Component {
 		return keys.processEvent(e,config);
 	}
 
-	public function setContainer(cont) {
+	/**
+		Called once, when the view is first added to a container. Moving it to another container doesn't call it again.
+	**/
+	public function setContainer( cont : hide.html.comp.TabViewContainer ) {
 		this.container = cont;
 		@:privateAccess ide.views.push(this);
 		syncTitle();
-		container.on("destroy",function(e) {
-			destroy();
-		});
-		container.on("show", function(_) {
-			// we are dragging the container tab
-			if( container.parent.parent.config == null ) return;
-			hide.tools.CrashReport.log("show " + this);
-			haxe.Timer.delay(onActivate,0);
-		});
-		container.on("hide", function(_) {
-			onHide();
-		});
-		container.getElement().keydown(function(e) {
+		element.keydown(function(e) {
 			processKeyEvent(e);
 		});
-
-		container.on("tab", function(e) {
-			container.tab.onClose = function() {
-				return onBeforeClose();
-			};
-			container.tab.element.contextmenu(function(e: js.jquery.Event) {
-				var menu = buildTabMenu();
-				if( menu.length > 0 ) {
-					hide.comp.ContextMenu.createFromEvent(cast e, menu);
-				}
-				e.preventDefault();
-			});
-		});
-
-		if( containerView != null ) containerView.__view = null;
-		containerView = container.parent;
-		containerView.__view = this;
-		element = cont.getElement();
 	}
 
 	public final function rebuild() {
 		function checkRebuild() {
-			if( container == null || !needRebuild ) return;
+			if( element == null || !needRebuild ) return;
 			if( !isActive() ) {
 				haxe.Timer.delay(checkRebuild,200);
 				return;
@@ -238,13 +205,6 @@ class View<T> extends hide.comp.Component {
 		element.off();
 		onDisplay();
 	}
-	#end
-
-	#if hl
-	public final function rebuild() {
-		onDisplay();
-	}
-	#end
 
 	function onDisplay() {
 		element.text(viewClass+(state == null ? "" : " "+state));
@@ -274,77 +234,75 @@ class View<T> extends hide.comp.Component {
 
 	function get_defaultOptions() return viewClasses.get(Type.getClassName(Type.getClass(this))).options;
 
-	#if !hl
-
 	public function isActive() {
-		return container != null && !container.isHidden;
+		return element != null && element[0].assignedSlot != null;
 	}
 
 	public function onActivate() {
 	}
 
 	/**
-		Gives focus if part of a tab group
+		Selects the view tab
 	**/
 	public function activate() {
-		if( container != null ) {
-			var cur = container.parent.parent.getActiveContentItem();
-			if( cur != container.parent )
-				container.parent.parent.setActiveContentItem(container.parent);
-		}
+		if( container != null )
+			container.select(element[0]);
 	}
 
 	function saveState() {
-		container.setState(state);
+		@:privateAccess ide.onLayoutChanged();
 	}
 
+	/**
+		Returns false if `onBeforeClose` canceled it
+	**/
 	public function close() {
 		if( container != null )
-			container.close();
+			return container.close(element[0]);
+		if( element != null ) {
+			element[0].remove();
+			destroy();
+		}
+		return true;
 	}
 
 	function destroy() {
 		hide.tools.CrashReport.log("close " + this);
+		if( fullScreen )
+			fullScreen = false;
 		for( w in watches.copy() )
 			ide.fileWatcher.unregister(w.path, w.callb);
 		watches = [];
 		@:privateAccess ide.views.remove(this);
-		for( c in container.getElement().find("canvas") ) {
+		for( c in element.find("canvas") ) {
 			var s : hide.comp.Scene = Reflect.field(c, "__scene");
 			if( s != null )
 				s.dispose();
 		}
+		(element[0] : Dynamic).__view = null;
 		element = null;
-		containerView.__view = null;
+		container = null;
 		@:privateAccess ide.lastClosedTabStates.push(state);
 	}
 
 	function buildTabMenu() : Array<hrt.ui.HuiMenu.MenuItem> {
-		if( @:privateAccess ide.subView != null )
-			return [];
 		return [
 			{ label : "Close", click : close },
-			{ label : "Close Others", click : function() for( v in @:privateAccess ide.views.copy() ) if( v != this && v.container.tab.header == container.tab.header ) v.close() },
-			{ label : "Close All", click : function() for( v in @:privateAccess ide.views.copy() ) if( v.container.tab.header == container.tab.header ) v.close() },
+			{ label : "Close Others", click : function() for( v in @:privateAccess ide.views.copy() ) if( v != this && v.container == container ) v.close() },
+			{ label : "Close All", click : function() for( v in @:privateAccess ide.views.copy() ) if( v.container == container ) v.close() },
 		];
 	}
 
-	function get_contentWidth() return container.width;
-	function get_contentHeight() return container.height;
-	function get_fullScreen() return container != null && container.getElement().is(".fullScreen");
+	function get_contentWidth() return element[0].offsetWidth;
+	function get_contentHeight() return element[0].offsetHeight;
+	function get_fullScreen() return @:privateAccess ide.currentFullScreen == this;
 	function set_fullScreen(v) {
-		if( fullScreen == v )
-			return v;
-		if( container != null ) {
-			new Element(".fullScreen").removeClass("fullScreen");
-			container.getElement().toggleClass("fullScreen", v);
-			new Element("body").toggleClass("fullScreenMode",v);
-		}
-		@:privateAccess if( v ) ide.currentFullScreen = this else ide.currentFullScreen = null;
-		if( !ide.isCDB ) ide.setFullscreen(v);
+		if( v )
+			activate();
+		if( v || fullScreen )
+			@:privateAccess ide.currentFullScreen = v ? this : null;
 		return v;
 	}
-	#end
 
 	public static var viewClasses = new Map<String,{ name : String, cl : Class<View<Dynamic>>, options : ViewOptions }>();
 	public static function register<T>( cl : Class<View<T>>, ?options : ViewOptions ) {
@@ -355,6 +313,10 @@ class View<T> extends hide.comp.Component {
 			options.position = Center;
 		viewClasses.set(name, { name : name, cl : cl, options : options });
 		return null;
+	}
+
+	static function createView( name : String, state : Dynamic ) : View<Dynamic> {
+		return Type.createInstance(viewClasses.get(name).cl, [state]);
 	}
 
 }

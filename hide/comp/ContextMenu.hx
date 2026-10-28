@@ -216,7 +216,7 @@ class ContextMenu {
         if (parentMenu == null && parentElement != null) {
             autoCleanupTimer = new haxe.Timer(10);
             autoCleanupTimer.run = () -> {
-                if (parentElement.closest("body") == null) {
+                if (!parentElement.isConnected) {
                     close();
                 }
             };

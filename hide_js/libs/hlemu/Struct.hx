@@ -7,6 +7,15 @@ import hlemu.Native as N;
 **/
 class Struct {
 
+	// Runs before static initializers, which already allocate structs
+	static function __init__() {
+		if( js.Syntax.code("typeof __dx12 == 'undefined'") ) {
+			var msg = "DirectX 12 addon bin/jsdx/dx12.node is missing : build it with 'npm run build' in hide_js/libs/jsdx";
+			js.Browser.alert(msg);
+			throw msg;
+		}
+	}
+
 	/** allocates the memory of a new struct : a zeroed ArrayBuffer with a known address **/
 	public static function alloc( s : Dynamic, size : Int ) : Void {
 		var buf = new js.lib.ArrayBuffer(size > 0 ? size : 1);

@@ -15,6 +15,8 @@ typedef CreateWindowOptions = {
 	?width : Int,
 	?height : Int,
 	?opener : Int,
+	// replaced by the page's own title bar (hide.ui.TitleBar), the native buttons are drawn over it
+	?customTitleBar : Bool,
 }
 
 /**
@@ -25,7 +27,10 @@ typedef CreateWindowOptions = {
 **/
 class ElectronMain {
 
-	static var MIMES = ["text" => "text/plain", "html" => "text/html", "rtf" => "text/rtf", "png" => "image/png", "jpeg" => "image/jpeg"];
+	// same as .title-bar in style.css
+	static inline var TITLE_BAR_HEIGHT = 30;
+
+	static var MIMES =["text" => "text/plain", "html" => "text/html", "rtf" => "text/rtf", "png" => "image/png", "jpeg" => "image/jpeg"];
 
 	static var isCDB : Bool;
 	static var appName : String;
@@ -38,8 +43,6 @@ class ElectronMain {
 	static var mainWindow : BrowserWindow;
 	static var quitting = false;
 	static var windowStates : Map<Int, WindowState> = new Map();
-	static var sharedRefs : Map<Int, Dynamic> = new Map();
-	static var sharedRefId = 0;
 	// window id => subscriber webContents id => events
 	static var subscriptions : Map<Int, Map<Int, Array<String>>> = new Map();
 	// webContents id => accelerators
@@ -129,7 +132,7 @@ class ElectronMain {
 			Menu.setApplicationMenu(null);
 			try Session.defaultSession.setSpellCheckerLanguages(["en-US", "fr-FR"]) catch( e : Dynamic ) {}
 			watchDebuggers();
-			mainWindow = createWindow("app.html", {});
+			mainWindow = createWindow("app.html", { customTitleBar : Sys.systemName() != "Mac" });
 			mainWindow.on("closed", function() {
 				mainWindow = null;
 				App.quit();
@@ -373,6 +376,9 @@ class ElectronMain {
 			title : opts.title == null ? appTitle : opts.title,
 			icon : windowIcon(),
 			backgroundColor : "#222222",
+			// the native menu is hidden, its accelerators still work
+			titleBarStyle : opts.customTitleBar ? "hidden" : "default",
+			titleBarOverlay : opts.customTitleBar ? ({ height : TITLE_BAR_HEIGHT } : Dynamic) : false,
 			webPreferences : {
 				nodeIntegration : true,
 				nodeIntegrationInWorker : true,
@@ -419,7 +425,6 @@ class ElectronMain {
 		win.webContents.on("render-process-gone", () -> dispatchWinEvent(id, "crashed"));
 
 		win.webContents.on("destroyed", () -> cleanupWebContents(wcId));
-		initDevToolsKeys(win);
 		win.webContents.setWindowOpenHandler((details : Dynamic) -> {
 			action : "allow",
 			createWindow : (options : Dynamic) -> createSubWindow(win, options),
@@ -485,6 +490,7 @@ class ElectronMain {
 					enabled : it.enabled != false,
 				};
 				if( it.type == "checkbox" ) m.checked = it.checked == true;
+				if( it.accelerator != null ) m.accelerator = it.accelerator;
 				if( it.submenu != null )
 					m.submenu = menuFromTemplate(wc, it.submenu);
 				else {
@@ -629,7 +635,8 @@ class ElectronMain {
 			if( force ) windowStates.get(win.id).forceClose = true;
 			win.close();
 		});
-		h.set("win.openDevTools", (wc, id) -> getWin(wc, id).webContents.openDevTools());
+		h.set("win.toggleDevTools", (wc, id) -> getWin(wc, id).webContents.toggleDevTools());
+		h.set("win.setTitleBarOverlay", (wc, id, color : String, symbolColor : String) -> getWin(wc, id).setTitleBarOverlay({ color : color, symbolColor : symbolColor, height : TITLE_BAR_HEIGHT }));
 		h.set("win.setMenu", function(wc : WebContents, items : Array<Dynamic>) {
 			var win = getWin(wc, null);
 			var template = items == null ? null : menuFromTemplate(wc, items);
@@ -649,10 +656,6 @@ class ElectronMain {
 			if( item == null ) return;
 			for( k => v in props ) Reflect.setField(item, k, v);
 		});
-		h.set("win.callParent", function(wc, name : String, param : Dynamic) {
-			var opener = windowStates.get(getWin(wc, null).id).opener;
-			if( opener != null ) send(WebContents.fromId(opener), "hide-parent-call", name, param);
-		});
 		h.set("win.connectOpener", function(wc : WebContents) {
 			var win = getWin(wc, null);
 			var opener = windowStates.get(win.id).opener;
@@ -662,14 +665,6 @@ class ElectronMain {
 			openerWc.postMessage("hide-port", win.id, [channel.port1]);
 			wc.postMessage("hide-port", null, [channel.port2]);
 		});
-
-		// values shared between windows (must be serializable)
-		h.set("shared.set", function(wc, value : Dynamic) {
-			var id = sharedRefId++;
-			sharedRefs.set(id, value);
-			return id;
-		});
-		h.set("shared.get", (wc, id : Int) -> sharedRefs.get(id));
 
 		// dialogs
 		h.set("dialog.open", function(wc, o : Dynamic) {

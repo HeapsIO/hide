@@ -51,6 +51,7 @@ extern class BrowserWindow {
 	function blur() : Void;
 	function close() : Void;
 	function setMenu( menu : Menu ) : Void;
+	function setTitleBarOverlay( options : { color : String, symbolColor : String, height : Int } ) : Void;
 	static function fromWebContents( wc : WebContents ) : Null<BrowserWindow>;
 	static function fromId( id : Int ) : Null<BrowserWindow>;
 	static function getAllWindows() : Array<BrowserWindow>;

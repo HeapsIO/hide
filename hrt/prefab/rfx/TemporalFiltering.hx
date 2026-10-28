@@ -182,6 +182,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 	public var pass = new h3d.pass.ScreenFx(new TemporalFilteringShader());
 	var curMatNoJitter = new h3d.Matrix();
 	var prevMatJittered = new h3d.Matrix();
+	var historyIndex = 0;
 
 	override function start( r:h3d.scene.Renderer) {
 		r.ctx.computeVelocity = velocity;
@@ -222,13 +223,18 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			r.mark("TemporalFiltering");
 			var output : h3d.mat.Texture = ctx.engine.getCurrentTarget();
 			var depthMap : Dynamic = ctx.getGlobal("depthMap");
-			var prevFrame = r.allocTarget("prevFrame", false, 1.0, output.format);
-			if ( prevFrame.flags.has(WasCleared) )
-				resolve(r, output, prevFrame, depthMap);
-			else
-				prevFrame.flags.set(WasCleared);
-
-			h3d.pass.Copy.run(output, prevFrame);
+			var history0 = r.allocTarget("prevFrame", false, 1.0, output.format);
+			var history1 = r.allocTarget("nextFrame", false, 1.0, output.format);
+			var prevFrame = historyIndex == 0 ? history0 : history1;
+			var nextFrame = historyIndex == 0 ? history1 : history0;
+			historyIndex = 1 - historyIndex;
+			if ( prevFrame.flags.has(WasCleared) ) {
+				resolve(r, output, prevFrame, depthMap, nextFrame);
+				r.setTarget(output, NotBound);
+				h3d.pass.Copy.run(nextFrame, output);
+			} else
+				h3d.pass.Copy.run(output, nextFrame);
+			nextFrame.flags.set(WasCleared);
 			pass.shader.prevCamMat.load(curMatNoJitter);
 
 			ctx.camera.jitterOffsetX = 0;
@@ -242,10 +248,13 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 		}
 	}
 
-	function resolve( r : h3d.scene.Renderer, output : h3d.mat.Texture, prevFrame : h3d.mat.Texture, depthMap : Dynamic ) {
+	function resolve( r : h3d.scene.Renderer, output : h3d.mat.Texture, prevFrame : h3d.mat.Texture, depthMap : Dynamic, ?target : h3d.mat.Texture ) {
 		var ctx = r.ctx;
-		var curFrame = r.allocTarget("curFrame", false, 1.0, output.format);
-		h3d.pass.Copy.run(output, curFrame);
+		var curFrame = output;
+		if( target == null ) {
+			curFrame = r.allocTarget("curFrame", false, 1.0, output.format);
+			h3d.pass.Copy.run(output, curFrame);
+		}
 
 		var s = pass.shader;
 		s.curFrame = curFrame;
@@ -276,7 +285,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 		s.KEEP_ALPHA = keepAlpha;
 		s.KEEP_SKY_ALPHA = keepSkyAlpha;
 
-		r.setTarget(output, NotBound);
+		r.setTarget(target == null ? output : target, NotBound);
 		pass.render();
 	}
 

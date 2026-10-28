@@ -30,7 +30,7 @@ class Menu {
 			var label = e.attr("label");
 			if( label == null ) label = "???";
 			var checked = e.prop("checked") || e.attr("checked") == "checked";
-			var m = new electron.MenuItem(submenu == null ? { label : label, type : type } : { label : label, type : type, submenu : submenu });
+			var m = new electron.MenuItem({ label : label, type : type, submenu : submenu, accelerator : elt.getAttribute("accelerator") });
 			if( type == Checkbox )
 				m.checked = checked;
 			if( e.attr("disabled") == "disabled" )
