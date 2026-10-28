@@ -1,6 +1,5 @@
 package hrt.prefab.fx;
 
-import hrt.prefab.Curve;
 import hrt.prefab.fx.Value;
 
 enum ParamKind {
@@ -12,15 +11,15 @@ enum ParamKind {
 enum ParamMode {
 	Constant( value : Float );
 	Range( min : Float, max : Float );
-	Curve( curve : String, from : Float, to : Float );
+	Curve( curve : String );
 	RandomCurve( curve : String, fromMin : Float, fromMax : Float, toMin : Float, toMax : Float );
-	CurveRange( a : String, aFrom : Float, aTo : Float, b : String, bFrom : Float, bTo : Float );
+	CurveRange( a : String, b : String );
 }
 
 typedef ParamVec2 = { ?x : ParamMode, ?y : ParamMode };
 typedef ParamVec3 = { > ParamVec2, ?z : ParamMode };
 
-typedef ParticleCurve = { curve : String, from : Float, to : Float };
+typedef ParticleCurve = { curve : String };
 
 typedef ParticleShaderParam = { name : String, comps : Array<ParticleCurve> };
 
@@ -33,11 +32,15 @@ typedef ModeParamDef = {
 	var ?disp : String;
 }
 
-interface ParamOwner {
-	function getSettings() : Array<EmitterHelper.ParamDef>;
-	function getModeParams() : Array<ModeParamDef>;
+interface ParamModes {
 	function getMode( name : String, comp : Int ) : ParamMode;
 	function setMode( name : String, comp : Int, m : ParamMode ) : Void;
+}
+
+interface ParamOwner extends ParamModes {
+	function getSettings() : Array<EmitterHelper.ParamDef>;
+	function getModeParams() : Array<ModeParamDef>;
+	function onSettingChange( ctx : hrt.prefab.EditContext2, name : String ) : Void;
 }
 
 class EmitterParam {
@@ -47,14 +50,6 @@ class EmitterParam {
 	public static function animKey( def : ModeParamDef, comp : Int, ?field : String ) {
 		var k = def.def.length == 1 ? def.name : def.name + ":" + COMPONENTS[comp];
 		return field == null ? k : k + ":" + field;
-	}
-
-	public static function span( m : ParamMode, def : Float ) : { min : Float, max : Float } {
-		return switch( m ) {
-		case Range(min, max): { min: min, max: max };
-		case Constant(v): { min: v, max: v };
-		case null, _: { min: def, max: def };
-		}
 	}
 
 	// A constant is a plain number, the other modes an object with a `mode` field, a vector an object of its components
@@ -104,44 +99,34 @@ class EmitterParam {
 		if( Std.isOfType(v, Float) || Std.isOfType(v, Int) )
 			return Constant(v);
 		inline function num( v : Dynamic, def : Float ) : Float return v ?? def;
-		var from : Dynamic = v.from, to : Dynamic = v.to, a : Dynamic = v.a, b : Dynamic = v.b;
+		var from : Dynamic = v.from, to : Dynamic = v.to;
 		return switch( (v.mode : String) ) {
 		case "Range": Range(num(v.min, 0), num(v.max, 0));
-		case "Curve": Curve(v.curve, num(from, 0), num(to, 1));
+		case "Curve": Curve(v.curve);
 		case "RandomCurve": RandomCurve(v.curve, num(from?.min, 0), num(from?.max, 0), num(to?.min, 1), num(to?.max, 1));
-		case "CurveRange": CurveRange(a.curve, num(a.from, 0), num(a.to, 1), b.curve, num(b.from, 0), num(b.to, 1));
+		case "CurveRange": CurveRange(v.a, v.b);
 		default: null;
 		}
 	}
 
 	public static function saveMode( m : ParamMode ) : Dynamic {
-		function curve( s : String, from : Float, to : Float ) : Dynamic {
-			var o : Dynamic = { curve: s };
-			if( from != 0 ) o.from = from;
-			if( to != 1 ) o.to = to;
-			return o;
-		}
 		return switch( m ) {
 		case null: null;
 		case Constant(v): v;
 		case Range(min, max): { mode: "Range", min: min, max: max };
-		case Curve(s, from, to):
-			var o = curve(s, from, to);
-			o.mode = "Curve";
-			o;
+		case Curve(s): { mode: "Curve", curve: s };
 		case RandomCurve(s, f0, f1, t0, t1):
-			var o = curve(s, 0, 1);
-			o.mode = "RandomCurve";
+			var o : Dynamic = { mode: "RandomCurve", curve: s };
 			if( f0 != 0 || f1 != 0 ) o.from = { min: f0, max: f1 };
 			if( t0 != 1 || t1 != 1 ) o.to = { min: t0, max: t1 };
 			o;
-		case CurveRange(a, af, at, b, bf, bt): { mode: "CurveRange", a: curve(a, af, at), b: curve(b, bf, bt) };
+		case CurveRange(a, b): { mode: "CurveRange", a: a, b: b };
 		}
 	}
 
 	/** Null when the curve or a prefab on its path is disabled **/
 	public static function resolveCurve( owner : Prefab, path : String ) : Curve {
-		var curve = owner.locatePrefab(path)?.to(hrt.prefab.Curve);
+		var curve = owner.locatePrefab(path)?.to(hrt.prefab.fx.Curve);
 		var p : Prefab = curve;
 		while( p != null && p != owner ) {
 			if( !p.enabled )
@@ -190,8 +175,8 @@ class ParamBuilder {
 		this.modes = modes;
 	}
 
-	public static function particleCurve( owner : Prefab, c : ParticleCurve ) : Value {
-		return curve(owner, c.curve, c.from, c.to);
+	public static function particleCurve( owner : Prefab, c : ParticleCurve, def : Float ) : Value {
+		return curve(owner, c.curve, def);
 	}
 
 	/** 1 for a missing curve **/
@@ -203,20 +188,16 @@ class ParamBuilder {
 		return k == 0 ? from : k == 1 ? to : from + (to - from) * k;
 	}
 
-	static function curve( owner : Prefab, s : String, from : Float, to : Float ) : Value {
-		return switch( curveValue(owner, s) ) {
-		case VCurve(c, a, b): VCurve(c, at(from, to, a), at(from, to, b));
-		case VParamCurve(c, a, b): VParamCurve(c, at(from, to, a), at(from, to, b));
-		case VConst(k): VConst(at(from, to, k));
-		default: VConst(to);
-		}
+	/** `def` for a missing curve **/
+	static function curve( owner : Prefab, s : String, def : Float ) : Value {
+		return EmitterParam.resolveCurve(owner, s)?.makeVal() ?? Evaluator.vVal(def);
 	}
 
 	public static function fixedValue( owner : Prefab, m : ParamMode, def : Float ) : Value {
 		return switch( m ) {
 		case null: Evaluator.vVal(def);
 		case Constant(v): Evaluator.vVal(v);
-		case Curve(s, from, to): curve(owner, s, from, to);
+		case Curve(s): curve(owner, s, def);
 		default: throw "Random mode " + m + " not supported here";
 		}
 	}
@@ -227,14 +208,15 @@ class ParamBuilder {
 		case RandomCurve(s, f0, f1, t0, t1):
 			var rid = randomSlots++;
 			switch( curveValue(owner, s) ) {
-			case VCurve(c, a, b), VParamCurve(c, a, b): VRandomCurve(rid, c, at(f0, t0, a), at(f1, t1, a), at(f0, t0, b), at(f1, t1, b));
+			case VCurve(c): VRandomCurve(rid, { c1: c, c2: null, param: null }, f0, f1, t0, t1);
+			case VParamCurve(pc): VRandomCurve(rid, pc, f0, f1, t0, t1);
 			case VConst(k): VRandom(rid, at(f0, t0, k), at(f1, t1, k));
 			default: VRandom(rid, t0, t1);
 			}
-		case CurveRange(a, aFrom, aTo, b, bFrom, bTo):
-			var va = curve(owner, a, aFrom, aTo), vb = curve(owner, b, bFrom, bTo);
+		case CurveRange(a, b):
+			var va = curve(owner, a, def), vb = curve(owner, b, def);
 			switch( [va, vb] ) {
-			case [VCurve(ca, a0, a1), VCurve(cb, b0, b1)]: VCurveRange(randomSlots++, ca, a0, a1, cb, b0, b1);
+			case [VCurve(ca), VCurve(cb)]: VCurveRange(randomSlots++, ca, cb);
 			default: throw owner.getAbsPath(true) + ': a Curve Range needs two plain curves, not $va and $vb';
 			}
 		case null, _: fixedValue(owner, m, def);
@@ -242,15 +224,15 @@ class ParamBuilder {
 	}
 
 	public function animated( name : String, base : Value ) : Value {
-		var c = hrt.prefab.Curve.getCurve(owner, name);
+		var c = hrt.prefab.fx.Curve.getCurve(owner, name);
 		if( c == null )
 			return base;
 		if( c.blendMode != RandomBlend )
 			return c.makeVal();
-		var a = Std.downcast(c.children[0], hrt.prefab.Curve), b = Std.downcast(c.children[1], hrt.prefab.Curve);
+		var a = Std.downcast(c.children[0], hrt.prefab.fx.Curve), b = Std.downcast(c.children[1], hrt.prefab.fx.Curve);
 		if( a == null || b == null || !a.isPlain() || !b.isPlain() )
 			throw c.getAbsPath(true) + ": a random blend needs two plain curves";
-		return VCurveRange(randomSlots++, a, 0, 1, b, 0, 1);
+		return VCurveRange(randomSlots++, a.data, b.data);
 	}
 
 	function mode( def : ModeParamDef, i : Int ) : ParamMode {
@@ -268,7 +250,7 @@ class ParamBuilder {
 			var s : SpawnValue = switch( m ) {
 			case Range(min, max):
 				function bound( field : String, v : Float ) {
-					var c = hrt.prefab.Curve.getCurve(owner, EmitterParam.animKey(def, i, field));
+					var c = hrt.prefab.fx.Curve.getCurve(owner, EmitterParam.animKey(def, i, field));
 					if( c != null && c.blendMode == RandomBlend )
 						throw c.getAbsPath(true) + ": a random blend on a range bound is not supported";
 					return c?.makeVal() ?? VConst(v);
@@ -276,7 +258,7 @@ class ParamBuilder {
 				{ rid: randomSlots++, min: bound("min", min), max: bound("max", max) };
 			case null, _:
 				switch( animated(EmitterParam.animKey(def, i), fixedValue(owner, m, def.def[i])) ) {
-				case VCurveRange(rid, a, a0, a1, b, b0, b1): { rid: rid, min: VCurve(a, a0, a1), max: VCurve(b, b0, b1) };
+				case VCurveRange(rid, a, b): { rid: rid, min: VCurve(a), max: VCurve(b) };
 				case v: { rid: -1, min: v, max: v };
 				}
 			}

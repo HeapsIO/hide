@@ -700,12 +700,14 @@ class Emitter2D extends Object2D implements ParamOwner {
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
 		super.edit2(ctx);
-		EmitterEdit.edit(ctx, this, getVisibleParams(), REFRESH_PARAMS, (pname) -> {
-			if (pname == "useRandomGradient")
-				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
-			if (pname == "spriteType" && spriteType != SpriteType.SpriteSheet)
-				spriteSheet = null;
-		});
+		EmitterEdit.edit(ctx, this, getVisibleParams(), REFRESH_PARAMS);
+	}
+
+	public function onSettingChange( ctx : hrt.prefab.EditContext2, name : String ) {
+		if (name == "useRandomGradient")
+			randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
+		if (name == "spriteType" && spriteType != SpriteType.SpriteSheet)
+			spriteSheet = null;
 	}
 
 	#if editor

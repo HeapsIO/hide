@@ -153,6 +153,10 @@ class Window {
 		return getById(id);
 	}
 
+	public static function openSub( x : Float, y : Float, width : Float, height : Float ) : js.html.Window {
+		return js.Browser.window.open("", "", 'popup=true,left=$x,top=$y,width=$width,height=$height');
+	}
+
 	/**
 		Call a function on the page that opened this window
 	**/

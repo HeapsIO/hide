@@ -41,6 +41,14 @@ class SVG extends Component {
 		return make(parent, "rect", {x:x, y:y, width:width, height:height}, style);
 	}
 
+	public function rectBetween(?parent: Element, x0:Float, y0:Float, x1:Float, y1:Float, ?style:Dynamic) {
+		return rect(parent, Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0), style);
+	}
+
+	public function square(?parent: Element, x:Float, y:Float, size:Float, ?style:Dynamic) {
+		return rect(parent, x - size / 2, y - size / 2, size, size, style);
+	}
+
 	public function line(?parent: Element, x1:Float, y1:Float, x2:Float, y2:Float, ?style:Dynamic) {
 		return make(parent, "line", {x1:x1, y1:y1, x2:x2, y2:y2}, style);
 	}

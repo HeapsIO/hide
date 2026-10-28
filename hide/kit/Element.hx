@@ -70,6 +70,11 @@ class Element {
 	public var disabled(default, set) = false;
 
 	/**
+		If set, the element is shown grayed out but stays editable
+	**/
+	public var unset(default, set) = false;
+
+	/**
 		If set, the element will take width units of space in its line
 	**/
 	public var width : Null<Int> = null;
@@ -80,14 +85,14 @@ class Element {
 	public var tooltip : String = null;
 
 	/**
-		If set, the element is shown grayed out but stays editable (a value that is not set, showing its default)
+		The css classes added to the element
 	**/
-	public var faded(default, set) = false;
+	public var classList : Array<String> = [];
 
 	/**
-		If set, a css class added to the element, for a specific layout
+		Items added to the context menu of this element (collected recursively with its children)
 	**/
-	public var cssClass : String = null;
+	public var menuItems : () -> Array<hrt.ui.HuiMenu.MenuItem> = null;
 
 	/**
 		Internal ID of this element that is unique between this element siblings (use getIdPath for a unique identifier in this element tree)
@@ -123,10 +128,10 @@ class Element {
 		return disabled;
 	}
 
-	function set_faded(v: Bool) {
-		faded = v;
-		native?.toggleClass("kit-faded", v);
-		return faded;
+	function set_unset(v: Bool) {
+		unset = v;
+		native?.toggleClass("kit-unset", v);
+		return unset;
 	}
 
 	function isDisabled() {
@@ -170,9 +175,9 @@ class Element {
 
 		// call setters
 		disabled = disabled;
-		faded = faded;
-		if (cssClass != null)
-			native?.addClass(cssClass);
+		unset = unset;
+		for (c in classList)
+			native?.addClass(c);
 
 		makeChildren();
 
@@ -268,21 +273,9 @@ class Element {
 		}
 	}
 
-	/**
-		Items added to the context menu of this element and of the line it is in: when the line is
-		clicked on this element, or on the label of the line if this is its first element with items
-	**/
-	public var menuItems : () -> Array<hrt.ui.HuiMenu.MenuItem> = null;
-
-	function hasMenuItems() : Bool {
-		return menuItems != null || Lambda.exists(children, c -> !(c is Category) && c.hasMenuItems());
-	}
-
-	/** The items of this element and of its children under `target` (all of them without a target) **/
 	function collectMenuItems(out: Array<hrt.ui.HuiMenu.MenuItem>, ?target: Dynamic) {
 		if (menuItems != null) {
 			var items = menuItems();
-			// the items of each element apart
 			if (items.length > 0 && out.length > 0 && out[out.length - 1].isSeparator != true && items[0].isSeparator != true)
 				out.push({ isSeparator: true });
 			for (item in items)
@@ -290,13 +283,8 @@ class Element {
 		}
 		var from = [for (c in children) if (!(c is Category)) c];
 		#if js
-		if (target != null) {
-			var hit = from.filter(c -> c.native != null && c.native.get().contains(target));
-			// out of the children (the label of the line): the first one with items, the label is its own
-			if (hit.length == 0)
-				hit = [for (c in from) if (c.hasMenuItems()) c].slice(0, 1);
-			from = hit;
-		}
+		if (target != null)
+			from = from.filter(c -> c.native != null && c.native.get().contains(target));
 		#end
 		for (c in from)
 			c.collectMenuItems(out, target);

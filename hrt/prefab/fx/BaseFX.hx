@@ -1,5 +1,4 @@
 package hrt.prefab.fx;
-import hrt.prefab.Curve;
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.fx.Value as Value;
 
@@ -240,7 +239,10 @@ class BaseFXTools {
 		if(p == null)
 			return null;
 		var prop : Dynamic = Reflect.field(shader.props, name);
-		function comp(i: Int) return p.comps[i] == null ? Evaluator.vVal(EmitterParam.baseComponent(prop, dim, i)) : EmitterParam.ParamBuilder.particleCurve(shader, p.comps[i]);
+		function comp(i: Int) {
+			var base = EmitterParam.baseComponent(prop, dim, i);
+			return p.comps[i] == null ? Evaluator.vVal(base) : EmitterParam.ParamBuilder.particleCurve(shader, p.comps[i], base);
+		}
 		return dim == 1 ? comp(0) : VVector(comp(0), comp(1), dim > 2 ? comp(2) : VZero, dim > 3 ? comp(3) : null);
 	}
 

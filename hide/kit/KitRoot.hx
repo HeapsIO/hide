@@ -9,6 +9,7 @@ class KitRoot #if !macro extends Element #end {
 	var prefabUndoPoint : Dynamic = null;
 	public var editor(default, null) : hrt.prefab.EditContext2;
 	public var isMultiEdit(default, null) : Bool;
+	public var header = true;
 
 	public function new(parent: Element, id: String, prefab: hrt.prefab.Prefab, editor: hrt.prefab.EditContext2) {
 		super(parent, id);
@@ -20,6 +21,8 @@ class KitRoot #if !macro extends Element #end {
 	override function makeSelf() : Void {
 		#if js
 		native = js.Browser.document.createElement("kit-root");
+		if (!header)
+			return;
 
 		var title = js.Browser.document.createElement("kit-title");
 		var titleText = prefab.getHideProps().name;

@@ -164,7 +164,7 @@ class Slider<T:Float> extends Widget<T> {
 			if (e.ctrlKey) mult *= 10.0;
 			if (e.shiftKey) mult /= 10.0;
 
-			subPixelSlide += e.movementX / js.Browser.window.devicePixelRatio * mult;
+			subPixelSlide += e.movementX / slider.ownerDocument.defaultView.devicePixelRatio * mult;
 
 			var newValueLinear = startValueLinear + subPixelSlide;
 

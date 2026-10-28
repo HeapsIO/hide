@@ -1,6 +1,5 @@
 package hrt.prefab.fx;
 import hrt.prefab.fx.BaseFX.AdditionalProperies;
-import hrt.prefab.Curve;
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.fx.BaseFX.ObjectAnimation;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
@@ -622,7 +621,7 @@ class FXAnimation extends h3d.scene.Object {
 
 				if(anim.color != null) {
 					switch(anim.color) {
-						case VCurve(_, 0, 1):
+						case VCurve(_) | VParamCurve(_):
 							for(mat in anim.obj.getMaterials())
 								mat.color.a = evaluator.getFloat(anim.color, newTime);
 						default:

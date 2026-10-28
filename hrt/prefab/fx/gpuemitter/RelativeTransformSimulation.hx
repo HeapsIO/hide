@@ -140,7 +140,7 @@ class RelativeTransformSimulation extends SimulationShader {
 
 		s.curveTexture = new h3d.mat.Texture(width, height, null, R32F);
 
-		var curves = findAll(hrt.prefab.Curve, p -> p.shouldBeInstanciated());
+		var curves = findAll(hrt.prefab.fx.Curve, p -> p.shouldBeInstanciated());
 		if ( curves.length == 0 )
 			return;
 

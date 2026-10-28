@@ -1,7 +1,6 @@
 package hrt.prefab.fx;
 
 import hrt.prefab.fx.Value;
-import hrt.prefab.Curve.CurveBlendMode;
 
 class Evaluator {
 	public var parameters: Map<String, Float> = [];
@@ -60,31 +59,29 @@ class Evaluator {
 			case null, VZero: 0.0;
 			case VConst(v): v;
 			case VRandom(rid, min, max): hxd.Math.lerp(min, max, getRandom(pidx, rid));
-			case VCurve(c, from, to): hxd.Math.lerp(from, to, c.getVal(time));
-			case VParamCurve(c, from, to): hxd.Math.lerp(from, to, getParamCurve(c, time));
-			case VRandomCurve(rid, c, fromMin, fromMax, toMin, toMax):
+			case VCurve(c): c.getVal(time);
+			case VParamCurve(pc): getParamCurve(pc, time);
+			case VRandomCurve(rid, pc, fromMin, fromMax, toMin, toMax):
 				var u = getRandom(pidx, rid);
-				hxd.Math.lerp(hxd.Math.lerp(fromMin, fromMax, u), hxd.Math.lerp(toMin, toMax, u), c.param == null ? c.getVal(time) : getParamCurve(c, time));
-			case VCurveRange(rid, a, aFrom, aTo, b, bFrom, bTo):
-				hxd.Math.lerp(hxd.Math.lerp(aFrom, aTo, a.getVal(time)), hxd.Math.lerp(bFrom, bTo, b.getVal(time)), getRandom(pidx, rid));
+				hxd.Math.lerp(hxd.Math.lerp(fromMin, fromMax, u), hxd.Math.lerp(toMin, toMax, u), pc.param == null ? pc.c1.getVal(time) : getParamCurve(pc, time));
+			case VCurveRange(rid, a, b): hxd.Math.lerp(a.getVal(time), b.getVal(time), getRandom(pidx, rid));
 			case VVector(_), VHsl(_): throw "getFloat: vector value";
 		}
 	}
 
-	function getParamCurve(c: Curve, time: Float) : Float {
-		var p = parameters[c.param] ?? 0.0;
-		return c.blendMode == CurveBlendMode.Blend ? hxd.Math.lerp((cast c.children[0] : Curve).getVal(time), (cast c.children[1] : Curve).getVal(time), p) : c.getVal(p);
+	function getParamCurve(pc: ParamCurve, time: Float) : Float {
+		var p = parameters[pc.param] ?? 0.0;
+		return pc.c2 != null ? hxd.Math.lerp(pc.c1.getVal(time), pc.c2.getVal(time), p) : pc.c1.getVal(p);
 	}
 
 	public function getSum(val: Value, time: Float) : Float {
 		return switch(val) {
 			case VZero: 0;
 			case VConst(v): v * time;
-			case VCurve(c, from, to): from * time + (to - from) * c.getSum(time);
-			case VParamCurve(c, from, to):
-				var p = parameters[c.param] ?? 0.0;
-				var sum = c.blendMode == CurveBlendMode.Blend ? hxd.Math.lerp((cast c.children[0] : Curve).getSum(time), (cast c.children[1] : Curve).getSum(time), p) : c.getSum(p) * time;
-				from * time + (to - from) * sum;
+			case VCurve(c): c.getSum(time);
+			case VParamCurve(pc):
+				var p = parameters[pc.param] ?? 0.0;
+				pc.c2 != null ? hxd.Math.lerp(pc.c1.getSum(time), pc.c2.getSum(time), p) : pc.c1.getVal(p) * time;
 			default: throw "not implemented";
 		}
 	}

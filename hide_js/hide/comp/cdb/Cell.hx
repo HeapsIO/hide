@@ -1587,10 +1587,10 @@ class Cell {
 		case TCurve:
 			var e = new Element(elementHtml);
 			e.addClass("edit");
-			var curveEditor = new hide.comp.CurveEditor.CurvePopup(e, editor.undo);
+			var curveEditor = new hide.comp.Timeline.CurvePopup(e, editor.undo);
 
 			var prefabCurve = new hrt.prefab.Curve(null, null);
-			var linear : Float = cast hrt.prefab.Curve.CurveKeyMode.Linear;
+			var linear : Float = cast hrt.impl.Curve.CurveKeyMode.Linear;
 			var curve = new cdb.Types.Curve(cast (value ?? [0.0,0.0,cdb.Types.Curve.HandleData,linear,cdb.Types.Curve.HandleData,cdb.Types.Curve.HandleData, 1.0,1.0,cdb.Types.Curve.HandleData,linear,cdb.Types.Curve.HandleData,cdb.Types.Curve.HandleData]));
 			prefabCurve.initFromCDB(curve);
 

@@ -19,7 +19,7 @@ class HuiKeyPopup extends HuiPopup {
 			</hui-element>
 		</hui-key-popup>
 
-	public function new(k : hrt.prefab.Curve.CurveKey, editor : HuiCurveEditor, ?parent: h2d.Object) {
+	public function new(k : hrt.impl.Curve.CurveKey, editor : HuiCurveEditor, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 
@@ -558,12 +558,12 @@ class HuiCurveEditor extends HuiPopup {
 
 		inline function addPrevH() {
 			if(key.prevHandle == null)
-				key.prevHandle = new hrt.prefab.Curve.CurveHandle(prev != null ? (prev.time - key.time) / 3 : -0.5, 0);
+				key.prevHandle = new hrt.impl.Curve.CurveHandle(prev != null ? (prev.time - key.time) / 3 : -0.5, 0);
 		}
 
 		inline function addNextH() {
 			if(key.nextHandle == null)
-				key.nextHandle = new hrt.prefab.Curve.CurveHandle(next != null ? (next.time - key.time) / 3 : -0.5, 0);
+				key.nextHandle = new hrt.impl.Curve.CurveHandle(next != null ? (next.time - key.time) / 3 : -0.5, 0);
 		}
 
 		switch(key.mode) {

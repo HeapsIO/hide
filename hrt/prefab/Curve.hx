@@ -5,69 +5,31 @@ import hide.prefab.EditContext;
 import hide.prefab.HideProps;
 #end
 
-
-import hrt.prefab.fx.Value;
+import hrt.impl.Curve.CurveKey;
+import hrt.impl.Curve.CurveKeyMode;
 
 using Lambda;
 
-@:build(hrt.prefab.Macros.buildSerializable())
-class CurveHandle {
-	@:s public var dv: Float = -1; // Force serialization of 0 values for retrocompat
-	@:s public var dt: Float = -1; // Force serialization of 0 values for retrocompat
-	public function new(t, v) {
-		this.dt = t;
-		this.dv = v;
-	}
-}
-
-enum abstract CurveKeyMode(Int) {
-	var Aligned = 0;
-	var Free = 1;
-	var Linear = 2;
-	var Constant = 3;
-}
-
-enum abstract CurveBlendMode(Int) {
-	var None = 0;
-	var Blend = 1;
-	var RandomBlend = 2;
-	var Reference = 3;
-}
-
-@:build(hrt.prefab.Macros.buildSerializable())
-class CurveKey {
-	@:s public var time: Float = -1; // Force serialization of 0 values for retrocompat
-	@:s public var value: Float = -1; // Force serialization of 0 values for retrocompat
-	@:s public var mode: CurveKeyMode = Aligned;
-	@:s public var prevHandle: CurveHandle;
-	@:s public var nextHandle: CurveHandle;
-	public function new() {}
-}
-
-typedef CurveKeys = Array<CurveKey>;
-
 @:prefabIcon(HuiRes.ui.icons.prefab.curve)
 class Curve extends Prefab {
-	#if !editor
-	public static var BAKE_ENABLE = true;
-	public static var BAKE_MAX_DURATION = 1.0;
-	public static var BAKE_RESOLUTION = 128.0;
-	#end
+	public var data = new hrt.impl.Curve();
 
-	@:s public var keyMode : CurveKeyMode = Linear;
-	@:s public var keys : CurveKeys = [];
-	@:s public var previewKeys : CurveKeys = [];
+	public var keyMode(get, set) : CurveKeyMode;
+	function get_keyMode() return data.keyMode;
+	function set_keyMode(v) return data.keyMode = v;
 
-	@:s public var blendMode : CurveBlendMode = None;
-	@:s public var loop : Bool = false;
-	@:s public var blendParam : String = null;
-	@:s public var remapPath : String = null;
+	public var keys(get, set) : Array<CurveKey>;
+	function get_keys() return data.keys;
+	function set_keys(v) return data.keys = v;
 
-	@:s public var offset : Float = 0.0;
-	@:s public var scale : Float = 1.0;
+	public var loop(get, set) : Bool;
+	function get_loop() return data.loop;
+	function set_loop(v) return data.loop = v;
+
+	public var duration(get, never): Float;
+	function get_duration() return data.duration;
 
 	public var maxTime : Float = 5000.;
-	public var duration(get, never): Float;
 	public var minValue : Float = 0.;
 	public var maxValue : Float = 0.;
 
@@ -76,553 +38,53 @@ class Curve extends Prefab {
 	public var lock : Bool = false;
 	public var selected : Bool = false;
 
-	var refCurve : Curve = null;
-	/** The FX parameter of its blend or remap, set by `makeVal` **/
-	public var param(default, null) : String;
-
-	#if !editor
-	@:c var bake : haxe.ds.Vector<Float> = null;
-	@:c var bakeDuration = 0.0;
-	#end
-
-	function get_duration() {
-		if (blendMode == Reference) {
-			return getRef()?.duration ?? 0.0;
-		}
-		if(keys.length == 0) return 0.0;
-		if (blendMode == CurveBlendMode.Blend || blendMode == CurveBlendMode.RandomBlend) {
-			var c1:Curve = cast this.children[0];
-			var c2:Curve = cast this.children[1];
-			return Math.min(c1.duration, c2.duration);
-		}
-		return keys[keys.length-1].time;
-	}
-
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 	}
 
 	public override function load(o:Dynamic) {
-		if (o.blendMode != null && !Std.isOfType(o.blendMode, Int)) {
-			o.blendMode = Std.parseInt(o.blendMode);
-		}
 		super.load(o);
+		@:privateAccess data.copyFromDynamic(o);
 		if( keys.length == 0 ) {
 			addKey(0.0, 0.0);
 			addKey(1.0, 1.0);
 		}
 		name = StringTools.replace(name, ".", ":");
-		#if editor
-		if (Std.downcast(parent, Curve) != null) {
-			if (StringTools.startsWith(name, parent.name)) {
-				name = StringTools.replace(name, parent.name + ":", "");
-			}
-		}
-		#else
+		#if !editor
 		bakeValues();
 		#end
 	}
 
-	override function copy(o:Prefab) {
-		super.copy(o);
-	}
-
-	override function makeInstance() {
-		refCurve = null;
-	}
-
-	static inline function bezier(c0: Float, c1:Float, c2:Float, c3: Float, t:Float) {
-		var u = 1 - t;
-		return u * u * u * c0 + c1 * 3 * t * u * u + c2 * 3 * t * t * u + t * t * t * c3;
-	}
-
 	public function findKey(time: Float, tolerance: Float) {
-		var minDist = tolerance;
-		var closest = null;
-		for(k in keys) {
-			var d = hxd.Math.abs(k.time - time);
-			if(d < minDist) {
-				minDist = d;
-				closest = k;
-			}
-		}
-		return closest;
+		return data.findKey(time, tolerance);
 	}
 
 	public function addKey(time: Float, ?val: Float, ?mode=null) {
-		var index = 0;
-		for(ik in 0...keys.length) {
-			var key = keys[ik];
-			if(time > key.time)
-				index = ik + 1;
-		}
-
-		if(val == null)
-			val = getVal(time);
-
-		var key = new hrt.prefab.Curve.CurveKey();
-		key.time = time;
-		key.value = val;
-		key.mode = mode != null ? mode : (keys[index] != null ? keys[index].mode : keyMode);
-		keys.insert(index, key);
-		return key;
-	}
-
-	public function addPreviewKey(time: Float, val: Float) {
-		var key = new hrt.prefab.Curve.CurveKey();
-		key.time = time;
-		key.value = val;
-		previewKeys.push(key);
-		return key;
+		return data.addKey(time, val, mode);
 	}
 
 	public function getBounds(bounds: h2d.col.Bounds = null) {
-		if (blendMode == Reference) {
-			return getRef()?.getBounds(bounds) ?? bounds ?? new h2d.col.Bounds();
-		}
-		var ret = bounds == null ? new h2d.col.Bounds() : bounds;
-
-		// We always want to show 0,0
-		ret.addPos(0.0,0.0);
-
-		for(k in keys) {
-			ret.addPos(k.time, k.value);
-			if (k.nextHandle != null) {
-				ret.addPos(k.time + k.nextHandle.dt, k.value + k.nextHandle.dv);
-			}
-			if (k.prevHandle != null) {
-				ret.addPos(k.time + k.prevHandle.dt, k.value + k.prevHandle.dv);
-			}
-		}
-
-		return ret;
-	}
-
-	function getRef() : Null<Curve> {
-		if (refCurve != null)
-			return refCurve;
-		var root = getRoot(false);
-		refCurve = Std.downcast(root.locatePrefab(blendParam), Curve);
-		if (refCurve == this) refCurve = null;
-		return refCurve;
-	}
-
-	public function getRemapParameter() : Null<String> {
-		if (remapPath == null)
-			return null;
-		var param = StringTools.replace(remapPath, "$param.", "");
-		if (param != remapPath)
-			return param;
-		return null;
-	}
-
-	public function isPlain() {
-		return blendMode == None && (remapPath == null || remapPath == "");
-	}
-
-	function isBlendChild() {
-		var p = Std.downcast(parent, Curve);
-		return p != null && (p.blendMode == Blend || p.blendMode == RandomBlend);
-	}
-
-	public function makeVal() : Value {
-		param = null;
-		var remap = getRemapParameter();
-		inline function fail(what: String) : Value throw '${getAbsPath(true)}: $what is not supported';
-		if (remap == null && (remapPath ?? "") != "")
-			return fail("a time remap by another curve");
-		return switch(blendMode) {
-			case None, RandomBlend:
-				param = remap;
-				remap == null ? VCurve(this, 0, 1) : VParamCurve(this, 0, 1);
-			case Blend:
-				var ca = Std.downcast(this.children[0], Curve);
-				var cb = Std.downcast(this.children[1], Curve);
-				if (remap != null)
-					fail("a remapped blend");
-				else if ((ca != null && !ca.isPlain()) || (cb != null && !cb.isPlain()))
-					fail("a blend of curves that are not plain");
-				else if (ca == null && cb == null)
-					VConst(0.0);
-				else if (ca == null || cb == null || blendParam == null)
-					VCurve(ca ?? cb, 0, 1);
-				else {
-					param = blendParam;
-					VParamCurve(this, 0, 1);
-				}
-			case Reference:
-				if (remap != null)
-					return fail("a remapped reference");
-				switch(getRef()?.makeVal()) {
-					case null: VConst(0.0);
-					case VConst(v): VConst(v * scale + offset);
-					case VCurve(c, from, to): VCurve(c, from * scale + offset, to * scale + offset);
-					case VParamCurve(c, from, to): VParamCurve(c, from * scale + offset, to * scale + offset);
-					case v: fail("a reference to " + v);
-				}
-			default:
-				throw "invalid blendMode value";
-		}
-	}
-
-	#if !editor
-	function bakeValues() {
-		if (bake != null || !BAKE_ENABLE || blendMode != None || keys.length < 2 || duration <= 0 || duration > BAKE_MAX_DURATION)
-			return;
-
-		var numPts = Math.ceil(duration * BAKE_RESOLUTION) + 1;
-		var samples = new haxe.ds.Vector<Float>(numPts);
-		var prevLoop = loop;
-		loop = false; // prevent getVal from looping during baking
-		for (i in 0...numPts)
-			samples[i] = getVal(i / BAKE_RESOLUTION);
-		loop = prevLoop;
-		bake = samples;
-		bakeDuration = duration;
-	}
-	#end
-
-	inline function findT(cur: CurveKey, next: CurveKey, time: Float) : {minT: Float, maxT: Float} {
-		inline function sampleTime(t) {
-			return bezier(
-				cur.time,
-				cur.time + (cur.nextHandle != null ? cur.nextHandle.dt : 0.),
-				next.time + (next.prevHandle != null ? next.prevHandle.dt : 0.),
-				next.time, t);
-		}
-
-		var minT = 0.;
-		var maxT = 1.;
-		var maxDelta = 1./ 25.;
-
-		while( maxT - minT > maxDelta ) {
-			var t = (maxT + minT) * 0.5;
-			var x = sampleTime(t);
-			if( x > time )
-				maxT = t;
-			else
-				minT = t;
-		}
-		return {minT: minT, maxT: maxT};
+		return data.getBounds(bounds);
 	}
 
 	public function getVal(time: Float) : Float {
-		#if !editor
-		if (bake != null) {
-			var duration = bakeDuration;
-			var t = time; // HL2 performance hit when modifying func args
-			if (loop)
-				t %= duration;
-			if (t >= 0.0 && t <= duration) {
-				var fidx = t * BAKE_RESOLUTION;
-				var idx = Math.floor(fidx);
-				if (idx >= bake.length - 1)
-					return bake[bake.length - 1];
-				return hxd.Math.lerp(bake[idx], bake[idx + 1], fidx - idx);
-			}
-		}
-		#end
-
-		if (blendMode == Reference) {
-			throw "getVal shoudln't be called on curves with Reference mode";
-		}
-
-		switch(keys.length) {
-			case 0: return 0;
-			case 1: return keys[0].value;
-			default:
-		}
-
-		if (loop)
-			time = time % keys[keys.length-1].time;
-
-		var idx = -1;
-		for(ik in 0...keys.length) {
-			var key = keys[ik];
-			if(time > key.time)
-				idx = ik;
-		}
-
-		if(idx < 0)
-			return keys[0].value;
-
-		var cur = keys[idx];
-		var next = keys[idx + 1];
-		if(next == null || cur.mode == Constant)
-			return cur.value;
-
-		var T = findT(cur, next, time);
-		var minT = T.minT;
-		var maxT = T.maxT;
-
-		inline function sampleTime(t) {
-			return bezier(
-				cur.time,
-				cur.time + (cur.nextHandle != null ? cur.nextHandle.dt : 0.),
-				next.time + (next.prevHandle != null ? next.prevHandle.dt : 0.),
-				next.time, t);
-		}
-
-		var x0 = sampleTime(minT);
-		var x1 = sampleTime(maxT);
-		var dx = x1 - x0;
-		var xfactor = dx == 0 ? 0.5 : (time - x0) / dx;
-
-		inline function sampleVal(t) {
-			return bezier(
-				cur.value,
-				cur.value + (cur.nextHandle != null ? cur.nextHandle.dv : 0.),
-				next.value + (next.prevHandle != null ? next.prevHandle.dv : 0.),
-				next.value, t);
-		}
-
-		var y0 = sampleVal(minT);
-		var y1 = sampleVal(maxT);
-		var y = y0 + (y1 - y0) * xfactor;
-		return y;
+		return data.getVal(time);
 	}
 
 	public function getSum(time: Float) : Float {
-		if (blendMode == Reference) {
-			return getRef()?.getSum(time) ?? 0.0;
-		}
-		var duration = keys[keys.length-1].time;
-		if(loop && time > duration) {
-			var cycles = Math.floor(time / duration);
-			return getSum(duration) * cycles + getSum(time - cycles);
-		}
-
-		var sum = 0.0;
-		for(ik in 0...keys.length) {
-			var key = keys[ik];
-			if(time < key.time)
-				break;
-
-			if(ik == 0 && key.time > 0) {
-				// Account for start of curve
-				sum += key.time * key.value;
-			}
-
-			var nkey = keys[ik + 1];
-			if(nkey != null) {
-				if(time > nkey.time) {
-					// Full interval
-					sum += key.value * (nkey.time - key.time);
-					if(key.mode != Constant)
-						sum += 0.5 * (nkey.time - key.time) * (nkey.value - key.value);
-				}
-				else {
-					// Split interval
-					sum += key.value * (time - key.time);
-					if(key.mode != Constant)
-						sum += 0.5 * (time - key.time) * hxd.Math.lerp(key.value, nkey.value, (time - key.time) / (nkey.time - key.time));
-				}
-			}
-			else {
-				sum += key.value * (time - key.time);
-			}
-		}
-		return sum;
+		return data.getSum(time);
 	}
 
 	public function sample(numPts: Int) {
-		if (blendMode == Reference) {
-			return getRef()?.sample(numPts) ?? [];
-		}
-		var vals = [];
-
-		var duration = this.duration;
-		for(i in 0...numPts) {
-			var v = 0.0;
-			v = getVal(duration * i/(numPts-1));
-			vals.push(v);
+		var vals = data.sample(numPts);
+		for (v in vals) {
 			if (v < minValue) minValue = v;
 			if (v > maxValue) maxValue = v;
 		}
 		return vals;
 	}
 
-	override function edit2(ctx: hrt.prefab.EditContext2) {
-		super.edit2(ctx);
-
-		ctx.build(
-			<root>
-				<category("Parameters")>
-					<checkbox field={loop}/>
-					<select field={blendMode} id="blend-mode-select" if (!isBlendChild() || this.blendMode != CurveBlendMode.None)/>
-					<select([{label: "None", value: null}]) field={blendParam} id="blend-param-select" if (this.blendMode == CurveBlendMode.Blend || this.blendMode == CurveBlendMode.Reference)/>
-					<range(0., 1.) field={offset} if (this.blendMode == CurveBlendMode.Reference)/>
-					<range(0., 1.) field={scale} if (this.blendMode == CurveBlendMode.Reference)/>
-					<select([{label: "None", value: null}]) label="Time Remap" id="remap-select" field={remapPath} if (this.blendMode == CurveBlendMode.None && (!isBlendChild() || this.remapPath != null))/>
-					<line label="Curve"><curve(this) id="curve-editor"/></line>
-				</category>
-			</root>
-		);
-
-		if (blendModeSelect != null)
-			blendModeSelect.onValueChange = (_) -> {
-				ctx.rebuildInspector();
-			}
-
-		var root = Std.downcast(getRoot(false), hrt.prefab.fx.FX);
-		if (root != null && blendParamSelect != null && blendMode == Blend) {
-			var entries = [for(p in root.parameters) { label: p.name, value: p.name }];
-			entries.insert(0, { label: "None", value: null });
-			blendParamSelect.setEntries(entries);
-			blendParamSelect.value = blendParam;
-		}
-		if (remapSelect != null) {
-			var entries = [for(p in root?.parameters ?? []) { label: p.name, value: "$param." + p.name }];
-			entries.insert(0, { label: "None", value: null });
-			remapSelect.setEntries(entries);
-			remapSelect.value = remapPath;
-		}
-	}
-
 	#if editor
-	override function edit( ctx : EditContext ) {
-		super.edit(ctx);
-
-		var props = new hide.Element('
-		<div class="group" name="Parameters">
-			<dl>
-				<dt>Loop curve</dt><dd><input type="checkbox" field="loop"/></dd>
-				<div id="mode">
-					<dt>Blend Mode</dt><dd>
-						<select class="blendmode-selector" id="blendMode">
-							<option value="0">None</option>
-							<option value="1">Blend curve</option>
-							<option value="2">Random between two curves</option>
-							<option value="3">Curve Reference</option>
-						</select>
-					</dd>
-				</div>
-				<div id="parameter">
-					<dt>Parameter</dt><dd>
-					<select field="blendParam"></select>
-					</dd>
-				</div>
-				<div id="reference">
-					<dt>Curve Path</dt><dd>
-					<select field="blendParam"></select>
-					</dd>
-					<dt>Offset</dt><dd><input type="range" min="0.0" max="1.0" field="offset"/></dd>
-					<dt>Scale</dt><dd><input type="range" min="0.0" max="1.0" field="scale"/></dd>
-				</div>
-				<div id="remap">
-					<dt>Time Remap</dt><dd>
-						<select field="remapPath"></select>
-					</dd>
-				</div>
-			</dl>
-		</div>');
-
-		var blendModeSelect = props.find('#blendMode');
-
-		var refreshBlend = function() {
-			var parameter = props.find('#parameter');
-			if (blendMode != Blend) {
-				parameter.hide();
-			}
-			else {
-				var selecta = parameter.find('[field="blendParam"]');
-				parameter.show();
-				selecta.empty();
-				var root = Std.downcast(getRoot(false), hrt.prefab.fx.FX);
-				if (root != null) {
-					for (p in root.parameters) {
-						selecta.append(new hide.Element('<option value="${p.name}">${p.name}</option>'));
-					}
-					selecta.val(blendParam);
-				}
-			}
-
-			var reference = props.find('#reference');
-			if (blendMode != Reference) {
-				reference.hide();
-			}
-			else {
-				var selecta = reference.find('[field="blendParam"]');
-				reference.show();
-				selecta.empty();
-				var root = getRoot(false);
-				var flat = root.flatten(Curve);
-				for (p in flat) {
-					if (p == this) continue;
-					var path = p.getAbsPath();
-					selecta.append(new hide.Element('<option value="${path}">${path}</option>'));
-				}
-				selecta.val(blendParam);
-			}
-
-			props.find('#mode').toggle(!isBlendChild() || blendMode != None);
-			var remap = props.find('#remap');
-			if (blendMode != None || (isBlendChild() && remapPath == null)) {
-				remap.hide();
-			}
-			else {
-				remap.show();
-				var select = remap.find('[field=remapPath]');
-				select.empty();
-				select.append(new hide.Element('<option value="">None</option>'));
-				var parameters = Std.downcast(getRoot(false), hrt.prefab.fx.FX)?.parameters ?? [];
-				for (param in parameters) {
-					var path = "$param." + param.name;
-					select.append(new hide.Element('<option value="${path}">Param: ${param.name}</option>'));
-				}
-				select.val(remapPath);
-			}
-		}
-
-		refreshBlend();
-
-		blendModeSelect.val(Std.string(blendMode));
-		blendModeSelect.change((_) -> {
-			var oldBlend = this.blendMode;
-			var oldParam = this.blendParam;
-			var newBlend = cast Std.parseInt(blendModeSelect.val());
-			var newParam = null;
-
-			function exec(undo : Bool) {
-				blendMode = undo ? oldBlend : newBlend;
-				blendParam = undo ? oldParam : newParam;
-				refreshBlend();
-				ctx.onChange(this, "blendMode");
-				ctx.rebuildPrefab(this);
-			}
-
-			exec(false);
-			ctx.properties.undo.change(Custom(exec));
-		});
-
-		ctx.properties.add(props, this, function(pname) {
-			if (pname == "blendParam") {
-				refCurve = null;
-				if (containsRefCycle()) {
-					hide.Ide.inst.quickMessage("Curve reference create a cycle");
-					blendParam = null;
-					refCurve = null;
-				}
-			}
-			if (pname == "remapPath") {
-				if (remapPath == "")
-					remapPath = null;
-			}
-			refreshBlend();
-			@:privateAccess ctx.scene.editor.refreshTree(SceneTree);
-			ctx.onChange(this, pname);
-		});
-
-		var ce = new hide.comp.CurveEditor(ctx.properties.undo, ctx.properties.element, false);
-		ce.saveDisplayKey = this.getAbsPath(true);
-		ce.curves.push(this);
-		ce.refresh();
-	}
-
-	override function getHideProps() : HideProps {
-		return { icon : "paint-brush", name : "Curve" };
-	}
-
 	// Returns the visual representation of this curve as an svg path `d` data
 	public function getSvgString() : String {
 		var data = "";
@@ -654,7 +116,7 @@ class Curve extends Prefab {
 							var r0: Float;
 							var r1: Float;
 
-							var midt = bezier(c0,c1,c2,c3, 0.5);
+							var midt = hrt.impl.Curve.bezier(c0,c1,c2,c3, 0.5);
 							if (midt < c0) {
 								// solve bezier(c0,c1,c2,c2, x) = c0 for x;
 								var div = 2*c3-6*c2+6*c1-2*c0;
@@ -711,7 +173,7 @@ class Curve extends Prefab {
 								r1 = hxd.Math.clamp(r1, 0.0, 1.0);
 
 								inline function b(t) {
-									bezier(c0,c1,c2,c3, t);
+									hrt.impl.Curve.bezier(c0,c1,c2,c3, t);
 								}
 
 								// split the curve in two if its loops on itself
@@ -751,49 +213,30 @@ class Curve extends Prefab {
 	}
 	#end
 
-	function containsRefCycle(?visited: Map<Curve, Bool>) : Bool {
-		if (blendMode != Reference) return false;
-		var visited = visited?.copy() ?? [];
-		var cur = this;
-		while (cur != null) {
-			if (visited.get(cur) != null)
-			{
-				return true;
-			}
-			visited.set(cur, true);
-			if (cur.blendMode == Blend || cur.blendMode == RandomBlend) {
-				for (i in 0...2) {
-					var subCurve = Std.downcast(cur.children[i], Curve);
-					if (subCurve.containsRefCycle(visited)) {
-						return true;
-					}
-				}
-			}
-			cur = cur.getRef();
-		}
-		return false;
+	public static function getCurve(parent : Prefab, name: String, onlyEnabled=true) : Curve {
+		return findCurve(parent, name, onlyEnabled, c -> c.to(Curve));
 	}
 
-	static inline function checkName(a: String, b: String) {
-		return a == b || a.toLowerCase() == b.toLowerCase();
+	public static function getCurves(parent: Prefab, prefix: String) : Array<Curve> {
+		return findCurves(parent, prefix, c -> c.to(Curve));
 	}
 
-	public static function getCurve(parent : Prefab, name: String, onlyEnabled=true) {
+	public static function findCurve<T>(parent : Prefab, name: String, onlyEnabled: Bool, get: Prefab -> Null<T>) : T {
 		for(c in parent.children) {
 			if(onlyEnabled && !c.enabled) continue;
 			#if editor
 			if (parent.shared.editor?.isHidden(c)) continue;
 			#end
 			if(!checkName(c.name, name)) continue;
-			var curve = c.to(Curve);
+			var curve = get(c);
 			if(curve == null) continue;
 			return curve;
 		}
 		return null;
 	}
 
-	public static function getCurves(parent: Prefab, prefix: String) {
-		var ret = null;
+	public static function findCurves<T>(parent: Prefab, prefix: String, get: Prefab -> Null<T>) : Array<T> {
+		var ret : Array<T> = null;
 		for(c in parent.children) {
 			if(!c.enabled) continue;
 			#if editor
@@ -803,7 +246,7 @@ class Curve extends Prefab {
 			var curvePrefix = (idx >= 0) ? c.name.substr(0, idx) : c.name;
 			if(!checkName(curvePrefix, prefix))
 				continue;
-			var curve = c.to(Curve);
+			var curve = get(c);
 			if(curve == null) continue;
 			if (ret == null) ret = [];
 			ret.push(curve);
@@ -830,120 +273,77 @@ class Curve extends Prefab {
 	}
 
 	#if castle
-	public function initFromCDB(curve: cdb.Types.Curve) {
-		keys = [];
-		var nbPoints = Std.int(curve.data.length / 6);
-		for (pointIdx in 0...nbPoints) {
-			var x = curve.data[pointIdx * 6 + 0];
-			var y = curve.data[pointIdx * 6 + 1];
-			var prevHandleX = curve.data[pointIdx * 6 + 2];
-			var prevHandleY = curve.data[pointIdx * 6 + 3];
-			var nextHandleX = curve.data[pointIdx * 6 + 4];
-			var nextHandleY = curve.data[pointIdx * 6 + 5];
-
-			var mode : hrt.prefab.Curve.CurveKeyMode = Free;
-
-			if (Math.isNaN(prevHandleX) || prevHandleX == cdb.Types.Curve.HandleData) {
-				mode = cast Std.int(prevHandleY);
-			}
-			else {
-				var pt1 = inline new h2d.col.Point(prevHandleX, prevHandleY);
-				var pt2 = inline new h2d.col.Point(nextHandleX, nextHandleY);
-				pt1.normalize();
-				pt2.normalize();
-				var dot = pt1.dot(pt2);
-				if (Math.abs(dot + 1.0) < 0.01) {
-					mode = Aligned;
-				}
-			}
-
-			var key = addKey(x, y, mode);
-			if (mode == Free || mode == Aligned) {
-				key.prevHandle = new hrt.prefab.Curve.CurveHandle(Math.isFinite(prevHandleX) ? prevHandleX : 0.0, Math.isFinite(prevHandleY) ? prevHandleY : 0.0);
-				key.nextHandle = new hrt.prefab.Curve.CurveHandle(Math.isFinite(nextHandleX) ? nextHandleX : 0.0, Math.isFinite(nextHandleY) ? nextHandleY : 0.0);
-			}
-		}
+	public function initFromCDB(c: cdb.Types.Curve) {
+		data.initFromCDB(c);
 	}
 
 	public function toCDB() : cdb.Types.Curve {
-		var data : Array<Float>= [];
-		for (key in keys) {
-			data.push(key.time);
-			data.push(key.value);
-
-			switch(key.mode) {
-				case Free, Aligned:
-					data.push(key.prevHandle?.dt ?? 0.0);
-					data.push(key.prevHandle?.dv ?? 0.0);
-					data.push(key.nextHandle?.dt ?? 0.0);
-					data.push(key.nextHandle?.dv ?? 0.0);
-				case Constant, Linear:
-					data.push(cdb.Types.Curve.HandleData);
-					data.push((cast key.mode:Int));
-					data.push(cdb.Types.Curve.HandleData);
-					data.push(cdb.Types.Curve.HandleData);
-			}
-		}
-		return cast data;
+		return data.toCDB();
 	}
 	#end
 
-	static inline function findCurve(curves: Array<Curve>, suffix: String) {
-		return curves.find(c -> StringTools.endsWith(c.name.toLowerCase(), suffix));
+	#if !editor
+	function bakeValues() {
+		data.bakeValues();
+	}
+	#end
+
+	override function save() {
+		var o = super.save();
+		@:privateAccess data.copyToDynamic(o);
+		return o;
 	}
 
-	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0) : Value {
-		inline function find(s) {
-			return findCurve(curves, s);
-		}
-		var x = find(":x");
-		var y = find(":y");
-		var z = find(":z");
-		var w = find(":w");
-
-		inline function curveOrVal(c: Curve, defVal: Float) : Value {
-			return c == null ? VConst(defVal) : c.makeVal();
-		}
-
-		return VVector(
-			curveOrVal(x, defVal),
-			curveOrVal(y, defVal),
-			curveOrVal(z, defVal),
-			curveOrVal(w, 1.0));
+	override function copy(o:Prefab) {
+		super.copy(o);
+		@:privateAccess data.copyFromOther((cast o : Curve).data);
 	}
 
-	public static function getColorValue(curves: Array<Curve>) : Value {
-		inline function find(s) {
-			return findCurve(curves, s);
+	override function edit2(ctx: hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<root>
+				<category("Parameters")>
+					<checkbox field={loop}/>
+					<line label="Curve"><curve(name) id="curve-editor"/></line>
+				</category>
+			</root>
+		);
+
+		if (curveEditor != null) {
+			curveEditor.maxTime = Math.POSITIVE_INFINITY;
+			curveEditor.addTrack(data);
 		}
+	}
 
-		var r = find(":r");
-		var g = find(":g");
-		var b = find(":b");
-		var a = find(":a");
-		var h = find(":h");
-		var s = find(":s");
-		var l = find(":l");
+	#if editor
+	override function edit( ctx : EditContext ) {
+		super.edit(ctx);
 
-		if(h != null || s != null || l != null) {
-			return VHsl(
-				h != null ? h.makeVal() : VConst(0.0),
-				s != null ? s.makeVal() : VConst(1.0),
-				l != null ? l.makeVal() : VConst(1.0),
-				a != null ? a.makeVal() : VConst(1.0));
-		}
+		var props = new hide.Element('
+		<div class="group" name="Parameters">
+			<dl>
+				<dt>Loop curve</dt><dd><input type="checkbox" field="loop"/></dd>
+			</dl>
+		</div>');
+		ctx.properties.add(props, this, function(pname) {
+			ctx.onChange(this, pname);
+		});
 
-		if(a != null && r == null && g == null && b == null)
-			return a.makeVal();
+		var ce = new hide.comp.Timeline(ctx.properties.undo, ctx.properties.element, false);
+		ce.saveDisplayKey = this.getAbsPath(true);
+		ce.curves.push(this);
+		ce.refresh();
+	}
 
-		if(a == null && r == null && g == null && b == null)
-			return VConst(1.0); // White by default
+	override function getHideProps() : HideProps {
+		return { icon : "paint-brush", name : "Curve", allowParent : p -> !hrt.prefab.fx.Curve.isInFX(p), allowChildren : _ -> false };
+	}
+	#end
 
-		return VVector(
-			r != null ? r.makeVal() : VConst(1.0),
-			g != null ? g.makeVal() : VConst(1.0),
-			b != null ? b.makeVal() : VConst(1.0),
-			a != null ? a.makeVal() : VConst(1.0));
+	static inline function checkName(a: String, b: String) {
+		return a == b || a.toLowerCase() == b.toLowerCase();
 	}
 
 	static var _ = Prefab.register("curve", Curve);

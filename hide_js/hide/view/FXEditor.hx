@@ -4,7 +4,7 @@ using Lambda;
 
 import hide.Element;
 import hrt.prefab.Prefab in PrefabElement;
-import hrt.prefab.Curve;
+import hrt.prefab.fx.Curve;
 import hrt.prefab.fx.Event;
 import hide.tools.CameraController.CamController;
 
@@ -348,7 +348,7 @@ class FXEditor extends hide.view.FileView {
 	var selectMax : Float;
 	var previewMin : Float;
 	var previewMax : Float;
-	var curveEditor : hide.comp.CurveEditor;
+	var curveEditor : hide.comp.Timeline;
 	var afterPanRefreshes : Array<Bool->Void> = [];
 	var statusText : h2d.Text;
 	var forceTick : Bool = false;
@@ -749,7 +749,7 @@ class FXEditor extends hide.view.FileView {
 							c.name = '$i';
 							if (i == 0) {
 								for (k in curve.keys) {
-									var newK = new hrt.prefab.Curve.CurveKey();
+									var newK = new hrt.impl.Curve.CurveKey();
 									@:privateAccess newK.copyFromOther(k);
 									c.keys.push(newK);
 								}
@@ -827,15 +827,15 @@ class FXEditor extends hide.view.FileView {
 		if (this.curveEditor != null)
 			previousTime = @:privateAccess this.curveEditor.currentTime;
 
-		this.curveEditor = new hide.comp.CurveEditor(this.undo, rightPanel);
+		this.curveEditor = new hide.comp.Timeline(this.undo, rightPanel);
 		this.curveEditor.onRefreshProps = () -> {
 			skipRebuildPannel++;
 			@:privateAccess sceneEditor.selectElements(sceneEditor.selectedPrefabs, NoHistory);
 			skipRebuildPannel--;
 		}
 
-		var overviewEditor = new hide.comp.CurveEditor.OverviewEditor(rightPanel, this.curveEditor);
-		var eventEditor = new hide.comp.CurveEditor.EventsEditor(rightPanel, this, this.curveEditor);
+		var overviewEditor = new hide.comp.Timeline.OverviewEditor(rightPanel, this.curveEditor);
+		var eventEditor = new hide.comp.Timeline.EventsEditor(rightPanel, this, this.curveEditor);
 		for (e in events)
 			eventEditor.events.push(e);
 
@@ -845,7 +845,7 @@ class FXEditor extends hide.view.FileView {
 		for (curve in curves){
 			var dispKey = getPath() + "/" + curve.getAbsPath(true);
 			// a particle curve is over the particle life
-			curve.maxTime = hrt.prefab.fx.AnimEdit.isParticleCurve(curve) ? 1 : data.duration == 0 ? 5000 : data.duration;
+			curve.maxTime = curve.isParticleCurve() ? 1 : data.duration == 0 ? 5000 : data.duration;
 			this.curveEditor.saveDisplayKey = dispKey;
 
 			this.curveEditor.requestXZoom = function(xMin, xMax) {
@@ -1131,11 +1131,11 @@ class FXEditor extends hide.view.FileView {
 				for (i in 0...section.curves.length) {
 					var c = section.curves[i];
 
-					var curveColor = hide.comp.CurveEditor.CURVE_COLORS[i];
-					if (StringTools.contains(c.name, ":x") || StringTools.contains(c.name, ":h")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[0];
-					if (StringTools.contains(c.name, ":y") || StringTools.contains(c.name, ":s")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[1];
-					if (StringTools.contains(c.name, ":z") || StringTools.contains(c.name, ":l")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[2];
-					if (StringTools.contains(c.name, ":w") || StringTools.contains(c.name, ":a")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[3];
+					var curveColor = hide.comp.Timeline.CURVE_COLORS[i];
+					if (StringTools.contains(c.name, ":x") || StringTools.contains(c.name, ":h")) curveColor = hide.comp.Timeline.CURVE_COLORS[0];
+					if (StringTools.contains(c.name, ":y") || StringTools.contains(c.name, ":s")) curveColor = hide.comp.Timeline.CURVE_COLORS[1];
+					if (StringTools.contains(c.name, ":z") || StringTools.contains(c.name, ":l")) curveColor = hide.comp.Timeline.CURVE_COLORS[2];
+					if (StringTools.contains(c.name, ":w") || StringTools.contains(c.name, ":a")) curveColor = hide.comp.Timeline.CURVE_COLORS[3];
 
 					// Assign same color to curve and curve's header
 					c.color = curveColor;
@@ -1294,7 +1294,7 @@ class FXEditor extends hide.view.FileView {
 			var section: Section = { root:root, curves: [], children: [], events: []};
 			var eventAdded = false;
 			particles = particles || (depth == 0 && root is Curve);
-			function shown(c: Curve) return particles || !hrt.prefab.fx.AnimEdit.isParticleCurve(c);
+			function shown(c: Curve) return particles || !c.isParticleCurve();
 
 			if (root is Curve && shown(cast root))
 				curvesToDraw.push(cast root);

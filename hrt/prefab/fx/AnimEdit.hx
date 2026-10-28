@@ -18,27 +18,6 @@ class AnimEdit {
 		return anim2d == null ? null : { time: anim2d.localTime, evaluator: @:privateAccess anim2d.evaluator };
 	}
 
-	static var CHANNELS = ["position", "rotation", "scale", "color", "visibility", "localposition", "localrotation"];
-
-	public static function isChannel(name: String) {
-		return name != null && CHANNELS.contains(name.split(":")[0].toLowerCase());
-	}
-
-	public static function isParticleCurve(curve: Curve) {
-		var top : Prefab = curve;
-		while (top.parent is Curve)
-			top = top.parent;
-		var emitter : ParamOwner = top.parent is ParamOwner ? cast top.parent : null;
-		if (emitter == null)
-			return top.findParent(Prefab, p -> p is ParamOwner) != null;
-		return !isChannel(top.name) && !isParamName(emitter, top.name);
-	}
-
-	static function isParamName(emitter: ParamOwner, name: String) {
-		var base = name?.split(":")[0];
-		return Lambda.exists(emitter.getSettings(), p -> p.animate == true && p.name == base) || Lambda.exists(emitter.getModeParams(), p -> p.kind != Particle && p.name == base);
-	}
-
 	public static function animKeys(owner: Prefab, prop: String) : Array<String> {
 		var emitter : ParamOwner = owner is ParamOwner ? cast owner : null;
 		if (emitter == null)
@@ -63,8 +42,8 @@ class AnimEdit {
 		var def = emitter == null ? null : Lambda.find(emitter.getModeParams(), p -> p.name == parts[0]);
 		if (def != null) {
 			var i = parts.length > 1 ? hxd.Math.imax(0, EmitterParam.COMPONENTS.indexOf(parts[1])) : 0;
-			var span = EmitterParam.span(emitter.getMode(def.name, i), def.def[i]);
-			return parts[parts.length - 1] == "min" ? span.min : span.max;
+			var bounds = span(emitter.getMode(def.name, i), def.def[i]);
+			return parts[parts.length - 1] == "min" ? bounds.min : bounds.max;
 		}
 		var comp = parts.length > 1 ? parts[1] : "x";
 		if (owner is Object3D || owner is Object2D) {
@@ -89,7 +68,7 @@ class AnimEdit {
 
 	public static function findCurve(owner: Prefab, name: String) : Curve {
 		// a single curve can animate all the components of a vector
-		return hrt.prefab.Curve.getCurve(owner, name, false) ?? (name.indexOf(":") > 0 ? hrt.prefab.Curve.getCurve(owner, name.split(":")[0], false) : null);
+		return hrt.prefab.fx.Curve.getCurve(owner, name, false) ?? (name.indexOf(":") > 0 ? hrt.prefab.fx.Curve.getCurve(owner, name.split(":")[0], false) : null);
 	}
 
 	public static function bind(editor: EditContext2, slider: hide.kit.Slider<Float>, owner: Prefab, name: String) {
@@ -148,37 +127,8 @@ class AnimEdit {
 		slider.value = value();
 	}
 
-	public static function editTree(editor: EditContext2, owner: Prefab, f: () -> Void) {
-		var before = Diff.deepCopy(owner.save()), childrenBefore = owner.children.copy();
-		f();
-		var after = Diff.deepCopy(owner.save()), childrenAfter = owner.children.copy();
-		function apply(isUndo: Bool) {
-			var children = isUndo ? childrenBefore : childrenAfter;
-			for (c in owner.children.copy())
-				if (!children.contains(c))
-					c.remove();
-			for (i => c in children)
-				if (c.parent != owner)
-					owner.addChildAt(c, i);
-			EditContext2.tempLoad(owner, Diff.deepCopy(isUndo ? before : after));
-			editor.rebuildTree(owner);
-			editor.rebuildPrefab(owner);
-			editor.rebuildInspector();
-		}
-		editor.rebuildTree(owner);
-		editor.rebuildPrefab(owner);
-		editor.recordUndo(apply, [owner]);
-	}
-
-	public static function newCurveName(owner: Prefab, base: String) {
-		var name = base, i = 1;
-		while (Lambda.exists(owner.children, c -> c.name != null && c.name.toLowerCase() == name.toLowerCase()))
-			name = base + (i++);
-		return name;
-	}
-
 	public static function animate(editor: EditContext2, owner: Prefab, name: String, value: Float, time: Float) {
-		editTree(editor, owner, () -> {
+		editor.recordPrefabUndoWithChildren(owner, () -> {
 			var c = new Curve(owner, owner.shared);
 			c.name = name;
 			c.addKey(time, value, Linear);
@@ -188,7 +138,7 @@ class AnimEdit {
 	public static function removeAnimation(editor: EditContext2, owner: Prefab, name: String) {
 		var curve = findCurve(owner, name);
 		if (curve != null)
-			editTree(editor, curve.parent, () -> curve.remove());
+			editor.recordPrefabUndoWithChildren(curve.parent, () -> curve.remove());
 	}
 
 	public static function keyAt(curve: Curve, time: Float) {
@@ -207,6 +157,14 @@ class AnimEdit {
 			curve.addKey(time, value);
 		editor.rebuildPrefab(owner);
 		editor.recordPrefabUndo(curve, before, owner);
+	}
+
+	static function span(m: ParamMode, def: Float) : { min: Float, max: Float } {
+		return switch (m) {
+			case Range(min, max): { min: min, max: max };
+			case Constant(v): { min: v, max: v };
+			case null, _: { min: def, max: def };
+		}
 	}
 }
 

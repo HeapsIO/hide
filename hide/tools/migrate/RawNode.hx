@@ -25,7 +25,7 @@ class RawNode {
 		n.origin = origin;
 		n.type = get(data, "type");
 		n.cls = classOf(n.type);
-		n.isCurve = n.cls != null && hrt.prefab.Prefab.isOfType(n.cls, hrt.prefab.Curve);
+		n.isCurve = n.cls != null && (hrt.prefab.Prefab.isOfType(n.cls, hrt.prefab.Curve) || hrt.prefab.Prefab.isOfType(n.cls, hrt.prefab.fx.Curve));
 		n.name = loadedName(n);
 		var children : Array<Dynamic> = get(data, "children");
 		if( children != null )
@@ -95,8 +95,10 @@ class RawNode {
 	/** Appends a child (data and node) **/
 	public function addChild( d : Dynamic ) : RawNode {
 		var arr : Array<Dynamic> = get(data, "children");
-		if( arr == null )
-			setField(data, "children", arr = []);
+		if( arr == null ) {
+			arr = [];
+			setField(data, "children", arr);
+		}
 		arr.push(d);
 		var n = build(d, this);
 		children.push(n);

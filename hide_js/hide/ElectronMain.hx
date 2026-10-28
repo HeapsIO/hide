@@ -350,6 +350,20 @@ class ElectronMain {
 		});
 	}
 
+	static function createSubWindow( parent : BrowserWindow, options : Dynamic ) : WebContents {
+		options.parent = parent;
+		options.show = !background;
+		options.useContentSize = true;
+		options.backgroundColor = "#222222";
+		options.icon = windowIcon();
+		var win = new BrowserWindow(options);
+		win.setMenu(null);
+		initDevToolsKeys(win);
+		if( background )
+			win.showInactive();
+		return win.webContents;
+	}
+
 	static function createWindow( file : String, opts : CreateWindowOptions ) {
 		var show = opts.show != false;
 		var win = new BrowserWindow({
@@ -408,19 +422,7 @@ class ElectronMain {
 		initDevToolsKeys(win);
 		win.webContents.setWindowOpenHandler((details : Dynamic) -> {
 			action : "allow",
-			overrideBrowserWindowOptions : {
-				parent : win,
-				show : !background,
-				useContentSize : true,
-				backgroundColor : "#222222",
-				icon : windowIcon(),
-			},
-		});
-		win.webContents.on("did-create-window", function(child : BrowserWindow, details : Dynamic) {
-			child.setMenu(null);
-			initDevToolsKeys(child);
-			if( background )
-				child.showInactive();
+			createWindow : (options : Dynamic) -> createSubWindow(win, options),
 		});
 		// page reload : forget what the previous page had registered
 		win.webContents.on("did-start-navigation", function(e : Dynamic) {

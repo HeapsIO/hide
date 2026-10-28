@@ -1735,10 +1735,10 @@ class Emitter extends Object3D implements ParamOwner {
 
 	@:group("Properties")
 	@:s @:disp("Sub Kind") public var subEmitterKind : SubEmitterKind = SubEmitterKind.SpawnOnDeath;
-	@:s @:range(0, 1) public var speedFactor : Float = 1.0;
-	@:s @:range(0, 1) @:disp("Warm Up") public var warmUpTime : Float = 0.0;
-	@:s @:range(0, 10) public var delay : Float = 0.0;
-	@:s @:range(0, 100) @:disp("Seed") public var seedGroup : Int = 0;
+	@:s @:range(0, null) public var speedFactor : Float = 1.0;
+	@:s @:range(0, null) @:disp("Warm Up") public var warmUpTime : Float = 0.0;
+	@:s @:range(0, null) public var delay : Float = 0.0;
+	@:s @:range(0, null) @:disp("Seed") public var seedGroup : Int = 0;
 	@:s @:disp("Mode") public var alignMode : AlignMode = AlignMode.None;
 	@:s @:disp("Lock Axis") public var alignLockAxis : AlignLockAxis = AlignLockAxis.ScreenZ;
 	@:s public var simulationSpace : SimulationSpace = SimulationSpace.Local;
@@ -1750,24 +1750,24 @@ class Emitter extends Object3D implements ParamOwner {
 
 	@:group("Emit Params")
 	@:s @:disp("Type") public var emitType : EmitType = EmitType.Infinity;
-	@:s @:range(0, 10.0) @:disp("Duration") public var emitDuration : Float = 1.0;
-	@:s @:range(0, 100) @:animate @:disp("Rate") public var emitRate : Float = 5;
-	@:s @:range(0, 100) @:animate @:disp("Rate Min") public var emitRateMin : Float = 5;
-	@:s @:range(0, 100) @:animate @:disp("Rate Max") public var emitRateMax : Float = 5;
-	@:s @:range(0.01, 5.0) @:disp("Rate Change Time") public var emitRateChangeDelay : Float = 1.0;
-	@:s @:range(1, 10) @:disp("Count") public var burstCount : Float = 1;
-	@:s @:range(0, 1.0) @:disp("Delay") public var burstDelay : Float = 1.0;
-	@:s @:range(1, 10) @:animate @:disp("Particle Count") public var burstParticleCount : Float = 1;
-	@:s @:range(0, 100) public var maxCount : Int = 20;
+	@:s @:range(0, null) @:disp("Duration") public var emitDuration : Float = 1.0;
+	@:s @:range(0, null) @:animate @:disp("Rate") public var emitRate : Float = 5;
+	@:s @:range(0, null) @:animate @:disp("Rate Min") public var emitRateMin : Float = 5;
+	@:s @:range(0, null) @:animate @:disp("Rate Max") public var emitRateMax : Float = 5;
+	@:s @:range(0.01, null) @:disp("Rate Change Time") public var emitRateChangeDelay : Float = 1.0;
+	@:s @:range(1, null) @:disp("Count") public var burstCount : Float = 1;
+	@:s @:range(0, null) @:disp("Delay") public var burstDelay : Float = 1.0;
+	@:s @:range(1, null) @:animate @:disp("Particle Count") public var burstParticleCount : Float = 1;
+	@:s @:range(0, null) public var maxCount : Int = 20;
 	@:s @:disp("Orientation") public var emitOrientation : Orientation = Orientation.Forward;
 
 	@:group("Emit Shape")
 	@:s @:disp("Shape") public var emitShape : EmitShape = EmitShape.Sphere;
 	@:s @:range(0, 360.0) @:animate @:disp("Angle") public var emitAngle : Float = 30.0;
-	@:s @:range(0, 1.0) @:disp("Radius 1") public var emitRad1 : Float = 1.0;
-	@:s @:range(0, 1.0) @:disp("Radius 2") public var emitRad2 : Float = 1.0;
+	@:s @:range(0, null) @:disp("Radius 1") public var emitRad1 : Float = 1.0;
+	@:s @:range(0, null) @:disp("Radius 2") public var emitRad2 : Float = 1.0;
 	@:s @:disp("Surface") public var emitSurface : Bool = false;
-	@:s @:range(0, 1.0) @:disp("Cut") public var emitDomeCut : Float = 0.5;
+	@:s @:range(0, null) @:disp("Cut") public var emitDomeCut : Float = 0.5;
 	@:s @:disp("Flip") public var emitDomeFlip : Bool = false;
 
 	@:group("Color")
@@ -1796,29 +1796,29 @@ class Emitter extends Object3D implements ParamOwner {
 	@:s @:disp("Show Debug") public var viewDebug : Bool = false;
 
 	@:group("Particle Movement")
-	@:param(PVec(3, -10, 10), Particle) @:disp("Fixed Speed") public var speed : ParamVec3;
-	@:param(PVec(3, -10, 10), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamVec3;
+	@:param(PVec(3), Particle) @:disp("Fixed Speed") public var speed : ParamVec3;
+	@:param(PVec(3), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamVec3;
 	/** Degrees per second **/
 	@:param(PVec(3, -360, 360), Particle) public var orbitSpeed : ParamVec3;
-	@:param(PFloat(0, 2), Multiplier, 1.) public var orbitSpeedMultiplier : ParamMode;
-	@:param(PVec(3, -10, 10), Particle) public var acceleration : ParamVec3;
-	@:param(PVec(3, -10, 10), Particle) public var worldAcceleration : ParamVec3;
-	@:param(PVec(3, -10, 10), Spawn) public var startSpeed : ParamVec3;
-	@:param(PVec(3, -10, 10), Spawn) public var startWorldSpeed : ParamVec3;
+	@:param(PFloat(0), Multiplier, 1.) public var orbitSpeedMultiplier : ParamMode;
+	@:param(PVec(3), Particle) public var acceleration : ParamVec3;
+	@:param(PVec(3), Particle) public var worldAcceleration : ParamVec3;
+	@:param(PVec(3), Spawn) public var startSpeed : ParamVec3;
+	@:param(PVec(3), Spawn) public var startWorldSpeed : ParamVec3;
 	@:group("Particle Transform")
-	@:param(PVec(3, -10, 10), Particle) public var offset : ParamVec3;
-	@:param(PFloat(0, 2), Particle, 1.) public var scale : ParamMode;
-	@:param(PFloat(0, 2), Multiplier, 1.) public var scaleMultiplier : ParamMode;
-	@:param(PVec(3, 0, 2), Particle, [1., 1., 1.]) public var stretch : ParamVec3;
-	@:param(PFloat(0, 2), Particle) public var stretchVelocity : ParamMode;
+	@:param(PVec(3), Particle) public var offset : ParamVec3;
+	@:param(PFloat(), Particle, 1.) public var scale : ParamMode;
+	@:param(PFloat(0), Multiplier, 1.) public var scaleMultiplier : ParamMode;
+	@:param(PVec(3), Particle, [1., 1., 1.]) public var stretch : ParamVec3;
+	@:param(PFloat(0), Particle) public var stretchVelocity : ParamMode;
 	/** Degrees **/
 	@:param(PVec(3, 0, 360), Particle) public var rotation : ParamVec3;
-	@:param(PVec(3, -1, 1), Particle) public var pivot : ParamVec3;
+	@:param(PVec(3), Particle) public var pivot : ParamVec3;
 	@:group("Limit Velocity")
-	@:param(PFloat(0, 10), Particle) public var dampen : ParamMode;
-	@:param(PFloat(0, 10), Particle) public var maxVelocity : ParamMode;
+	@:param(PFloat(0), Particle) public var dampen : ParamMode;
+	@:param(PFloat(0), Particle) public var maxVelocity : ParamMode;
 	@:group("Properties")
-	@:param(PFloat(0, 10), Spawn, 1.) public var lifeTime : ParamMode;
+	@:param(PFloat(0), Spawn, 1.) public var lifeTime : ParamMode;
 
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
@@ -2057,14 +2057,16 @@ class Emitter extends Object3D implements ParamOwner {
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
 		super.edit2(ctx);
-		EmitterEdit.edit(ctx, this, getVisibleParams(), REFRESH_PARAMS, (pname) -> {
-			if (pname == "useRandomGradient")
-				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
-			if (pname == "warmUpTime" && warmUpTime < 0) {
-				warmUpTime = 0;
-				ctx.quickError("Warm up time can no longer be negative. Use the Delay property instead");
-			}
-		});
+		EmitterEdit.edit(ctx, this, getVisibleParams(), REFRESH_PARAMS);
+	}
+
+	public function onSettingChange( ctx : hrt.prefab.EditContext2, name : String ) {
+		if (name == "useRandomGradient")
+			randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
+		if (name == "warmUpTime" && warmUpTime < 0) {
+			warmUpTime = 0;
+			ctx.quickError("Warm up time can no longer be negative. Use the Delay property instead");
+		}
 	}
 
 	#if editor

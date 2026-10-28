@@ -31,7 +31,7 @@ private typedef Resample = {
 	var nonRigid : Float;
 }
 
-/** The mode of a param component (format 1), a curve by its path from the emitter **/
+/** The mode of a param component (format 1), a curve by its path from the emitter. The bounds of MCurve and MCurveRange are baked into their curves when saved **/
 private enum Mode {
 	MConstant( v : Float );
 	MRange( min : Float, max : Float );
@@ -53,7 +53,8 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	Upgrade of the prefab format 0 to 1, on the raw data of one file:
 
 	- Emitter params with modes (`Emitter`, `Emitter2D`, the particle shaders), from the base value,
-	  random amount and curves by name of the old params.
+	  random amount and curves by name of the old params. The curves of the Curve and Curve Range modes
+	  hold their values, their bounds baked into them.
 	- Animation curves hold the value they animate: the constants the old FX composed them with are
 	  baked into them (exactly when the old value is linear in the curve), and the ones of the emitter
 	  params are named after what they animate (`startSpeed:x:min`, `scaleMultiplier`).
@@ -68,6 +69,9 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	  shears, and an object that cannot get a parent (`noParent`), are sampled to what the old runtime
 	  showed: `setTransform` kept a scale and a quaternion of the animated matrix (a shear is lost). The
 	  samples are over the input of the curves: the FX time, or the FX parameter that remaps them.
+	- The curves are FX curves (`hrt.prefab.fx.Curve`, type `fxcurve`).
+	- A reference to a curve has no scale or offset: a scaled reference, of the data or made by the
+	  upgrade, becomes a copy of its curve with the scale and offset applied to its keys.
 	- The overrides of the references are rewritten for the upgraded files they override (see
 	  `upgradeReference`), reading the other files of the project through the context.
 
@@ -114,6 +118,7 @@ class Upgrade0 {
 	var root : RawNode;
 	var users : Map<RawNode, Array<RawNode>> = new Map();
 	var remapUsers : Map<RawNode, Array<RawNode>> = new Map();
+	var bakedModeCurves : Map<RawNode, Bool> = new Map();
 	/** The curves that hold their new values **/
 	var upgraded = new haxe.ds.ObjectMap<Dynamic, Bool>();
 	var parameters : Map<String, Float> = new Map();
@@ -140,6 +145,26 @@ class Upgrade0 {
 		checkInputs(root);
 		fxPass(root);
 		emitterPass(root);
+		scaledReferencePass(root);
+		curvePass(data);
+	}
+
+	/** `Curve.makeVal` reads no scale or offset on a reference to a curve: the scaled references become a copy of their curve. A broken reference reads 0, it is kept. **/
+	function scaledReferencePass( n : RawNode ) {
+		function isScaled() return n.isCurve && blendMode(n) == 3 && (num(get(n.data, "scale"), 1) != 1 || num(get(n.data, "offset"), 0) != 0);
+		// the copy of a reference to a reference is a scaled reference again
+		while( isScaled() && locate(get(n.data, "blendParam")) != null ) {
+			dereference(n);
+			change(n, "scaled reference, copy of its curve");
+		}
+		for( c in n.children )
+			scaledReferencePass(c);
+	}
+
+	function curvePass( d : Dynamic ) {
+		if( get(d, "type") == "curve" ) d.type = "fxcurve";
+		var children : Array<Dynamic> = get(d, "children");
+		if( children != null ) for( c in children ) if( c != null ) curvePass(c);
 	}
 
 	/** Upgrades the overrides of the references of a file, true if any changed **/
@@ -255,7 +280,7 @@ class Upgrade0 {
 	}
 
 	function newCurve( name : String ) : Dynamic {
-		var d : Dynamic = obj(["type", "curve", "name", name, "keyMode", 2, "keys", []]);
+		var d : Dynamic = obj(["type", "fxcurve", "name", name, "keyMode", 2, "keys", []]);
 		upgraded.set(d, true);
 		return d;
 	}
@@ -380,7 +405,7 @@ class Upgrade0 {
 		}
 	}
 
-	/** A curve that is `a * curve + b`: a reference to it when possible, else a baked copy. **/
+	/** A curve that is `a * curve + b`: a reference to it when possible (made a copy by `scaledReferencePass`), else a baked copy. **/
 	function linearCopy( src : RawNode, parent : RawNode, name : String, a : Float, b : Float ) : RawNode {
 		var path = pathOf(src);
 		if( path != null ) {
@@ -423,7 +448,13 @@ class Upgrade0 {
 			return null;
 		if( mirror == null ) {
 			function strip( d : Dynamic ) : Dynamic {
-				if( get(d, "type") == "curve" ) return deepCopy(d);
+				if( get(d, "type") == "curve" ) {
+					var c : Dynamic = deepCopy(d);
+					c.type = "fxcurve";
+					var ch : Array<Dynamic> = get(c, "children");
+					if( ch != null ) c.children = [for( x in ch ) if( x != null ) strip(x)];
+					return c;
+				}
 				var o : Dynamic = { name: d.name };
 				var ch : Array<Dynamic> = get(d, "children");
 				if( ch != null ) o.children = [for( c in ch ) if( c != null ) strip(c)];
@@ -969,7 +1000,7 @@ class Upgrade0 {
 		for( k => v in parameters ) ev.parameters.set(k, v);
 		function val( c : RawNode ) : Value {
 			if( c == null ) return null;
-			var p = Std.downcast(mirrorOf(c), hrt.prefab.Curve);
+			var p = Std.downcast(mirrorOf(c), hrt.prefab.fx.Curve);
 			return p?.makeVal();
 		}
 		var sv = cs == null ? [null, null, null] : [for( c in cs.comps ) val(c)];
@@ -1124,9 +1155,9 @@ class Upgrade0 {
 			if( keys == null ) return VConst(base);
 			var isBase = keys.length == 1 && Math.abs(keys[0].value - base) <= 1e-12;
 			if( isBase ) return VConst(base);
-			var d : Dynamic = { type: "curve", name: "c", keyMode: 2, keys: deepCopy(keys) };
+			var d : Dynamic = { type: "fxcurve", name: "c", keyMode: 2, keys: deepCopy(keys) };
 			if( fit.loop ) d.loop = true;
-			var c : hrt.prefab.Curve = cast @:privateAccess hrt.prefab.Prefab.createFromDynamic(d, null, new hrt.prefab.ContextShared(null, false));
+			var c : hrt.prefab.fx.Curve = cast @:privateAccess hrt.prefab.Prefab.createFromDynamic(d, null, new hrt.prefab.ContextShared(null, false));
 			return c.makeVal();
 		}
 		var withScale = fit.withScale, scale = fit.scale, rot = fit.rot, sk = fit.scaleKeys, rk = fit.rotKeys;
@@ -1507,6 +1538,12 @@ class Upgrade0 {
 			change(e, "orbit speed in degrees per second");
 		}
 
+		for( d in defs ) {
+			var v = params.get(d.name);
+			if( v != null )
+				params.set(d.name, [for( m in v ) bakeModeCurves(e, m)]);
+		}
+
 		// format 1: the settings are fields of the emitter, the params with modes are in `params`
 		var old = new Map();
 		for( d in defs ) {
@@ -1535,6 +1572,30 @@ class Upgrade0 {
 		if( !is2D )
 			for( s in particleShaders(e) )
 				upgradeParticleShader(s);
+	}
+
+	/** The curves of the Curve and CurveRange modes hold their values: `lerp(from, to, curve)` is baked into them **/
+	function bakeModeCurves( owner : RawNode, m : Mode ) : Mode {
+		function bake( path : String, from : Float, to : Float ) {
+			var n = locate(path, owner);
+			if( n == null || (from == 0 && to == 1) )
+				return;
+			if( bakedModeCurves.exists(n) )
+				warn(n, "curve of several params, baked with the bounds of the first one");
+			else
+				bakeLinear(n, to - from, from);
+			bakedModeCurves.set(n, true);
+		}
+		return switch( m ) {
+		case MCurve(s, from, to):
+			bake(s, from, to);
+			MCurve(s, 0, 1);
+		case MCurveRange(a, af, at, b, bf, bt):
+			bake(a, af, at);
+			bake(b, bf, bt);
+			MCurveRange(a, 0, 1, b, 0, 1);
+		case null, _: m;
+		}
 	}
 
 	/** The shaders the particles of `e` get (`Shader.getParticleEmitter`) **/
@@ -1804,7 +1865,10 @@ class Upgrade0 {
 					v.push(x != null ? MCurve(x.uniqueName(), 0, 1) : null);
 					if( x == null ) base[k] = k == 3 ? 1. : 0.;
 				}
-				if( props == null ) RawNode.setField(s.data, "props", props = {});
+				if( props == null ) {
+					props = {};
+					RawNode.setField(s.data, "props", props);
+				}
 				Reflect.setField(props, name, base);
 				out.set(name, v);
 			} else {
@@ -1823,8 +1887,8 @@ class Upgrade0 {
 		var names = [for( k in out.keys() ) k];
 		names.sort(Reflect.compare);
 		function comp( m : Mode ) : Dynamic {
-			return switch( m ) {
-			case MCurve(path, from, to): obj(["curve", path, "from", from, "to", to]);
+			return switch( bakeModeCurves(s, m) ) {
+			case MCurve(path, _): obj(["curve", path]);
 			case null, _: null;
 			}
 		}
@@ -1846,32 +1910,19 @@ class Upgrade0 {
 		return o;
 	}
 
+	/** The bounds of MCurve and MCurveRange are baked (`bakeModeCurves`) **/
 	static function saveMode( m : Mode ) : Dynamic {
-		inline function span( o : Dynamic, from : Float, to : Float ) {
-			if( from != 0 ) o.from = from;
-			if( to != 1 ) o.to = to;
-		}
-		function shape( fields : Array<Dynamic>, path : String ) : Dynamic {
-			return obj(fields.concat(["curve", path]));
-		}
 		return switch( m ) {
 		case null: null;
 		case MConstant(v): v;
 		case MRange(min, max): obj(["mode", "Range", "min", min, "max", max]);
-		case MCurve(s, from, to):
-			var o : Dynamic = shape(["mode", "Curve"], s);
-			span(o, from, to);
-			o;
+		case MCurve(s, _): obj(["mode", "Curve", "curve", s]);
 		case MRandomCurve(s, f0, f1, t0, t1):
-			var o : Dynamic = shape(["mode", "RandomCurve"], s);
+			var o : Dynamic = obj(["mode", "RandomCurve", "curve", s]);
 			if( f0 != 0 || f1 != 0 ) o.from = obj(["min", f0, "max", f1]);
 			if( t0 != 1 || t1 != 1 ) o.to = obj(["min", t0, "max", t1]);
 			o;
-		case MCurveRange(a, af, at, b, bf, bt):
-			var oa : Dynamic = shape([], a), ob : Dynamic = shape([], b);
-			span(oa, af, at);
-			span(ob, bf, bt);
-			obj(["mode", "CurveRange", "a", oa, "b", ob]);
+		case MCurveRange(a, _, _, b, _): obj(["mode", "CurveRange", "a", a, "b", b]);
 		}
 	}
 

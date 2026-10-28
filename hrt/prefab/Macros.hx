@@ -158,8 +158,9 @@ class Macros {
 			case "Array" | "String":
 				return null;
 			default:
-				var name = cl.get().pack.copy();
-				name.push(cl.get().name);
+				var name = cl.get().module.split(".");
+				if (name[name.length - 1] != cl.get().name)
+					name.push(cl.get().name);
 				return macro {
 					if ($e{source} != null) {
 						var tmp = std.Type.createEmptyInstance($p{name});

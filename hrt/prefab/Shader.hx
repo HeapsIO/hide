@@ -10,7 +10,7 @@ import hide.prefab.HideProps;
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.shader)
 @:prefabCategory("Shader")
 @:prefabHideInAddMenu
-class Shader extends Prefab {
+class Shader extends Prefab implements hrt.prefab.fx.EmitterParam.ParamModes {
 
 	static final PASS_SELECT = "$PASS_SELECT";
 
@@ -32,6 +32,38 @@ class Shader extends Prefab {
 		while (p != null && !(p is hrt.prefab.fx.Emitter) && !(p is hrt.prefab.l3d.Trails))
 			p = p.parent;
 		return Std.downcast(p, hrt.prefab.fx.Emitter);
+	}
+
+	public function getMode(name: String, comp: Int) : hrt.prefab.fx.EmitterParam.ParamMode {
+		var c = Lambda.find(particleParams, p -> p.name == name)?.comps[comp];
+		return c == null ? null : Curve(c.curve);
+	}
+
+	public function setMode(name: String, comp: Int, m: hrt.prefab.fx.EmitterParam.ParamMode) {
+		var dim = hrt.prefab.fx.EmitterParam.particleDim(Lambda.find(getShaderDefinition().data.vars, v -> v.name == name));
+		var p = Lambda.find(particleParams, p -> p.name == name);
+		if (p == null) {
+			p = { name: name, comps: [for (_ in 0...dim) null] };
+			particleParams.push(p);
+		}
+		p.comps[comp] = switch (m) {
+			case Curve(curve): { curve: curve };
+			case Constant(k):
+				if (dim == 1)
+					Reflect.setField(this.props, name, k);
+				else {
+					var prop : Array<Dynamic> = Reflect.field(this.props, name);
+					if (!Std.isOfType(prop, Array)) {
+						prop = [for (j in 0...dim) hrt.prefab.fx.EmitterParam.baseComponent(prop, dim, j)];
+						Reflect.setField(this.props, name, prop);
+					}
+					prop[comp] = k;
+				}
+				null;
+			case null, _: null;
+		}
+		if (!Lambda.exists(p.comps, c -> c != null))
+			particleParams.remove(p);
 	}
 
 	public function makeShader() : hxsl.Shader {
@@ -313,31 +345,6 @@ class Shader extends Prefab {
 			return;
 		}
 
-		function getParticleCurve(name: String, i: Int) : hrt.prefab.fx.EmitterParam.ParamMode {
-			var c = Lambda.find(particleParams, p -> p.name == name)?.comps[i];
-			return c == null ? null : Curve(c.curve, c.from, c.to);
-		}
-		function setParticleCurve(name: String, dim: Int, i: Int, m: hrt.prefab.fx.EmitterParam.ParamMode) {
-			var p = Lambda.find(particleParams, p -> p.name == name);
-			if (p == null)
-				particleParams.push(p = { name: name, comps: [for (_ in 0...dim) null] });
-			p.comps[i] = switch (m) {
-				case Curve(path, from, to): { curve: path, from: from, to: to };
-				case Constant(k):
-					if (dim == 1)
-						Reflect.setField(this.props, name, k);
-					else {
-						var prop : Array<Dynamic> = Reflect.field(this.props, name);
-						if (!Std.isOfType(prop, Array))
-							Reflect.setField(this.props, name, prop = [for (j in 0...dim) hrt.prefab.fx.EmitterParam.baseComponent(prop, dim, j)]);
-						prop[i] = k;
-					}
-					null;
-				case null, _: null;
-			}
-			if (!Lambda.exists(p.comps, c -> c != null))
-				particleParams.remove(p);
-		}
 		for (prop in props) {
 			var v = Lambda.find(shaderDef.data.vars, v -> v.name == prop.name);
 			var dim = hrt.prefab.fx.EmitterParam.particleDim(v);
@@ -352,8 +359,7 @@ class Shader extends Prefab {
 				case PInt(min, max): hrt.prefab.Props.PropType.PFloat(min, max);
 				default: hrt.prefab.Props.PropType.PFloat(0, 1);
 			}
-			hrt.prefab.fx.EmitterEdit.param(ctx, shaderCat, this, { name: prop.name, t: t, def: base, kind: Particle, groupName: null }, [Constant, Curve],
-				(i) -> getParticleCurve(prop.name, i), (i, m) -> setParticleCurve(prop.name, dim, i, m), refresh);
+			hrt.prefab.fx.EmitterEdit.param(ctx, this, { name: prop.name, t: t, def: base, kind: Particle, groupName: null }, [Constant, Curve], shaderCat);
 		}
 	}
 

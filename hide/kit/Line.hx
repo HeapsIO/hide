@@ -3,20 +3,25 @@ package hide.kit;
 #if domkit
 
 class Line extends Element {
-	@:attr public var label: String;
-	@:attr public var multiline: Bool = false;
-	@:attr public var full: Bool = false;
-	/** If set, the label of the first widget of the line is shown in the label of the line **/
-	public var stealLabel = true;
+	public var label : String;
+	public var multiline : Bool = false;
+	public var full : Bool = false;
+	public var stealLabel : Bool = true;
 
 	var decorationsLeft: Array<Element> = null;
 
 	public var labelElement: NativeElement;
 	public var multilineElement: NativeElement;
+
+	override function set_unset(v: Bool) {
+		unset = v;
+		labelElement?.toggleClass("kit-unset", v);
+		return unset;
+	}
+
 	override function get_nativeContent():NativeElement {
 		return multilineElement ?? native;
 	}
-
 
 	override function makeSelf():Void {
 		if (!full) {

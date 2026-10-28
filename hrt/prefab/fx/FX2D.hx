@@ -1,5 +1,4 @@
 package hrt.prefab.fx;
-import hrt.prefab.Curve;
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.fx.BaseFX.ObjectAnimation;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
@@ -127,7 +126,7 @@ class FX2DAnimation extends h2d.Object {
 
 			if(anim.color != null) {
 				switch(anim.color) {
-					case VCurve(_, 0, 1):
+					case VCurve(_) | VParamCurve(_):
 						anim.obj2d.alpha = evaluator.getFloat(anim.color, time);
 					default:
 						var drawable = Std.downcast(anim.obj2d, h2d.Drawable);
@@ -244,7 +243,7 @@ class FX2D extends Object2D implements BaseFX {
 			var c = Curve.getCurve(elt, name);
 			if(c != null)
 				anyFound = true;
-			return c != null ? VCurve(c, 0, 1) : def;
+			return c != null ? c.makeVal() : def;
 		}
 
 		function makeColor(name: String) {

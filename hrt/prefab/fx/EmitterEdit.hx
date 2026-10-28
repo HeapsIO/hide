@@ -13,295 +13,199 @@ enum abstract ModeKind(String) to String {
 }
 
 class EmitterEdit {
-
-	static function kindModes(kind: ParamKind) : Array<ModeKind> {
-		return switch (kind) {
-			case Spawn: [Constant, Range];
-			case Particle: [Constant, Range, Curve, RandomCurve, CurveRange];
-			case Multiplier: [Constant];
-		}
-	}
-
-	static function kindOf(m: ParamMode) : ModeKind {
-		return switch (m) {
-			case Constant(_): Constant;
-			case Range(_): Range;
-			case Curve(_): Curve;
-			case RandomCurve(_): RandomCurve;
-			case CurveRange(_): CurveRange;
-		}
-	}
-
-	static function convert(m: ParamMode, mode: ModeKind, def: Float, newCurve: () -> String) : ParamMode {
-		var s = null, s2 = null, f0 = def, f1 = def, t0 = def, t1 = def;
-		switch (m) {
-			case null:
-			case Constant(v): f0 = f1 = t0 = t1 = v;
-			case Range(min, max): f0 = t0 = min; f1 = t1 = max;
-			case Curve(sh, from, to): s = sh; f0 = f1 = from; t0 = t1 = to;
-			case RandomCurve(sh, a, b, c, d): s = sh; f0 = a; f1 = b; t0 = c; t1 = d;
-			case CurveRange(a, af, at, b, bf, bt): s = a; s2 = b; f0 = af; t0 = at; f1 = bf; t1 = bt;
-		}
-		if (s == null && mode != Constant && mode != Range) {
-			f0 = f1 = 0;
-			t0 = t1 = 1;
-			s = newCurve();
-		}
-		return switch (mode) {
-			case Constant: Constant((t0 + t1) * 0.5);
-			case Range: Range(t0, t1);
-			case Curve: Curve(s, (f0 + f1) * 0.5, (t0 + t1) * 0.5);
-			case RandomCurve: RandomCurve(s, f0, f1, t0, t1);
-			case CurveRange: CurveRange(s, f0, t0, s2 ?? s, f1, t1);
-		}
-	}
-
-	static function paramCurves(owner: Prefab) : Array<Curve> {
-		return [for (c in owner.children) {
-			var curve = Std.downcast(c, hrt.prefab.Curve);
-			if (curve != null && AnimEdit.isParticleCurve(curve))
-				curve;
-		}];
-	}
-
-	static function curveFunction(owner: Prefab, s: String) : Float -> Float {
-		var v = ParamBuilder.curveValue(owner, s);
-		var ev = AnimEdit.getFX(owner)?.evaluator ?? new Evaluator();
-		return (t) -> ev.getFloat(v, t);
-	}
-
-	static function blendFunctions(owner: Prefab, s: String) : Array<Float -> Float> {
-		return switch (ParamBuilder.curveValue(owner, s)) {
-			case VParamCurve(c, from, to) if (c.blendMode == Blend):
-				[for (i in 0...2) { var b : Curve = cast c.children[i]; (t) -> hxd.Math.lerp(from, to, b.getVal(t)); }];
-			default: [];
-		}
-	}
-
-	static function editableCurve(owner: Prefab, path: String) : Curve {
-		var c = EmitterParam.resolveCurve(owner, path);
-		return c != null && c.blendMode == None ? c : null;
-	}
-
-	static function newCurve(owner: Prefab, name: String) : String {
-		var c = new Curve(owner, owner.shared);
-		c.name = AnimEdit.newCurveName(owner, name + "Curve");
-		c.addKey(0, 0, Linear);
-		c.addKey(1, 1, Linear);
-		return EmitterParam.curvePath(owner, c);
-	}
-
-	static function curveSelect(ctx: EditContext2, parent: hide.kit.Element, id: String, owner: Prefab, path: String, name: String, plain: Bool, set: String -> Void) {
-		var select = new hide.kit.Select(parent, id);
-		var curves : Array<hide.kit.Select.SelectEntry> = [for (c in paramCurves(owner)) if (!plain || c.isPlain()) {
-			var path = EmitterParam.curvePath(owner, c);
-			{ value: path, label: path };
-		}];
-		if (path != null && !Lambda.exists(curves, e -> e.value == path))
-			curves.push({ value: path, label: path + " (missing)" });
-		select.setEntries([{ value: "new", label: "New curve" }, { value: null, label: "Reference", children: curves }]);
-		select.value = path;
-		select.defaultValue = path;
-		select.onValueChange = (_) -> {
-			var v : String = select.value;
-			if (v == "new")
-				AnimEdit.editTree(ctx, owner, () -> set(newCurve(owner, name)));
-			else
-				set(v);
-			ctx.rebuildPrefab(owner);
-			ctx.rebuildInspector();
-		}
-	}
-
-	public static function param(ctx: EditContext2, parent: hide.kit.Element, owner: Prefab, def: ModeParamDef, modes: Array<ModeKind>,
-			get: Int -> ParamMode, set: (Int, ParamMode) -> Void, onChange: Bool -> Void) {
+	// Build inspector for an emitter parameter
+	public static function param(ctx: EditContext2, owner: ParamModes, def: ModeParamDef, allowed: Array<ModeKind>, parent: hide.kit.Element) {
 		var dim = def.def.length;
 		var label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
 		var range = switch (def.t) {
 			case PFloat(min, max), PVec(_, min, max): { min: min, max: max };
 			default: { min: null, max: null };
 		}
-		function rebuild() {
-			onChange(false);
+		var comps = [for (i in 0...dim) i];
+		var value = [for (i in comps) owner.getMode(def.name, i)];
+
+		function applyMode(comps: Array<Int>, mode: Null<ModeKind>) {
+			var prefab : Prefab = cast owner;
+			var before = getModeCurves(prefab);
+			ctx.recordPrefabUndoWithChildren(prefab, () -> {
+				for (i in comps)
+					setMode(owner, def, i, mode == null ? null : convert(owner, def, i, mode));
+				removeUnusedModeCurves(prefab, before);
+			});
 			ctx.rebuildInspector();
 		}
-		function setComp(i: Int, m: ParamMode) {
-			// no difference between the default value and no value
-			if (m != null && m.match(Constant(_)) && Type.enumParameters(m)[0] == def.def[i])
-				m = null;
-			set(i, m);
-		}
 
-		var value = [for (i in 0...dim) get(i)];
-		var compName = (i: Int) -> EmitterParam.COMPONENTS[i].toUpperCase();
-
-		function menuEdit(line: hide.kit.Element, f: () -> Void) {
-			@:privateAccess line.change({ callback: f, isTemporaryEdit: false, recordUndo: true });
-			rebuild();
-		}
-		function compItems(line: hide.kit.Element, i: Int) : Array<hrt.ui.HuiMenu.MenuItem> {
-			var m = get(i);
-			var kind = m == null ? Constant : kindOf(m);
-			function isSet(j: Int) {
-				var c = get(j);
-				return c != null && !(c.match(Constant(_)) && Type.enumParameters(c)[0] == def.def[j]);
-			}
+		function contextMenu(i: Int) : Array<hrt.ui.HuiMenu.MenuItem> {
+			var m = owner.getMode(def.name, i);
+			var kind : ModeKind = m == null ? Constant : cast m.getName();
 			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
 			if (dim > 1)
 				items.push({ isSeparator: true, label: label + " " + compName(i) });
-			if (modes.length > 1) {
-				for (mode in modes)
-					items.push({ label: hide.kit.Macros.camelToSpaceCase(mode), radio: () -> kind == mode,
-						click: () -> {
-							// from a mode without a curve, a new one: the curve and the mode in one undo step
-							if (mode != Constant && mode != Range && (m == null || m.match(Constant(_) | Range(_)))) {
-								var curveName = def.name + (dim == 1 ? "" : compName(i));
-								AnimEdit.editTree(ctx, owner, () -> setComp(i, convert(m, mode, def.def[i], () -> newCurve(owner, curveName))));
-								rebuild();
-							} else
-								menuEdit(line, () -> setComp(i, convert(m, mode, def.def[i], () -> null)));
-						} });
+			if (allowed.length > 1) {
+				for (mode in allowed)
+					items.push({ label: hide.kit.Macros.camelToSpaceCase(mode), radio: () -> kind == mode, click: () -> applyMode([i], mode) });
 				items.push({ isSeparator: true });
 			}
-			items.push({ label: dim == 1 ? "Remove" : "Remove " + compName(i), click: () -> menuEdit(line, () -> setComp(i, null)), enabled: isSet(i) });
-			if (dim > 1)
-				items.push({ label: "Remove all", click: () -> menuEdit(line, () -> for (j in 0...dim) set(j, null)), enabled: Lambda.exists([for (j in 0...dim) j], isSet) });
+			items.push({ label: dim == 1 ? "Remove" : "Remove " + compName(i), click: () -> applyMode([i], null), enabled: isSet(owner, def, i) });
 			return items;
 		}
 
-		var compact = dim > 1 && Lambda.foreach(value, m -> m == null || m.match(Constant(_)));
-		var compactLine = null;
-		if (compact) {
-			compactLine = new hide.kit.Line(parent, def.name);
-			compactLine.label = label;
+		function setupVectorHeader(line: hide.kit.Line) {
+			line.label = label;
+			line.unset = !isAnySet(owner, def);
+			line.menuItems = () -> [
+				{ isSeparator: true, label: label },
+				{ label: "Remove all", click: () -> applyMode(comps, null), enabled: isAnySet(owner, def) },
+			];
 		}
-		for (i in 0...dim) {
-			var id = def.name + (dim == 1 ? "" : compName(i));
-			var suffix = compact ? compName(i) : "";
-			var line = compactLine;
-			var menuOwners : Array<hide.kit.Element> = [];
-			if (line == null) {
-				line = new hide.kit.Line(parent, id);
-				line.label = dim == 1 ? label : label + " " + compName(i);
-				line.stealLabel = false;
-				menuOwners.push(line);
-			}
-			var m = value[i];
 
-			// the fields of the mode are the variables bound by the switch below, `make` builds the mode from them
-			var make : () -> ParamMode = null;
-			function apply() setComp(i, make());
-			function animKey(?field: String) return def.kind == Particle ? null : EmitterParam.animKey(def, i, field);
-			function slider(parent: hide.kit.Element, sid: String, label: String, value: Float, defaultValue: Float, set: Float -> Void, ?anim: String, ?changed: () -> Void) {
-				var s = new hide.kit.Slider<Float>(parent, sid);
-				if (compact)
+		var line = null;
+		var isCompact = dim > 1 && Lambda.foreach(value, m -> m == null || m.match(Constant(_)));
+		if (isCompact) {
+			line = new hide.kit.Line(parent, def.name);
+			line.stealLabel = false;
+			setupVectorHeader(line);
+		}
+
+		for (i in comps) {
+			var menuOwners : Array<hide.kit.Element> = [];
+			if (!isCompact) {
+				line = new hide.kit.Line(parent, def.name + (dim == 1 ? "" : compName(i)));
+				line.stealLabel = false;
+				if (dim == 1) {
+					line.label = label;
+					line.unset = !isSet(owner, def, i);
+					menuOwners.push(line);
+				} else {
+					if (i == 0)
+						setupVectorHeader(line);
+					var name = new hide.kit.Text(line, "comp", compName(i));
+					name.classList.push("kit-param-comp");
+					name.unset = !isSet(owner, def, i);
+					menuOwners.push(name);
+				}
+			}
+			var wasSet = isSet(owner, def, i);
+			var prefab : Prefab = cast owner;
+			function slider(sid: String, label: String, value: Float) {
+				var s = new hide.kit.Slider<Float>(line, sid);
+				if (dim > 1)
 					menuOwners.push(s);
 				s.label = label;
 				s.value = value;
 				s.min = range.min;
 				s.max = range.max;
-				s.defaultValue = defaultValue;
+				s.defaultValue = def.def[i];
 				s.showRange = range.min != null && range.max != null;
-				s.onFieldChange = (_) -> {
-					set(s.value);
-					apply();
-					if (make().match(Constant(_)))
-						s.faded = s.value == def.def[i];
-				}
 				s.onValueChange = (temp) -> {
-					onChange(temp);
-					if (changed != null) changed();
-					// set or unset by the edit: its menu changes
-					if (!temp && (get(i) != null) != (m != null))
+					ctx.rebuildPrefab(prefab);
+					if (!temp && isSet(owner, def, i) != wasSet)
 						ctx.rebuildInspector();
 				}
-				s.anim = anim;
 				return s;
 			}
 
-			function curve(s: String, from: Array<{ v: () -> Float, set: Float -> Void }>, to: Array<{ v: () -> Float, set: Float -> Void }>, ranges: () -> Array<hide.kit.ParamCurve.ParamRange>, suffix: String) {
-				var graph = new hide.kit.ParamCurve(parent, id + "Curve" + suffix, owner, curveFunction(owner, s), ranges(), editableCurve(owner, s), blendFunctions(owner, s));
-				var bounds = new hide.kit.Line(parent, id + "Bounds" + suffix);
-				bounds.cssClass = "kit-param-bounds";
-				bounds.full = true;
-				menuOwners.push(bounds);
-				function changed() {
-					graph.setRanges(ranges());
-				}
-				var names = to.length == 1 ? [""] : [" min", " max"];
-				for (j => f in from)
-					slider(bounds, "from" + j, "", f.v(), 0, f.set, null, changed).tooltip = "From" + names[j] + ": at the birth of the particle";
-				var swap = new hide.kit.Button(bounds, "swap", "⇄");
-				swap.tooltip = "Swap from and to";
-				swap.onClick = () -> {
-					for (j in 0...from.length) {
-						var v = from[j].v();
-						from[j].set(to[j].v());
-						to[j].set(v);
-					}
-					apply();
-					rebuild();
-				}
-				for (j => f in to)
-					slider(bounds, "to" + j, "", f.v(), 1, f.set, null, changed).tooltip = "To" + names[j] + ": at the death of the particle";
-			}
-			function select(parent: hide.kit.Element, sid: String, s: String, set: String -> Void) {
-				curveSelect(ctx, parent, sid, owner, s, def.name + (dim == 1 ? "" : compName(i)), m.match(CurveRange(_)), (s) -> {
-					set(s);
-					apply();
+			function selectCurve(k: Int, path: String) {
+				var before = getModeCurves(prefab);
+				ctx.recordPrefabUndoWithChildren(prefab, () -> {
+					setMode(owner, def, i, switch (owner.getMode(def.name, i)) {
+						case RandomCurve(_, f0, f1, t0, t1): RandomCurve(path, f0, f1, t0, t1);
+						case CurveRange(a, b): k == 0 ? CurveRange(path, b) : CurveRange(a, path);
+						case null, _: Curve(path);
+					});
+					removeUnusedModeCurves(prefab, before);
 				});
+				ctx.rebuildInspector();
 			}
-			inline function mid(a: Float, b: Float) return (a + b) * 0.5;
 
-			switch (m) {
-				case null:
-					var v = def.def[i];
-					make = () -> Constant(v);
-					slider(line, "value" + suffix, compact ? compName(i) : "", v, v, x -> v = x, animKey()).faded = true;
-				case Constant(v):
-					make = () -> Constant(v);
-					slider(line, "value" + suffix, compact ? compName(i) : "", v, def.def[i], x -> v = x, animKey()).faded = v == def.def[i];
-				case Range(min, max):
-					make = () -> Range(min, max);
-					slider(line, "min", "Min", min, def.def[i], x -> min = x, animKey("min"));
-					slider(line, "max", "Max", max, def.def[i], x -> max = x, animKey("max"));
-				case Curve(s, from, to):
-					make = () -> Curve(s, from, to);
-					select(line, "curve0", s, x -> s = x);
-					curve(s, [{ v: () -> from, set: x -> from = x }], [{ v: () -> to, set: x -> to = x }], () -> [{ from: from, to: to }], "");
-				case RandomCurve(s, fromMin, fromMax, toMin, toMax):
-					make = () -> RandomCurve(s, fromMin, fromMax, toMin, toMax);
-					select(line, "curve0", s, x -> s = x);
-					curve(s, [{ v: () -> fromMin, set: x -> fromMin = x }, { v: () -> fromMax, set: x -> fromMax = x }], [{ v: () -> toMin, set: x -> toMin = x }, { v: () -> toMax, set: x -> toMax = x }],
-						() -> [{ from: mid(fromMin, fromMax), to: mid(toMin, toMax) }, { from: fromMin, to: toMin }, { from: fromMax, to: toMax }], "");
-				case CurveRange(a, aFrom, aTo, b, bFrom, bTo):
-					make = () -> CurveRange(a, aFrom, aTo, b, bFrom, bTo);
-					var lineA = new hide.kit.Line(parent, id + "LineA");
-					lineA.label = "A";
-					menuOwners.push(lineA);
-					select(lineA, "curve0", a, x -> a = x);
-					curve(a, [{ v: () -> aFrom, set: x -> aFrom = x }], [{ v: () -> aTo, set: x -> aTo = x }], () -> [{ from: aFrom, to: aTo }], "0");
-					var lineB = new hide.kit.Line(parent, id + "LineB");
-					lineB.label = "B";
-					menuOwners.push(lineB);
-					select(lineB, "curve1", b, x -> b = x);
-					curve(b, [{ v: () -> bFrom, set: x -> bFrom = x }], [{ v: () -> bTo, set: x -> bTo = x }], () -> [{ from: bFrom, to: bTo }], "1");
+			function curveEditor(tracks: Array<{ path: String, ?ranges: Array<hide.kit.Curve.TrackRange> }>) {
+				var g = new hide.kit.Curve(line, "curve", (dim == 1 ? label : label + " " + compName(i)) + " - " + prefab.name);
+				g.onValueChange = (_) -> ctx.rebuildPrefab(prefab);
+				if (dim > 1)
+					menuOwners.push(g);
+				for (k => track in tracks) {
+					var t = g.addTrack(getEditableCurve(prefab, track.path)?.data, track.ranges);
+					var entries : Array<hide.kit.Select.SelectEntry> = [];
+					for (c in prefab.children) {
+						var curve = Std.downcast(c, hrt.prefab.fx.Curve);
+						if (curve == null || !curve.isParticleCurve())
+							continue;
+						var cpath = EmitterParam.curvePath(prefab, curve);
+						if (curve.isPlain() || cpath == track.path)
+							entries.push({ value: cpath, label: cpath });
+					}
+					if (!Lambda.exists(entries, e -> e.value == track.path))
+						entries.push({ value: track.path, label: track.path + " (missing)" });
+					t.curveSelect = {
+						entries: entries,
+						value: track.path,
+						set: (p) -> selectCurve(k, p),
+					};
+				}
 			}
-			var menuLine = line;
+
+			switch (value[i]) {
+				case null, Constant(_):
+					var v = switch (value[i]) {
+						case Constant(c): c;
+						case null, _: def.def[i];
+					}
+
+					var s = slider("value" + (isCompact ? compName(i) : ""), isCompact ? compName(i) : "", v);
+					s.unset = !wasSet;
+					s.onFieldChange = (_) -> {
+						setMode(owner, def, i, Constant(s.value));
+						s.unset = s.value == def.def[i];
+					}
+
+				case Range(min, max):
+					var minSlider = slider("min", "Min", min);
+					var maxSlider = slider("max", "Max", max);
+					function bound() {
+						minSlider.max = range.max == null ? maxSlider.value : Math.min(range.max, maxSlider.value);
+						maxSlider.min = range.min == null ? minSlider.value : Math.max(range.min, minSlider.value);
+					}
+
+					function apply() {
+						bound();
+						setMode(owner, def, i, Range(minSlider.value, maxSlider.value));
+					}
+
+					minSlider.onFieldChange = (_) -> {
+						minSlider.value = Math.min(minSlider.value, maxSlider.value);
+						apply();
+					}
+					maxSlider.onFieldChange = (_) -> {
+						maxSlider.value = Math.max(maxSlider.value, minSlider.value);
+						apply();
+					}
+					bound();
+				case Curve(s):
+					curveEditor([{ path: s }]);
+				case RandomCurve(s, fromMin, fromMax, toMin, toMax):
+					function apply() { setMode(owner, def, i, RandomCurve(s, fromMin, fromMax, toMin, toMax)); }
+					curveEditor([{ path: s, ranges: [
+						{ from: { v: () -> fromMin, set: x -> { fromMin = x; apply(); } }, to: { v: () -> toMin, set: x -> { toMin = x; apply(); } } },
+						{ from: { v: () -> fromMax, set: x -> { fromMax = x; apply(); } }, to: { v: () -> toMax, set: x -> { toMax = x; apply(); } } },
+					] }]);
+				case CurveRange(a, b):
+					curveEditor([{ path: a }, { path: b }]);
+			}
 			for (o in menuOwners)
-				o.menuItems = () -> compItems(menuLine, i);
+				o.menuItems = () -> contextMenu(i);
 		}
 	}
 
-	public static function edit(ctx: EditContext2, owner: ParamOwner, settings: Array<EmitterHelper.ParamDef>, refresh: Array<String>, ?onChange: String -> Void) {
+	// Build inspector for an emitter
+	public static function edit(ctx: EditContext2, owner: ParamOwner, settings: Array<EmitterHelper.ParamDef>, refresh: Array<String>) {
 		var emitter : Prefab = cast owner;
 		function changed(name: String, temp: Bool) {
-			if (onChange != null)
-				onChange(name);
+			owner.onSettingChange(ctx, name);
 			ctx.rebuildPrefab(emitter);
 			if (!temp && refresh.contains(name))
 				ctx.rebuildInspector();
 		}
+
 		var categories = new Map<String, hide.kit.Category>();
 		function getCategory(name: String) {
 			var cat = categories.get(name);
@@ -321,7 +225,7 @@ class EmitterEdit {
 					var vec : Array<Float> = Reflect.field(emitter, p.name);
 					for (i in 0...n) {
 						var s = new hide.kit.Slider<Float>(line, p.name + i);
-						s.label = EmitterParam.COMPONENTS[i].toUpperCase();
+						s.label = compName(i);
 						s.value = vec[i];
 						s.min = min;
 						s.max = max;
@@ -334,14 +238,144 @@ class EmitterEdit {
 					if (widget == null)
 						continue;
 					widget.onValueChange = (temp) -> changed(p.name, temp);
-					var slider = Std.downcast(widget, hide.kit.Slider);
-					if (p.animate && slider != null)
-						slider.anim = p.name;
+			}
+		}
+
+		function getAllowedModes(kind: ParamKind) : Array<ModeKind> {
+			return switch (kind) {
+				case Spawn: [Constant, Range];
+				case Particle: [Constant, Range, Curve, RandomCurve, CurveRange];
+				case Multiplier: [Constant];
 			}
 		}
 
 		for (p in owner.getModeParams())
-			param(ctx, getCategory(p.groupName), emitter, p, kindModes(p.kind), (i) -> owner.getMode(p.name, i), (i, m) -> owner.setMode(p.name, i, m), (temp) -> changed(p.name, temp));
+			param(ctx, owner, p, getAllowedModes(p.kind), getCategory(p.groupName));
+	}
+
+
+	static function compName(i: Int) {
+		return EmitterParam.COMPONENTS[i].toUpperCase();
+	}
+
+	static function isDefault(def: ModeParamDef, i: Int, m: ParamMode) {
+		return switch (m) {
+			case Constant(v): v == def.def[i];
+			default: false;
+		}
+	}
+
+	static function isSet(owner: ParamModes, def: ModeParamDef, i: Int) {
+		var m = owner.getMode(def.name, i);
+		return m != null && !isDefault(def, i, m);
+	}
+
+	static function isAnySet(owner: ParamModes, def: ModeParamDef) {
+		return Lambda.exists([for (i in 0...def.def.length) i], i -> isSet(owner, def, i));
+	}
+
+	static function setMode(owner: ParamModes, def: ModeParamDef, i: Int, m: ParamMode) {
+		owner.setMode(def.name, i, isDefault(def, i, m) ? null : m);
+	}
+
+	static function convert(owner: ParamModes, def: ModeParamDef, i: Int, mode: ModeKind) : ParamMode {
+		var prefab : Prefab = cast owner;
+		var base = def.def[i];
+		function at(s: String, t: Float) { return EmitterParam.resolveCurve(prefab, s)?.data.getVal(t) ?? base; }
+		function curve(src: String, from: Float, to: Float) { return newModeCurve(prefab, def, i, src, from, to); }
+		var m = owner.getMode(def.name, i) ?? Constant(base);
+		var f0 = base, f1 = base, t0 = base, t1 = base;
+		switch (m) {
+			case Constant(v): f0 = f1 = t0 = t1 = v;
+			case Range(min, max): f0 = t0 = min; f1 = t1 = max;
+			case Curve(s): f0 = f1 = at(s, 0); t0 = t1 = at(s, 1);
+			case RandomCurve(_, a, b, c, d): f0 = a; f1 = b; t0 = c; t1 = d;
+			case CurveRange(a, b): f0 = at(a, 0); t0 = at(a, 1); f1 = at(b, 0); t1 = at(b, 1);
+		}
+		var fm = (f0 + f1) * 0.5, tm = (t0 + t1) * 0.5;
+		return switch [mode, m] {
+			case [Constant, _]: Constant(tm);
+			case [Range, _]: Range(t0, t1);
+			case [Curve, Curve(_)]: m;
+			case [Curve, CurveRange(a, _)]: Curve(a);
+			case [Curve, RandomCurve(s, _)]: Curve(curve(s, fm, tm));
+			case [Curve, _]: Curve(curve(null, fm, tm));
+			case [RandomCurve, RandomCurve(_)]: m;
+			case [RandomCurve, Curve(s) | CurveRange(s, _)]: RandomCurve(s, 0, 0, 1, 1);
+			case [RandomCurve, _]: RandomCurve(curve(null, 0, 1), f0, f1, t0, t1);
+			case [CurveRange, CurveRange(_)]: m;
+			case [CurveRange, Curve(s)]: CurveRange(s, curve(null, f1, t1));
+			case [CurveRange, RandomCurve(s, _)]: CurveRange(curve(s, f0, t0), curve(s, f1, t1));
+			case [CurveRange, _]: CurveRange(curve(null, f0, t0), curve(null, f1, t1));
+		}
+	}
+
+	static function newModeCurve(owner: Prefab, def: ModeParamDef, i: Int, src: String, from: Float, to: Float) : String {
+		var c = new Curve(owner, owner.shared);
+		var base = def.name + (def.def.length == 1 ? "" : compName(i)) + "Curve";
+		var name = base;
+		var n = 1;
+		while (Lambda.exists(owner.children, p -> p.name != null && p.name.toLowerCase() == name.toLowerCase())) {
+			name = base + n;
+			n++;
+		}
+		c.name = name;
+		var s = src == null ? null : getEditableCurve(owner, src);
+		if (s == null) {
+			c.addKey(0, from, Linear);
+			c.addKey(1, to, Linear);
+		} else {
+			@:privateAccess c.data.copyFromOther(s.data);
+			for (k in c.keys) {
+				k.value = hxd.Math.lerp(from, to, k.value);
+				for (h in [k.prevHandle, k.nextHandle])
+					if (h != null)
+						h.dv *= to - from;
+			}
+		}
+		return EmitterParam.curvePath(owner, c);
+	}
+
+	static function getModeCurves(owner: Prefab) : Array<Curve> {
+		var modes : Array<ParamMode> = [];
+		if (owner is ParamOwner) {
+			var emitter : ParamOwner = cast owner;
+			for (p in emitter.getModeParams())
+				for (i in 0...p.def.length)
+					modes.push(emitter.getMode(p.name, i));
+		}
+		var shader = Std.downcast(owner, hrt.prefab.Shader);
+		if (shader != null)
+			for (p in shader.particleParams)
+				for (c in p.comps)
+					if (c != null)
+						modes.push(Curve(c.curve));
+		var paths = [];
+		for (m in modes)
+			switch (m) {
+				case Curve(s), RandomCurve(s, _): paths.push(s);
+				case CurveRange(a, b): paths.push(a); paths.push(b);
+				case null, Constant(_), Range(_):
+			}
+		var curves = [];
+		for (path in paths) {
+			var c = owner.locatePrefab(path)?.to(hrt.prefab.fx.Curve);
+			if (c != null)
+				curves.push(c);
+		}
+		return curves;
+	}
+
+	static function removeUnusedModeCurves(owner: Prefab, before: Array<Curve>) {
+		var after = getModeCurves(owner);
+		for (c in before)
+			if (!after.contains(c))
+				c.remove();
+	}
+
+	static function getEditableCurve(owner: Prefab, path: String) : Curve {
+		var c = EmitterParam.resolveCurve(owner, path);
+		return c != null && c.isPlain() ? c : null;
 	}
 }
 
