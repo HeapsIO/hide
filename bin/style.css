@@ -11,7 +11,7 @@
 	--theme-base: oklch(0.243 0 0);
 	--theme-surface-0: oklch(0.300 0 0);
 	--theme-surface-1: oklch(0.333 0 0);
-	--theme-surface-2: oklch(0.477 0.034 278.643);
+	--theme-surface-2: oklch(0.400 0 0);
 
 	--theme-text: oklch(0.879 0.043 272.277);
 	--theme-foreground: oklch(94.027% 0.00845 271.33);
@@ -23,7 +23,9 @@
 	--theme-accent: var(--theme-blue);
 	--theme-accent-dimmed: color-mix(in oklch, var(--theme-blue), var(--theme-crust) 10%);
 
-	--theme-color-border: var(--theme-surface-0);
+	--theme-color-border: var(--theme-surface-2);
+	--theme-border: 1px solid var(--theme-color-border);
+	--theme-border-radius: 4px;
 
 	@function --hover(--c <color>) returns <color> {
 		result: color-mix(in oklch, var(--c), var(--theme-foreground) 6%);

@@ -137,6 +137,9 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	function startup() {
+
+		HideRes.init();
+
 		inst = this;
 		window = electron.Window.get();
 		// see ElectronMain customTitleBar

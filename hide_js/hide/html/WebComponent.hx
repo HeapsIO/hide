@@ -24,6 +24,7 @@ function register(cl : Class<IWebComponent>, htmlName : String, ?extendsTag : St
 			base = base.__super__;
 		var c = class extends base { constructor() { super(); cl.call(this); } };
 		Object.setPrototypeOf(c.prototype, cl.prototype);
+		c.observedAttributes = cl.observedAttributes;
 		return c;
 	})({0})", cl);
 	if (extendsTag == null)

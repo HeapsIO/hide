@@ -3,9 +3,6 @@
 	flex-direction: column;
 	overflow: hidden;
 	position: relative;
-	/* margin: 2px;
-	border-radius: 5px;
-	border: 1px solid var(--theme-color-border); */
 
 	--hover-feedback-border: var(--theme-accent);
 	--hover-transient-background: color-mix(in oklch, var(--theme-accent), var(--theme-base) 30%);

@@ -488,22 +488,23 @@ class Prefab extends hide.view.FileView {
 		hide.html.Html.build(element.find("#prefab-toolbar").get(0),
 			<hide-toolbar>
 				<hide-group>
-					<hide-button title="Perspective camera" onclick={() -> resetCamera(false)}><span class="ico ico-video-camera"></span></hide-button>
-					<hide-button title="Camera Settings" onclick={popup((e) -> new hide.comp.CameraControllerEditor(sceneEditor, e))}><span class="ico ico-camera"></span></hide-button>
-					<hide-button title="Top camera" onclick={() -> resetCamera(true)}><span class="ico ico-video-camera" style="transform: rotateZ(90deg)"></span></hide-button>
-				</hide-group>
-
-				<hide-button id="snapToGroundToggle" title="Snap to ground" oncheck={(_, v) -> sceneEditor.snapToGround = v}><span class="ico ico-anchor"></span></hide-button>
-
-				<hide-group>
-					<hide-button id="selectionMode" title="Gizmo selection Mode" onclick={gizmo.selectionMode}><span class="ico ico-mouse-pointer"></span></hide-button>
-					<hide-button id="translationMode" title="Gizmo translation Mode" onclick={gizmo.translationMode}><span class="ico ico-arrows"></span></hide-button>
-					<hide-button id="rotationMode" title="Gizmo rotation Mode" onclick={gizmo.rotationMode}><span class="ico ico-refresh"></span></hide-button>
-					<hide-button id="scalingMode" title="Gizmo scaling Mode" onclick={gizmo.scalingMode}><span class="ico ico-expand"></span></hide-button>
+					<hide-button id="selectionMode" title="Gizmo selection Mode" onclick={gizmo.selectionMode} icon={HideRes.icon.selection}/>
+					<hide-button id="translationMode" title="Gizmo translation Mode" onclick={gizmo.translationMode} icon={HideRes.icon.translation}/>
+					<hide-button id="rotationMode" title="Gizmo rotation Mode" onclick={gizmo.rotationMode} icon={HideRes.icon.rotation}/>
+					<hide-button id="scalingMode" title="Gizmo scaling Mode" onclick={gizmo.scalingMode} icon={HideRes.icon.scale}/>
 				</hide-group>
 
 				<hide-group>
-					<hide-button id="toggleSnap" title="Snap Toggle" oncheck={(_, v) -> { sceneEditor.snapToggle = v; sceneEditor.updateGrid(); }}><span class="ico ico-magnet"></span></hide-button>
+					<hide-button title="Perspective camera" onclick={() -> resetCamera(false)} icon={HideRes.icon.camera}/>
+					<hide-button title="Camera Settings" onclick={popup((e) -> new hide.comp.CameraControllerEditor(sceneEditor, e))} icon={HideRes.icon.settings}/>
+					<hide-button title="Top camera" onclick={() -> resetCamera(true)}><hide-icon icon={HideRes.icon.camera} style="transform: rotateZ(90deg)"/></hide-button>
+				</hide-group>
+
+				<hide-button id="snapToGroundToggle" title="Snap to ground" oncheck={(_, v) -> sceneEditor.snapToGround = v} icon={HideRes.icon.snap_to_ground}></hide-button>
+
+
+				<hide-group>
+					<hide-button id="toggleSnap" title="Snap Toggle" oncheck={(_, v) -> { sceneEditor.snapToggle = v; sceneEditor.updateGrid(); }} icon={HideRes.icon.grid_snap}/>
 					<hide-button class="small-dropdown" onclick={popup((e) -> new hide.comp.SceneEditor.SnapSettingsPopup(e, sceneEditor))}></hide-button>
 				</hide-group>
 
@@ -512,30 +513,31 @@ class Prefab extends hide.view.FileView {
 					<hide-button id="selfOnlyTransformsToggle" title="Self only transforms" oncheck={(_, v) -> sceneEditor.selfOnlyTransform = v}><span class="ico ico-map-pin"></span></hide-button>
 				</hide-group>
 
-				<hide-button id="ruler" title="Ruler mode" oncheck={(_, v) -> sceneEditor.toggleRuler(v)}><span class="ico ico-arrows-h"></span></hide-button>
+				<hide-button id="ruler" title="Ruler mode" oncheck={(_, v) -> sceneEditor.toggleRuler(v)} icon={HideRes.icon.ruler}/>
 
 				<hide-group>
-					<hide-button id="showViewportOverlays" title="Viewport Overlays" oncheck={(_, _) -> sceneEditor.updateViewportOverlays()}><span class="ico ico-eye"></span></hide-button>
+					<hide-button id="showViewportOverlays" title="Viewport Overlays" oncheck={(_, _) -> sceneEditor.updateViewportOverlays()} icon={HideRes.icon.visibility}/>
 					<hide-button class="small-dropdown" onclick={popup((e) -> new hide.comp.SceneEditor.ViewportOverlaysPopup(e, sceneEditor))}></hide-button>
 				</hide-group>
 
-				<hide-button id="autoSyncToggle" title="Auto synchronize" oncheck={(_, v) -> autoSync = v}><span class="ico ico-refresh"></span></hide-button>
 
-				<hide-button title="Help" onclick={popup((e) -> new hide.comp.SceneEditor.HelpPopup(e, sceneEditor))}><span class="ico ico-question"></span></hide-button>
 
-				<hide-button class="dropdown" onclick={popup((e) -> new hide.comp.SceneEditor.ViewModePopup(e, renderer, sceneEditor))}><span class="label">View Modes</span></hide-button>
-				<hide-button class="dropdown" onclick={popup((e) -> new FiltersPopup(e, this, graphicsFilters, "Graphics"))}><span class="label">Graphics filters</span></hide-button>
-				<hide-button class="dropdown" onclick={popup((e) -> new FiltersPopup(e, this, sceneFilters, "Scene"))}><span class="label">Scene filters</span></hide-button>
-				<hide-button class="dropdown" onclick={popup((e) -> new hide.comp.SceneEditor.RenderPropsPopup(e, this, sceneEditor, true))}><span class="label">Render props</span></hide-button>
-
+				<hide-group>
+					<hide-button class="dropdown" onclick={popup((e) -> new hide.comp.SceneEditor.ViewModePopup(e, renderer, sceneEditor))} label="View Modes"/>
+					<hide-button class="dropdown" onclick={popup((e) -> new FiltersPopup(e, this, graphicsFilters, "Graphics"))} label="Graphics filters"/>
+					<hide-button class="dropdown" onclick={popup((e) -> new FiltersPopup(e, this, sceneFilters, "Scene"))} label="Scene filters"/>
+					<hide-button class="dropdown" onclick={popup((e) -> new hide.comp.SceneEditor.RenderPropsPopup(e, this, sceneEditor, true))} label="Render props"/>
+				</hide-group>
 				<input id="sceneSpeed" type="range" title="Speed" min="0" max="1" value="1"/>
+
+				<hide-button title="Help" onclick={popup((e) -> new hide.comp.SceneEditor.HelpPopup(e, sceneEditor))} icon={HideRes.icon.question_mark}/>
 			</hide-toolbar>
 		);
 
 		var speed = new hide.comp.Range(null, new hide.Element(sceneSpeed));
 		speed.onChange = (_) -> scene.speed = speed.value;
 
-		toggles = [snapToGroundToggle, toggleSnap, localTransformsToggle, selfOnlyTransformsToggle, showViewportOverlays, autoSyncToggle];
+		toggles = [snapToGroundToggle, toggleSnap, localTransformsToggle, selfOnlyTransformsToggle, showViewportOverlays];
 		for (b in toggles) {
 			var onCheck = b.oncheck;
 			b.oncheck = (e, v) -> {
@@ -744,11 +746,11 @@ class Prefab extends hide.view.FileView {
 			posToolTip.visible = false;
 		}
 
-		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
-			save();
-			lastSyncChange = properties.lastChange;
-			currentVersion = undo.currentID;
-		}
+		// if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
+		// 	save();
+		// 	lastSyncChange = properties.lastChange;
+		// 	currentVersion = undo.currentID;
+		// }
 
 	}
 
