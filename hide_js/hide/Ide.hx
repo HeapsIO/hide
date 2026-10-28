@@ -760,10 +760,92 @@ class Ide extends hide.tools.IdeData {
 		loadDatabase();
 
 		if( currentConfig.get("debug.displayErrors")  ) {
+			// per js file : sources, and for each generated line [genCol, source, sourceLine, ...]
+			var sourceMaps = new Map<String, { sources : Array<String>, lines : Array<Array<Int>> }>();
+
+			function loadSourceMap( file : String ) {
+				var map : { sources : Array<String>, mappings : String } = try haxe.Json.parse(sys.io.File.getContent(StringTools.urlDecode(file.substr(8)) + ".map")) catch( e : Dynamic ) null;
+				if( map == null )
+					return { sources : [], lines : [] };
+
+				var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+				var vlq = [];
+				for( i in 0...chars.length )
+					vlq[chars.charCodeAt(i)] = i;
+
+				var m = map.mappings;
+				var cur = [];
+				var lines = [cur];
+				var genCol = 0, src = 0, srcLine = 0;
+				var field = 0, value = 0, shift = 0;
+				for( i in 0...m.length ) {
+					var c = StringTools.fastCodeAt(m, i);
+					if( c == ";".code ) {
+						cur = [];
+						lines.push(cur);
+						genCol = 0;
+						field = 0;
+						continue;
+					}
+					if( c == ",".code ) {
+						field = 0;
+						continue;
+					}
+
+					var d = vlq[c];
+					value += (d & 31) << shift;
+					if( (d & 32) != 0 ) {
+						shift += 5;
+						continue;
+					}
+					var v = (value & 1) == 0 ? value >> 1 : -(value >> 1);
+					value = shift = 0;
+					switch( field++ ) {
+					case 0: genCol += v;
+					case 1: src += v;
+					case 2:
+						srcLine += v;
+						cur.push(genCol);
+						cur.push(src);
+						cur.push(srcLine);
+					default:
+					}
+				}
+
+				var classPaths = hide.tools.ClassPaths.get();
+				var sources = [for( s in map.sources ) {
+					var path = StringTools.replace(s, "file:///", "");
+					var lower = path.toLowerCase();
+					for( cp in classPaths )
+						if( StringTools.startsWith(lower, cp) ) {
+							path = path.substr(cp.length);
+							break;
+						}
+					path;
+				}];
+
+				return { sources : sources, lines : lines };
+			}
+
 			js.Browser.window.onerror = function(msg, url, line, col, error) {
 				if( error == null ) return true; // some internal chrome errors are only a msg, skip
 				var e = error.stack;
 				e = ~/\(?chrome-extension:\/\/[a-z0-9\-\.\/]+.js:[0-9]+:[0-9]+\)?/g.replace(e,"");
+				e = ~/(file:\/\/\/[^()\s]+\.js):([0-9]+):([0-9]+)/g.map(e, function(r) {
+					var file = r.matched(1);
+					var map = sourceMaps.get(file);
+					if( map == null ) {
+						map = loadSourceMap(file);
+						sourceMaps.set(file, map);
+					}
+
+					var segs = map.lines[Std.parseInt(r.matched(2)) - 1];
+					var col = Std.parseInt(r.matched(3)) - 1;
+					var i = segs == null ? -1 : segs.length - 3;
+					while( i >= 0 && segs[i] > col )
+						i -= 3;
+					return i < 0 ? r.matched(0) : map.sources[segs[i + 1]] + ":" + (segs[i + 2] + 1);
+				});
 				e = ~/at ([A-Za-z0-9_\.\$]+)/g.map(e,function(r) { var path = r.matched(1); path = path.split("$hx_exports.").pop().split("$hxClasses.").pop(); return path; });
 				e = e.split("\t").join("    ");
 				this.error(e);
