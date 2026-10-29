@@ -8,11 +8,12 @@ using hxsl.Ast;
 @group("Math")
 class HSLtoRGB extends ShaderNodeHxsl {
 	static var SRC = {
+		@:import h3d.shader.ColorSpaces;
+
 		@sginput(0.0) var hsl : Vec3;
 		@sgoutput var rgb : Vec3;
 		function fragment() {
-			var c = clamp(abs(mod(hsl.x * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
-			rgb = hsl.z + hsl.y * (c - 0.5) * (1.0 - abs(2.0 * hsl.z - 1.0));
+			rgb = hsl2rgb(hsl);
 		}
 	};
 
