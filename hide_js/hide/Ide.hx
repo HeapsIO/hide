@@ -447,6 +447,8 @@ class Ide extends hide.tools.IdeData {
 
 		var commitHash = getGitCommitHashAndDate();
 		if (commitHash.length > 0) {
+			if (commitHash == "dev")
+				commitHash = 'dev(${js.node.Path.basename(js.node.Path.dirname(js.Node.__dirname))})';
 			var driver = #if dx12 "dx12" #else "webgl" #end;
 			new Element('<span class="build">hide $driver $commitHash</span>').appendTo(statusBar);
 		}
