@@ -293,6 +293,10 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 	public function selectItem(item: GalleryItem) {
 		clearSelection();
 		var data = itemMap.get(cast item);
+		if (data == null && currentRefreshFlags.has(Items)) {
+			rebuildItems();
+			data = itemMap.get(cast item);
+		}
 		if (data == null) {
 			return;
 		}

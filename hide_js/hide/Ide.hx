@@ -1792,12 +1792,46 @@ class Ide extends hide.tools.IdeData {
 
 	public function showFileInResources(path: String) {
 		var filebrowsers = getViews(hide.view.FileBrowser);
-		for (filebrowser in filebrowsers) {
+
+		function reveal(filebrowser: hide.view.FileBrowser) {
 			if (@:privateAccess filebrowser.fancyTree == null)
 				filebrowser.onDisplay();
-			filebrowser.activate();
 			filebrowser.reveal(path);
 		}
+
+		function find(visibleOnly: Bool, match: hide.view.FileBrowser.Layout -> Bool) {
+			for (filebrowser in filebrowsers)
+				if ((!visibleOnly || filebrowser.isActive()) && match(filebrowser.state.savedLayout))
+					return filebrowser;
+			return null;
+		}
+
+		// reveal the file in the first Tree mode filebrowser
+		var tree = find(true, (l) -> l == hide.view.FileBrowser.Layout.SingleTree);
+		if (tree != null) {
+			reveal(tree);
+			var gallery = find(false, (l) -> l == hide.view.FileBrowser.Layout.SingleMiniature);
+			if (gallery != null)
+				reveal(gallery);
+			return;
+		}
+
+		// reveal the file in any other visible file browser
+		var split = find(true, (l) -> l != hide.view.FileBrowser.Layout.SingleTree && l != hide.view.FileBrowser.Layout.SingleMiniature);
+		if (split != null) {
+			reveal(split);
+			return;
+		}
+
+		// reveal the file in any other file browser
+		if (filebrowsers.length > 0) {
+			reveal(filebrowsers[0]);
+			filebrowsers[0].activate();
+			return;
+		}
+
+		// Create a new filebrowser
+		open("hide.view.FileBrowser", {savedLayout: hide.view.FileBrowser.Layout.SingleTree}, null, (v) -> reveal(cast v), Left);
 	}
 
 	public function openFile( file : String, ?onCreate, ?onOpen) {
