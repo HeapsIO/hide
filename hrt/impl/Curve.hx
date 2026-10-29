@@ -35,7 +35,6 @@ class Curve {
 	public static var BAKE_RESOLUTION = 128.0;
 	#end
 
-	@:s public var keyMode : CurveKeyMode = Linear;
 	@:s public var keys : Array<CurveKey> = [];
 	@:s public var loop : Bool = false;
 
@@ -85,7 +84,7 @@ class Curve {
 		var key = new CurveKey();
 		key.time = time;
 		key.value = val;
-		key.mode = mode != null ? mode : (keys[index] != null ? keys[index].mode : keyMode);
+		key.mode = mode ?? keys[index]?.mode ?? Linear;
 		keys.insert(index, key);
 		return key;
 	}

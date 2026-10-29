@@ -25,10 +25,6 @@ class Curve extends Prefab {
 	public var data(get, never) : hrt.impl.Curve;
 	function get_data() : hrt.impl.Curve { return datas[0]; }
 
-	public var keyMode(get, set) : CurveKeyMode;
-	function get_keyMode() return data.keyMode;
-	function set_keyMode(v) return data.keyMode = v;
-
 	public var keys(get, set) : Array<CurveKey>;
 	function get_keys() return data.keys;
 	function set_keys(v) return data.keys = v;

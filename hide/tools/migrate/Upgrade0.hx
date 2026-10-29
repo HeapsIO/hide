@@ -280,7 +280,7 @@ class Upgrade0 {
 	}
 
 	function newCurve( name : String ) : Dynamic {
-		var d : Dynamic = obj(["type", "fxcurve", "name", name, "keyMode", 2, "keys", []]);
+		var d : Dynamic = obj(["type", "fxcurve", "name", name, "keys", []]);
 		upgraded.set(d, true);
 		return d;
 	}
@@ -1155,7 +1155,7 @@ class Upgrade0 {
 			if( keys == null ) return VConst(base);
 			var isBase = keys.length == 1 && Math.abs(keys[0].value - base) <= 1e-12;
 			if( isBase ) return VConst(base);
-			var d : Dynamic = { type: "fxcurve", name: "c", keyMode: 2, keys: deepCopy(keys) };
+			var d : Dynamic = { type: "fxcurve", name: "c", keys: deepCopy(keys) };
 			if( fit.loop ) d.loop = true;
 			var c : hrt.prefab.fx.Curve = cast @:privateAccess hrt.prefab.Prefab.createFromDynamic(d, null, new hrt.prefab.ContextShared(null, false));
 			return c.makeVal();
@@ -1225,9 +1225,8 @@ class Upgrade0 {
 		var d : Dynamic = cur != null ? cur.data : newCurve(freeName(n, prop + ":" + COMPONENTS[i]));
 		if( isBase )
 			keys = [obj(["time", 0., "value", base, "mode", 2])];
-		for( f in ["blendMode", "blendParam", "remapPath", "scale", "offset", "loop", "previewKeys", "children"] )
+		for( f in ["blendMode", "blendParam", "remapPath", "scale", "offset", "loop", "previewKeys", "children", "keyMode"] )
 			Reflect.deleteField(d, f);
-		RawNode.setField(d, "keyMode", 2);
 		RawNode.setField(d, "keys", keys);
 		if( loop && !isBase ) RawNode.setField(d, "loop", true);
 		if( input != "" && !isBase ) RawNode.setField(d, "remapPath", "$param." + input);

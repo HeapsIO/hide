@@ -185,7 +185,7 @@ class CurveEditor extends SVG {
 			}
 			var t = hxd.Math.clamp(m.time(p.x), 0, editor.maxTime);
 			track.edit(() -> {
-				key = curve.addKey(t, m.flat ? curve.getVal(t) : m.value(p.y), curve.keyMode);
+				key = curve.addKey(t, m.flat ? curve.getVal(t) : m.value(p.y));
 				track.fixKey(key);
 			}, true);
 			selection = [key];
@@ -228,7 +228,7 @@ class CurveEditor extends SVG {
 		menu(e, [{ label: "Add key", keys: "Ctrl + click", click: () -> {
 			var t = hxd.Math.clamp(m.time(p.x), 0, editor.maxTime);
 			track.edit(() -> {
-				var k = curve.addKey(t, m.flat ? curve.getVal(t) : m.value(p.y), curve.keyMode);
+				var k = curve.addKey(t, m.flat ? curve.getVal(t) : m.value(p.y));
 				track.fixKey(k);
 				selection = [k];
 			}, false);
@@ -645,7 +645,6 @@ class CurveEditor extends SVG {
 					k.mode = mode;
 					track.fixKey(k);
 				}
-				curve.keyMode = mode;
 			}, false),
 		}];
 		items.push({ isSeparator: true });

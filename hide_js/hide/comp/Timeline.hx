@@ -602,7 +602,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 		for (c in this.curveEditor.curves)
 			if (c.selected || this.curveEditor.curves.length == 1) {
 				var previousKeyVal = c.data.getVal(time);
-				c.data.addKey(time, previousKeyVal, c.data.keyMode);
+				c.data.addKey(time, previousKeyVal);
 			}
 
 		@:privateAccess this.curveEditor.afterChange();
@@ -866,7 +866,7 @@ class Timeline extends hide.comp.Component {
 				if(c.minValue < c.maxValue)
 					val = hxd.Math.clamp(val, c.minValue, c.maxValue);
 				c.selected = true;
-				var key = c.data.addKey(time, val, c.data.keyMode);
+				var key = c.data.addKey(time, val);
 				fixKey(key);
 			}
 
@@ -1344,7 +1344,6 @@ class Timeline extends hide.comp.Component {
 
 			function setMode(m: hrt.impl.Curve.CurveKeyMode) {
 					key.mode = m;
-					curve.data.keyMode = m;
 					fixKey(key);
 					refreshGraph();
 			}
