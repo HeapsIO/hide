@@ -4274,14 +4274,13 @@ div.gradient-box {
 .devtools {
 	width: 100%;
 	height: 100%;
-	webview {
-		display: block;
-	}
+	display: flex;
+	flex-direction: column;
 	#webview-blank {
 		height: 0px;
 	}
 	#webview-devtools {
-		height: 100%;
+		flex: 1;
 	}
 }
 
