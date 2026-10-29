@@ -113,6 +113,7 @@ class ScreenOutline extends h3d.shader.ScreenShader {
 class PbrRenderer extends h3d.scene.pbr.Renderer {
 	public function new(env) {
 		super(env);
+		sceneColorCopy = true;
 		#if editor
 		outline.pass.setBlendMode(Alpha);
 		#end
