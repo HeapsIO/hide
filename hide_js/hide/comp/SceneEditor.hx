@@ -2758,6 +2758,8 @@ class SceneEditor {
 			return p.enabled == true && p.visible == true && !isHidden(p);
 		}
 
+		scene.setCurrent();
+
 		// 1.
 		if (renderProps == null) {
 
