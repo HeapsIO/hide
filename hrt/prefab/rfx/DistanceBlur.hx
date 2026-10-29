@@ -53,6 +53,8 @@ class DistanceBlurShader extends hrt.shader.PbrShader {
 @:access(h3d.scene.Renderer)
 class DistanceBlur extends RendererFX {
 
+	public static var MAX_HEIGHT = 0;
+
 	var blurPass = new h3d.pass.ScreenFx(new DistanceBlurShader());
 	var lbrBlur = new h3d.pass.Blur();
 
@@ -95,9 +97,12 @@ class DistanceBlur extends RendererFX {
 			blurPass.shader.DEBUG = #if editor showDebug #else false #end;
 
 			var ldr : h3d.mat.Texture = ctx.getGlobal("ldrMap");
-			var lbrBlurred = r.allocTarget("ldrBlurred", false, blurTextureSize, RGBA);
+			var texSize = blurTextureSize;
+			if( MAX_HEIGHT > 0 )
+				texSize = hxd.Math.min(texSize, MAX_HEIGHT / ctx.renderResolutionHeight);
+			var lbrBlurred = r.allocTarget("ldrBlurred", false, texSize, RGBA);
 			r.copy(ldr, lbrBlurred);
-			lbrBlur.radius = blurRange;
+			lbrBlur.radius = blurRange * texSize / blurTextureSize;
 			lbrBlur.apply(ctx, lbrBlurred);
 
 			blurPass.shader.blurredTexture = lbrBlurred;

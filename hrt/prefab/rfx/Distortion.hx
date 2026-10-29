@@ -22,11 +22,14 @@ class Distortion extends RendererFX {
 	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		if( step == BeforeTonemapping ) {
 			r.mark("Distortion");
+			var passes = r.get("distortion");
+			if( passes.isEmpty() )
+				return;
 			var distortionMap = r.allocTarget("distortion", true, 1.0, RG16F);
 			r.ctx.setGlobal("distortion", distortionMap);
 			r.ctx.engine.pushTarget(distortionMap);
 			r.clear(0);
-			r.draw("distortion");
+			r.defaultPass.draw(passes);
 			r.ctx.engine.popTarget();
 
 			tonemap.amount = amount;
