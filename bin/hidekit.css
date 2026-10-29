@@ -61,6 +61,8 @@ kit-root {
 			flex: 1 1;
 			min-width: 0;
 			width: 0;
+			padding: 2px;
+			overflow: visible;
 		}
 		> svg path.main {
 			stroke-width: 1.5px;
@@ -79,6 +81,9 @@ kit-root {
 		path {
 			fill: none;
 			stroke: #f05a5a;
+		}
+		path, line {
+			vector-effect: non-scaling-stroke;
 		}
 		path.main {
 			stroke-width: 2px;
@@ -157,15 +162,39 @@ kit-root {
 			padding: 8px;
 		}
 
+		kit-root.kit-curve-fields-root {
+			display: grid;
+			grid-template-columns: auto 1fr;
+			align-items: center;
+		}
+		kit-line.kit-curve-reference {
+			grid-column: 1;
+			margin: 0 8px 0 0;
+			max-width: none;
+			kit-select {
+				min-width: 120px;
+			}
+		}
 		kit-line.kit-curve-fields {
+			grid-column: 2;
 			flex-wrap: wrap;
 			max-width: none;
 			margin-block: 0;
 			padding: 2px 4px;
 			border-radius: 3px;
 
+			&.kit-curve-selectable {
+				cursor: pointer;
+				&:hover:not(.active) {
+					background-color: hsl(from var(--color-menu-bg-highlight) h s l / 0.5);
+				}
+			}
 			&.active {
 				background-color: var(--color-menu-bg-highlight);
+			}
+			kit-text {
+				flex: 0 0 auto;
+				min-width: 28px;
 			}
 			> kit-div {
 				flex: 0 0 auto;
@@ -177,6 +206,7 @@ kit-root {
 				width: 64px;
 			}
 			kit-button {
+				flex: 0 0 auto;
 				width: 24px;
 			}
 			> kit-spacer {
@@ -208,6 +238,7 @@ kit-root {
 				width: 44px;
 				height: 28px;
 				padding: 3px;
+				overflow: visible;
 				background-color: var(--color-menu-bg);
 				cursor: pointer;
 			}

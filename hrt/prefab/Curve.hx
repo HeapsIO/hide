@@ -12,7 +12,8 @@ using Lambda;
 
 @:prefabIcon(HuiRes.ui.icons.prefab.curve)
 class Curve extends Prefab {
-	public var data = new hrt.impl.Curve();
+	@:isVar public var data(get, null) = new hrt.impl.Curve();
+	function get_data() { return data; }
 
 	public var keyMode(get, set) : CurveKeyMode;
 	function get_keyMode() return data.keyMode;

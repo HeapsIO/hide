@@ -1,51 +1,41 @@
-package hide.comp;
+package hide.comp.curveeditor;
 
 #if (domkit && js)
 
 import hrt.impl.Curve.CurveKeyMode;
 import hide.kit.Curve;
-
-typedef DisplayRange = {
-	from : Float,
-	to : Float
-};
+import hide.comp.curveeditor.CurveDrawing;
 
 @:access(hide.kit.Element)
 class CurveEditor extends SVG {
-	public var svg(default, null) : js.html.svg.SVGElement;
-
-	static inline var SAMPLES = 64;
+	static inline var PADDING = 4;
 	static inline var KEY_SIZE = 6;
 	static inline var HANDLE_SIZE = 3;
 	static inline var MAX_LINES = 6;
 	static inline var BOX_MARGIN = 8;
 	static inline var BOX_EDGE = 4;
 
+	public var svg(default, null) : js.html.svg.SVGElement;
 	public var editor(default, null) : Curve;
 	public var track(default, null) : CurveTrack;
-	var large : Bool;
+
 	var editable : Bool;
 	var minX = 0.;
 	var maxX = 1.;
 	var minY = 0.;
 	var maxY = 1.;
-	var pad : Float;
 	var selection : Array<hrt.impl.Curve.CurveKey> = [];
 	var box : { x0: Float, y0: Float, x1: Float, y1: Float };
 	var lastClick : { key: hrt.impl.Curve.CurveKey, time: Float };
 
-	function single() return selection.length == 1 ? selection[0] : null;
-
-	public function new(editor: Curve, large: Bool, activeTrack = 0) {
+	public function new(editor: Curve, activeTrack : Int = 0) {
 		super();
-		svg = cast element[0];
 		this.editor = editor;
-		this.large = large;
-		pad = large ? 4 : 2;
+
+		svg = cast element[0];
+
 		setTrack(editor.tracks[activeTrack]);
 		frame();
-		if (!large)
-			return;
 		svg.addEventListener("wheel", onWheel);
 		svg.addEventListener("pointerdown", onPointerDown);
 		// no autoscroll of the middle button, that pans
@@ -73,268 +63,57 @@ class CurveEditor extends SVG {
 		});
 	}
 
-	public function setTrack(t: CurveTrack) {
-		if (t == track)
-			return;
-		track = t;
-		editable = large && track.curve != null;
-		selection = [];
-		onTrackChange();
-	}
-
-	public dynamic function onTrackChange() {}
-
-	public static function thumbnail(curve: hrt.impl.Curve) : js.html.svg.SVGElement {
-		var svg = new SVG();
-		svg.element.attr({ viewBox: "0 0 1 1", preserveAspectRatio: "none" });
-		svg.polygon(svg.element, [for (i in 0...SAMPLES + 1) new h2d.col.Point(i / SAMPLES, 1 - curve.getVal(i / SAMPLES))]).addClass("main").attr("vector-effect", "non-scaling-stroke");
-		return cast svg.element[0];
-	}
-
-	static function displayRanges(t: CurveTrack) : Array<DisplayRange> {
-		var rs : Array<DisplayRange> = [for (r in t.ranges) { from: r.from.v(), to: r.to.v() }];
-		return switch (rs.length) {
-			case 0: [{ from: 0, to: 1 }];
-			case 2: [{ from: (rs[0].from + rs[1].from) * 0.5, to: (rs[0].to + rs[1].to) * 0.5 }].concat(rs);
-			default: rs;
-		}
-	}
-
-	static function lines(t: CurveTrack) : Array<{ f: Float -> Float, r: DisplayRange, main: Bool }> {
-		if (t.curve == null)
-			return [];
-		return [for (i => r in displayRanges(t)) { f: t.curve.getVal, r: r, main: i == 0 }];
-	}
-
-	static inline function near(x: Float, y: Float, px: Float, py: Float, d: Float) return Math.abs(px - x) <= d && Math.abs(py - y) <= d;
-
-	static function handles(k: hrt.impl.Curve.CurveKey) : Array<{ h: hrt.impl.Curve.CurveHandle, next: Bool }> {
-		if (k.mode == CurveKeyMode.Linear || k.mode == CurveKeyMode.Constant)
-			return [];
-		return [for (next in [false, true]) {
-			var h = next ? k.nextHandle : k.prevHandle;
-			if (h != null) { h: h, next: next };
-		}];
-	}
-
-	public function keepView(other: CurveEditor) {
-		minX = other.minX;
-		maxX = other.maxX;
-		minY = other.minY;
-		maxY = other.maxY;
-	}
-
-	public function frame() {
-		minX = 0;
-		var end = editor.maxTime;
-		if (!Math.isFinite(end)) {
-			end = 1.;
-			for (t in editor.tracks)
-				if (t.curve != null && t.curve.keys.length > 0)
-					end = Math.max(end, t.curve.keys[t.curve.keys.length - 1].time);
-		}
-		maxX = end;
-		minY = 0;
-		maxY = 1;
-		for (t in editor.tracks)
-			for (l in lines(t))
-				for (i in 0...SAMPLES + 1) {
-					var y = hxd.Math.lerp(l.r.from, l.r.to, l.f(i / SAMPLES * end));
-					minY = Math.min(minY, y);
-					maxY = Math.max(maxY, y);
-				}
-	}
-
-	function onWheel(e: js.html.WheelEvent) {
-		e.preventDefault();
-		e.stopPropagation();
-		var factor = e.deltaY + e.deltaX < 0 ? 1 / 1.125 : 1.125;
-		var m = mapping();
-		var p = m.local(e);
-		var t = m.time(p.x), v = m.display(p.y);
-		if (!e.altKey) {
-			minX = t + (minX - t) * factor;
-			maxX = t + (maxX - t) * factor;
-		}
-		if (!e.ctrlKey) {
-			minY = v + (minY - v) * factor;
-			maxY = v + (maxY - v) * factor;
-		}
-		refresh();
-	}
-
-	function pan(e: js.html.PointerEvent) {
-		var m = mapping();
-		var start = m.local(e), startX = [minX, maxX], startY = [minY, maxY];
-		drag(e, (e) -> {
-			var p = m.local(e);
-			var dt = (p.x - start.x) / (m.w - pad * 2) * (startX[1] - startX[0]);
-			var dv = (p.y - start.y) / (m.h - pad * 2) * (startY[1] - startY[0]);
-			minX = startX[0] - dt;
-			maxX = startX[1] - dt;
-			minY = startY[0] + dv;
-			maxY = startY[1] + dv;
-			refresh();
-		}, () -> {});
-	}
-
-	inline function toDisplay(v: Float) return trackDisplay(track, v);
-	static function trackDisplay(t: CurveTrack, v: Float) {
-		var r = displayRanges(t)[0];
-		return hxd.Math.lerp(r.from, r.to, v);
-	}
-	inline function sx(t: Float, w: Float) return pad + (t - minX) / (maxX - minX) * (w - pad * 2);
-	inline function sy(v: Float, h: Float) return h - pad - (v - minY) / (maxY - minY) * (h - pad * 2);
-
-	static function gridStep(size: Float) {
-		var i = Math.floor(Math.log(size / MAX_LINES) / Math.log(10)) * 3;
-		var step = 0.;
-		do {
-			step = [1, 2, 5][((i % 3) + 3) % 3] * Math.pow(10, Math.floor(i++ / 3));
-		} while (size / step > MAX_LINES);
-		return step;
-	}
-
-	/** `v` without the float noise of the grid steps (0.30000000000000004) **/
-	static function gridLabel(v: Float) return Std.string(Math.round(v * 1e6) / 1e6);
-
 	public function refresh() {
 		var w = svg.clientWidth, h = svg.clientHeight;
 		if (w <= 0 || h <= 0)
 			return;
-		// the preview shows the whole curve, as edited from any window; the window keeps its view while editing
-		if (!large)
-			frame();
 		clear();
 		var g = element;
 		function px(t: Float) return sx(t, w);
 		function py(v: Float) return sy(v, h);
-		if (large) {
-			rectBetween(g, 0, 0, hxd.Math.clamp(px(0), 0, w), h).addClass("outside");
-			rectBetween(g, hxd.Math.clamp(px(editor.maxTime), 0, w), 0, w, h).addClass("outside");
-			var step = gridStep(maxY - minY);
-			for (i in Math.ceil(minY / step)...Math.floor(maxY / step) + 1) {
-				var y = py(i * step);
-				line(g, 0, y, w, y).addClass(i == 0 ? "zero" : "grid");
-				text(g, 2, y - 2 < 9 ? y + 9 : y - 2, gridLabel(i * step));
-			}
-			var step = gridStep(maxX - minX);
-			for (i in Math.ceil(minX / step)...Math.floor(maxX / step) + 1) {
-				var x = px(i * step);
-				line(g, x, 0, x, h).addClass(i == 0 ? "zero" : "grid");
-				text(g, x + 2, h - 3, gridLabel(i * step));
-			}
-		} else
-			line(g, 0, py(0), w, py(0)).addClass("zero");
-
-		var t0 = Math.max(minX, 0), t1 = Math.min(maxX, editor.maxTime);
-		function points(f: Float -> Float, r: DisplayRange) {
-			return [for (i in 0...SAMPLES + 1) { var t = hxd.Math.lerp(t0, t1, i / SAMPLES); new h2d.col.Point(px(t), py(hxd.Math.lerp(r.from, r.to, f(t)))); }];
+		rectBetween(g, 0, 0, hxd.Math.clamp(px(0), 0, w), h).addClass("outside");
+		rectBetween(g, hxd.Math.clamp(px(editor.maxTime), 0, w), 0, w, h).addClass("outside");
+		var step = gridStep(maxY - minY);
+		for (i in Math.ceil(minY / step)...Math.floor(maxY / step) + 1) {
+			var y = py(i * step);
+			line(g, 0, y, w, y).addClass(i == 0 ? "zero" : "grid");
+			text(g, 2, y - 2 < 9 ? y + 9 : y - 2, gridLabel(i * step));
 		}
-		function band(f0: Float -> Float, r0: DisplayRange, f1: Float -> Float, r1: DisplayRange) {
-			var back = points(f1, r1);
-			back.reverse();
-			polygon2(g, points(f0, r0).concat(back)).addClass("band");
-		}
-		if (t1 > t0) {
-			// the two curves of a curve range, the min and the max of a random curve
-			var a = editor.tracks[0].curve, b = editor.tracks[1]?.curve;
-			if (a != null && b != null)
-				band(a.getVal, displayRanges(editor.tracks[0])[0], b.getVal, displayRanges(editor.tracks[1])[0]);
-			for (t in editor.tracks) {
-				var rs = displayRanges(t);
-				if (t.curve != null && rs.length == 3)
-					band(t.curve.getVal, rs[1], t.curve.getVal, rs[2]);
-				for (l in lines(t))
-					polygon(g, points(l.f, l.r)).addClass(l.main ? "main" : "extreme").toggleClass("other", large && t != track);
-			}
+		var step = gridStep(maxX - minX);
+		for (i in Math.ceil(minX / step)...Math.floor(maxX / step) + 1) {
+			var x = px(i * step);
+			line(g, x, 0, x, h).addClass(i == 0 ? "zero" : "grid");
+			text(g, x + 2, h - 3, gridLabel(i * step));
 		}
 
-		function key(t: CurveTrack, k: hrt.impl.Curve.CurveKey) return square(g, px(k.time), py(trackDisplay(t, k.value)), KEY_SIZE).addClass("key");
-		if (large)
-			for (t in editor.tracks)
-				if (t != track && t.curve != null)
-					for (k in t.curve.keys)
-						key(t, k).addClass("other");
+		var view : CurveView = { minX: minX, maxX: maxX, minY: minY, maxY: maxY, w: w, h: h, pad: PADDING };
+		CurveDrawing.drawTracks(this, editor.tracks, editor.bands, view, editor.maxTime, track);
+
+		function key(t: CurveTrack, k: hrt.impl.Curve.CurveKey) return square(g, px(k.time), py(CurveDrawing.trackDisplay(t, k.value)), KEY_SIZE).addClass("key");
+		for (t in editor.tracks)
+			if (t != track && t.data != null)
+				for (k in t.data.keys)
+					key(t, k).addClass("other");
 		if (!editable)
 			return;
-		selection = selection.filter(k -> track.curve.keys.contains(k));
+		selection = selection.filter(k -> track.data.keys.contains(k));
 		var b = box == null ? selectionBox(w, h) : null;
 		if (b != null)
 			rectBetween(g, b.x0, b.y0, b.x1, b.y1).addClass("selection-box");
-		var k = single();
-		if (k != null)
+		if (selection.length == 1) {
+			var k = selection[0];
 			for (hd in handles(k)) {
 				var x = px(k.time + hd.h.dt), y = py(toDisplay(k.value + hd.h.dv));
 				line(g, px(k.time), py(toDisplay(k.value)), x, y).addClass("tangent");
 				circle(g, x, y, HANDLE_SIZE).addClass("handle");
 			}
-		for (k in track.curve.keys)
+		}
+		for (k in track.data.keys)
 			key(track, k).toggleClass("selected", selection.contains(k));
 		if (box != null)
 			rectBetween(g, box.x0, box.y0, box.x1, box.y1).addClass("keys-box");
 	}
 
-	function mapping() {
-		var rect = svg.getBoundingClientRect();
-		var w = rect.width, h = rect.height;
-		var r = displayRanges(track)[0];
-		var scale = r.to - r.from;
-		var display =(y: Float) -> minY + (h - pad - y) / (h - pad * 2) * (maxY - minY);
-		return {
-			rect: rect,
-			w: w,
-			h: h,
-			/** Keys can only move in time when the range is empty **/
-			flat: Math.abs(scale) <= 1e-9,
-			local: (e: js.html.MouseEvent) -> { x: e.clientX - rect.left, y: e.clientY - rect.top },
-			time: (x: Float) -> minX + (x - pad) / (w - pad * 2) * (maxX - minX),
-			display: display,
-			value: (y: Float) -> (display(y) - r.from) / scale,
-		};
-	}
-
-	function keyAt(x: Float, y: Float, w: Float, h: Float, ?t: CurveTrack) {
-		t ??= track;
-		return Lambda.find(t.curve.keys, k -> near(x, y, sx(k.time, w), sy(trackDisplay(t, k.value), h), KEY_SIZE));
-	}
-
-	function otherTrackAt(x: Float, y: Float, w: Float, h: Float) {
-		return Lambda.find(editor.tracks, t -> t != track && t.curve != null && keyAt(x, y, w, h, t) != null);
-	}
-
-	function handleAt(x: Float, y: Float, w: Float, h: Float) {
-		var k = single();
-		if (k == null)
-			return null;
-		return Lambda.find(handles(k), hd -> near(x, y, sx(k.time + hd.h.dt, w), sy(toDisplay(k.value + hd.h.dv), h), HANDLE_SIZE + 2));
-	}
-
-	function selectionBox(w: Float, h: Float) {
-		if (selection.length < 2)
-			return null;
-		var x0 = Math.POSITIVE_INFINITY, y0 = Math.POSITIVE_INFINITY, x1 = Math.NEGATIVE_INFINITY, y1 = Math.NEGATIVE_INFINITY;
-		for (k in selection) {
-			var x = sx(k.time, w), y = sy(toDisplay(k.value), h);
-			x0 = Math.min(x0, x);
-			y0 = Math.min(y0, y);
-			x1 = Math.max(x1, x);
-			y1 = Math.max(y1, y);
-		}
-		return { x0: x0 - BOX_MARGIN, y0: y0 - BOX_MARGIN, x1: x1 + BOX_MARGIN, y1: y1 + BOX_MARGIN };
-	}
-
-	/**
-		The part of the box of the selected keys at (x, y): its inside (0, 0), an edge (`dx`: -1 left, 1 right, `dy`: -1 top,
-		1 bottom, 0 for the other axis) or a corner. Null out of it
-	**/
-	function boxPartAt(x: Float, y: Float, w: Float, h: Float) : { dx: Int, dy: Int } {
-		var b = selectionBox(w, h);
-		if (b == null || x < b.x0 - BOX_EDGE || x > b.x1 + BOX_EDGE || y < b.y0 - BOX_EDGE || y > b.y1 + BOX_EDGE)
-			return null;
-		inline function side(v: Float, v0: Float, v1: Float) return Math.abs(v - v0) <= BOX_EDGE ? -1 : Math.abs(v - v1) <= BOX_EDGE ? 1 : 0;
-		return { dx: side(x, b.x0, b.x1), dy: side(y, b.y0, b.y1) };
-	}
 
 	public function onKeyDown(e: js.html.KeyboardEvent) {
 		if (e.ctrlKey)
@@ -352,7 +131,7 @@ class CurveEditor extends SVG {
 		e.stopPropagation();
 	}
 
-	function onPointerDown(e: js.html.PointerEvent) {
+	public function onPointerDown(e: js.html.PointerEvent) {
 		e.preventDefault();
 		e.stopPropagation();
 		(cast svg.closest("kit-curve-view") : js.html.Element).focus();
@@ -360,7 +139,7 @@ class CurveEditor extends SVG {
 			pan(e);
 			return;
 		}
-		if (!large || editor.isDisabled() || e.button != 0)
+		if (editor.isDisabled() || e.button != 0)
 			return;
 		var m = mapping();
 		var p = m.local(e);
@@ -373,11 +152,11 @@ class CurveEditor extends SVG {
 		}
 		if (!editable)
 			return;
-		var curve = track.curve;
+		var curve = track.data;
 
 		var hd = handleAt(p.x, p.y, m.w, m.h);
 		if (hd != null) {
-			dragHandle(e, single(), hd.h, hd.next);
+			dragHandle(e, selection[0], hd.h, hd.next);
 			return;
 		}
 		var key = keyAt(p.x, p.y, m.w, m.h);
@@ -432,6 +211,182 @@ class CurveEditor extends SVG {
 		moveKeys(e, key);
 	}
 
+	public function onContextMenu(e: js.html.MouseEvent) {
+		if (editor.isDisabled())
+			return;
+		var curve = track.data;
+		var m = mapping();
+		var p = m.local(e);
+		var key = keyAt(p.x, p.y, m.w, m.h);
+		if (key != null) {
+			if (!selection.contains(key))
+				selection = [key];
+			refresh();
+			keyMenu(e, key);
+			return;
+		}
+		menu(e, [{ label: "Add key", keys: "Ctrl + click", click: () -> {
+			var t = hxd.Math.clamp(m.time(p.x), 0, editor.maxTime);
+			track.edit(() -> {
+				var k = curve.addKey(t, m.flat ? curve.getVal(t) : m.value(p.y), curve.keyMode);
+				track.fixKey(k);
+				selection = [k];
+			}, false);
+		} }]);
+	}
+
+	public function onWheel(e: js.html.WheelEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		var factor = e.deltaY + e.deltaX < 0 ? 1 / 1.125 : 1.125;
+		var m = mapping();
+		var p = m.local(e);
+		var t = m.time(p.x), v = m.display(p.y);
+		if (!e.altKey) {
+			minX = t + (minX - t) * factor;
+			maxX = t + (maxX - t) * factor;
+		}
+		if (!e.ctrlKey) {
+			minY = v + (minY - v) * factor;
+			maxY = v + (maxY - v) * factor;
+		}
+		refresh();
+	}
+
+	public dynamic function onTrackChange() {}
+
+
+	public function setTrack(t: CurveTrack) {
+		if (t == track)
+			return;
+		track = t;
+		editable = track.data != null;
+		selection = [];
+		onTrackChange();
+	}
+
+	static inline function near(x: Float, y: Float, px: Float, py: Float, d: Float) return Math.abs(px - x) <= d && Math.abs(py - y) <= d;
+
+	static function handles(k: hrt.impl.Curve.CurveKey) : Array<{ h: hrt.impl.Curve.CurveHandle, next: Bool }> {
+		if (k.mode == CurveKeyMode.Linear || k.mode == CurveKeyMode.Constant)
+			return [];
+		return [for (next in [false, true]) {
+			var h = next ? k.nextHandle : k.prevHandle;
+			if (h != null) { h: h, next: next };
+		}];
+	}
+
+	public function keepView(other: CurveEditor) {
+		minX = other.minX;
+		maxX = other.maxX;
+		minY = other.minY;
+		maxY = other.maxY;
+	}
+
+	public function frame() {
+		var bounds = CurveDrawing.frame(editor.tracks, editor.maxTime);
+		minX = bounds.minX;
+		maxX = bounds.maxX;
+		minY = bounds.minY;
+		maxY = bounds.maxY;
+	}
+
+
+
+	function pan(e: js.html.PointerEvent) {
+		var m = mapping();
+		var start = m.local(e), startX = [minX, maxX], startY = [minY, maxY];
+		drag(e, (e) -> {
+			var p = m.local(e);
+			var dt = (p.x - start.x) / (m.w - PADDING * 2) * (startX[1] - startX[0]);
+			var dv = (p.y - start.y) / (m.h - PADDING * 2) * (startY[1] - startY[0]);
+			minX = startX[0] - dt;
+			maxX = startX[1] - dt;
+			minY = startY[0] + dv;
+			maxY = startY[1] + dv;
+			refresh();
+		}, () -> {});
+	}
+
+	inline function toDisplay(v: Float) return CurveDrawing.trackDisplay(track, v);
+	inline function sx(t: Float, w: Float) return PADDING + (t - minX) / (maxX - minX) * (w - PADDING * 2);
+	inline function sy(v: Float, h: Float) return h - PADDING - (v - minY) / (maxY - minY) * (h - PADDING * 2);
+
+	static function gridStep(size: Float) {
+		var i = Math.floor(Math.log(size / MAX_LINES) / Math.log(10)) * 3;
+		var step = 0.;
+		do {
+			step = [1, 2, 5][((i % 3) + 3) % 3] * Math.pow(10, Math.floor(i++ / 3));
+		} while (size / step > MAX_LINES);
+		return step;
+	}
+
+	/** `v` without the float noise of the grid steps (0.30000000000000004) **/
+	static function gridLabel(v: Float) return Std.string(Math.round(v * 1e6) / 1e6);
+
+
+
+	function mapping() {
+		var rect = svg.getBoundingClientRect();
+		var w = rect.width, h = rect.height;
+		var r = CurveDrawing.getDisplayRanges(track)[0];
+		var scale = r.to - r.from;
+		var display =(y: Float) -> minY + (h - PADDING - y) / (h - PADDING * 2) * (maxY - minY);
+		return {
+			rect: rect,
+			w: w,
+			h: h,
+			/** Keys can only move in time when the range is empty **/
+			flat: Math.abs(scale) <= 1e-9,
+			local: (e: js.html.MouseEvent) -> { x: e.clientX - rect.left, y: e.clientY - rect.top },
+			time: (x: Float) -> minX + (x - PADDING) / (w - PADDING * 2) * (maxX - minX),
+			display: display,
+			value: (y: Float) -> (display(y) - r.from) / scale,
+		};
+	}
+
+	function keyAt(x: Float, y: Float, w: Float, h: Float, ?t: CurveTrack) {
+		t ??= track;
+		return Lambda.find(t.data.keys, k -> near(x, y, sx(k.time, w), sy(CurveDrawing.trackDisplay(t, k.value), h), KEY_SIZE));
+	}
+
+	function otherTrackAt(x: Float, y: Float, w: Float, h: Float) {
+		return Lambda.find(editor.tracks, t -> t != track && t.data != null && keyAt(x, y, w, h, t) != null);
+	}
+
+	function handleAt(x: Float, y: Float, w: Float, h: Float) {
+		if (selection.length != 1)
+			return null;
+		var k = selection[0];
+		return Lambda.find(handles(k), hd -> near(x, y, sx(k.time + hd.h.dt, w), sy(toDisplay(k.value + hd.h.dv), h), HANDLE_SIZE + 2));
+	}
+
+	function selectionBox(w: Float, h: Float) {
+		if (selection.length < 2)
+			return null;
+		var x0 = Math.POSITIVE_INFINITY, y0 = Math.POSITIVE_INFINITY, x1 = Math.NEGATIVE_INFINITY, y1 = Math.NEGATIVE_INFINITY;
+		for (k in selection) {
+			var x = sx(k.time, w), y = sy(toDisplay(k.value), h);
+			x0 = Math.min(x0, x);
+			y0 = Math.min(y0, y);
+			x1 = Math.max(x1, x);
+			y1 = Math.max(y1, y);
+		}
+		return { x0: x0 - BOX_MARGIN, y0: y0 - BOX_MARGIN, x1: x1 + BOX_MARGIN, y1: y1 + BOX_MARGIN };
+	}
+
+	/**
+		The part of the box of the selected keys at (x, y): its inside (0, 0), an edge (`dx`: -1 left, 1 right, `dy`: -1 top,
+		1 bottom, 0 for the other axis) or a corner. Null out of it
+	**/
+	function boxPartAt(x: Float, y: Float, w: Float, h: Float) : { dx: Int, dy: Int } {
+		var b = selectionBox(w, h);
+		if (b == null || x < b.x0 - BOX_EDGE || x > b.x1 + BOX_EDGE || y < b.y0 - BOX_EDGE || y > b.y1 + BOX_EDGE)
+			return null;
+		inline function side(v: Float, v0: Float, v1: Float) return Math.abs(v - v0) <= BOX_EDGE ? -1 : Math.abs(v - v1) <= BOX_EDGE ? 1 : 0;
+		return { dx: side(x, b.x0, b.x1), dy: side(y, b.y0, b.y1) };
+	}
+
 	function selectBox(e: js.html.PointerEvent, start: { x: Float, y: Float }, add: Bool) {
 		var m = mapping();
 		var initial = add ? selection.copy() : [];
@@ -444,7 +399,7 @@ class CurveEditor extends SVG {
 			box.y1 = p.y;
 			var x0 = Math.min(box.x0, box.x1), x1 = Math.max(box.x0, box.x1), y0 = Math.min(box.y0, box.y1), y1 = Math.max(box.y0, box.y1);
 			selection = initial.copy();
-			for (k in track.curve.keys) {
+			for (k in track.data.keys) {
 				var x = sx(k.time, m.w), y = sy(toDisplay(k.value), m.h);
 				if (x >= x0 && x <= x1 && y >= y0 && y <= y1 && !selection.contains(k))
 					selection.push(k);
@@ -463,8 +418,8 @@ class CurveEditor extends SVG {
 		var t = m.time(x);
 		if (t < 0 || t > editor.maxTime)
 			return null;
-		var c = track.curve.getVal(t);
-		var rs = displayRanges(track);
+		var c = track.data.getVal(t);
+		var rs = CurveDrawing.getDisplayRanges(track);
 		for (edge in [1, -1]) {
 			var r = rs[edge == 1 ? 2 : 1];
 			if (Math.abs(sy(hxd.Math.lerp(r.from, r.to, c), m.h) - y) <= KEY_SIZE)
@@ -482,7 +437,7 @@ class CurveEditor extends SVG {
 	function scaleBand(e: js.html.PointerEvent, edge: Int) {
 		var m = mapping();
 		var t = m.time(m.local(e).x);
-		var c = track.curve.getVal(t);
+		var c = track.data.getVal(t);
 		var birth = t < 0.5;
 		var bounds = [for (r in track.ranges) birth ? r.from : r.to];
 		var other = [for (r in track.ranges) birth ? r.to : r.from];
@@ -509,7 +464,7 @@ class CurveEditor extends SVG {
 		value of the key would change (the band is `lerp(from, to, key)` wide)
 	**/
 	function endBounds(k: hrt.impl.Curve.CurveKey) : Array<TrackBound> {
-		var keys = track.curve.keys;
+		var keys = track.data.keys;
 		if (track.ranges.length != 2 || selection.length != 1)
 			return null;
 		if (k == keys[0] && k.value == 0)
@@ -538,8 +493,8 @@ class CurveEditor extends SVG {
 			return;
 		}
 		var m = mapping();
-		var curve = track.curve;
-		var r = displayRanges(track)[0];
+		var curve = track.data;
+		var r = CurveDrawing.getDisplayRanges(track)[0];
 		var keys = selection.copy();
 		var start = [for (k in keys) { time: k.time, value: k.value }];
 		var grabbedStart = start[keys.indexOf(grabbed)];
@@ -573,7 +528,7 @@ class CurveEditor extends SVG {
 
 	function scaleKeys(e: js.html.PointerEvent, part: { dx: Int, dy: Int }) {
 		var m = mapping();
-		var curve = track.curve;
+		var curve = track.data;
 		var keys = selection.copy();
 		var start = [for (k in keys) {
 			time: k.time,
@@ -638,29 +593,8 @@ class CurveEditor extends SVG {
 		}, () -> track.edit(null, false));
 	}
 
-	function onContextMenu(e: js.html.MouseEvent) {
-		if (editor.isDisabled())
-			return;
-		var curve = track.curve;
-		var m = mapping();
-		var p = m.local(e);
-		var key = keyAt(p.x, p.y, m.w, m.h);
-		if (key != null) {
-			if (!selection.contains(key))
-				selection = [key];
-			refresh();
-			keyMenu(e, key);
-			return;
-		}
-		menu(e, [{ label: "Add key", keys: "Ctrl + click", click: () -> {
-			var t = hxd.Math.clamp(m.time(p.x), 0, editor.maxTime);
-			track.edit(() -> {
-				var k = curve.addKey(t, m.flat ? curve.getVal(t) : m.value(p.y), curve.keyMode);
-				track.fixKey(k);
-				selection = [k];
-			}, false);
-		} }]);
-	}
+
+
 
 	/** Drags `handle` of `k`, the other one following it in the Aligned mode, opposite and of the same length on screen **/
 	function dragHandle(e: js.html.PointerEvent, k: hrt.impl.Curve.CurveKey, handle: hrt.impl.Curve.CurveHandle, next: Bool) {
@@ -701,7 +635,7 @@ class CurveEditor extends SVG {
 	}
 
 	function keyMenu(e: js.html.MouseEvent, k: hrt.impl.Curve.CurveKey) {
-		var curve = track.curve;
+		var curve = track.data;
 		var keys = selection.copy();
 		var items : Array<hrt.ui.HuiMenu.MenuItem> = [for (mode in [CurveKeyMode.Aligned, CurveKeyMode.Free, CurveKeyMode.Linear, CurveKeyMode.Constant]) {
 			label: Std.string(["Aligned", "Free", "Linear", "Constant"][(cast mode : Int)]),
@@ -729,7 +663,7 @@ class CurveEditor extends SVG {
 	}
 
 	function editKey(k: hrt.impl.Curve.CurveKey, x: Float, y: Float) {
-		var curve = track.curve;
+		var curve = track.data;
 		var parent = svg.parentElement;
 		var popup = new hide.comp.Popup(new hide.Element(parent), false);
 		var content = new hide.Element('<div class="keyPopup">
@@ -741,7 +675,7 @@ class CurveEditor extends SVG {
 		popup.offsetX = x + 8 - rect.left;
 		popup.offsetY = y - 20 - rect.top;
 		popup.onClose = () -> popup.element.remove();
-		var r = displayRanges(track)[0];
+		var r = CurveDrawing.getDisplayRanges(track)[0];
 		var t = content.find(".t"), v = content.find(".v");
 		t.val(hxd.Math.fmt(k.time));
 		v.val(hxd.Math.fmt(toDisplay(k.value)));

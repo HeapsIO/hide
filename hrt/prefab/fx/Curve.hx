@@ -19,7 +19,11 @@ enum abstract CurveBlendMode(Int) {
 
 @:prefabIcon(HuiRes.ui.icons.prefab.curve)
 class Curve extends Prefab {
-	public var data = new hrt.impl.Curve();
+	static var CHANNELS = ["position", "rotation", "scale", "color", "visibility", "localposition", "localrotation"];
+
+	public var datas : Array<hrt.impl.Curve>;
+	public var data(get, never) : hrt.impl.Curve;
+	function get_data() : hrt.impl.Curve { return datas[0]; }
 
 	public var keyMode(get, set) : CurveKeyMode;
 	function get_keyMode() return data.keyMode;
@@ -50,9 +54,6 @@ class Curve extends Prefab {
 	@:s public var blendParam : String = null;
 	@:s public var remapPath : String = null;
 
-	@:s public var offset : Float = 0.0;
-	@:s public var scale : Float = 1.0;
-
 	public var maxTime : Float = 5000.;
 	public var minValue : Float = 0.;
 	public var maxValue : Float = 0.;
@@ -66,6 +67,7 @@ class Curve extends Prefab {
 
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
+		datas = [new hrt.impl.Curve()];
 	}
 
 	public override function load(o:Dynamic) {
@@ -73,7 +75,16 @@ class Curve extends Prefab {
 			o.blendMode = Std.parseInt(o.blendMode);
 		}
 		super.load(o);
-		@:privateAccess data.copyFromDynamic(o);
+		if (o.datas != null) {
+			datas = [];
+			for (d in (o.datas : Array<Dynamic>)) {
+				var c = new hrt.impl.Curve();
+				@:privateAccess c.copyFromDynamic(d);
+				datas.push(c);
+			}
+		}
+		else
+			@:privateAccess data.copyFromDynamic(o);
 		if( keys.length == 0 ) {
 			addKey(0.0, 0.0);
 			addKey(1.0, 1.0);
@@ -87,7 +98,8 @@ class Curve extends Prefab {
 		}
 		#else
 		if (blendMode == None)
-			data.bakeValues();
+			for (d in datas)
+				d.bakeValues();
 		#end
 	}
 
@@ -179,8 +191,7 @@ class Curve extends Prefab {
 				var ref = getRef();
 				switch(ref?.makeVal()) {
 					case null: VConst(0.0);
-					case VConst(v): VConst(v * scale + offset);
-					case v = VCurve(_) | VParamCurve(_): scale == 1 && offset == 0 ? v : fail("a scaled reference to a curve");
+					case v = VConst(_) | VCurve(_) | VParamCurve(_): v;
 					case v: fail("a reference to " + v);
 				}
 			default:
@@ -252,13 +263,21 @@ class Curve extends Prefab {
 
 	override function save() {
 		var o = super.save();
-		@:privateAccess data.copyToDynamic(o);
+		if (datas.length == 1)
+			@:privateAccess data.copyToDynamic(o);
+		else
+			o.datas = [for (d in datas) @:privateAccess d.copyToDynamic(null)];
 		return o;
 	}
 
 	override function copy(o:Prefab) {
 		super.copy(o);
-		@:privateAccess data.copyFromOther((cast o : Curve).data);
+		datas = [];
+		for (d in (cast o : Curve).datas) {
+			var c = new hrt.impl.Curve();
+			@:privateAccess c.copyFromOther(d);
+			datas.push(c);
+		}
 	}
 
 	override function makeInstance() {
@@ -296,7 +315,10 @@ class Curve extends Prefab {
 
 		if (curveEditor != null) {
 			curveEditor.maxTime = Math.POSITIVE_INFINITY;
-			curveEditor.addTrack(data);
+			for (d in datas)
+				curveEditor.addTrack(d);
+			if (datas.length == 2)
+				curveEditor.addBand(curveEditor.tracks[0], curveEditor.tracks[1]);
 		}
 
 		if (blendModeSelect != null)
@@ -494,8 +516,6 @@ class Curve extends Prefab {
 	static inline function findSuffix(curves: Array<Curve>, suffix: String) {
 		return curves.find(c -> StringTools.endsWith(c.name.toLowerCase(), suffix));
 	}
-
-	static var CHANNELS = ["position", "rotation", "scale", "color", "visibility", "localposition", "localrotation"];
 
 	static function isChannel(name: String) {
 		return name != null && CHANNELS.contains(name.split(":")[0].toLowerCase());

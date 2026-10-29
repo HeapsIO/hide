@@ -13,7 +13,7 @@ enum ParamMode {
 	Range( min : Float, max : Float );
 	Curve( curve : String );
 	RandomCurve( curve : String, fromMin : Float, fromMax : Float, toMin : Float, toMax : Float );
-	CurveRange( a : String, b : String );
+	CurveRange( curve : String );
 }
 
 typedef ParamVec2 = { ?x : ParamMode, ?y : ParamMode };
@@ -104,7 +104,7 @@ class EmitterParam {
 		case "Range": Range(num(v.min, 0), num(v.max, 0));
 		case "Curve": Curve(v.curve);
 		case "RandomCurve": RandomCurve(v.curve, num(from?.min, 0), num(from?.max, 0), num(to?.min, 1), num(to?.max, 1));
-		case "CurveRange": CurveRange(v.a, v.b);
+		case "CurveRange": CurveRange(v.curve);
 		default: null;
 		}
 	}
@@ -120,7 +120,7 @@ class EmitterParam {
 			if( f0 != 0 || f1 != 0 ) o.from = { min: f0, max: f1 };
 			if( t0 != 1 || t1 != 1 ) o.to = { min: t0, max: t1 };
 			o;
-		case CurveRange(a, b): { mode: "CurveRange", a: a, b: b };
+		case CurveRange(s): { mode: "CurveRange", curve: s };
 		}
 	}
 
@@ -213,12 +213,14 @@ class ParamBuilder {
 			case VConst(k): VRandom(rid, at(f0, t0, k), at(f1, t1, k));
 			default: VRandom(rid, t0, t1);
 			}
-		case CurveRange(a, b):
-			var va = curve(owner, a, def), vb = curve(owner, b, def);
-			switch( [va, vb] ) {
-			case [VCurve(ca), VCurve(cb)]: VCurveRange(randomSlots++, ca, cb);
-			default: throw owner.getAbsPath(true) + ': a Curve Range needs two plain curves, not $va and $vb';
-			}
+		case CurveRange(s):
+			var c = EmitterParam.resolveCurve(owner, s);
+			if( c == null )
+				Evaluator.vVal(def);
+			else if( !c.isPlain() || c.datas.length != 2 )
+				throw owner.getAbsPath(true) + ': a Curve Range needs a plain curve with two datas';
+			else
+				VCurveRange(randomSlots++, c.datas[0], c.datas[1]);
 		case null, _: fixedValue(owner, m, def);
 		}
 	}

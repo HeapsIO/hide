@@ -4,7 +4,7 @@ package hide.kit;
 
 import hrt.impl.Curve.CurveKeyMode;
 #if js
-import hide.comp.CurveEditor;
+import hide.comp.curveeditor.CurveEditor;
 
 typedef CurveWindow = {
 	var sub : hide.comp.SubWindow;
@@ -24,10 +24,9 @@ typedef TrackRange = {
 	to : TrackBound
 };
 
-typedef CurveSelect = {
-	entries : Array<hide.kit.Select.SelectEntry>,
-	value : String,
-	set : String -> Void
+typedef CurveBand = {
+	a : CurveTrack,
+	b : CurveTrack
 };
 
 typedef CurvePreset = {
@@ -41,6 +40,9 @@ class Curve extends Element {
 	public var maxTime = 1.;
 	public var label : String;
 	public var tracks : Array<CurveTrack> = [];
+	public var bands : Array<CurveBand> = [];
+	public var curvePath : String;
+	public var curveChoices : Array<Select.SelectEntry>;
 
 	public static var PRESETS : Array<CurvePreset> = [
 		{ name: "Constant", keys: [{ t: 0, v: 1 }, { t: 1, v: 1 }] },
@@ -57,7 +59,7 @@ class Curve extends Element {
 	static inline var WINDOW_BOUNDS_KEY = "curveEditorWindow";
 	static var win : CurveWindow;
 
-	var preview : CurveEditor;
+	var preview : hide.comp.curveeditor.CurveThumbnail;
 	#end
 
 	public function new(parent: Element, id: String, label: String) {
@@ -79,6 +81,10 @@ class Curve extends Element {
 		var t = new CurveTrack(curve, ranges ?? [], this);
 		tracks.push(t);
 		return t;
+	}
+
+	public function addBand(a: CurveTrack, b: CurveTrack) {
+		bands.push({ a: a, b: b });
 	}
 
 	public static function getCurveFromPreset(p: CurvePreset) : hrt.impl.Curve {
@@ -103,7 +109,7 @@ class Curve extends Element {
 	}
 
 	override function copySelf(target: Dynamic) {
-		target.tracks = [for (t in tracks) { curve: t.curve == null ? null : @:privateAccess t.curve.copyToDynamic(null), from: [for (r in t.ranges) r.from.v()], to: [for (r in t.ranges) r.to.v()] }];
+		target.tracks = [for (t in tracks) { curve: t.data == null ? null : @:privateAccess t.data.copyToDynamic(null), from: [for (r in t.ranges) r.from.v()], to: [for (r in t.ranges) r.to.v()] }];
 	}
 
 	override function pasteSelf(data: Dynamic) {
@@ -120,10 +126,10 @@ class Curve extends Element {
 				return src.length == n ? src : [for (_ in 0...n) mid];
 			}
 			t.edit(() -> {
-				if (c.curve != null && t.curve != null) {
+				if (c.curve != null && t.data != null) {
 					var keys = new hrt.impl.Curve();
 					@:privateAccess keys.copyFromDynamic(hrt.prefab.Diff.deepCopy(c.curve));
-					t.curve.keys = keys.keys;
+					t.data.keys = keys.keys;
 				}
 				if (c.from.length > 0 && t.ranges.length > 0) {
 					var from = values(c.from, t.ranges.length), to = values(c.to, t.ranges.length);
@@ -140,12 +146,11 @@ class Curve extends Element {
 	override function makeSelf() {
 		#if js
 		var e = js.Browser.document.createElement("kit-curve-editor");
-		preview = new CurveEditor(this, false);
+		preview = new hide.comp.curveeditor.CurveThumbnail(tracks, bands, maxTime);
 		e.appendChild(preview.svg);
 		e.title = "Edit the curve";
 		e.addEventListener("click", (_) -> if (!isDisabled()) openWindow());
 		setupPropLine(null, cast e, false);
-		new hide.comp.ResizeObserver((_, _) -> preview.refresh()).observe(cast preview.svg);
 		if (win != null && sameAs(win.edited))
 			bindWindow();
 		#else
@@ -181,21 +186,30 @@ class Curve extends Element {
 		// the widgets of the window edit the prefab of the inspector, apart from its tree
 		var fields = new KitRoot(null, null, root.prefab, root.editor);
 		fields.header = false;
+		fields.classList.push("kit-curve-fields-root");
 		win.fields = fields;
 		var view : CurveEditor = null;
+		var reference : Line = null;
+		if (curveChoices != null) {
+			reference = new Line(fields, "reference");
+			reference.full = true;
+			reference.classList.push("kit-curve-reference");
+			new Text(reference, "curveLabel", "Reference");
+			var select = new Select(reference, "curve", curveChoices);
+			select.value = curvePath;
+			select.onValueChange = (_) -> onCurveChange(select.value);
+		}
 		var rows = [];
 		for (i => t in tracks) {
 			var line = new Line(fields, "track" + i);
 			line.full = true;
 			line.classList.push("kit-curve-fields");
+			if (tracks.length > 1)
+				line.classList.push("kit-curve-selectable");
 			rows.push(line);
-			if (t.curveSelect != null) {
-				var select = new Select(line, "curve", t.curveSelect.entries);
-				select.label = "Reference";
-				select.value = t.curveSelect.value;
-				select.onValueChange = (_) -> t.curveSelect.set(select.value);
-			}
-			if (t.curve != null)
+			if (t.name != null)
+				new Text(line, "name", t.name);
+			if (t.data != null)
 				for (f in [{ id: "flipTime", text: "↔", tooltip: "Flip the curve in time", flip: t.flipTime }, { id: "flipValue", text: "↕", tooltip: "Flip the curve in value", flip: t.flipValue }]) {
 					var button = new Button(line, f.id, f.text);
 					button.tooltip = f.tooltip;
@@ -235,6 +249,7 @@ class Curve extends Element {
 		}
 		fields.make();
 		body.appendChild(fields.native.get());
+		reference?.native.get().style.setProperty("grid-row", "span " + tracks.length);
 
 		for (i => row in rows) {
 			if (tracks.length > 1) {
@@ -249,7 +264,7 @@ class Curve extends Element {
 		area.tabIndex = 0;
 		body.appendChild(area);
 		var active = previous == null ? 0 : previous.editor.tracks.indexOf(previous.track);
-		view = new CurveEditor(this, true, active < tracks.length ? active : 0);
+		view = new CurveEditor(this, active < tracks.length ? active : 0);
 		win.content = view;
 		if (previous != null)
 			view.keepView(previous);
@@ -262,14 +277,14 @@ class Curve extends Element {
 			presets.innerHTML = "";
 			for (i => row in rows)
 				row.native.toggleClass("active", tracks.length > 1 && tracks[i] == view.track);
-			if (view.track.curve == null) {
+			if (view.track.data == null) {
 				var hint = doc.createElement("kit-curve-hint");
 				hint.innerText = "A missing curve, or not a plain one: it is not edited here";
 				presets.appendChild(hint);
 				return;
 			}
 			for (p in PRESETS) {
-				var thumb = CurveEditor.thumbnail(getCurveFromPreset(p));
+				var thumb = new hide.comp.curveeditor.CurveThumbnail([new CurveTrack(getCurveFromPreset(p), [], null)], [], 1).svg;
 				thumb.addEventListener("click", (_) -> view.track.applyPreset(p));
 				presets.appendChild(thumb);
 			}
@@ -300,24 +315,26 @@ class Curve extends Element {
 	#end
 
 	public dynamic function onValueChange(temporaryEdit: Bool) : Void {}
+
+	public dynamic function onCurveChange(path: String) : Void {}
 }
 
 @:access(hrt.prefab.Prefab)
 @:access(hide.kit.Element)
 @:access(hrt.prefab.EditContext2)
 class CurveTrack {
-	public var curve : hrt.impl.Curve;
-	public var ranges : Array<TrackRange>;
-	public var curveSelect : CurveSelect;
-
 	public var editor(default, null) : Curve;
+
+	public var name : String;
+	public var data : hrt.impl.Curve;
+	public var ranges : Array<TrackRange>;
 
 	var editStart : Dynamic;
 
-	public function new(curve: hrt.impl.Curve, ranges: Array<TrackRange>, editor: Curve) {
+	public function new(data: hrt.impl.Curve, ranges: Array<TrackRange>, editor: Curve) {
 		this.editor = editor;
 		this.ranges = ranges;
-		this.curve = curve;
+		this.data = data;
 	}
 
 	public function edit(f: () -> Void, temp: Bool) {
@@ -328,8 +345,8 @@ class CurveTrack {
 		function apply(isUndo: Bool) {
 			if (after == null)
 				after = keys();
-			else if (curve != null)
-				@:privateAccess curve.copyFromDynamic(hrt.prefab.Diff.deepCopy(isUndo ? before : after));
+			else if (data != null)
+				@:privateAccess data.copyFromDynamic(hrt.prefab.Diff.deepCopy(isUndo ? before : after));
 			rebuild();
 		}
 
@@ -349,14 +366,14 @@ class CurveTrack {
 	}
 
 	public function applyPreset(p: CurvePreset) {
-		edit(() -> curve.keys = Curve.getCurveFromPreset(p).keys, false);
+		edit(() -> data.keys = Curve.getCurveFromPreset(p).keys, false);
 	}
 
 	public function flipTime() {
 		var bounded = ranges.length > 0;
-		var end = Math.isFinite(editor.maxTime) ? editor.maxTime : curve.keys[curve.keys.length - 1].time;
+		var end = Math.isFinite(editor.maxTime) ? editor.maxTime : data.keys[data.keys.length - 1].time;
 		edit(() -> {
-			for (k in curve.keys) {
+			for (k in data.keys) {
 				k.time = end - k.time;
 				if (bounded)
 					k.value = 1 - k.value;
@@ -370,7 +387,7 @@ class CurveTrack {
 							h.dv = -h.dv;
 					}
 			}
-			curve.keys.reverse();
+			data.keys.reverse();
 			swapBounds();
 		}, false);
 	}
@@ -382,11 +399,11 @@ class CurveTrack {
 		}
 		edit(() -> {
 			var min = Math.POSITIVE_INFINITY, max = Math.NEGATIVE_INFINITY;
-			for (k in curve.keys) {
+			for (k in data.keys) {
 				min = Math.min(min, k.value);
 				max = Math.max(max, k.value);
 			}
-			for (k in curve.keys) {
+			for (k in data.keys) {
 				k.value = min + max - k.value;
 				for (h in [k.prevHandle, k.nextHandle])
 					if (h != null)
@@ -396,8 +413,8 @@ class CurveTrack {
 	}
 
 	public function fixKey(k: hrt.impl.Curve.CurveKey) {
-		var i = curve.keys.indexOf(k);
-		var prev = curve.keys[i - 1], next = curve.keys[i + 1];
+		var i = data.keys.indexOf(k);
+		var prev = data.keys[i - 1], next = data.keys[i + 1];
 		switch (k.mode) {
 			case Aligned, Free:
 				k.prevHandle ??= new hrt.impl.Curve.CurveHandle(prev != null ? (prev.time - k.time) / 3 : -0.1, 0);
@@ -409,20 +426,20 @@ class CurveTrack {
 	}
 
 	public function deleteKeys(keys: Array<hrt.impl.Curve.CurveKey>) {
-		if (keys.length == 0 || curve.keys.length - keys.length < 1)
+		if (keys.length == 0 || data.keys.length - keys.length < 1)
 			return;
-		edit(() -> for (k in keys) curve.keys.remove(k), false);
+		edit(() -> for (k in keys) data.keys.remove(k), false);
 	}
 
 	function keys() : Dynamic {
-		return curve == null ? null : @:privateAccess curve.copyToDynamic(null);
+		return data == null ? null : @:privateAccess data.copyToDynamic(null);
 	}
 
 	function rebuild() {
 		editor.root.editor.rebuildPrefab(@:privateAccess editor.root.prefab);
 		function visit(e: Element) {
 			var p = Std.downcast(e, Curve);
-			if (p != null && Lambda.exists(p.tracks, t -> t.curve == curve))
+			if (p != null && Lambda.exists(p.tracks, t -> t.data == data))
 				p.refresh();
 			for (c in e.children)
 				visit(c);

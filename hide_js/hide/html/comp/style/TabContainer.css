@@ -40,7 +40,7 @@
 .header {
 	display: flex;
 	flex-shrink: 0;
-	height: 28px;
+	height: 24px;
 	background: var(--theme-crust);
 }
 

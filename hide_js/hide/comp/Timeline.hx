@@ -5,7 +5,7 @@ import hrt.prefab.fx.Curve.CurveBlendMode;
 typedef CurveKey = hrt.impl.Curve.CurveKey;
 
 typedef EditedCurve = {
-	var data : hrt.impl.Curve;
+	var data(get, never) : hrt.impl.Curve;
 	var color : Int;
 	var hidden : Bool;
 	var lock : Bool;
