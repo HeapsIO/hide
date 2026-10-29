@@ -33,6 +33,8 @@ class SSRShader extends h3d.shader.ScreenShader {
 		@param var maxRoughness : Float;
 		@param var minCosAngle : Float;
 		@param var rayMarchingResolution : Float;
+		@param var maxSteps : Float;
+		@param var minIntensity : Float;
 
 		@param var frustum : Buffer<Vec4, 6>;
 
@@ -94,7 +96,7 @@ class SSRShader extends h3d.shader.ScreenShader {
 				normal = mix(normal, normalMask.rgb, normalMask.a);
 				intensityFactor = mix(intensityFactor, 1.0, normalMask.a);
 			}
-			if (intensityFactor <= 0)
+			if (intensityFactor * intensity <= minIntensity)
 				discard;
 			if (normal.dot(normal) <= 0)
 				discard;
@@ -121,7 +123,7 @@ class SSRShader extends h3d.shader.ScreenShader {
 
 			var ray = endFrag.xy - startFrag.xy;
 			var rayLength = length(ray);
-			var stepCount = ceil(rayLength * rayMarchingResolution);
+			var stepCount = min(ceil(rayLength * rayMarchingResolution), maxSteps);
 			var increment = ray / stepCount;
 			var frag = startFrag.xy + increment;
 			var uv = frag / texSize;
@@ -183,6 +185,9 @@ class SSR extends RendererFX {
 
 	public static var REFERENCE_WIDTH = 2560;
 	public static var REFERENCE_HEIGHT = 1440;
+	public static var LOW_RES_DEPTH = false;
+	public static var MIN_INTENSITY = 0.;
+	public static var MAX_STEPS = 0;
 
 	public var ssrPass : h3d.pass.ScreenFx<SSRShader>;
 
@@ -242,6 +247,8 @@ class SSR extends RendererFX {
 		if ( !support4K )
 			resRescale = hxd.Math.max(1.0, hxd.Math.max(ssrShader.texSize.x / REFERENCE_WIDTH, ssrShader.texSize.y / REFERENCE_HEIGHT));
 		ssrShader.rayMarchingResolution = hxd.Math.clamp(rayMarchingResolution / resRescale);
+		ssrShader.maxSteps = MAX_STEPS > 0 ? MAX_STEPS : 1e9;
+		ssrShader.minIntensity = MIN_INTENSITY;
 
 		ssrShader.cameraView = r.ctx.camera.mcam;
 		ssrShader.cameraInverseView = r.ctx.camera.getInverseView();
@@ -252,14 +259,24 @@ class SSR extends RendererFX {
 		ssrShader.vignettingRadius = vignettingRadius;
 		ssrShader.vignettingSoftness = vignettingSmoothness;
 
-		ssrShader.depthBuffer = @:privateAccess pbrRenderer.textures.albedo.depthBuffer;
-		var depthBufferBits = switch(ssrShader.depthBuffer.format) {
+		var depth = @:privateAccess pbrRenderer.textures.albedo.depthBuffer;
+		var depthBufferBits = switch(depth.format) {
 		case Depth16: 16;
 		case Depth24, Depth24Stencil8: 24;
 		case Depth32: 32;
 		default: throw "not a depthBuffer";
 		}
 		ssrShader.depthBufferPrecision = 1 << depthBufferBits;
+		if( LOW_RES_DEPTH ) {
+			var lowDepth = r.allocTarget("ssrDepth", false, textureSize / resRescale, R32F);
+			lowDepth.filter = Nearest;
+			var prevFilter = depth.filter;
+			depth.filter = Nearest;
+			h3d.pass.Copy.run(depth, lowDepth);
+			depth.filter = prevFilter;
+			ssrShader.depthBuffer = lowDepth;
+		} else
+			ssrShader.depthBuffer = depth;
 
 		ssrShader.frustum = r.ctx.getCameraFrustumBuffer();
 
