@@ -114,6 +114,16 @@ class Model extends Object3D {
 		}
 	}
 
+	/** True if name is empty or was generated from `src` by the editor (see getDefaultEditorName) **/
+	function isAutoName(src : String) {
+		if( name == "" ) return true;
+		if( src == null ) return false;
+
+		var file = new haxe.io.Path(src).file;
+		var prefix = ~/_+[0-9]+$/.replace(name, "");
+		return name == file || prefix == file.split(" ")[0].split("-")[0];
+	}
+
 	override function edit2(ctx: hrt.prefab.EditContext2) {
 		super.edit2(ctx);
 
@@ -132,11 +142,11 @@ class Model extends Object3D {
 
 		var oldSource = source;
 		fileSource.onValueChange = (_) -> {
-			if( this.name == "" || this.name == new haxe.io.Path(oldSource).file ) {
+			if( isAutoName(oldSource) ) {
 				this.name = new haxe.io.Path(source).file;
-				oldSource = source;
 				ctx.rebuildTree(this);
 			}
+			oldSource = source;
 
 			animation = null;
 			ctx.rebuildPrefab(this);
@@ -260,10 +270,16 @@ class Model extends Object3D {
 			else {
 				var oldS = this.source;
 				var newS = sourceSelect.path;
+				var oldName = this.name;
+				var newName = isAutoName(oldS) ? new haxe.io.Path(newS).file : oldName;
 				function exec(undo : Bool) {
 					var s = undo ? oldS : newS;
 					this.source = s;
 					sourceSelect.path = s;
+					if( oldName != newName ) {
+						this.name = undo ? oldName : newName;
+						@:privateAccess ctx.scene.editor.refreshTree(SceneTree);
+					}
 					ctx.scene.editor.queueRebuild(this);
 				}
 				exec(false);
