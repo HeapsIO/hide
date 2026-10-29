@@ -27,6 +27,7 @@ class FileWatcher {
 	public var rootDir : String;
 	var rootWatcher : js.node.fs.FSWatcher;
 	var rootWatches : Map<String, Watch> = new Map();
+	var rescanPending = false;
 	#end
 
 	public function new() {
@@ -275,14 +276,9 @@ class FileWatcher {
 
 	function onRootEvent( k : String, file : String ) {
 		if( file == null ) {
-			for( w in rootWatches ) {
-				var st = try js.node.Fs.statSync(w.path) catch( e : Dynamic ) null;
-				if( st == null )
-					onWatchEvent(w, "rename");
-				else if( st.mtime.getTime() > w.lastStat.mtime.getTime() || st.ctime.getTime() > w.lastStat.ctime.getTime() ) {
-					if( w.isDir ) w.lastStat = st;
-					onWatchEvent(w, w.isDir ? "rename" : "change");
-				}
+			if( !rescanPending ) {
+				rescanPending = true;
+				haxe.Timer.delay(rescanRoot, 500);
 			}
 			return;
 		}
@@ -293,6 +289,23 @@ class FileWatcher {
 		var dir = rootWatches.get(key.substr(0, key.lastIndexOf("/")));
 		if( dir != null && dir.isDir )
 			onWatchEvent(dir, k);
+	}
+
+	function rescanRoot() {
+		rescanPending = false;
+		if( rootWatcher == null )
+			return;
+		for( w in rootWatches )
+			js.node.Fs.stat(w.path, (err, st) -> {
+				if( !w.rooted )
+					return;
+				if( err != null )
+					onWatchEvent(w, "rename");
+				else if( st.mtime.getTime() > w.lastStat.mtime.getTime() || st.ctime.getTime() > w.lastStat.ctime.getTime() ) {
+					if( w.isDir ) w.lastStat = st;
+					onWatchEvent(w, w.isDir ? "rename" : "change");
+				}
+			});
 	}
 
 	function onWatchEvent( w : Watch, k : String ) {
