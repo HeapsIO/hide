@@ -5,11 +5,8 @@ import hrt.prefab.fx.Curve.CurveBlendMode;
 typedef CurveKey = hrt.impl.Curve.CurveKey;
 
 typedef EditedCurve = {
+	var name : String;
 	var data(get, never) : hrt.impl.Curve;
-	var color : Int;
-	var hidden : Bool;
-	var lock : Bool;
-	var selected : Bool;
 	var maxTime : Float;
 	var minValue : Float;
 	var maxValue : Float;
@@ -384,17 +381,12 @@ class OverviewEditor extends Component implements CurveEditorComponent
 
 			@:privateAccess this.curveEditor.selectedElements = [];
 			for (c in this.curveEditor.curves){
-				c.selected = false;
-
-				if (c.hidden || c.lock || Timeline.blendMode(c) == CurveBlendMode.Blend || Timeline.blendMode(c) == CurveBlendMode.RandomBlend)
+				if (Timeline.blendMode(c) == CurveBlendMode.Blend || Timeline.blendMode(c) == CurveBlendMode.RandomBlend)
 					continue;
 
-				for (key in c.data.keys) {
-					if(key.time >= minT && key.time <= maxT) {
-						c.selected = true;
+				for (key in c.data.keys)
+					if(key.time >= minT && key.time <= maxT)
 						@:privateAccess this.curveEditor.selectedElements.push(key);
-					}
-				}
 			}
 
 			this.curveEditor.refresh();
@@ -476,13 +468,6 @@ class OverviewEditor extends Component implements CurveEditorComponent
 					keyEvent.addClass("selected");
 
 				keyEvent.mousedown(function(e) {
-					if (curve.lock || curve.hidden) return;
-
-					for (c in this.curveEditor.curves)
-						c.selected = false;
-
-					curve.selected = true;
-
 					if(e.which != 1) return;
 
 					e.preventDefault();
@@ -518,21 +503,10 @@ class OverviewEditor extends Component implements CurveEditorComponent
 		}
 
 		for (curve in this.curveEditor.curves){
-			if (curve.hidden)
-				continue;
-
-			var style: Dynamic = { 'fill-opacity' : curve.selected ? 1 : 0.5};
-
-			if (curve.lock || Timeline.blendMode(curve) == CurveBlendMode.Blend)
-				style = { 'fill-opacity' : curve.selected ? 1 : 0.5};
-
-			if (curve.hidden || Timeline.blendMode(curve) == CurveBlendMode.RandomBlend)
-				style = { 'fill-opacity' : 0};
-
 			// We don't want to show keys in overview if the
 			// concerned curve is a blended one
 			if (Timeline.blendMode(curve) != CurveBlendMode.Blend && Timeline.blendMode(curve) != CurveBlendMode.RandomBlend )
-				addCurveKeysToOverview(curve, style);
+				addCurveKeysToOverview(curve, { 'fill-opacity' : 1 });
 		}
 
 		var selectedKeys = @:privateAccess this.curveEditor.selectedElements.filter(item -> item is CurveKey);
@@ -600,10 +574,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 		@:privateAccess this.curveEditor.beforeChange();
 
 		for (c in this.curveEditor.curves)
-			if (c.selected || this.curveEditor.curves.length == 1) {
-				var previousKeyVal = c.data.getVal(time);
-				c.data.addKey(time, previousKeyVal);
-			}
+			c.data.addKey(time, c.data.getVal(time));
 
 		@:privateAccess this.curveEditor.afterChange();
 	}
@@ -630,6 +601,14 @@ class Timeline extends hide.comp.Component {
 
 	public static function blendMode(c: EditedCurve) : CurveBlendMode {
 		return fxCurveOf(c)?.blendMode ?? None;
+	}
+
+	public static function getCurveColor(name: String, index: Int) : Int {
+		var suffixes = [[":x", ":h"], [":y", ":s"], [":z", ":l"], [":w", ":a"]];
+		for (i => s in suffixes)
+			if (StringTools.contains(name, s[0]) || StringTools.contains(name, s[1]))
+				return CURVE_COLORS[i];
+		return CURVE_COLORS[index % CURVE_COLORS.length];
 	}
 
 	static function fxCurveOf(c: EditedCurve) : hrt.prefab.fx.Curve {
@@ -861,14 +840,11 @@ class Timeline extends hide.comp.Component {
 	function addKey(time: Float, ?val: Float) {
 		beforeChange();
 
-		for (c in curves)
-			if (c.selected || curves.length == 1) {
-				if(c.minValue < c.maxValue)
-					val = hxd.Math.clamp(val, c.minValue, c.maxValue);
-				c.selected = true;
-				var key = c.data.addKey(time, val);
-				fixKey(key);
-			}
+		for (c in curves) {
+			var v = c.minValue < c.maxValue && val != null ? hxd.Math.clamp(val, c.minValue, c.maxValue) : val;
+			var key = c.data.addKey(time, v);
+			fixKey(key);
+		}
 
 		afterChange();
 	}
@@ -880,9 +856,6 @@ class Timeline extends hide.comp.Component {
 
 	function fixKey(key : CurveKey) {
 		for (c in curves) {
-			if (!c.selected)
-				continue;
-
 			var index = c.data.keys.indexOf(key);
 
 			// Meaning that this key isn't appartening to this curve
@@ -975,17 +948,12 @@ class Timeline extends hide.comp.Component {
 
 			selectedElements = [];
 			for (c in curves){
-				if (curves.length > 1)
-					c.selected = false;
-
-				if (c.hidden || c.lock || blendMode(c) == CurveBlendMode.Blend ||  blendMode(c) == CurveBlendMode.RandomBlend)
+				if (blendMode(c) == CurveBlendMode.Blend ||  blendMode(c) == CurveBlendMode.RandomBlend)
 					continue;
 
 				for (key in c.data.keys)
-					if(key.time >= minT && key.time <= maxT && key.value >= minV && key.value <= maxV) {
-						c.selected = true;
+					if(key.time >= minT && key.time <= maxT && key.value >= minV && key.value <= maxV)
 						selectedElements.push(key);
-					}
 			}
 
 			onSelectionEnd(minT, minV, maxT, maxV);
@@ -1066,12 +1034,8 @@ class Timeline extends hide.comp.Component {
 
 		// Compute a surrounding box that encapsulate all the visible curves
 		var bounds = new h2d.col.Bounds();
-		for (c in curves) {
-			if (c.hidden)
-				continue;
-
+		for (c in curves)
 			c.data.getBounds(bounds);
-		}
 
 		if(bounds.width <= 0) {
 			bounds.xMin = 0.0;
@@ -1395,21 +1359,11 @@ class Timeline extends hide.comp.Component {
 				var ky = -yScale*(key.value);
 				var keyHandle = addCircle(keyHandles, kx, ky, style);
 
-				if(curve.lock)
-					keyHandle.addClass("no-hover");
-
 				var selected = selectedElements.indexOf(key) >= 0;
 				if(selected)
 					keyHandle.addClass("selected");
 				if(!anim) {
 					keyHandle.mousedown(function(e) {
-						if (curve.lock || curve.hidden) return;
-
-						for (c in curves)
-							c.selected = false;
-
-						curve.selected = true;
-
 						if(e.which != 1) return;
 
 						e.preventDefault();
@@ -1450,12 +1404,6 @@ class Timeline extends hide.comp.Component {
 						refreshGraph();
 					});
 					keyHandle.contextmenu(function(e) {
-						if (curve.lock || curve.hidden) return false;
-
-						for (c in curves)
-							c.selected = false;
-
-						curve.selected = true;
 						var offset = element.offset();
 						var popup = editPopup(curve, key, e.clientY - offset.top - 50, e.clientX - offset.left);
 						e.preventDefault();
@@ -1477,13 +1425,6 @@ class Timeline extends hide.comp.Component {
 					if(anim)
 						return circle;
 					circle.mousedown(function(e) {
-						if (curve.lock || curve.hidden) return;
-
-						for (c in curves)
-							c.selected = false;
-
-						curve.selected = true;
-
 						if(e.which != 1) return;
 						e.preventDefault();
 						e.stopPropagation();
@@ -1525,25 +1466,10 @@ class Timeline extends hide.comp.Component {
 		redrawCurves(lowQuality);
 
 		for (curve in curves) {
-
-			var keyStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5};
-
-			if (curve.lock) {
-				keyStyle = { opacity : curve.selected ? 1 : 0.5, 'cursor':'default'};
-			}
-
-			if (blendMode(curve) == CurveBlendMode.Blend) {
-				keyStyle = { opacity : curve.selected ? 1 : 0.5};
-			}
-
-			if (curve.hidden || blendMode(curve) == CurveBlendMode.RandomBlend) {
-				keyStyle = { opacity : 0};
-			}
-
 			// Blend curve are controlled with parent curve
 			// so we don't want to allow user to use keys on this.s
 			if (blendMode(curve) == CurveBlendMode.None)
-				drawKeys(curve, keyStyle);
+				drawKeys(curve, { opacity : 1 });
 		}
 
 		var selectedKeys = selectedElements.filter(item -> item is CurveKey);
@@ -1730,18 +1656,13 @@ class Timeline extends hide.comp.Component {
 				}
 
 				var blendAreaStyle: Dynamic = { opacity : 0.1 , fill : '#FFFFFF', stroke : '#000000'};
-				if (c1.lock && c2.lock) blendAreaStyle = { opacity : 0.05 , fill : '#FFFFFF', stroke : '#000000'};
-				if (c1.hidden && c2.hidden) blendAreaStyle = { opacity : 0 , fill : '#FFFFFF', stroke : '#000000'};
 
 				svg.polygon(curveGroup, poly, blendAreaStyle).attr("pointer-events","none");
 			}
 		}
 
-		for (curve in curves){
-			if (curve.hidden)
-				continue;
-
-			var colorInt = curve.color ?? hide.comp.Timeline.CURVE_COLORS[0];
+		for (i => curve in curves){
+			var colorInt = getCurveColor(curve.name, i);
 			var fxCurve = fxCurveOf(curve);
 			if (blendMode(curve) == Blend) {
 				var root = fxCurve.getRoot();
@@ -1756,23 +1677,13 @@ class Timeline extends hide.comp.Component {
 				}
 			}
 			var color = '#${StringTools.hex(colorInt)}';
-			var curveStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5, stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px'};
-			var eventStyle: Dynamic = { 'fill-opacity' : curve.selected ? 1 : 0.5};
+			var curveStyle: Dynamic = { opacity : 1, stroke : color, "stroke-width":'1px'};
 
-			if (curve.lock) {
-				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"5, 3"};
-				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
-			}
+			if (blendMode(curve) == CurveBlendMode.Blend)
+				curveStyle = { opacity : 1, stroke : color, "stroke-width":'1px', "stroke-dasharray":"20,10,5,5,5,10"};
 
-			if (blendMode(curve) == CurveBlendMode.Blend) {
-				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"20,10,5,5,5,10"};
-				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
-			}
-
-			if (curve.hidden || blendMode(curve) == CurveBlendMode.RandomBlend) {
+			if (blendMode(curve) == CurveBlendMode.RandomBlend)
 				curveStyle = { opacity : 0};
-				eventStyle = { 'fill-opacity' : 0};
-			}
 
 			drawCurve(curve, curveStyle, true, lowQuality);
 

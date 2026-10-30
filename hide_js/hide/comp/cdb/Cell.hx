@@ -1594,7 +1594,6 @@ class Cell {
 			var curve = new cdb.Types.Curve(cast (value ?? [0.0,0.0,cdb.Types.Curve.HandleData,linear,cdb.Types.Curve.HandleData,cdb.Types.Curve.HandleData, 1.0,1.0,cdb.Types.Curve.HandleData,linear,cdb.Types.Curve.HandleData,cdb.Types.Curve.HandleData]));
 			prefabCurve.initFromCDB(curve);
 
-			prefabCurve.selected = true;
 			curveEditor.editor.curves = [prefabCurve];
 
 

@@ -30,11 +30,6 @@ class Curve extends Prefab {
 	public var minValue : Float = 0.;
 	public var maxValue : Float = 0.;
 
-	public var color : Int;
-	public var hidden : Bool = false;
-	public var lock : Bool = false;
-	public var selected : Bool = false;
-
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 	}

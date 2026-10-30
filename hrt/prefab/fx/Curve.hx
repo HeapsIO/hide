@@ -21,6 +21,10 @@ enum abstract CurveBlendMode(Int) {
 class Curve extends Prefab {
 	static var CHANNELS = ["position", "rotation", "scale", "color", "visibility", "localposition", "localrotation"];
 
+	public var maxTime : Float = 5000.;
+	public var minValue : Float = 0.;
+	public var maxValue : Float = 0.;
+
 	public var datas : Array<hrt.impl.Curve>;
 	public var data(get, never) : hrt.impl.Curve;
 	function get_data() : hrt.impl.Curve { return datas[0]; }
@@ -49,16 +53,6 @@ class Curve extends Prefab {
 	@:s public var blendMode : CurveBlendMode = None;
 	@:s public var blendParam : String = null;
 	@:s public var remapPath : String = null;
-
-	public var maxTime : Float = 5000.;
-	public var minValue : Float = 0.;
-	public var maxValue : Float = 0.;
-
-	public var color : Int;
-	public var hidden : Bool = false;
-	public var lock : Bool = false;
-	public var selected : Bool = false;
-
 	var refCurve : Curve = null;
 
 	public function new(parent, shared: ContextShared) {

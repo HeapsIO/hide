@@ -944,22 +944,6 @@ class FXEditor extends hide.view.FileView {
 				return null;
 			}
 
-			function areAllChildrenLocked(secRoot : PrefabElement) {
-				for (c in secRoot.flatten(Curve))
-					if(!c.lock)
-						return false;
-
-				return true;
-			}
-
-			function areAllChildrenHidden(secRoot : PrefabElement) {
-				for (c in secRoot.flatten(Curve))
-					if(!c.hidden)
-						return false;
-
-				return true;
-			}
-
 			function addVisibilityButtonListener(parentEl: Element, affectedElements : Array<Dynamic>) {
 				var visibilityEl = parentEl.find(".visibility");
 				var saveKey = affectedElements.length == 1 ? affectedElements[0].getAbsPath(true) : parentEl.hasClass("section") ? section.root.getAbsPath(true) : affectedElements[0]?._parent.getAbsPath(true) ?? "null";
@@ -1029,10 +1013,6 @@ class FXEditor extends hide.view.FileView {
 			function addOnSelectListener(parentEl: Element, affectedElements : Array<Dynamic>) {
 				var trackEl = parentEl.find(".track-header");
 				trackEl.click(function(e) {
-
-					for (c in this.curveEditor.curves)
-						c.selected = false;
-
 					for (c in affectedElements)
 						c.selected = true;
 
@@ -1090,12 +1070,9 @@ class FXEditor extends hide.view.FileView {
 
 			var allElements: Array<Dynamic> = [];
 			var curves = section.root.flatten(Curve);
-			for (c in curves)
-				allElements.push(c);
 
 			if (section.root is Curve) {
 				curves.push(cast section.root);
-				allElements.push(cast section.root);
 			}
 
 			var events: Array<IEvent> = [];
@@ -1109,14 +1086,17 @@ class FXEditor extends hide.view.FileView {
 				allElements.push(cast section.root);
 			}
 
+			var areEventsLocked = events.length > 0 && Lambda.foreach(events, e -> e.lock);
+			var areEventsHidden = events.length > 0 && Lambda.foreach(events, e -> e.hidden);
+
 			var sectionEl = new Element('<div class="section" name="${section.root.name}">
 			<div class="tracks-header" style="margin-left: ${depth * 10}px">
 			<div class="track-button fold ico ico-angle-down"></div>
-			<div class="track-button visibility ico ${areAllChildrenHidden(section.root) ? "ico-eye-slash" : "ico-eye"}"></div>
+			<div class="track-button visibility ico ${areEventsHidden ? "ico-eye-slash" : "ico-eye"}"></div>
 			<label class="name">${upperCase(section.root.name)}</label>
 			<label class="abspath">${section.root.getAbsPath(true)}</label>
 			${section.root is Curve ?'': '<div class="track-button align-right-first addtrack ico ico-plus-square"></div>'}
-			<div class="track-button lock align-right-second ico ${areAllChildrenLocked(section.root) ? "ico-lock" : "ico-unlock"}"></div>
+			<div class="track-button lock align-right-second ico ${areEventsLocked ? "ico-lock" : "ico-unlock"}"></div>
 			</div>
 			<div class="tracks"></div>
 			</div>');
@@ -1131,32 +1111,17 @@ class FXEditor extends hide.view.FileView {
 				for (i in 0...section.curves.length) {
 					var c = section.curves[i];
 
-					var curveColor = hide.comp.Timeline.CURVE_COLORS[i];
-					if (StringTools.contains(c.name, ":x") || StringTools.contains(c.name, ":h")) curveColor = hide.comp.Timeline.CURVE_COLORS[0];
-					if (StringTools.contains(c.name, ":y") || StringTools.contains(c.name, ":s")) curveColor = hide.comp.Timeline.CURVE_COLORS[1];
-					if (StringTools.contains(c.name, ":z") || StringTools.contains(c.name, ":l")) curveColor = hide.comp.Timeline.CURVE_COLORS[2];
-					if (StringTools.contains(c.name, ":w") || StringTools.contains(c.name, ":a")) curveColor = hide.comp.Timeline.CURVE_COLORS[3];
-
-					// Assign same color to curve and curve's header
-					c.color = curveColor;
-					var hexColor = '#${StringTools.hex(curveColor)}';
-
-					var colorStyle = c.selected ? "style = color:#d59320" : "";
+					var hexColor = '#${StringTools.hex(hide.comp.Timeline.getCurveColor(c.name, i))}';
 					var trackEl = new Element('<div>
 						<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
 							<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
-							<div class="track-button visibility ico ${c.hidden ? "ico-eye-slash" : "ico-eye"}"></div>
-							<label class="name" ${colorStyle}>${upperCase(c.name)}</label>
-							<div class="track-button lock align-right-second ico ${c.lock ? "ico-lock" : "ico-unlock"}"></div>
+							<label class="name">${upperCase(c.name)}</label>
 						</div>
 						<div class="tracks"></div>
 					</div>');
 
 					sectionEl.append(trackEl);
 
-					addVisibilityButtonListener(trackEl, [ c ]);
-					addLockButtonListener(trackEl, [ c ]);
-					addOnSelectListener(trackEl, [ c ]);
 					addFoldButtonListener(trackEl);
 				}
 
@@ -1194,23 +1159,17 @@ class FXEditor extends hide.view.FileView {
 				// We don't want to show an header for the blending curve,
 				// just for the parent blend curves.
 				if (c.blendMode != CurveBlendMode.Blend && c.blendMode != CurveBlendMode.RandomBlend) {
-					var hexColor = '#${StringTools.hex(c.color)}';
-					var colorStyle = c.selected ? "style = color:#d59320" : "";
+					var hexColor = '#${StringTools.hex(hide.comp.Timeline.getCurveColor(c.name, 0))}';
 					var trackEl = new Element('<div>
 						<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
 							<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
-							<div class="track-button visibility ico ${c.hidden ? "ico-eye-slash" : "ico-eye"}"></div>
-							<label class="name" ${colorStyle}>${upperCase(c.name)}</label>
-							<div class="track-button lock align-right-second ico ${c.lock ? "ico-lock" : "ico-unlock"}"></div>
+							<label class="name">${upperCase(c.name)}</label>
 						</div>
 						<div class="tracks"></div>
 					</div>');
 
 					sectionEl.append(trackEl);
 
-					addVisibilityButtonListener(trackEl, curves);
-					addLockButtonListener(trackEl, curves);
-					addOnSelectListener(trackEl, curves);
 					addFoldButtonListener(trackEl);
 				}
 			}
