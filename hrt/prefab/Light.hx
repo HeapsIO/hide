@@ -405,7 +405,7 @@ class Light extends Object3D {
 					<color field={color}/>
 					<checkbox field={inverseSquareFalloff} onValueChange={refresh} if (kind != Directional)/>
 					<select(unitEntries) field={unit} label="Light Unit" onValueChange={refresh} if (kind == Directional || inverseSquareFalloff)/>
-					<range(0, getUnitMax(validUnit)) field={power} unit={getUnitSymbol(validUnit)} poly={validUnit != Unitless} anim="power"/>
+					<range(0, getUnitMax(validUnit)) field={power} unit={getUnitSymbol(validUnit)} poly={validUnit != Unitless}/>
 					<range(0, 1) field={occlusionFactor}/>
 					<block if (kind == Directional)>
 						<range(0, 1000) field={maxDist}/>
@@ -415,14 +415,14 @@ class Light extends Object3D {
 						<checkbox field={cascade} onValueChange={refresh}/>
 					</block>
 					<block if (kind == Spot)>
-						<range(1, 20) field={range} anim="range"/>
-						<range(1, 90) field={angle} anim="angle"/>
-						<range(1, 90) field={fallOff} anim="fallOff"/>
+						<range(1, 20) field={range}/>
+						<range(1, 90) field={angle}/>
+						<range(1, 90) field={fallOff}/>
 						<file type={"texture"} field={cookiePath} id="cookiePathEl"/>
 					</block>
 					<block if (kind == Point)>
-						<range(0, 5) field={size} anim="size"/>
-						<range(1, 20) field={range} anim="range"/>
+						<range(0, 5) field={size}/>
+						<range(1, 20) field={range}/>
 						<range(0.02, 5) field={zNear}/>
 					</block>
 					<block if (kind == Capsule)>

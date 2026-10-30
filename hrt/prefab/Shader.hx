@@ -336,12 +336,7 @@ class Shader extends Prefab implements hrt.prefab.fx.EmitterParam.ParamModes {
 			<category("Shader") id="shaderCat"/>
 		);
 		if (getParticleEmitter() == null) {
-			var animated = findParent(hrt.prefab.fx.Emitter) == null;
-			for (prop in props) {
-				var slider = Std.downcast(shaderCat.buildProp(prop, this.props), hide.kit.Slider);
-				if (slider != null && animated)
-					slider.anim = prop.name;
-			}
+			shaderCat.buildPropsList(props, this.props);
 			return;
 		}
 

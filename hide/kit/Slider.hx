@@ -52,11 +52,6 @@ class Slider<T:Float> extends Widget<T> {
 	**/
 	public var unit : String = null;
 
-	/**
-		If set, the name of the animation curve that can animate the field (`EditContext2.bindAnimation`)
-	**/
-	public var anim : String = null;
-
 
 	#if js
 	var slider: js.html.InputElement;

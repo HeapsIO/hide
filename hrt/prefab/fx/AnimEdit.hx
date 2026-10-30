@@ -7,17 +7,6 @@ import hrt.prefab.fx.EmitterParam;
 @:access(hrt.prefab.Prefab)
 class AnimEdit {
 
-	public static function getFX(p: Prefab) : { time: Float, evaluator: Evaluator } {
-		if (p.findParent(Prefab, c -> c is BaseFX, true) == null)
-			return null;
-		var root = p.getRoot();
-		var anim3d = Std.downcast(root.to(Object3D)?.local3d, FX.FXAnimation);
-		if (anim3d != null)
-			return { time: anim3d.localTime, evaluator: @:privateAccess anim3d.evaluator };
-		var anim2d = Std.downcast(root.to(Object2D)?.local2d, FX2D.FX2DAnimation);
-		return anim2d == null ? null : { time: anim2d.localTime, evaluator: @:privateAccess anim2d.evaluator };
-	}
-
 	public static function animKeys(owner: Prefab, prop: String) : Array<String> {
 		var emitter : ParamOwner = owner is ParamOwner ? cast owner : null;
 		if (emitter == null)
@@ -64,99 +53,6 @@ class AnimEdit {
 		if (emitter != null || owner is hrt.prefab.rfx.RendererFX || (owner is Light && parts.length == 1))
 			return num(Reflect.field(owner, key));
 		return null;
-	}
-
-	public static function findCurve(owner: Prefab, name: String) : Curve {
-		// a single curve can animate all the components of a vector
-		return hrt.prefab.fx.Curve.getCurve(owner, name, false) ?? (name.indexOf(":") > 0 ? hrt.prefab.fx.Curve.getCurve(owner, name.split(":")[0], false) : null);
-	}
-
-	public static function bind(editor: EditContext2, slider: hide.kit.Slider<Float>, owner: Prefab, name: String) {
-		if (getFX(owner) == null)
-			return;
-		var curve = findCurve(owner, name);
-		function time() return getFX(owner)?.time ?? 0.;
-		var label = slider.label != null && slider.label.length > 0 ? ' (${slider.label})' : "";
-		function menu() : Array<hrt.ui.HuiMenu.MenuItem> {
-			if (curve == null)
-				return [{ label: "Animate" + label, click: () -> animate(editor, owner, name, slider.value, time()) }];
-			var key = keyAt(curve, time());
-			return [
-				key == null
-					? { label: "Insert key" + label, click: () -> setKey(editor, curve, owner, time(), slider.value) }
-					: { label: "Remove key" + label, click: () -> setKey(editor, curve, owner, time(), null), enabled: curve.keys.length > 1 },
-				{ label: "Remove animation" + label, click: () -> removeAnimation(editor, owner, name) },
-			];
-		}
-		if (curve == null) {
-			hide.kit.AnimMarker.addMenu(slider, menu);
-			return;
-		}
-		var marker = new hide.kit.AnimMarker(slider, true, menu);
-		marker.onMarkerClick = () -> {
-			if (keyAt(curve, time()) == null)
-				setKey(editor, curve, owner, time(), slider.value);
-			else if (curve.keys.length > 1)
-				setKey(editor, curve, owner, time(), null);
-		}
-
-		marker.isKeyed = () -> keyAt(curve, time()) != null;
-		// the curve before the temporary edits of the field
-		var pending : Dynamic = null;
-		function value() {
-			var fx = getFX(owner);
-			// a reference curve has no keys of its own
-			return fx == null ? slider.value : fx.evaluator.getFloat(curve.makeVal(), fx.time);
-		}
-		slider.getFieldValue = () -> pending != null ? slider.value : value();
-		slider.onFieldChange = (temp) -> {
-			pending ??= Diff.deepCopy(curve.save());
-			var t = time();
-			var key = keyAt(curve, t);
-			if (key != null)
-				key.value = slider.value;
-			else
-				curve.addKey(t, slider.value);
-			editor.rebuildPrefab(owner);
-			if (temp)
-				return;
-			var before = pending;
-			pending = null;
-			editor.recordPrefabUndo(curve, before, owner);
-		}
-		slider.value = value();
-	}
-
-	public static function animate(editor: EditContext2, owner: Prefab, name: String, value: Float, time: Float) {
-		editor.recordPrefabUndoWithChildren(owner, () -> {
-			var c = new Curve(owner, owner.shared);
-			c.name = name;
-			c.addKey(time, value, Linear);
-		});
-	}
-
-	public static function removeAnimation(editor: EditContext2, owner: Prefab, name: String) {
-		var curve = findCurve(owner, name);
-		if (curve != null)
-			editor.recordPrefabUndoWithChildren(curve.parent, () -> curve.remove());
-	}
-
-	public static function keyAt(curve: Curve, time: Float) {
-		return curve.findKey(time, 0.5 / 60);
-	}
-
-	/** Removes the key when `value` is null **/
-	public static function setKey(editor: EditContext2, curve: Curve, owner: Prefab, time: Float, value: Null<Float>) {
-		var before = Diff.deepCopy(curve.save());
-		var key = keyAt(curve, time);
-		if (value == null)
-			curve.keys.remove(key);
-		else if (key != null)
-			key.value = value;
-		else
-			curve.addKey(time, value);
-		editor.rebuildPrefab(owner);
-		editor.recordPrefabUndo(curve, before, owner);
 	}
 
 	static function span(m: ParamMode, def: Float) : { min: Float, max: Float } {

@@ -163,23 +163,11 @@ class KitRoot #if !macro extends Element #end {
 	}
 
 	public function postEditStep() {
-		if (prefab != null && !isMultiEdit)
-			bindAnimations(this);
 		#if castle
 		if (prefab != null) {
 			new CDB(this, "cdb");
 		}
 		#end
-	}
-
-	function bindAnimations(e: Element) {
-		for (c in e.children.copy()) {
-			var slider = Std.downcast(c, Slider);
-			if (slider?.anim != null)
-				editor.bindAnimation(cast slider, prefab, slider.anim);
-			else
-				bindAnimations(c);
-		}
 	}
 
 	#end
