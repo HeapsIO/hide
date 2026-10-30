@@ -1095,11 +1095,11 @@ class FX extends Object3D implements BaseFX {
 							var to = isUndo ? old : v;
 							p.name = to;
 
-							// rename all curves that used this param as a blendParam
+							// rename all curves driven by this param
 							var curves = flatten(Curve);
 							for (c in curves) {
-								if (c.blendMode == Blend && c.blendParam == from) {
-									c.blendParam = to;
+								if (c.param == from) {
+									c.param = to;
 								}
 							}
 

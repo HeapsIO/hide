@@ -155,7 +155,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			if (curve == null || (curve.blendMode != Blend && curve.blendMode != Reference))
 				return buttons;
 
-			var paramName = curve.blendParam;
+			var paramName = curve.param;
 			var color = 0xFFFFFF;
 			var icon = "ico-random";
 			var missing = false;
@@ -169,7 +169,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 				color = param?.color;
 			}
 			else {
-				var ref = (cast this.parent.data: hrt.prefab.Prefab).locatePrefab(curve.blendParam);
+				var ref = (cast this.parent.data: hrt.prefab.Prefab).locatePrefab(curve.refPath);
 				if (ref == null)
 					missing = true;
 				icon = "ico-link";
@@ -720,7 +720,7 @@ class FXEditor extends hide.view.FileView {
 		if (pname == "speed" && p is hrt.prefab.fx.SubFX)
 			rebuildAnimPanel();
 
-		if (pname == "blendMode" || pname == "remapPath") {
+		if (pname == "blendMode" || pname == "param") {
 			var curve = Std.downcast(p, Curve);
 
 			function removeCurves() {
@@ -766,7 +766,7 @@ class FXEditor extends hide.view.FileView {
 			rebuildAnimPanel();
 		}
 
-		if (pname == "blendParam") {
+		if (pname == "refPath") {
 			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 			rebuildAnimPanel();
 		}

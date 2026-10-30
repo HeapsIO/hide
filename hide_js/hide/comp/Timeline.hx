@@ -1592,24 +1592,16 @@ class Timeline extends hide.comp.Component {
 			var fxCurve = fxCurveOf(curve);
 			var v = fxCurve == null || (bypassRemap && fxCurve.blendMode == CurveBlendMode.None) ? hrt.prefab.fx.Value.VCurve(curve.data) : fxCurve.makeVal();
 			evaluator.parameters.clear();
-			var paramName = fxCurve?.getRemapParameter();
-
 			var fx = Std.downcast((cast curve : hrt.prefab.Prefab).getRoot(false), hrt.prefab.fx.FX);
 
-			if (fxCurve?.blendParam != null) {
+			if (fxCurve?.param != null) {
 				for (param in fx.parameters) {
-					if (param.name == fxCurve.blendParam) {
-						evaluator.parameters.set(fxCurve.blendParam, param.def);
-					}
-				}
-			}
-
-			if (paramName != null) {
-				for (param in fx.parameters) {
-					if (param.name == paramName) {
-						evaluator.parameters.set(paramName, param.def);
-						var color = '#${StringTools.hex(param.color)}';
-						svg.polylineRawArray(curveGroup, [param.def * xScale, (-yOffset) * yScale - height / 2, param.def * xScale, (-yOffset) * yScale + height / 2], {"stroke": color, "stroke-width": "0.5px", "stroke-dasharray":"7, 5" });
+					if (param.name == fxCurve.param) {
+						evaluator.parameters.set(param.name, param.def);
+						if (fxCurve.blendMode == None) {
+							var color = '#${StringTools.hex(param.color)}';
+							svg.polylineRawArray(curveGroup, [param.def * xScale, (-yOffset) * yScale - height / 2, param.def * xScale, (-yOffset) * yScale + height / 2], {"stroke": color, "stroke-width": "0.5px", "stroke-dasharray":"7, 5" });
+						}
 					}
 				}
 			}
@@ -1669,7 +1661,7 @@ class Timeline extends hide.comp.Component {
 				var params = Std.downcast(root, hrt.prefab.fx.FX)?.parameters;
 				if (params != null) {
 					for (p in params) {
-						if (p.name == fxCurve.blendParam) {
+						if (p.name == fxCurve.param) {
 							colorInt = p.color;
 							break;
 						}
@@ -1687,7 +1679,7 @@ class Timeline extends hide.comp.Component {
 
 			drawCurve(curve, curveStyle, true, lowQuality);
 
-			if (fxCurve?.remapPath != null) {
+			if (fxCurve?.blendMode == None && fxCurve.param != null) {
 				drawCurve(curve, {opacity : 0.5, "stroke-width":'1px', "stroke-dasharray":"5, 3", stroke : color}, false, lowQuality);
 			}
 

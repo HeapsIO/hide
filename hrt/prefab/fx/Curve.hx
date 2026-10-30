@@ -51,8 +51,8 @@ class Curve extends Prefab {
 	}
 
 	@:s public var blendMode : CurveBlendMode = None;
-	@:s public var blendParam : String = null;
-	@:s public var remapPath : String = null;
+	@:s public var param : String;
+	@:s public var refPath : String;
 	var refCurve : Curve = null;
 
 	public function new(parent, shared: ContextShared) {
@@ -63,6 +63,14 @@ class Curve extends Prefab {
 	public override function load(o:Dynamic) {
 		if (o.blendMode != null && !Std.isOfType(o.blendMode, Int)) {
 			o.blendMode = Std.parseInt(o.blendMode);
+		}
+		var remap : String = o.remapPath;
+		var mode : CurveBlendMode = o.blendMode ?? None;
+		switch (mode) {
+			case Blend: o.param ??= o.blendParam;
+			case Reference: o.refPath ??= o.blendParam;
+			case None if (remap != null && StringTools.startsWith(remap, "$param.")): o.param ??= remap.substr("$param.".length);
+			default:
 		}
 		super.load(o);
 		if (o.datas != null) {
@@ -131,17 +139,8 @@ class Curve extends Prefab {
 		return vals;
 	}
 
-	public function getRemapParameter() : Null<String> {
-		if (remapPath == null)
-			return null;
-		var param = StringTools.replace(remapPath, "$param.", "");
-		if (param != remapPath)
-			return param;
-		return null;
-	}
-
 	public function isPlain() {
-		return blendMode == None && (remapPath == null || remapPath == "");
+		return blendMode == None && param == null;
 	}
 
 	public function isParticleCurve() {
@@ -155,29 +154,24 @@ class Curve extends Prefab {
 	}
 
 	public function makeVal() : Value {
-		var remap = getRemapParameter();
 		inline function fail(what: String) : Value throw '${getAbsPath(true)}: $what is not supported';
-		if (remap == null && (remapPath ?? "") != "")
-			return fail("a time remap by another curve");
 		return switch(blendMode) {
-			case None, RandomBlend:
-				remap == null ? VCurve(data) : VParamCurve({ c1: data, c2: null, param: remap });
+			case None:
+				param == null ? VCurve(data) : VParamCurve({ c1: data, c2: null, param: param });
+			case RandomBlend:
+				VCurve(data);
 			case Blend:
 				var ca = Std.downcast(this.children[0], Curve);
 				var cb = Std.downcast(this.children[1], Curve);
-				if (remap != null)
-					fail("a remapped blend");
-				else if ((ca != null && !ca.isPlain()) || (cb != null && !cb.isPlain()))
+				if ((ca != null && !ca.isPlain()) || (cb != null && !cb.isPlain()))
 					fail("a blend of curves that are not plain");
 				else if (ca == null && cb == null)
 					VConst(0.0);
-				else if (ca == null || cb == null || blendParam == null)
+				else if (ca == null || cb == null || param == null)
 					VCurve((ca ?? cb).data);
 				else
-					VParamCurve({ c1: ca.data, c2: cb.data, param: blendParam });
+					VParamCurve({ c1: ca.data, c2: cb.data, param: param });
 			case Reference:
-				if (remap != null)
-					return fail("a remapped reference");
 				var ref = getRef();
 				switch(ref?.makeVal()) {
 					case null: VConst(0.0);
@@ -278,7 +272,7 @@ class Curve extends Prefab {
 		if (refCurve != null)
 			return refCurve;
 		var root = getRoot(false);
-		refCurve = root.locatePrefab(blendParam)?.to(Curve);
+		refCurve = root.locatePrefab(refPath)?.to(Curve);
 		if (refCurve == this) refCurve = null;
 		return refCurve;
 	}
@@ -296,8 +290,9 @@ class Curve extends Prefab {
 				<category("Parameters")>
 					<checkbox field={loop}/>
 					<select field={blendMode} id="blend-mode-select" if (!isBlendChild() || this.blendMode != CurveBlendMode.None)/>
-					<select([{label: "None", value: null}]) field={blendParam} id="blend-param-select" if (this.blendMode == CurveBlendMode.Blend || this.blendMode == CurveBlendMode.Reference)/>
-					<select([{label: "None", value: null}]) label="Time Remap" id="remap-select" field={remapPath} if (this.blendMode == CurveBlendMode.None && (!isBlendChild() || this.remapPath != null))/>
+					<select([{label: "None", value: null}]) label="Blend Param" field={param} id="blend-param-select" if (this.blendMode == CurveBlendMode.Blend)/>
+					<select([{label: "None", value: null}]) label="Reference" field={refPath} id="ref-select" if (this.blendMode == CurveBlendMode.Reference)/>
+					<select([{label: "None", value: null}]) label="Time Remap" id="remap-select" field={param} if (this.blendMode == CurveBlendMode.None && (!isBlendChild() || this.param != null))/>
 					<line label="Curve" if (this.blendMode == CurveBlendMode.None)><curve(name) id="curve-editor"/></line>
 				</category>
 			</root>
@@ -317,19 +312,22 @@ class Curve extends Prefab {
 			}
 
 		var root = Std.downcast(getRoot(false), FX);
+		var paramEntries : Array<hide.kit.Select.SelectEntry> = [for(p in root?.parameters ?? []) { label: p.name, value: p.name }];
+		paramEntries.insert(0, { label: "None", value: null });
 		if (blendParamSelect != null) {
-			var entries = blendMode == Blend ? [for(p in root?.parameters ?? []) { label: p.name, value: p.name }]
-				: [for(c in getRoot(false).flatten(Curve)) if (c != this) { label: c.getAbsPath(), value: c.getAbsPath() }];
+			blendParamSelect.setEntries(paramEntries);
+			blendParamSelect.value = param;
+		}
+		if (refSelect != null) {
+			var entries : Array<hide.kit.Select.SelectEntry> = [for(c in getRoot(false).flatten(Curve)) if (c != this) { label: c.getAbsPath(), value: c.getAbsPath() }];
 			entries.insert(0, { label: "None", value: null });
-			blendParamSelect.setEntries(entries);
-			blendParamSelect.value = blendParam;
-			blendParamSelect.onValueChange = (_) -> refCurve = null;
+			refSelect.setEntries(entries);
+			refSelect.value = refPath;
+			refSelect.onValueChange = (_) -> refCurve = null;
 		}
 		if (remapSelect != null) {
-			var entries = [for(p in root?.parameters ?? []) { label: p.name, value: "$param." + p.name }];
-			entries.insert(0, { label: "None", value: null });
-			remapSelect.setEntries(entries);
-			remapSelect.value = remapPath;
+			remapSelect.setEntries(paramEntries);
+			remapSelect.value = param;
 		}
 	}
 
@@ -353,17 +351,17 @@ class Curve extends Prefab {
 				</div>
 				<div id="parameter">
 					<dt>Parameter</dt><dd>
-					<select field="blendParam"></select>
+					<select field="param"></select>
 					</dd>
 				</div>
 				<div id="reference">
 					<dt>Curve Path</dt><dd>
-					<select field="blendParam"></select>
+					<select field="refPath"></select>
 					</dd>
 				</div>
 				<div id="remap">
 					<dt>Time Remap</dt><dd>
-						<select field="remapPath"></select>
+						<select field="param"></select>
 					</dd>
 				</div>
 			</dl>
@@ -377,7 +375,7 @@ class Curve extends Prefab {
 				parameter.hide();
 			}
 			else {
-				var selecta = parameter.find('[field="blendParam"]');
+				var selecta = parameter.find('[field="param"]');
 				parameter.show();
 				selecta.empty();
 				var root = Std.downcast(getRoot(false), FX);
@@ -385,7 +383,7 @@ class Curve extends Prefab {
 					for (p in root.parameters) {
 						selecta.append(new hide.Element('<option value="${p.name}">${p.name}</option>'));
 					}
-					selecta.val(blendParam);
+					selecta.val(param);
 				}
 			}
 
@@ -394,7 +392,7 @@ class Curve extends Prefab {
 				reference.hide();
 			}
 			else {
-				var selecta = reference.find('[field="blendParam"]');
+				var selecta = reference.find('[field="refPath"]');
 				reference.show();
 				selecta.empty();
 				var root = getRoot(false);
@@ -404,25 +402,24 @@ class Curve extends Prefab {
 					var path = p.getAbsPath();
 					selecta.append(new hide.Element('<option value="${path}">${path}</option>'));
 				}
-				selecta.val(blendParam);
+				selecta.val(refPath);
 			}
 
 			props.find('#mode').toggle(!isBlendChild() || blendMode != None);
 			var remap = props.find('#remap');
-			if (blendMode != None || (isBlendChild() && remapPath == null)) {
+			if (blendMode != None || (isBlendChild() && param == null)) {
 				remap.hide();
 			}
 			else {
 				remap.show();
-				var select = remap.find('[field=remapPath]');
+				var select = remap.find('[field=param]');
 				select.empty();
 				select.append(new hide.Element('<option value="">None</option>'));
 				var parameters = Std.downcast(getRoot(false), FX)?.parameters ?? [];
-				for (param in parameters) {
-					var path = "$param." + param.name;
-					select.append(new hide.Element('<option value="${path}">Param: ${param.name}</option>'));
+				for (p in parameters) {
+					select.append(new hide.Element('<option value="${p.name}">Param: ${p.name}</option>'));
 				}
-				select.val(remapPath);
+				select.val(param);
 			}
 		}
 
@@ -431,13 +428,14 @@ class Curve extends Prefab {
 		blendModeSelect.val(Std.string(blendMode));
 		blendModeSelect.change((_) -> {
 			var oldBlend = this.blendMode;
-			var oldParam = this.blendParam;
+			var oldParam = this.param;
+			var oldRef = this.refPath;
 			var newBlend = cast Std.parseInt(blendModeSelect.val());
-			var newParam = null;
 
 			function exec(undo : Bool) {
 				blendMode = undo ? oldBlend : newBlend;
-				blendParam = undo ? oldParam : newParam;
+				param = undo ? oldParam : null;
+				refPath = undo ? oldRef : null;
 				refreshBlend();
 				ctx.onChange(this, "blendMode");
 				ctx.rebuildPrefab(this);
@@ -448,17 +446,17 @@ class Curve extends Prefab {
 		});
 
 		ctx.properties.add(props, this, function(pname) {
-			if (pname == "blendParam") {
+			if (pname == "refPath") {
 				refCurve = null;
 				if (containsRefCycle()) {
 					hide.Ide.inst.quickMessage("Curve reference create a cycle");
-					blendParam = null;
+					refPath = null;
 					refCurve = null;
 				}
 			}
-			if (pname == "remapPath") {
-				if (remapPath == "")
-					remapPath = null;
+			if (pname == "param") {
+				if (param == "")
+					param = null;
 			}
 			refreshBlend();
 			@:privateAccess ctx.scene.editor.refreshTree(SceneTree);
