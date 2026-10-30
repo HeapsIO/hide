@@ -235,7 +235,7 @@ class Curve extends Element {
 					s.tooltip = side + names[j];
 					s.decimals = 3;
 					s.value = b.v();
-					s.getFieldValue = b.v;
+					@:privateAccess s.getFieldValue = b.v;
 					s.onValueChange = (temp) -> {
 						b.set(s.value);
 						limit();

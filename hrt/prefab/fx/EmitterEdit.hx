@@ -158,7 +158,7 @@ class EmitterEdit {
 
 					var s = slider("value" + (isCompact ? compName(i) : ""), isCompact ? compName(i) : "", v);
 					s.unset = !wasSet;
-					s.onFieldChange = (_) -> {
+					@:privateAccess s.onFieldChange = (_) -> {
 						setMode(owner, def, i, Constant(s.value));
 						s.unset = s.value == def.def[i];
 					}
@@ -176,11 +176,11 @@ class EmitterEdit {
 						setMode(owner, def, i, Range(minSlider.value, maxSlider.value));
 					}
 
-					minSlider.onFieldChange = (_) -> {
+					@:privateAccess minSlider.onFieldChange = (_) -> {
 						minSlider.value = Math.min(minSlider.value, maxSlider.value);
 						apply();
 					}
-					maxSlider.onFieldChange = (_) -> {
+					@:privateAccess maxSlider.onFieldChange = (_) -> {
 						maxSlider.value = Math.max(maxSlider.value, minSlider.value);
 						apply();
 					}
@@ -235,7 +235,7 @@ class EmitterEdit {
 						s.min = min;
 						s.max = max;
 						s.showRange = min != null && max != null;
-						s.onFieldChange = (_) -> vec[i] = s.value;
+						@:privateAccess s.onFieldChange = (_) -> vec[i] = s.value;
 						s.onValueChange = (temp) -> changed(p.name, temp);
 					}
 				default:

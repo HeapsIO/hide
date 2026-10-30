@@ -139,14 +139,14 @@ abstract class Widget<ValueType> extends Element {
 	/**
 		Internal version of onValueChange for field editing
 	**/
-	public dynamic function onFieldChange(temporaryEdit: Bool) : Void {
+	dynamic function onFieldChange(temporaryEdit: Bool) : Void {
 
 	}
 
 	/**
 		If set, allows the widget to query the bound value to the current field
 	**/
-	public dynamic function getFieldValue() : ValueType {
+	dynamic function getFieldValue() : ValueType {
 		return value;
 	}
 
