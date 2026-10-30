@@ -305,6 +305,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		if (delayedSelectItem != null) {
 			fancyGallery.selectItem(delayedSelectItem);
+			fancyGallery.queueRefresh(FocusCurrent);
 			delayedSelectItem = null;
 		}
 	}

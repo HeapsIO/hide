@@ -152,6 +152,9 @@ class ShaderNodeHxsl extends ShaderNode {
 				};
 				fn.expr.iter(hasShaderInput);
 
+				if (!needPatching)
+					fn.ref.id = hxsl.Ast.Tools.allocVarId();
+
 				funs.push({
 					fun: fn,
 					needPatching: needPatching,
@@ -177,6 +180,8 @@ class ShaderNodeHxsl extends ShaderNode {
 		function patch(e: TExpr) : TExpr {
 			switch (e.e) {
 				case TVar(v):
+					if (v.type.match(TFun(_)) && !varsRemap.exists(v.id))
+						return e;
 					var replacement = varsOverride.get(v.id);
 					if (replacement != null)
 						return replacement;

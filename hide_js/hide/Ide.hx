@@ -57,6 +57,7 @@ class Ide extends hide.tools.IdeData {
 	public var thumbnailMode : Bool = false;
 
 	var dataTransfer : Map<String, Dynamic> = new Map();
+	var sourceMaps = new Map<String, { sources : Array<String>, lines : Array<Array<Int>> }>();
 
 	var hideRoot : hide.Element;
 	var statusBar : hide.Element;
@@ -447,6 +448,8 @@ class Ide extends hide.tools.IdeData {
 
 		var commitHash = getGitCommitHashAndDate();
 		if (commitHash.length > 0) {
+			if (commitHash == "dev")
+				commitHash = 'dev(${js.node.Path.basename(js.node.Path.dirname(js.Node.__dirname))})';
 			var driver = #if dx12 "dx12" #else "webgl" #end;
 			new Element('<span class="build">hide $driver $commitHash</span>').appendTo(statusBar);
 		}
@@ -740,8 +743,93 @@ class Ide extends hide.tools.IdeData {
 		globalMessage(msg, Error, timeoutSeconds);
 	}
 
+	public function formatStack( stack : String ) {
+		var e = stack;
+		e = ~/\(?chrome-extension:\/\/[a-z0-9\-\.\/]+.js:[0-9]+:[0-9]+\)?/g.replace(e,"");
+		e = ~/(file:\/\/\/[^()\s]+\.js):([0-9]+):([0-9]+)/g.map(e, function(r) {
+			var file = r.matched(1);
+			var map = sourceMaps.get(file);
+			if( map == null ) {
+				map = loadSourceMap(file);
+				sourceMaps.set(file, map);
+			}
+
+			var segs = map.lines[Std.parseInt(r.matched(2)) - 1];
+			var col = Std.parseInt(r.matched(3)) - 1;
+			var i = segs == null ? -1 : segs.length - 3;
+			while( i >= 0 && segs[i] > col )
+				i -= 3;
+			return i < 0 ? r.matched(0) : map.sources[segs[i + 1]] + ":" + (segs[i + 2] + 1);
+		});
+		e = ~/at ([A-Za-z0-9_\.\$]+)/g.map(e,function(r) { var path = r.matched(1); path = path.split("$hx_exports.").pop().split("$hxClasses.").pop(); return path; });
+		return e.split("\t").join("    ");
+	}
+
+	function loadSourceMap( file : String ) {
+		var map : { sources : Array<String>, mappings : String } = try haxe.Json.parse(sys.io.File.getContent(StringTools.urlDecode(file.substr(8)) + ".map")) catch( e : Dynamic ) null;
+		if( map == null )
+			return { sources : [], lines : [] };
+
+		var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+		var vlq = [];
+		for( i in 0...chars.length )
+			vlq[chars.charCodeAt(i)] = i;
+
+		var m = map.mappings;
+		var cur = [];
+		var lines = [cur];
+		var genCol = 0, src = 0, srcLine = 0;
+		var field = 0, value = 0, shift = 0;
+		for( i in 0...m.length ) {
+			var c = StringTools.fastCodeAt(m, i);
+			if( c == ";".code ) {
+				cur = [];
+				lines.push(cur);
+				genCol = 0;
+				field = 0;
+				continue;
+			}
+			if( c == ",".code ) {
+				field = 0;
+				continue;
+			}
+
+			var d = vlq[c];
+			value += (d & 31) << shift;
+			if( (d & 32) != 0 ) {
+				shift += 5;
+				continue;
+			}
+			var v = (value & 1) == 0 ? value >> 1 : -(value >> 1);
+			value = shift = 0;
+			switch( field++ ) {
+			case 0: genCol += v;
+			case 1: src += v;
+			case 2:
+				srcLine += v;
+				cur.push(genCol);
+				cur.push(src);
+				cur.push(srcLine);
+			default:
+			}
+		}
+
+		var classPaths = hide.tools.ClassPaths.get();
+		var sources = [for( s in map.sources ) {
+			var path = StringTools.replace(s, "file:///", "");
+			var lower = path.toLowerCase();
+			for( cp in classPaths )
+				if( StringTools.startsWith(lower, cp) ) {
+					path = path.substr(cp.length);
+					break;
+				}
+			path;
+		}];
+
+		return { sources : sources, lines : lines };
+	}
+
 	function loadProject() {
-		var dir = currentProject;
 		setProgress();
 		hxsl.Cache.clear();
 
@@ -759,96 +847,11 @@ class Ide extends hide.tools.IdeData {
 
 		loadDatabase();
 
+		sourceMaps = new Map();
 		if( currentConfig.get("debug.displayErrors")  ) {
-			// per js file : sources, and for each generated line [genCol, source, sourceLine, ...]
-			var sourceMaps = new Map<String, { sources : Array<String>, lines : Array<Array<Int>> }>();
-
-			function loadSourceMap( file : String ) {
-				var map : { sources : Array<String>, mappings : String } = try haxe.Json.parse(sys.io.File.getContent(StringTools.urlDecode(file.substr(8)) + ".map")) catch( e : Dynamic ) null;
-				if( map == null )
-					return { sources : [], lines : [] };
-
-				var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-				var vlq = [];
-				for( i in 0...chars.length )
-					vlq[chars.charCodeAt(i)] = i;
-
-				var m = map.mappings;
-				var cur = [];
-				var lines = [cur];
-				var genCol = 0, src = 0, srcLine = 0;
-				var field = 0, value = 0, shift = 0;
-				for( i in 0...m.length ) {
-					var c = StringTools.fastCodeAt(m, i);
-					if( c == ";".code ) {
-						cur = [];
-						lines.push(cur);
-						genCol = 0;
-						field = 0;
-						continue;
-					}
-					if( c == ",".code ) {
-						field = 0;
-						continue;
-					}
-
-					var d = vlq[c];
-					value += (d & 31) << shift;
-					if( (d & 32) != 0 ) {
-						shift += 5;
-						continue;
-					}
-					var v = (value & 1) == 0 ? value >> 1 : -(value >> 1);
-					value = shift = 0;
-					switch( field++ ) {
-					case 0: genCol += v;
-					case 1: src += v;
-					case 2:
-						srcLine += v;
-						cur.push(genCol);
-						cur.push(src);
-						cur.push(srcLine);
-					default:
-					}
-				}
-
-				var classPaths = hide.tools.ClassPaths.get();
-				var sources = [for( s in map.sources ) {
-					var path = StringTools.replace(s, "file:///", "");
-					var lower = path.toLowerCase();
-					for( cp in classPaths )
-						if( StringTools.startsWith(lower, cp) ) {
-							path = path.substr(cp.length);
-							break;
-						}
-					path;
-				}];
-
-				return { sources : sources, lines : lines };
-			}
-
 			js.Browser.window.onerror = function(msg, url, line, col, error) {
 				if( error == null ) return true; // some internal chrome errors are only a msg, skip
-				var e = error.stack;
-				e = ~/\(?chrome-extension:\/\/[a-z0-9\-\.\/]+.js:[0-9]+:[0-9]+\)?/g.replace(e,"");
-				e = ~/(file:\/\/\/[^()\s]+\.js):([0-9]+):([0-9]+)/g.map(e, function(r) {
-					var file = r.matched(1);
-					var map = sourceMaps.get(file);
-					if( map == null ) {
-						map = loadSourceMap(file);
-						sourceMaps.set(file, map);
-					}
-
-					var segs = map.lines[Std.parseInt(r.matched(2)) - 1];
-					var col = Std.parseInt(r.matched(3)) - 1;
-					var i = segs == null ? -1 : segs.length - 3;
-					while( i >= 0 && segs[i] > col )
-						i -= 3;
-					return i < 0 ? r.matched(0) : map.sources[segs[i + 1]] + ":" + (segs[i + 2] + 1);
-				});
-				e = ~/at ([A-Za-z0-9_\.\$]+)/g.map(e,function(r) { var path = r.matched(1); path = path.split("$hx_exports.").pop().split("$hxClasses.").pop(); return path; });
-				e = e.split("\t").join("    ");
-				this.error(e);
+				this.error(formatStack(error.stack));
 				return true;
 			};
 		} else
@@ -1790,12 +1793,46 @@ class Ide extends hide.tools.IdeData {
 
 	public function showFileInResources(path: String) {
 		var filebrowsers = getViews(hide.view.FileBrowser);
-		for (filebrowser in filebrowsers) {
+
+		function reveal(filebrowser: hide.view.FileBrowser) {
 			if (@:privateAccess filebrowser.fancyTree == null)
 				filebrowser.onDisplay();
-			filebrowser.activate();
 			filebrowser.reveal(path);
 		}
+
+		function find(visibleOnly: Bool, match: hide.view.FileBrowser.Layout -> Bool) {
+			for (filebrowser in filebrowsers)
+				if ((!visibleOnly || filebrowser.isActive()) && match(filebrowser.state.savedLayout))
+					return filebrowser;
+			return null;
+		}
+
+		// reveal the file in the first Tree mode filebrowser
+		var tree = find(true, (l) -> l == hide.view.FileBrowser.Layout.SingleTree);
+		if (tree != null) {
+			reveal(tree);
+			var gallery = find(false, (l) -> l == hide.view.FileBrowser.Layout.SingleMiniature);
+			if (gallery != null)
+				reveal(gallery);
+			return;
+		}
+
+		// reveal the file in any other visible file browser
+		var split = find(true, (l) -> l != hide.view.FileBrowser.Layout.SingleTree && l != hide.view.FileBrowser.Layout.SingleMiniature);
+		if (split != null) {
+			reveal(split);
+			return;
+		}
+
+		// reveal the file in any other file browser
+		if (filebrowsers.length > 0) {
+			reveal(filebrowsers[0]);
+			filebrowsers[0].activate();
+			return;
+		}
+
+		// Create a new filebrowser
+		open("hide.view.FileBrowser", {savedLayout: hide.view.FileBrowser.Layout.SingleTree}, null, (v) -> reveal(cast v), Left);
 	}
 
 	public function openFile( file : String, ?onCreate, ?onOpen) {

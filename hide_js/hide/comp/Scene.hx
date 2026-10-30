@@ -437,7 +437,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	public dynamic function errorHandler(e:haxe.Exception) : Null<haxe.Exception> {
 		if (!enableNewErrorSystem)
 			return e;
-		setErrorMessage({ title: e.toString() });
+		setErrorMessage({ title: e.message, details: ide.formatStack(cast (e, js.lib.Error).stack) });
 		return null;
 	}
 

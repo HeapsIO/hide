@@ -81,6 +81,8 @@ class Threshold extends h3d.shader.ScreenShader {
 @:access(h3d.scene.Renderer)
 class TemporalBloom extends RendererFX {
 
+	public static var MAX_HEIGHT = 0;
+
 	@:s public var size : Float;
 	@:s public var downScaleCount : Int;
 	@:s public var threshold : Float;
@@ -111,7 +113,16 @@ class TemporalBloom extends RendererFX {
 			r.mark("TBloom");
 			var ctx = r.ctx;
 
-			var source = r.allocTarget("source", false, size, RGBA16F);
+			var baseSize = size;
+			var count = downScaleCount;
+			if( MAX_HEIGHT > 0 ) {
+				while( count > 1 && baseSize * ctx.renderResolutionHeight > MAX_HEIGHT ) {
+					baseSize *= 0.5;
+					count--;
+				}
+			}
+
+			var source = r.allocTarget("source", false, baseSize, RGBA16F);
 			ctx.engine.pushTarget(source);
 			thresholdPass.shader.hdr = ctx.getGlobal("hdrMap");
 			thresholdPass.shader.threshold = threshold;
@@ -123,7 +134,7 @@ class TemporalBloom extends RendererFX {
 					prevCamMat.load(ctx.camera.m);
 				}
 				thresholdPass.shader.USE_TEMPORAL_FILTER = true;
-				prevResult = r.allocTarget("pr", false, size, RGBA16F);
+				prevResult = r.allocTarget("pr", false, baseSize, RGBA16F);
 				if ( !prevResult.flags.has(WasCleared) ) {
 					prevResult.clear(0);
 					prevResult.flags.set(WasCleared);
@@ -143,9 +154,9 @@ class TemporalBloom extends RendererFX {
 				ctx.engine.popTarget();
 			}
 
-			var curSize = size;
+			var curSize = baseSize;
 			var curTarget : h3d.mat.Texture = source;
-			for( i in 0 ... downScaleCount ) {
+			for( i in 0 ... count ) {
 				curSize *= 0.5;
 				var prevTarget = curTarget;
 				curTarget = r.allocTarget("dso_"+i, false, curSize, RGBA16F);
@@ -155,7 +166,7 @@ class TemporalBloom extends RendererFX {
 				downScale.render();
 				ctx.engine.popTarget();
 			}
-			for( i in 0 ... downScaleCount ) {
+			for( i in 0 ... count ) {
 				curSize *= 2.0;
 				var prevTarget = curTarget;
 				curTarget = r.allocTarget("uso_"+i, false, curSize, RGBA16F);

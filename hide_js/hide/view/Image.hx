@@ -143,6 +143,11 @@ class Image extends FileView {
 		}
 
 		var compressionInfo = element.find(".compression-infos");
+		var fileFormat = js.Browser.document.createDivElement();
+		fileFormat.className = "field";
+		fileFormat.innerHTML = '<label>Loaded as :</label><label class="file-format">Unknown</label>';
+		compressionInfo.append(fileFormat);
+
 		var nativeFormat = new Element('<div class="field">
 		<label>Native format :</label>
 		<label class="native-format">Unknown</label>
@@ -681,12 +686,14 @@ class Image extends FileView {
 		uncompTWeight.text('Uncompressed texture weight : ${getTextureMemSize(state.path)} MB');
 
 		nativeFormat.text(getTextureNativeFormat(state.path).getName());
+		setFileFormat(new hxd.res.Image(localEntry).getFormat());
 	}
 
 	public function replaceImage(path : String) {
 		var bytes = sys.io.File.getBytes(path);
 		var res = hxd.res.Any.fromBytes(path, bytes);
 		var t = res.toTexture();
+		setFileFormat(res.toImage().getFormat());
 
 		if (bmp != null) {
 			if (!bmp.tile.isDisposed())
@@ -791,6 +798,10 @@ class Image extends FileView {
 		var t = res.toTexture();
 
 		return t.format;
+	}
+
+	function setFileFormat(format: hxd.res.Image.ImageFormat) {
+		element.get(0).querySelector(".file-format").textContent = format.getName();
 	}
 
 	public function floatToStringPrecision(number:Float, ?precision=2) {

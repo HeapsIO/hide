@@ -1988,6 +1988,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			if (Reflect.hasField(metas,"hideInAddMenu"))
 				continue;
 
+			if (Reflect.hasField(metas, "needsSceneColor")) {
+				var pbr = Std.downcast(graphEditor.previewsScene.s3d.renderer, h3d.scene.pbr.Renderer);
+				if (pbr == null || !pbr.hasSceneColor())
+					continue;
+			}
+
 			var group = metas.group != null ? metas.group[0] : "Other";
 			var name = metas.name != null ? metas.name[0] : "unknown";
 			var description = metas.description != null ? metas.description[0] : "";
