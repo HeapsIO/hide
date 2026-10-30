@@ -95,12 +95,15 @@ class Category extends Widget<Null<Bool>> {
 		#end
 	}
 
-	override function getEditMenuContent(?target: Dynamic) : Array<hrt.ui.HuiMenu.MenuItem> {
+	override function getEditMenuContent(?target: NativeElement) : Array<hrt.ui.HuiMenu.MenuItem> {
 		var content = super.getEditMenuContent(target);
 		content.unshift({isSeparator: true});
 		content.unshift({label: "Collapse", click: collapse});
 		content.unshift({label: "Collapse All", click: root.collapse.bind()});
 		return content;
+	}
+
+	override function getEditMenuItems(out: Array<hrt.ui.HuiMenu.MenuItem>, ?target: NativeElement) {
 	}
 
 	override function getChildDisabled():Bool {

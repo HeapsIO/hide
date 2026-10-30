@@ -273,7 +273,7 @@ class Element {
 		}
 	}
 
-	function collectMenuItems(out: Array<hrt.ui.HuiMenu.MenuItem>, ?target: Dynamic) {
+	function getEditMenuItems(out: Array<hrt.ui.HuiMenu.MenuItem>, ?target: NativeElement) {
 		if (menuItems != null) {
 			var items = menuItems();
 			if (items.length > 0 && out.length > 0 && out[out.length - 1].isSeparator != true && items[0].isSeparator != true)
@@ -281,19 +281,18 @@ class Element {
 			for (item in items)
 				out.push(item);
 		}
-		var from = [for (c in children) if (!(c is Category)) c];
+		var from = children;
 		#if js
 		if (target != null)
 			from = from.filter(c -> c.native != null && c.native.get().contains(target));
 		#end
 		for (c in from)
-			c.collectMenuItems(out, target);
+			c.getEditMenuItems(out, target);
 	}
 
-	function getEditMenuContent(?target: Dynamic) : Array<hrt.ui.HuiMenu.MenuItem> {
+	function getEditMenuContent(?target: NativeElement) : Array<hrt.ui.HuiMenu.MenuItem> {
 		var items = [];
-		if (!(this is Category))
-			collectMenuItems(items, target);
+		getEditMenuItems(items, target);
 		if (items.length > 0)
 			items.push({isSeparator: true});
 		return items.concat([
@@ -328,7 +327,7 @@ class Element {
 			e.preventDefault();
 			e.stopPropagation();
 
-			hide.comp.ContextMenu.createFromEvent(e, getEditMenuContent(e.target));
+			hide.comp.ContextMenu.createFromEvent(e, getEditMenuContent(cast e.target));
 		});
 		#elseif hui
 		var element = Std.downcast(el.get(), hrt.ui.HuiElement);
