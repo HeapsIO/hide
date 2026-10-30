@@ -7,9 +7,6 @@ typedef CurveKey = hrt.impl.Curve.CurveKey;
 typedef EditedCurve = {
 	var name : String;
 	var data(get, never) : hrt.impl.Curve;
-	var maxTime : Float;
-	var minValue : Float;
-	var maxValue : Float;
 }
 
 interface CurveEditorComponent {
@@ -823,12 +820,6 @@ class Timeline extends hide.comp.Component {
 	function set_curves(curves: Array<EditedCurve>) {
 		this.curves = curves;
 
-		var maxLength = 0.0;
-		for (c in curves){
-			if (c.maxTime > maxLength)
-				maxLength = c.maxTime;
-		}
-
 		lastValue = [for (c in curves) snapshot(c)];
 		if (getDisplayState("view") == null) {
 			zoomAll();
@@ -841,8 +832,7 @@ class Timeline extends hide.comp.Component {
 		beforeChange();
 
 		for (c in curves) {
-			var v = c.minValue < c.maxValue && val != null ? hxd.Math.clamp(val, c.minValue, c.maxValue) : val;
-			var key = c.data.addKey(time, v);
+			var key = c.data.addKey(time, val);
 			fixKey(key);
 		}
 
@@ -894,8 +884,6 @@ class Timeline extends hide.comp.Component {
 				key.time = 0;
 			if(maxLength > 0 && key.time > maxLength)
 				key.time = maxLength;
-			if(key.time > c.maxTime)
-				key.time = c.maxTime;
 			if(prev != null && key.time < prev.time)
 				key.time = prev.time + 0.01;
 			if(next != null && key.time > next.time)
@@ -1238,19 +1226,6 @@ class Timeline extends hide.comp.Component {
 		var minX = xt(0) - 1;
 
 		var maxTime = this.duration == 0 ? 5000 : this.duration;
-
-		// the time of the curves when they all have one (the particle life of the particle curves)
-		var curvesMaxTime = 0.0;
-		for (curve in curves) {
-			if (curve.maxTime > 0) {
-				curvesMaxTime = hxd.Math.max(curvesMaxTime, curve.maxTime);
-			} else {
-				curvesMaxTime = 0.0;
-				break;
-			}
-		}
-		if (curvesMaxTime > 0)
-			maxTime = curvesMaxTime;
 
 		var maxX = xt(maxTime);
 		svg.line(overlayGroup, minX, svg.element.height(), minX, 0, { stroke:'#000000', 'stroke-width':'1px' });

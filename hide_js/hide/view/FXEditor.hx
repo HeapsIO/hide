@@ -844,8 +844,6 @@ class FXEditor extends hide.view.FileView {
 
 		for (curve in curves){
 			var dispKey = getPath() + "/" + curve.getAbsPath(true);
-			// a particle curve is over the particle life
-			curve.maxTime = curve.isParticleCurve() ? 1 : data.duration == 0 ? 5000 : data.duration;
 			this.curveEditor.saveDisplayKey = dispKey;
 
 			this.curveEditor.requestXZoom = function(xMin, xMax) {
@@ -859,30 +857,6 @@ class FXEditor extends hide.view.FileView {
 				this.curveEditor.xScale = xScale;
 			}
 
-			if(["visibility", "s", "l", "a"].indexOf(curve.name.split(":").pop()) >= 0) {
-				curve.minValue = 0;
-				curve.maxValue = 1;
-			}
-			if(curve.name.indexOf("Rotation") >= 0 || curve.name.indexOf("Local Rotation") >= 0) {
-				curve.minValue = -360;
-				curve.maxValue = 360;
-			}
-			var shader = curve.parent.to(hrt.prefab.Shader);
-			if(shader != null) {
-				var sh = shader.getShaderDefinition();
-				if(sh != null) {
-					var v = sh.data.vars.find(v -> v.kind == Param && v.name == curve.name);
-					if(v != null && v.qualifiers != null) {
-						for( q in v.qualifiers )
-							switch( q ) {
-							case Range(rmin, rmax):
-								curve.minValue = rmin;
-								curve.maxValue = rmax;
-							default:
-						}
-					}
-				}
-			}
 			this.curveEditor.xOffset = xOffset;
 			this.curveEditor.xScale = xScale;
 

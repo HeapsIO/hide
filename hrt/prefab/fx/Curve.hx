@@ -21,10 +21,6 @@ enum abstract CurveBlendMode(Int) {
 class Curve extends Prefab {
 	static var CHANNELS = ["position", "rotation", "scale", "color", "visibility", "localposition", "localrotation"];
 
-	public var maxTime : Float = 5000.;
-	public var minValue : Float = 0.;
-	public var maxValue : Float = 0.;
-
 	public var datas : Array<hrt.impl.Curve>;
 	public var data(get, never) : hrt.impl.Curve;
 	function get_data() : hrt.impl.Curve { return datas[0]; }
@@ -131,12 +127,7 @@ class Curve extends Prefab {
 	public function sample(numPts: Int) {
 		if (blendMode == Reference)
 			return getRef()?.sample(numPts) ?? [];
-		var vals = data.sample(numPts);
-		for (v in vals) {
-			if (v < minValue) minValue = v;
-			if (v > maxValue) maxValue = v;
-		}
-		return vals;
+		return data.sample(numPts);
 	}
 
 	public function isPlain() {

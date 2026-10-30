@@ -6,7 +6,6 @@ import hide.prefab.HideProps;
 #end
 
 import hrt.impl.Curve.CurveKey;
-import hrt.impl.Curve.CurveKeyMode;
 
 using Lambda;
 
@@ -25,10 +24,6 @@ class Curve extends Prefab {
 
 	public var duration(get, never): Float;
 	function get_duration() return data.duration;
-
-	public var maxTime : Float = 5000.;
-	public var minValue : Float = 0.;
-	public var maxValue : Float = 0.;
 
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
@@ -68,12 +63,7 @@ class Curve extends Prefab {
 	}
 
 	public function sample(numPts: Int) {
-		var vals = data.sample(numPts);
-		for (v in vals) {
-			if (v < minValue) minValue = v;
-			if (v > maxValue) maxValue = v;
-		}
-		return vals;
+		return data.sample(numPts);
 	}
 
 	#if editor
