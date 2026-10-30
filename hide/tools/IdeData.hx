@@ -28,7 +28,11 @@ class IdeData {
 
 	// Editor states is basically editor UI state (camera position, last view opened, etc)
 	public var globalState(default, null) : EditorState;
+	public var globalViewState(default, null) : EditorState;
 	public var projectState(default, null) : EditorState;
+	public var projectViewState(default, null) : EditorState;
+	public var projectFileState(default, null) : EditorState;
+
 
 	public var currentProject(get, never) : String;
 	function get_currentProject() : String return projectOverride ?? globalState.get("currentProject", "");
@@ -92,8 +96,10 @@ class IdeData {
 	}
 
 	function initConfig( cwd : String ) {
-		globalState = new EditorState(defaultConfig ? null : userDataPath + "/editorState.json");
-		projectState = new EditorState();
+		globalState = new EditorState(defaultConfig ? null : userDataPath + "/editorState.json", true);
+		globalViewState = new EditorState();
+		globalViewState.setParent(globalState, "views");
+		projectState = new EditorState(null, true);
 		config = Config.loadForProject(cwd, cwd+"/res");
 		fileWatcher = new hide.tools.FileWatcher();
 	}
@@ -120,7 +126,10 @@ class IdeData {
 		#if js
 		if( isProjectValid() ) fileWatcher.rootDir = resourceDir;
 		#end
-		projectState = isProjectValid() && !defaultConfig ? new EditorState(getProjectDataPath(projectDir) + "/editorState.json") : new EditorState();
+		projectState = isProjectValid() && !defaultConfig ? new EditorState(getProjectDataPath(projectDir) + "/editorState.json", true) : new EditorState(null, true);
+		projectViewState = projectState.getOrInitState("views");
+		projectFileState = projectState.getOrInitState("files");
+
 		config = Config.loadForProject(projectDir, resourceDir);
 		databaseFile = currentConfig.get("cdb.databaseFile") ?? "data.cdb";
 		databaseDiff = currentConfig.get("cdb.databaseDiff");

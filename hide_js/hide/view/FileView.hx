@@ -1,7 +1,7 @@
 package hide.view;
 
 class FileView extends hide.ui.View<{ path : String }> {
-
+	public var fileState : hide.tools.EditorState = new hide.tools.EditorState();
 	public var extension(get,never) : String;
 	public var modified(default, set) : Bool = false;
 	var skipNextChange : Bool;
@@ -12,6 +12,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 	public function new(state) {
 		super(state);
 		if( state.path != null )
+			fileState.initFileView(state.path, Type.getClassName(Type.getClass(this)));
 			watch(state.path, function() {
 				if( skipNextChange ) {
 					skipNextChange = false;

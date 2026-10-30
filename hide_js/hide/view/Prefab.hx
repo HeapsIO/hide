@@ -166,6 +166,7 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 }
 
 @:keep
+@:build(hide.tools.EditorState.build())
 class Prefab extends hide.view.FileView {
 
 	public var sceneEditor : PrefabSceneEditor;
@@ -188,6 +189,9 @@ class Prefab extends hide.view.FileView {
 	var posToolTip : h2d.Text;
 	var matLibPath : String;
 	var renameMatsHistory : Array<Dynamic>;
+
+	@:state(localState) var localTransform : Bool = false;
+	var localTransformToggle: hide.html.comp.Button;
 
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
@@ -509,7 +513,7 @@ class Prefab extends hide.view.FileView {
 				</hide-group>
 
 				<hide-group>
-					<hide-button id="localTransformsToggle" title="Local transforms" oncheck={(_, v) -> sceneEditor.localTransform = v}><span class="ico ico-compass"></span></hide-button>
+					<hide-button id="localTransformsToggle" title="Local transforms" oncheck={(_, v) -> localTransform = v}><span class="ico ico-compass"></span></hide-button>
 					<hide-button id="selfOnlyTransformsToggle" title="Self only transforms" oncheck={(_, v) -> sceneEditor.selfOnlyTransform = v}><span class="ico ico-map-pin"></span></hide-button>
 				</hide-group>
 
@@ -537,7 +541,9 @@ class Prefab extends hide.view.FileView {
 		var speed = new hide.comp.Range(null, new hide.Element(sceneSpeed));
 		speed.onChange = (_) -> scene.speed = speed.value;
 
-		toggles = [snapToGroundToggle, toggleSnap, localTransformsToggle, selfOnlyTransformsToggle, showViewportOverlays];
+		localTransformToggle = localTransformsToggle;
+
+		toggles = [snapToGroundToggle, toggleSnap, selfOnlyTransformsToggle, showViewportOverlays];
 		for (b in toggles) {
 			var onCheck = b.oncheck;
 			b.oncheck = (e, v) -> {
@@ -744,6 +750,11 @@ class Prefab extends hide.view.FileView {
 		}
 		else {
 			posToolTip.visible = false;
+		}
+
+		{
+			sceneEditor.localTransform = localTransform;
+			localTransformToggle.toggleAttribute("checked", localTransform);
 		}
 
 		// if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
