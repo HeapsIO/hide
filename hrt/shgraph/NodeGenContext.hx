@@ -64,6 +64,12 @@ class NodeGenContextSubGraph extends NodeGenContext {
 		}
 	}
 
+	override function addFunction(e: TFunction) : Void {
+		if (parentCtx != null) {
+			parentCtx.addFunction(e);
+		}
+	}
+
 	var parentCtx : NodeGenContext;
 
 	var globalInVars: Map<String, {type: Type, id: Int}> = [];
