@@ -3,8 +3,8 @@ package hrt.prefab.fx;
 import hrt.prefab.fx.Value;
 
 class Evaluator {
+	var randValues : Array<Float>;
 	public var parameters: Map<String, Float> = [];
-	var randValues : Array<Float> = [];
 	var slots = 0;
 
 	public function new() {
