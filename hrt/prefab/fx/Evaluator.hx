@@ -49,8 +49,8 @@ class Evaluator {
 		return s.rid < 0 ? v : hxd.Math.lerp(v, getFast(pidx, s.max, time), getRandom(pidx, s.rid));
 	}
 
-	public inline function getFloat(pidx: Int=0, val: Value, time: Float) : Float {
-		return getFast(pidx, val, time);
+	public inline function getFloat(val: Value, time: Float) : Float {
+		return getFast(0, val, time);
 	}
 
 	// no optional argument, causes boxing on HL

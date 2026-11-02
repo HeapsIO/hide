@@ -89,14 +89,14 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 
 		// ROTATION
 		if (def.rotation != VZero) {
-			var r = evaluator.getFloat(idx, def.rotation, t) * Math.PI / 180.0;
+			var r = evaluator.getFast(idx, def.rotation, t) * Math.PI / 180.0;
 			m.rotate(r);
 		}
 
 		// SCALE
 		evaluator.getVector2(idx, def.stretch, t, tmpVec);
-		tmpVec *= evaluator.getFloat(idx, def.scale, t);
-		tmpVec *= evaluator.getFloat(idx, def.scaleMultiplier, emitter.curTime);
+		tmpVec *= evaluator.getFast(idx, def.scale, t);
+		tmpVec *= evaluator.getFast(idx, def.scaleMultiplier, emitter.curTime);
 		m.scale(tmpVec.x, tmpVec.y);
 	}
 
@@ -192,7 +192,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 
 		// DAMPEN
 		if (def.dampen != VZero) {
-			var dampen = evaluator.getFloat(idx, def.dampen, t);
+			var dampen = evaluator.getFast(idx, def.dampen, t);
 			var scale = Math.exp(dampen* -dt);
 			speed.scale(scale);
 		}
@@ -207,7 +207,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 
 		// MAX VELOCITY
 		if (def.maxVelocity != VZero) {
-			var maxVel = evaluator.getFloat(idx, def.maxVelocity, t);
+			var maxVel = evaluator.getFast(idx, def.maxVelocity, t);
 			var curVelSq = tmpSpeed.lengthSq();
 			if (maxVel * maxVel < curVelSq) {
 				tmpSpeed.normalize();
@@ -218,9 +218,9 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		m.translate(tmpSpeed.x * dt, tmpSpeed.y * dt);
 
 		if (def.orbitSpeed != VZero) {
-			var orbitSpeed = evaluator.getFloat(idx, def.orbitSpeed, t);
+			var orbitSpeed = evaluator.getFast(idx, def.orbitSpeed, t);
 
-			var factorOverTime = evaluator.getFloat(idx, def.orbitSpeedMultiplier, emitter.curTime);
+			var factorOverTime = evaluator.getFast(idx, def.orbitSpeedMultiplier, emitter.curTime);
 			orbitSpeed *= factorOverTime * (Math.PI / 180.0);
 
 			var prevPos = m.getPosition().clone();
@@ -734,12 +734,12 @@ class Emitter2D extends Object2D implements BaseEmitter {
 		graphics.lineStyle(1, 0xFFFFFF, 1);
 		switch(e.emitShape) {
 			case Circle:
-				var radA1 = e.evaluator.getFloat(0, e.emitAngle1, 0) * hxd.Math.PI / 180;
-				var radA2 = e.evaluator.getFloat(0, e.emitAngle2, 0) * hxd.Math.PI / 180;
-				graphics.drawPie(0, 0, e.evaluator.getFloat(0, e.emitRadius, 0), radA1, radA2 - radA1);
+				var radA1 = e.evaluator.getFloat(e.emitAngle1, 0) * hxd.Math.PI / 180;
+				var radA2 = e.evaluator.getFloat(e.emitAngle2, 0) * hxd.Math.PI / 180;
+				graphics.drawPie(0, 0, e.evaluator.getFloat(e.emitRadius, 0), radA1, radA2 - radA1);
 			case Rectangle:
-				var width = e.evaluator.getFloat(0, e.emitWidth, 0);
-				var height = e.evaluator.getFloat(0, e.emitHeight, 0);
+				var width = e.evaluator.getFloat(e.emitWidth, 0);
+				var height = e.evaluator.getFloat(e.emitHeight, 0);
 				graphics.drawRect(-width / 2, -height / 2, width, height);
 		}
 	}
