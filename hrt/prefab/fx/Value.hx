@@ -1,5 +1,6 @@
 package hrt.prefab.fx;
 
+/** Parameters that have a one-shot random at time of emission **/
 @:structInit class SpawnValue {
 	public var rid : Int;
 	public var min : Value;
