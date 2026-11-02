@@ -11,7 +11,7 @@ using Lambda;
 
 @:prefabIcon(HuiRes.ui.icons.prefab.curve)
 class Curve extends Prefab {
-	@:isVar public var data(get, null) = new hrt.impl.Curve();
+	@:isVar public var data(get, null) : hrt.impl.Curve;
 	function get_data() { return data; }
 
 	public var keys(get, set) : Array<CurveKey>;
@@ -27,11 +27,16 @@ class Curve extends Prefab {
 
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
+		initData();
+	}
+
+	function initData() {
+		data = new hrt.impl.Curve();
 	}
 
 	public override function load(o:Dynamic) {
 		super.load(o);
-		@:privateAccess data.copyFromDynamic(o);
+		loadData(o);
 		if( keys.length == 0 ) {
 			addKey(0.0, 0.0);
 			addKey(1.0, 1.0);
@@ -40,6 +45,14 @@ class Curve extends Prefab {
 		#if !editor
 		bakeValues();
 		#end
+	}
+
+	function loadData(o:Dynamic) {
+		@:privateAccess data.copyFromDynamic(o);
+	}
+
+	function saveData(o:Dynamic) {
+		@:privateAccess data.copyToDynamic(o);
 	}
 
 	public function findKey(time: Float, tolerance: Float) {
@@ -276,7 +289,7 @@ class Curve extends Prefab {
 
 	override function save() {
 		var o = super.save();
-		@:privateAccess data.copyToDynamic(o);
+		saveData(o);
 		return o;
 	}
 

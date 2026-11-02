@@ -4,8 +4,6 @@ package hrt.prefab.fx;
 import hide.prefab.EditContext;
 import hide.prefab.HideProps;
 #end
-import hrt.impl.Curve.CurveKey;
-import hrt.impl.Curve.CurveKeyMode;
 import hrt.prefab.fx.Value;
 
 using Lambda;
@@ -18,23 +16,13 @@ enum abstract CurveBlendMode(Int) {
 }
 
 @:prefabIcon(HuiRes.ui.icons.prefab.curve)
-class Curve extends Prefab {
+class Curve extends hrt.prefab.Curve {
 	static var CHANNELS = ["position", "rotation", "scale", "color", "visibility", "localposition", "localrotation"];
 
 	public var datas : Array<hrt.impl.Curve>;
-	public var data(get, never) : hrt.impl.Curve;
-	function get_data() : hrt.impl.Curve { return datas[0]; }
+	override function get_data() : hrt.impl.Curve { return datas[0]; }
 
-	public var keys(get, set) : Array<CurveKey>;
-	function get_keys() return data.keys;
-	function set_keys(v) return data.keys = v;
-
-	public var loop(get, set) : Bool;
-	function get_loop() return data.loop;
-	function set_loop(v) return data.loop = v;
-
-	public var duration(get, never): Float;
-	function get_duration() {
+	override function get_duration() {
 		if (blendMode == Reference)
 			return getRef()?.duration ?? 0.0;
 		if(keys.length == 0) return 0.0;
@@ -51,12 +39,11 @@ class Curve extends Prefab {
 	@:s public var refPath : String;
 	var refCurve : Curve = null;
 
-	public function new(parent, shared: ContextShared) {
-		super(parent, shared);
+	override function initData() {
 		datas = [new hrt.impl.Curve()];
 	}
 
-	public override function load(o:Dynamic) {
+	override function load(o:Dynamic) {
 		if (o.blendMode != null && !Std.isOfType(o.blendMode, Int)) {
 			o.blendMode = Std.parseInt(o.blendMode);
 		}
@@ -69,62 +56,63 @@ class Curve extends Prefab {
 			default:
 		}
 		super.load(o);
-		if (o.datas != null) {
-			datas = [];
-			for (d in (o.datas : Array<Dynamic>)) {
-				var c = new hrt.impl.Curve();
-				@:privateAccess c.copyFromDynamic(d);
-				datas.push(c);
-			}
-		}
-		else
-			@:privateAccess data.copyFromDynamic(o);
-		if( keys.length == 0 ) {
-			addKey(0.0, 0.0);
-			addKey(1.0, 1.0);
-		}
-		name = StringTools.replace(name, ".", ":");
 		#if editor
 		if (Std.downcast(parent, Curve) != null) {
 			if (StringTools.startsWith(name, parent.name)) {
 				name = StringTools.replace(name, parent.name + ":", "");
 			}
 		}
-		#else
-		if (blendMode == None)
-			for (d in datas)
-				d.bakeValues();
 		#end
 	}
 
-	public function findKey(time: Float, tolerance: Float) {
-		return data.findKey(time, tolerance);
+	override function loadData(o:Dynamic) {
+		if (o.datas == null) {
+			super.loadData(o);
+			return;
+		}
+		datas = [];
+		for (d in (o.datas : Array<Dynamic>)) {
+			var c = new hrt.impl.Curve();
+			@:privateAccess c.copyFromDynamic(d);
+			datas.push(c);
+		}
 	}
 
-	public function addKey(time: Float, ?val: Float, ?mode=null) {
-		return data.addKey(time, val, mode);
+	override function saveData(o:Dynamic) {
+		if (datas.length == 1)
+			super.saveData(o);
+		else
+			o.datas = [for (d in datas) @:privateAccess d.copyToDynamic(null)];
 	}
 
-	public function getBounds(bounds: h2d.col.Bounds = null) {
+	#if !editor
+	override function bakeValues() {
+		if (blendMode == None)
+			for (d in datas)
+				d.bakeValues();
+	}
+	#end
+
+	override function getBounds(bounds: h2d.col.Bounds = null) {
 		if (blendMode == Reference)
 			return getRef()?.getBounds(bounds) ?? bounds ?? new h2d.col.Bounds();
 		return data.getBounds(bounds);
 	}
 
-	public function getVal(time: Float) : Float {
+	override function getVal(time: Float) : Float {
 		if (blendMode == Reference) {
 			throw "getVal shoudln't be called on curves with Reference mode";
 		}
 		return data.getVal(time);
 	}
 
-	public function getSum(time: Float) : Float {
+	override function getSum(time: Float) : Float {
 		if (blendMode == Reference)
 			return getRef()?.getSum(time) ?? 0.0;
 		return data.getSum(time);
 	}
 
-	public function sample(numPts: Int) {
+	override function sample(numPts: Int) {
 		if (blendMode == Reference)
 			return getRef()?.sample(numPts) ?? [];
 		return data.sample(numPts);
@@ -144,7 +132,7 @@ class Curve extends Prefab {
 		return !isChannel(rootCurve.name) && !isParamName(emitter, rootCurve.name);
 	}
 
-	public function makeVal() : Value {
+	override function makeVal() : Value {
 		inline function fail(what: String) : Value throw '${getAbsPath(true)}: $what is not supported';
 		return switch(blendMode) {
 			case None:
@@ -236,15 +224,6 @@ class Curve extends Prefab {
 			a != null ? a.makeVal() : VConst(1.0));
 	}
 
-	override function save() {
-		var o = super.save();
-		if (datas.length == 1)
-			@:privateAccess data.copyToDynamic(o);
-		else
-			o.datas = [for (d in datas) @:privateAccess d.copyToDynamic(null)];
-		return o;
-	}
-
 	override function copy(o:Prefab) {
 		super.copy(o);
 		datas = [];
@@ -274,8 +253,7 @@ class Curve extends Prefab {
 	}
 
 	override function edit2(ctx: hrt.prefab.EditContext2) {
-		super.edit2(ctx);
-
+		// not super: replaces the inspector of a plain curve
 		ctx.build(
 			<root>
 				<category("Parameters")>
@@ -324,8 +302,7 @@ class Curve extends Prefab {
 
 	#if editor
 	override function edit( ctx : EditContext ) {
-		super.edit(ctx);
-
+		// not super: replaces the inspector of a plain curve
 		var props = new hide.Element('
 		<div class="group" name="Parameters">
 			<dl>

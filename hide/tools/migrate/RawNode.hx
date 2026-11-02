@@ -25,7 +25,7 @@ class RawNode {
 		n.origin = origin;
 		n.type = get(data, "type");
 		n.cls = classOf(n.type);
-		n.isCurve = n.cls != null && (hrt.prefab.Prefab.isOfType(n.cls, hrt.prefab.Curve) || hrt.prefab.Prefab.isOfType(n.cls, hrt.prefab.fx.Curve));
+		n.isCurve = n.cls != null && hrt.prefab.Prefab.isOfType(n.cls, hrt.prefab.Curve);
 		n.name = loadedName(n);
 		var children : Array<Dynamic> = get(data, "children");
 		if( children != null )
