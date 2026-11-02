@@ -442,10 +442,10 @@ class Curve extends Prefab {
 				<category("Parameters")>
 					<checkbox field={loop}/>
 					<select field={blendMode} id="blend-mode-select"/>
-					<select([{label: "None", value: null}]) field={blendParam} if (this.blendMode == CurveBlendMode.Blend || this.blendMode == CurveBlendMode.Reference)/>
+					<select([{label: "None", value: null}]) id="blend-param-select" field={blendParam} if (this.blendMode == CurveBlendMode.Blend || this.blendMode == CurveBlendMode.Reference)/>
 					<range(0., 1.) field={offset} if (this.blendMode == CurveBlendMode.Reference)/>
 					<range(0., 1.) field={scale} if (this.blendMode == CurveBlendMode.Reference)/>
-					<select([{label: "None", value: null}]) label="Time Remap" id="blend-param-select" field={remapPath}/>
+					<select([{label: "None", value: null}]) label="Time Remap" id="time-remap-select" field={remapPath}/>
 					<line label="Curve"><curve(this) id="curve-editor"/></line>
 				</category>
 			</root>
@@ -455,13 +455,24 @@ class Curve extends Prefab {
 			ctx.rebuildInspector();
 		}
 
-		var root = Std.downcast(getRoot(false), hrt.prefab.fx.FX);
-		if (root != null && blendParamSelect != null) {
-			var entries = [for(p in root.parameters) { label: p.name, value: p.name }];
-			entries.insert(0, { label: "None", value: null });
-			blendParamSelect.setEntries(entries);
+		var root = getRoot(false);
+		var params = [for (p in Std.downcast(root, hrt.prefab.fx.FX)?.parameters ?? []) p.name];
+		var otherCurves = [for (c in root.flatten(Curve)) if (c != this) c.getAbsPath()];
+		if (blendParamSelect != null) {
+			var blendEntries : Array<hide.kit.Select.SelectEntry> = [{ label: "None", value: null }];
+			for (n in (blendMode == Reference ? otherCurves : params))
+				blendEntries.push({ label: n, value: n });
+			blendParamSelect.setEntries(blendEntries);
 			blendParamSelect.value = blendParam;
 		}
+
+		var remapEntries : Array<hide.kit.Select.SelectEntry> = [{ label: "None", value: null }];
+		for (p in params)
+			remapEntries.push({ label: 'Param: $p', value: "$param." + p });
+		for (c in otherCurves)
+			remapEntries.push({ label: 'Curve: $c', value: c });
+		timeRemapSelect.setEntries(remapEntries);
+		timeRemapSelect.value = remapPath;
 	}
 
 	#if editor
