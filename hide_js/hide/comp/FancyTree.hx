@@ -371,6 +371,10 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	}
 
 	public function rebuildTree() {
+		// itemMap holds the open state not saved yet
+		if (currentRefreshFlags.has(SaveOpen))
+			saveOpenState();
+
 		itemMap.clear();
 		rootData = generateChildren(null);
 		recLoadChildren(rootData);
@@ -628,18 +632,21 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 	var lastHeight = null;
 
+	function saveOpenState() {
+		var openState = {};
+		for (item in itemMap) {
+			if (item.open) {
+				Reflect.setField(openState, item.uniqueName, true);
+			}
+		}
+		state.set("openState", openState);
+		currentRefreshFlags.unset(SaveOpen);
+	}
+
 	// Never call this function directly, instead call queueRefresh();
 	function onRefreshInternal() {
-		if (currentRefreshFlags.has(SaveOpen)) {
-			var openState = {};
-			for (item in itemMap) {
-				if (item.open) {
-					Reflect.setField(openState, item.uniqueName, true);
-				}
-			}
-			state.set("openState", openState);
-			currentRefreshFlags.unset(SaveOpen);
-		}
+		if (currentRefreshFlags.has(SaveOpen))
+			saveOpenState();
 
 		if (currentRefreshFlags.has(Search)) {
 			filterRec(rootData);
