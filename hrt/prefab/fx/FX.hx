@@ -929,6 +929,10 @@ class FX extends Object3D implements BaseFX {
 			+ 'Migrate the project with the hide migration tool (hide/migrate.hxml), or upgrade it on load with -D fx-migration';
 	}
 
+	public static function inFX( p : Prefab ) {
+		return p.findParent(Prefab, c -> c is BaseFX, true) != null;
+	}
+
 	override function load( data : Dynamic ) {
 		checkVersion(this, data);
 		super.load(data);

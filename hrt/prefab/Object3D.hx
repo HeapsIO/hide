@@ -285,19 +285,19 @@ class Object3D extends Prefab {
 		ctx.build(
 			<category("Position")>
 				<line label="Position">
-					<slider field={x}/>
-					<slider field={y}/>
-					<slider field={z}/>
+					<slider field={x} anim="position:x"/>
+					<slider field={y} anim="position:y"/>
+					<slider field={z} anim="position:z"/>
 				</line>
 				<slider-group label="Scale">
-					<slider field={scaleX} label="X" default={1.0}/>
-					<slider field={scaleY} label="Y" default={1.0}/>
-					<slider field={scaleZ} label="Z" default={1.0}/>
+					<slider field={scaleX} label="X" default={1.0} anim="scale:x"/>
+					<slider field={scaleY} label="Y" default={1.0} anim="scale:y"/>
+					<slider field={scaleZ} label="Z" default={1.0} anim="scale:z"/>
 				</slider-group>
 				<line label="Rotation">
-					<slider field={rotationX} min="-180" max="180" wrap label="X"/>
-					<slider field={rotationY} min="-180" max="180" wrap label="Y"/>
-					<slider field={rotationZ} min="-180" max="180" wrap label="Z"/>
+					<slider field={rotationX} min="-180" max="180" wrap label="X" anim="rotation:x"/>
+					<slider field={rotationY} min="-180" max="180" wrap label="Y" anim="rotation:y"/>
+					<slider field={rotationZ} min="-180" max="180" wrap label="Z" anim="rotation:z"/>
 				</line>
 				<checkbox field={visible}/>
 			</category>, this

@@ -287,6 +287,8 @@ kit-root {
 		--widget-bg-disabled: #222222;
 		--widget-border-color: #484848;
 		--widget-border-color-disabled: #333333;
+		--widget-bg-animated: #2c3d26;
+		--widget-border-color-animated: #4f7a3a;
 		--widget-border-color-hover: hsl(from var(--widget-border-color) h s calc(l + 20));
 
 		--widget-left-pad: 5px;
@@ -419,6 +421,15 @@ kit-root {
 			kit-button, input, input[type=checkbox]:after {
 				background-color: var(--widget-bg-disabled);
 				border-color: var(--widget-border-color-disabled);
+			}
+		}
+
+		.kit-animated.disabled {
+			pointer-events: auto;
+
+			input {
+				background-color: var(--widget-bg-animated);
+				border-color: var(--widget-border-color-animated);
 			}
 		}
 

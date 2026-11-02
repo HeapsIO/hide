@@ -1593,6 +1593,7 @@ class FXEditor extends hide.view.FileView {
 			onUpdate2D(dt);
 		else
 			onUpdate3D(dt);
+		sceneEditor.curEdit2?.root?.refreshAnimatedFields();
 	}
 
 	function onUpdate2D(dt:Float) {

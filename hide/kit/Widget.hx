@@ -17,6 +17,9 @@ abstract class Widget<ValueType> extends Element {
 	/** If set, modifying the value don't save an undo step (use ctx.recordUndo to handle that yourself))**/
 	public var noUndo: Bool = false;
 
+	/** If set, the name of the animation curve of this field in an FX **/
+	public var anim : String = null;
+
 	var fieldName: String;
 
 	var input: NativeElement;

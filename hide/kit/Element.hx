@@ -293,6 +293,8 @@ class Element {
 	function getEditMenuContent(?target: NativeElement) : Array<hrt.ui.HuiMenu.MenuItem> {
 		var items = [];
 		getEditMenuItems(items, target);
+		if (isDisabled())
+			return items;
 		if (items.length > 0)
 			items.push({isSeparator: true});
 		return items.concat([
@@ -319,25 +321,29 @@ class Element {
 	}
 
 	function addEditMenu(el: NativeElement) {
-		if (!disabled) {
 		#if js
 		el.get().addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
 			if ((cast e.target:js.html.Element).closest(".is-cdb-editor") != null)
 				return;
+			var content = getEditMenuContent(cast e.target);
+			if (content.length == 0)
+				return;
 			e.preventDefault();
 			e.stopPropagation();
 
-			hide.comp.ContextMenu.createFromEvent(e, getEditMenuContent(cast e.target));
+			hide.comp.ContextMenu.createFromEvent(e, content);
 		});
 		#elseif hui
 		var element = Std.downcast(el.get(), hrt.ui.HuiElement);
 		element?.onClick = (e) -> {
 			if (e.button != hxd.Key.MOUSE_RIGHT)
 				return;
-			element.uiBase.contextMenu(getEditMenuContent());
+			var content = getEditMenuContent();
+			if (content.length == 0)
+				return;
+			element.uiBase.contextMenu(content);
 		}
 		#end
-		}
 	}
 
 	function canCopy() : Bool {
@@ -779,6 +785,7 @@ class Element {
 		}
 		if (widget != null) {
 			widget.label =  def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
+			widget.anim = def.name;
 			widget.value = Reflect.field(props, def.name) ?? defValue;
 			@:privateAccess widget.onFieldChange = (_) -> {
 				Reflect.setField(props, def.name, widget.value);
