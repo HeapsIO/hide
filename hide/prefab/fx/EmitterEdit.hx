@@ -17,13 +17,13 @@ enum abstract ModeKind(String) to String {
 class EmitterEdit {
 	// Build inspector for an emitter parameter
 	public static function param(ctx: EditContext2, prefab: Prefab, owner: ParamModes, def: ModeParamDef, allowed: Array<ModeKind>, parent: hide.kit.Element) {
-		var dim = def.def.length;
+		var size = def.def.length;
 		var label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
 		var range = switch (def.t) {
 			case PFloat(min, max), PVec(_, min, max): { min: min, max: max };
 			default: { min: null, max: null };
 		}
-		var comps = [for (i in 0...dim) i];
+		var comps = [for (i in 0...size) i];
 		var value = [for (i in comps) owner.getMode(def.name, i)];
 
 		function applyMode(comps: Array<Int>, mode: Null<ModeKind>) {
@@ -40,14 +40,14 @@ class EmitterEdit {
 			var m = owner.getMode(def.name, i);
 			var kind : ModeKind = m == null ? Constant : cast m.getName();
 			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
-			if (dim > 1)
+			if (size > 1)
 				items.push({ isSeparator: true, label: label + " " + compName(i) });
 			if (allowed.length > 1) {
 				for (mode in allowed)
 					items.push({ label: hide.kit.Macros.camelToSpaceCase(mode), radio: () -> kind == mode, click: () -> applyMode([i], mode) });
 				items.push({ isSeparator: true });
 			}
-			items.push({ label: dim == 1 ? "Remove" : "Remove " + compName(i), click: () -> applyMode([i], null), enabled: isSet(owner, def, i) });
+			items.push({ label: size == 1 ? "Remove" : "Remove " + compName(i), click: () -> applyMode([i], null), enabled: isSet(owner, def, i) });
 			return items;
 		}
 
@@ -61,7 +61,7 @@ class EmitterEdit {
 		}
 
 		var line = null;
-		var isCompact = dim > 1 && Lambda.foreach(value, m -> m == null || m.match(Constant(_)));
+		var isCompact = size > 1 && Lambda.foreach(value, m -> m == null || m.match(Constant(_)));
 		if (isCompact) {
 			line = new hide.kit.Line(parent, def.name);
 			line.stealLabel = false;
@@ -71,9 +71,9 @@ class EmitterEdit {
 		for (i in comps) {
 			var menuOwners : Array<hide.kit.Element> = [];
 			if (!isCompact) {
-				line = new hide.kit.Line(parent, def.name + (dim == 1 ? "" : compName(i)));
+				line = new hide.kit.Line(parent, def.name + (size == 1 ? "" : compName(i)));
 				line.stealLabel = false;
-				if (dim == 1) {
+				if (size == 1) {
 					line.label = label;
 					line.unset = !isSet(owner, def, i);
 					menuOwners.push(line);
@@ -89,7 +89,7 @@ class EmitterEdit {
 			var wasSet = isSet(owner, def, i);
 			function slider(sid: String, label: String, value: Float) {
 				var s = new hide.kit.Slider<Float>(line, sid);
-				if (dim > 1)
+				if (size > 1)
 					menuOwners.push(s);
 				s.label = label;
 				s.value = value;
@@ -117,10 +117,10 @@ class EmitterEdit {
 			}
 
 			function curveEditor(path: String, ?ranges: Array<hide.kit.Curve.TrackRange>) {
-				var g = new hide.kit.Curve(line, "curve", (dim == 1 ? label : label + " " + compName(i)) + " - " + prefab.name);
+				var g = new hide.kit.Curve(line, "curve", (size == 1 ? label : label + " " + compName(i)) + " - " + prefab.name);
 				g.onValueChange = (_) -> ctx.rebuildPrefab(prefab);
 				g.onCurveChange = selectCurve;
-				if (dim > 1)
+				if (size > 1)
 					menuOwners.push(g);
 				var edited = getEditableCurve(prefab, path);
 				if (edited == null)
@@ -392,13 +392,13 @@ class EmitterEdit {
 		var modes = new ParticleShaderModes(shader);
 		for (prop in props) {
 			var v = Lambda.find(shaderDef.data.vars, v -> v.name == prop.name);
-			var dim = EmitterParam.getParamSize(v);
-			if (dim == 0) {
+			var size = EmitterParam.getParamSize(v);
+			if (size == 0) {
 				parent.buildProp(prop, shader.props);
 				continue;
 			}
 			var value : Dynamic = Reflect.field(shader.props, prop.name);
-			var base = [for (i in 0...dim) EmitterParam.baseComponent(value, dim, i)];
+			var base = [for (i in 0...size) EmitterParam.baseComponent(value, size, i)];
 			var t : hrt.prefab.Props.PropType = switch (prop.t) {
 				case PFloat(_), PVec(_): prop.t;
 				case PInt(min, max): PFloat(min, max);
