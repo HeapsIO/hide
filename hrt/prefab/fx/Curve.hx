@@ -438,11 +438,7 @@ class Curve extends hrt.prefab.Curve {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "paint-brush", name : "Curve", allowParent : isInFX, allowChildren : _ -> false };
-	}
-
-	public static function isInFX( p : Prefab ) {
-		return p.findParent(FX, null, true) != null || p.findParent(FX2D, null, true) != null;
+		return { icon : "paint-brush", name : "Curve", allowParent : FX.inFX, allowChildren : _ -> false };
 	}
 	#end
 

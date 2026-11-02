@@ -169,10 +169,12 @@ class EmitterHelper {
 				}
 			}
 			var wasSet = isSet(owner, def, i);
-			function slider(sid: String, label: String, value: Float) {
+			function slider(sid: String, label: String, value: Float, ?field: String) {
 				var s = new hide.kit.Slider<Float>(line, sid);
 				if (size > 1)
 					menuOwners.push(s);
+				if (def.kind != Particle)
+					s.anim = EmitterParam.animKey(def, i, field);
 				s.label = label;
 				s.value = value;
 				s.min = range.min;
@@ -246,8 +248,8 @@ class EmitterHelper {
 					}
 
 				case Range(min, max):
-					var minSlider = slider("min", "Min", min);
-					var maxSlider = slider("max", "Max", max);
+					var minSlider = slider("min", "Min", min, "min");
+					var maxSlider = slider("max", "Max", max, "max");
 					function bound() {
 						minSlider.max = range.max == null ? maxSlider.value : Math.min(range.max, maxSlider.value);
 						maxSlider.min = range.min == null ? minSlider.value : Math.max(range.min, minSlider.value);
@@ -318,6 +320,8 @@ class EmitterHelper {
 					var widget = cat.buildProp(p, emitter);
 					if (widget == null)
 						continue;
+					if (!p.animate)
+						widget.anim = null;
 					widget.onValueChange = (temp) -> changed(p.name, temp);
 			}
 		}

@@ -337,7 +337,7 @@ class Curve extends Prefab {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "paint-brush", name : "Curve", allowParent : p -> !hrt.prefab.fx.Curve.isInFX(p), allowChildren : _ -> false };
+		return { icon : "paint-brush", name : "Curve", allowParent : p -> !hrt.prefab.fx.FX.inFX(p), allowChildren : _ -> false };
 	}
 	#end
 

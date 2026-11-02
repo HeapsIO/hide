@@ -5,11 +5,12 @@ package hide.kit;
 class KitRoot #if !macro extends Element #end {
 	#if !macro
 	public var editedPrefabsProperties : Array<KitRoot> = [];
-	var prefab : hrt.prefab.Prefab;
-	var prefabUndoPoint : Dynamic = null;
 	public var editor(default, null) : hrt.prefab.EditContext2;
 	public var isMultiEdit(default, null) : Bool;
 	public var header = true;
+	var prefab : hrt.prefab.Prefab;
+	var prefabUndoPoint : Dynamic = null;
+	var animated : Array<Widget<Dynamic>> = [];
 
 	public function new(parent: Element, id: String, prefab: hrt.prefab.Prefab, editor: hrt.prefab.EditContext2) {
 		super(parent, id);
@@ -163,11 +164,74 @@ class KitRoot #if !macro extends Element #end {
 	}
 
 	public function postEditStep() {
+		if (prefab == null)
+			return;
+
+		if (!isMultiEdit)
+			registerAnimatedField(this);
+
 		#if castle
-		if (prefab != null) {
-			new CDB(this, "cdb");
-		}
+		new CDB(this, "cdb");
 		#end
+	}
+
+	public function refreshAnimatedFields() {
+		for (a in animated)
+			a.refreshFields();
+	}
+
+	function registerAnimatedField(e: Element) {
+		for (c in e.children) {
+			var widget : Widget<Dynamic> = Std.downcast(c, Widget);
+			if (widget?.anim != null) {
+				var curve = hrt.prefab.Curve.getCurve(prefab, widget.anim);
+				if (curve != null) {
+					var value = curve.makeVal();
+					@:privateAccess widget.getFieldValue = () -> hxd.Math.fmt(evaluateAnimation(value));
+					widget.value = hxd.Math.fmt(evaluateAnimation(value));
+
+					widget.disabled = true;
+					widget.classList.push("kit-animated");
+					addMenuItem(widget, { label: "Delete animation", click: () -> deleteAnimation(curve) });
+					animated.push(widget);
+				} else if (hrt.prefab.Curve.getCurve(prefab, widget.anim, false) == null) {
+					addMenuItem(widget, { label: "Animate", click: () -> animate(widget.anim, widget.value) });
+				}
+			}
+			registerAnimatedField(c);
+		}
+	}
+
+	function addMenuItem(widget: Widget<Dynamic>, item: hrt.ui.HuiMenu.MenuItem) {
+		var menuItems = widget.menuItems;
+		widget.menuItems = () -> {
+			var items : Array<hrt.ui.HuiMenu.MenuItem> = menuItems == null ? [] : menuItems().concat([{ isSeparator: true }]);
+			items.push(item);
+			return items;
+		}
+	}
+
+	function evaluateAnimation(value: hrt.prefab.fx.Value) : Float {
+		var root = prefab.getRoot();
+		var anim3d = Std.downcast(root.to(hrt.prefab.Object3D)?.local3d, hrt.prefab.fx.FX.FXAnimation);
+		if (anim3d != null)
+			return @:privateAccess anim3d.evaluator.getFloat(value, anim3d.localTime);
+		var anim2d = Std.downcast(root.to(hrt.prefab.Object2D)?.local2d, hrt.prefab.fx.FX2D.FX2DAnimation);
+		return @:privateAccess anim2d.evaluator.getFloat(value, anim2d.localTime);
+	}
+
+	function animate(name: String, value: Float) {
+		editor.recordPrefabUndoWithChildren(prefab, () -> {
+			var curve = new hrt.prefab.fx.Curve(prefab, prefab.shared);
+			curve.name = name;
+			curve.addKey(0, value);
+		});
+		editor.rebuildInspector();
+	}
+
+	function deleteAnimation(curve: hrt.prefab.Curve) {
+		editor.recordPrefabUndoWithChildren(prefab, () -> curve.remove());
+		editor.rebuildInspector();
 	}
 
 	#end
