@@ -49,8 +49,8 @@ class Ide extends hide.tools.IdeData {
 
 
 	public function update(dt: Float) {
-		hide.Config.updatePendingSaves(dt);
-		hide.tools.EditorState.updatePendingSaves(dt);
+		// hide.Config.updatePendingSaves(dt);
+		// hide.tools.EditorState.updatePendingSaves(dt);
 
 		for (update in updates) {
 			update(dt);

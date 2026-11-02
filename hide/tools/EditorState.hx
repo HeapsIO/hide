@@ -83,7 +83,7 @@ class EditorState {
 		return Reflect.field(store, k) ?? def;
 	}
 
-	public function set(k, v) {
+	public function set(k, v : Dynamic) {
 		var store = store ?? parent.getInit(key);
 		Reflect.setField(store, k, v);
 		change();
