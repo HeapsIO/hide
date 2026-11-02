@@ -1,5 +1,7 @@
 package hide.tools.migrate;
 
+#if fx_migration
+
 import hide.tools.migrate.Migrate;
 
 /** The migration tool, see `usage` **/
@@ -113,3 +115,5 @@ With no option, a dry run: lists the files that would change, the changes and th
 		return b.toString();
 	}
 }
+
+#end

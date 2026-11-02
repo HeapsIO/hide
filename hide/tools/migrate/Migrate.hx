@@ -1,5 +1,7 @@
 package hide.tools.migrate;
 
+#if fx_migration
+
 import hrt.prefab.fx.FX;
 
 typedef Change = { path : String, kind : String };
@@ -41,31 +43,27 @@ typedef ProjectResult = {
 
 /**
 	Upgrades FX data saved in an older version (`hrt.prefab.fx.FX.VERSION`, on the root of the data:
-	an FX, or an emitter out of any FX) to the current one, one step per version (`STEPS`).
+	an FX, or an emitter out of any FX) to the current one (`STEPS`). Compiled with `-D fx-migration` only.
 
 	- On a whole project, once: `migrateProject`, or the tool (`Cli`, hide/migrate.hxml). The project is
 	  migrated in memory, the files that change are written by `toText` (the prefab save of hide). The
 	  overrides of the references to the migrated files are migrated with them. The upgrade reads the
 	  prefab classes (the defaults of their fields, what their curves animate): the tool of a game with
 	  its own prefabs is built with them, the prefab types the build does not have are reported as errors.
-	- On load, as a fallback, when this module is compiled in (`--macro include("hide.tools.migrate")`):
-	  it is `FX.upgrader`. FX data is then upgraded alone, in memory, once per loaded resource. The
+	- On load, as a fallback (`FX.checkVersion`): FX data is then upgraded alone, in memory, once per loaded resource. The
 	  overrides of its references are kept: they are applied on the files they override, still in the
 	  old version, and the result is upgraded when it loads.
 **/
 @:keep
 class Migrate {
 
+	/** The upgrade of each older version to the current one. Version 1, the format before the curves rework, was never released: it has none. **/
 	public static var STEPS : Map<Int, (data : Dynamic, root : Bool, report : FileReport) -> Void> = [
 		0 => (data, root, report) -> new Upgrade0(null, report).run(data, root),
 	];
 
 	/** Loaded as prefabs (`hxd.res.Config`) **/
 	public static var EXTENSIONS = ["prefab", "fx", "fx2d", "l3d"];
-
-	static function __init__() {
-		hrt.prefab.fx.FX.upgrader = fallback;
-	}
 
 	public static function newReport( file : String ) : FileReport {
 		return { file: file, changes: [], warnings: [], errors: [], parents: [] };
@@ -76,10 +74,15 @@ class Migrate {
 		return v == null ? 0 : Std.int(v);
 	}
 
+	public static function canUpgrade( version : Int ) {
+		return STEPS.exists(version);
+	}
+
 	/** Upgrades in place the root of FX data from `version`, `root` when it is the root of its file. **/
 	public static function upgradeTree( data : Dynamic, version : Int, root : Bool, report : FileReport ) {
-		for( v in version...FX.VERSION )
-			STEPS.get(v)(data, root, report);
+		if( !canUpgrade(version) )
+			throw 'FX data of version $version cannot be upgraded to version ${FX.VERSION}';
+		STEPS.get(version)(data, root, report);
 		// the FX inside are upgraded with it
 		function mark( d : Dynamic ) {
 			if( isFX(d) ) RawNode.setField(d, "version", FX.VERSION);
@@ -163,7 +166,7 @@ class Migrate {
 
 	static var warned = false;
 
-	/** `FX.upgrader` **/
+	/** The upgrade on load of `FX.checkVersion` **/
 	public static function fallback( data : Dynamic, version : Int, root : Bool ) {
 		var report = newReport(Reflect.field(data, "name"));
 		upgradeTree(data, version, root, report);
@@ -255,3 +258,5 @@ private class ProjectContext implements Context {
 		return Migrate.migrateData(data, path, this).data;
 	}
 }
+
+#end

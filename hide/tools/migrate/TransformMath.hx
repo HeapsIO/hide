@@ -1,5 +1,7 @@
 package hide.tools.migrate;
 
+#if fx_migration
+
 /**
 	Matrix helpers of the transform re-bakes of `Upgrade0`: the exact forms of an old animated transform,
 	checked at fixed values of the curves, and the decomposition of the sampled ones. `classes` tells, per component, which curve animates it: the
@@ -170,3 +172,5 @@ class TransformMath {
 		return null;
 	}
 }
+
+#end

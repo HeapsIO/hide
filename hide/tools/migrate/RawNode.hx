@@ -1,5 +1,7 @@
 package hide.tools.migrate;
 
+#if fx_migration
+
 /**
 	A prefab of the raw (json) data of a file, before it is loaded. The upgrade steps work on these:
 	they change `data` in place, and keep the tree in sync when they add, move or rename nodes.
@@ -136,3 +138,5 @@ class RawNode {
 		for( k in Reflect.fields(by) ) Reflect.setField(o, k, Reflect.field(by, k));
 	}
 }
+
+#end

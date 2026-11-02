@@ -1,5 +1,7 @@
 package hide.tools.migrate;
 
+#if fx_migration
+
 import hrt.prefab.fx.Value;
 import hrt.prefab.fx.Evaluator;
 import hide.tools.migrate.Migrate.FileReport;
@@ -2018,3 +2020,5 @@ class Upgrade0 {
 		change(n, 'overrides of $source made for its upgrade');
 	}
 }
+
+#end

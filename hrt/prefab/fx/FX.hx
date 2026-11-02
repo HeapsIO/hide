@@ -908,12 +908,9 @@ class FX extends Object3D implements BaseFX {
 
 	/**
 		Version of the data of an FX, saved on its root (and on an emitter out of any FX), 0 when missing.
-		Older data is upgraded on load by `upgrader`, or rejected.
+		Older data is upgraded on load with `-D fx-migration`, or rejected.
 	**/
-	public static inline var VERSION = 1;
-
-	/** Upgrades in place data of an older version, `root` of a file or not. Set by `hide.tools.migrate` when it is compiled in. **/
-	public static var upgrader : (data : Dynamic, version : Int, root : Bool) -> Void;
+	public static inline var VERSION = 2;
 
 	/** Called before `p`, the root of FX data, loads `data` **/
 	public static function checkVersion( p : Prefab, data : Dynamic ) {
@@ -921,10 +918,14 @@ class FX extends Object3D implements BaseFX {
 		if( v == VERSION )
 			return;
 		var version : Int = v == null ? 0 : v;
-		if( upgrader == null || version > VERSION )
-			throw '${p.shared.currentPath} ${p.getAbsPath()}: FX data of version $version, this build reads version $VERSION. '
-				+ 'Migrate the project with the hide migration tool (hide/migrate.hxml), or upgrade it on load: --macro include("hide.tools.migrate")';
-		upgrader(data, version, p.parent == null);
+		#if fx_migration
+		if( hide.tools.migrate.Migrate.canUpgrade(version) ) {
+			hide.tools.migrate.Migrate.fallback(data, version, p.parent == null);
+			return;
+		}
+		#end
+		throw '${p.shared.currentPath} ${p.getAbsPath()}: FX data of version $version, this build reads version $VERSION. '
+			+ 'Migrate the project with the hide migration tool (hide/migrate.hxml), or upgrade it on load with -D fx-migration';
 	}
 
 	public static function inFX( p : Prefab ) {
