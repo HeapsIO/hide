@@ -73,8 +73,8 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function dispose() {
-		hide.Config.flushPendingSaves();
-		hide.tools.EditorState.flushPendingSaves();
+		// hide.Config.flushPendingSaves();
+		// hide.tools.EditorState.flushPendingSaves();
 
 		hrt.tools.FileManager.inst.dispose();
 	}
