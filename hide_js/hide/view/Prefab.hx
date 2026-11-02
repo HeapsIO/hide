@@ -191,6 +191,7 @@ class Prefab extends hide.view.FileView {
 	var renameMatsHistory : Array<Dynamic>;
 
 	@:state(projectState) var localTransform : Bool = false;
+	@:state(projectState) var selfOnlyTransform : Bool = false;
 	var localTransformToggle: hide.html.comp.Button;
 
 	var scene(get, null):  hide.comp.Scene;
@@ -513,8 +514,8 @@ class Prefab extends hide.view.FileView {
 				</hide-group>
 
 				<hide-group>
-					<hide-button id="localTransformsToggle" title="Local transforms" oncheck={(_, v) -> localTransform = v}><span class="ico ico-compass"></span></hide-button>
-					<hide-button id="selfOnlyTransformsToggle" title="Self only transforms" oncheck={(_, v) -> sceneEditor.selfOnlyTransform = v}><span class="ico ico-map-pin"></span></hide-button>
+					<hide-button id="localTransformsToggle" title="Local transforms" oncheck={(_, v) -> localTransform = v}></hide-button>
+					<hide-button class="small-dropdown" onclick={(e) -> transformMenu(e.currentTarget)}></hide-button>
 				</hide-group>
 
 				<hide-button id="ruler" title="Ruler mode" oncheck={(_, v) -> sceneEditor.toggleRuler(v)} icon={HideRes.icon.ruler}/>
@@ -543,7 +544,7 @@ class Prefab extends hide.view.FileView {
 
 		localTransformToggle = localTransformsToggle;
 
-		toggles = [snapToGroundToggle, toggleSnap, selfOnlyTransformsToggle, showViewportOverlays];
+		toggles = [snapToGroundToggle, toggleSnap, showViewportOverlays];
 		for (b in toggles) {
 			var onCheck = b.oncheck;
 			b.oncheck = (e, v) -> {
@@ -584,6 +585,14 @@ class Prefab extends hide.view.FileView {
 			initSceneFilters();
 		}
 
+	}
+
+	function transformMenu(e: js.html.Element) {
+		hide.comp.ContextMenu.createDropdown(
+			e, [
+				{checked: selfOnlyTransform, click: () -> selfOnlyTransform = !selfOnlyTransform, label:"Keep Child Transforms", tooltip: "Transforming an object via the gizmo will keep its children in place. Doesn't work for objects that have", stayOpen: true}
+			]
+		);
 	}
 
 	function resetCamera( top : Bool ) {
@@ -754,7 +763,9 @@ class Prefab extends hide.view.FileView {
 
 		{
 			sceneEditor.localTransform = localTransform;
-			localTransformToggle.toggleAttribute("checked", localTransform);
+			localTransformToggle.icon = localTransform ? HideRes.icon.cube.entry.path : HideRes.icon.prefab.object3d.entry.path;
+
+			sceneEditor.selfOnlyTransform = selfOnlyTransform;
 		}
 
 		// if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {

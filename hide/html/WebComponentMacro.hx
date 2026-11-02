@@ -77,6 +77,11 @@ class WebComponentMacro {
 		Adds `create()`, which creates the component through the DOM, and makes `new` throw.
 		Adds a static `styleSheet` from `style/<module>.css` next to the source file, if it exists.
 		If the running hide is a git checkout, the sheet is reloaded from its copy of the file when it changes.
+		Turns `@:attr` vars into properties backed by the attribute of the same name. Supported types :
+		- `Bool` : attribute presence (`hasAttribute` / `toggleAttribute`).
+		- `String` / `Int` (or `Null<>` of them) : `getAttribute` / `setAttribute`, `null` removes the attribute. `Int` is converted with `Std.string` / `Std.parseInt` (`null` if missing or not a number).
+		The class must declare `set_x(old, v)`, taking the typed values, called on each change of the attribute (renamed to free the name for the property setter).
+		The lowercased names are stored in a static `__internalAttributes`, and the calls added to the end of `attributeChangedCallback` (created if missing).
 	**/
 	static function build() : Array<Field> {
 		var cl = Context.getLocalClass().get();
@@ -127,6 +132,117 @@ class WebComponentMacro {
 			fields.push((macro class {
 				static var styleSheet : js.html.CSSStyleSheet = $b{init};
 			}).fields[0]);
+		}
+
+		var attrs = [];
+		for (f in fields.copy()) {
+			if (f.meta == null || !Lambda.exists(f.meta, m -> m.name == ":attr"))
+				continue;
+			var t = switch (f.kind) {
+				case FVar(t, null) if (t != null): t;
+				default: Context.error("@:attr requires a typed var without initial value", f.pos);
+			}
+			f.kind = FProp("get", "set", t);
+			var name = f.name;
+			var getter = "get_" + name;
+			var setter = "set_" + name;
+
+			// The declared `set_x(old, v)` frees its name for the property setter
+			var changed = Lambda.find(fields, c -> c.name == setter && c.kind.match(FFun(_)));
+			if (changed == null)
+				Context.error('@:attr requires a function $setter(old, v)', f.pos);
+			changed.name = "attrChanged_" + name;
+
+			var typeName = switch (t) {
+				case TPath({pack: [], name: "Null", params: [TPType(TPath({pack: [], name: n}))]}) if (n != "Bool"): n;
+				case TPath({pack: [], name: n}): n;
+				default: null;
+			}
+			var accessors = switch (typeName) {
+				case "Bool":
+					macro class {
+						function $getter() : Bool return hasAttribute($v{name});
+						function $setter(v : Bool) : Bool {
+							toggleAttribute($v{name}, v);
+							return v;
+						}
+					};
+				case "Int":
+					macro class {
+						function $getter() : $t {
+							var v = getAttribute($v{name});
+							return v == null ? null : Std.parseInt(v);
+						}
+						function $setter(v : $t) : $t {
+							if (v == null)
+								removeAttribute($v{name});
+							else
+								setAttribute($v{name}, Std.string(v));
+							return v;
+						}
+					};
+				case "String":
+					macro class {
+						function $getter() : $t return getAttribute($v{name});
+						function $setter(v : $t) : $t {
+							if (v == null)
+								removeAttribute($v{name});
+							else
+								setAttribute($v{name}, v);
+							return v;
+						}
+					};
+				default:
+					Context.error("@:attr only supports Bool, Int and String", f.pos);
+			}
+			for (a in accessors.fields)
+				a.pos = f.pos;
+			fields = fields.concat(accessors.fields);
+			attrs.push({name: name.toLowerCase(), changed: changed.name, type: typeName, pos: f.pos});
+		}
+
+		if (attrs.length > 0) {
+			var names = [for (a in attrs) a.name];
+			// First, to be initialized before the static calling `register`
+			fields.unshift((macro class {
+				@:keep static var __internalAttributes = $v{names};
+			}).fields[0]);
+
+			function dispatch(name : String, oldValue : String, newValue : String) {
+				function convert(v : String, type : String) {
+					return switch (type) {
+						case "Bool": macro $i{v} != null;
+						case "Int": macro $i{v} == null ? null : Std.parseInt($i{v});
+						default: macro $i{v};
+					}
+				}
+				var cases = [for (a in attrs) {
+					values: [macro $v{a.name}],
+					expr: macro @:pos(a.pos) $i{a.changed}(${convert(oldValue, a.type)}, ${convert(newValue, a.type)}),
+				}];
+				return {expr: ESwitch(macro $i{name}, cases, macro {}), pos: Context.currentPos()};
+			}
+
+			var callback = Lambda.find(fields, f -> f.name == "attributeChangedCallback");
+			if (callback == null) {
+				var e = dispatch("name", "oldValue", "newValue");
+				fields.push((macro class {
+					override public function attributeChangedCallback(name : String, oldValue : Null<String>, newValue : Null<String>) {
+						super.attributeChangedCallback(name, oldValue, newValue);
+						$e;
+					}
+				}).fields[0]);
+			} else
+				switch (callback.kind) {
+					case FFun(fn):
+						var e = dispatch(fn.args[0].name, fn.args[1].name, fn.args[2].name);
+						// Wrapped so that an early `return` doesn't skip the dispatch
+						fn.expr = macro {
+							(function() ${fn.expr})();
+							$e;
+						};
+					default:
+				}
 		}
 
 		var ctor = Lambda.find(fields, f -> f.name == "new");

@@ -385,7 +385,6 @@ class SnapSettingsPopup extends hide.comp.Popup {
 		}
 	}
 }
-
 @:access(hide.comp.SceneEditor)
 class SceneEditorContext extends hide.prefab.EditContext {
 

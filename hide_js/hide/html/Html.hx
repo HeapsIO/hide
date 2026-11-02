@@ -10,12 +10,18 @@ import domkit.MarkupParser;
 class Html {
 	#if macro
 	static var nativeTypes : Map<String, ComplexType>;
+	#else
+	extern overload static inline function setAttribute(el : js.html.Element, name : String, v : Bool)
+		el.toggleAttribute(name, v);
+
+	extern overload static inline function setAttribute(el : js.html.Element, name : String, v : Dynamic)
+		el.setAttribute(name, Std.string(v));
 	#end
 
 	/**
 		Creates a tree of elements from markup and appends it to `parent`. Nodes with an `id` are declared as typed locals.
 		`hide-*` tags create the web component `hide.html.comp.*`, other tags use `document.createElement`.
-		Attributes with a code value are set as properties when they start with `on` (event handlers), others with `setAttribute`, the value being converted to a string as in JS.
+		Attributes with a code value are set as properties when they start with `on` (event handlers), others with `setAttribute`, the value being converted to a string as in JS, or `toggleAttribute` for a `Bool`.
 	**/
 	public static macro function build(parent : ExprOf<js.html.Element>, dml : Expr) : Expr {
 		var str = switch (dml.expr) {
@@ -100,7 +106,7 @@ class Html {
 						if (StringTools.startsWith(a.name, "on"))
 							exprs.push(macro @:pos(ap) $p{["__el", a.name]} = $e);
 						else
-							exprs.push(macro @:pos(ap) __el.setAttribute($v{a.name}, Std.string($e)));
+							exprs.push(macro @:pos(ap) @:privateAccess hide.html.Html.setAttribute(__el, $v{a.name}, $e));
 				}
 			}
 

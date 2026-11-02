@@ -8,12 +8,13 @@ import hide.html.WebComponent;
 **/
 @:keep
 class Button extends WebComponent {
-	static var observedAttributes = ["icon", "label"];
-
 	public var oncheck : (e : js.html.Event, checked : Bool) -> Void;
 
-	var icon : Icon;
-	var label : js.html.SpanElement;
+	@:attr public var icon : Null<String>;
+	@:attr public var label : Null<String>;
+
+	var iconElement : Icon;
+	var labelElement : js.html.SpanElement;
 
 	public function new() {
 		super();
@@ -27,36 +28,40 @@ class Button extends WebComponent {
 		});
 	}
 
-	override public function attributeChangedCallback(name : String, oldValue : Null<String>, newValue : Null<String>) {
-		switch (name) {
-			case "icon":
-				if (newValue == null) {
-					icon?.remove();
-					icon = null;
-					return;
-				}
-				if (icon == null) {
-					icon = Icon.create();
-					shadowRoot.prepend(icon);
-				}
-				icon.setAttribute("icon", newValue);
+	function set_icon(old : Null<String>, v : Null<String>) {
+		if (old == v)
+			return;
 
-			case "label":
-				if (newValue == null) {
-					label?.remove();
-					label = null;
-					return;
-				}
-				if (label == null) {
-					label = js.Browser.document.createSpanElement();
-					label.className = "label";
-					if (icon != null)
-						icon.after(label);
-					else
-						shadowRoot.prepend(label);
-				}
-				label.textContent = newValue;
+		if (v == null) {
+			iconElement?.remove();
+			iconElement = null;
+			return;
 		}
+		if (iconElement == null) {
+			iconElement = Icon.create();
+			shadowRoot.prepend(iconElement);
+		}
+		iconElement.setAttribute("icon", v);
+	}
+
+	function set_label(old : Null<String>, v : Null<String>) {
+		if (old == v)
+			return;
+
+		if (v == null) {
+			labelElement?.remove();
+			labelElement = null;
+			return;
+		}
+		if (labelElement == null) {
+			labelElement = js.Browser.document.createSpanElement();
+			labelElement.className = "label";
+			if (iconElement != null)
+				iconElement.after(labelElement);
+			else
+				shadowRoot.prepend(labelElement);
+		}
+		labelElement.textContent = v;
 	}
 
 	static var _ = register(Button, "hide-button");
