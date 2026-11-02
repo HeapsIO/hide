@@ -199,7 +199,7 @@ class BaseFXTools {
 
 			paramCount++;
 
-			var dim = particle ? EmitterParam.particleDim(v) : 0;
+			var dim = particle ? EmitterParam.getParamSize(v) : 0;
 			var val = dim > 0 ? makeParticleShaderValue(cast basePrefab, v.name, dim) : makeShaderParamValue(basePrefab, v.name, v.type);
 			if(val == null)
 				continue;

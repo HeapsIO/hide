@@ -37,10 +37,9 @@ interface ParamModes {
 	function setMode( name : String, comp : Int, m : ParamMode ) : Void;
 }
 
-interface ParamOwner extends ParamModes {
+interface BaseEmitter extends ParamModes {
 	function getSettings() : Array<EmitterHelper.ParamDef>;
 	function getModeParams() : Array<ModeParamDef>;
-	function onSettingChange( ctx : hrt.prefab.EditContext2, name : String ) : Void;
 }
 
 class EmitterParam {
@@ -50,6 +49,21 @@ class EmitterParam {
 	public static function animKey( def : ModeParamDef, comp : Int, ?field : String ) {
 		var k = def.def.length == 1 ? def.name : def.name + ":" + COMPONENTS[comp];
 		return field == null ? k : k + ":" + field;
+	}
+
+	/** The animation curve names of the property `prop` of `emitter` (the min and max of a Range), null if it is not animatable **/
+	public static function animKeys( emitter : BaseEmitter, prop : String ) : Array<String> {
+		var parts = prop.split(":");
+		var def = Lambda.find(emitter.getModeParams(), p -> p.name == parts[0]);
+		if( def == null )
+			return Lambda.exists(emitter.getSettings(), p -> p.animate == true && p.name == prop) ? [prop] : null;
+		var i = parts.length > 1 ? COMPONENTS.indexOf(parts[1]) : 0;
+		if( def.kind == Particle || i < 0 )
+			return null;
+		return switch( emitter.getMode(def.name, i) ) {
+		case Range(_): [animKey(def, i, "min"), animKey(def, i, "max")];
+		case null, _: [animKey(def, i)];
+		}
 	}
 
 	// A constant is a plain number, the other modes an object with a `mode` field, a vector an object of its components
@@ -80,7 +94,8 @@ class EmitterParam {
 		return out.x == null && out.y == null && out.z == null ? null : out;
 	}
 
-	public static function particleDim( v : hxsl.Ast.TVar ) : Int {
+	/** The number of components of the shader param `v` as a particle param (a mode per component), 0 if it is not one (colors, textures...) **/
+	public static function getParamSize( v : hxsl.Ast.TVar ) : Int {
 		return switch( v.type ) {
 		case TVec(n, VFloat) if( v.name.toLowerCase().indexOf("color") < 0 ): n;
 		case TFloat, TInt, TBool: 1;
@@ -167,10 +182,10 @@ class EmitterValues {
 class ParamBuilder {
 
 	var owner : Prefab;
-	var modes : ParamOwner;
+	var modes : BaseEmitter;
 	public var randomSlots(default, null) = 0;
 
-	public function new( owner : Prefab, ?modes : ParamOwner ) {
+	public function new( owner : Prefab, ?modes : BaseEmitter ) {
 		this.owner = owner;
 		this.modes = modes;
 	}

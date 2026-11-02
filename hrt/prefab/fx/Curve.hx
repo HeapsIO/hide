@@ -138,9 +138,9 @@ class Curve extends Prefab {
 		var rootCurve : Prefab = this;
 		while (rootCurve.parent is Curve)
 			rootCurve = rootCurve.parent;
-		var emitter : EmitterParam.ParamOwner = rootCurve.parent is EmitterParam.ParamOwner ? cast rootCurve.parent : null;
+		var emitter : EmitterParam.BaseEmitter = rootCurve.parent is EmitterParam.BaseEmitter ? cast rootCurve.parent : null;
 		if (emitter == null)
-			return rootCurve.findParent(Prefab, p -> p is EmitterParam.ParamOwner) != null;
+			return rootCurve.findParent(Prefab, p -> p is EmitterParam.BaseEmitter) != null;
 		return !isChannel(rootCurve.name) && !isParamName(emitter, rootCurve.name);
 	}
 
@@ -500,7 +500,7 @@ class Curve extends Prefab {
 		return name != null && CHANNELS.contains(name.split(":")[0].toLowerCase());
 	}
 
-	static function isParamName(emitter: EmitterParam.ParamOwner, name: String) {
+	static function isParamName(emitter: EmitterParam.BaseEmitter, name: String) {
 		var base = name?.split(":")[0];
 		return Lambda.exists(emitter.getSettings(), p -> p.animate == true && p.name == base) || Lambda.exists(emitter.getModeParams(), p -> p.kind != Particle && p.name == base);
 	}

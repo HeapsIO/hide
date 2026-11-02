@@ -458,7 +458,7 @@ class Emitter2DObject extends h2d.Object {
 @:prefabName("Emitter 2D")
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter2d)
 @:build(hrt.prefab.fx.EmitterMacros.build("hrt.prefab.fx.Emitter2D.Emitter2DObject"))
-class Emitter2D extends Object2D implements ParamOwner {
+class Emitter2D extends Object2D implements BaseEmitter {
 
 	@:group("Properties")
 	@:s @:range(0, 1) public var speedFactor : Float = 1.0;
@@ -700,14 +700,18 @@ class Emitter2D extends Object2D implements ParamOwner {
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
 		super.edit2(ctx);
-		EmitterEdit.edit(ctx, this, getVisibleParams(), REFRESH_PARAMS);
-	}
 
-	public function onSettingChange( ctx : hrt.prefab.EditContext2, name : String ) {
-		if (name == "useRandomGradient")
-			randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
-		if (name == "spriteType" && spriteType != SpriteType.SpriteSheet)
-			spriteSheet = null;
+		function onChange(pname: String, isTemp: Bool) {
+			if (pname == "useRandomGradient")
+				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
+			if (pname == "spriteType" && spriteType != SpriteType.SpriteSheet)
+				spriteSheet = null;
+			ctx.rebuildPrefab(this);
+			if (!isTemp && REFRESH_PARAMS.contains(pname))
+				ctx.rebuildInspector();
+		}
+
+		hide.prefab.fx.EmitterEdit.edit(ctx, this, getVisibleParams(), onChange);
 	}
 
 	#if editor

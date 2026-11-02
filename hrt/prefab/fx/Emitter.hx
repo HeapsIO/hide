@@ -1731,7 +1731,7 @@ class EmitterObject extends h3d.scene.Object {
 @:prefabName("Emitter")
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter)
 @:build(hrt.prefab.fx.EmitterMacros.build("hrt.prefab.fx.Emitter.EmitterObject"))
-class Emitter extends Object3D implements ParamOwner {
+class Emitter extends Object3D implements BaseEmitter {
 
 	@:group("Properties")
 	@:s @:disp("Sub Kind") public var subEmitterKind : SubEmitterKind = SubEmitterKind.SpawnOnDeath;
@@ -2057,16 +2057,20 @@ class Emitter extends Object3D implements ParamOwner {
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
 		super.edit2(ctx);
-		EmitterEdit.edit(ctx, this, getVisibleParams(), REFRESH_PARAMS);
-	}
 
-	public function onSettingChange( ctx : hrt.prefab.EditContext2, name : String ) {
-		if (name == "useRandomGradient")
-			randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
-		if (name == "warmUpTime" && warmUpTime < 0) {
-			warmUpTime = 0;
-			ctx.quickError("Warm up time can no longer be negative. Use the Delay property instead");
+		function onChange(pname: String, isTemp: Bool) {
+			if (pname == "useRandomGradient")
+				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
+			if (pname == "warmUpTime" && warmUpTime < 0) {
+				warmUpTime = 0;
+				ctx.quickError("Warm up time can no longer be negative. Use the Delay property instead");
+			}
+			ctx.rebuildPrefab(this);
+			if (!isTemp && REFRESH_PARAMS.contains(pname))
+				ctx.rebuildInspector();
 		}
+
+		hide.prefab.fx.EmitterEdit.edit(ctx, this, getVisibleParams(), onChange);
 	}
 
 	#if editor

@@ -1311,13 +1311,13 @@ class FXEditor extends hide.view.FileView {
 		var added = [];
 		for(prop in props) {
 			var id = prefix != null ? prefix + ":" + prop.name : prop.name;
-			for(k in hrt.prefab.fx.AnimEdit.animKeys(element, id) ?? [id]) {
+			for(k in getAnimKeys(element, id) ?? [id]) {
 				if(Curve.getCurve(element, k, false) != null)
 					continue;
 				var curve = new Curve(null, null);
 				curve.name = k;
 				// the curve holds the value of the property: it starts from its current value
-				var v = hrt.prefab.fx.AnimEdit.currentValue(element, k) ?? prop.def;
+				var v = getAnimValue(element, k) ?? prop.def;
 				if(v != null)
 					curve.addKey(0, v, Linear);
 				added.push(curve);
@@ -1353,7 +1353,7 @@ class FXEditor extends hide.view.FileView {
 		var rfxElt = Std.downcast(elt, hrt.prefab.rfx.RendererFX);
 		var screenShaderGraph = Std.downcast(elt, hrt.prefab.rfx.ScreenShaderGraph);
 
-		var emitterElt : hrt.prefab.fx.EmitterParam.ParamOwner = elt is hrt.prefab.fx.EmitterParam.ParamOwner ? cast elt : null;
+		var emitterElt : hrt.prefab.fx.EmitterParam.BaseEmitter = elt is hrt.prefab.fx.EmitterParam.BaseEmitter ? cast elt : null;
 
 		var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
 		var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [];
@@ -1762,8 +1762,49 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	static function getTrack(element : PrefabElement, propName : String) {
-		var keys = hrt.prefab.fx.AnimEdit.animKeys(element, propName);
+		var keys = getAnimKeys(element, propName);
 		return Curve.getCurve(element, keys != null ? keys[0] : propName, false);
+	}
+
+	static function getAnimKeys(element : PrefabElement, propName : String) : Array<String> {
+		var emitter : hrt.prefab.fx.EmitterParam.BaseEmitter = element is hrt.prefab.fx.EmitterParam.BaseEmitter ? cast element : null;
+		return emitter == null ? null : hrt.prefab.fx.EmitterParam.animKeys(emitter, propName);
+	}
+
+	/** The current value of the property animated by the curve `key` **/
+	static function getAnimValue(element : PrefabElement, key : String) : Null<Float> {
+		inline function num(v: Dynamic) : Null<Float> return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : null;
+		var parts = key.split(":");
+		var emitter : hrt.prefab.fx.EmitterParam.BaseEmitter = element is hrt.prefab.fx.EmitterParam.BaseEmitter ? cast element : null;
+		var def = emitter == null ? null : Lambda.find(emitter.getModeParams(), p -> p.name == parts[0]);
+		if(def != null) {
+			var i = parts.length > 1 ? hxd.Math.imax(0, hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1])) : 0;
+			var isMin = parts[parts.length - 1] == "min";
+			return switch(emitter.getMode(def.name, i)) {
+				case Range(min, max): isMin ? min : max;
+				case Constant(v): v;
+				case null, _: def.def[i];
+			}
+		}
+		var comp = parts.length > 1 ? parts[1] : "x";
+		if(element is hrt.prefab.Object3D || element is hrt.prefab.Object2D) {
+			switch(parts[0]) {
+				case "position": return num(Reflect.field(element, comp));
+				case "rotation" if(element is hrt.prefab.Object2D): return (cast element : hrt.prefab.Object2D).rotation;
+				case "rotation", "scale": return num(Reflect.field(element, parts[0] + comp.toUpperCase()));
+				case "localPosition", "localRotation": return 0.;
+				default:
+			}
+		}
+		if(element is hrt.prefab.Shader || element is hrt.prefab.rfx.ScreenShaderGraph) {
+			var prop : Dynamic = element.props == null ? null : Reflect.field(element.props, parts[0]);
+			if(Std.isOfType(prop, Array) && parts.length > 1)
+				prop = (prop : Array<Dynamic>)[hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1])];
+			return num(prop);
+		}
+		if(emitter != null || element is hrt.prefab.rfx.RendererFX || (element is Light && parts.length == 1))
+			return num(Reflect.field(element, key));
+		return null;
 	}
 
 	static function upperCase(prop: String) {

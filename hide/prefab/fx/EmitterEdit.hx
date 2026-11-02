@@ -1,7 +1,9 @@
-package hrt.prefab.fx;
+package hide.prefab.fx;
 
 #if domkit
 
+import hrt.prefab.Prefab;
+import hrt.prefab.EditContext2;
 import hrt.prefab.fx.EmitterParam;
 
 enum abstract ModeKind(String) to String {
@@ -14,7 +16,7 @@ enum abstract ModeKind(String) to String {
 
 class EmitterEdit {
 	// Build inspector for an emitter parameter
-	public static function param(ctx: EditContext2, owner: ParamModes, def: ModeParamDef, allowed: Array<ModeKind>, parent: hide.kit.Element) {
+	public static function param(ctx: EditContext2, prefab: Prefab, owner: ParamModes, def: ModeParamDef, allowed: Array<ModeKind>, parent: hide.kit.Element) {
 		var dim = def.def.length;
 		var label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
 		var range = switch (def.t) {
@@ -25,11 +27,10 @@ class EmitterEdit {
 		var value = [for (i in comps) owner.getMode(def.name, i)];
 
 		function applyMode(comps: Array<Int>, mode: Null<ModeKind>) {
-			var prefab : Prefab = cast owner;
 			var before = getModeCurves(prefab);
 			ctx.recordPrefabUndoWithChildren(prefab, () -> {
 				for (i in comps)
-					setMode(owner, def, i, mode == null ? null : convert(owner, def, i, mode));
+					setMode(owner, def, i, mode == null ? null : convert(prefab, owner, def, i, mode));
 				removeUnusedModeCurves(prefab, before);
 			});
 			ctx.rebuildInspector();
@@ -86,7 +87,6 @@ class EmitterEdit {
 				}
 			}
 			var wasSet = isSet(owner, def, i);
-			var prefab : Prefab = cast owner;
 			function slider(sid: String, label: String, value: Float) {
 				var s = new hide.kit.Slider<Float>(line, sid);
 				if (dim > 1)
@@ -202,14 +202,8 @@ class EmitterEdit {
 	}
 
 	// Build inspector for an emitter
-	public static function edit(ctx: EditContext2, owner: ParamOwner, settings: Array<EmitterHelper.ParamDef>, refresh: Array<String>) {
+	public static function edit(ctx: EditContext2, owner: BaseEmitter, settings: Array<hrt.prefab.fx.EmitterHelper.ParamDef>, changed: (name: String, temp: Bool) -> Void) {
 		var emitter : Prefab = cast owner;
-		function changed(name: String, temp: Bool) {
-			owner.onSettingChange(ctx, name);
-			ctx.rebuildPrefab(emitter);
-			if (!temp && refresh.contains(name))
-				ctx.rebuildInspector();
-		}
 
 		var categories = new Map<String, hide.kit.Category>();
 		function getCategory(name: String) {
@@ -255,7 +249,7 @@ class EmitterEdit {
 		}
 
 		for (p in owner.getModeParams())
-			param(ctx, owner, p, getAllowedModes(p.kind), getCategory(p.groupName));
+			param(ctx, emitter, owner, p, getAllowedModes(p.kind), getCategory(p.groupName));
 	}
 
 
@@ -283,8 +277,7 @@ class EmitterEdit {
 		owner.setMode(def.name, i, isDefault(def, i, m) ? null : m);
 	}
 
-	static function convert(owner: ParamModes, def: ModeParamDef, i: Int, mode: ModeKind) : ParamMode {
-		var prefab : Prefab = cast owner;
+	static function convert(prefab: Prefab, owner: ParamModes, def: ModeParamDef, i: Int, mode: ModeKind) : ParamMode {
 		var base = def.def[i];
 		function at(s: String, k: Int, t: Float) { return EmitterParam.resolveCurve(prefab, s)?.datas[k]?.getVal(t) ?? base; }
 		function data(src: String, from: Float, to: Float) { return newModeData(prefab, src, from, to); }
@@ -318,7 +311,7 @@ class EmitterEdit {
 	}
 
 	static function newModeCurve(owner: Prefab, def: ModeParamDef, i: Int, datas: Array<hrt.impl.Curve>) : String {
-		var c = new Curve(owner, owner.shared);
+		var c = new hrt.prefab.fx.Curve(owner, owner.shared);
 		var base = def.name + (def.def.length == 1 ? "" : compName(i)) + "Curve";
 		var name = base;
 		var n = 1;
@@ -350,10 +343,10 @@ class EmitterEdit {
 		return d;
 	}
 
-	static function getModeCurves(owner: Prefab) : Array<Curve> {
+	static function getModeCurves(owner: Prefab) : Array<hrt.prefab.fx.Curve> {
 		var modes : Array<ParamMode> = [];
-		if (owner is ParamOwner) {
-			var emitter : ParamOwner = cast owner;
+		if (owner is BaseEmitter) {
+			var emitter : BaseEmitter = cast owner;
 			for (p in emitter.getModeParams())
 				for (i in 0...p.def.length)
 					modes.push(emitter.getMode(p.name, i));
@@ -379,16 +372,90 @@ class EmitterEdit {
 		return curves;
 	}
 
-	static function removeUnusedModeCurves(owner: Prefab, before: Array<Curve>) {
+	static function removeUnusedModeCurves(owner: Prefab, before: Array<hrt.prefab.fx.Curve>) {
 		var after = getModeCurves(owner);
 		for (c in before)
 			if (!after.contains(c))
 				c.remove();
 	}
 
-	static function getEditableCurve(owner: Prefab, path: String) : Curve {
+	static function getEditableCurve(owner: Prefab, path: String) : hrt.prefab.fx.Curve {
 		var c = EmitterParam.resolveCurve(owner, path);
 		return c != null && c.isPlain() ? c : null;
+	}
+
+	// Build inspector for the params of a shader under an emitter, false if the shader is not under one
+	public static function editParticleShader(ctx: EditContext2, shader: hrt.prefab.Shader, props: Array<hrt.prefab.Props.PropDef>, parent: hide.kit.Element) : Bool {
+		if (getParticleEmitter(shader) == null)
+			return false;
+		var shaderDef = shader.getShaderDefinition();
+		var modes = new ParticleShaderModes(shader);
+		for (prop in props) {
+			var v = Lambda.find(shaderDef.data.vars, v -> v.name == prop.name);
+			var dim = EmitterParam.getParamSize(v);
+			if (dim == 0) {
+				parent.buildProp(prop, shader.props);
+				continue;
+			}
+			var value : Dynamic = Reflect.field(shader.props, prop.name);
+			var base = [for (i in 0...dim) EmitterParam.baseComponent(value, dim, i)];
+			var t : hrt.prefab.Props.PropType = switch (prop.t) {
+				case PFloat(_), PVec(_): prop.t;
+				case PInt(min, max): PFloat(min, max);
+				default: PFloat(0, 1);
+			}
+			param(ctx, shader, modes, { name: prop.name, t: t, def: base, kind: Particle, groupName: null }, [Constant, Curve], parent);
+		}
+		return true;
+	}
+
+	/** Not the one of a trail or a sub-emitter it is under **/
+	static function getParticleEmitter(shader: hrt.prefab.Shader) : hrt.prefab.fx.Emitter {
+		var p = shader.parent;
+		while (p != null && !(p is hrt.prefab.fx.Emitter) && !(p is hrt.prefab.l3d.Trails))
+			p = p.parent;
+		return Std.downcast(p, hrt.prefab.fx.Emitter);
+	}
+}
+
+/** The params of a shader under an emitter: a component is its shader prop (Constant) or a particle curve **/
+class ParticleShaderModes implements ParamModes {
+	var shader : hrt.prefab.Shader;
+
+	public function new(shader: hrt.prefab.Shader) {
+		this.shader = shader;
+	}
+
+	public function getMode(name: String, comp: Int) : ParamMode {
+		var c = Lambda.find(shader.particleParams, p -> p.name == name)?.comps[comp];
+		return c == null ? null : Curve(c.curve);
+	}
+
+	public function setMode(name: String, comp: Int, m: ParamMode) {
+		var size = EmitterParam.getParamSize(Lambda.find(shader.getShaderDefinition().data.vars, v -> v.name == name));
+		var p = Lambda.find(shader.particleParams, p -> p.name == name);
+		if (p == null) {
+			p = { name: name, comps: [for (_ in 0...size) null] };
+			shader.particleParams.push(p);
+		}
+		p.comps[comp] = switch (m) {
+			case Curve(curve): { curve: curve };
+			case Constant(k):
+				if (size == 1)
+					Reflect.setField(shader.props, name, k);
+				else {
+					var prop : Array<Dynamic> = Reflect.field(shader.props, name);
+					if (!Std.isOfType(prop, Array)) {
+						prop = [for (j in 0...size) EmitterParam.baseComponent(prop, size, j)];
+						Reflect.setField(shader.props, name, prop);
+					}
+					prop[comp] = k;
+				}
+				null;
+			case null, _: null;
+		}
+		if (!Lambda.exists(p.comps, c -> c != null))
+			shader.particleParams.remove(p);
 	}
 }
 

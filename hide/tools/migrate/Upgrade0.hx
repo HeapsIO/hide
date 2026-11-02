@@ -716,7 +716,7 @@ class Upgrade0 {
 		}
 	}
 
-	/** Mirrors `Shader.getParticleEmitter`: the shaders under an emitter are evaluated over the particle life. **/
+	/** Mirrors `EmitterEdit.getParticleEmitter`: the shaders under an emitter are evaluated over the particle life. **/
 	static function particleEmitter( n : RawNode ) : RawNode {
 		var p = n.parent;
 		while( p != null ) {
@@ -1642,7 +1642,7 @@ class Upgrade0 {
 		change(n, "random blend, a curve of two datas");
 	}
 
-	/** The shaders the particles of `e` get (`Shader.getParticleEmitter`) **/
+	/** The shaders the particles of `e` get (`EmitterEdit.getParticleEmitter`) **/
 	static function particleShaders( e : RawNode, ?out : Array<RawNode> ) : Array<RawNode> {
 		if( out == null ) out = [];
 		for( c in e.children ) {
