@@ -1830,14 +1830,10 @@ class Emitter extends Object3D implements BaseEmitter {
 		saveParams(data);
 		if( !useRandomColor || !useRandomGradient )
 			Reflect.deleteField(data, "randomGradient");
-		if( !FX.inFX(this) )
-			data.version = FX.VERSION;
 		return data;
 	}
 
 	override function load( obj : Dynamic ) {
-		if( !FX.inFX(this) )
-			FX.checkVersion(this, obj);
 		super.load(obj);
 		loadParams(obj);
 		// Negative warmup time is an old version of delay

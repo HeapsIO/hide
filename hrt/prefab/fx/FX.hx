@@ -3,6 +3,7 @@ import hrt.prefab.fx.BaseFX.AdditionalProperies;
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.fx.BaseFX.ObjectAnimation;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
+import hrt.prefab.fx.BaseFX.BaseFXTools;
 import hrt.prefab.fx.Event;
 
 /**
@@ -123,7 +124,7 @@ class FXAnimation extends h3d.scene.Object {
 		updateCustomAnims(root);
 
 		events = initEvents(root, events);
-		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(def);
+		var root = BaseFXTools.getFXRoot(def);
 		initConstraints(root != null ? root : def);
 
 		trails = findAll((p) -> Std.downcast(p, hrt.prefab.l3d.Trails.TrailObj));
@@ -907,7 +908,7 @@ class FX extends Object3D implements BaseFX {
 	}
 
 	/**
-		Version of the data of an FX, saved on its root (and on an emitter out of any FX), 0 when missing.
+		Version of the data of an FX, saved on its root, 0 when missing.
 		Older data is upgraded on load with `-D fx-migration`, or rejected.
 	**/
 	public static inline var VERSION = 2;
@@ -926,10 +927,6 @@ class FX extends Object3D implements BaseFX {
 		#end
 		throw '${p.shared.currentPath} ${p.getAbsPath()}: FX data of version $version, this build reads version $VERSION. '
 			+ 'Migrate the project with the hide migration tool (hide/migrate.hxml), or upgrade it on load with -D fx-migration';
-	}
-
-	public static function inFX( p : Prefab ) {
-		return p.findParent(Prefab, c -> c is BaseFX) != null;
 	}
 
 	override function load( data : Dynamic ) {
@@ -951,7 +948,7 @@ class FX extends Object3D implements BaseFX {
 	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab  {
 		var fromRef = shared.parentPrefab != null;
 		var useFXRoot = #if editor fromRef #else true #end;
-		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
+		var root = BaseFXTools.getFXRoot(this);
 		if(useFXRoot && root != null){
 			var childrenBackup = _children;
 			_children = [root];
@@ -1000,7 +997,7 @@ class FX extends Object3D implements BaseFX {
 	}
 
 	public override function postMakeInstance() {
-		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
+		var root = BaseFXTools.getFXRoot(this);
 		var fxAnim = Std.downcast(local3d, FXAnimation);
 		if (fxAnim == null)
 			return;

@@ -538,14 +538,10 @@ class Emitter2D extends Object2D implements BaseEmitter {
 		saveParams(data);
 		if( !useRandomColor || !useRandomGradient )
 			Reflect.deleteField(data, "randomGradient");
-		if( !FX.inFX(this) )
-			data.version = FX.VERSION;
 		return data;
 	}
 
 	override function load( obj : Dynamic ) {
-		if( !FX.inFX(this) )
-			FX.checkVersion(this, obj);
 		super.load(obj);
 		loadParams(obj);
 		if( randomGradient == null && useRandomGradient )
