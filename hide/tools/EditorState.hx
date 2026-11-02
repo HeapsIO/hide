@@ -141,6 +141,17 @@ class EditorStateRoot extends EditorState {
 		saveDelay = haxe.Timer.delay(() -> save(), saveDebounce);
 	}
 
+	/**
+		Saves now if a save is queued
+	**/
+	public function flush() {
+		if (saveDelay == null)
+			return;
+		saveDelay.stop();
+		saveDelay = null;
+		save();
+	}
+
 	public function load(filePath) {
 		key = filePath;
 		if (key != null) {

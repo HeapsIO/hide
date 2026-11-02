@@ -150,6 +150,8 @@ class Ide extends hide.tools.IdeData {
 			var pre = "--project-dir=";
 			if( StringTools.startsWith(a, pre) )
 				projectOverride = a.substr(pre.length);
+			else if( StringTools.startsWith(a, "--user-data-dir=") )
+				userDataPath = electron.App.dataPath.split("\\").join("/");
 			else if( a == "--default-config" )
 				defaultConfig = true;
 		}
@@ -211,6 +213,10 @@ class Ide extends hide.tools.IdeData {
 			return;
 		}
 
+		js.Browser.window.addEventListener("beforeunload", function() {
+			globalState.flush();
+			projectState.flush();
+		});
 		js.Browser.document.addEventListener("mousedown", function(e) {
 			mouseX = e.x;
 			mouseY = e.y;
