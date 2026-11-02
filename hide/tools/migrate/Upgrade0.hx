@@ -31,13 +31,16 @@ private typedef Resample = {
 	var nonRigid : Float;
 }
 
-/** The mode of a param component (format 1), a curve by its path from the emitter. The bounds of MCurve and MCurveRange are baked into their curves when saved **/
+/**
+	The mode of a param component (format 1), a curve by its path from the emitter. The bounds of MCurve and MCurveRange are baked
+	into their curves when saved. The curve of MCurveRange is an old random blend: its two child curves become its two datas.
+**/
 private enum Mode {
 	MConstant( v : Float );
 	MRange( min : Float, max : Float );
 	MCurve( curve : String, from : Float, to : Float );
 	MRandomCurve( curve : String, fromMin : Float, fromMax : Float, toMin : Float, toMax : Float );
-	MCurveRange( a : String, aFrom : Float, aTo : Float, b : String, bFrom : Float, bTo : Float );
+	MCurveRange( curve : String, aFrom : Float, aTo : Float, bFrom : Float, bTo : Float );
 }
 
 private enum abstract Group(Int) {
@@ -119,6 +122,7 @@ class Upgrade0 {
 	var users : Map<RawNode, Array<RawNode>> = new Map();
 	var remapUsers : Map<RawNode, Array<RawNode>> = new Map();
 	var bakedModeCurves : Map<RawNode, Bool> = new Map();
+	var mergedBlends : Map<RawNode, Bool> = new Map();
 	/** The curves that hold their new values **/
 	var upgraded = new haxe.ds.ObjectMap<Dynamic, Bool>();
 	var parameters : Map<String, Float> = new Map();
@@ -1532,7 +1536,7 @@ class Upgrade0 {
 				case MRange(a, b): MRange(a * k, b * k);
 				case MCurve(s, f, t): MCurve(s, f * k, t * k);
 				case MRandomCurve(s, f0, f1, t0, t1): MRandomCurve(s, f0 * k, f1 * k, t0 * k, t1 * k);
-				case MCurveRange(a, af, at, b, bf, bt): MCurveRange(a, af * k, at * k, b, bf * k, bt * k);
+				case MCurveRange(s, af, at, bf, bt): MCurveRange(s, af * k, at * k, bf * k, bt * k);
 			}]);
 			change(e, "orbit speed in degrees per second");
 		}
@@ -1573,10 +1577,12 @@ class Upgrade0 {
 				upgradeParticleShader(s);
 	}
 
-	/** The curves of the Curve and CurveRange modes hold their values: `lerp(from, to, curve)` is baked into them **/
+	/**
+		The curves of the Curve and CurveRange modes hold their values: `lerp(from, to, curve)` is baked into them. The random
+		blend of a CurveRange then becomes a curve of two datas (`mergeRandomBlend`).
+	**/
 	function bakeModeCurves( owner : RawNode, m : Mode ) : Mode {
-		function bake( path : String, from : Float, to : Float ) {
-			var n = locate(path, owner);
+		function bake( n : RawNode, from : Float, to : Float ) {
 			if( n == null || (from == 0 && to == 1) )
 				return;
 			if( bakedModeCurves.exists(n) )
@@ -1587,14 +1593,53 @@ class Upgrade0 {
 		}
 		return switch( m ) {
 		case MCurve(s, from, to):
-			bake(s, from, to);
+			bake(locate(s, owner), from, to);
 			MCurve(s, 0, 1);
-		case MCurveRange(a, af, at, b, bf, bt):
-			bake(a, af, at);
-			bake(b, bf, bt);
-			MCurveRange(a, 0, 1, b, 0, 1);
+		case MCurveRange(s, af, at, bf, bt):
+			var n = locate(s, owner);
+			if( n != null && !mergedBlends.exists(n) ) {
+				bake(n.children[0], af, at);
+				bake(n.children[1], bf, bt);
+				mergeRandomBlend(n);
+			} else if( n != null && (af != 0 || at != 1 || bf != 0 || bt != 1) )
+				warn(n, "random blend of several params, baked with the bounds of the first one");
+			MCurveRange(s, 0, 1, 0, 1);
 		case null, _: m;
 		}
+	}
+
+	/**
+		A Curve Range reads the two datas of one curve (`ParamBuilder.comp`): the random blend `n` gets the keys of its two child
+		curves (`lerp(child0(t), child1(t), random)` before) as its datas, and loses its children.
+	**/
+	function mergeRandomBlend( n : RawNode ) {
+		mergedBlends.set(n, true);
+		var sub = [for( i in 0...2 ) i < n.children.length && n.children[i].isCurve ? n.children[i] : null];
+		if( sub[0] == null || sub[1] == null ) {
+			fail(n, "random blend without its two child curves");
+			return;
+		}
+		// the old runtime read the own keys of a random blend through a reference: they are lost
+		if( users.exists(n) && users.get(n).length > 0 )
+			warn(n, "random blend read by references, they read its first child curve now");
+		function datum( c : RawNode ) : Dynamic {
+			var keys : Array<Dynamic> = get(c.data, "keys");
+			if( keys == null || keys.length == 0 ) {
+				// the default keys of `Curve.load`
+				var mode = get(c.data, "keyMode") ?? 2;
+				keys = [obj(["time", 0., "value", 0., "mode", mode]), obj(["time", 1., "value", 1., "mode", mode])];
+			}
+			var d : Dynamic = obj(["keys", deepCopy(keys)]);
+			if( get(c.data, "loop") == true ) d.loop = true;
+			return d;
+		}
+		var d = n.data;
+		var datas = [datum(sub[0]), datum(sub[1])];
+		for( f in ["blendMode", "blendParam", "remapPath", "scale", "offset", "keys", "keyMode", "loop", "previewKeys", "children"] )
+			Reflect.deleteField(d, f);
+		RawNode.setField(d, "datas", datas);
+		n.rebuildChildren();
+		change(n, "random blend, a curve of two datas");
 	}
 
 	/** The shaders the particles of `e` get (`Shader.getParticleEmitter`) **/
@@ -1682,8 +1727,7 @@ class Upgrade0 {
 								warn(e, '${old + suffix}: random blend without its two child curves');
 							else if( !sub[0].enabled() || !sub[1].enabled() )
 								warn(e, '${old + suffix}: disabled child curve of a random blend');
-							inline function path( j : Int ) return ci.uniqueName() + "." + (j < sub.length ? sub[j].uniqueName() : "0");
-							mode = MCurveRange(path(0), 0, 1, path(1), 0, 1);
+							mode = MCurveRange(ci.uniqueName(), 0, 1, 0, 1);
 						} else if( curve != null ) {
 							if( isAdditive )
 								mode = hasRand ? MRandomCurve(curve, k - rand, k + rand, k - rand + 1, k + rand + 1) : MCurve(curve, k, k + 1);
@@ -1921,7 +1965,7 @@ class Upgrade0 {
 			if( f0 != 0 || f1 != 0 ) o.from = obj(["min", f0, "max", f1]);
 			if( t0 != 1 || t1 != 1 ) o.to = obj(["min", t0, "max", t1]);
 			o;
-		case MCurveRange(a, _, _, b, _): obj(["mode", "CurveRange", "a", a, "b", b]);
+		case MCurveRange(s, _): obj(["mode", "CurveRange", "curve", s]);
 		}
 	}
 
