@@ -711,7 +711,7 @@ class Emitter2D extends Object2D implements BaseEmitter {
 				ctx.rebuildInspector();
 		}
 
-		hide.prefab.fx.EmitterEdit.edit(ctx, this, getVisibleParams(), onChange);
+		EmitterHelper.edit(ctx, this, getVisibleParams(), onChange);
 	}
 
 	#if editor

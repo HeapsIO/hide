@@ -295,7 +295,7 @@ class Shader extends Prefab {
 		ctx.build(
 			<category("Shader") id="shaderCat"/>
 		);
-		if (!hide.prefab.fx.EmitterEdit.editParticleShader(ctx, this, props, shaderCat))
+		if (!hrt.prefab.fx.EmitterHelper.editParticleShader(ctx, this, props, shaderCat))
 			shaderCat.buildPropsList(props, this.props);
 	}
 
