@@ -139,6 +139,17 @@ class PreviewSettings {
 	public function new() {};
 }
 
+class ShaderPreviewScene extends hide.comp.Scene {
+	public var clearOnly = false;
+
+	override public function render( e : h3d.Engine ) {
+		if (clearOnly)
+			e.clear(e.backgroundColor, 1, 0);
+		else
+			super.render(e);
+	}
+}
+
 @:access(hrt.shgraph.ShaderGraph)
 @:access(hrt.shgraph.Graph)
 class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEditor {
@@ -148,6 +159,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	var compiledShader : hrt.prefab.Cache.ShaderDef;
 	var compiledShaderPreview : hrt.prefab.Cache.ShaderDef;
+	var compileError : haxe.Exception;
+	var shaderErrorElement : js.html.DivElement;
 
 	var previewShaderBase : PreviewShaderBase;
 	var previewShaderAlpha : GraphEditor.PreviewShaderAlpha;
@@ -155,7 +168,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var needRecompile : Bool = true;
 	var needResolveTypes : Bool = true;
 
-	var meshPreviewScene : hide.comp.Scene;
+	var meshPreviewScene : ShaderPreviewScene;
 	var meshPreviewMeshes : Array<h3d.scene.Mesh> = [];
 	var meshPreviewScreenFX : Array<hrt.prefab.rfx.ScreenShaderGraph> = [];
 	var meshPreviewRoot3d : h3d.scene.Object;
@@ -218,6 +231,11 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		graphEditor = new hide.view.GraphEditor(config, this, this.element);
 		graphEditor.onDisplay();
 
+		shaderErrorElement = js.Browser.document.createDivElement();
+		shaderErrorElement.className = "shader-error";
+		graphEditor.element.get(0).append(shaderErrorElement);
+		refreshShaderError();
+
 		haxe.Timer.delay(() -> {
 			graphEditor.centerView();
 		}, 50);
@@ -228,6 +246,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				e.stopPropagation();
 			}
 		};
+
+		// Must precede the native handlers below, which override the ones set by makeDropTarget
+		hide.tools.DragAndDrop.makeDropTarget(graphEditor.element.get(0), onDropEvent);
 
 		graphEditor.element.get(0).ondragenter = canDragFunc;
 		graphEditor.element.get(0).ondragover = canDragFunc;
@@ -544,7 +565,23 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					setMeshPreviewFBX(item);
 				}
 			}
+			return;
 		}
+
+		var pos = new Point(graphEditor.lX(dragData.mouseX - 25), graphEditor.lY(dragData.mouseY - 25));
+		for (item in items) {
+			if (!StringTools.endsWith(item, ".shgraph") || item == state.path)
+				continue;
+
+			var node = @:privateAccess new SubGraph(item);
+			@:privateAccess node.id = currentGraph.current_node_id++;
+			node.setPos(pos);
+			node.graph = currentGraph;
+			graphEditor.opBox(node, true, graphEditor.currentUndoBuffer);
+			pos.x += 25;
+			pos.y += 25;
+		}
+		graphEditor.commitUndo();
 	}
 
 	override function onActivate() {
@@ -1282,7 +1319,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		previewElem.width(previewSettings.width);
 		previewElem.height(previewSettings.height);
-		meshPreviewScene = new hide.comp.Scene(config, null, sceneContainer);
+		meshPreviewScene = new ShaderPreviewScene(config, null, sceneContainer);
 		meshPreviewScene.onReady = onMeshPreviewReady;
 		meshPreviewScene.onUpdate = onMeshPreviewUpdate;
 		meshPreviewScene.enableNewErrorSystem = true;
@@ -1501,6 +1538,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 		if (meshPreviewShader == null) {
 			checkCompileShader();
+			if (compileError != null)
+				return;
 			@:privateAccess meshPreviewScene.checkCurrent();
 			meshPreviewShader = new hxsl.DynamicShader(compiledShader.shader);
 
@@ -1844,7 +1883,15 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		checkCompileShader();
 
-		return true;
+		// the previews would throw every frame with an invalid shader
+		var valid = compileError == null;
+		if (!valid)
+			for (bitmap in bitmapToShader.keys())
+				bitmap.visible = false;
+		if (meshPreviewScene != null)
+			meshPreviewScene.clearOnly = !valid;
+
+		return valid;
 	}
 	var bitmapToShader : Map<h2d.Bitmap, hxsl.DynamicShader> = [];
 	public function onNodePreviewUpdate(node: IGraphNode, bitmap: h2d.Bitmap) {
@@ -2064,6 +2111,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	public override function save() {
+		checkCompileShader();
+		if (compileError != null) {
+			var error = compileError.message.split("\n")[0];
+			if (!ide.confirm('The shader has compilation errors :\n$error\n\nThe shader might not work in game. Save anyway?'))
+				return;
+		}
+
 		var content = shaderGraph.saveToText();
 		currentSign = ide.makeSignature(content);
 		sys.io.File.saveContent(getPath(), content);
@@ -2104,14 +2158,64 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			shaderGraph.clearCaches();
 			compiledShader = shaderGraph.compile({});
 			compiledShaderPreview = shaderGraph.compile({previewDomain: currentGraph.domain});
+			hxsl.Printer.check(compiledShader.shader.data);
+			hxsl.Printer.check(compiledShaderPreview.shader.data);
 			bitmapToShader.clear();
 			previewVar = compiledShaderPreview.inits.find((e) -> e.variable.name == hrt.shgraph.Variables.previewSelectName)?.variable;
 			var end = Timer.stamp();
 
 			meshPreviewShader = null;
+			compileError = null;
 		} catch (err) {
-			Ide.inst.quickError(err);
+			compileError = err;
 		}
+		refreshShaderError();
+	}
+
+	function refreshShaderError() {
+		shaderErrorElement.innerHTML = "";
+		shaderErrorElement.style.display = compileError != null ? "" : "none";
+		if (compileError == null)
+			return;
+
+		var doc = js.Browser.document;
+		var lines = compileError.message.split("\n");
+		var title = doc.createDivElement();
+		title.innerText = "This shader has an error : " + lines.shift();
+		shaderErrorElement.append(title);
+
+		var details = doc.createPreElement();
+		details.textContent = lines.join("\n");
+
+		var buttons = doc.createDivElement();
+		buttons.className = "buttons";
+		shaderErrorElement.append(buttons);
+
+		function addButton(label: String, onClick: js.html.SpanElement -> Void) {
+			var button = doc.createElement("fancy-button");
+			var span = doc.createSpanElement();
+			span.className = "label";
+			span.innerText = label;
+			button.append(span);
+			button.onclick = (_) -> onClick(span);
+			buttons.append(button);
+		}
+
+		if (lines.length > 0) {
+			addButton("More Info", (label) -> {
+				var shown = details.isConnected;
+				if (shown)
+					details.remove();
+				else
+					title.after(details);
+				label.innerText = shown ? "More Info" : "Less Info";
+			});
+		}
+
+		addButton("Copy Error", (_) -> {
+			ide.setClipboard(compileError.message);
+			ide.quickMessage("Error copied to clipboard");
+		});
 	}
 
 	static var _ = Extension.registerExtension(ShaderEditor,["shgraph"],{ icon : "scribd", createNew: "Shader Graph", name: "Shader Graph" });
