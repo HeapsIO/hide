@@ -265,14 +265,14 @@ class EmitterEdit {
 
 	static function isDefault(def: ModeParamDef, i: Int, m: ParamMode) {
 		return switch (m) {
+			case null: true;
 			case Constant(v): v == def.def[i];
 			default: false;
 		}
 	}
 
 	static function isSet(owner: ParamModes, def: ModeParamDef, i: Int) {
-		var m = owner.getMode(def.name, i);
-		return m != null && !isDefault(def, i, m);
+		return !isDefault(def, i, owner.getMode(def.name, i));
 	}
 
 	static function isAnySet(owner: ParamModes, def: ModeParamDef) {
