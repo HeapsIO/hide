@@ -1,5 +1,6 @@
 package hide.tools;
 
+#if !macro
 /**
 	View for a String -> Any dictionary, that get/set values either in
 	itself, or in parent[key] if parent is set.
@@ -52,6 +53,11 @@ class EditorState {
 		}
 	}
 
+	// called when data changes happens inside the tree
+	function change() {
+		parent?.change();
+	}
+
 	public function get(k, ?def) : Any {
 		var store = store ?? parent.get(key);
 		if (store == null)
@@ -62,6 +68,7 @@ class EditorState {
 	public function set(k, v) {
 		var store = store ?? parent.getInit(key);
 		Reflect.setField(store, k, v);
+		change();
 	}
 
 	public function remove(k) {
@@ -72,6 +79,7 @@ class EditorState {
 		if (parent != null && Reflect.fields(store).length == 0) {
 			parent.remove(key);
 		}
+		change();
 	}
 
 	function getInit(k) : Dynamic {
@@ -84,6 +92,10 @@ class EditorState {
 		return v;
 	}
 }
+
+/**
+	EditorState that stores its state as a file on disk
+**/
 class EditorStateRoot extends EditorState {
 	var saveDelay: haxe.Timer;
 
@@ -92,17 +104,16 @@ class EditorStateRoot extends EditorState {
 		load(filePath);
 	}
 
-	static final saveDebounce = 1_000;
-
-	// called when a child calls set();
-	override function getInit(k) : Dynamic {
-		queueSave();
-		return super.getInit(k);
+	override function setParent(p, path) {
+		if (p != null)
+			throw "EditorStateRoot can't have a parent";
+		super.setParent(p, path);
 	}
 
-	override function set(k, v) {
+	static final saveDebounce = 1_000;
+
+	override function change() {
 		queueSave();
-		super.set(k,v);
 	}
 
 	function queueSave() {
@@ -135,3 +146,55 @@ class EditorStateRoot extends EditorState {
 		sys.io.File.saveContent(key, haxe.Json.stringify(store ?? {}, null, "\t"));
 	}
 }
+#else
+class EditorState {
+
+	/**
+		Turns each `@:state(state) var name : T = default` into a property stored in `state` under the key `name`.
+	**/
+	public static function build() : Array<haxe.macro.Expr.Field> {
+		var fields = haxe.macro.Context.getBuildFields();
+		for( f in fields.copy() ) {
+			var meta = Lambda.find(f.meta, m -> m.name == ":state");
+			if( meta == null )
+				continue;
+			if( meta.params.length != 1 )
+				haxe.macro.Context.error("@:state expects the state as parameter", meta.pos);
+
+			var state = meta.params[0];
+			var key = f.name;
+			switch( f.kind ) {
+			case FVar(t, def) if( t != null ):
+				if( !isValueType(haxe.macro.Context.resolveType(t, f.pos)) )
+					haxe.macro.Context.error("@:state only supports Bool, Int, Float and String", f.pos);
+				if( def == null )
+					def = macro null;
+				f.kind = FProp("get", "set", t);
+
+				fields.push({
+					name : "get_" + key,
+					pos : f.pos,
+					kind : FFun({ args : [], ret : t, expr : macro return $state.get($v{key}, $def) }),
+				});
+				fields.push({
+					name : "set_" + key,
+					pos : f.pos,
+					kind : FFun({ args : [{ name : "v", type : t }], ret : t, expr : macro { if( v == $def ) $state.remove($v{key}) else $state.set($v{key}, v); return v; } }),
+				});
+			default:
+				haxe.macro.Context.error("@:state expects a var with an explicit type", f.pos);
+			}
+		}
+		return fields;
+	}
+
+	static function isValueType( t : haxe.macro.Type ) {
+		return switch( haxe.macro.Context.follow(t) ) {
+		case TAbstract(_.get() => { pack : [], name : "Null" }, [p]): isValueType(p);
+		case TAbstract(_.get() => { pack : [], name : "Bool" | "Int" | "Float" }, _): true;
+		case TInst(_.get() => { pack : [], name : "String" }, _): true;
+		default: false;
+		}
+	}
+}
+#end

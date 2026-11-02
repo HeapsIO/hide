@@ -166,6 +166,7 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 }
 
 @:keep
+@:build(hide.tools.EditorState.build())
 class Prefab extends hide.view.FileView {
 
 	public var sceneEditor : PrefabSceneEditor;
