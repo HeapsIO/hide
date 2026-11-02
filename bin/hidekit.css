@@ -391,7 +391,7 @@ kit-root {
 			content: "";
 			position: absolute;
 			left: 0;
-			right: 0; /* TEST */
+			right: 0;
 			height: 0;
 			border: 1px solid #FFFFFF;
 			z-index: 1;
