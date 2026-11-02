@@ -2,23 +2,41 @@ package hide.tools;
 
 #if !macro
 /**
-	View for a String -> Any dictionary, that get/set values either in
-	itself, or in parent[key] if parent is set.
+	View for a String -> Any dictionary, get/set functions retrieves or stores the data either in
+	this.store, or in parent.store[key] if parent is set.
 
 	Usage :
 
 	- Store state globally :
-		Use ide.Inst.globalState for user state that is cross project, or ide.Inst.projectState for
+		Use hide.Ide.inst.globalState for user state that is cross project, or hide.Ide.inst.projectState for
 		project specific state.
-		Calling set/get saves the values at the root of these config (at the root of editorState.json)
+		Calling set/get saves the values at the root of these configs objects (they will be serialized at the root of their respective editorState.json files)
 	- Nesting state :
-		For scoped state, or objects that can optionally store their state (for example FancyArray open state can be optionnaly stored),
+		For scoped state, or objects that can optionally store their state (for example FancyArray open state can be optionally stored),
 		create a new public EditorState object inside the class, and store your state using the get/set api.
-		Then the user of your class can call editorState.setParent(parentState, "key") to store the child state inside parentState unde the "key"
+		Then the user of your class can call editorState.setParent(parentState, "key") to store the child state inside parentState under the "key"
 		entry. Note that state stored before setParent is called is lost, so don't get/set state as part of your object constructor.
-		For convenience, Views create their own global / projectState that are stored inside views."view.class.path", and FileView expose
+		For convenience, Views create their own global / projectState that are stored inside views."view.class.path", and FileView exposes
 		a fileState that is saved inside files."file/path"."view.class.path".
 
+	- Macros :
+		Member variables of a class can be saved into a state using the @:state variable annotation.
+		For the moment only value types are covered by this macro, and must have a default value.
+		To use it, first add @:build(hide.tools.EditorState.build()) to your class, then you can use
+		the annotation `@:state(state_variable)` to transform the variable into a getter/setter pair that
+		store its value into an EditorState named `state_variable`.
+		The default value will be used when the key is not set, and if someone sets the variable to its
+		default value, it will be removed from the state.
+
+		Example :
+		```haxe
+		var localState = new EditorState(); // first we need a state object to store our variable.
+											// Note that until setParent is called, the state is stored
+											// won't be saved on disk
+
+		@:state(localState) var localTransform : Bool = false; // reads and writes to localTransform
+															   // use localState.get/set("localTransform");
+		```
 **/
 class EditorState {
 	// Key of this state in its parent object
@@ -168,7 +186,7 @@ class EditorState {
 				if( !isValueType(haxe.macro.Context.resolveType(t, f.pos)) )
 					haxe.macro.Context.error("@:state only supports Bool, Int, Float and String", f.pos);
 				if( def == null )
-					def = macro null;
+					haxe.macro.Context.error("@:state expects a default value", f.pos);
 				f.kind = FProp("get", "set", t);
 
 				fields.push({

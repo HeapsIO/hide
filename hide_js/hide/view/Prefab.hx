@@ -190,7 +190,7 @@ class Prefab extends hide.view.FileView {
 	var matLibPath : String;
 	var renameMatsHistory : Array<Dynamic>;
 
-	@:state(localState) var localTransform : Bool = false;
+	@:state(projectState) var localTransform : Bool = false;
 	var localTransformToggle: hide.html.comp.Button;
 
 	var scene(get, null):  hide.comp.Scene;

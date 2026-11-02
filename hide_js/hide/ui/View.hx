@@ -12,7 +12,7 @@ typedef ViewOptions = { ?position : DisplayPosition, ?width : Int }
 @:keepSub @:allow(hide.Ide) @:allow(hide.html.comp.TabViewContainer)
 class View<T> extends hide.comp.Component {
 	public var globalState : hide.tools.EditorState = new hide.tools.EditorState();
-	public var localState : hide.tools.EditorState = new hide.tools.EditorState();
+	public var projectState : hide.tools.EditorState = new hide.tools.EditorState();
 
 	var container : hide.html.comp.TabViewContainer;
 	public var fullScreen(get,set) : Bool;
@@ -37,7 +37,7 @@ class View<T> extends hide.comp.Component {
 	public function new(state:T) {
 		super(null,null);
 		globalState.setParent(hide.Ide.inst.globalViewState, Type.getClassName(Type.getClass(this)));
-		localState.setParent(hide.Ide.inst.projectViewState, Type.getClassName(Type.getClass(this)));
+		projectState.setParent(hide.Ide.inst.projectViewState, Type.getClassName(Type.getClass(this)));
 
 		element[0].classList.add("hide-view");
 		(element[0] : Dynamic).__view = this;
