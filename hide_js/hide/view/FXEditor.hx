@@ -1314,7 +1314,7 @@ class FXEditor extends hide.view.FileView {
 			for(k in getAnimKeys(element, id) ?? [id]) {
 				if(Curve.getCurve(element, k, false) != null)
 					continue;
-				var curve = new Curve(null, null);
+				var curve = new Curve(element, null);
 				curve.name = k;
 				// the curve holds the value of the property: it starts from its current value
 				var v = getAnimValue(element, k) ?? prop.def;
@@ -1327,17 +1327,13 @@ class FXEditor extends hide.view.FileView {
 		if(added.length == 0)
 			return added;
 
-		function exec(undo: Bool) {
+		undo.change(Custom(function(undo) {
 			for(c in added) {
 				if(undo)
 					c.remove();
 				else
 					element.addChild(c);
 			}
-		}
-		exec(false);
-		undo.change(Custom(function(undo) {
-			exec(undo);
 			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 			sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(SceneTree, () -> sceneEditor.selectElements(!undo ? [for (a in added) a] : [], NoHistory)));
 		}));

@@ -23,6 +23,7 @@ class Line extends Element {
 		return multilineElement ?? native;
 	}
 
+
 	override function makeSelf():Void {
 		if (!full) {
 			labelElement = NativeElement.create("kit-label");
