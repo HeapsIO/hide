@@ -66,6 +66,10 @@ class Curve extends Prefab {
 		return data.sample(numPts);
 	}
 
+	public function makeVal() : hrt.prefab.fx.Value {
+		return VCurve(data);
+	}
+
 	#if editor
 	// Returns the visual representation of this curve as an svg path `d` data
 	public function getSvgString() : String {
