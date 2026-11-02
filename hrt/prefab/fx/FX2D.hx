@@ -2,6 +2,7 @@ package hrt.prefab.fx;
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.fx.BaseFX.ObjectAnimation;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
+import hrt.prefab.fx.BaseFX.BaseFXTools;
 import hrt.prefab.fx.Event;
 
 @:allow(hrt.prefab.fx.FX2D)
@@ -258,9 +259,9 @@ class FX2D extends Object2D implements BaseFX {
 		var anim : ObjectAnimation = {
 			elt2d: obj2d,
 			obj2d: local2d,
-			position: hrt.prefab.fx.BaseFX.BaseFXTools.vectorAnimation(elt, "position"),
-			scale: hrt.prefab.fx.BaseFX.BaseFXTools.vectorAnimation(elt, "scale"),
-			rotation: hrt.prefab.fx.BaseFX.BaseFXTools.vectorAnimation(elt, "rotation"),
+			position: BaseFXTools.vectorAnimation(elt, "position"),
+			scale: BaseFXTools.vectorAnimation(elt, "scale"),
+			rotation: BaseFXTools.vectorAnimation(elt, "rotation"),
 			color: makeColor("color"),
 			visibility: makeVal("visibility", null),
 		};
@@ -277,7 +278,7 @@ class FX2D extends Object2D implements BaseFX {
 		#else
 		var fromRef = shared.parentPrefab != null;
 		var useFXRoot = #if editor fromRef #else true #end;
-		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
+		var root = BaseFXTools.getFXRoot(this);
 		if( useFXRoot && root != null ) {
 			var childrenBackup = _children;
 			_children = [root];
@@ -294,7 +295,7 @@ class FX2D extends Object2D implements BaseFX {
 		var fxanim : FX2DAnimation = cast local2d;
 		fxanim.init(this);
 		getObjAnimations(this, fxanim.objects);
-		hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(this, fxanim.customAnims);
+		BaseFXTools.getCustomAnimations(this, fxanim.customAnims);
 	}
 
 	override function makeObject(parent2d: h2d.Object) : h2d.Object {
