@@ -53,8 +53,8 @@ class Evaluator {
 		return getFast(pidx, val, time);
 	}
 
-	// no optional argument: HL boxes it
-	public function getFast(pidx: Int, val: Value, time: Float) : Float {
+	// no optional argument, causes boxing on HL
+	public inline function getFast(pidx: Int, val: Value, time: Float) : Float {
 		return switch(val) {
 			case null, VZero: 0.0;
 			case VConst(v): v;
@@ -89,16 +89,16 @@ class Evaluator {
 	public function getVector(pidx: Int=0, v: Value, time: Float, vec: h3d.Vector4) {
 		switch(v) {
 			case VVector(x, y, z, null):
-				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time), getFloat(pidx, z, time), 1.0);
+				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), 1.0);
 			case VVector(x, y, z, w):
-				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time), getFloat(pidx, z, time), getFloat(pidx, w, time));
+				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), getFast(pidx, w, time));
 			case VHsl(h, s, l, a):
-				vec.makeColor(getFloat(pidx, h, time), getFloat(pidx, s, time), getFloat(pidx, l, time));
-				vec.a = getFloat(pidx, a, time);
+				vec.makeColor(getFast(pidx, h, time), getFast(pidx, s, time), getFast(pidx, l, time));
+				vec.a = getFast(pidx, a, time);
 			case VZero:
 				vec.set(0,0,0,1);
 			default:
-				var f = getFloat(pidx, v, time);
+				var f = getFast(pidx, v, time);
 				vec.set(f, f, f, 1.0);
 		}
 		return vec;
@@ -128,11 +128,11 @@ class Evaluator {
 	public function getVector2(pidx: Int=0, v: Value, time: Float, vec: h2d.col.Point) {
 		switch(v) {
 			case VVector(x, y, _, _):
-				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time));
+				vec.set(getFast(pidx, x, time), getFast(pidx, y, time));
 			case VZero:
 				vec.set(0,0);
 			default:
-				var f = getFloat(pidx, v, time);
+				var f = getFast(pidx, v, time);
 				vec.set(f, f);
 		}
 		return vec;
