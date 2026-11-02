@@ -472,7 +472,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		// Favorites tree
 
-		favoritesTree = new hide.comp.FancyTree<FavoriteEntry>(browserLayout.find(".left").find(".top"), { saveDisplayKey: "fileBrowserTree_Favorites" } );
+		favoritesTree = new hide.comp.FancyTree<FavoriteEntry>(browserLayout.find(".left").find(".top"), {} );
+		favoritesTree.state.setParent(localState, "favoritesTree");
 		favoritesTree.getChildren = (file: FavoriteEntry) -> {
 			function rec(parent : FavoriteEntry) {
 				if (parent.ref.children == null)
@@ -721,7 +722,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			this.favoritesTree.element.parent().hide();
 
 		// Ressources tree
-		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left").find(".bot"), { saveDisplayKey: "fileBrowserTree_Main", search: true, customScroll: element.find("fancy-scroll").get(0) } );
+		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left").find(".bot"), { search: true, customScroll: element.find("fancy-scroll").get(0) } );
+		fancyTree.state.setParent(localState, "tree");
 		fancyTree.getChildren = (file: FileEntry) -> {
 			if (file == null)
 				return [root];

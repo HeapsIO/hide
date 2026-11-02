@@ -36,8 +36,8 @@ class View<T> extends hide.comp.Component {
 
 	public function new(state:T) {
 		super(null,null);
-		globalState.initGlobalView(Type.getClassName(Type.getClass(this)));
-		localState.initLocalView(Type.getClassName(Type.getClass(this)));
+		globalState.setParent(hide.Ide.inst.globalViewState, Type.getClassName(Type.getClass(this)));
+		localState.setParent(hide.Ide.inst.projectViewState, Type.getClassName(Type.getClass(this)));
 
 		element[0].classList.add("hide-view");
 		(element[0] : Dynamic).__view = this;

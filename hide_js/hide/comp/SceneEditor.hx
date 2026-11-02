@@ -2049,8 +2049,10 @@ class SceneEditor {
 		for( f in Reflect.fields(iconsConfig) )
 			icons.set(f, Reflect.field(iconsConfig,f));
 
-		var saveDisplayKey = isSceneTree ? view.saveDisplayKey + '/tree' : view.saveDisplayKey + '/renderPropsTree';
-		var tree = new FancyTree<hrt.prefab.Prefab>(null, { saveDisplayKey: saveDisplayKey, quickGoto: false, search: true });
+		var saveKey = isSceneTree ? 'tree' : 'renderPropsTree';
+		var tree = new FancyTree<hrt.prefab.Prefab>(null, { quickGoto: false, search: true });
+		tree.state.setParent(view.fileState, saveKey);
+
 		tree.getChildren = (p : hrt.prefab.Prefab) -> {
 			if (p == null) {
 				if (isSceneTree)
@@ -2071,13 +2073,19 @@ class SceneEditor {
 			return p.name;
 		}
 		tree.getUniqueName = (p : hrt.prefab.Prefab) -> {
-			var path = p.getUniqueName();
-			var parent = p.parent;
-			while(parent != null) {
-				path = parent.getUniqueName() + "/" + path;
-				parent = parent.parent ?? parent.shared.parentPrefab;
-			}
-			return path;
+			return p.getAbsPath(true, true);
+			// var path = "";
+			// var self = p;
+			// while(p != null) {
+			// 	path = path
+			// }
+			// var path = p.getUniqueName();
+			// var parent = p.parent;
+			// while(parent != null) {
+			// 	path = parent.getUniqueName() + "/" + path;
+			// 	parent = parent.parent ?? parent.shared.parentPrefab;
+			// }
+			// return path;
 		}
 		tree.getIcon = (p: hrt.prefab.Prefab) -> {
 			var icon = p.getHideProps().icon;
@@ -2143,6 +2151,10 @@ class SceneEditor {
 			(cast view:Dynamic).onPrefabChange(p, "name");
 			p.updateInstance("name");
 			sceneTree.refreshItem(p);
+		}
+		tree.getItemByUniqueName = (path: String) -> {
+			var root = isSceneTree ? sceneData : renderPropsRoot.refInstance;
+			return root?.locatePrefab(path);
 		}
 		tree.applyStyle = (p : hrt.prefab.Prefab, el : js.html.Element) -> {
 			applyTreeStyle(p, targetTree);

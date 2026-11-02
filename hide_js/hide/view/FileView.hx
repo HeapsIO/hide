@@ -11,8 +11,9 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 	public function new(state) {
 		super(state);
-		if( state.path != null )
-			fileState.initFileView(state.path, Type.getClassName(Type.getClass(this)));
+		if( state.path != null ) {
+			var fileViewState = new hide.tools.EditorState(hide.Ide.inst.projectFileState, state.path);
+			fileState.setParent(fileViewState, Type.getClassName(Type.getClass(this)));
 			watch(state.path, function() {
 				if( skipNextChange ) {
 					skipNextChange = false;
@@ -34,6 +35,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 				onFileChanged(!exists(fs));
 			}, { checkDelete : true, keepOnRebuild : true });
+		}
 	}
 
 	override function onRebuild() {
