@@ -141,4 +141,7 @@ interface IGraphEditor {
     public function removeEdge(nodeToId: Int, inputToId : Int) : Void;
 
     public function getUndo() : hide.ui.UndoHistory;
+
+    /**Extra entries of the graph context menu, acting on the selected nodes**/
+    public function getSelectionMenu(selection: Array<IGraphNode>) : Array<hrt.ui.HuiMenu.MenuItem>;
 }

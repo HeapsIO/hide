@@ -652,6 +652,8 @@ class GraphEditor extends hide.comp.Component {
 			menu.push({label: "Paste", click: () -> paste(pastePos), keys: config.get("key.paste")});
 			menu.push({label: "Delete selection", click: deleteSelection, enabled: hasSelection, keys: config.get("key.delete")});
 			menu.push({label: "Comment selection", click: commentFromSelection, enabled: hasSelection, keys: config.get("key.shadergraph.comment")});
+			for (item in editor.getSelectionMenu([for (id in boxesSelected.keys()) boxes[id].node]))
+				menu.push(item);
 		}
 
 		contextMenu = hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu, {search: Visible, noIcons: true, flat: nodes.length < 10});

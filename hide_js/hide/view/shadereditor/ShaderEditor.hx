@@ -31,6 +31,9 @@ typedef SavedClipboard = {
 	edges : Array<{ fromIdx : Int, fromOutputId : Int, toIdx : Int, toInputId : Int }>,
 }
 
+// Output of a node connected to inputs on the other side of the selection converted to a subgraph
+typedef Boundary = {from: ShaderNode, outputId: Int, targets: Array<{node: ShaderNode, inputId: Int}>};
+
 class PreviewShaderBase extends hxsl.Shader {
 	static var SRC = {
 
@@ -2388,6 +2391,255 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	public function getUndo() : hide.ui.UndoHistory {
 		return undo;
+	}
+
+	public function getSelectionMenu(selection: Array<IGraphNode>) : Array<hrt.ui.HuiMenu.MenuItem> {
+		return [{label: "Convert to SubGraph", click: () -> convertToSubGraph([for (n in selection) cast n]), enabled: selection.length > 0}];
+	}
+
+	/**
+		Move the selected nodes into a new subgraph file, replaced by a SubGraph node.
+		Edges entering the selection become parameters, edges leaving it become outputs.
+	**/
+	function convertToSubGraph(selection: Array<ShaderNode>) {
+		for (n in selection) {
+			if (Std.isOfType(n, hrt.shgraph.ShaderOutput) || Std.isOfType(n, hrt.shgraph.ShaderSubGraphOutput) || Std.isOfType(n, hrt.shgraph.nodes.ShaderVar)) {
+				ide.quickError('${n.getInfo().name} nodes can\'t be used in a subgraph');
+				return;
+			}
+		}
+
+		checkResolveTypes();
+
+		// Selected parameters stay in the graph and feed the subgraph
+		var moved = [for (n in selection) if (!Std.isOfType(n, ShaderParam)) n];
+		var isMoved : Map<Int, Bool> = [for (n in moved) n.id => true];
+
+		var inputs : Array<Boundary> = [];
+		var outputs : Array<Boundary> = [];
+
+		function addTarget(list: Array<Boundary>, from: ShaderNode, outputId: Int, node: ShaderNode, inputId: Int) {
+			var b = list.find(b -> b.from == from && b.outputId == outputId);
+			if (b == null) {
+				b = {from: from, outputId: outputId, targets: []};
+				list.push(b);
+			}
+			b.targets.push({node: node, inputId: inputId});
+		}
+
+		for (node in currentGraph.nodes) {
+			for (inputId => c in node.connections) {
+				if (c == null || isMoved.exists(c.from.id) == isMoved.exists(node.id))
+					continue;
+				addTarget(isMoved.exists(node.id) ? inputs : outputs, c.from, c.outputId, node, inputId);
+			}
+		}
+
+		if (outputs.length == 0) {
+			ide.quickError("The selection must be connected to a node outside of it");
+			return;
+		}
+
+		// An outside node fed by the selection and feeding it would create a cycle through the SubGraph node
+		var dependsOnSelection : Map<Int, Bool> = [];
+		function dependsOn(node: ShaderNode) : Bool {
+			if (isMoved.exists(node.id))
+				return true;
+			var res = dependsOnSelection.get(node.id);
+			if (res == null) {
+				res = false;
+				for (c in node.connections)
+					if (c != null && dependsOn(c.from))
+						res = true;
+				dependsOnSelection.set(node.id, res);
+			}
+			return res;
+		}
+		for (b in inputs) {
+			if (dependsOn(b.from)) {
+				ide.quickError("The selection can't be converted : the subgraph would be connected to itself");
+				return;
+			}
+		}
+
+		function compareY(a: Boundary, b: Boundary)
+			return a.from.y != b.from.y ? Reflect.compare(a.from.y, b.from.y) : a.outputId - b.outputId;
+		inputs.sort(compareY);
+		outputs.sort(compareY);
+
+		// Generic pins of a SubGraph node share the same type
+		var genericType : SgType = null;
+		function getType(generic: Bool, resolved: Null<SgType>) : SgType {
+			var unresolved = resolved == null || resolved.match(SgGeneric(_, _));
+			if (generic && !unresolved && genericType == null)
+				genericType = resolved;
+			if (generic && (unresolved || Type.enumEq(genericType, resolved)))
+				return SgGeneric(0, hrt.shgraph.ShaderGraph.ConstraintFloat);
+			return resolved;
+		}
+
+		var inputTypes = [];
+		for (b in inputs) {
+			var generic = b.targets.exists(t -> t.node.getInputs()[t.inputId].type.match(SgGeneric(_, _)));
+			var resolved = b.from.getResolvedOutputType(b.outputId);
+			if (resolved == null || resolved.match(SgGeneric(_, _)))
+				resolved = b.targets[0].node.getResolvedInputType(b.targets[0].inputId);
+			var type = getType(generic, resolved);
+			if (type.match(SgInt)) {
+				ide.quickError("Int connections can't be converted to subgraph parameters");
+				return;
+			}
+			inputTypes.push(type);
+		}
+		var outputTypes = [for (b in outputs) getType(b.from.getOutputs()[b.outputId].type.match(SgGeneric(_, _)), b.from.getResolvedOutputType(b.outputId))];
+
+		function makeName(b: Boundary, used: Array<String>) {
+			var name = ~/[^A-Za-z0-9_]/g.replace(b.from.getInfo().name + "_" + b.from.getOutputs()[b.outputId].name, "_");
+			if (~/^[0-9]/.match(name))
+				name = "_" + name;
+			var res = name;
+			var i = 1;
+			while (used.contains(res))
+				res = name + "_" + i++;
+			used.push(res);
+			return res;
+		}
+
+		var dir = haxe.io.Path.directory(state.path);
+		var defaultName = haxe.io.Path.withoutDirectory(haxe.io.Path.withoutExtension(state.path)) + "_sub.subgraph";
+		ide.chooseFileOptions((files) -> {
+			var path = files.pop();
+			if (!StringTools.endsWith(path, ".subgraph"))
+				path += ".subgraph";
+			var absPath = ide.getPath(path);
+			if (sys.FileSystem.exists(absPath)) {
+				ide.quickError('$path already exists');
+				return;
+			}
+
+			// Build the subgraph
+			var sub = new ShaderSubGraph(null, null);
+			var graph = new hrt.shgraph.ShaderGraph.Graph(sub, Fragment);
+			sub.graphs.push(graph);
+
+			var clones : Map<Int, ShaderNode> = [];
+			var minX = Math.POSITIVE_INFINITY;
+			var maxX = Math.NEGATIVE_INFINITY;
+			var minY = Math.POSITIVE_INFINITY;
+			var maxY = Math.NEGATIVE_INFINITY;
+			for (n in moved) {
+				var clone = ShaderNode.createFromDynamic(n.serializeToDynamic(), graph);
+				graph.addNode(clone);
+				clones.set(n.id, clone);
+
+				var box = @:privateAccess graphEditor.boxes.get(n.id);
+				minX = Math.min(minX, n.x);
+				maxX = Math.max(maxX, n.x + @:privateAccess box.width);
+				minY = Math.min(minY, n.y);
+				maxY = Math.max(maxY, n.y + box.getHeight());
+			}
+			for (n in moved) {
+				for (inputId => c in n.connections) {
+					if (c != null && isMoved.exists(c.from.id))
+						clones[n.id].connections[inputId] = {from: clones[c.from.id], outputId: c.outputId};
+				}
+			}
+
+			var nextId = @:privateAccess currentGraph.current_node_id;
+			var usedNames = [];
+			var lastY = Math.NEGATIVE_INFINITY;
+			for (i => b in inputs) {
+				var type = inputTypes[i];
+				var generic = type.match(SgGeneric(_, _));
+				var hxslType = generic ? HxslType.TFloat : hrt.shgraph.ShaderGraph.sgTypeToType(type);
+				var defaultValue : Dynamic = switch (type) {
+					case SgSampler: null;
+					case SgGeneric(_, _): 0.0;
+					default: hrt.shgraph.ShaderGraph.getSgTypeDefVal(type);
+				}
+				var name = makeName(b, usedNames);
+				sub.parametersAvailable.set(i, {id: i, name: name, type: hxslType, defaultValue: defaultValue, variable: sub.generateParameter(name, hxslType), index: i, generic: generic ? true : null});
+
+				var param = new ShaderParam();
+				param.parameterId = i;
+				param.setId(nextId++);
+				param.graph = graph;
+				lastY = Math.max(b.targets[0].node.y, lastY + 60);
+				param.setPos(new Point(minX - 200, lastY));
+				graph.addNode(param);
+				for (t in b.targets)
+					clones[t.node.id].connections[t.inputId] = {from: param, outputId: 0};
+			}
+			sub.current_param_id = inputs.length;
+
+			usedNames = [];
+			lastY = Math.NEGATIVE_INFINITY;
+			for (i => b in outputs) {
+				sub.subGraphOutputs.set(i, {name: makeName(b, usedNames), type: outputTypes[i], id: i, index: i});
+
+				var output = new hrt.shgraph.ShaderSubGraphOutput();
+				output.outputId = i;
+				output.setId(nextId++);
+				output.graph = graph;
+				lastY = Math.max(b.from.y, lastY + 60);
+				output.setPos(new Point(maxX + 80, lastY));
+				output.connections = [{from: clones[b.from.id], outputId: b.outputId}];
+				graph.addNode(output);
+			}
+			sub.currentOutputId = outputs.length;
+
+			var content = ide.toJSON(sub.serialize());
+
+			// Executed first on redo and last on undo : the file must exist while the SubGraph node does
+			function writeFile(isUndo: Bool) {
+				if (!isUndo) {
+					if (!sys.FileSystem.exists(absPath))
+						sys.io.File.saveContent(absPath, content);
+					return;
+				}
+				if (!sys.FileSystem.exists(absPath))
+					return;
+
+				var view = ide.getViews(hide.view.FileView).find(v -> v.state.path == path);
+				var modified = (view != null && view.modified) || sys.io.File.getContent(absPath) != content;
+				var remove = modified ? !ide.confirm('$path was modified since it was generated. Keep it?') : ide.confirm('Delete the generated subgraph $path?');
+				if (!remove)
+					return;
+				if (view != null) {
+					view.modified = false;
+					view.close();
+				}
+				sys.FileSystem.deleteFile(absPath);
+			}
+
+			var undoBuffer = graphEditor.currentUndoBuffer = [];
+			graphEditor.addUndo(writeFile);
+
+			@:privateAccess {
+				for (n in moved) {
+					graphEditor.opSelect(n.id, false, undoBuffer);
+					graphEditor.removeBoxEdges(graphEditor.boxes[n.id], undoBuffer);
+				}
+				for (n in moved)
+					graphEditor.opBox(n, false, undoBuffer);
+
+				var node = new SubGraph(path);
+				node.setId(currentGraph.current_node_id++);
+				node.setPos(new Point((minX + maxX) / 2, (minY + maxY) / 2));
+				node.graph = currentGraph;
+				graphEditor.opBox(node, true, undoBuffer);
+
+				for (i => b in inputs)
+					graphEditor.opEdge(GraphEditor.packIO(b.from.id, b.outputId), GraphEditor.packIO(node.id, i), true, undoBuffer);
+				for (i => b in outputs) {
+					for (t in b.targets)
+						graphEditor.opEdge(GraphEditor.packIO(node.id, i), GraphEditor.packIO(t.node.id, t.inputId), true, undoBuffer);
+				}
+				graphEditor.opSelect(node.id, true, undoBuffer);
+			}
+
+			graphEditor.commitUndo();
+		}, {workingDir: dir == "" ? null : dir, saveAs: defaultName, exts: ["subgraph"]});
 	}
 
 	override function getDefaultContent() {
