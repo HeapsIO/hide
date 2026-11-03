@@ -13,6 +13,7 @@ class DomPatch {
 		patch("js.html.CSSStyleSheet", "styleSheet");
 		patch("js.html.ShadowRoot", "shadowRoot");
 		patch("js.html.CSS", "css");
+		patch("js.html.Element", "element");
 	}
 
 	static function patch(cl : String, name : String) {
@@ -40,6 +41,12 @@ class DomPatch {
 	static function shadowRoot() {
 		return merge((macro class {
 			var adoptedStyleSheets : Array<js.html.CSSStyleSheet>;
+		}).fields);
+	}
+
+	static function element() {
+		return merge((macro class {
+			function replaceChildren(nodes : haxe.extern.Rest<haxe.extern.EitherType<js.html.Node, String>>) : Void;
 		}).fields);
 	}
 

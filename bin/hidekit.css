@@ -902,3 +902,17 @@ kit-root {
 	}
 }
 
+body.kit-sub-window {
+	margin: 0;
+	height: 100vh;
+	display: flex;
+	overflow: hidden;
+	background-color: var(--inspector-bg);
+
+	> kit-root {
+		flex: 1 1;
+		display: flex;
+		min-width: 0;
+	}
+}
+

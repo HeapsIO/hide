@@ -155,6 +155,10 @@ class Window {
 		return getById(id);
 	}
 
+	public static function openSub( x : Float, y : Float, width : Float, height : Float ) : js.html.Window {
+		return js.Browser.window.open("", "", 'popup=true,left=$x,top=$y,width=$width,height=$height');
+	}
+
 	/**
 		Open a direct message channel with the page that opened this window, which receives the other end in its Window.onConnect
 	**/
