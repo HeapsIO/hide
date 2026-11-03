@@ -77,13 +77,11 @@ class InstanceDef {
 	var speed: Value;
 	var worldSpeed: Value;
 	var orbitSpeed: Value;
-	var orbitSpeedMultiplier: Value;
 	var acceleration: Value;
 	var worldAcceleration: Value;
 	var offset: Value;
 	var pivot: Value;
 	var scale: Value;
-	var scaleMultiplier: Value;
 	var stretch: Value;
 	var stretchVelocity: Value;
 	var rotation: Value;
@@ -296,7 +294,7 @@ class ParticleInstance {
 		var def = emitter.instDef;
 		evaluator.getFastVec(idx, def.stretch, t, v);
 		v.scale3(evaluator.getFast(idx, def.scale, t));
-		v.scale3(evaluator.getFast(idx, def.scaleMultiplier, emitter.curTime));
+		v.scale3(emitter.curScaleOverTime);
 		localMat.initScale(v.x, v.y, v.z);
 
 
@@ -441,7 +439,7 @@ class ParticleInstance {
 		if(def.orbitSpeed != VZero) {
 			evaluator.getFastVec(idx, def.orbitSpeed, t, v);
 
-			var factorOverTime = evaluator.getFast(idx, def.orbitSpeedMultiplier, emitter.curTime);
+			var factorOverTime = emitter.curOrbitSpeedOverTime;
 			v.scale3(factorOverTime * (Math.PI / 180.0));
 
 			tmpMat.initRotation(v.x * dt, v.y * dt, v.z * dt);
@@ -586,6 +584,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var applyMeshTransform = false;
 	public var startSpeed: Array<SpawnValue>;
 	public var startWorldSpeed: Array<SpawnValue>;
+	public var scaleOverTime : Value;
+	public var orbitSpeedOverTime : Value;
 
 	// EMIT SHAPE
 	public var emitShape : EmitShape = Cylinder;
@@ -634,6 +634,9 @@ class EmitterObject extends h3d.scene.Object {
 	var emitCount = 0;
 	var emitTarget = 0.0;
 	var curTime = 0.0;
+	// the values of the over time settings at the current tick, shared by the particles
+	var curScaleOverTime = 1.0;
+	var curOrbitSpeedOverTime = 1.0;
 	var evaluator : Evaluator;
 	var numInstances = 0;
 	var instanceCounter = 0;
@@ -1263,6 +1266,9 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 		}
 
+		curScaleOverTime = evaluator.getFloat(scaleOverTime, curTime);
+		curOrbitSpeedOverTime = evaluator.getFloat(orbitSpeedOverTime, curTime);
+
 		if(subEmitters != null) {
 			for( se in subEmitters ) {
 				se.tick(dt);
@@ -1800,7 +1806,7 @@ class Emitter extends Object3D {
 	@:param(PVec(3), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamVec3;
 	/** Degrees per second **/
 	@:param(PVec(3, -360, 360), Particle) public var orbitSpeed : ParamVec3;
-	@:param(PFloat(0), Multiplier, 1.) public var orbitSpeedMultiplier : ParamMode;
+	@:s @:range(0, null) @:animate public var orbitSpeedOverTime : Float = 1;
 	@:param(PVec(3), Particle) public var acceleration : ParamVec3;
 	@:param(PVec(3), Particle) public var worldAcceleration : ParamVec3;
 	@:param(PVec(3), Spawn) public var startSpeed : ParamVec3;
@@ -1808,7 +1814,7 @@ class Emitter extends Object3D {
 	@:group("Particle Transform")
 	@:param(PVec(3), Particle) public var offset : ParamVec3;
 	@:param(PFloat(), Particle, 1.) public var scale : ParamMode;
-	@:param(PFloat(0), Multiplier, 1.) public var scaleMultiplier : ParamMode;
+	@:s @:range(0, null) @:animate public var scaleOverTime : Float = 1;
 	@:param(PVec(3), Particle, [1., 1., 1.]) public var stretch : ParamVec3;
 	@:param(PFloat(0), Particle) public var stretchVelocity : ParamMode;
 	/** Degrees **/

@@ -2,11 +2,9 @@ package hrt.prefab.fx;
 
 import hrt.prefab.fx.Value;
 
-// TODO TRE: Still need this? Where is multiplier used now?
 enum ParamKind {
 	Spawn;
 	Particle;
-	Multiplier;
 }
 
 enum ParamMode {

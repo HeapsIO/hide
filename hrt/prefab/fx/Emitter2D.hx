@@ -96,7 +96,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		// SCALE
 		evaluator.getVector2(idx, def.stretch, t, tmpVec);
 		tmpVec *= evaluator.getFast(idx, def.scale, t);
-		tmpVec *= evaluator.getFast(idx, def.scaleMultiplier, emitter.curTime);
+		tmpVec *= emitter.curScaleOverTime;
 		m.scale(tmpVec.x, tmpVec.y);
 	}
 
@@ -220,7 +220,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		if (def.orbitSpeed != VZero) {
 			var orbitSpeed = evaluator.getFast(idx, def.orbitSpeed, t);
 
-			var factorOverTime = evaluator.getFast(idx, def.orbitSpeedMultiplier, emitter.curTime);
+			var factorOverTime = emitter.curOrbitSpeedOverTime;
 			orbitSpeed *= factorOverTime * (Math.PI / 180.0);
 
 			var prevPos = m.getPosition().clone();
@@ -250,6 +250,9 @@ class Emitter2DObject extends h2d.Object {
 
 	var prevTime : Float;
 	var curTime = 0.;
+	// the values of the over time settings at the current tick, shared by the particles
+	var curScaleOverTime = 1.;
+	var curOrbitSpeedOverTime = 1.;
 	var countToEmit = 0.;
 	var totalBurstCount = 0;
 	var instanceCounter = 0;
@@ -276,6 +279,8 @@ class Emitter2DObject extends h2d.Object {
 	public var maxCount = 20;
 	public var startSpeed: Array<SpawnValue>;
 	public var startWorldSpeed: Array<SpawnValue>;
+	public var scaleOverTime : Value;
+	public var orbitSpeedOverTime : Value;
 	public var emitShape : Emit2DShape = Circle;
 	public var emitRadius : Value;
 	public var emitAngle1 : Value;
@@ -358,6 +363,9 @@ class Emitter2DObject extends h2d.Object {
 	}
 
 	function tick(dt : Float) {
+		curScaleOverTime = evaluator.getFloat(scaleOverTime, curTime);
+		curOrbitSpeedOverTime = evaluator.getFloat(orbitSpeedOverTime, curTime);
+
 		switch (emitType) {
 			case Infinity:
 				var emitTarget = evaluator.getFloat(emitRate, curTime) * hxd.Math.clamp(emitScale) * dt;
@@ -511,7 +519,7 @@ class Emitter2D extends Object2D {
 	@:param(PVec(2, -10, 10), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamVec2;
 	/** Degrees per second **/
 	@:param(PFloat(-360, 360), Particle) public var orbitSpeed : ParamMode;
-	@:param(PFloat(0, 2), Multiplier, 1.) public var orbitSpeedMultiplier : ParamMode;
+	@:s @:range(0, 2) @:animate public var orbitSpeedOverTime : Float = 1;
 	@:param(PVec(2, -10, 10), Particle) public var acceleration : ParamVec2;
 	@:param(PVec(2, -10, 10), Particle) public var worldAcceleration : ParamVec2;
 	@:param(PVec(2, -10, 10), Spawn) public var startSpeed : ParamVec2;
@@ -519,7 +527,7 @@ class Emitter2D extends Object2D {
 	@:group("Particle Transform")
 	@:param(PVec(2, -10, 10), Particle) public var offset : ParamVec2;
 	@:param(PFloat(0, 2), Particle, 1.) public var scale : ParamMode;
-	@:param(PFloat(0, 2), Multiplier, 1.) public var scaleMultiplier : ParamMode;
+	@:s @:range(0, 2) @:animate public var scaleOverTime : Float = 1;
 	@:param(PVec(2, 0, 2), Particle, [1., 1.]) public var stretch : ParamVec2;
 	/** Degrees. Not named `rotation`, the one of the emitter object **/
 	@:param(PFloat(0, 360), Particle) @:name("rotation") public var particleRotation : ParamMode;

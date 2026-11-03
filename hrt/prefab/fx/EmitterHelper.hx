@@ -401,7 +401,6 @@ class EmitterHelper {
 			return switch (kind) {
 				case Spawn: [Constant, Range];
 				case Particle: [Constant, Range, Curve, RandomCurve, CurveRange];
-				case Multiplier: [Constant];
 			}
 		}
 

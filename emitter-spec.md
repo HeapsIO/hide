@@ -11,11 +11,10 @@ Scope: `Emitter` and `Emitter2D`. Editing through the new inspector only (edit2 
 
 | Group | Params | Modes | Timeline |
 |---|---|---|---|
-| Emitter | emission settings (rate, burst count, angle, shape dimensions...) | Constant | animatable ones take an animation curve |
+| Emitter | emission settings (rate, burst count, angle, shape dimensions...), scale / orbit speed over time | Constant | animatable ones take an animation curve, read once per tick (the over time ones apply to all the live particles) |
 | Spawn | lifetime, start speed, start world speed | Constant, Range | `value` / `min` / `max` take an animation curve, read when the particle spawns |
 | Particle | speed, world speed, acceleration, world acceleration, orbit speed, dampen, max velocity, scale, stretch, stretch velocity, rotation, pivot, offset | all | — |
 | Particle shader params | params of the shaders applied to the particles | Constant, Curve (random modes later) | — |
-| Multipliers | scale multiplier, orbit speed multiplier | Constant | take an animation curve, read every frame |
 
 Vector params have one mode per component. Rotations are in degrees, rotation speeds (orbit speed) in degrees per second.
 Particle shaders get their per-particle randomness on the GPU, from the emitter's `particleRandom`.
@@ -49,7 +48,7 @@ Rejected when the values are built (an error), and not offered by the curve insp
 - They set the animated value directly.
 - They hold plain keys: no range, no random. Constants of the old data are baked into the keys. They take the same curve forms as the shapes, over the FX time, and a random between two plain curves (Random Blend, on Emitter and Spawn `value` fields).
 - A Spawn param is read when the particle spawns: its value, or a random between its `min` and `max`, both at the FX time.
-- Targets: transforms, shader params outside emitters, Emitter params, Spawn `value` / `min` / `max`, Multipliers.
+- Targets: transforms, shader params outside emitters, Emitter params, Spawn `value` / `min` / `max`.
 - Animation curves are children of the animated prefab, found by name (the property name, `:x` / `:y` / `:z` per component, e.g. `position:x`, `emitRate`, `startSpeed:x:min`). The inspector marks properties that have one.
 
 ## Storage
@@ -76,7 +75,7 @@ Rule: runtime-equivalent whenever possible, while simplifying.
 | time remap by another curve, remapped blend or reference, blend of curves that are not plain | migration error |
 | lifetime + lifetime random | Spawn, Range |
 | start speed curves (FX time) | animation curves on its Spawn fields, baked |
-| scale / orbit speed over time | Multipliers, Constant or animation curve |
+| scale / orbit speed over time | Emitter settings, Constant or animation curve |
 | emitter param `k·c` | animation curve, `k` baked |
 | object transform curves | animation curves overriding the transform, exact affine bakes of the old ones (rotation curves in turns become degrees): the base rotation folded into the euler angles (from another euler triple of the same rotation, then stored on the object), the animated scale moved before the base rotation (components permuted); a rotation the euler curves cannot follow gets a parent object with the original name, which takes the animation as it is, the object keeping its base transform as `<name>_base`, which the look at and constraint targets now name; a scale the base rotation shears, and such a rotation on an object that cannot get a parent (a look at with a lock axis, a billboard, an emitter, a swarm, the direct children of a shader target, swarm or GPU emitter, an object that would become a leaf of a local animation), are sampled to what the old runtime showed (`setTransform`: the shear dropped, the quaternion normalized, the previous rotation kept while a scale is 0), with a migration warning |
 | orbit speed (radians per second) | degrees per second |

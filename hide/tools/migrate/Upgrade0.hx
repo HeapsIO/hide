@@ -48,7 +48,7 @@ private enum Mode {
 private enum abstract Group(Int) {
 	var Spawn;
 	var Particle;
-	var Multiplier;
+	var OverTime;
 }
 
 /** A param with modes of format 1, and the old field it comes from **/
@@ -62,7 +62,7 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	  hold their values, their bounds baked into them.
 	- Animation curves hold the value they animate: the constants the old FX composed them with are
 	  baked into them (exactly when the old value is linear in the curve), and the ones of the emitter
-	  params are named after what they animate (`startSpeed:x:min`, `scaleMultiplier`).
+	  params are named after what they animate (`startSpeed:x:min`, `scaleOverTime`).
 	- Orbit speeds go from radians to degrees per second.
 	- Transforms are re-baked exactly, the curves of the rotation and scale affine in the old ones: the
 	  base rotation folded into the euler angles (from another euler triple of the same rotation, which
@@ -692,7 +692,7 @@ class Upgrade0 {
 			prepareEmitters(c);
 	}
 
-	/** The old names of the curves the emitters bake: settings, spawn params and multipliers. **/
+	/** The old names of the curves the emitters bake: settings, spawn params and over time settings. **/
 	static var EMITTER_ANIMS = ["emitrate", "emitratemin", "emitratemax", "burstparticlecount", "emitangle", "emitradius", "emitangle1", "emitangle2",
 		"emitwidth", "emitheight", "inststartspeed", "inststartworldspeed", "instscaleovertime", "instorbitspeedovertime"];
 
@@ -1466,12 +1466,12 @@ class Upgrade0 {
 		{ name: "startSpeed", old: "instStartSpeed", group: Spawn, def: [0., 0., 0.] },
 		{ name: "startWorldSpeed", old: "instStartWorldSpeed", group: Spawn, def: [0., 0., 0.] },
 		{ name: "orbitSpeed", old: "instOrbitSpeed", group: Particle, def: [0., 0., 0.] },
-		{ name: "orbitSpeedMultiplier", old: "instOrbitSpeedOverTime", group: Multiplier, def: [1.] },
+		{ name: "orbitSpeedOverTime", old: "instOrbitSpeedOverTime", group: OverTime, def: [1.] },
 		{ name: "acceleration", old: "instAcceleration", group: Particle, def: [0., 0., 0.] },
 		{ name: "maxVelocity", old: "instMaxVelocity", group: Particle, def: [0.] },
 		{ name: "dampen", old: "instDampen", group: Particle, def: [0.] },
 		{ name: "scale", old: "instScale", group: Particle, def: [1.] },
-		{ name: "scaleMultiplier", old: "instScaleOverTime", group: Multiplier, def: [1.] },
+		{ name: "scaleOverTime", old: "instScaleOverTime", group: OverTime, def: [1.] },
 		{ name: "stretch", old: "instStretch", group: Particle, def: [1., 1., 1.] },
 		{ name: "stretchVelocity", old: "instStretchVelocity", group: Particle, def: [0.] },
 		{ name: "rotation", old: "instRotation", group: Particle, def: [0., 0., 0.] },
@@ -1482,7 +1482,7 @@ class Upgrade0 {
 	static var EMITTER_2D : Array<ParamDef> = [
 		{ name: "lifeTime", old: "lifeTime", group: Spawn, def: [1.] },
 		{ name: "scale", old: "instScale", group: Particle, def: [1.] },
-		{ name: "scaleMultiplier", old: "instScaleOverTime", group: Multiplier, def: [1.] },
+		{ name: "scaleOverTime", old: "instScaleOverTime", group: OverTime, def: [1.] },
 		{ name: "stretch", old: "instStretch", group: Particle, def: [1., 1.] },
 		{ name: "rotation", old: "instRotation", group: Particle, def: [0.] },
 		{ name: "offset", old: "instOffset", group: Particle, def: [0., 0.] },
@@ -1493,7 +1493,7 @@ class Upgrade0 {
 		{ name: "startSpeed", old: "instStartSpeed", group: Spawn, def: [0., 0.] },
 		{ name: "startWorldSpeed", old: "instStartWorldSpeed", group: Spawn, def: [0., 0.] },
 		{ name: "orbitSpeed", old: "instOrbitSpeed", group: Particle, def: [0.] },
-		{ name: "orbitSpeedMultiplier", old: "instOrbitSpeedOverTime", group: Multiplier, def: [1.] },
+		{ name: "orbitSpeedOverTime", old: "instOrbitSpeedOverTime", group: OverTime, def: [1.] },
 		{ name: "maxVelocity", old: "instMaxVelocity", group: Particle, def: [0.] },
 		{ name: "dampen", old: "instDampen", group: Particle, def: [0.] },
 	];
@@ -1549,7 +1549,7 @@ class Upgrade0 {
 				params.set(d.name, [for( m in v ) bakeModeCurves(e, m)]);
 		}
 
-		// format 1: the settings are fields of the emitter, the params with modes are in `params`
+		// format 1: the settings (and the over time ones) are fields of the emitter, the params with modes are in `params`
 		var old = new Map();
 		for( d in defs ) {
 			old.set(d.name, true);
@@ -1564,7 +1564,12 @@ class Upgrade0 {
 		for( d in defs ) {
 			var v = params.get(d.name);
 			var j = v == null ? null : saveValue(v);
-			if( j != null ) {
+			if( j == null )
+				continue;
+			// an animated setting of format 1, a constant
+			if( d.group == OverTime )
+				RawNode.setField(e.data, d.name, j);
+			else {
 				Reflect.setField(out, d.name, j);
 				any = true;
 			}
@@ -1727,12 +1732,12 @@ class Upgrade0 {
 				if( d.group != Particle ) {
 					// the curves of these params are animation curves over the FX time (`upgradeEmitterAnims`)
 					if( ri != null )
-						warn(e, '${old + suffix}:rand: a random curve on a ${d.group == Spawn ? "Spawn" : "Multiplier"} param has no equivalent, ignored');
+						warn(e, '${old + suffix}:rand: a random curve on a ${d.group == Spawn ? "Spawn" : "over time"} param has no equivalent, ignored');
 					if( hasRand && d.group == Spawn )
 						mode = MRange(k - rand, k + rand);
 					else {
 						if( hasRand )
-							warn(e, '${d.name}: random amount $rand ignored, a multiplier is a constant');
+							warn(e, '${d.name}: random amount $rand ignored, an over time setting is a constant');
 						if( base != null || hasRand )
 							mode = MConstant(k);
 					}
@@ -1782,7 +1787,7 @@ class Upgrade0 {
 
 	/**
 		The old animation curves of an emitter: the settings (`settings`, with their value), the spawn
-		params and the multipliers were multiplied by their curve, found by name (the old names). The
+		params and the over time settings were multiplied by their curve, found by name (the old names). The
 		curves are baked and named after what they animate (`EmitterParam.animKey`). A range
 		`(k ± a) * curve` gets one curve per bound (the second one a reference to the first).
 	**/
@@ -1803,7 +1808,7 @@ class Upgrade0 {
 			change(n, isBlend(n) ? "emitter setting, random blend" : "emitter setting");
 		}
 
-		// spawn params and multipliers
+		// spawn params and over time settings
 		for( d in defs ) {
 			if( d.group == Particle || d.name == "lifeTime" ) continue;
 			var dim = d.def.length;
@@ -1818,10 +1823,10 @@ class Upgrade0 {
 				var k = switch( m ) { case MConstant(v): v; case null, _: d.def[i]; };
 				var c = find(d.old + suffix);
 				if( c == null || !isLegacy(c) ) continue;
-				if( d.group == Multiplier ) {
+				if( d.group == OverTime ) {
 					renames.push({ node: c, name: key });
 					if( !isBlend(c) ) bakeLinear(c, k, 0);
-					change(c, isBlend(c) ? "multiplier, random blend" : "multiplier");
+					change(c, isBlend(c) ? "over time, random blend" : "over time");
 					continue;
 				}
 				if( isBlend(c) ) {
