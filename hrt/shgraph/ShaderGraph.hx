@@ -68,7 +68,7 @@ function serializeSgType(t: SgType) : String {
 		case SgSampler, SgInt, SgBool:
 			return EnumValueTools.getName(t);
 		case SgGeneric(_,_):
-			throw "Can't serialize generic variables";
+			return "SgGeneric";
 	}
 }
 
@@ -78,6 +78,8 @@ function unserializeSgType(s: String) : SgType {
 	switch(name) {
 		case "SgFloat":
 			return SgFloat(Std.parseInt(split[0]));
+		case "SgGeneric":
+			return SgGeneric(0, ConstraintFloat);
 		default:
 			return std.Type.createEnum(SgType, name);
 	}
@@ -193,6 +195,8 @@ typedef Parameter = {
 	?internal: Bool,
 	?min : Float,
 	?max : Float,
+	// Subgraph parameter typed by the input of the SubGraph node (SgGeneric). `type` is its type when not included
+	?generic : Bool,
 	index : Int
 };
 
@@ -482,7 +486,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		var json = super.save();
 
 		json.parameters = [
-			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal, min : p.min, max : p.max }
+			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal, min : p.min, max : p.max, generic : p.generic }
 		];
 
 		// Fix parameters index that sometimes get f-ed up for an unknown reason

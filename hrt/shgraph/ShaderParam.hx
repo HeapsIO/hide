@@ -1,6 +1,7 @@
 package hrt.shgraph;
 
 using hxsl.Ast;
+import hrt.shgraph.ShaderGraph.SgType;
 
 @name("Parameter")
 @width(120)
@@ -15,13 +16,17 @@ class ShaderParam extends ShaderNode {
 
 	override function getOutputs() : Array<ShaderNode.OutputInfo> {
 		var variable = getVariable();
-		var t = ShaderGraph.typeToSgType(variable.type);
+		var t = isGeneric() ? SgGeneric(0, ShaderGraph.ConstraintFloat) : ShaderGraph.typeToSgType(variable.type);
 		return [{name: variable.name, type: t}];
 	}
 
 	override function generate(ctx: NodeGenContext) {
 		var variable = getVariable();
 		var v = ctx.getGlobalParam(variable.name, variable.type);
+
+		// The type of a generic parameter is the type of the expression given by the parent graph
+		if (isGeneric())
+			@:privateAccess ctx.genericTypes[0] = v?.t;
 
 		ctx.setOutput(0, v);
 		switch(v?.t) {
@@ -36,6 +41,10 @@ class ShaderParam extends ShaderNode {
 
 	function getVariable() : TVar {
 		return graph.parent.getParameter(parameterId).variable;
+	}
+
+	function isGeneric() : Bool {
+		return graph.parent.getParameter(parameterId).generic ?? false;
 	}
 
 	override public function loadProperties(props : Dynamic) {

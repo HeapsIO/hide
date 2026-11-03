@@ -434,6 +434,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				type.innerText = outputTypes.find(t -> Type.enumEq(t.type, o.type))?.label ?? "Unknown Type";
 				header.get(0).querySelector("input").after(type);
 			}
+			outputList.getItemMenu = (o: SubGraphOutput) -> getConvertMenu(o.type, true, (t) -> setOutputType(o, t));
 			outputList.refresh();
 
 			var createOutputMenu : Array<hrt.ui.HuiMenu.MenuItem> = [
@@ -549,6 +550,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			{ label : "Color", click : () -> createParameter(HxslType.TVec(4, VFloat)) },
 			{ label : "Texture", click : () -> createParameter(HxslType.TSampler(T2D,false)) },
 		];
+		if (subGraph != null)
+			newParamCtxMenu.push({ label : "Generic", click : () -> createParameter(HxslType.TFloat, true) });
 
 		var createParameter = rightPannel.find(".createParameter");
 		createParameter.on("click", function(e) {
@@ -576,7 +579,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		parametersList.setItemName = renameParameter;
 		parametersList.getItemContent = getParameterContent;
 		parametersList.customizeHeader = (p:Parameter, header:Element) -> {
-			var type = switch(p.type) {
+			var type = if (p.generic) "Generic" else switch(p.type) {
 				case TBool: "Bool";
 				case TFloat: "Number";
 				case TVec(4, VFloat): "Color";
@@ -586,6 +589,14 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				default: "Unknown Type";
 			};
 			header.find("input").after(new Element('<div class="type">$type</div>'));
+		}
+		parametersList.getItemMenu = (p: Parameter) -> {
+			var type = switch (p.type) {
+				case _ if (p.generic): SgGeneric(0, hrt.shgraph.ShaderGraph.ConstraintFloat);
+				case TFloat, TVec(_, VFloat): hrt.shgraph.ShaderGraph.typeToSgType(p.type);
+				default: return [];
+			}
+			return getConvertMenu(type, subGraph != null, (t) -> setParameterType(p, t));
 		}
 
 		parametersList.refresh();
@@ -1289,13 +1300,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		undo.change(Custom(exec));
 	}
 
-	function createParameter(type : HxslType) {
+	function createParameter(type : HxslType, generic = false) {
 		@:privateAccess var paramShaderID : Int = shaderGraph.current_param_id++;
 		@:privateAccess
 		function exec(isUndo:Bool) {
 			if (!isUndo) {
 				var name = "Param_" + paramShaderID;
-				shaderGraph.parametersAvailable.set(paramShaderID, {id: paramShaderID, name : name, type : type, defaultValue : null, variable : shaderGraph.generateParameter(name, type), index : shaderGraph.parametersAvailable.count()});
+				shaderGraph.parametersAvailable.set(paramShaderID, {id: paramShaderID, name : name, type : type, defaultValue : null, variable : shaderGraph.generateParameter(name, type), index : shaderGraph.parametersAvailable.count(), generic : generic ? true : null});
 			} else {
 				shaderGraph.parametersAvailable.remove(paramShaderID);
 			}
@@ -1309,6 +1320,49 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		parametersList.toggleItem(paramShader.index, true);
 	}
 
+	function setParameterType(p: Parameter, type: SgType) {
+		var oldType = p.type;
+		var oldGeneric = p.generic;
+		var oldDefault = p.defaultValue;
+		var generic = type.match(SgGeneric(_, _));
+		var newType = generic ? HxslType.TFloat : hrt.shgraph.ShaderGraph.sgTypeToType(type);
+
+		// The default value editor depends on the hxsl type
+		var newDefault = Type.enumEq(newType, oldType) ? oldDefault : null;
+
+		function exec(isUndo: Bool) {
+			p.type = !isUndo ? newType : oldType;
+			p.generic = !isUndo ? (generic ? true : null) : oldGeneric;
+			p.defaultValue = !isUndo ? newDefault : oldDefault;
+			p.variable = @:privateAccess shaderGraph.generateParameter(p.name, p.type);
+			for (node in currentGraph.nodes) {
+				var param = Std.downcast(node, ShaderParam);
+				if (param != null && param.parameterId == p.id)
+					graphEditor.refreshBox(node.id);
+			}
+			requestRecompile();
+			parametersList.refresh();
+		}
+		exec(false);
+		undo.change(Custom(exec));
+	}
+
+	// "Convert to" items for the float, vector and generic types
+	function getConvertMenu(current: SgType, allowGeneric: Bool, convert: SgType -> Void) : Array<hrt.ui.HuiMenu.MenuItem> {
+		if (!current.match(SgFloat(_) | SgGeneric(_, _)))
+			return [];
+
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [{label: "Convert", isSeparator: true}];
+		for (t in outputTypes) {
+			if (!t.type.match(SgFloat(_) | SgGeneric(_, _)) || Type.enumEq(t.type, current))
+				continue;
+			if (!allowGeneric && t.type.match(SgGeneric(_, _)))
+				continue;
+			menu.push({label: "Convert to " + t.label, click: () -> convert(t.type)});
+		}
+		return menu;
+	}
+
 	static final outputTypes : Array<{label: String, type: SgType}> = [
 		{ label: "Bool", type: SgBool },
 		{ label: "Int", type: SgInt },
@@ -1316,6 +1370,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		{ label: "Vec 2", type: SgFloat(2) },
 		{ label: "Vec 3", type: SgFloat(3) },
 		{ label: "Vec 4", type: SgFloat(4) },
+		{ label: "Generic", type: SgGeneric(0, hrt.shgraph.ShaderGraph.ConstraintFloat) },
 	];
 
 	function findOutputNode(outputId: Int) : Null<hrt.shgraph.ShaderSubGraphOutput> {

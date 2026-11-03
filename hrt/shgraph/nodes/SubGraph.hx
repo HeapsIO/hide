@@ -1,6 +1,7 @@
 package hrt.shgraph.nodes;
 
 using hxsl.Ast;
+import hrt.shgraph.ShaderGraph.SgType;
 
 @name("SubGraph")
 @description("Include a subgraph")
@@ -25,6 +26,10 @@ class SubGraph extends ShaderNode {
 			throw 'Subgraph $pathShaderGraph includes itself';
 
 		var graph = loadSubGraph().getGraph(ctx.domain);
+
+		// Generic outputs without generic inputs
+		ctx.genericTypes[0] ??= TFloat;
+
 		generating.push(pathShaderGraph);
 		try {
 			var genCtx = new ShaderGraphGenContext(graph, false);
@@ -66,7 +71,8 @@ class SubGraph extends ShaderNode {
 				}
 			}
 
-			inputs.push({name: p.name, type: hrt.shgraph.ShaderGraph.typeToSgType(p.type), def: def, inlineEditable: inlineEditable});
+			var type = p.generic ? SgGeneric(0, ShaderGraph.ConstraintFloat) : ShaderGraph.typeToSgType(p.type);
+			inputs.push({name: p.name, type: type, def: def, inlineEditable: inlineEditable});
 		}
 
 		return inputs;

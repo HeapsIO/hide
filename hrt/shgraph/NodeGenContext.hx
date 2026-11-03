@@ -54,7 +54,7 @@ class NodeGenContextSubGraph extends NodeGenContext {
 				continue;
 			if (index == 0 && expr.t != TInt)
 				parentCtx.addPreview(expr);
-			parentCtx.setOutput(index, expr);
+			parentCtx.setOutput(index, NodeGenContext.convertToType(parentCtx.getType(parentCtx.nodeOutputInfo[index].type), expr));
 		}
 	}
 
