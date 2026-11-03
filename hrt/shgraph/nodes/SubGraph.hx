@@ -4,7 +4,8 @@ using hxsl.Ast;
 
 @name("SubGraph")
 @description("Include a subgraph")
-@width(200)
+@width(160)
+@icon("icon/file/shader_graph.svg")
 @alwaysshowinputs()
 @:access(hrt.shgraph.NodeGenContext)
 @:access(hrt.shgraph.NodeGenContextSubGraph)
@@ -75,6 +76,20 @@ class SubGraph extends ShaderNode {
 		return [for (o in loadSubGraph().getSortedOutputs()) {name: o.name, type: o.type}];
 	}
 
+	#if editor
+	override public function getInfo() {
+		var info = super.getInfo();
+		info.name = hide.kit.Macros.camelToSpaceCase(pathShaderGraph.split("/").pop().split(".")[0]);
+
+		info.contextMenu = (e: js.html.MouseEvent) -> {
+			hide.comp.ContextMenu.createFromEvent(e, [
+				{label: "Open Subgraph", click: () -> hide.Ide.inst.openFile(pathShaderGraph)},
+			]);
+		}
+		return info;
+	}
+
+	#end
 	function loadSubGraph() : hrt.shgraph.ShaderSubGraph {
 		#if !editor
 		var prefab = hxd.res.Loader.currentInstance.load(pathShaderGraph).toPrefab().load();

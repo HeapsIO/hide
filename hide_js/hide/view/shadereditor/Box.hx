@@ -217,7 +217,18 @@ class Box {
 
 			}
 			else {
-				editor.editorDisplay.text(element, 7, HEADER_HEIGHT-6, info.name).addClass("title-box");
+				var titleX = 7;
+				if (info.icon != null) {
+					var iconSize = HEADER_HEIGHT - 8;
+					var cont = editor.editorDisplay.foreignObject(element, titleX, 4, iconSize, iconSize);
+					var icon = js.Browser.document.createElement("hide-icon");
+					icon.setAttribute("icon", info.icon);
+					icon.style.height = "100%";
+					cont.get(0).append(icon);
+					titleX += iconSize + 4;
+				}
+
+				editor.editorDisplay.text(element, titleX, HEADER_HEIGHT-6, info.name).addClass("title-box");
 
 				if (info.playButton != null) {
 					var cont = editor.editorDisplay.foreignObject(element, width - 24, 0, HEADER_HEIGHT, HEADER_HEIGHT);

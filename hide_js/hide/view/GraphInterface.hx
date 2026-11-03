@@ -12,6 +12,9 @@ typedef GraphNodeInfo = {
     outputs: Array<NodeOutput>,
     ?width: Int,
 
+    /**Icon shown before the name in the header, path relative to bin/res**/
+    ?icon: String,
+
     /**If set, the node can show a preview pannel**/
     ?preview: {
         getVisible : () -> Bool,
