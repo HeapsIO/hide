@@ -293,8 +293,8 @@ class View<T> extends hide.comp.Component {
 	function buildTabMenu() : Array<hrt.ui.HuiMenu.MenuItem> {
 		return [
 			{ label : "Close", click : close },
-			{ label : "Close Others", click : function() for( v in @:privateAccess ide.views.copy() ) if( v != this && v.container == container ) v.close() },
-			{ label : "Close All", click : function() for( v in @:privateAccess ide.views.copy() ) if( v.container == container ) v.close() },
+			{ label : "Close Others", click : function() container.closeOthers(element[0]) },
+			{ label : "Close All", click : function() container.closeAll() },
 		];
 	}
 
