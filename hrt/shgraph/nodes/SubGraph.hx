@@ -12,41 +12,48 @@ class SubGraph extends ShaderNode {
 
 	@prop() public var pathShaderGraph : String;
 
+	// Paths of the subgraphs being generated, to detect subgraphs including themselves
+	static var generating : Array<String> = [];
+
 	override function new(path: String) {
 		pathShaderGraph = path;
 	}
 
 	override public function generate(ctx: NodeGenContext) {
-		#if !editor
-		var shader = cast hxd.res.Loader.currentInstance.load(pathShaderGraph).toPrefab().load();
-		#else
-		var shader = cast hide.Ide.inst.loadPrefab(pathShaderGraph);
-		#end
-		var graph = shader.getGraph(ctx.domain);
+		if (generating.contains(pathShaderGraph))
+			throw 'Subgraph $pathShaderGraph includes itself';
 
-		var genCtx = new ShaderGraphGenContext(graph, false);
-		genCtx.generate(new NodeGenContext.NodeGenContextSubGraph(graph, ctx));
+		var graph = loadSubGraph().getGraph(ctx.domain);
+		generating.push(pathShaderGraph);
+		try {
+			var genCtx = new ShaderGraphGenContext(graph, false);
+			genCtx.generate(new NodeGenContext.NodeGenContextSubGraph(graph, ctx));
+		} catch (e) {
+			generating.pop();
+			throw e;
+		}
+		generating.pop();
+
+		// Outputs not written by the subgraph default to zero
+		for (id => output in ctx.nodeOutputInfo) {
+			if (ctx.outputs[id] != null)
+				continue;
+			var zero = switch (ctx.getType(output.type)) {
+				case TBool: AstTools.makeExpr(TConst(CBool(false)), TBool);
+				case TInt: AstTools.makeInt(0);
+				case t: NodeGenContext.convertToType(t, AstTools.makeFloat(0.0));
+			}
+			ctx.setOutput(id, zero);
+		}
 	}
 
 	override public function getInputs() : Array<ShaderNode.InputInfo> {
-		#if !editor
-		var shader = cast hxd.res.Loader.currentInstance.load(pathShaderGraph).toPrefab().load();
-		#else
-		var shader = cast hide.Ide.inst.loadPrefab(pathShaderGraph);
-		#end
-		var graph = shader.getGraph(hrt.shgraph.ShaderGraph.Domain.Fragment);
-
-		var genCtx = new ShaderGraphGenContext(graph, false);
-		var nodeGenCtx = new NodeGenContext.NodeGenContextSubGraph(graph, null);
-		genCtx.generate(nodeGenCtx);
 		var inputs: Array<ShaderNode.InputInfo> = [];
 
-		for (name => info in nodeGenCtx.globalInVars) {
+		for (p in loadSubGraph().getSortedParameters()) {
 			var def : hrt.shgraph.SgHxslVar.ShaderDefInput = NoDefault;
 			var inlineEditable = false;
-			for (p in graph.parent.parametersAvailable) {
-				if (p.name != name || p.defaultValue == null)
-					continue;
+			if (p.defaultValue != null) {
 				switch (p.type) {
 					case TFloat:
 						def = Const(p.defaultValue);
@@ -58,30 +65,26 @@ class SubGraph extends ShaderNode {
 				}
 			}
 
-			inputs[info.id] = {name: name, type: hrt.shgraph.ShaderGraph.typeToSgType(info.type), def: def, inlineEditable: inlineEditable};
+			inputs.push({name: p.name, type: hrt.shgraph.ShaderGraph.typeToSgType(p.type), def: def, inlineEditable: inlineEditable});
 		}
 
 		return inputs;
 	}
 
 	override public function getOutputs() : Array<ShaderNode.OutputInfo> {
+		return [for (o in loadSubGraph().getSortedOutputs()) {name: o.name, type: o.type}];
+	}
+
+	function loadSubGraph() : hrt.shgraph.ShaderSubGraph {
 		#if !editor
-		var shader = cast hxd.res.Loader.currentInstance.load(pathShaderGraph).toPrefab().load();
+		var prefab = hxd.res.Loader.currentInstance.load(pathShaderGraph).toPrefab().load();
 		#else
-		var shader = cast hide.Ide.inst.loadPrefab(pathShaderGraph);
+		var prefab = hide.Ide.inst.loadPrefab(pathShaderGraph);
 		#end
-		var graph = shader.getGraph(hrt.shgraph.ShaderGraph.Domain.Fragment);
-
-		var genCtx = new ShaderGraphGenContext(graph, false);
-		var nodeGenCtx = new NodeGenContext.NodeGenContextSubGraph(graph, null);
-		genCtx.generate(nodeGenCtx);
-		var outputs: Array<ShaderNode.OutputInfo> = [];
-
-		for (name => info in nodeGenCtx.globalOutVars) {
-			outputs[info.id] = {name: name, type: hrt.shgraph.ShaderGraph.typeToSgType(info.type)};
-		}
-
-		return outputs;
+		var subGraph = Std.downcast(prefab, hrt.shgraph.ShaderSubGraph);
+		if (subGraph == null)
+			throw '$pathShaderGraph is not a subgraph';
+		return subGraph;
 	}
 
 }

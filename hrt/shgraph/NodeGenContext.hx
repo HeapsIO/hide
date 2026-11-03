@@ -15,9 +15,7 @@ class NodeGenContextSubGraph extends NodeGenContext {
 	}
 
 	override function getGlobalInput(id: Variables.Global) : TExpr {
-		var global = Variables.Globals[id];
-		var info = MapUtils.getOrPut(globalInVars, Variables.getFullPath(global), {type: global.type, id: inputCount++});
-		return getParentInput(info.id) ?? parentCtx?.getGlobalInput(id) ?? super.getGlobalInput(id);
+		return parentCtx?.getGlobalInput(id) ?? super.getGlobalInput(id);
 	}
 
 	override function getGlobalTVar(tvar: TVar) : TExpr {
@@ -28,61 +26,55 @@ class NodeGenContextSubGraph extends NodeGenContext {
 		}
 	}
 
-	override  function setGlobalOutput(id: Variables.Global, expr: TExpr) : Void {
-		var global = Variables.Globals[id];
-		if (outputCount == 0 && parentCtx != null) {
-			parentCtx.addPreview(expr);
-		}
-		var info = MapUtils.getOrPut(globalOutVars, Variables.getFullPath(global), {type: global.type, id: outputCount ++});
-		if (parentCtx != null) {
-			parentCtx.setOutput(info.id, expr);
-		} else {
-			super.setGlobalOutput(id, expr);
-		}
-	}
-
-	override  function getGlobalParam(name: String, type: Type) : TExpr {
-		var info = MapUtils.getOrPut(globalInVars, name, {type: type, id: inputCount ++});
-		return getParentInput(info.id);
-	}
-
-	// Inputs of the subgraph node are declared from its fragment graph : other domains can request undeclared ones
-	function getParentInput(id: Int) : Null<TExpr> {
-		if (parentCtx?.nodeInputInfo[id] == null)
-			return null;
-		return parentCtx.getInput(id);
+	override function setGlobalOutput(id: Variables.Global, expr: TExpr) : Void {
+		throw 'Node ${node.id} (${std.Type.getClassName(std.Type.getClass(node))}) can\'t set a global output in a subgraph';
 	}
 
 	override function setGlobalCustomOutput(name: String, expr: TExpr) : Void {
-		if (outputCount == 0 && parentCtx != null) {
-			parentCtx.addPreview(expr);
+		throw 'Node ${node.id} (${std.Type.getClassName(std.Type.getClass(node))}) can\'t set a global output in a subgraph';
+	}
+
+	// Parameters of the subgraph are the inputs of the SubGraph node, in the parameters order
+	override function getGlobalParam(name: String, type: Type) : TExpr {
+		if (parentCtx == null)
+			return super.getGlobalParam(name, type);
+		for (i => p in (cast graph.parent : ShaderSubGraph).getSortedParameters()) {
+			if (p.name == name)
+				return parentCtx.getInput(i);
 		}
-		var info = MapUtils.getOrPut(globalOutVars, name, {type : expr.t, id: outputCount ++});
-		if (parentCtx != null) {
-			parentCtx.setOutput(info.id, expr);
-		} else {
-			super.setGlobalCustomOutput(name, expr);
+		throw 'Unknown subgraph parameter $name';
+	}
+
+	// Outputs of the subgraph are the outputs of the SubGraph node, in the outputs order. The first one is previewed
+	override function setSubGraphOutput(id: Int, expr: TExpr) : Void {
+		if (parentCtx == null)
+			return;
+		for (index => o in (cast graph.parent : ShaderSubGraph).getSortedOutputs()) {
+			if (o.id != id)
+				continue;
+			if (index == 0 && expr.t != TInt)
+				parentCtx.addPreview(expr);
+			parentCtx.setOutput(index, expr);
 		}
 	}
 
 	override function addExpr(expr: TExpr) : Void {
 		if (parentCtx != null) {
 			parentCtx.addExpr(expr);
+		} else {
+			super.addExpr(expr);
 		}
 	}
 
 	override function addFunction(e: TFunction) : Void {
 		if (parentCtx != null) {
 			parentCtx.addFunction(e);
+		} else {
+			super.addFunction(e);
 		}
 	}
 
 	var parentCtx : NodeGenContext;
-
-	var globalInVars: Map<String, {type: Type, id: Int}> = [];
-	var globalOutVars: Map<String, {type: Type, id: Int}> = [];
-	var inputCount = 0;
-	var outputCount = 0;
 }
 
 @:allow(hrt.shgraph.ShaderGraph)
@@ -137,6 +129,9 @@ class NodeGenContext {
 	public function setGlobalCustomOutput(name: String, expr: TExpr) : Void {
 		var v = makeVar(MapUtils.getOrPut(globalVars, name, {v: {id: hxsl.Ast.Tools.allocVarId(), name: name, type: expr.t, kind: Param}, defValue:null, __init__: null}).v);
 		expressions.push(makeAssign(v, expr));
+	}
+
+	public function setSubGraphOutput(id: Int, expr: TExpr) : Void {
 	}
 
 	public function getShaderVariable(id: Int, init: TExpr = null) : TVar {

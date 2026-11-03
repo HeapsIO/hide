@@ -14,6 +14,7 @@ import h2d.col.Point;
 import h2d.col.IPoint;
 import hide.view.shadereditor.Box;
 import hrt.shgraph.ShaderGraph;
+import hrt.shgraph.ShaderSubGraph;
 import hrt.shgraph.ShaderNode;
 import hide.view.GraphInterface;
 
@@ -151,10 +152,13 @@ class ShaderPreviewScene extends hide.comp.Scene {
 }
 
 @:access(hrt.shgraph.ShaderGraph)
+@:access(hrt.shgraph.ShaderSubGraph)
 @:access(hrt.shgraph.Graph)
 class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEditor {
 	var graphEditor : hide.view.GraphEditor;
 	var shaderGraph : hrt.shgraph.ShaderGraph;
+	// Not null when editing a subgraph
+	var subGraph : hrt.shgraph.ShaderSubGraph;
 	var currentGraph : hrt.shgraph.ShaderGraph.Graph;
 
 	var compiledShader : hrt.prefab.Cache.ShaderDef;
@@ -182,6 +186,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	var parametersList : hide.comp.FancyArray<hrt.shgraph.ShaderGraph.Parameter>;
 	var variableList : hide.comp.FancyArray<ShaderGraphVariable>;
+	var outputList : hide.comp.FancyArray<SubGraphOutput>;
 
 	var previewElem : Element;
 	var draggedParamId : Int;
@@ -213,6 +218,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			element.html('<p>${state.path} is not a valid shadergrah');
 			return;
 		}
+		subGraph = Std.downcast(shaderGraph, hrt.shgraph.ShaderSubGraph);
 		isLoaded = true;
 		isDisplayed = true;
 
@@ -242,7 +248,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}, 50);
 
 		var canDragFunc = (e:js.html.DragEvent) -> {
-			if (e.dataTransfer.types.contains(variableList.getDragKeyName()) || e.dataTransfer.types.contains(parametersList.getDragKeyName())) {
+			if (e.dataTransfer.types.contains(variableList.getDragKeyName()) || e.dataTransfer.types.contains(parametersList.getDragKeyName())
+				|| (outputList != null && e.dataTransfer.types.contains(outputList.getDragKeyName()))) {
 				e.preventDefault();
 				e.stopPropagation();
 			}
@@ -317,6 +324,19 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				addNode(inst);
 				return;
 			}
+
+			var outputIndex = outputList?.getDragIndex(e);
+			if (outputIndex != null) {
+				var output = subGraph.getSortedOutputs()[outputIndex];
+				if (findOutputNode(output.id) != null) {
+					ide.quickError('Output "${output.name}" is already in the graph');
+					return;
+				}
+				var inst = new hrt.shgraph.ShaderSubGraphOutput();
+				inst.outputId = output.id;
+				addNode(inst);
+				return;
+			}
 		};
 
 		var rightPannel = new Element(
@@ -373,6 +393,62 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		collapse("param-collapse");
 		collapse("var-collapse");
+
+		if (subGraph != null) {
+			// A subgraph has no domain : no variables to pass from the vertex to the fragment shader
+			var variablesBlock : js.html.Element = rightPannel.get(0).querySelector(".var-collapse");
+			variablesBlock.style.display = "none";
+			rightPannel.get(0).querySelector("#domainSelection").parentElement.style.display = "none";
+
+			var outputsBlock = js.Browser.document.createDivElement();
+			outputsBlock.className = "hide-block flexible output-collapse";
+			outputsBlock.innerHTML = '<h1 class="subtle-title">Outputs <fancy-button class="quieter btn-collapse"><div class="icon ico ico-chevron-down"></div></fancy-button></h1>
+				<to-collapse>
+				<fancy-array class="outputs merge-bottom" style="flex-grow: 1"></fancy-array>
+				<fancy-button class="fancy-small add-output merge-top"><div class="icon ico ico-plus"></div></fancy-button>
+				</to-collapse>';
+			variablesBlock.after(outputsBlock);
+			collapse("output-collapse");
+
+			outputList = new hide.comp.FancyArray(null, new Element(outputsBlock.querySelector(".outputs")), "outputs", "outputs");
+			outputList.getItems = () -> subGraph.getSortedOutputs();
+			outputList.getItemName = (o: SubGraphOutput) -> o.name;
+			outputList.reorderItem = reorderOutput;
+			outputList.removeItem = removeOutput;
+			outputList.setItemName = renameOutput;
+			outputList.getItemContent = (o: SubGraphOutput) -> {
+				var select = js.Browser.document.createSelectElement();
+				for (i => t in outputTypes) {
+					var option = js.Browser.document.createOptionElement();
+					option.value = '$i';
+					option.innerText = t.label;
+					option.selected = Type.enumEq(t.type, o.type);
+					select.append(option);
+				}
+				select.onchange = (_) -> setOutputType(o, outputTypes[Std.parseInt(select.value)].type);
+				return new Element(select);
+			}
+			outputList.customizeHeader = (o: SubGraphOutput, header: Element) -> {
+				var type = js.Browser.document.createDivElement();
+				type.className = "type";
+				type.innerText = outputTypes.find(t -> Type.enumEq(t.type, o.type))?.label ?? "Unknown Type";
+				header.get(0).querySelector("input").after(type);
+			}
+			outputList.refresh();
+
+			var createOutputMenu : Array<hrt.ui.HuiMenu.MenuItem> = [
+				for (t in outputTypes) { label: t.label, click: () -> createOutput(t.type) }
+			];
+			var addOutput = outputsBlock.querySelector(".add-output");
+			addOutput.onclick = (_) -> hide.comp.ContextMenu.createDropdown(addOutput, createOutputMenu);
+			outputList.element.get(0).oncontextmenu = (e: js.html.MouseEvent) -> {
+				e.preventDefault();
+				e.stopPropagation();
+				var items = createOutputMenu.copy();
+				items.unshift({label: "New", isSeparator: true});
+				hide.comp.ContextMenu.createFromEvent(e, items);
+			};
+		}
 
 
 
@@ -534,7 +610,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		graphEditor.onPreviewUpdate = onPreviewUpdate;
 		graphEditor.onNodePreviewUpdate = onNodePreviewUpdate;
 
-		initMeshPreview();
+		if (subGraph == null)
+			initMeshPreview();
 	}
 
 	function onDropEvent(event: hide.tools.DragAndDrop.DropEvent, dragData: hide.tools.DragAndDrop.DragData) {
@@ -549,7 +626,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 
 		var items = [ for (f in files) f.relPath];
-		if (previewElem.get(0).matches(":hover")) {
+		if (previewElem != null && previewElem.get(0).matches(":hover")) {
 			for (item in items) {
 				if (StringTools.endsWith(item, ".prefab") || StringTools.endsWith(item, ".fx")) {
 					var renderProp = config.get("scene.renderProps");
@@ -571,7 +648,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		var pos = new Point(graphEditor.lX(dragData.mouseX - 25), graphEditor.lY(dragData.mouseY - 25));
 		for (item in items) {
-			if (!StringTools.endsWith(item, ".shgraph") || item == state.path)
+			if (!StringTools.endsWith(item, ".subgraph") || item == state.path)
 				continue;
 
 			var node = @:privateAccess new SubGraph(item);
@@ -590,7 +667,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		if (!isLoaded && isDisplayed) {
 			graphEditor.createMiniPreviewScene();
 			graphEditor.previewsScene.onRenderError = onPreviewRenderError;
-			initMeshPreview();
+			if (subGraph == null)
+				initMeshPreview();
 			isLoaded = true;
 
 		}
@@ -1231,7 +1309,118 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		parametersList.toggleItem(paramShader.index, true);
 	}
 
+	static final outputTypes : Array<{label: String, type: SgType}> = [
+		{ label: "Bool", type: SgBool },
+		{ label: "Int", type: SgInt },
+		{ label: "Float", type: SgFloat(1) },
+		{ label: "Vec 2", type: SgFloat(2) },
+		{ label: "Vec 3", type: SgFloat(3) },
+		{ label: "Vec 4", type: SgFloat(4) },
+	];
+
+	function findOutputNode(outputId: Int) : Null<hrt.shgraph.ShaderSubGraphOutput> {
+		for (node in currentGraph.nodes) {
+			var output = Std.downcast(node, hrt.shgraph.ShaderSubGraphOutput);
+			if (output != null && output.outputId == outputId)
+				return output;
+		}
+		return null;
+	}
+
+	function createOutput(type: SgType) {
+		var id = subGraph.currentOutputId++;
+		var name = "Output_" + id;
+		while (subGraph.subGraphOutputs.find(o -> o.name == name) != null)
+			name += "_";
+		var output : SubGraphOutput = {name: name, type: type, id: id, index: subGraph.subGraphOutputs.count()};
+
+		function exec(isUndo: Bool) {
+			if (!isUndo)
+				subGraph.subGraphOutputs.set(id, output);
+			else
+				subGraph.subGraphOutputs.remove(id);
+			outputList.refresh();
+		}
+		exec(false);
+		undo.change(Custom(exec));
+		outputList.editTitle(output.index);
+	}
+
+	function renameOutput(output: SubGraphOutput, name: String) {
+		if (name == "" || subGraph.subGraphOutputs.find(o -> o != output && o.name == name) != null) {
+			outputList.refresh();
+			ide.quickError('Output name "$name" is empty or already exists in this subgraph');
+			return;
+		}
+
+		var oldName = output.name;
+		function exec(isUndo: Bool) {
+			output.name = !isUndo ? name : oldName;
+			var node = findOutputNode(output.id);
+			if (node != null)
+				graphEditor.refreshBox(node.id);
+			outputList.refresh();
+		}
+		exec(false);
+		undo.change(Custom(exec));
+	}
+
+	function setOutputType(output: SubGraphOutput, type: SgType) {
+		var oldType = output.type;
+		function exec(isUndo: Bool) {
+			output.type = !isUndo ? type : oldType;
+			var node = findOutputNode(output.id);
+			if (node != null)
+				graphEditor.refreshBox(node.id);
+			outputList.refresh();
+			requestRecompile();
+		}
+		exec(false);
+		undo.change(Custom(exec));
+	}
+
+	function reorderOutput(oldIndex: Int, newIndex: Int) {
+		var oldOrder = subGraph.getSortedOutputs();
+		function exec(isUndo: Bool) {
+			var order = oldOrder.copy();
+			if (!isUndo)
+				order.insert(newIndex, order.splice(oldIndex, 1)[0]);
+			for (i => o in order)
+				o.index = i;
+			outputList.refresh();
+		}
+		exec(false);
+		undo.change(Custom(exec));
+	}
+
+	function removeOutput(index: Int) {
+		var oldOrder = subGraph.getSortedOutputs();
+		var output = oldOrder[index];
+		if (findOutputNode(output.id) != null) {
+			ide.quickError('Output ${output.name} is used in the graph and can\'t be deleted');
+			return;
+		}
+
+		function exec(isUndo: Bool) {
+			if (!isUndo) {
+				subGraph.subGraphOutputs.remove(output.id);
+				for (i => o in subGraph.getSortedOutputs())
+					o.index = i;
+			} else {
+				subGraph.subGraphOutputs.set(output.id, output);
+				for (i => o in oldOrder)
+					o.index = i;
+			}
+			outputList.refresh();
+		}
+		exec(false);
+		undo.change(Custom(exec));
+	}
+
 	function updateParam(id : Int) : Bool {
+		// node previews read the parameters values each frame
+		if (meshPreviewScene == null)
+			return true;
 		meshPreviewScene.setCurrent(); // needed for texture changes
 
 		var param = shaderGraph.getParameter(id);
@@ -1965,6 +2154,18 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	public function unserializeNode(data : Dynamic, newId : Bool) : IGraphNode {
 		var node = ShaderNode.createFromDynamic(data, currentGraph);
 		if (newId) {
+			if (subGraph != null && Std.isOfType(node, hrt.shgraph.ShaderOutput))
+				throw "Shader outputs can't be used in a subgraph";
+			var output = Std.downcast(node, hrt.shgraph.ShaderSubGraphOutput);
+			if (output != null) {
+				if (subGraph == null)
+					throw "Subgraph outputs can only be used in a subgraph";
+				if (!subGraph.subGraphOutputs.exists(output.outputId))
+					throw "Subgraph output doesn't exist in this subgraph";
+				if (findOutputNode(output.outputId) != null)
+					throw 'Output "${subGraph.subGraphOutputs.get(output.outputId).name}" is already in the graph';
+			}
+
 			@:privateAccess var newId = currentGraph.current_node_id++;
 			node.setId(newId);
 		}
@@ -2036,6 +2237,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			}
 
 			if (Reflect.hasField(metas,"hideInAddMenu"))
+				continue;
+
+			if (subGraph != null && node == hrt.shgraph.ShaderOutput)
 				continue;
 
 			if (Reflect.hasField(metas, "needsSceneColor")) {
@@ -2230,4 +2434,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	static var _ = Extension.registerExtension(ShaderEditor,["shgraph"],{ icon : "scribd", createNew: "Shader Graph", name: "Shader Graph" });
+}
+
+class ShaderSubGraphEditor extends ShaderEditor {
+	override function getDefaultContent() {
+		var p = (new hrt.shgraph.ShaderSubGraph(null, null)).serialize();
+		return haxe.io.Bytes.ofString(ide.toJSON(p));
+	}
+
+	static var _ = Extension.registerExtension(ShaderSubGraphEditor,["subgraph"],{ icon : "scribd", createNew: "Shader SubGraph", name: "Shader SubGraph" });
 }

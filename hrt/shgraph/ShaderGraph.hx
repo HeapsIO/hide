@@ -458,6 +458,10 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		}
 
 		loadParameters(json.parameters ?? []);
+		loadGraphs(json);
+	}
+
+	function loadGraphs(json : Dynamic) {
 		for (domain in haxe.EnumTools.getConstructors(Domain)) {
 			var graph = new Graph(this, haxe.EnumTools.createByName(Domain, domain));
 			var graphJson = Reflect.getProperty(json, domain);
@@ -499,12 +503,16 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			}
 		];
 
+		saveGraphs(json);
+
+		return json;
+	}
+
+	function saveGraphs(json : Dynamic) {
 		for (graph in graphs) {
 			var serName = EnumValueTools.getName(graph.domain);
 			Reflect.setField(json, serName, graph.saveToDynamic());
 		}
-
-		return json;
 	}
 
 	public function saveToText() : String {
@@ -565,7 +573,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		};
 
 
-		var nodeGen = new NodeGenContext(null, Vertex);
+		var nodeGen = createNodeGenContext();
 		nodeGen.explicitVarNames = options.explicitVarNames ?? false;
 		nodeGen.previewDomain = previewDomain;
 
@@ -730,6 +738,10 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		shaderGraphCache.set(this.shared.prefabSource, {lastTime: lastTime, def: cachedDef});
 
 		return cachedDef;
+	}
+
+	function createNodeGenContext() : NodeGenContext {
+		return new NodeGenContext(null, Vertex);
 	}
 
 	public function makeShaderInstance() : hxsl.DynamicShader {
