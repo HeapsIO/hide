@@ -221,6 +221,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 
 		if( ( step == AfterTonemapping && renderMode == "AfterTonemapping") || (step == BeforeTonemapping && renderMode == "BeforeTonemapping" ) ) {
 			r.mark("TemporalFiltering");
+			ctx.engine.driver.beginEvent("TemporalFiltering");
 			var output : h3d.mat.Texture = ctx.engine.getCurrentTarget();
 			var depthMap : Dynamic = ctx.getGlobal("depthMap");
 			var history0 = r.allocTarget("prevFrame", false, 1.0, output.format);
@@ -245,6 +246,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			r.ctx.camera.update();
 			// Update inverse proj
 			r.ctx.camera.getInverseProj();
+			ctx.engine.driver.endEvent();
 		}
 	}
 

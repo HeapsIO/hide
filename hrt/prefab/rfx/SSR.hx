@@ -223,6 +223,7 @@ class SSR extends RendererFX {
 			return;
 
 		r.mark("SSR");
+		r.ctx.engine.driver.beginEvent("SSR");
 
 		var ssrShader = ssrPass.shader;
 
@@ -292,6 +293,7 @@ class SSR extends RendererFX {
 		blurPass.apply(r.ctx, ssr);
 
 		h3d.pass.Copy.run(ssr, r.ctx.engine.getCurrentTarget(), Alpha);
+		r.ctx.engine.driver.endEvent();
 	}
 
 	function drawMask(r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {

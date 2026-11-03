@@ -80,6 +80,7 @@ class Sao extends RendererFX {
 			if ( intensity <= 0.0 )
 				return;
 			r.mark("SSAO");
+			r.ctx.engine.driver.beginEvent("SSAO");
 			if( sao == null ) sao = new h3d.pass.ScalableAO();
 			var ctx = r.ctx;
 			saoTex = r.allocTarget("sao",false, size); // TODO : R8
@@ -125,6 +126,7 @@ class Sao extends RendererFX {
 
 			saoCopy.pass.setColorChannel(occlu.channel);
 			saoCopy.apply(saoMerge, occlu.texture);
+			ctx.engine.driver.endEvent();
 		}
 	}
 
