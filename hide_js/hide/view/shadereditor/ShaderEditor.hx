@@ -2493,14 +2493,30 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 		var outputTypes = [for (b in outputs) getType(b.from.getOutputs()[b.outputId].type.match(SgGeneric(_, _)), b.from.getResolvedOutputType(b.outputId))];
 
-		function makeName(b: Boundary, used: Array<String>) {
-			var name = ~/[^A-Za-z0-9_]/g.replace(b.from.getInfo().name + "_" + b.from.getOutputs()[b.outputId].name, "_");
+		function makeName(b: Boundary, isInput: Bool, used: Array<String>) {
+			var shaderInput = Std.downcast(b.from, hrt.shgraph.ShaderInput);
+			var globalInput = Std.downcast(b.from, hrt.shgraph.ShaderGlobalInput);
+			var shaderOutput = [for (t in b.targets) Std.downcast(t.node, hrt.shgraph.ShaderOutput)].find(o -> o != null);
+
+			var name = if (isInput && shaderInput != null)
+				hrt.shgraph.ShaderInput.availableInputs[shaderInput.variable].display;
+			else if (isInput && globalInput != null)
+				hrt.shgraph.ShaderGlobalInput.globalInputs[globalInput.variableIdx].display;
+			else if (!isInput && shaderOutput != null)
+				hrt.shgraph.ShaderOutput.availableOutputs[shaderOutput.variable].display;
+			else {
+				var node = isInput ? b.targets[0].node : b.from;
+				var pin = isInput ? node.getInputs()[b.targets[0].inputId].name : node.getOutputs()[b.outputId].name;
+				~/^(in|input|out|output)?$/i.match(pin) ? node.getInfo().name : pin;
+			}
+
+			name = [for (w in ~/[^A-Za-z0-9]+/g.split(name)) w.charAt(0).toUpperCase() + w.substr(1)].join("");
 			if (~/^[0-9]/.match(name))
 				name = "_" + name;
 			var res = name;
 			var i = 1;
 			while (used.contains(res))
-				res = name + "_" + i++;
+				res = name + i++;
 			used.push(res);
 			return res;
 		}
@@ -2557,7 +2573,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					case SgGeneric(_, _): 0.0;
 					default: hrt.shgraph.ShaderGraph.getSgTypeDefVal(type);
 				}
-				var name = makeName(b, usedNames);
+				var name = makeName(b, true, usedNames);
 				sub.parametersAvailable.set(i, {id: i, name: name, type: hxslType, defaultValue: defaultValue, variable: sub.generateParameter(name, hxslType), index: i, generic: generic ? true : null});
 
 				var param = new ShaderParam();
@@ -2575,7 +2591,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			usedNames = [];
 			lastY = Math.NEGATIVE_INFINITY;
 			for (i => b in outputs) {
-				sub.subGraphOutputs.set(i, {name: makeName(b, usedNames), type: outputTypes[i], id: i, index: i});
+				sub.subGraphOutputs.set(i, {name: makeName(b, false, usedNames), type: outputTypes[i], id: i, index: i});
 
 				var output = new hrt.shgraph.ShaderSubGraphOutput();
 				output.outputId = i;
