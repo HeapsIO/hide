@@ -10,6 +10,81 @@ typedef ParamDef = {
 
 class EmitterHelper {
 
+	public static function isEmitter( p : Prefab ) {
+		return p is Emitter || p is Emitter2D;
+	}
+
+	public static function getParams( p : Prefab ) : Array<ParamDef> {
+		var e = Std.downcast(p, Emitter);
+		if( e != null ) return e.getParams();
+		var e2 = Std.downcast(p, Emitter2D);
+		if( e2 != null ) return e2.getParams();
+		return [];
+	}
+
+	public static function getModeParams( p : Prefab ) : Array<ModeParamDef> {
+		var e = Std.downcast(p, Emitter);
+		if( e != null ) return e.getModeParams();
+		var e2 = Std.downcast(p, Emitter2D);
+		if( e2 != null ) return e2.getModeParams();
+		return [];
+	}
+
+	/** The mode of the component `comp` of the param `name` of an emitter, or of a shader under an emitter (a particle curve or null) **/
+	public static function getMode( p : Prefab, name : String, comp : Int ) : ParamMode {
+		var e = Std.downcast(p, Emitter);
+		if( e != null ) return e.getMode(name, comp);
+		var e2 = Std.downcast(p, Emitter2D);
+		if( e2 != null ) return e2.getMode(name, comp);
+		var shader = Std.downcast(p, hrt.prefab.Shader);
+		if( shader != null ) {
+			var c = Lambda.find(shader.particleParams, p -> p.name == name)?.comps[comp];
+			return c == null ? null : Curve(c.curve);
+		}
+		return null;
+	}
+
+	/** For a shader, a Constant sets its prop, a Curve its particle curve **/
+	public static function setMode( p : Prefab, name : String, comp : Int, m : ParamMode ) {
+		var e = Std.downcast(p, Emitter);
+		if( e != null ) {
+			e.setMode(name, comp, m);
+			return;
+		}
+		var e2 = Std.downcast(p, Emitter2D);
+		if( e2 != null ) {
+			e2.setMode(name, comp, m);
+			return;
+		}
+		var shader = Std.downcast(p, hrt.prefab.Shader);
+		if( shader == null )
+			throw "Not an emitter or a shader: " + p.getAbsPath(true);
+		var size = EmitterParam.getParamSize(Lambda.find(shader.getShaderDefinition().data.vars, v -> v.name == name));
+		var param = Lambda.find(shader.particleParams, p -> p.name == name);
+		if( param == null ) {
+			param = { name: name, comps: [for( _ in 0...size ) null] };
+			shader.particleParams.push(param);
+		}
+		param.comps[comp] = switch( m ) {
+			case Curve(curve): { curve: curve };
+			case Constant(k):
+				if( size == 1 )
+					Reflect.setField(shader.props, name, k);
+				else {
+					var prop : Array<Dynamic> = Reflect.field(shader.props, name);
+					if( !Std.isOfType(prop, Array) ) {
+						prop = [for( j in 0...size ) EmitterParam.baseComponent(prop, size, j)];
+						Reflect.setField(shader.props, name, prop);
+					}
+					prop[comp] = k;
+				}
+				null;
+			case null, _: null;
+		}
+		if( !Lambda.exists(param.comps, c -> c != null) )
+			shader.particleParams.remove(param);
+	}
+
 	/** `m.rotate(0, 0, angle)` without the 4 other sin/cos and the full multiply **/
 	public static inline function rotateZ( m : h3d.Matrix, angle : Float ) {
 		var c = Math.cos(angle);
@@ -98,7 +173,7 @@ class EmitterHelper {
 	#if domkit
 
 	// Build inspector for an emitter parameter
-	public static function editParam(ctx: EditContext2, prefab: Prefab, owner: ParamModes, def: ModeParamDef, allowed: Array<ModeKind>, parent: hide.kit.Element) {
+	public static function editParam(ctx: EditContext2, prefab: Prefab, def: ModeParamDef, allowed: Array<ModeKind>, parent: hide.kit.Element) {
 		var size = def.def.length;
 		var label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
 		var range = switch (def.t) {
@@ -106,20 +181,20 @@ class EmitterHelper {
 			default: { min: null, max: null };
 		}
 		var comps = [for (i in 0...size) i];
-		var value = [for (i in comps) owner.getMode(def.name, i)];
+		var value = [for (i in comps) getMode(prefab, def.name, i)];
 
 		function applyMode(comps: Array<Int>, mode: Null<ModeKind>) {
 			var before = getModeCurves(prefab);
 			ctx.recordPrefabUndoWithChildren(prefab, () -> {
 				for (i in comps)
-					setMode(owner, def, i, mode == null ? null : convert(prefab, owner, def, i, mode));
+					setParamMode(prefab, def, i, mode == null ? null : convert(prefab, def, i, mode));
 				removeUnusedModeCurves(prefab, before);
 			});
 			ctx.rebuildInspector();
 		}
 
 		function contextMenu(i: Int) : Array<hrt.ui.HuiMenu.MenuItem> {
-			var m = owner.getMode(def.name, i);
+			var m = getMode(prefab, def.name, i);
 			var kind : ModeKind = m == null ? Constant : cast m.getName();
 			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
 			if (size > 1)
@@ -129,16 +204,16 @@ class EmitterHelper {
 					items.push({ label: hide.kit.Macros.camelToSpaceCase(mode), radio: () -> kind == mode, click: () -> applyMode([i], mode) });
 				items.push({ isSeparator: true });
 			}
-			items.push({ label: size == 1 ? "Remove" : "Remove " + compName(i), click: () -> applyMode([i], null), enabled: isSet(owner, def, i) });
+			items.push({ label: size == 1 ? "Remove" : "Remove " + compName(i), click: () -> applyMode([i], null), enabled: isSet(prefab, def, i) });
 			return items;
 		}
 
 		function setupVectorHeader(line: hide.kit.Line) {
 			line.label = label;
-			line.unset = !isAnySet(owner, def);
+			line.unset = !isAnySet(prefab, def);
 			line.menuItems = () -> [
 				{ isSeparator: true, label: label },
-				{ label: "Remove all", click: () -> applyMode(comps, null), enabled: isAnySet(owner, def) },
+				{ label: "Remove all", click: () -> applyMode(comps, null), enabled: isAnySet(prefab, def) },
 			];
 		}
 
@@ -157,18 +232,18 @@ class EmitterHelper {
 				line.stealLabel = false;
 				if (size == 1) {
 					line.label = label;
-					line.unset = !isSet(owner, def, i);
+					line.unset = !isSet(prefab, def, i);
 					menuOwners.push(line);
 				} else {
 					if (i == 0)
 						setupVectorHeader(line);
 					var name = new hide.kit.Text(line, "comp", compName(i));
 					name.classList.push("kit-param-comp");
-					name.unset = !isSet(owner, def, i);
+					name.unset = !isSet(prefab, def, i);
 					menuOwners.push(name);
 				}
 			}
-			var wasSet = isSet(owner, def, i);
+			var wasSet = isSet(prefab, def, i);
 			function slider(sid: String, label: String, value: Float, ?field: String) {
 				var s = new hide.kit.Slider<Float>(line, sid);
 				if (size > 1)
@@ -183,7 +258,7 @@ class EmitterHelper {
 				s.showRange = range.min != null && range.max != null;
 				s.onValueChange = (temp) -> {
 					ctx.rebuildPrefab(prefab);
-					if (!temp && isSet(owner, def, i) != wasSet)
+					if (!temp && isSet(prefab, def, i) != wasSet)
 						ctx.rebuildInspector();
 				}
 				return s;
@@ -191,7 +266,7 @@ class EmitterHelper {
 
 			function selectCurve(path: String) {
 				ctx.recordPrefabUndoWithChildren(prefab, () -> {
-					setMode(owner, def, i, switch (owner.getMode(def.name, i)) {
+					setParamMode(prefab, def, i, switch (getMode(prefab, def.name, i)) {
 						case RandomCurve(_, from, to): RandomCurve(path, from, to);
 						case CurveRange(_): CurveRange(path);
 						case null, _: Curve(path);
@@ -243,7 +318,7 @@ class EmitterHelper {
 					var s = slider("value" + (isCompact ? compName(i) : ""), isCompact ? compName(i) : "", v);
 					s.unset = !wasSet;
 					@:privateAccess s.onFieldChange = (_) -> {
-						setMode(owner, def, i, Constant(s.value));
+						setParamMode(prefab, def, i, Constant(s.value));
 						s.unset = s.value == def.def[i];
 					}
 
@@ -257,7 +332,7 @@ class EmitterHelper {
 
 					function apply() {
 						bound();
-						setMode(owner, def, i, Range(minSlider.value, maxSlider.value));
+						setParamMode(prefab, def, i, Range(minSlider.value, maxSlider.value));
 					}
 
 					@:privateAccess minSlider.onFieldChange = (_) -> {
@@ -272,7 +347,7 @@ class EmitterHelper {
 				case Curve(s):
 					curveEditor(s);
 				case RandomCurve(s, from, to):
-					function apply() { setMode(owner, def, i, RandomCurve(s, from, to)); }
+					function apply() { setParamMode(prefab, def, i, RandomCurve(s, from, to)); }
 					curveEditor(s, { from: { v: () -> from, set: x -> { from = x; apply(); } }, to: { v: () -> to, set: x -> { to = x; apply(); } } });
 				case CurveRange(s):
 					curveEditor(s);
@@ -283,8 +358,7 @@ class EmitterHelper {
 	}
 
 	// Build inspector for an emitter
-	public static function edit(ctx: EditContext2, owner: BaseEmitter, settings: Array<ParamDef>, changed: (name: String, temp: Bool) -> Void) {
-		var emitter : Prefab = cast owner;
+	public static function edit(ctx: EditContext2, emitter: Prefab, settings: Array<ParamDef>, changed: (name: String, temp: Bool) -> Void) {
 
 		var categories = new Map<String, hide.kit.Category>();
 		function getCategory(name: String) {
@@ -331,8 +405,8 @@ class EmitterHelper {
 			}
 		}
 
-		for (p in owner.getModeParams())
-			editParam(ctx, emitter, owner, p, getAllowedModes(p.kind), getCategory(p.groupName));
+		for (p in getModeParams(emitter))
+			editParam(ctx, emitter, p, getAllowedModes(p.kind), getCategory(p.groupName));
 	}
 
 
@@ -348,24 +422,25 @@ class EmitterHelper {
 		}
 	}
 
-	static function isSet(owner: ParamModes, def: ModeParamDef, i: Int) {
-		return !isDefault(def, i, owner.getMode(def.name, i));
+	static function isSet(prefab: Prefab, def: ModeParamDef, i: Int) {
+		return !isDefault(def, i, getMode(prefab, def.name, i));
 	}
 
-	static function isAnySet(owner: ParamModes, def: ModeParamDef) {
-		return Lambda.exists([for (i in 0...def.def.length) i], i -> isSet(owner, def, i));
+	static function isAnySet(prefab: Prefab, def: ModeParamDef) {
+		return Lambda.exists([for (i in 0...def.def.length) i], i -> isSet(prefab, def, i));
 	}
 
-	static function setMode(owner: ParamModes, def: ModeParamDef, i: Int, m: ParamMode) {
-		owner.setMode(def.name, i, isDefault(def, i, m) ? null : m);
+	/** A mode set back to the default value of the param unsets it **/
+	static function setParamMode(prefab: Prefab, def: ModeParamDef, i: Int, m: ParamMode) {
+		setMode(prefab, def.name, i, isDefault(def, i, m) ? null : m);
 	}
 
-	static function convert(prefab: Prefab, owner: ParamModes, def: ModeParamDef, i: Int, mode: ModeKind) : ParamMode {
+	static function convert(prefab: Prefab, def: ModeParamDef, i: Int, mode: ModeKind) : ParamMode {
 		var base = def.def[i];
 		function at(s: String, k: Int, t: Float) { return EmitterParam.resolveCurve(prefab, s)?.datas[k]?.getVal(t) ?? base; }
 		function data(src: String, from: Float, to: Float, shiftFrom = 0., shiftTo = 0.) { return newModeData(prefab, src, from, to, shiftFrom, shiftTo); }
 		function curve(datas: Array<hrt.impl.Curve>) { return newModeCurve(prefab, def, i, datas); }
-		var m = owner.getMode(def.name, i) ?? Constant(base);
+		var m = getMode(prefab, def.name, i) ?? Constant(base);
 		var f0 = base, f1 = base, t0 = base, t1 = base;
 		switch (m) {
 			case Constant(v): f0 = f1 = t0 = t1 = v;
@@ -431,12 +506,9 @@ class EmitterHelper {
 
 	static function getModeCurves(owner: Prefab) : Array<Curve> {
 		var modes : Array<ParamMode> = [];
-		if (owner is BaseEmitter) {
-			var emitter : BaseEmitter = cast owner;
-			for (p in emitter.getModeParams())
-				for (i in 0...p.def.length)
-					modes.push(emitter.getMode(p.name, i));
-		}
+		for (p in getModeParams(owner))
+			for (i in 0...p.def.length)
+				modes.push(getMode(owner, p.name, i));
 		var shader = Std.downcast(owner, hrt.prefab.Shader);
 		if (shader != null)
 			for (p in shader.particleParams)
@@ -475,7 +547,6 @@ class EmitterHelper {
 		if (getParticleEmitter(shader) == null)
 			return false;
 		var shaderDef = shader.getShaderDefinition();
-		var modes = new ParticleShaderModes(shader);
 		for (prop in props) {
 			var v = Lambda.find(shaderDef.data.vars, v -> v.name == prop.name);
 			var size = EmitterParam.getParamSize(v);
@@ -490,7 +561,7 @@ class EmitterHelper {
 				case PInt(min, max): PFloat(min, max);
 				default: PFloat(0, 1);
 			}
-			editParam(ctx, shader, modes, { name: prop.name, t: t, def: base, kind: Particle, groupName: null }, [Constant, Curve], parent);
+			editParam(ctx, shader, { name: prop.name, t: t, def: base, kind: Particle, groupName: null }, [Constant, Curve], parent);
 		}
 		return true;
 	}
@@ -514,47 +585,6 @@ enum abstract ModeKind(String) to String {
 	var Curve;
 	var RandomCurve;
 	var CurveRange;
-}
-
-/** The params of a shader under an emitter: a component is its shader prop (Constant) or a particle curve **/
-class ParticleShaderModes implements ParamModes {
-	var shader : hrt.prefab.Shader;
-
-	public function new(shader: hrt.prefab.Shader) {
-		this.shader = shader;
-	}
-
-	public function getMode(name: String, comp: Int) : ParamMode {
-		var c = Lambda.find(shader.particleParams, p -> p.name == name)?.comps[comp];
-		return c == null ? null : Curve(c.curve);
-	}
-
-	public function setMode(name: String, comp: Int, m: ParamMode) {
-		var size = EmitterParam.getParamSize(Lambda.find(shader.getShaderDefinition().data.vars, v -> v.name == name));
-		var p = Lambda.find(shader.particleParams, p -> p.name == name);
-		if (p == null) {
-			p = { name: name, comps: [for (_ in 0...size) null] };
-			shader.particleParams.push(p);
-		}
-		p.comps[comp] = switch (m) {
-			case Curve(curve): { curve: curve };
-			case Constant(k):
-				if (size == 1)
-					Reflect.setField(shader.props, name, k);
-				else {
-					var prop : Array<Dynamic> = Reflect.field(shader.props, name);
-					if (!Std.isOfType(prop, Array)) {
-						prop = [for (j in 0...size) EmitterParam.baseComponent(prop, size, j)];
-						Reflect.setField(shader.props, name, prop);
-					}
-					prop[comp] = k;
-				}
-				null;
-			case null, _: null;
-		}
-		if (!Lambda.exists(p.comps, c -> c != null))
-			shader.particleParams.remove(p);
-	}
 }
 
 #end

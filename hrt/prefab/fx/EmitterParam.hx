@@ -2,6 +2,7 @@ package hrt.prefab.fx;
 
 import hrt.prefab.fx.Value;
 
+// TODO TRE: Still need this? Where is multiplier used now?
 enum ParamKind {
 	Spawn;
 	Particle;
@@ -12,13 +13,13 @@ enum ParamMode {
 	Constant( value : Float );
 	Range( min : Float, max : Float );
 	Curve( curve : String );
-	/** The curve plus a signed random amount, `from` at the birth of the particle, `to` at its death **/
 	RandomCurve( curve : String, from : Float, to : Float );
 	CurveRange( curve : String );
 }
 
 typedef ParamVec2 = { ?x : ParamMode, ?y : ParamMode };
-typedef ParamVec3 = { > ParamVec2, ?z : ParamMode };
+typedef ParamVec3 = { > ParamVec2, ?z : ParamMode }; 
+// TODO TRE: duplicate of VectorAnimation..?
 
 typedef ParticleCurve = { curve : String };
 
@@ -33,16 +34,6 @@ typedef ModeParamDef = {
 	var ?disp : String;
 }
 
-interface ParamModes {
-	function getMode( name : String, comp : Int ) : ParamMode;
-	function setMode( name : String, comp : Int, m : ParamMode ) : Void;
-}
-
-interface BaseEmitter extends ParamModes {
-	function getSettings() : Array<EmitterHelper.ParamDef>;
-	function getModeParams() : Array<ModeParamDef>;
-}
-
 class EmitterParam {
 
 	public static var COMPONENTS = ["x", "y", "z", "w"];
@@ -52,16 +43,18 @@ class EmitterParam {
 		return field == null ? k : k + ":" + field;
 	}
 
-	/** The animation curve names of the property `prop` of `emitter` (the min and max of a Range), null if it is not animatable **/
-	public static function animKeys( emitter : BaseEmitter, prop : String ) : Array<String> {
+	/** The animation curve names of the property `prop` of `prefab` (the min and max of a Range), null if it is not an emitter or not animatable **/
+	public static function animKeys( prefab : Prefab, prop : String ) : Array<String> {
+		if( !EmitterHelper.isEmitter(prefab) )
+			return null;
 		var parts = prop.split(":");
-		var def = Lambda.find(emitter.getModeParams(), p -> p.name == parts[0]);
+		var def = Lambda.find(EmitterHelper.getModeParams(prefab), p -> p.name == parts[0]);
 		if( def == null )
-			return Lambda.exists(emitter.getSettings(), p -> p.animate == true && p.name == prop) ? [prop] : null;
+			return Lambda.exists(EmitterHelper.getParams(prefab), p -> p.animate == true && p.name == prop) ? [prop] : null;
 		var i = parts.length > 1 ? COMPONENTS.indexOf(parts[1]) : 0;
 		if( def.kind == Particle || i < 0 )
 			return null;
-		return switch( emitter.getMode(def.name, i) ) {
+		return switch( EmitterHelper.getMode(prefab, def.name, i) ) {
 		case Range(_): [animKey(def, i, "min"), animKey(def, i, "max")];
 		case null, _: [animKey(def, i)];
 		}
@@ -183,12 +176,10 @@ class EmitterValues {
 class ParamBuilder {
 
 	var owner : Prefab;
-	var modes : BaseEmitter;
 	public var randomSlots(default, null) = 0;
 
-	public function new( owner : Prefab, ?modes : BaseEmitter ) {
+	public function new( owner : Prefab ) {
 		this.owner = owner;
-		this.modes = modes;
 	}
 
 	public static function particleCurve( owner : Prefab, c : ParticleCurve, def : Float ) : Value {
@@ -252,7 +243,7 @@ class ParamBuilder {
 	}
 
 	function mode( def : ModeParamDef, i : Int ) : ParamMode {
-		return modes.getMode(def.name, i);
+		return EmitterHelper.getMode(owner, def.name, i);
 	}
 
 	function component( def : ModeParamDef, i : Int ) : Value {

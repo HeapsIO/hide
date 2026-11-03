@@ -1311,7 +1311,7 @@ class FXEditor extends hide.view.FileView {
 		var added = [];
 		for(prop in props) {
 			var id = prefix != null ? prefix + ":" + prop.name : prop.name;
-			for(k in getAnimKeys(element, id) ?? [id]) {
+			for(k in hrt.prefab.fx.EmitterParam.animKeys(element, id) ?? [id]) {
 				if(Curve.getCurve(element, k, false) != null)
 					continue;
 				var curve = new Curve(element, null);
@@ -1349,7 +1349,7 @@ class FXEditor extends hide.view.FileView {
 		var rfxElt = Std.downcast(elt, hrt.prefab.rfx.RendererFX);
 		var screenShaderGraph = Std.downcast(elt, hrt.prefab.rfx.ScreenShaderGraph);
 
-		var emitterElt : hrt.prefab.fx.EmitterParam.BaseEmitter = elt is hrt.prefab.fx.EmitterParam.BaseEmitter ? cast elt : null;
+		var isEmitter = hrt.prefab.fx.EmitterHelper.isEmitter(elt);
 
 		var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
 		var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [];
@@ -1504,11 +1504,11 @@ class FXEditor extends hide.view.FileView {
 			menuItems.push(item);
 		}
 
-		if(emitterElt != null) {
-			for(param in emitterElt.getSettings())
+		if(isEmitter) {
+			for(param in hrt.prefab.fx.EmitterHelper.getParams(elt))
 				if(param.animate)
 					addParam(param, "");
-			for(p in emitterElt.getModeParams())
+			for(p in hrt.prefab.fx.EmitterHelper.getModeParams(elt))
 				if(p.kind != Particle)
 					addParam({ name: p.name, t: p.t, def: p.def.length > 1 ? p.def : p.def[0], disp: p.disp }, "");
 		}
@@ -1759,25 +1759,20 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	static function getTrack(element : PrefabElement, propName : String) {
-		var keys = getAnimKeys(element, propName);
+		var keys = hrt.prefab.fx.EmitterParam.animKeys(element, propName);
 		return Curve.getCurve(element, keys != null ? keys[0] : propName, false);
-	}
-
-	static function getAnimKeys(element : PrefabElement, propName : String) : Array<String> {
-		var emitter : hrt.prefab.fx.EmitterParam.BaseEmitter = element is hrt.prefab.fx.EmitterParam.BaseEmitter ? cast element : null;
-		return emitter == null ? null : hrt.prefab.fx.EmitterParam.animKeys(emitter, propName);
 	}
 
 	/** The current value of the property animated by the curve `key` **/
 	static function getAnimValue(element : PrefabElement, key : String) : Null<Float> {
 		inline function num(v: Dynamic) : Null<Float> return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : null;
 		var parts = key.split(":");
-		var emitter : hrt.prefab.fx.EmitterParam.BaseEmitter = element is hrt.prefab.fx.EmitterParam.BaseEmitter ? cast element : null;
-		var def = emitter == null ? null : Lambda.find(emitter.getModeParams(), p -> p.name == parts[0]);
+		var isEmitter = hrt.prefab.fx.EmitterHelper.isEmitter(element);
+		var def = Lambda.find(hrt.prefab.fx.EmitterHelper.getModeParams(element), p -> p.name == parts[0]);
 		if(def != null) {
 			var i = parts.length > 1 ? hxd.Math.imax(0, hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1])) : 0;
 			var isMin = parts[parts.length - 1] == "min";
-			return switch(emitter.getMode(def.name, i)) {
+			return switch(hrt.prefab.fx.EmitterHelper.getMode(element, def.name, i)) {
 				case Range(min, max): isMin ? min : max;
 				case Constant(v): v;
 				case null, _: def.def[i];
@@ -1799,7 +1794,7 @@ class FXEditor extends hide.view.FileView {
 				prop = (prop : Array<Dynamic>)[hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1])];
 			return num(prop);
 		}
-		if(emitter != null || element is hrt.prefab.rfx.RendererFX || (element is Light && parts.length == 1))
+		if(isEmitter || element is hrt.prefab.rfx.RendererFX || (element is Light && parts.length == 1))
 			return num(Reflect.field(element, key));
 		return null;
 	}

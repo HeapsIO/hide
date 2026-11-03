@@ -458,7 +458,7 @@ class Emitter2DObject extends h2d.Object {
 @:prefabName("Emitter 2D")
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter2d)
 @:build(hrt.prefab.fx.EmitterMacros.build("hrt.prefab.fx.Emitter2D.Emitter2DObject"))
-class Emitter2D extends Object2D implements BaseEmitter {
+class Emitter2D extends Object2D {
 
 	@:group("Properties")
 	@:s @:range(0, 1) public var speedFactor : Float = 1.0;

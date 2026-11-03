@@ -3,7 +3,7 @@ package hrt.prefab.fx;
 /** Parameters that have a one-shot random at time of emission **/
 @:structInit class SpawnValue {
 	public var rid : Int;
-	public var min : Value;
+	public var min : Value;  // TODO
 	public var max : Value;
 }
 
@@ -29,6 +29,6 @@ enum Value {
 	// lerp(a(t), b(t), u), a and b with absolute values for keys
 	VCurveRange(rid: Int, a: hrt.impl.Curve, b: hrt.impl.Curve);
 
-	VVector(x: Value, y: Value, z: Value, ?w: Value);
+	VVector(x: Value, y: Value, z: Value, ?w: Value);  // TODO: ever need w?
 	VHsl(h: Value, s: Value, l: Value, a: Value);
 }

@@ -126,10 +126,10 @@ class Curve extends hrt.prefab.Curve {
 		var rootCurve : Prefab = this;
 		while (rootCurve.parent is Curve)
 			rootCurve = rootCurve.parent;
-		var emitter : EmitterParam.BaseEmitter = rootCurve.parent is EmitterParam.BaseEmitter ? cast rootCurve.parent : null;
-		if (emitter == null)
-			return rootCurve.findParent(Prefab, p -> p is EmitterParam.BaseEmitter) != null;
-		return !isChannel(rootCurve.name) && !isParamName(emitter, rootCurve.name);
+		var parent = rootCurve.parent;
+		if (!EmitterHelper.isEmitter(parent))
+			return rootCurve.findParent(Prefab, p -> EmitterHelper.isEmitter(p)) != null;
+		return !isChannel(rootCurve.name) && !isParamName(parent, rootCurve.name);
 	}
 
 	override function makeVal() : Value {
@@ -415,9 +415,9 @@ class Curve extends hrt.prefab.Curve {
 		return name != null && CHANNELS.contains(name.split(":")[0].toLowerCase());
 	}
 
-	static function isParamName(emitter: EmitterParam.BaseEmitter, name: String) {
+	static function isParamName(emitter: Prefab, name: String) {
 		var base = name?.split(":")[0];
-		return Lambda.exists(emitter.getSettings(), p -> p.animate == true && p.name == base) || Lambda.exists(emitter.getModeParams(), p -> p.kind != Particle && p.name == base);
+		return Lambda.exists(EmitterHelper.getParams(emitter), p -> p.animate == true && p.name == base) || Lambda.exists(EmitterHelper.getModeParams(emitter), p -> p.kind != Particle && p.name == base);
 	}
 
 	static var _ = Prefab.register("fxcurve", Curve);

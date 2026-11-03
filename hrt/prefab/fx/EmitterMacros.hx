@@ -41,7 +41,7 @@ class EmitterMacros {
 			case EArrayDecl(v): macro PVec($v{v.length}, $min, $max);
 			default: Context.error("A vector setting needs its default", f.pos);
 			}
-		case TPath({ name: "GradientData" } | { sub: "GradientData" }): macro PGradient;
+		case TPath({ name: "GradientData" } | { sub: "GradientData" }): macro PGradient; // ??
 		case TPath(p): macro PEnum($i{p.sub ?? p.name});
 		default: Context.error("Unsupported setting type", f.pos);
 		}
@@ -155,7 +155,7 @@ class EmitterMacros {
 				$b{copy};
 				$copyValues;
 			}
-			public function getSettings() return emitterParams;
+			public function getParams() return emitterParams;
 			public function getModeParams() return MODE_PARAMS;
 			public function getMode( name : String, comp : Int ) : hrt.prefab.fx.EmitterParam.ParamMode {
 				return ${{ expr: ESwitch(macro name, getCases, macro null), pos: pos }};
@@ -164,7 +164,7 @@ class EmitterMacros {
 				${{ expr: ESwitch(macro name, setCases, macro throw "No param " + name), pos: pos }};
 			}
 			function buildValues() : hrt.prefab.fx.EmitterParam.EmitterValues {
-				var b = new hrt.prefab.fx.EmitterParam.ParamBuilder(this, this);
+				var b = new hrt.prefab.fx.EmitterParam.ParamBuilder(this);
 				var d = new hrt.prefab.fx.Emitter.InstanceDef();
 				$b{particleValues};
 				var v = new hrt.prefab.fx.EmitterParam.EmitterValues(d);

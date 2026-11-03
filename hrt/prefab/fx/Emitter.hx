@@ -1731,7 +1731,7 @@ class EmitterObject extends h3d.scene.Object {
 @:prefabName("Emitter")
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter)
 @:build(hrt.prefab.fx.EmitterMacros.build("hrt.prefab.fx.Emitter.EmitterObject"))
-class Emitter extends Object3D implements BaseEmitter {
+class Emitter extends Object3D {
 
 	@:group("Properties")
 	@:s @:disp("Sub Kind") public var subEmitterKind : SubEmitterKind = SubEmitterKind.SpawnOnDeath;
