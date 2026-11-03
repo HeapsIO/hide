@@ -160,10 +160,14 @@ class CurveEditor extends SVG {
 			return;
 		}
 		var key = keyAt(p.x, p.y, m.w, m.h);
+		// the svg is redrawn by the first click: the double click is found here, not by a dblclick event
+		var now = haxe.Timer.stamp();
+		var isDoubleClick = !e.shiftKey && lastClick != null && lastClick.key == key && now - lastClick.time < 0.4;
+		lastClick = isDoubleClick ? null : { key: key, time: now };
 		if (key == null) {
-			// Ctrl + click in the box adds a key, on its edges scales the keys around their center
+			// Ctrl + click or double click in the box adds a key, on its edges scales the keys around their center
 			var part = e.shiftKey ? null : boxPartAt(p.x, p.y, m.w, m.h);
-			if (part != null && !(e.ctrlKey && part.dx == 0 && part.dy == 0)) {
+			if (part != null && !((e.ctrlKey || isDoubleClick) && part.dx == 0 && part.dy == 0)) {
 				if (part.dx == 0 && part.dy == 0) {
 					var first = selection[0];
 					for (k in selection)
@@ -179,7 +183,7 @@ class CurveEditor extends SVG {
 				scaleBand(e, edge);
 				return;
 			}
-			if (!e.ctrlKey) {
+			if (!e.ctrlKey && !isDoubleClick) {
 				selectBox(e, p, e.shiftKey);
 				return;
 			}
@@ -196,14 +200,11 @@ class CurveEditor extends SVG {
 				refresh();
 				return;
 			}
-			// the svg is redrawn by the first click: the double click is found here, not by a dblclick event
-			var now = haxe.Timer.stamp();
-			if (lastClick != null && lastClick.key == key && now - lastClick.time < 0.4) {
-				lastClick = null;
-				editKey(key, e.clientX, e.clientY);
+			if (isDoubleClick) {
+				// opened on release: the popover would be light dismissed by a release outside of it
+				drag(e, (_) -> {}, () -> editKey(key, e.clientX, e.clientY));
 				return;
 			}
-			lastClick = { key: key, time: now };
 			if (!selection.contains(key))
 				selection = [key];
 			refresh();
@@ -573,19 +574,23 @@ class CurveEditor extends SVG {
 	function keyMenu(e: js.html.MouseEvent, k: hrt.impl.Curve.CurveKey) {
 		var curve = track.data;
 		var keys = selection.copy();
-		var items : Array<hrt.ui.HuiMenu.MenuItem> = [for (mode in [CurveKeyMode.Aligned, CurveKeyMode.Free, CurveKeyMode.Linear, CurveKeyMode.Constant]) {
-			label: Std.string(["Aligned", "Free", "Linear", "Constant"][(cast mode : Int)]),
-			radio: () -> Lambda.foreach(keys, k -> k.mode == mode),
-			click: () -> track.edit(() -> {
-				for (k in keys) {
-					k.mode = mode;
-					track.fixKey(k);
-				}
-			}, false),
-		}];
-		items.push({ isSeparator: true });
-		items.push({ label: "Edit time and value", click: () -> editKey(k, e.clientX, e.clientY), enabled: keys.length == 1 });
-		items.push({ label: keys.length == 1 ? "Delete key" : "Delete keys", keys: "Delete", click: () -> track.deleteKeys(keys), enabled: curve.keys.length > keys.length });
+		var items : Array<hrt.ui.HuiMenu.MenuItem> = [
+			{ label: keys.length == 1 ? "Delete key" : "Delete keys", keys: "Delete", click: () -> track.deleteKeys(keys), enabled: curve.keys.length > keys.length },
+			{ label: "Edit key", click: () -> editKey(k, e.clientX, e.clientY), enabled: keys.length == 1 },
+			{ isSeparator: true },
+		];
+		for (mode in [CurveKeyMode.Aligned, CurveKeyMode.Free, CurveKeyMode.Linear, CurveKeyMode.Constant]) {
+			items.push({
+				label: Std.string(["Aligned", "Free", "Linear", "Constant"][(cast mode : Int)]),
+				radio: () -> Lambda.foreach(keys, k -> k.mode == mode),
+				click: () -> track.edit(() -> {
+					for (k in keys) {
+						k.mode = mode;
+						track.fixKey(k);
+					}
+				}, false),
+			});
+		}
 		menu(e, items);
 	}
 
