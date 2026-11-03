@@ -139,8 +139,7 @@ class Curve extends Element {
 	override function makeSelf() {
 		#if js
 		var e = js.Browser.document.createElement("kit-curve-editor");
-		preview = new hide.comp.curveeditor.CurveThumbnail(tracks, bands, maxTime);
-		e.appendChild(preview.svg);
+		preview = new hide.comp.curveeditor.CurveThumbnail(e, tracks, bands, maxTime);
 		e.title = "Edit the curve";
 		e.addEventListener("click", (_) -> if (!isDisabled()) openWindow());
 		setupPropLine(null, cast e, false);
@@ -272,9 +271,8 @@ class Curve extends Element {
 				return;
 			}
 			for (p in PRESETS) {
-				var thumb = new hide.comp.curveeditor.CurveThumbnail([new CurveTrack(getCurveFromPreset(p), null, null)], [], 1).svg;
-				thumb.addEventListener("click", (_) -> view.track.applyPreset(p));
-				presets.appendChild(thumb);
+				var thumb = new hide.comp.curveeditor.CurveThumbnail(presets, [new CurveTrack(getCurveFromPreset(p), null, null)], [], 1);
+				thumb.element.on("click", (_) -> view.track.applyPreset(p));
 			}
 		}
 

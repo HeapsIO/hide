@@ -4,22 +4,23 @@ package hide.comp.curveeditor;
 
 import hide.kit.Curve;
 
-class CurveThumbnail {
-	public var svg(default, null) : js.html.svg.SVGElement;
-
+class CurveThumbnail extends hide.comp.Component {
 	var drawing : SVG;
 	var tracks : Array<CurveTrack>;
 	var bands : Array<CurveBand>;
 	var maxTime : Float;
 
-	public function new(tracks: Array<CurveTrack>, bands: Array<CurveBand>, maxTime: Float) {
+	public function new(parent: js.html.Element, tracks: Array<CurveTrack>, bands: Array<CurveBand>, maxTime: Float) {
+		var drawing = new SVG();
+		super(null, drawing.element);
+		this.drawing = drawing;
 		this.tracks = tracks;
 		this.bands = bands;
 		this.maxTime = maxTime;
-		drawing = new SVG();
-		svg = cast drawing.element[0];
+		var svg = drawing.element[0];
 		svg.setAttribute("viewBox", "0 0 1 1");
 		svg.setAttribute("preserveAspectRatio", "none");
+		parent.appendChild(svg);
 		refresh();
 	}
 
