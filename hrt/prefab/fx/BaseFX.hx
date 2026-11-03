@@ -161,9 +161,8 @@ typedef ObjectAnimation = {
 	?obj2d: h2d.Object,
 	?position: VectorAnimation,
 	?scale: VectorAnimation,
-	/** Degrees **/
 	?rotation: VectorAnimation,
-	?localPosition: Value,
+	?localPosition: Value,  // TODO TOMR: Why Values
 	?localRotation: Value,
 	?color: Value,
 	?visibility: Value,
@@ -214,13 +213,71 @@ class BaseFXTools {
 		return ret;
 	}
 
+	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0) : Value {
+		inline function find(s) {
+			return findSuffix(curves, s);
+		}
+		var x = find(":x");
+		var y = find(":y");
+		var z = find(":z");
+		var w = find(":w");
+
+		inline function curveOrVal(c: Curve, defVal: Float) : Value {
+			return c == null ? VConst(defVal) : c.makeVal();
+		}
+
+		return VVector(
+			curveOrVal(x, defVal),
+			curveOrVal(y, defVal),
+			curveOrVal(z, defVal),
+			curveOrVal(w, 1.0));
+	}
+
+	public static function getColorValue(curves: Array<Curve>) : Value {
+		inline function find(s) {
+			return findSuffix(curves, s);
+		}
+
+		var r = find(":r");
+		var g = find(":g");
+		var b = find(":b");
+		var a = find(":a");
+		var h = find(":h");
+		var s = find(":s");
+		var l = find(":l");
+
+		if(h != null || s != null || l != null) {
+			return VHsl(
+				h != null ? h.makeVal() : VConst(0.0),
+				s != null ? s.makeVal() : VConst(1.0),
+				l != null ? l.makeVal() : VConst(1.0),
+				a != null ? a.makeVal() : VConst(1.0));
+		}
+
+		if(a != null && r == null && g == null && b == null)
+			return a.makeVal();
+
+		if(a == null && r == null && g == null && b == null)
+			return VConst(1.0); // White by default
+
+		return VVector(
+			r != null ? r.makeVal() : VConst(1.0),
+			g != null ? g.makeVal() : VConst(1.0),
+			b != null ? b.makeVal() : VConst(1.0),
+			a != null ? a.makeVal() : VConst(1.0));
+	}
+
+	static inline function findSuffix(curves: Array<Curve>, suffix: String) {
+		return Lambda.find(curves, c -> StringTools.endsWith(c.name.toLowerCase(), suffix));
+	}
+
 	public static function makeShaderParamValue(basePrefab: hrt.prefab.Prefab, name: String, type: hxsl.Ast.Type) : Value {
 		var curves = Curve.getCurves(basePrefab, name);
 		if(curves == null || curves.length == 0)
 			return null;
 		switch(type) {
 			case TVec(_, VFloat):
-				return name.toLowerCase().indexOf("color") >= 0 ? Curve.getColorValue(curves) : Curve.getVectorValue(curves);
+				return name.toLowerCase().indexOf("color") >= 0 ? getColorValue(curves) : getVectorValue(curves);
 			default:
 				var curve = Curve.getCurve(basePrefab, name);
 				if(curve != null)
@@ -234,16 +291,16 @@ class BaseFXTools {
 		}
 	}
 
-	public static function makeParticleShaderValue(shader: hrt.prefab.Shader, name: String, dim: Int) : Value {
+	public static function makeParticleShaderValue(shader: hrt.prefab.Shader, name: String, size: Int) : Value {
 		var p = Lambda.find(shader.particleParams, p -> p.name == name);
 		if(p == null)
 			return null;
 		var prop : Dynamic = Reflect.field(shader.props, name);
 		function comp(i: Int) {
-			var base = EmitterParam.baseComponent(prop, dim, i);
+			var base = EmitterParam.baseComponent(prop, size, i);
 			return p.comps[i] == null ? Evaluator.vVal(base) : EmitterParam.ParamBuilder.particleCurve(shader, p.comps[i], base);
 		}
-		return dim == 1 ? comp(0) : VVector(comp(0), comp(1), dim > 2 ? comp(2) : VZero, dim > 3 ? comp(3) : null);
+		return size == 1 ? comp(0) : VVector(comp(0), comp(1), size > 2 ? comp(2) : VZero, size > 3 ? comp(3) : null);
 	}
 
 	public static function makeRendererFXParams(rfxElt: hrt.prefab.rfx.RendererFX) {

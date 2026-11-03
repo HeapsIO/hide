@@ -755,7 +755,7 @@ class FXAnimation extends h3d.scene.Object {
 
 			if(curves.length == 1 && curves[0].name == name)
 				return curves[0].makeVal();
-			return Curve.getVectorValue(curves, defVal);
+			return BaseFXTools.getVectorValue(curves, defVal);
 		}
 
 		function makeColor(name: String) {
@@ -764,7 +764,7 @@ class FXAnimation extends h3d.scene.Object {
 				return null;
 
 			anyFound = true;
-			return Curve.getColorValue(curves);
+			return BaseFXTools.getColorValue(curves);
 		}
 
 		var ap : AdditionalProperies = null;

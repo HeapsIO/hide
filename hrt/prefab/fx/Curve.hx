@@ -170,60 +170,6 @@ class Curve extends hrt.prefab.Curve {
 		return hrt.prefab.Curve.findCurves(parent, prefix, c -> c.to(Curve));
 	}
 
-	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0) : Value {
-		inline function find(s) {
-			return findSuffix(curves, s);
-		}
-		var x = find(":x");
-		var y = find(":y");
-		var z = find(":z");
-		var w = find(":w");
-
-		inline function curveOrVal(c: Curve, defVal: Float) : Value {
-			return c == null ? VConst(defVal) : c.makeVal();
-		}
-
-		return VVector(
-			curveOrVal(x, defVal),
-			curveOrVal(y, defVal),
-			curveOrVal(z, defVal),
-			curveOrVal(w, 1.0));
-	}
-
-	public static function getColorValue(curves: Array<Curve>) : Value {
-		inline function find(s) {
-			return findSuffix(curves, s);
-		}
-
-		var r = find(":r");
-		var g = find(":g");
-		var b = find(":b");
-		var a = find(":a");
-		var h = find(":h");
-		var s = find(":s");
-		var l = find(":l");
-
-		if(h != null || s != null || l != null) {
-			return VHsl(
-				h != null ? h.makeVal() : VConst(0.0),
-				s != null ? s.makeVal() : VConst(1.0),
-				l != null ? l.makeVal() : VConst(1.0),
-				a != null ? a.makeVal() : VConst(1.0));
-		}
-
-		if(a != null && r == null && g == null && b == null)
-			return a.makeVal();
-
-		if(a == null && r == null && g == null && b == null)
-			return VConst(1.0); // White by default
-
-		return VVector(
-			r != null ? r.makeVal() : VConst(1.0),
-			g != null ? g.makeVal() : VConst(1.0),
-			b != null ? b.makeVal() : VConst(1.0),
-			a != null ? a.makeVal() : VConst(1.0));
-	}
-
 	override function copy(o:Prefab) {
 		super.copy(o);
 		datas = [];
@@ -463,10 +409,6 @@ class Curve extends hrt.prefab.Curve {
 			cur = cur.getRef();
 		}
 		return false;
-	}
-
-	static inline function findSuffix(curves: Array<Curve>, suffix: String) {
-		return curves.find(c -> StringTools.endsWith(c.name.toLowerCase(), suffix));
 	}
 
 	static function isChannel(name: String) {

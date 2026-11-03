@@ -104,8 +104,8 @@ class EmitterParam {
 		}
 	}
 
-	public static function baseComponent( prop : Dynamic, dim : Int, i : Int ) : Float {
-		var c : Dynamic = dim == 1 ? prop : Std.isOfType(prop, Array) ? prop[i] : null;
+	public static function baseComponent( prop : Dynamic, size : Int, i : Int ) : Float {
+		var c : Dynamic = size == 1 ? prop : Std.isOfType(prop, Array) ? prop[i] : null;
 		return Std.isOfType(c, Float) || Std.isOfType(c, Int) ? c : 0.0;
 	}
 
