@@ -172,15 +172,13 @@ class Curve extends Element {
 
 	function bindWindow() {
 		var previous = win.edited != null && sameAs(win.edited) ? win.content : null;
-		var doc = win.sub.doc;
 		win.edited = this;
 		win.sub.anchor = native.get();
 		win.sub.title = label;
-		win.sub.root.innerHTML = "";
-		var content = doc.createElement("kit-curve-editor-window");
-		win.sub.root.appendChild(content);
+		var content = js.Browser.document.createElement("kit-curve-editor-window");
+		win.sub.setContent(content);
 
-		var body = doc.createElement("kit-curve-body");
+		var body = js.Browser.document.createElement("kit-curve-body");
 		content.appendChild(body);
 
 		// the widgets of the window edit the prefab of the inspector, apart from its tree
@@ -260,7 +258,7 @@ class Curve extends Element {
 			}
 		}
 
-		var area = doc.createElement("kit-curve-view");
+		var area = js.Browser.document.createElement("kit-curve-view");
 		area.tabIndex = 0;
 		body.appendChild(area);
 		var active = previous == null ? 0 : previous.editor.tracks.indexOf(previous.track);
@@ -271,14 +269,14 @@ class Curve extends Element {
 		area.appendChild(view.svg);
 		area.addEventListener("keydown", view.onKeyDown);
 
-		var presets = doc.createElement("kit-presets");
+		var presets = js.Browser.document.createElement("kit-presets");
 		content.appendChild(presets);
 		function fillPresets() {
 			presets.innerHTML = "";
 			for (i => row in rows)
 				row.native.toggleClass("active", tracks.length > 1 && tracks[i] == view.track);
 			if (view.track.data == null) {
-				var hint = doc.createElement("kit-curve-hint");
+				var hint = js.Browser.document.createElement("kit-curve-hint");
 				hint.innerText = "A missing curve, or not a plain one: it is not edited here";
 				presets.appendChild(hint);
 				return;
