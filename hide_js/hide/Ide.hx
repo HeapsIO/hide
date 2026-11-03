@@ -90,12 +90,7 @@ class Ide extends hide.tools.IdeData {
 				shaderErrors.set(key, true);
 				js.Browser.console.warn(text);
 			}
-			var s = hide.comp.Scene.getCurrent();
-			if (s != null) {
-				var nl = msg.indexOf("\n");
-				var title = (nl < 0 ? msg : msg.substr(0, nl)) + objName;
-				@:privateAccess s.setErrorMessage({ title: title, details: nl < 0 ? null : msg.substr(nl + 1), contextObject: p?.obj, log: false });
-			}
+			hide.comp.Scene.getCurrent()?.onRenderError(error, msg);
 		};
 		#if dx12
 		hide.tools.NativeMeshTools.init();

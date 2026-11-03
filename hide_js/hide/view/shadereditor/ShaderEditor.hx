@@ -230,6 +230,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			graphEditor.remove();
 		graphEditor = new hide.view.GraphEditor(config, this, this.element);
 		graphEditor.onDisplay();
+		graphEditor.previewsScene.onRenderError = onPreviewRenderError;
 
 		shaderErrorElement = js.Browser.document.createDivElement();
 		shaderErrorElement.className = "shader-error";
@@ -588,6 +589,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		super.onActivate();
 		if (!isLoaded && isDisplayed) {
 			graphEditor.createMiniPreviewScene();
+			graphEditor.previewsScene.onRenderError = onPreviewRenderError;
 			initMeshPreview();
 			isLoaded = true;
 
@@ -1323,6 +1325,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		meshPreviewScene.onReady = onMeshPreviewReady;
 		meshPreviewScene.onUpdate = onMeshPreviewUpdate;
 		meshPreviewScene.enableNewErrorSystem = true;
+		meshPreviewScene.onRenderError = onPreviewRenderError;
 
 		var resizeUp = new Element('<div class="resize-handle up">').appendTo(previewElem);
 		var resizeLeft = new Element('<div class="resize-handle left">').appendTo(previewElem);
@@ -2169,6 +2172,14 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		} catch (err) {
 			compileError = err;
 		}
+		refreshShaderError();
+	}
+
+	// the previews stop drawing the failed shader : keep its error until the next recompile
+	function onPreviewRenderError(error : h3d.impl.RenderError.RenderErrorKind, msg : String) {
+		if (compileError != null)
+			return;
+		compileError = new haxe.Exception(msg);
 		refreshShaderError();
 	}
 

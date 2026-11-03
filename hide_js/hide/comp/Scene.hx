@@ -434,6 +434,14 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		}
 	}
 
+	/** Called when heaps fails to render with this scene current, each frame while the error remains **/
+	public dynamic function onRenderError(error : h3d.impl.RenderError.RenderErrorKind, msg : String) {
+		var p = Std.downcast(h3d.impl.RenderContext.get(), h3d.scene.RenderContext)?.drawPass;
+		var nl = msg.indexOf("\n");
+		var title = (nl < 0 ? msg : msg.substr(0, nl)) + (p == null ? "" : " (" + p.obj.name + ")");
+		setErrorMessage({ title: title, details: nl < 0 ? null : msg.substr(nl + 1), contextObject: p?.obj, log: false });
+	}
+
 	public dynamic function errorHandler(e:haxe.Exception) : Null<haxe.Exception> {
 		if (!enableNewErrorSystem)
 			return e;
