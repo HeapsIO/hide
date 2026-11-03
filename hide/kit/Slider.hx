@@ -62,6 +62,8 @@ class Slider<T:Float> extends Widget<T> {
 	#end
 
 	public var showRange: Bool = false;
+	/** The text of the input is being typed: not replaced by the value until it is committed **/
+	var typed = false;
 	var subPixelSlide : Float = 0;
 	var startValueLinear : Float = 0;
 	var expScale : Null<Float> = null;
@@ -199,6 +201,7 @@ class Slider<T:Float> extends Widget<T> {
 		var inputSave = null;
 		slider.addEventListener("focus", (e: js.html.InputEvent) -> {
 			inputSave = slider.value;
+			typed = false;
 		});
 
 		slider.addEventListener("keydown", (e: js.html.KeyboardEvent) -> {
@@ -219,11 +222,16 @@ class Slider<T:Float> extends Widget<T> {
 		slider.addEventListener("input", (e: js.html.InputEvent) -> {
 			var newValue = Std.parseFloat(slider.value);
 			if (newValue != null) {
+				typed = true;
 				broadcastValueChange(true);
 			}
 		});
 
 		slider.addEventListener("blur", (e: js.html.FocusEvent) -> {
+			// the value shown rounded to `decimals`, not edited: keep the exact one
+			if (!typed && slider.value == displayValue())
+				return;
+			typed = false;
 			var newValue = Std.parseFloat(slider.value);
 			slideTo(cast newValue ?? value, false, false);
 		});
@@ -363,6 +371,15 @@ class Slider<T:Float> extends Widget<T> {
 		return true;
 	}
 
+	#if js
+	function displayValue() : String {
+		if (decimals == null || int)
+			return Std.string(value);
+		var k = Math.pow(10, decimals);
+		return Std.string(Math.round((value : Float) * k) / k);
+	}
+	#end
+
 	override function syncValueUI() {
 		if (slider == null)
 			return;
@@ -374,7 +391,8 @@ class Slider<T:Float> extends Widget<T> {
 			return;
 		}
 		#if js
-		slider.value = Std.string(value);
+		if (!typed)
+			slider.value = displayValue();
 		#elseif hui
 		slider.value = value;
 		#end

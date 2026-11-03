@@ -22,8 +22,10 @@ enum Value {
 	VCurve(c: hrt.impl.Curve);
 	// lerp(pc.c1(t), pc.c2(t), pc.param)
 	VParamCurve(pc: ParamCurve);
-	// lerp(lerp(fromMin, fromMax, u), lerp(toMin, toMax, u), c)
-	VRandomCurve(rid: Int, pc: ParamCurve, fromMin: Float, fromMax: Float, toMin: Float, toMax: Float);
+	// c(t) + lerp(from, to, t) * (2u - 1), c with absolute values for keys
+	VRandomCurve(rid: Int, c: hrt.impl.Curve, from: Float, to: Float);
+	// same as VRandomCurve with the value of VParamCurve
+	VRandomParamCurve(rid: Int, pc: ParamCurve, from: Float, to: Float);
 	// lerp(a(t), b(t), u), a and b with absolute values for keys
 	VCurveRange(rid: Int, a: hrt.impl.Curve, b: hrt.impl.Curve);
 

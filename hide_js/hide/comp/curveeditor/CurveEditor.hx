@@ -89,7 +89,7 @@ class CurveEditor extends SVG {
 		var view : CurveView = { minX: minX, maxX: maxX, minY: minY, maxY: maxY, w: w, h: h, pad: PADDING };
 		CurveDrawing.drawTracks(this, editor.tracks, editor.bands, view, editor.maxTime, track);
 
-		function key(t: CurveTrack, k: hrt.impl.Curve.CurveKey) return square(g, px(k.time), py(CurveDrawing.trackDisplay(t, k.value)), KEY_SIZE).addClass("key");
+		function key(t: CurveTrack, k: hrt.impl.Curve.CurveKey) return square(g, px(k.time), py(k.value), KEY_SIZE).addClass("key");
 		for (t in editor.tracks)
 			if (t != track && t.data != null)
 				for (k in t.data.keys)
@@ -103,8 +103,8 @@ class CurveEditor extends SVG {
 		if (selection.length == 1) {
 			var k = selection[0];
 			for (hd in handles(k)) {
-				var x = px(k.time + hd.h.dt), y = py(toDisplay(k.value + hd.h.dv));
-				line(g, px(k.time), py(toDisplay(k.value)), x, y).addClass("tangent");
+				var x = px(k.time + hd.h.dt), y = py(k.value + hd.h.dv);
+				line(g, px(k.time), py(k.value), x, y).addClass("tangent");
 				circle(g, x, y, HANDLE_SIZE).addClass("handle");
 			}
 		}
@@ -185,7 +185,7 @@ class CurveEditor extends SVG {
 			}
 			var t = hxd.Math.clamp(m.time(p.x), 0, editor.maxTime);
 			track.edit(() -> {
-				key = curve.addKey(t, m.flat ? curve.getVal(t) : m.value(p.y));
+				key = curve.addKey(t, m.value(p.y));
 				track.fixKey(key);
 			}, true);
 			selection = [key];
@@ -228,7 +228,7 @@ class CurveEditor extends SVG {
 		menu(e, [{ label: "Add key", keys: "Ctrl + click", click: () -> {
 			var t = hxd.Math.clamp(m.time(p.x), 0, editor.maxTime);
 			track.edit(() -> {
-				var k = curve.addKey(t, m.flat ? curve.getVal(t) : m.value(p.y));
+				var k = curve.addKey(t, m.value(p.y));
 				track.fixKey(k);
 				selection = [k];
 			}, false);
@@ -241,7 +241,7 @@ class CurveEditor extends SVG {
 		var factor = e.deltaY + e.deltaX < 0 ? 1 / 1.125 : 1.125;
 		var m = mapping();
 		var p = m.local(e);
-		var t = m.time(p.x), v = m.display(p.y);
+		var t = m.time(p.x), v = m.value(p.y);
 		if (!e.altKey) {
 			minX = t + (minX - t) * factor;
 			maxX = t + (maxX - t) * factor;
@@ -308,7 +308,6 @@ class CurveEditor extends SVG {
 		}, () -> {});
 	}
 
-	inline function toDisplay(v: Float) return CurveDrawing.trackDisplay(track, v);
 	inline function sx(t: Float, w: Float) return PADDING + (t - minX) / (maxX - minX) * (w - PADDING * 2);
 	inline function sy(v: Float, h: Float) return h - PADDING - (v - minY) / (maxY - minY) * (h - PADDING * 2);
 
@@ -329,25 +328,19 @@ class CurveEditor extends SVG {
 	function mapping() {
 		var rect = svg.getBoundingClientRect();
 		var w = rect.width, h = rect.height;
-		var r = CurveDrawing.getDisplayRanges(track)[0];
-		var scale = r.to - r.from;
-		var display =(y: Float) -> minY + (h - PADDING - y) / (h - PADDING * 2) * (maxY - minY);
 		return {
 			rect: rect,
 			w: w,
 			h: h,
-			/** Keys can only move in time when the range is empty **/
-			flat: Math.abs(scale) <= 1e-9,
 			local: (e: js.html.MouseEvent) -> { x: e.clientX - rect.left, y: e.clientY - rect.top },
 			time: (x: Float) -> minX + (x - PADDING) / (w - PADDING * 2) * (maxX - minX),
-			display: display,
-			value: (y: Float) -> (display(y) - r.from) / scale,
+			value: (y: Float) -> minY + (h - PADDING - y) / (h - PADDING * 2) * (maxY - minY),
 		};
 	}
 
 	function keyAt(x: Float, y: Float, w: Float, h: Float, ?t: CurveTrack) {
 		t ??= track;
-		return Lambda.find(t.data.keys, k -> near(x, y, sx(k.time, w), sy(CurveDrawing.trackDisplay(t, k.value), h), KEY_SIZE));
+		return Lambda.find(t.data.keys, k -> near(x, y, sx(k.time, w), sy(k.value, h), KEY_SIZE));
 	}
 
 	function otherTrackAt(x: Float, y: Float, w: Float, h: Float) {
@@ -358,7 +351,7 @@ class CurveEditor extends SVG {
 		if (selection.length != 1)
 			return null;
 		var k = selection[0];
-		return Lambda.find(handles(k), hd -> near(x, y, sx(k.time + hd.h.dt, w), sy(toDisplay(k.value + hd.h.dv), h), HANDLE_SIZE + 2));
+		return Lambda.find(handles(k), hd -> near(x, y, sx(k.time + hd.h.dt, w), sy(k.value + hd.h.dv, h), HANDLE_SIZE + 2));
 	}
 
 	function selectionBox(w: Float, h: Float) {
@@ -366,7 +359,7 @@ class CurveEditor extends SVG {
 			return null;
 		var x0 = Math.POSITIVE_INFINITY, y0 = Math.POSITIVE_INFINITY, x1 = Math.NEGATIVE_INFINITY, y1 = Math.NEGATIVE_INFINITY;
 		for (k in selection) {
-			var x = sx(k.time, w), y = sy(toDisplay(k.value), h);
+			var x = sx(k.time, w), y = sy(k.value, h);
 			x0 = Math.min(x0, x);
 			y0 = Math.min(y0, y);
 			x1 = Math.max(x1, x);
@@ -400,7 +393,7 @@ class CurveEditor extends SVG {
 			var x0 = Math.min(box.x0, box.x1), x1 = Math.max(box.x0, box.x1), y0 = Math.min(box.y0, box.y1), y1 = Math.max(box.y0, box.y1);
 			selection = initial.copy();
 			for (k in track.data.keys) {
-				var x = sx(k.time, m.w), y = sy(toDisplay(k.value), m.h);
+				var x = sx(k.time, m.w), y = sy(k.value, m.h);
 				if (x >= x0 && x <= x1 && y >= y0 && y <= y1 && !selection.contains(k))
 					selection.push(k);
 			}
@@ -412,89 +405,34 @@ class CurveEditor extends SVG {
 	}
 
 	function bandEdgeAt(x: Float, y: Float) : Null<Int> {
-		if (track.ranges.length != 2)
+		if (track.spread == null)
 			return null;
 		var m = mapping();
 		var t = m.time(x);
 		if (t < 0 || t > editor.maxTime)
 			return null;
-		var c = track.data.getVal(t);
-		var rs = CurveDrawing.getDisplayRanges(track);
-		for (edge in [1, -1]) {
-			var r = rs[edge == 1 ? 2 : 1];
-			if (Math.abs(sy(hxd.Math.lerp(r.from, r.to, c), m.h) - y) <= KEY_SIZE)
-				return edge;
-		}
+		for (side in [1, -1])
+			if (Math.abs(sy(CurveDrawing.trackValue(track, t, side), m.h) - y) <= KEY_SIZE)
+				return side;
 		return null;
 	}
 
 	/**
-		Drags the `edge` of the band of a random curve (1: its max, -1: its min) up and down: grabbed in the first half
-		of the time, the band widens or narrows around the middle of its `from` bounds, in the second half around the
-		middle of its `to` ones, the edge following the mouse (the half width of the band is `lerp(from, to, curve)`).
-		An undo step
+		Drags the `edge` of the band of a random curve (1: its max, -1: its min) up and down where it is grabbed, the other
+		edge staying there and the curve recentered between them (`CurveTrack.moveEdge`). An undo step
 	**/
 	function scaleBand(e: js.html.PointerEvent, edge: Int) {
 		var m = mapping();
-		var t = m.time(m.local(e).x);
-		var c = track.data.getVal(t);
-		var birth = t < 0.5;
-		var bounds = [for (r in track.ranges) birth ? r.from : r.to];
-		var other = [for (r in track.ranges) birth ? r.to : r.from];
-		var center = (bounds[0].v() + bounds[1].v()) * 0.5, otherCenter = (other[0].v() + other[1].v()) * 0.5;
-		var otherHalf = (other[1].v() - other[0].v()) * 0.5;
-		var weight = birth ? 1 - c : c;
-		var mid = birth ? hxd.Math.lerp(center, otherCenter, c) : hxd.Math.lerp(otherCenter, center, c);
-		if (Math.abs(weight) < 1e-3)
-			return;
+		var t = hxd.Math.clamp(m.time(m.local(e).x), 0, 1);
 		drag(e, (e) -> {
-			var half = Math.max(edge * (m.display(m.local(e).y) - mid), 0);
-			var h = Math.max((half - (1 - weight) * otherHalf) / weight, 0);
-			inline function round(v: Float) return Math.round(v * 1000) / 1000;
-			track.edit(() -> {
-				bounds[0].set(round(center - h));
-				bounds[1].set(round(center + h));
-			}, true);
-		}, () -> track.edit(null, false));
-	}
-
-	/**
-		The bounds that `k` moves, alone, in a random curve (its middle, its min, its max): the `from` ones for its
-		first key at 0, the `to` ones for its last key at 1. The band keeps there the width of its bounds, that the
-		value of the key would change (the band is `lerp(from, to, key)` wide)
-	**/
-	function endBounds(k: hrt.impl.Curve.CurveKey) : Array<TrackBound> {
-		var keys = track.data.keys;
-		if (track.ranges.length != 2 || selection.length != 1)
-			return null;
-		if (k == keys[0] && k.value == 0)
-			return [for (r in track.ranges) r.from];
-		if (k == keys[keys.length - 1] && k.value == 1)
-			return [for (r in track.ranges) r.to];
-		return null;
-	}
-
-	function moveBounds(e: js.html.PointerEvent, bounds: Array<TrackBound>) {
-		var m = mapping();
-		var start = [for (b in bounds) b.v()];
-		var startValue = (start[0] + start[1]) * 0.5;
-		drag(e, (e) -> {
-			var v = m.display(m.local(e).y);
-			v = e.ctrlKey ? Math.round(v * 10) / 10 : v;
-			var shift = e.altKey ? 0 : Math.round((v - startValue) * 1000) / 1000;
-			track.edit(() -> for (j => b in bounds) b.set(start[j] + shift), true);
+			var v = m.value(m.local(e).y);
+			track.edit(() -> track.moveEdge(t, edge, e.ctrlKey ? Math.round(v * 10) / 10 : v), true);
 		}, () -> track.edit(null, false));
 	}
 
 	function moveKeys(e: js.html.PointerEvent, grabbed: hrt.impl.Curve.CurveKey) {
-		var bounds = endBounds(grabbed);
-		if (bounds != null) {
-			moveBounds(e, bounds);
-			return;
-		}
 		var m = mapping();
 		var curve = track.data;
-		var r = CurveDrawing.getDisplayRanges(track)[0];
 		var keys = selection.copy();
 		var start = [for (k in keys) { time: k.time, value: k.value }];
 		var grabbedStart = start[keys.indexOf(grabbed)];
@@ -508,14 +446,13 @@ class CurveEditor extends SVG {
 				maxDt = Math.min(maxDt, (next?.time ?? editor.maxTime) - start[j].time);
 		}
 		var p0 = m.local(e);
-		var t0 = m.time(p0.x), v0 = m.flat ? 0 : m.value(p0.y);
+		var t0 = m.time(p0.x), v0 = m.value(p0.y);
 		drag(e, (e) -> {
 			var p = m.local(e);
-			var t = grabbedStart.time + m.time(p.x) - t0, v = m.flat ? grabbedStart.value : grabbedStart.value + m.value(p.y) - v0;
+			var t = grabbedStart.time + m.time(p.x) - t0, v = grabbedStart.value + m.value(p.y) - v0;
 			if (e.ctrlKey) {
 				t = Math.round(t * 10) / 10;
-				if (!m.flat)
-					v = (Math.round(toDisplay(v) * 10) / 10 - r.from) / (r.to - r.from);
+				v = Math.round(v * 10) / 10;
 			}
 			var dt = e.shiftKey ? 0 : hxd.Math.clamp(t - grabbedStart.time, minDt, maxDt);
 			var dv = e.altKey ? 0 : v - grabbedStart.value;
@@ -544,8 +481,8 @@ class CurveEditor extends SVG {
 		}
 		var scaleTime = part.dx != 0 && tMax - tMin > 1e-9;
 		var edgeT = part.dx < 0 ? tMin : tMax, anchorT = part.dx < 0 ? tMax : tMin;
-		var scaleValue = part.dy != 0 && !m.flat && vMax - vMin > 1e-9;
-		var maxOnTop = sy(toDisplay(vMax), m.h) < sy(toDisplay(vMin), m.h);
+		var scaleValue = part.dy != 0 && vMax - vMin > 1e-9;
+		var maxOnTop = sy(vMax, m.h) < sy(vMin, m.h);
 		var edgeV = (part.dy < 0) == maxOnTop ? vMax : vMin, anchorV = edgeV == vMax ? vMin : vMax;
 		if (!scaleTime && !scaleValue)
 			return;
@@ -572,7 +509,7 @@ class CurveEditor extends SVG {
 		var limits = timeLimits(anchorT), centerLimits = timeLimits(centerT);
 
 		var p0 = m.local(e);
-		var t0 = m.time(p0.x), v0 = m.flat ? 0 : m.value(p0.y);
+		var t0 = m.time(p0.x), v0 = m.value(p0.y);
 		drag(e, (e) -> {
 			var p = m.local(e);
 			var at = e.ctrlKey ? centerT : anchorT, av = e.ctrlKey ? centerV : anchorV;
@@ -601,16 +538,15 @@ class CurveEditor extends SVG {
 		var m = mapping();
 		var other = next ? k.prevHandle : k.nextHandle;
 		inline function kx() return sx(k.time, m.w);
-		inline function ky() return sy(toDisplay(k.value), m.h);
-		var otherLength = other == null ? 0. : hxd.Math.distance(sx(k.time + other.dt, m.w) - kx(), sy(toDisplay(k.value + other.dv), m.h) - ky());
+		inline function ky() return sy(k.value, m.h);
+		var otherLength = other == null ? 0. : hxd.Math.distance(sx(k.time + other.dt, m.w) - kx(), sy(k.value + other.dv, m.h) - ky());
 		drag(e, (e) -> {
 			var p = m.local(e);
 			var x = next ? Math.max(p.x, kx()) : Math.min(p.x, kx());
 			track.edit(() -> {
 				handle.dt = m.time(x) - k.time;
-				if (!m.flat)
-					handle.dv = m.value(p.y) - k.value;
-				if (k.mode == CurveKeyMode.Aligned && other != null && !m.flat) {
+				handle.dv = m.value(p.y) - k.value;
+				if (k.mode == CurveKeyMode.Aligned && other != null) {
 					var dx = x - kx(), dy = p.y - ky();
 					var len = hxd.Math.distance(dx, dy);
 					if (len > 1e-6) {
@@ -674,11 +610,9 @@ class CurveEditor extends SVG {
 		popup.offsetX = x + 8 - rect.left;
 		popup.offsetY = y - 20 - rect.top;
 		popup.onClose = () -> popup.element.remove();
-		var r = CurveDrawing.getDisplayRanges(track)[0];
 		var t = content.find(".t"), v = content.find(".v");
 		t.val(hxd.Math.fmt(k.time));
-		v.val(hxd.Math.fmt(toDisplay(k.value)));
-		v.prop("disabled", mapping().flat);
+		v.val(hxd.Math.fmt(k.value));
 		function set(f: Float -> Void, input: hide.Element) {
 			var f2 = Std.parseFloat(input.val());
 			if (Math.isNaN(f2))
@@ -689,7 +623,7 @@ class CurveEditor extends SVG {
 			var i = curve.keys.indexOf(k);
 			k.time = hxd.Math.clamp(f, curve.keys[i - 1]?.time ?? 0, curve.keys[i + 1]?.time ?? editor.maxTime);
 		}, t));
-		v.change((_) -> set(f -> k.value = (f - r.from) / (r.to - r.from), v));
+		v.change((_) -> set(f -> k.value = f, v));
 		t.focus();
 	}
 }

@@ -19,7 +19,8 @@ typedef TrackBound = {
 	set : Float -> Void
 };
 
-typedef TrackRange = {
+/** The random amount around a track (its band is the curve minus and plus it), `from` at time 0 and `to` at time 1 **/
+typedef TrackSpread = {
 	from : TrackBound,
 	to : TrackBound
 };
@@ -77,8 +78,8 @@ class Curve extends Element {
 		#end
 	}
 
-	public function addTrack(curve: hrt.impl.Curve, ?ranges: Array<TrackRange>) : CurveTrack {
-		var t = new CurveTrack(curve, ranges ?? [], this);
+	public function addTrack(curve: hrt.impl.Curve, ?spread: TrackSpread) : CurveTrack {
+		var t = new CurveTrack(curve, spread, this);
 		tracks.push(t);
 		return t;
 	}
@@ -109,11 +110,11 @@ class Curve extends Element {
 	}
 
 	override function copySelf(target: Dynamic) {
-		target.tracks = [for (t in tracks) { curve: t.data == null ? null : @:privateAccess t.data.copyToDynamic(null), from: [for (r in t.ranges) r.from.v()], to: [for (r in t.ranges) r.to.v()] }];
+		target.tracks = [for (t in tracks) { curve: t.data == null ? null : @:privateAccess t.data.copyToDynamic(null), spread: t.spread == null ? null : [t.spread.from.v(), t.spread.to.v()] }];
 	}
 
 	override function pasteSelf(data: Dynamic) {
-		var copied : Array<{ curve: Dynamic, from: Array<Float>, to: Array<Float> }> = data.tracks;
+		var copied : Array<{ curve: Dynamic, spread: Array<Float> }> = data.tracks;
 		if (copied == null)
 			return;
 		root.editor.beginMultiUndo();
@@ -121,22 +122,15 @@ class Curve extends Element {
 			var c = copied[i];
 			if (c == null)
 				continue;
-			function values(src: Array<Float>, n: Int) {
-				var mid = Lambda.fold(src, (v, s) -> s + v, 0.) / src.length;
-				return src.length == n ? src : [for (_ in 0...n) mid];
-			}
 			t.edit(() -> {
 				if (c.curve != null && t.data != null) {
 					var keys = new hrt.impl.Curve();
 					@:privateAccess keys.copyFromDynamic(hrt.prefab.Diff.deepCopy(c.curve));
 					t.data.keys = keys.keys;
 				}
-				if (c.from.length > 0 && t.ranges.length > 0) {
-					var from = values(c.from, t.ranges.length), to = values(c.to, t.ranges.length);
-					for (j => r in t.ranges) {
-						r.from.set(from[j]);
-						r.to.set(to[j]);
-					}
+				if (c.spread != null && t.spread != null) {
+					t.spread.from.set(c.spread[0]);
+					t.spread.to.set(c.spread[1]);
 				}
 			}, false);
 		}
@@ -216,34 +210,23 @@ class Curve extends Element {
 					button.onClick = f.flip;
 				}
 			new Spacer(line, "push");
-			var names = t.ranges.length == 1 ? [""] : [" min", " max"];
-			for (side in ["From", "To"]) {
-				var bounds = [for (r in t.ranges) side == "From" ? r.from : r.to];
-				var sliders : Array<Slider<Float>> = [];
-				// the min stays below the max
-				function limit() {
-					if (sliders.length == 2) {
-						sliders[0].max = bounds[1].v();
-						sliders[1].min = bounds[0].v();
+			if (t.spread != null)
+				for (side in ["From", "To"]) {
+					// the absolute bounds of the band at the start / end: one moves, the other stays and the curve is recentered between them (`moveEdge`)
+					var time = side == "From" ? 0. : 1.;
+					for (j => edge in [-1, 1]) {
+						var s = new Slider<Float>(line, side + j);
+						s.label = j == 0 ? side : "";
+						s.tooltip = side + (j == 0 ? " min" : " max");
+						s.decimals = 3;
+						// the edit records its own undo step, with the keys of the curve
+						s.noUndo = true;
+						function bound() return t.edgeAt(time, edge);
+						s.value = bound();
+						@:privateAccess s.getFieldValue = bound;
+						s.onValueChange = (temp) -> t.edit(() -> t.moveEdge(time, edge, s.value), temp);
 					}
 				}
-				for (j => b in bounds) {
-					var s = new Slider<Float>(line, side + j);
-					s.label = j == 0 ? side : "";
-					s.tooltip = side + names[j];
-					s.decimals = 3;
-					s.value = b.v();
-					@:privateAccess s.getFieldValue = b.v;
-					s.onValueChange = (temp) -> {
-						b.set(s.value);
-						limit();
-						onValueChange(temp);
-						refresh();
-					}
-					sliders.push(s);
-				}
-				limit();
-			}
 		}
 		fields.make();
 		body.appendChild(fields.native.get());
@@ -282,7 +265,7 @@ class Curve extends Element {
 				return;
 			}
 			for (p in PRESETS) {
-				var thumb = new hide.comp.curveeditor.CurveThumbnail([new CurveTrack(getCurveFromPreset(p), [], null)], [], 1).svg;
+				var thumb = new hide.comp.curveeditor.CurveThumbnail([new CurveTrack(getCurveFromPreset(p), null, null)], [], 1).svg;
 				thumb.addEventListener("click", (_) -> view.track.applyPreset(p));
 				presets.appendChild(thumb);
 			}
@@ -325,13 +308,13 @@ class CurveTrack {
 
 	public var name : String;
 	public var data : hrt.impl.Curve;
-	public var ranges : Array<TrackRange>;
+	public var spread : TrackSpread;
 
 	var editStart : Dynamic;
 
-	public function new(data: hrt.impl.Curve, ranges: Array<TrackRange>, editor: Curve) {
+	public function new(data: hrt.impl.Curve, spread: TrackSpread, editor: Curve) {
 		this.editor = editor;
-		this.ranges = ranges;
+		this.spread = spread;
 		this.data = data;
 	}
 
@@ -367,34 +350,67 @@ class CurveTrack {
 		edit(() -> data.keys = Curve.getCurveFromPreset(p).keys, false);
 	}
 
+	/** The random amount around the curve at `time` **/
+	public function spreadAt(time: Float) : Float {
+		return spread == null ? 0. : hxd.Math.lerp(spread.from.v(), spread.to.v(), hxd.Math.clamp(time, 0, 1));
+	}
+
+	/** The value at `time` of the `edge` of the band (-1: min, 1: max, 0: the curve) **/
+	public function edgeAt(time: Float, edge: Int) : Float {
+		return (data?.getVal(time) ?? 0.) + edge * spreadAt(time);
+	}
+
+	/**
+		Moves the `edge` of the band (-1: min, 1: max) at `time` to `value`, the other edge staying there: the amount of the
+		nearest end (the start before 0.5) becomes the half width, and the curve is recentered between the edges by a shift
+		of that end, linear in time down to 0 at the other end (that keeps the shape of the curve and its other end)
+	**/
+	public function moveEdge(time: Float, edge: Int, value: Float) {
+		time = hxd.Math.clamp(time, 0, 1);
+		var start = time < 0.5;
+		var weight = start ? 1 - time : time;
+		if (spread == null || weight < 1e-3)
+			return;
+		var other = edgeAt(time, -edge);
+		var half = Math.max(edge * (value - other), 0) * 0.5;
+		var bound = start ? spread.from : spread.to;
+		bound.set(round(Math.max(bound.v() + (half - spreadAt(time)) / weight, 0)));
+		if (data == null)
+			return;
+		var shift = (other + edge * spreadAt(time) - data.getVal(time)) / weight;
+		var s0 = start ? shift : 0., s1 = start ? 0. : shift;
+		for (k in data.keys) {
+			k.value += hxd.Math.lerp(s0, s1, k.time);
+			for (h in [k.prevHandle, k.nextHandle])
+				if (h != null)
+					h.dv += (s1 - s0) * h.dt;
+		}
+	}
+
+	static inline function round(v: Float) return Math.round(v * 1e6) / 1e6;
+
 	public function flipTime() {
-		var bounded = ranges.length > 0;
 		var end = Math.isFinite(editor.maxTime) ? editor.maxTime : data.keys[data.keys.length - 1].time;
 		edit(() -> {
 			for (k in data.keys) {
 				k.time = end - k.time;
-				if (bounded)
-					k.value = 1 - k.value;
 				var h = k.prevHandle;
 				k.prevHandle = k.nextHandle;
 				k.nextHandle = h;
 				for (h in [k.prevHandle, k.nextHandle])
-					if (h != null) {
+					if (h != null)
 						h.dt = -h.dt;
-						if (bounded)
-							h.dv = -h.dv;
-					}
 			}
 			data.keys.reverse();
-			swapBounds();
+			if (spread != null) {
+				var v = spread.from.v();
+				spread.from.set(spread.to.v());
+				spread.to.set(v);
+			}
 		}, false);
 	}
 
 	public function flipValue() {
-		if (ranges.length > 0) {
-			edit(swapBounds, false);
-			return;
-		}
 		edit(() -> {
 			var min = Math.POSITIVE_INFINITY, max = Math.NEGATIVE_INFINITY;
 			for (k in data.keys) {
@@ -443,14 +459,6 @@ class CurveTrack {
 				visit(c);
 		}
 		visit(editor.root);
-	}
-
-	function swapBounds() {
-		for (r in ranges) {
-			var v = r.from.v();
-			r.from.set(r.to.v());
-			r.to.set(v);
-		}
 	}
 }
 

@@ -35,7 +35,7 @@ private typedef Resample = {
 
 /**
 	The mode of a param component (format 1), a curve by its path from the emitter. The bounds of MCurve and MCurveRange are baked
-	into their curves when saved. The curve of MCurveRange is an old random blend: its two child curves become its two datas.
+	into their curves when saved, the middle of the ones of MRandomCurve too (its curve is then absolute, its bounds -amount and +amount around it). The curve of MCurveRange is an old random blend: its two child curves become its two datas.
 **/
 private enum Mode {
 	MConstant( v : Float );
@@ -1580,7 +1580,10 @@ class Upgrade0 {
 	}
 
 	/**
-		The curves of the Curve and CurveRange modes hold their values: `lerp(from, to, curve)` is baked into them. The random
+		The curves of the Curve and CurveRange modes hold their values: `lerp(from, to, curve)` is baked into them. The curve of a
+		RandomCurve gets the middle of its bounds, their half width (`lerp(from, to, curve)` before) becomes its random amounts at
+		the start and the end, `curve + lerp(fromAmount, toAmount, t) * random`: exact when the width is constant, else read at
+		the first and last keys of the curve. The random
 		blend of a CurveRange then becomes a curve of two datas (`mergeRandomBlend`).
 	**/
 	function bakeModeCurves( owner : RawNode, m : Mode ) : Mode {
@@ -1597,6 +1600,16 @@ class Upgrade0 {
 		case MCurve(s, from, to):
 			bake(locate(s, owner), from, to);
 			MCurve(s, 0, 1);
+		case MRandomCurve(s, f0, f1, t0, t1):
+			var n = locate(s, owner);
+			var ends = n == null ? [0., 1.] : curveEnds(n);
+			var wf = (f1 - f0) * 0.5, wt = (t1 - t0) * 0.5;
+			if( n != null && wf != wt && (ends == null || ends.length > 2) )
+				warn(n, "random amount following a curve, approximated by a line from its start to its end");
+			if( ends == null ) ends = [0., 1.];
+			var a0 = hxd.Math.lerp(wf, wt, ends[0]), a1 = hxd.Math.lerp(wf, wt, ends[ends.length - 1]);
+			bake(n, (f0 + f1) * 0.5, (t0 + t1) * 0.5);
+			MRandomCurve(s, -a0, a0, -a1, a1);
 		case MCurveRange(s, af, at, bf, bt):
 			var n = locate(s, owner);
 			if( n != null && !mergedBlends.exists(n) ) {
@@ -1608,6 +1621,17 @@ class Upgrade0 {
 			MCurveRange(s, 0, 1, 0, 1);
 		case null, _: m;
 		}
+	}
+
+	/** The values of the keys of a plain curve, at least two (the start and the end), null for another curve **/
+	static function curveEnds( n : RawNode ) : Array<Float> {
+		if( blendMode(n) != 0 )
+			return null;
+		var keys : Array<Dynamic> = get(n.data, "keys");
+		if( keys == null || keys.length == 0 )
+			return [0., 1.];
+		var values = [for( k in keys ) num(get(k, "value"), CurveKeyDefault)];
+		return values.length == 1 ? [values[0], values[0]] : values;
 	}
 
 	/**
@@ -1955,7 +1979,7 @@ class Upgrade0 {
 		return o;
 	}
 
-	/** The bounds of MCurve and MCurveRange are baked (`bakeModeCurves`) **/
+	/** The bounds of MCurve, MRandomCurve and MCurveRange are baked (`bakeModeCurves`) **/
 	static function saveMode( m : Mode ) : Dynamic {
 		return switch( m ) {
 		case null: null;
@@ -1964,8 +1988,8 @@ class Upgrade0 {
 		case MCurve(s, _): obj(["mode", "Curve", "curve", s]);
 		case MRandomCurve(s, f0, f1, t0, t1):
 			var o : Dynamic = obj(["mode", "RandomCurve", "curve", s]);
-			if( f0 != 0 || f1 != 0 ) o.from = obj(["min", f0, "max", f1]);
-			if( t0 != 1 || t1 != 1 ) o.to = obj(["min", t0, "max", t1]);
+			if( f1 != f0 ) o.from = (f1 - f0) * 0.5;
+			if( t1 != t0 ) o.to = (t1 - t0) * 0.5;
 			o;
 		case MCurveRange(s, _): obj(["mode", "CurveRange", "curve", s]);
 		}
