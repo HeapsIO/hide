@@ -24,13 +24,13 @@ class ShaderParam extends ShaderNode {
 		var v = ctx.getGlobalParam(variable.name, variable.type);
 
 		ctx.setOutput(0, v);
-		if (v.t.match(TSampler(_,_))) {
-			var uv = ctx.getGlobalInput(CalculatedUV);
-			var sample = AstTools.makeGlobalCall(Texture, [v, uv], TVec(4, VFloat));
-			ctx.addPreview(sample);
-		}
-		else {
-			ctx.addPreview(v);
+		switch(v?.t) {
+			case TSampler(_,_):
+				var uv = ctx.getGlobalInput(CalculatedUV);
+				var sample = AstTools.makeGlobalCall(Texture, [v, uv], TVec(4, VFloat));
+				ctx.addPreview(sample);
+			default:
+				ctx.addPreview(v);
 		}
 	}
 

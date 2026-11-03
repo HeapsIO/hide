@@ -42,9 +42,6 @@ class SubGraph extends ShaderNode {
 		var inputs: Array<ShaderNode.InputInfo> = [];
 
 		for (name => info in nodeGenCtx.globalInVars) {
-			var global = nodeGenCtx.globalVars.get(name);
-			var t = typeToSgType(global.v.type);
-
 			var def : hrt.shgraph.SgHxslVar.ShaderDefInput = NoDefault;
 			var inlineEditable = false;
 			for (p in graph.parent.parametersAvailable) {

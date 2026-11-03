@@ -43,7 +43,7 @@ class NodeGenContextSubGraph extends NodeGenContext {
 
 	override  function getGlobalParam(name: String, type: Type) : TExpr {
 		var info = MapUtils.getOrPut(globalInVars, name, {type: type, id: inputCount ++});
-		return getParentInput(info.id) ?? parentCtx?.getGlobalParam(name, type) ?? super.getGlobalParam(name, type);
+		return getParentInput(info.id);
 	}
 
 	// Inputs of the subgraph node are declared from its fragment graph : other domains can request undeclared ones
@@ -271,7 +271,7 @@ class NodeGenContext {
 	// in the preview box of the node. Expr must be a type that
 	// can be casted a Vec4
 	public function addPreview(expr: TExpr) {
-		if (previewDomain != domain) return;
+		if (previewDomain != domain || expr == null) return;
 		var selector = getGlobalInput(PreviewSelect);
 		var outputColor = getOrAllocateGlobal(PreviewColor);
 
@@ -365,9 +365,11 @@ class NodeGenContext {
 	}
 
 	public function setOutput(id: Int, e: TExpr) {
-		var expectedType = getType(nodeOutputInfo[id].type);
-		if (!expectedType.equals(e.t))
-			throw "Output " + id + " has different type than declared";
+		if (e != null) {
+			var expectedType = getType(nodeOutputInfo[id].type);
+			if (!expectedType.equals(e.t))
+				throw "Output " + id + " has different type than declared";
+		}
 		outputs[id]=e;
 	}
 
