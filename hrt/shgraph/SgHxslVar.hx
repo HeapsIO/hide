@@ -4,6 +4,7 @@ enum ShaderDefInput {
 	NoDefault;
 	Var(name: String);
 	Const(intialValue: Float);
+	ConstVec(initialValue: Array<Float>);
 	ConstBool(initialValue: Bool);
 }
 
