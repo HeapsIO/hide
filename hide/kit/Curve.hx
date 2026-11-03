@@ -224,7 +224,15 @@ class Curve extends Element {
 						function bound() return t.edgeAt(time, edge);
 						s.value = bound();
 						@:privateAccess s.getFieldValue = bound;
-						s.onValueChange = (temp) -> t.edit(() -> t.moveEdge(time, edge, s.value), temp);
+						s.onValueChange = (temp) -> {
+							// typing sends the unchanged value: no edit, that would refresh the field being typed
+							if (s.value == bound()) {
+								if (!temp)
+									t.edit(null, false);
+								return;
+							}
+							t.edit(() -> t.moveEdge(time, edge, s.value), temp);
+						}
 					}
 				}
 		}
