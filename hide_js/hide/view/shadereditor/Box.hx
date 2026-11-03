@@ -32,10 +32,15 @@ class Box {
 	public static var NODE_HITBOX_RADIUS = NODE_RADIUS * 2;
 	@const var NODE_TITLE_PADDING = 10;
 	@const var NODE_INPUT_PADDING = 3;
+	@const var NODE_LABEL_GAP = 8;
 	public var selected : Bool = false;
 
 	public var inputs : Array<JQuery> = [];
 	public var outputs : Array<JQuery> = [];
+
+	var inputLabels : Array<{el: js.html.svg.TextElement, name: String}> = [];
+	var outputLabels : Array<{el: js.html.svg.TextElement, name: String}> = [];
+	var titleMaxWidth : Float;
 
 	var hasHeader : Bool = true;
 	var color : String;
@@ -228,7 +233,9 @@ class Box {
 					titleX += iconSize + 4;
 				}
 
-				editor.editorDisplay.text(element, titleX, HEADER_HEIGHT-6, info.name).addClass("title-box");
+				var title = editor.editorDisplay.text(element, titleX, HEADER_HEIGHT-6, info.name).addClass("title-box");
+				titleMaxWidth = (info.playButton != null ? width - 24 : width) - titleX - 4;
+				fitText(cast title.get(0), info.name, titleMaxWidth);
 
 				if (info.playButton != null) {
 					var cont = editor.editorDisplay.foreignObject(element, width - 24, 0, HEADER_HEIGHT, HEADER_HEIGHT);
@@ -316,11 +323,15 @@ class Box {
 		var nodeCircle = genPinShape(editor, node, nodeHeight, shape, false);
 
 		var nameWidth = 0.0;
+		var label = null;
 		if (name.length > 0 && name != "input") {
 			var inputName = editor.editorDisplay.text(node, NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node");
 			var domName : js.html.svg.GraphicsElement = cast inputName.get()[0];
 			nameWidth = domName.getBBox().width;
+			label = {el: cast domName, name: name};
 		}
+		inputLabels.push(label);
+		fitPinLabels(inputs.length);
 		if (valueDefault != null) {
 			var widthInput = 35;
 			var fObject = editor.editorDisplay.foreignObject(
@@ -369,8 +380,13 @@ class Box {
 
 		var nodeCircle = genPinShape(editor, node, nodeHeight, shape, true);
 
-		if (name.length > 0 && name != "output")
-			editor.editorDisplay.text(node, width - NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node").attr("text-anchor", "end");
+		var label = null;
+		if (name.length > 0 && name != "output") {
+			var outputName = editor.editorDisplay.text(node, width - NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node").attr("text-anchor", "end");
+			label = {el: cast outputName.get(0), name: name};
+		}
+		outputLabels.push(label);
+		fitPinLabels(outputs.length);
 
 		outputs.push(nodeCircle);
 
@@ -395,6 +411,56 @@ class Box {
 		}
 		refresh(inputs, info.inputs, newInfo.inputs);
 		refresh(outputs, info.outputs, newInfo.outputs);
+	}
+
+	/** Middle-truncate the input and output labels of a row so that they share the box width **/
+	function fitPinLabels(row : Int) {
+		var input = inputLabels[row];
+		var output = outputLabels[row];
+		var avail = width - 2 * NODE_TITLE_PADDING;
+
+		if (input == null || output == null) {
+			var label = input ?? output;
+			if (label != null)
+				fitText(label.el, label.name, avail);
+			return;
+		}
+
+		avail -= NODE_LABEL_GAP;
+		input.el.textContent = input.name;
+		output.el.textContent = output.name;
+		var inW = input.el.getComputedTextLength();
+		var outW = output.el.getComputedTextLength();
+		if (inW + outW <= avail)
+			return;
+
+		var inMax = hxd.Math.max(avail / 2, avail - outW);
+		fitText(input.el, input.name, inMax);
+		fitText(output.el, output.name, avail - hxd.Math.min(inW, inMax));
+	}
+
+	/** Set the text, replacing its middle with an ellipsis if it is wider than maxWidth **/
+	static function fitText(el : js.html.svg.TextElement, text : String, maxWidth : Float) {
+		el.textContent = text;
+		if (el.getComputedTextLength() <= maxWidth)
+			return;
+
+		function cut(keep : Int) {
+			var head = (keep + 1) >> 1;
+			return text.substr(0, head) + "…" + text.substr(text.length - (keep - head));
+		}
+
+		var lo = 0;
+		var hi = text.length - 1;
+		while (lo < hi) {
+			var mid = (lo + hi + 1) >> 1;
+			el.textContent = cut(mid);
+			if (el.getComputedTextLength() <= maxWidth)
+				lo = mid;
+			else
+				hi = mid - 1;
+		}
+		el.textContent = cut(lo);
 	}
 
 	public function getNodeHeight(id: Int) {
@@ -504,7 +570,7 @@ class Box {
 	}
 	public function setTitle(str : String) {
 		if (hasHeader) {
-			element.find(".title-box").html(str);
+			fitText(cast element.find(".title-box").get(0), str, titleMaxWidth);
 		}
 	}
 
