@@ -140,7 +140,7 @@ class Upgrade0 {
 	}
 
 	/**
-		Upgrades in place `data`, the root of FX data (an FX), `fileRoot` when it
+		Upgrades in place `data`, the root of FX data (an FX, an emitter out of any FX), `fileRoot` when it
 		is the root of its file (the paths of the curve references start there, they are not written otherwise).
 	**/
 	public function run( data : Dynamic, fileRoot : Bool ) {

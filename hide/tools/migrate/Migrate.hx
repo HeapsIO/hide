@@ -42,8 +42,8 @@ typedef ProjectResult = {
 }
 
 /**
-	Upgrades FX data saved in an older version (`hrt.prefab.fx.FX.VERSION`, on the root FX of the data)
-	to the current one (`STEPS`). Compiled with `-D fx-migration` only.
+	Upgrades FX data saved in an older version (`hrt.prefab.fx.FX.VERSION`, on the root of the data:
+	an FX, or an emitter out of any FX) to the current one (`STEPS`). Compiled with `-D fx-migration` only.
 
 	- On a whole project, once: `migrateProject`, or the tool (`Cli`, hide/migrate.hxml). The project is
 	  migrated in memory, the files that change are written by `toText` (the prefab save of hide). The
@@ -107,7 +107,7 @@ class Migrate {
 		var changed = false;
 		function walk( d : Dynamic ) {
 			if( d == null || !Reflect.isObject(d) ) return;
-			if( isFX(d) ) {
+			if( isFX(d) || isEmitter(d) ) {
 				var v = versionOf(d);
 				if( v != FX.VERSION ) {
 					upgradeTree(d, v, d == data, report);

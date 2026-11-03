@@ -908,10 +908,15 @@ class FX extends Object3D implements BaseFX {
 	}
 
 	/**
-		Version of the data of an FX, saved on its root, 0 when missing.
+		Version of the data of an FX, saved on its root (and on an emitter out of any FX), 0 when missing.
 		Older data is upgraded on load with `-D fx-migration`, or rejected.
 	**/
 	public static inline var VERSION = 2;
+
+	/** Whether `p` is in FX data: under an FX, or under an emitter out of any FX (the root of its FX data) **/
+	public static function inFXData( p : Prefab ) {
+		return p.findParent(Prefab, c -> c is BaseFX || c is Emitter || c is Emitter2D) != null;
+	}
 
 	/** Called before `p`, the root of FX data, loads `data` **/
 	public static function checkVersion( p : Prefab, data : Dynamic ) {
