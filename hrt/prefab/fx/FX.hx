@@ -782,9 +782,9 @@ class FXAnimation extends h3d.scene.Object {
 		var anim : ObjectAnimation = {
 			elt: obj3d,
 			obj: local3d,
-			position: hrt.prefab.fx.BaseFX.BaseFXTools.vectorAnimation(elt, "position"),
-			scale: hrt.prefab.fx.BaseFX.BaseFXTools.vectorAnimation(elt, "scale"),
-			rotation: hrt.prefab.fx.BaseFX.BaseFXTools.vectorAnimation(elt, "rotation"),
+			position: BaseFXTools.vectorAnimation(elt, "position"),
+			scale: BaseFXTools.vectorAnimation(elt, "scale"),
+			rotation: BaseFXTools.vectorAnimation(elt, "rotation"),
 			localPosition: makeVector("localPosition", 0.0),
 			localRotation: makeVector("localRotation", 0.0),
 			color: makeColor("color"),
@@ -938,7 +938,6 @@ class FX extends Object3D implements BaseFX {
 		super.load(data);
 	}
 
-	// the prefab macros require it with the `load` override
 	override function copy( obj : Prefab ) {
 		super.copy(obj);
 	}

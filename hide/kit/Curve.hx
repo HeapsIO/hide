@@ -19,7 +19,6 @@ typedef TrackBound = {
 	set : Float -> Void
 };
 
-/** The random amount around a track (its band is the curve minus and plus it), `from` at time 0 and `to` at time 1 **/
 typedef TrackSpread = {
 	from : TrackBound,
 	to : TrackBound

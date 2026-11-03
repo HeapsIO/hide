@@ -1316,7 +1316,6 @@ class FXEditor extends hide.view.FileView {
 					continue;
 				var curve = new Curve(element, null);
 				curve.name = k;
-				// the curve holds the value of the property: it starts from its current value
 				var v = getAnimValue(element, k) ?? prop.def;
 				if(v != null)
 					curve.addKey(0, v, Linear);
