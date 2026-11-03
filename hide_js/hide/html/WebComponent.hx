@@ -18,19 +18,36 @@ function register(cl : Class<IWebComponent>, htmlName : String, ?extendsTag : St
 	var ctor : Dynamic = cl;
 	ctor.__tag__ = htmlName;
 	ctor.__extends__ = extendsTag;
-	ctor = js.Syntax.code("(function(cl) {
+	ctor = js.Syntax.code("(function(cl, attrs) {
 		var base = cl;
 		while (base.__super__ != null)
 			base = base.__super__;
 		var c = class extends base { constructor() { super(); cl.call(this); } };
 		Object.setPrototypeOf(c.prototype, cl.prototype);
+		c.observedAttributes = attrs;
 		return c;
-	})({0})", cl);
+	})({0}, {1})", cl, getObservedAttributes(cl));
 	if (extendsTag == null)
 		js.Syntax.code("customElements.define({0}, {1})", htmlName, ctor);
 	else
 		js.Syntax.code("customElements.define({0}, {1}, {extends: {2}})", htmlName, ctor, extendsTag);
 	return 0;
+}
+
+/**
+	`observedAttributes` and `@:attr` names (`__internalAttributes`) of `cl` and its parent classes.
+**/
+private function getObservedAttributes(cl : Class<Dynamic>) : Array<String> {
+	var attrs = [];
+	while (cl != null) {
+		for (field in ["observedAttributes", "__internalAttributes"]) {
+			var a : Array<String> = Reflect.field(cl, field);
+			if (a != null)
+				attrs = attrs.concat(a);
+		}
+		cl = Type.getSuperClass(cl);
+	}
+	return attrs;
 }
 
 @:build(hide.html.WebComponentMacro.base())

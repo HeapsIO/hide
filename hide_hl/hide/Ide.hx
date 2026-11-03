@@ -49,8 +49,8 @@ class Ide extends hide.tools.IdeData {
 
 
 	public function update(dt: Float) {
-		hide.Config.updatePendingSaves(dt);
-		hide.tools.EditorState.updatePendingSaves(dt);
+		// hide.Config.updatePendingSaves(dt);
+		// hide.tools.EditorState.updatePendingSaves(dt);
 
 		for (update in updates) {
 			update(dt);
@@ -73,8 +73,8 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function dispose() {
-		hide.Config.flushPendingSaves();
-		hide.tools.EditorState.flushPendingSaves();
+		// hide.Config.flushPendingSaves();
+		// hide.tools.EditorState.flushPendingSaves();
 
 		hrt.tools.FileManager.inst.dispose();
 	}

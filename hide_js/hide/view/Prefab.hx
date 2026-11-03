@@ -166,12 +166,13 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 }
 
 @:keep
+@:build(hide.tools.EditorState.build())
 class Prefab extends hide.view.FileView {
 
 	public var sceneEditor : PrefabSceneEditor;
 	var data : hrt.prefab.Prefab;
 
-	var tools : hide.comp.Toolbar;
+	var toggles : Array<hide.html.comp.Button> = [];
 
 	var layerToolbar : hide.comp.Toolbar;
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
@@ -188,6 +189,10 @@ class Prefab extends hide.view.FileView {
 	var posToolTip : h2d.Text;
 	var matLibPath : String;
 	var renameMatsHistory : Array<Dynamic>;
+
+	@:state(projectState) var localTransform : Bool = false;
+	@:state(projectState) var selfOnlyTransform : Bool = false;
+	var localTransformToggle: hide.html.comp.Button;
 
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
@@ -336,7 +341,6 @@ class Prefab extends hide.view.FileView {
 			</div>
 		');
 
-		tools = new hide.comp.Toolbar(null,element.find("#prefab-toolbar"));
 		layerToolbar = new hide.comp.Toolbar(null,element.find(".layer-buttons"));
 		currentVersion = undo.currentID;
 
@@ -409,10 +413,22 @@ class Prefab extends hide.view.FileView {
 			return;
 		if( sceneEditor != null )
 			refreshColLayout();
-		if (tools != null)
-			tools.refreshToggles();
+		refreshToggles();
 
 		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
+	}
+
+	/**
+		Syncs the toggles with their saved value, `force` calls their callback even when unchanged.
+	**/
+	function refreshToggles(force = false) {
+		for (b in toggles) {
+			var v : Bool = ide.currentConfig.get("sceneeditor." + b.id, false);
+			if (force || b.hasAttribute("checked") != v) {
+				b.toggleAttribute("checked", v);
+				b.oncheck(null, v);
+			}
+		}
 	}
 
 	public function hideColumns(?_) {
@@ -460,98 +476,102 @@ class Prefab extends hide.view.FileView {
 		refreshSceneFilters();
 		refreshGraphicsFilters();
 		refreshViewModes();
-		tools.saveDisplayKey = "Prefab/toolbar";
+		var gizmo = @:privateAccess sceneEditor.gizmo;
 
-		/*gridStep = @:privateAccess sceneEditor.gizmo.moveStep;*/
-		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
+		function popup(open : hide.Element -> hide.comp.Popup) {
+			var p : hide.comp.Popup = null;
+			return (e : js.html.MouseEvent) -> {
+				// Clicks inside the popup bubble to the button
+				if (p != null)
+					return;
+				p = open(new hide.Element(cast e.currentTarget));
+				p.onClose = () -> p = null;
+			};
+		}
 
-		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> resetCamera(false)) });
-		toolsDefs.push({id: "camSettings", title : "Camera Settings", icon : "camera", type : Popup((e : hide.Element) -> new hide.comp.CameraControllerEditor(sceneEditor, e)) });
+		var renderer = Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer);
+		hide.html.Html.build(element.find("#prefab-toolbar").get(0),
+			<hide-toolbar>
+				<hide-group>
+					<hide-button id="selectionMode" title="Gizmo selection Mode" onclick={gizmo.selectionMode} icon={HideRes.icon.selection}/>
+					<hide-button id="translationMode" title="Gizmo translation Mode" onclick={gizmo.translationMode} icon={HideRes.icon.translation}/>
+					<hide-button id="rotationMode" title="Gizmo rotation Mode" onclick={gizmo.rotationMode} icon={HideRes.icon.rotation}/>
+					<hide-button id="scalingMode" title="Gizmo scaling Mode" onclick={gizmo.scalingMode} icon={HideRes.icon.scale}/>
+				</hide-group>
 
-		toolsDefs.push({id: "topCamera", title : "Top camera", icon : "video-camera", iconStyle: { transform: "rotateZ(90deg)" }, type : Button(() -> resetCamera(true))});
+				<hide-group>
+					<hide-button title="Perspective camera" onclick={() -> resetCamera(false)} icon={HideRes.icon.camera}/>
+					<hide-button title="Camera Settings" onclick={popup((e) -> new hide.comp.CameraControllerEditor(sceneEditor, e))} icon={HideRes.icon.settings}/>
+					<hide-button title="Top camera" onclick={() -> resetCamera(true)}><hide-icon icon={HideRes.icon.camera} style="transform: rotateZ(90deg)"/></hide-button>
+				</hide-group>
 
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-
-		toolsDefs.push({id: "snapToGroundToggle", title : "Snap to ground", icon : "anchor", type : Toggle((v) -> sceneEditor.snapToGround = v)});
-
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-
-		toolsDefs.push({id: "selectionMode", title : "Gizmo selection Mode", icon : "mouse-pointer", type : Button(@:privateAccess sceneEditor.gizmo.selectionMode)});
-		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode)});
-		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "refresh", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode)});
-		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "expand", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
-
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-
-        toolsDefs.push({id: "toggleSnap", title : "Snap Toggle", icon: "magnet", type : Toggle((v) -> {sceneEditor.snapToggle = v; sceneEditor.updateGrid();})});
-        toolsDefs.push({id: "snap-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.SnapSettingsPopup(e, sceneEditor))});
-
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-
-		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
-		toolsDefs.push({id: "selfOnlyTransformsToggle", title : "Self only transforms", icon : "map-pin", type : Toggle((v) -> sceneEditor.selfOnlyTransform = v)});
-
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-		toolsDefs.push({id: "ruler", title : "Ruler mode", icon : "arrows-h", type : Toggle((v) -> sceneEditor.toggleRuler(v)), defaultValue: false, storage: None});
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+				<hide-button id="snapToGroundToggle" title="Snap to ground" oncheck={(_, v) -> sceneEditor.snapToGround = v} icon={HideRes.icon.snap_to_ground}></hide-button>
 
 
-		toolsDefs.push({id: "showViewportOverlays", title : "Viewport Overlays", icon : "eye", type : Toggle((v) -> { sceneEditor.updateViewportOverlays(); }) });
-		toolsDefs.push({id: "viewportoverlays-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.ViewportOverlaysPopup(e, sceneEditor))});
+				<hide-group>
+					<hide-button id="toggleSnap" title="Snap Toggle" oncheck={(_, v) -> { sceneEditor.snapToggle = v; sceneEditor.updateGrid(); }} icon={HideRes.icon.grid_snap}/>
+					<hide-button class="small-dropdown" onclick={popup((e) -> new hide.comp.SceneEditor.SnapSettingsPopup(e, sceneEditor))}></hide-button>
+				</hide-group>
 
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+				<hide-group>
+					<hide-button id="localTransformsToggle" title="Local transforms" oncheck={(_, v) -> localTransform = v}></hide-button>
+					<hide-button class="small-dropdown" onclick={(e) -> transformMenu(e.currentTarget)}></hide-button>
+				</hide-group>
 
-		toolsDefs.push({id: "autoSyncToggle", title : "Auto synchronize", icon : "refresh", type : Toggle((b) -> autoSync = b)});
+				<hide-button id="ruler" title="Ruler mode" oncheck={(_, v) -> sceneEditor.toggleRuler(v)} icon={HideRes.icon.ruler}/>
 
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+				<hide-group>
+					<hide-button id="showViewportOverlays" title="Viewport Overlays" oncheck={(_, _) -> sceneEditor.updateViewportOverlays()} icon={HideRes.icon.visibility}/>
+					<hide-button class="small-dropdown" onclick={popup((e) -> new hide.comp.SceneEditor.ViewportOverlaysPopup(e, sceneEditor))}></hide-button>
+				</hide-group>
 
 
-      toolsDefs.push({id: "help", title : "help", icon: "question", type : Popup((e) -> new hide.comp.SceneEditor.HelpPopup(e, sceneEditor))});
 
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+				<hide-group>
+					<hide-button class="dropdown" onclick={popup((e) -> new hide.comp.SceneEditor.ViewModePopup(e, renderer, sceneEditor))} label="View Modes"/>
+					<hide-button class="dropdown" onclick={popup((e) -> new FiltersPopup(e, this, graphicsFilters, "Graphics"))} label="Graphics filters"/>
+					<hide-button class="dropdown" onclick={popup((e) -> new FiltersPopup(e, this, sceneFilters, "Scene"))} label="Scene filters"/>
+					<hide-button class="dropdown" onclick={popup((e) -> new hide.comp.SceneEditor.RenderPropsPopup(e, this, sceneEditor, true))} label="Render props"/>
+				</hide-group>
+				<input id="sceneSpeed" type="range" title="Speed" min="0" max="1" value="1"/>
 
-		toolsDefs.push({id: "viewModes", title: "View Modes", type: Popup((e) -> new hide.comp.SceneEditor.ViewModePopup(e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer), sceneEditor))});
+				<hide-button title="Help" onclick={popup((e) -> new hide.comp.SceneEditor.HelpPopup(e, sceneEditor))} icon={HideRes.icon.question_mark}/>
+			</hide-toolbar>
+		);
 
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+		var speed = new hide.comp.Range(null, new hide.Element(sceneSpeed));
+		speed.onChange = (_) -> scene.speed = speed.value;
 
-		toolsDefs.push({id: "graphicsFilters", title : "Graphics filters", type : Popup((e) -> new FiltersPopup(e, this, graphicsFilters, "Graphics"))});
+		localTransformToggle = localTransformsToggle;
 
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+		toggles = [snapToGroundToggle, toggleSnap, showViewportOverlays];
+		for (b in toggles) {
+			var onCheck = b.oncheck;
+			b.oncheck = (e, v) -> {
+				ide.projectUserConfig.set("sceneeditor." + b.id, v);
+				onCheck(e, v);
+			};
+		}
+		refreshToggles(true);
 
-		toolsDefs.push({id: "sceneFilters", title : "Scene filters", type : Popup((e) -> new FiltersPopup(e, this, sceneFilters, "Scene"))});
-
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-
-		toolsDefs.push({
-			id: "renderProps",
-			title: "Render props",
-			type: Popup((e) -> new hide.comp.SceneEditor.RenderPropsPopup(e, this, sceneEditor, true))
-		});
-
-		toolsDefs.push({
-			id: "",
-			title: "",
-			icon: "",
-			type: Separator
-		});
-
-		toolsDefs.push({id: "sceneSpeed", title : "Speed", type : Range((v) -> scene.speed = v)});
-
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-
-		tools.makeToolbar(toolsDefs, config, keys);
+		for (b in [selectionMode, translationMode, rotationMode, scalingMode, toggleSnap, localTransformsToggle, ruler]) {
+			var key = config.get("key.sceneeditor." + b.id);
+			if (key == null)
+				continue;
+			b.title += ' ($key)';
+			if (b.oncheck != null)
+				keys.register("sceneeditor." + b.id, () -> b.click());
+		}
 
 		posToolTip = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		posToolTip.dropShadow = { dx : 1, dy : 1, color : 0, alpha : 0.5 };
 
 
-		var gizmo = @:privateAccess sceneEditor.gizmo;
-
 		var onSetGizmoMode = function(mode: hrt.tools.Gizmo.EditMode) {
-			tools.element.find("#selectionMode").get(0).toggleAttribute("checked", mode == Selection);
-			tools.element.find("#translationMode").get(0).toggleAttribute("checked", mode == Translation);
-			tools.element.find("#rotationMode").get(0).toggleAttribute("checked", mode == Rotation);
-			tools.element.find("#scalingMode").get(0).toggleAttribute("checked", mode == Scale);
+			selectionMode.toggleAttribute("checked", mode == Selection);
+			translationMode.toggleAttribute("checked", mode == Translation);
+			rotationMode.toggleAttribute("checked", mode == Rotation);
+			scalingMode.toggleAttribute("checked", mode == Scale);
 		};
 
 		gizmo.onChangeMode = onSetGizmoMode;
@@ -565,6 +585,14 @@ class Prefab extends hide.view.FileView {
 			initSceneFilters();
 		}
 
+	}
+
+	function transformMenu(e: js.html.Element) {
+		hide.comp.ContextMenu.createDropdown(
+			e, [
+				{checked: selfOnlyTransform, click: () -> selfOnlyTransform = !selfOnlyTransform, label:"Keep Child Transforms", tooltip: "Transforming an object via the gizmo will keep its children in place. Doesn't work for objects that have", stayOpen: true}
+			]
+		);
 	}
 
 	function resetCamera( top : Bool ) {
@@ -733,11 +761,18 @@ class Prefab extends hide.view.FileView {
 			posToolTip.visible = false;
 		}
 
-		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
-			save();
-			lastSyncChange = properties.lastChange;
-			currentVersion = undo.currentID;
+		{
+			sceneEditor.localTransform = localTransform;
+			localTransformToggle.icon = localTransform ? HideRes.icon.cube.entry.path : HideRes.icon.prefab.object3d.entry.path;
+
+			sceneEditor.selfOnlyTransform = selfOnlyTransform;
 		}
+
+		// if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
+		// 	save();
+		// 	lastSyncChange = properties.lastChange;
+		// 	currentVersion = undo.currentID;
+		// }
 
 	}
 

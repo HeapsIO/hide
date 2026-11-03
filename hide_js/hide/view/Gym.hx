@@ -70,18 +70,14 @@ class Gym extends hide.ui.View<{}> {
 					<fancy-button>
 						<span class="ico ico-eye"></span>
 					</fancy-button>
-					<fancy-button class="compact">
-						<span class="ico ico-chevron-down"></span>
-					</fancy-button>
+					<fancy-button class="compact"></fancy-button>
 
 					<fancy-separator></fancy-separator>
 
 					<fancy-button class="selected">
 						<span class="ico ico-eye"></span>
 					</fancy-button>
-					<fancy-button class="compact">
-						<span class="ico ico-chevron-down"></span>
-					</fancy-button>
+					<fancy-button class="compact"></fancy-button>
 				</fancy-toolbar>
 				'));
 
@@ -107,9 +103,7 @@ class Gym extends hide.ui.View<{}> {
 						<span class="ico ico-gear"></span>
 						<span class="label">Options</span>
 					</fancy-button>
-					<fancy-button class="compact">
-						<span class="ico ico-chevron-down"></span>
-					</fancy-button>
+					<fancy-button class="compact"></fancy-button>
 			'));
 
 
@@ -358,6 +352,127 @@ class Gym extends hide.ui.View<{}> {
 						<div label="Properties">Properties</div>
 					</hide-tab-container>
 				</hide-split-container>
+			);
+		}
+
+		{
+			function buttons(parent : js.html.Element) {
+				hide.html.Html.build(parent,
+					<div style="display: contents">
+						<hide-group>
+							<hide-button icon={HideRes.icon.edit}/>
+							<hide-button icon={HideRes.icon.clear}/>
+							<hide-button checked icon={HideRes.icon.stroke}/>
+						</hide-group>
+						<hide-button icon={HideRes.icon.settings}/>
+						<hide-button label="Options"/>
+						<hide-button icon={HideRes.icon.settings} label="Options"/>
+						<hide-button class="small-square" icon={HideRes.icon.sort}/>
+						<hide-button class="medium-square" icon={HideRes.icon.sort}/>
+						<hide-button class="quiet" icon={HideRes.icon.settings}/>
+						<hide-button class="quiet" label="Options"/>
+						<hide-button class="quiet" icon={HideRes.icon.settings} label="Options"/>
+
+						<hide-button class="transparent" icon={HideRes.icon.settings}/>
+						<hide-button class="transparent" label="Options"/>
+						<hide-button class="transparent" checked label="Options"/>
+						<hide-button class="transparent" icon={HideRes.icon.settings} label="Options"/>
+
+						<hide-button class="quiet transparent" icon={HideRes.icon.settings}/>
+						<hide-button class="quiet transparent" label="Options"/>
+						<hide-button class="quiet transparent" checked label="Options"/>
+						<hide-button class="quiet transparent" icon={HideRes.icon.settings} label="Options"/>
+
+					</div>
+				);
+			}
+
+			var toolbar = section(element, "Toolbar");
+			hide.html.Html.build(toolbar.get(0), <hide-toolbar id="bar"></hide-toolbar>);
+			buttons(bar);
+
+			var hideButtons = section(element, "Hide Buttons");
+			hide.html.Html.build(hideButtons.get(0), <div id="flex" style="display: flex; flex-direction: row; border: 1px solid red"></div>);
+			buttons(flex);
+
+			function openDropdown(e : js.html.MouseEvent) {
+				hide.comp.ContextMenu.createDropdown(cast e.currentTarget, getContextMenuContent(), {});
+			}
+
+			hide.html.Html.build(hideButtons.get(0),
+				<div>
+					<h1>Size</h1>
+					<hide-toolbar>
+						<hide-button class="small-square" icon={HideRes.icon.settings}/>
+						<hide-button class="medium-square" icon={HideRes.icon.settings}/>
+						<hide-button icon={HideRes.icon.settings}/>
+					</hide-toolbar>
+
+					<h1>Button</h1>
+					<hide-button icon={HideRes.icon.settings}/>
+
+					<h1>Quiet</h1>
+					<hide-button class="quiet" icon={HideRes.icon.settings}/>
+
+					<h1>Text button</h1>
+					<hide-button label="Options"/>
+
+					<h1>Icon and text button</h1>
+					<hide-button icon={HideRes.icon.settings} label="Options"/>
+
+					<h1>Icon and really long text button</h1>
+					<hide-button icon={HideRes.icon.settings} label="Lorem ispum sit dolor amet"/>
+
+					<h1>Icon and dropdown aside</h1>
+					<hide-group>
+						<hide-button icon={HideRes.icon.visibility}/>
+						<hide-button class="small-dropdown" onclick={openDropdown}></hide-button>
+					</hide-group>
+
+					<h1>With dropdown</h1>
+					<hide-toolbar>
+						<hide-button class="dropdown" onclick={openDropdown} label="Options"/>
+						<hide-button class="dropdown" onclick={openDropdown} icon={HideRes.icon.sort}/>
+					</hide-toolbar>
+
+					<h1>Icon text and dropdown aside</h1>
+					<hide-group>
+						<hide-button icon={HideRes.icon.settings} label="Options"/>
+						<hide-button class="small-dropdown" onclick={openDropdown}></hide-button>
+					</hide-group>
+
+					<h1>Toolbar</h1>
+					<hide-toolbar>
+						<hide-group>
+							<hide-button icon={HideRes.icon.folder}/>
+							<hide-button icon={HideRes.icon.copy}/>
+							<hide-button icon={HideRes.icon.settings}/>
+						</hide-group>
+						<hide-group>
+							<hide-button icon={HideRes.icon.edit}/>
+							<hide-button icon={HideRes.icon.clear}/>
+							<hide-button icon={HideRes.icon.stroke}/>
+						</hide-group>
+					</hide-toolbar>
+				</div>
+			);
+
+			var hideIcons = section(element, "Hide Icons");
+			hide.html.Html.build(hideIcons.get(0),
+				<div>
+					<hide-icon icon={HideRes.icon.add}/>
+					<hide-button icon={HideRes.icon.add}/>
+					<hide-group>
+						<hide-button icon={HideRes.icon.axis}/>
+						<hide-button icon={HideRes.icon.rotation}/>
+						<hide-button icon={HideRes.icon.scale}/>
+					</hide-group>
+					<hide-group>
+						<hide-button class="small-square" icon={HideRes.icon.axis}/>
+						<hide-button class="small-square" icon={HideRes.icon.rotation}/>
+						<hide-button class="medium-square" icon={HideRes.icon.scale}/>
+					</hide-group>
+				</div>
 			);
 		}
 	}

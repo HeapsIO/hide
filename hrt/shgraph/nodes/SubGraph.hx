@@ -44,7 +44,24 @@ class SubGraph extends ShaderNode {
 		for (name => info in nodeGenCtx.globalInVars) {
 			var global = nodeGenCtx.globalVars.get(name);
 			var t = typeToSgType(global.v.type);
-			inputs[info.id] = {name: name, type: hrt.shgraph.ShaderGraph.typeToSgType(info.type), def: NoDefault};
+
+			var def : hrt.shgraph.SgHxslVar.ShaderDefInput = NoDefault;
+			var inlineEditable = false;
+			for (p in graph.parent.parametersAvailable) {
+				if (p.name != name || p.defaultValue == null)
+					continue;
+				switch (p.type) {
+					case TFloat:
+						def = Const(p.defaultValue);
+						inlineEditable = true;
+					case TVec(_, VFloat):
+						def = ConstVec(p.defaultValue);
+						inlineEditable = false; // no editor for vectors atm
+					default:
+				}
+			}
+
+			inputs[info.id] = {name: name, type: hrt.shgraph.ShaderGraph.typeToSgType(info.type), def: def, inlineEditable: inlineEditable};
 		}
 
 		return inputs;

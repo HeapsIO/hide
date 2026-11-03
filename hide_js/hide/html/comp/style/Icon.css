@@ -1,0 +1,14 @@
+:host {
+	display: inline-block;
+	flex-shrink: 0;
+	height: var(--icon-size, 1em);
+	aspect-ratio: 1/1;
+}
+
+div {
+	height: 100%;
+	background-color: currentColor;
+	mask-size: contain;
+	mask-repeat: no-repeat;
+	mask-position: center;
+}

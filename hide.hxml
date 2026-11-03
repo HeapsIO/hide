@@ -12,6 +12,7 @@ hide_common.hxml
 --macro hide.tools.Macros.includeShaderSources()
 --macro hide.html.DomPatch.init()
 --macro hide.html.WebComponentMacro.init()
+--macro include("hide.html.comp")
 cdb.ConstLoader
 
 #-D shader_debug_dump

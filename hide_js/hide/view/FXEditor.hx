@@ -1637,11 +1637,11 @@ class FXEditor extends hide.view.FileView {
 		// 	statusText.text = lines.join("\n");
 		// }
 
-		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
-			save();
-			lastSyncChange = properties.lastChange;
-			currentVersion = undo.currentID;
-		}
+		// if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
+		// 	save();
+		// 	lastSyncChange = properties.lastChange;
+		// 	currentVersion = undo.currentID;
+		// }
 
 		lastTime = currentTime;
 	}
@@ -1750,11 +1750,11 @@ class FXEditor extends hide.view.FileView {
 		}
 
 		var cam = scene.s3d.camera;
-		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
-			save();
-			lastSyncChange = properties.lastChange;
-			currentVersion = undo.currentID;
-		}
+		// if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
+		// 	save();
+		// 	lastSyncChange = properties.lastChange;
+		// 	currentVersion = undo.currentID;
+		// }
 	}
 
 	static function getTrack(element : PrefabElement, propName : String) {

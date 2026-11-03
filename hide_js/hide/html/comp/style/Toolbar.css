@@ -1,0 +1,8 @@
+:host {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 0.5em;
+
+	padding: 2px 0.25em;
+}

@@ -175,8 +175,8 @@ class TabContainer extends WebComponent {
 	function buildPaneMenu(pane : Element) : Array<MenuItem> {
 		return [
 			{label: "Close", click: () -> close(pane)},
-			{label: "Close Others", click: () -> for (p in [for (i in 0...children.length) children[i]]) if (p != pane) close(p)},
-			{label: "Close All", click: () -> for (p in [for (i in 0...children.length) children[i]]) close(p)},
+			{label: "Close Others", click: () -> closeOthers(pane)},
+			{label: "Close All", click: closeAll},
 		];
 	}
 
@@ -260,6 +260,17 @@ class TabContainer extends WebComponent {
 			select(pane.nextElementSibling ?? pane.previousElementSibling);
 		pane.remove();
 		return true;
+	}
+
+	public function closeOthers(pane : Element) {
+		for (p in [for (i in 0...children.length) children[i]])
+			if (p != pane)
+				close(p);
+	}
+
+	public function closeAll() {
+		for (p in [for (i in 0...children.length) children[i]])
+			close(p);
 	}
 
 	public function select(pane : Element) {

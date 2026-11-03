@@ -10,8 +10,8 @@
 	--theme-mantle: oklch(0.216 0 0);
 	--theme-base: oklch(0.243 0 0);
 	--theme-surface-0: oklch(0.300 0 0);
-	--theme-surface-1: oklch(0.404 0 0);
-	--theme-surface-2: oklch(0.477 0.034 278.643);
+	--theme-surface-1: oklch(0.333 0 0);
+	--theme-surface-2: oklch(0.400 0 0);
 
 	--theme-text: oklch(0.879 0.043 272.277);
 	--theme-foreground: oklch(94.027% 0.00845 271.33);
@@ -21,8 +21,11 @@
 
 	/* Derived colors */
 	--theme-accent: var(--theme-blue);
+	--theme-accent-dimmed: color-mix(in oklch, var(--theme-blue), var(--theme-crust) 10%);
 
-	--theme-color-border: var(--theme-surface-0);
+	--theme-color-border: var(--theme-surface-2);
+	--theme-border: 1px solid var(--theme-color-border);
+	--theme-border-radius: 4px;
 
 	@function --hover(--c <color>) returns <color> {
 		result: color-mix(in oklch, var(--c), var(--theme-foreground) 6%);
@@ -2517,6 +2520,54 @@ input[type=checkbox] {
 
 				&:hover {
 					cursor: e-resize;
+				}
+			}
+		}
+	}
+
+	.shader-error {
+		z-index: 4;
+		position: absolute;
+		bottom: 0px;
+		left: 0px;
+		right: 0px;
+		max-height: 50%;
+		overflow-y: auto;
+		padding: 1em 0;
+
+		background-color: #ff5555;
+		box-shadow: 1px -1px 3px rgba(0,0,0,0.5);
+		color: black;
+		text-align: center;
+		font-weight: bold;
+		font-family: var(--default-font);
+
+		> pre {
+			text-align: left;
+			font-family: monospace;
+			font-weight: normal;
+			white-space: pre;
+			overflow: auto;
+			max-height: 20em;
+			margin: 0.5em 1em;
+			padding: 0.5em;
+			background-color: white;
+			border: solid 1px black;
+			user-select: text;
+		}
+
+		> .buttons {
+			display: flex;
+			justify-content: center;
+			gap: 0.5em;
+			margin-top: 0.5em;
+
+			> fancy-button {
+				border-radius: 3px;
+				background-color: #222222;
+
+				&:hover {
+					background-color: #555;
 				}
 			}
 		}
@@ -5717,6 +5768,12 @@ fancy-button {
 		}
 	}
 
+	&.compact::after {
+		font-family: "FontAwesome";
+		content: "\f078";
+		font-size: 0.7em;
+	}
+
 	&.disabled {
 		pointer-events: none;
 		color: #666;
@@ -6172,6 +6229,8 @@ blend-space-2d-root {
 .hide-gym {
 	padding: 2em;
 	box-sizing: border-box;
+	height: 100%;
+	overflow: auto;
 
 	h1 {
 		font-size: 1.1em;
@@ -7121,5 +7180,18 @@ fancy-gallery-item {
 				flex: 1;
 			}
 		}
+	}
+}
+
+.hide-view.no-project {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	.no-project-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8px;
 	}
 }

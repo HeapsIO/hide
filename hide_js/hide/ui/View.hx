@@ -11,6 +11,8 @@ typedef ViewOptions = { ?position : DisplayPosition, ?width : Int }
 
 @:keepSub @:allow(hide.Ide) @:allow(hide.html.comp.TabViewContainer)
 class View<T> extends hide.comp.Component {
+	public var globalState : hide.tools.EditorState = new hide.tools.EditorState();
+	public var projectState : hide.tools.EditorState = new hide.tools.EditorState();
 
 	var container : hide.html.comp.TabViewContainer;
 	public var fullScreen(get,set) : Bool;
@@ -34,6 +36,9 @@ class View<T> extends hide.comp.Component {
 
 	public function new(state:T) {
 		super(null,null);
+		globalState.setParent(hide.Ide.inst.globalViewState, Type.getClassName(Type.getClass(this)));
+		projectState.setParent(hide.Ide.inst.projectViewState, Type.getClassName(Type.getClass(this)));
+
 		element[0].classList.add("hide-view");
 		(element[0] : Dynamic).__view = this;
 		this.state = state;
@@ -288,8 +293,8 @@ class View<T> extends hide.comp.Component {
 	function buildTabMenu() : Array<hrt.ui.HuiMenu.MenuItem> {
 		return [
 			{ label : "Close", click : close },
-			{ label : "Close Others", click : function() for( v in @:privateAccess ide.views.copy() ) if( v != this && v.container == container ) v.close() },
-			{ label : "Close All", click : function() for( v in @:privateAccess ide.views.copy() ) if( v.container == container ) v.close() },
+			{ label : "Close Others", click : function() container.closeOthers(element[0]) },
+			{ label : "Close All", click : function() container.closeAll() },
 		];
 	}
 

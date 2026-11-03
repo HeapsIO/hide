@@ -423,9 +423,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 							<span class="ico ico-filter"></span>
 						</fancy-button>
 
-						<fancy-button class="compact bnt-filter-dropdown" title="Choose filters">
-							<span class="ico ico-chevron-down"></span>
-						</fancy-button>
+						<fancy-button class="compact bnt-filter-dropdown" title="Choose filters"></fancy-button>
 
 						<fancy-separator></fancy-separator>
 
@@ -474,7 +472,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		// Favorites tree
 
-		favoritesTree = new hide.comp.FancyTree<FavoriteEntry>(browserLayout.find(".left").find(".top"), { saveDisplayKey: "fileBrowserTree_Favorites" } );
+		favoritesTree = new hide.comp.FancyTree<FavoriteEntry>(browserLayout.find(".left").find(".top"), {} );
+		favoritesTree.state.setParent(projectState, "favoritesTree");
 		favoritesTree.getChildren = (file: FavoriteEntry) -> {
 			function rec(parent : FavoriteEntry) {
 				if (parent.ref.children == null)
@@ -723,7 +722,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			this.favoritesTree.element.parent().hide();
 
 		// Ressources tree
-		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left").find(".bot"), { saveDisplayKey: "fileBrowserTree_Main", search: true, customScroll: element.find("fancy-scroll").get(0) } );
+		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left").find(".bot"), { search: true, customScroll: element.find("fancy-scroll").get(0) } );
+		fancyTree.state.setParent(projectState, "tree");
 		fancyTree.getChildren = (file: FileEntry) -> {
 			if (file == null)
 				return [root];

@@ -17,7 +17,7 @@ class NodeGenContextSubGraph extends NodeGenContext {
 	override function getGlobalInput(id: Variables.Global) : TExpr {
 		var global = Variables.Globals[id];
 		var info = MapUtils.getOrPut(globalInVars, Variables.getFullPath(global), {type: global.type, id: inputCount++});
-		return parentCtx?.nodeInputExprs[info.id] ?? parentCtx?.getGlobalInput(id) ?? super.getGlobalInput(id);
+		return getParentInput(info.id) ?? parentCtx?.getGlobalInput(id) ?? super.getGlobalInput(id);
 	}
 
 	override function getGlobalTVar(tvar: TVar) : TExpr {
@@ -43,7 +43,14 @@ class NodeGenContextSubGraph extends NodeGenContext {
 
 	override  function getGlobalParam(name: String, type: Type) : TExpr {
 		var info = MapUtils.getOrPut(globalInVars, name, {type: type, id: inputCount ++});
-		return parentCtx?.nodeInputExprs[info.id] ?? parentCtx?.getGlobalParam(name, type) ?? super.getGlobalParam(name, type);
+		return getParentInput(info.id) ?? parentCtx?.getGlobalParam(name, type) ?? super.getGlobalParam(name, type);
+	}
+
+	// Inputs of the subgraph node are declared from its fragment graph : other domains can request undeclared ones
+	function getParentInput(id: Int) : Null<TExpr> {
+		if (parentCtx?.nodeInputInfo[id] == null)
+			return null;
+		return parentCtx.getInput(id);
 	}
 
 	override function setGlobalCustomOutput(name: String, expr: TExpr) : Void {
@@ -61,6 +68,12 @@ class NodeGenContextSubGraph extends NodeGenContext {
 	override function addExpr(expr: TExpr) : Void {
 		if (parentCtx != null) {
 			parentCtx.addExpr(expr);
+		}
+	}
+
+	override function addFunction(e: TFunction) : Void {
+		if (parentCtx != null) {
+			parentCtx.addFunction(e);
 		}
 	}
 
@@ -390,6 +403,8 @@ class NodeGenContext {
 			case Const(f):
 				var value = info.inlineEditable ? @:privateAccess node.getDef(info.name, f) : f;
 				return convertToType(inputType, makeFloat(value));
+			case ConstVec(v):
+				return convertToType(inputType, makeVec(v));
 			case ConstBool(b):
 				return makeExpr(TConst(CBool(b)), TBool);
 			case Var(name):

@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="32"
+   height="32"
+   viewBox="0 0 32 32"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="HideLogo.svg"
+   inkscape:version="1.4.4 (dcaf3e7, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#000000"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="true"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     showgrid="true"
+     inkscape:zoom="5.6568543"
+     inkscape:cx="-16.617009"
+     inkscape:cy="5.2149125"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <inkscape:grid
+       id="grid1"
+       units="px"
+       originx="0"
+       originy="0"
+       spacingx="1"
+       spacingy="1"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14901961"
+       empspacing="8"
+       enabled="true"
+       visible="true" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1">
+    <inkscape:path-effect
+       effect="copy_rotate"
+       starting_point="0,0"
+       origin="16,16"
+       id="path-effect3"
+       is_visible="true"
+       lpeversion="1.2"
+       lpesatellites=""
+       method="normal"
+       num_copies="8"
+       starting_angle="0"
+       rotation_angle="60"
+       gap="-0.01"
+       copies_to_360="true"
+       mirror_copies="false"
+       split_items="false"
+       link_styles="false" />
+    <linearGradient
+       id="linearGradient12"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#fbb040;stop-opacity:1;"
+         offset="0.27582419"
+         id="stop12" />
+      <stop
+         style="stop-color:#f26b21;stop-opacity:1;"
+         offset="1"
+         id="stop13" />
+    </linearGradient>
+    <inkscape:path-effect
+       effect="copy_rotate"
+       starting_point="0,0"
+       origin="16,16"
+       id="path-effect11"
+       is_visible="true"
+       lpeversion="1.2"
+       lpesatellites=""
+       method="normal"
+       num_copies="8"
+       starting_angle="0"
+       rotation_angle="45"
+       gap="-0.01"
+       copies_to_360="true"
+       mirror_copies="false"
+       split_items="false"
+       link_styles="false" />
+    <inkscape:path-effect
+       effect="copy_rotate"
+       starting_point="0,0"
+       origin="16,16"
+       id="path-effect10"
+       is_visible="true"
+       lpeversion="1.2"
+       lpesatellites=""
+       method="normal"
+       num_copies="2"
+       starting_angle="0"
+       rotation_angle="180"
+       gap="-0.01"
+       copies_to_360="true"
+       mirror_copies="false"
+       split_items="false"
+       link_styles="false" />
+    <inkscape:path-effect
+       effect="offset"
+       id="path-effect2"
+       is_visible="true"
+       lpeversion="1.3"
+       linejoin_type="miter"
+       unit="mm"
+       offset="-0.1"
+       miter_limit="4"
+       attempt_force_join="false"
+       update_on_knot_move="true" />
+    <inkscape:path-effect
+       effect="mirror_symmetry"
+       start_point="16,0"
+       end_point="16,32"
+       center_point="16,16"
+       id="path-effect1"
+       is_visible="false"
+       lpeversion="1.2"
+       lpesatellites=""
+       mode="vertical"
+       discard_orig_path="false"
+       fuse_paths="false"
+       oposite_fuse="false"
+       split_items="false"
+       split_open="false"
+       link_styles="true" />
+    <filter
+       style="color-interpolation-filters:sRGB"
+       id="filter24"
+       inkscape:label="filter1"
+       x="0"
+       y="0"
+       width="1"
+       height="1" />
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath6">
+      <g
+         id="g7"
+         mask="none">
+        <path
+           style="fill:#f24b04;stroke-width:4;paint-order:stroke fill markers"
+           d="m 16,12 h 14 l 2,1 v 6 l -2,1 H 16 Z m -2.828427,1.171573 9.899495,-9.8994951 2.12132,-0.7071067 4.242641,4.2426406 -0.707107,2.1213204 -9.899495,9.8994948 z M 12,16 V 2 l 1,-2 h 6 l 1,2 V 16 Z M 13.171573,18.828427 3.2720779,8.9289322 2.5649712,6.8076118 6.8076118,2.5649712 8.9289322,3.2720779 18.828427,13.171573 Z M 16,20 H 2 L 0,19 v -6 l 2,-1 h 14 z m 2.828427,-1.171573 -9.8994948,9.899495 -2.1213204,0.707107 -4.2426406,-4.242641 0.7071067,-2.12132 9.8994951,-9.899495 z M 20,16 v 14 l -1,2 H 13 L 12,30 V 16 Z m -1.171573,-2.828427 9.899495,9.899495 0.707107,2.12132 -4.242641,4.242641 -2.12132,-0.707107 -9.899495,-9.899495 z"
+           id="path6"
+           inkscape:path-effect="#path-effect3"
+           inkscape:original-d="m 16,12 h 14 l 2,1 v 6 l -2,1 H 16 Z"
+           sodipodi:nodetypes="ccccccc" />
+        <path
+           sodipodi:type="star"
+           style="fill:#f24b04;fill-opacity:1;stroke:none;stroke-width:2.57142;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+           id="path7"
+           inkscape:flatsided="true"
+           sodipodi:sides="8"
+           sodipodi:cx="18"
+           sodipodi:cy="4"
+           sodipodi:r1="9.4263294"
+           sodipodi:r2="6.3639612"
+           sodipodi:arg1="-3.1355647"
+           sodipodi:arg2="-2.7428656"
+           inkscape:rounded="0"
+           inkscape:randomized="0"
+           transform="matrix(1.5555555,0,0,1.5555555,-11.999998,9.7777784)"
+           d="m 8.5738416,3.9431789 2.8010364,-6.648658 6.681943,-2.7206793 6.648658,2.8010365 2.720679,6.681943 -2.801036,6.6486579 -6.681943,2.720679 -6.648658,-2.801036 z" />
+      </g>
+    </clipPath>
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Drop Shadow"
+       id="filter31"
+       x="-0.054545455"
+       y="-0.054545455"
+       width="1.1090909"
+       height="1.1318182">
+      <feFlood
+         result="flood"
+         in="SourceGraphic"
+         flood-opacity="0.63888888888888884"
+         flood-color="rgb(0,0,0)"
+         id="feFlood30" />
+      <feGaussianBlur
+         result="blur"
+         in="SourceGraphic"
+         stdDeviation="0.500000"
+         id="feGaussianBlur30" />
+      <feOffset
+         result="offset"
+         in="blur"
+         dx="0"
+         dy="0.500000"
+         id="feOffset30" />
+      <feComposite
+         result="comp1"
+         operator="in"
+         in="flood"
+         in2="offset"
+         id="feComposite30" />
+      <feComposite
+         result="comp2"
+         operator="over"
+         in="SourceGraphic"
+         in2="comp1"
+         id="feComposite31" />
+    </filter>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient12"
+       id="linearGradient37"
+       x1="4"
+       y1="3"
+       x2="31"
+       y2="30"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="display:inline;fill:url(#linearGradient37);fill-opacity:1;stroke:none;stroke-width:4;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       id="rect3"
+       width="32"
+       height="32"
+       x="0"
+       y="0"
+       rx="0"
+       ry="0"
+       clip-path="url(#clipPath6)" />
+    <path
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill;filter:url(#filter31)"
+       d="m 8,27 6,-3 v -6 h 2 V 14 H 14 V 5 L 8,8 v 5 l -3,3 3,3 z M 24,5 18,8 v 6 h -2 v 4 h 2 v 9 l 6,-3 v -5 l 3,-3 -3,-3 z"
+       id="path1"
+       inkscape:path-effect="#path-effect1;#path-effect10"
+       inkscape:original-d="m 8,27 6,-3 v -6 h 2 V 14 H 14 V 5 L 8,8 v 5 l -3,3 3,3 z"
+       sodipodi:nodetypes="cccccccccccc" />
+  </g>
+</svg>

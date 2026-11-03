@@ -90,12 +90,7 @@ class Ide extends hide.tools.IdeData {
 				shaderErrors.set(key, true);
 				js.Browser.console.warn(text);
 			}
-			var s = hide.comp.Scene.getCurrent();
-			if (s != null) {
-				var nl = msg.indexOf("\n");
-				var title = (nl < 0 ? msg : msg.substr(0, nl)) + objName;
-				@:privateAccess s.setErrorMessage({ title: title, details: nl < 0 ? null : msg.substr(nl + 1), contextObject: p?.obj, log: false });
-			}
+			hide.comp.Scene.getCurrent()?.onRenderError(error, msg);
 		};
 		#if dx12
 		hide.tools.NativeMeshTools.init();
@@ -137,6 +132,9 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	function startup() {
+
+		HideRes.init();
+
 		inst = this;
 		window = electron.Window.get();
 		// see ElectronMain customTitleBar
@@ -147,6 +145,8 @@ class Ide extends hide.tools.IdeData {
 			var pre = "--project-dir=";
 			if( StringTools.startsWith(a, pre) )
 				projectOverride = a.substr(pre.length);
+			else if( StringTools.startsWith(a, "--user-data-dir=") )
+				userDataPath = electron.App.dataPath.split("\\").join("/");
 			else if( a == "--default-config" )
 				defaultConfig = true;
 		}
@@ -195,7 +195,9 @@ class Ide extends hide.tools.IdeData {
 
 		if( !sys.FileSystem.exists(current) || !sys.FileSystem.isDirectory(current) ) {
 			if( current != "" ) js.Browser.alert(current+" no longer exists");
-			current = cwd;
+			// no project : forced empty without forgetting the saved one
+			projectOverride = "";
+			current = "";
 		}
 
 		setProject(current);
@@ -206,6 +208,10 @@ class Ide extends hide.tools.IdeData {
 			return;
 		}
 
+		js.Browser.window.addEventListener("beforeunload", function() {
+			globalState.flush();
+			projectState.flush();
+		});
 		js.Browser.document.addEventListener("mousedown", function(e) {
 			mouseX = e.x;
 			mouseY = e.y;
@@ -485,7 +491,9 @@ class Ide extends hide.tools.IdeData {
 		for( v in initViews )
 			initView(v);
 		if( views.length == 0 ) {
-			if( isCDB )
+			if( !isProjectValid() )
+				open("hide.view.NoProject", {}, Center);
+			else if( isCDB )
 				open("hide.view.cdb.CdbTable",{}, function(v) v.fullScreen = true);
 			else
 				open("hide.view.FileBrowser",{savedLayout: "SingleTree"}, Left);
@@ -1447,6 +1455,16 @@ class Ide extends hide.tools.IdeData {
 		js.node.ChildProcess.exec(c, function(e:js.node.ChildProcess.ChildProcessExecError,_,_) callb(e == null ? null : e.message));
 	}
 
+	function chooseProject() {
+		chooseDirectory(function(dir) {
+			if( dir == null ) return;
+			if( StringTools.endsWith(dir,"/res") || StringTools.endsWith(dir,"\\res") )
+				dir = dir.substr(0,-4);
+			setProject(dir);
+			reload();
+		}, true);
+	}
+
 	public function addCustomMenu(item: electron.MenuItem) {
 		customMenus.push(item);
 	}
@@ -1472,15 +1490,7 @@ class Ide extends hide.tools.IdeData {
 				reload(); // Reload stylesheets
 			});
 		}
-		menu.find(".project .open").click(function(_) {
-			chooseDirectory(function(dir) {
-				if( dir == null ) return;
-				if( StringTools.endsWith(dir,"/res") || StringTools.endsWith(dir,"\\res") )
-					dir = dir.substr(0,-4);
-				setProject(dir);
-				reload();
-			}, true);
-		});
+		menu.find(".project .open").click((_) -> chooseProject());
 		menu.find(".project .clear").click(function(_) {
 			globalState.set("recentProjects", []);
 			initMenu();
