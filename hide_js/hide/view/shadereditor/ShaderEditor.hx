@@ -688,6 +688,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 	}
 
+	// WebGL: free the contexts of hidden tabs (limited count). DX12 shares a single driver.
+	#if !dx12
 	override function onHide() {
 		super.onHide();
 		if (isLoaded) {
@@ -696,6 +698,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			isLoaded = false;
 		}
 	}
+	#end
 
 	override function onBeforeClose() {
 		isLoaded = false;
@@ -705,6 +708,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	override function destroy() {
+		#if dx12
+		disposeMeshPreview();
+		graphEditor?.disposeMiniPreviewScene();
+		#end
 		graphEditor?.remove();
 		super.destroy();
 	}
