@@ -171,7 +171,7 @@ class GraphEditor extends hide.comp.Component {
 		keys.register("shadergraph.comment", commentFromSelection);
 		keys.register("duplicateInPlace", duplicateSelection);
 		keys.register("duplicate", duplicateSelection);
-		keys.register("graph.openAddMenu", openAddMenu);
+		keys.register("graph.openAddMenu", () -> openContextMenu());
 		keys.register("cancel", cancelAll);
 
 
@@ -209,7 +209,7 @@ class GraphEditor extends hide.comp.Component {
 			// 		cleanupCreateEdge();
 			// 	}
 			// 	else {
-			// 		openAddMenu();
+			// 		openContextMenu();
 			// 	}
 			// 	e.preventDefault();
 			// 	e.stopPropagation();
@@ -217,7 +217,7 @@ class GraphEditor extends hide.comp.Component {
 		});
 
 		heapsScene.on("contextmenu", function(e) {
-			openAddMenu();
+			openContextMenu();
 			e.preventDefault();
 		});
 
@@ -247,7 +247,7 @@ class GraphEditor extends hide.comp.Component {
 						return;
 					}
 					else {
-						openAddMenu();
+						openContextMenu();
 						e.stopPropagation();
 						return;
 					}
@@ -554,9 +554,12 @@ class GraphEditor extends hide.comp.Component {
 
 	static var lastOpenAddMenuPoint = new Point();
 
-	function openAddMenu() {
-		if (contextMenu != null)
-			return;
+	function openContextMenu(?nodeMenu : Array<hrt.ui.HuiMenu.MenuItem>) {
+		if (contextMenu != null) {
+			contextMenu.onClose = () -> {};
+			contextMenu.close();
+			createLink(ide.mouseX, ide.mouseY);
+		}
 		lastOpenAddMenuPoint.set(lX(ide.mouseX), lY(ide.mouseY));
 
 		var edge : Edge = null;
@@ -631,8 +634,10 @@ class GraphEditor extends hide.comp.Component {
 			commitUndo();
 		}
 
-		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [];
-		for (group => entries in groups) {
+		var search = hide.comp.ContextMenu.SearchMode.Hidden;
+
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = nodeMenu?.copy() ?? [];
+		if (nodeMenu == null) for (group => entries in groups) {
 			var submenu: Array<hrt.ui.HuiMenu.MenuItem> = [];
 			for (entry in entries) {
 				submenu.push({label: entry.name, click: doAdd.bind(entry.onConstructNode), tooltip: entry.description});
@@ -641,12 +646,14 @@ class GraphEditor extends hide.comp.Component {
 				label: group,
 				menu: submenu,
 			});
+			search = hide.comp.ContextMenu.SearchMode.Visible;
 		}
 
 		if (edge == null) {
 			var hasSelection = boxesSelected.iterator().hasNext();
 			var pastePos = lastOpenAddMenuPoint.clone();
-			menu.push({isSeparator: true});
+			if (menu.length > 0)
+				menu.push({isSeparator: true});
 			menu.push({label: "Cut", click: cutSelection, enabled: hasSelection, keys: config.get("key.cut")});
 			menu.push({label: "Copy", click: copySelection, enabled: hasSelection, keys: config.get("key.copy")});
 			menu.push({label: "Paste", click: () -> paste(pastePos), keys: config.get("key.paste")});
@@ -656,7 +663,7 @@ class GraphEditor extends hide.comp.Component {
 				menu.push(item);
 		}
 
-		contextMenu = hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu, {search: Visible, noIcons: true, flat: nodes.length < 10});
+		contextMenu = hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu, {search: search, noIcons: true, flat: nodes.length < 10});
 		contextMenu.onClose = () -> {
 			contextMenu = null;
 		};
@@ -1200,9 +1207,14 @@ class GraphEditor extends hide.comp.Component {
 		elt.get(0).oncontextmenu = function(e: js.html.MouseEvent) {
 			e.preventDefault();
 			e.stopPropagation();
-			if (box.info.contextMenu != null) {
-				box.info.contextMenu(e);
+
+			if (!box.selected) {
+				clearSelectionBoxesUndo(currentUndoBuffer);
+				opSelect(box.node.id, true, currentUndoBuffer);
+				commitUndo(true);
 			}
+
+			openContextMenu(box.info.contextMenu != null ? box.info.contextMenu() : []);
 		}
 		if (box.node.id == null) {
 			throw "null id";

@@ -90,11 +90,9 @@ class SubGraph extends ShaderNode {
 		nodeName = hide.kit.Macros.camelToSpaceCase(nodeName);
 		info.name = nodeName;
 
-		info.contextMenu = (e: js.html.MouseEvent) -> {
-			hide.comp.ContextMenu.createFromEvent(e, [
-				{label: "Open Subgraph", click: () -> hide.Ide.inst.openFile(pathShaderGraph)},
-			]);
-		}
+		info.contextMenu = () -> [
+			{label: "Open Subgraph", click: () -> hide.Ide.inst.openFile(pathShaderGraph)},
+		];
 		return info;
 	}
 

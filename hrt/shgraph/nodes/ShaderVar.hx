@@ -7,13 +7,11 @@ abstract class ShaderVar extends ShaderNode {
 	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
 		var info = super.getInfo();
 
-		info.contextMenu = (e: js.html.MouseEvent) -> {
-			hide.comp.ContextMenu.createFromEvent(e, [
-				{label: "Show in Variable list", click: () -> {
-					(cast editor.editor: hide.view.shadereditor.ShaderEditor).revealVariable(varId);
-				}},
-			]);
-		}
+		info.contextMenu = () -> [
+			{label: "Show in Variable list", click: () -> {
+				(cast editor.editor: hide.view.shadereditor.ShaderEditor).revealVariable(varId);
+			}},
+		];
 		return info;
 	}
 	#end

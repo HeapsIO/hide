@@ -65,13 +65,11 @@ class ShaderParam extends ShaderNode {
 	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
 		var info = super.getInfo();
 
-		info.contextMenu = (e: js.html.MouseEvent) -> {
-			hide.comp.ContextMenu.createFromEvent(e, [
-				{label: "Show in Parameters list", click: () -> {
-					(cast editor.editor: hide.view.shadereditor.ShaderEditor).revealParameter(parameterId);
-				}},
-			]);
-		}
+		info.contextMenu = () -> [
+			{label: "Show in Parameters list", click: () -> {
+				(cast editor.editor: hide.view.shadereditor.ShaderEditor).revealParameter(parameterId);
+			}},
+		];
 		return info;
 	}
 	#end

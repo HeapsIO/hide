@@ -41,9 +41,9 @@ typedef GraphNodeInfo = {
     },
 
     /**
-        If set, a custom context menu will be created when the user right clicks the box
+        If set, these items replace the add section of the editor context menu when the user right clicks the box
     **/
-    ?contextMenu : (e: js.html.MouseEvent) -> Void,
+    ?contextMenu : () -> Array<hrt.ui.HuiMenu.MenuItem>,
 
     /**
         If true, this node cannot be added, removed, or cloned. It must be created externaly. Used for things like fixed inputs or ouputs
