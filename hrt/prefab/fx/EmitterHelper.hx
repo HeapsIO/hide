@@ -267,7 +267,7 @@ class EmitterHelper {
 			function selectCurve(path: String) {
 				ctx.recordPrefabUndoWithChildren(prefab, () -> {
 					setParamMode(prefab, def, i, switch (getMode(prefab, def.name, i)) {
-						case RandomCurve(_, from, to): RandomCurve(path, from, to);
+						case RandomCurve(_, spreadMin, spreadMax): RandomCurve(path, spreadMin, spreadMax);
 						case CurveRange(_): CurveRange(path);
 						case null, _: Curve(path);
 					});
@@ -275,9 +275,11 @@ class EmitterHelper {
 				ctx.rebuildInspector();
 			}
 
-			function curveEditor(path: String, ?spread: hide.kit.Curve.TrackSpread) {
+			function curveEditor(path: String, ?spread: hide.kit.Curve.TrackSpread, ?onSpreadChange: hide.kit.Curve.TrackSpread -> Void) {
 				var g = new hide.kit.Curve(line, "curve", (size == 1 ? label : label + " " + compName(i)) + " - " + prefab.name);
 				g.onValueChange = (_) -> ctx.rebuildPrefab(prefab);
+				if (onSpreadChange != null)
+					g.onSpreadChange = onSpreadChange;
 				g.onCurveChange = selectCurve;
 				if (size > 1)
 					menuOwners.push(g);
@@ -346,9 +348,8 @@ class EmitterHelper {
 					bound();
 				case Curve(s):
 					curveEditor(s);
-				case RandomCurve(s, from, to):
-					function apply() { setParamMode(prefab, def, i, RandomCurve(s, from, to)); }
-					curveEditor(s, { from: { v: () -> from, set: x -> { from = x; apply(); } }, to: { v: () -> to, set: x -> { to = x; apply(); } } });
+				case RandomCurve(s, spreadMin, spreadMax):
+					curveEditor(s, { min: spreadMin, max: spreadMax }, sp -> setParamMode(prefab, def, i, RandomCurve(s, sp.min, sp.max)));
 				case CurveRange(s):
 					curveEditor(s);
 			}
@@ -437,7 +438,12 @@ class EmitterHelper {
 	static function convert(prefab: Prefab, def: ModeParamDef, i: Int, mode: ModeKind) : ParamMode {
 		var base = def.def[i];
 		function at(s: String, k: Int, t: Float) { return EmitterParam.resolveCurve(prefab, s)?.datas[k]?.getVal(t) ?? base; }
-		function data(src: String, from: Float, to: Float, shiftFrom = 0., shiftTo = 0.) { return newModeData(prefab, src, from, to, shiftFrom, shiftTo); }
+		function data(src: String, from: Float, to: Float) { return newModeData(prefab, src, from, to); }
+		// the spread of a RandomCurve, `spread + slope * value`
+		function spread(s: String, spreadMin: Float, spreadMax: Float) {
+			var c = EmitterParam.resolveCurve(prefab, s)?.datas[0];
+			return EmitterParam.spreadLine(c == null ? { min: base, max: base } : c.getValueRange(), spreadMin, spreadMax);
+		}
 		function curve(datas: Array<hrt.impl.Curve>) { return newModeCurve(prefab, def, i, datas); }
 		var m = getMode(prefab, def.name, i) ?? Constant(base);
 		var f0 = base, f1 = base, t0 = base, t1 = base;
@@ -445,7 +451,10 @@ class EmitterHelper {
 			case Constant(v): f0 = f1 = t0 = t1 = v;
 			case Range(min, max): f0 = t0 = min; f1 = t1 = max;
 			case Curve(s): f0 = f1 = at(s, 0, 0); t0 = t1 = at(s, 0, 1);
-			case RandomCurve(s, from, to): f0 = at(s, 0, 0) - from; f1 = at(s, 0, 0) + from; t0 = at(s, 0, 1) - to; t1 = at(s, 0, 1) + to;
+			case RandomCurve(s, spreadMin, spreadMax):
+				var l = spread(s, spreadMin, spreadMax), v0 = at(s, 0, 0), v1 = at(s, 0, 1);
+				var a0 = l.spread + l.slope * v0, a1 = l.spread + l.slope * v1;
+				f0 = v0 - a0; f1 = v0 + a0; t0 = v1 - a1; t1 = v1 + a1;
 			case CurveRange(s): f0 = at(s, 0, 0); t0 = at(s, 0, 1); f1 = at(s, 1, 0); t1 = at(s, 1, 1);
 		}
 		var fm = (f0 + f1) * 0.5, tm = (t0 + t1) * 0.5;
@@ -459,10 +468,15 @@ class EmitterHelper {
 			case [RandomCurve, RandomCurve(_)]: m;
 			case [RandomCurve, Curve(s)]: RandomCurve(s, 0, 0);
 			case [RandomCurve, CurveRange(s)]: RandomCurve(curve([data(s, 0, 1)]), 0, 0);
-			case [RandomCurve, _]: RandomCurve(curve([data(null, fm, tm)]), (f1 - f0) * 0.5, (t1 - t0) * 0.5);
+			// a line from fm to tm: `spreadMin` is the spread at its lowest end
+			case [RandomCurve, _]: fm <= tm ? RandomCurve(curve([data(null, fm, tm)]), (f1 - f0) * 0.5, (t1 - t0) * 0.5)
+				: RandomCurve(curve([data(null, fm, tm)]), (t1 - t0) * 0.5, (f1 - f0) * 0.5);
 			case [CurveRange, CurveRange(_)]: m;
 			case [CurveRange, Curve(s)]: CurveRange(curve([data(s, 0, 1), data(null, f1, t1)]));
-			case [CurveRange, RandomCurve(s, from, to)]: CurveRange(curve([data(s, 0, 1, -from, -to), data(s, 0, 1, from, to)]));
+			// v -+ (spread + slope * v): the values of the curve remapped
+			case [CurveRange, RandomCurve(s, spreadMin, spreadMax)]:
+				var l = spread(s, spreadMin, spreadMax);
+				CurveRange(curve([data(s, -l.spread, 1 - l.slope - l.spread), data(s, l.spread, 1 + l.slope + l.spread)]));
 			case [CurveRange, _]: CurveRange(curve([data(null, f0, t0), data(null, f1, t1)]));
 		}
 	}
@@ -481,11 +495,8 @@ class EmitterHelper {
 		return EmitterParam.curvePath(owner, c);
 	}
 
-	/**
-		The keys of the curve `src` remapped from 0..1 to `from`..`to`, then shifted by `lerp(shiftFrom, shiftTo, t)`, or a line
-		from `from` to `to` without `src`
-	**/
-	static function newModeData(owner: Prefab, src: String, from: Float, to: Float, shiftFrom = 0., shiftTo = 0.) : hrt.impl.Curve {
+	/** The keys of the curve `src` remapped from 0..1 to `from`..`to`, or a line from `from` to `to` without `src` **/
+	static function newModeData(owner: Prefab, src: String, from: Float, to: Float) : hrt.impl.Curve {
 		var d = new hrt.impl.Curve();
 		var s = src == null ? null : getEditableCurve(owner, src);
 		if (s == null) {
@@ -495,10 +506,10 @@ class EmitterHelper {
 		}
 		@:privateAccess d.copyFromDynamic(hrt.prefab.Diff.deepCopy(s.data.copyToDynamic(null)));
 		for (k in d.keys) {
-			k.value = hxd.Math.lerp(from, to, k.value) + hxd.Math.lerp(shiftFrom, shiftTo, k.time);
+			k.value = hxd.Math.lerp(from, to, k.value);
 			for (h in [k.prevHandle, k.nextHandle])
 				if (h != null)
-					h.dv = h.dv * (to - from) + (shiftTo - shiftFrom) * h.dt;
+					h.dv *= to - from;
 		}
 		return d;
 	}

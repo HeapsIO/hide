@@ -420,8 +420,8 @@ class CurveEditor extends SVG {
 	}
 
 	/**
-		Drags the `edge` of the band of a random curve (1: its max, -1: its min) up and down where it is grabbed, the other
-		edge staying there and the curve recentered between them (`CurveTrack.moveEdge`). An undo step
+		Drags the `edge` of the band of a random curve (1: its max, -1: its min) up and down where it is grabbed: the band gets
+		that half width there, the curve stays (`CurveTrack.moveEdge`). An undo step
 	**/
 	function scaleBand(e: js.html.PointerEvent, edge: Int) {
 		var m = mapping();

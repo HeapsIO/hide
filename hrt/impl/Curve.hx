@@ -197,6 +197,45 @@ class Curve {
 		return y;
 	}
 
+	/**
+		The lowest and highest values of the curve, exact: its keys, and the extrema of the bezier of each segment (the values
+		of a segment are a cubic of its parameter, its extrema are where its derivative, a quadratic, is 0).
+	**/
+	public function getValueRange() : { min : Float, max : Float } {
+		if (keys.length == 0)
+			return { min: 0., max: 0. };
+		var min = keys[0].value, max = min;
+		inline function add(v: Float) {
+			if (v < min) min = v;
+			if (v > max) max = v;
+		}
+		for (i in 0...keys.length) {
+			var cur = keys[i];
+			add(cur.value);
+			var next = keys[i + 1];
+			if (next == null || cur.mode == Constant || (cur.nextHandle == null && next.prevHandle == null))
+				continue;
+			var p0 = cur.value, p3 = next.value;
+			var p1 = p0 + (cur.nextHandle != null ? cur.nextHandle.dv : 0.);
+			var p2 = p3 + (next.prevHandle != null ? next.prevHandle.dv : 0.);
+			// B'(s) / 3 = a s^2 + b s + c
+			var a = -p0 + 3 * p1 - 3 * p2 + p3, b = 2 * (p0 - 2 * p1 + p2), c = p1 - p0;
+			inline function root(s: Float) if (s > 0 && s < 1) add(bezier(p0, p1, p2, p3, s));
+			if (Math.abs(a) < 1e-12) {
+				if (Math.abs(b) > 1e-12)
+					root(-c / b);
+			} else {
+				var d = b * b - 4 * a * c;
+				if (d >= 0) {
+					var q = Math.sqrt(d);
+					root((-b + q) / (2 * a));
+					root((-b - q) / (2 * a));
+				}
+			}
+		}
+		return { min: min, max: max };
+	}
+
 	public function getSum(time: Float) : Float {
 		var duration = keys[keys.length-1].time;
 		if(loop && time > duration) {

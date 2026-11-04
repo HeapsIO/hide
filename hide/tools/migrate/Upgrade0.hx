@@ -1586,10 +1586,11 @@ class Upgrade0 {
 
 	/**
 		The curves of the Curve and CurveRange modes hold their values: `lerp(from, to, curve)` is baked into them. The curve of a
-		RandomCurve gets the middle of its bounds, their half width (`lerp(from, to, curve)` before) becomes its random amounts at
-		the start and the end, `curve + lerp(fromAmount, toAmount, t) * random`: exact when the width is constant, else read at
-		the first and last keys of the curve. The random
-		blend of a CurveRange then becomes a curve of two datas (`mergeRandomBlend`).
+		RandomCurve gets the middle of its bounds `m(c)`; their half width `w(c)` (both `lerp(from, to, c)` before) is its random
+		spread, which follows the value of the curve (`EmitterParam.spreadLine`): `w` at the lowest and the highest value of the
+		baked curve. Exact, the half width being affine in the curve as its middle is, but when the middle is flat and the width
+		is not (`(k + a * random) * c` with `k = 0`). The random blend of a CurveRange then becomes a curve of two datas
+		(`mergeRandomBlend`).
 	**/
 	function bakeModeCurves( owner : RawNode, m : Mode ) : Mode {
 		function bake( n : RawNode, from : Float, to : Float ) {
@@ -1607,14 +1608,33 @@ class Upgrade0 {
 			MCurve(s, 0, 1);
 		case MRandomCurve(s, f0, f1, t0, t1):
 			var n = locate(s, owner);
-			var ends = n == null ? [0., 1.] : curveEnds(n);
-			var wf = (f1 - f0) * 0.5, wt = (t1 - t0) * 0.5;
-			if( n != null && wf != wt && (ends == null || ends.length > 2) )
-				warn(n, "random amount following a curve, approximated by a line from its start to its end");
-			if( ends == null ) ends = [0., 1.];
-			var a0 = hxd.Math.lerp(wf, wt, ends[0]), a1 = hxd.Math.lerp(wf, wt, ends[ends.length - 1]);
-			bake(n, (f0 + f1) * 0.5, (t0 + t1) * 0.5);
-			MRandomCurve(s, -a0, a0, -a1, a1);
+			var fm = (f0 + f1) * 0.5, tm = (t0 + t1) * 0.5, wf = (f1 - f0) * 0.5, wt = (t1 - t0) * 0.5;
+			// a width following a curve the spread cannot follow, around a constant value or along a flat curve: a Curve Range,
+			// its bounds `lerp(f, t, c)` as its two datas
+			var r0 = n == null || wf == wt ? null : valueRange(n);
+			var flat = r0 != null && r0.max - r0.min <= 1e-9 * Math.max(1, Math.abs(r0.max));
+			if( n != null && wf != wt && (tm == fm || flat) && blendMode(n) == 0 && !bakedModeCurves.exists(n) ) {
+				splitRange(n, f0, t0, f1, t1);
+				bakedModeCurves.set(n, true);
+				return MCurveRange(s, 0, 1, 0, 1);
+			}
+			bake(n, fm, tm);
+			var low = wf, high = wf;
+			if( wf != wt ) {
+				var r = n == null ? null : valueRange(n);
+				if( r == null || tm == fm ) {
+					if( n != null )
+						warn(n, tm == fm ? "random amount following a curve around a constant value, approximated by its largest amount"
+							: "random amount following a curve that is not a plain one or a blend, approximated by its largest amount");
+					low = high = Math.abs(wf) > Math.abs(wt) ? wf : wt;
+				} else {
+					// the half width at a value v of the baked curve: `lerp(wf, wt, c)` with v = `lerp(fm, tm, c)`
+					inline function width( v : Float ) return wf + (wt - wf) * (v - fm) / (tm - fm);
+					low = width(r.min);
+					high = width(r.max);
+				}
+			}
+			MRandomCurve(s, -low, low, -high, high);
 		case MCurveRange(s, af, at, bf, bt):
 			var n = locate(s, owner);
 			if( n != null && !mergedBlends.exists(n) ) {
@@ -1628,15 +1648,59 @@ class Upgrade0 {
 		}
 	}
 
-	/** The values of the keys of a plain curve, at least two (the start and the end), null for another curve **/
-	static function curveEnds( n : RawNode ) : Array<Float> {
-		if( blendMode(n) != 0 )
+	/** The plain curve `n` becomes a curve of two datas, its keys remapped from 0..1 to `a0`..`a1` and to `b0`..`b1` (a Curve Range) **/
+	function splitRange( n : RawNode, a0 : Float, a1 : Float, b0 : Float, b1 : Float ) {
+		var d = n.data;
+		var keys : Array<Dynamic> = get(d, "keys");
+		if( keys == null || keys.length == 0 ) {
+			// the default keys of `Curve.load`
+			var mode = get(d, "keyMode") ?? 2;
+			keys = [obj(["time", 0., "value", 0., "mode", mode]), obj(["time", 1., "value", 1., "mode", mode])];
+		}
+		function datum( from : Float, to : Float ) : Dynamic {
+			var ks : Array<Dynamic> = deepCopy(keys);
+			for( k in ks ) {
+				// the mode of the curve, which the datas do not have
+				if( get(k, "mode") == null ) k.mode = get(d, "keyMode") ?? 2;
+				k.value = from + (to - from) * num(get(k, "value"), CurveKeyDefault);
+				for( h in [get(k, "prevHandle"), get(k, "nextHandle")] )
+					if( h != null )
+						h.dv = (to - from) * num(get(h, "dv"), CurveKeyDefault);
+			}
+			var o : Dynamic = obj(["keys", ks]);
+			if( get(d, "loop") == true ) o.loop = true;
+			return o;
+		}
+		var datas = [datum(a0, a1), datum(b0, b1)];
+		for( f in ["keys", "keyMode", "loop", "previewKeys"] )
+			Reflect.deleteField(d, f);
+		RawNode.setField(d, "datas", datas);
+		change(n, "random amount following a curve around a constant value, a curve of two datas");
+	}
+
+	/**
+		The lowest and highest values of a curve as the runtime reads them (`hrt.impl.Curve.getValueRange`): a plain curve, or a
+		blend of its two child curves (both); null for another curve
+	**/
+	static function valueRange( n : RawNode ) : { min : Float, max : Float } {
+		switch( blendMode(n) ) {
+		case 0:
+			var keys : Array<Dynamic> = get(n.data, "keys");
+			if( keys == null || keys.length == 0 )
+				return { min: 0., max: 1. };
+			var c = new hrt.impl.Curve();
+			@:privateAccess c.copyFromDynamic({ keys: deepCopy(keys) });
+			return c.getValueRange();
+		case 1:
+			var cs = [for( i in 0...hxd.Math.imin(2, n.children.length) ) if( n.children[i].isCurve ) valueRange(n.children[i])];
+			if( cs.length == 0 || cs.indexOf(null) >= 0 )
+				return null;
+			var r = cs[0];
+			for( c in cs ) r = { min: Math.min(r.min, c.min), max: Math.max(r.max, c.max) };
+			return r;
+		default:
 			return null;
-		var keys : Array<Dynamic> = get(n.data, "keys");
-		if( keys == null || keys.length == 0 )
-			return [0., 1.];
-		var values = [for( k in keys ) num(get(k, "value"), CurveKeyDefault)];
-		return values.length == 1 ? [values[0], values[0]] : values;
+		}
 	}
 
 	/**
@@ -1993,8 +2057,8 @@ class Upgrade0 {
 		case MCurve(s, _): obj(["mode", "Curve", "curve", s]);
 		case MRandomCurve(s, f0, f1, t0, t1):
 			var o : Dynamic = obj(["mode", "RandomCurve", "curve", s]);
-			if( f1 != f0 ) o.from = (f1 - f0) * 0.5;
-			if( t1 != t0 ) o.to = (t1 - t0) * 0.5;
+			if( f1 != f0 ) o.spreadMin = (f1 - f0) * 0.5;
+			if( t1 != t0 ) o.spreadMax = (t1 - t0) * 0.5;
 			o;
 		case MCurveRange(s, _): obj(["mode", "CurveRange", "curve", s]);
 		}

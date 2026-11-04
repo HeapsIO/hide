@@ -11,7 +11,8 @@ enum ParamMode {
 	Constant( value : Float );
 	Range( min : Float, max : Float );
 	Curve( curve : String );
-	RandomCurve( curve : String, from : Float, to : Float );
+	/** The curve plus a signed random spread that follows its value: `spreadMin` where the curve is at its min, `spreadMax` where it is at its max **/
+	RandomCurve( curve : String, spreadMin : Float, spreadMax : Float );
 	CurveRange( curve : String );
 }
 
@@ -109,8 +110,7 @@ class EmitterParam {
 		return switch( (v.mode : String) ) {
 		case "Range": Range(num(v.min, 0), num(v.max, 0));
 		case "Curve": Curve(v.curve);
-		// before, `from` and `to` were the `{ min, max }` bounds of a curve of 0 to 1, ignored
-		case "RandomCurve": RandomCurve(v.curve, Std.isOfType(v.from, Float) ? v.from : 0, Std.isOfType(v.to, Float) ? v.to : 0);
+		case "RandomCurve": RandomCurve(v.curve, num(v.spreadMin, 0), num(v.spreadMax, 0));
 		case "CurveRange": CurveRange(v.curve);
 		default: null;
 		}
@@ -122,13 +122,35 @@ class EmitterParam {
 		case Constant(v): v;
 		case Range(min, max): { mode: "Range", min: min, max: max };
 		case Curve(s): { mode: "Curve", curve: s };
-		case RandomCurve(s, from, to):
+		case RandomCurve(s, spreadMin, spreadMax):
 			var o : Dynamic = { mode: "RandomCurve", curve: s };
-			if( from != 0 ) o.from = from;
-			if( to != 0 ) o.to = to;
+			if( spreadMin != 0 ) o.spreadMin = spreadMin;
+			if( spreadMax != 0 ) o.spreadMax = spreadMax;
 			o;
 		case CurveRange(s): { mode: "CurveRange", curve: s };
 		}
+	}
+
+	/**
+		The random spread of a RandomCurve as an affine function of the value `v` of its curve, `spread + slope * v`: `spreadMin` at the
+		lowest value of the curve, `spreadMax` at the highest, `spreadMin` for a flat curve.
+	**/
+	public static function spreadLine( range : { min : Float, max : Float }, spreadMin : Float, spreadMax : Float ) : { spread : Float, slope : Float } {
+		var d = range.max - range.min;
+		if( d <= 1e-9 * Math.max(1, Math.abs(range.max)) )
+			return { spread: spreadMin, slope: 0 };
+		var slope = (spreadMax - spreadMin) / d;
+		return { spread: spreadMin - slope * range.min, slope: slope };
+	}
+
+	/** The range of the values of a param curve: both of its curves for a blend **/
+	public static function paramCurveRange( pc : ParamCurve ) : { min : Float, max : Float } {
+		var r = pc.c1.getValueRange();
+		if( pc.c2 != null ) {
+			var r2 = pc.c2.getValueRange();
+			r = { min: Math.min(r.min, r2.min), max: Math.max(r.max, r2.max) };
+		}
+		return r;
 	}
 
 	/** Null when the curve or a prefab on its path is disabled **/
@@ -201,20 +223,19 @@ class ParamBuilder {
 	public function comp( m : ParamMode, def : Float ) : Value {
 		return switch( m ) {
 		case Range(min, max): VRandom(randomSlots++, min, max);
-		case RandomCurve(s, from, to):
+		case RandomCurve(s, spreadMin, spreadMax):
 			var rid = randomSlots++;
 			switch( curve(owner, s, def) ) {
-			case VCurve(c): VRandomCurve(rid, c, from, to);
-			case VParamCurve(pc): VRandomParamCurve(rid, pc, from, to);
+			case VCurve(c):
+				var l = EmitterParam.spreadLine(c.getValueRange(), spreadMin, spreadMax);
+				VRandomCurve(rid, c, l.spread, l.slope);
+			case VParamCurve(pc):
+				var l = EmitterParam.spreadLine(EmitterParam.paramCurveRange(pc), spreadMin, spreadMax);
+				VRandomParamCurve(rid, pc, l.spread, l.slope);
 			case v:
+				// a flat curve: the spread at its lowest value
 				var k = switch( v ) { case VConst(k): k; default: 0.; };
-				if( from == to )
-					VRandom(rid, k - from, k + from);
-				else {
-					var c = new hrt.impl.Curve();
-					c.addKey(0, k, Linear);
-					VRandomCurve(rid, c, from, to);
-				}
+				VRandom(rid, k - spreadMin, k + spreadMin);
 			}
 		case CurveRange(s):
 			var c = EmitterParam.resolveCurve(owner, s);

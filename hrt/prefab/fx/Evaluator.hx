@@ -61,15 +61,15 @@ class Evaluator {
 			case VRandom(rid, min, max): hxd.Math.lerp(min, max, getRandom(pidx, rid));
 			case VCurve(c): c.getVal(time);
 			case VParamCurve(pc): getParamCurve(pc, time);
-			case VRandomCurve(rid, c, from, to): c.getVal(time) + getRandomOffset(pidx, rid, from, to, time);
-			case VRandomParamCurve(rid, pc, from, to): getParamCurve(pc, time) + getRandomOffset(pidx, rid, from, to, time);
+			case VRandomCurve(rid, c, spread, slope):
+				var v = c.getVal(time);
+				v + (spread + slope * v) * (getRandom(pidx, rid) * 2 - 1);
+			case VRandomParamCurve(rid, pc, spread, slope):
+				var v = getParamCurve(pc, time);
+				v + (spread + slope * v) * (getRandom(pidx, rid) * 2 - 1);
 			case VCurveRange(rid, a, b): hxd.Math.lerp(a.getVal(time), b.getVal(time), getRandom(pidx, rid));
 			case VVector(_), VHsl(_): throw "getFloat: vector value";
 		}
-	}
-
-	inline function getRandomOffset(pidx: Int, rid: Int, from: Float, to: Float, time: Float) : Float {
-		return hxd.Math.lerp(from, to, time) * (getRandom(pidx, rid) * 2 - 1);
 	}
 
 	function getParamCurve(pc: ParamCurve, time: Float) : Float {

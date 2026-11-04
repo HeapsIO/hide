@@ -44,14 +44,22 @@ class CurveDrawing {
 		}
 		var bounds = { minX: 0., maxX: end, minY: 0., maxY: 1. };
 		for (t in tracks) {
-			if (t.data == null)
+			if (t.data == null || t.data.keys.length == 0)
 				continue;
-			for (side in (t.spread == null ? [0] : [-1, 1]))
-				for (i in 0...SAMPLES + 1) {
-					var v = trackValue(t, i / SAMPLES * end, side);
-					bounds.minY = Math.min(bounds.minY, v);
-					bounds.maxY = Math.max(bounds.maxY, v);
-				}
+			var r = t.data.getValueRange();
+			var lo = r.min, hi = r.max;
+			if (t.spread != null) {
+				// the edges of the band are linear in the value of the curve (`CurveTrack.spreadAt`): their extrema are at its lowest / highest
+				// a spread can be negative (migrated data): the edges are `v -+ |spread|`
+				var sLow = Math.abs(t.spread.min), sHigh = Math.abs(t.spread.max);
+				// a flat curve has only the spread of its lowest
+				if (r.max - r.min <= 1e-9 * Math.max(1, Math.abs(r.max)))
+					sHigh = sLow;
+				lo = Math.min(r.min - sLow, r.max - sHigh);
+				hi = Math.max(r.min + sLow, r.max + sHigh);
+			}
+			bounds.minY = Math.min(bounds.minY, lo);
+			bounds.maxY = Math.max(bounds.maxY, hi);
 		}
 		return bounds;
 	}
