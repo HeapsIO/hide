@@ -1613,6 +1613,20 @@ class Upgrade0 {
 		}
 		renameCurves(renames);
 
+		// the sort and the random color are a mode each
+		if( Reflect.field(props, "enableSort") == false ) {
+			props.sortMode = "None";
+			change(e, "enableSort off is sortMode None");
+		}
+		// the 2D emitter took the gradient without useRandomColor
+		var rc = Reflect.field(props, "useRandomColor") == true, rg = Reflect.field(props, "useRandomGradient") == true;
+		if( rc || (rg && is2D) ) {
+			props.randomColorMode = rg ? "Gradient" : "Colors";
+			change(e, "random color mode");
+		}
+		for( f in ["enableSort", "useRandomColor", "useRandomGradient"] )
+			Reflect.deleteField(props, f);
+
 		// the properties and the params with modes are fields of the emitter
 		var old = new Map();
 		for( d in defs ) {

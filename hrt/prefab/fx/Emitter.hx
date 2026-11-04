@@ -614,8 +614,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var useCollision : Bool = false;
 	var collisionPlane : h3d.col.Plane;
 	// RANDOM COLOR
-	public var useRandomColor : Bool = false;
-	public var useRandomGradient : Bool = false;
+	public var randomColorMode : RandomColorMode = None;
 	public var randomColor1 : h3d.Vector;
 	public var randomColor2 : h3d.Vector;
 	public var randomGradient : GradientData;
@@ -808,7 +807,7 @@ class EmitterObject extends h3d.scene.Object {
 			baseEmitterShader.meshTransformInverse.initInverse(meshTransform);
 			batch.material.mainPass.addShader(baseEmitterShader);
 
-			if(useRandomColor) {
+			if(randomColorMode != RandomColorMode.None) {
 				colorMultShader = new h3d.shader.ColorMult();
 				batch.material.mainPass.addShader(colorMultShader);
 			}
@@ -1052,15 +1051,14 @@ class EmitterObject extends h3d.scene.Object {
 				part.startTime = globalTime;
 				part.lifeTime = hxd.Math.max(0.01, evaluator.getSpawn(part.idx, lifeTime, curTime));
 
-				if(useRandomColor) {
-					if (useRandomGradient) {
+				switch(randomColorMode) {
+					case None:
+					case Gradient:
 						part.colorMult = Gradient.evalData(randomGradient, random.rand()).toColor();
-					}
-					else {
+					case Colors:
 						var col = new h3d.Vector();
 						col.lerp(randomColor1, randomColor2, random.rand());
 						part.colorMult = col.toColor();
-					}
 				}
 
 				tmpQuat.identity();
@@ -1754,9 +1752,7 @@ class Emitter extends Object3D {
 	public var particleScaling : ParticleScaling = ParticleScaling.Parent;
 	@:s @:disp("Apply Mesh Transform", "The particles take the transform of the mesh of the emitter")
 	public var applyMeshTransform : Bool = false;
-	@:s @:disp("Enable Sort", "Sorts the particles before drawing them")
-	public var enableSort : Bool = true;
-	@:s @:disp("Sort Mode", "Depth: back to front from the camera. Instance: in their emission order")
+	@:s @:disp("Sort Mode", "Depth: back to front from the camera. Instance: in their emission order. None: not sorted")
 	public var sortMode : SortMode = SortMode.Depth;
 	@:s @:disp("Sub Emitter Mode", "For a sub emitter: spawned at the death of each particle of its parent, or following each of them")
 	public var subEmitterKind : SubEmitterKind = SubEmitterKind.SpawnOnDeath;
@@ -1852,10 +1848,8 @@ class Emitter extends Object3D {
 	public var followRotation : Bool = false;
 
 	@:group("Color")
-	@:s @:disp("Random Color", "Multiplies the color of each particle by a random color")
-	public var useRandomColor : Bool = false;
-	@:s @:disp("Random Gradient", "The random color is taken in a gradient instead of between two colors")
-	public var useRandomGradient : Bool = false;
+	@:s @:disp("Random Color", "Multiplies the color of each particle by a random color, taken between two colors or in a gradient")
+	public var randomColorMode : RandomColorMode = RandomColorMode.None;
 	@:s @:disp("Color 1", "First bound of the random color")
 	public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
 	@:s @:disp("Color 2", "Second bound of the random color")
@@ -1901,7 +1895,7 @@ class Emitter extends Object3D {
 	override function save() {
 		var data = super.save();
 		saveParams(data);
-		if( !useRandomColor || !useRandomGradient )
+		if( randomColorMode != RandomColorMode.Gradient )
 			Reflect.deleteField(data, "randomGradient");
 		if( !FX.inFXData(this) )
 			data.version = FX.VERSION;
@@ -1919,7 +1913,7 @@ class Emitter extends Object3D {
 			delay = -warmUpTime;
 			warmUpTime = 0;
 		}
-		if( randomGradient == null && useRandomGradient )
+		if( randomGradient == null && randomColorMode == RandomColorMode.Gradient )
 			randomGradient = Gradient.getDefaultGradientData();
 	}
 
@@ -1978,7 +1972,7 @@ class Emitter extends Object3D {
 		emitterObj.particleScaling		= 	particleScaling;
 		emitterObj.emitOrientation 		= 	emitOrientation;
 		emitterObj.maxCount 			= 	maxCount;
-		emitterObj.sortMode 			= 	enableSort ? sortMode : None;
+		emitterObj.sortMode 			= 	sortMode;
 		emitterObj.emitRateChangeDelay 	= 	emitRateChangeDelay;
 		emitterObj.emitShape 			= 	emitShape;
 		emitterObj.followRotation 		= 	followRotation;
@@ -2007,8 +2001,7 @@ class Emitter extends Object3D {
 		emitterObj.killOnCollision 		= 	killOnCollision;
 		emitterObj.elasticity 			= 	elasticity;
 		// RANDOM COLOR
-		emitterObj.useRandomColor 		= 	useRandomColor;
-		emitterObj.useRandomGradient 	= 	useRandomGradient;
+		emitterObj.randomColorMode 		= 	randomColorMode;
 		emitterObj.randomColor1 		= 	h3d.Vector.fromArray(randomColor1);
 		emitterObj.randomColor2 		= 	h3d.Vector.fromArray(randomColor2);
 		emitterObj.randomGradient 		= 	randomGradient;
@@ -2039,7 +2032,7 @@ class Emitter extends Object3D {
 		return Rebuild;
 	}
 
-	static var REFRESH_PARAMS = ["emitShape", "alignMode", "useCollision", "emitType", "useRandomColor", "useRandomGradient"];
+	static var REFRESH_PARAMS = ["emitShape", "alignMode", "useCollision", "emitType", "randomColorMode"];
 
 	function getVisibleParams() : Array<hrt.prefab.fx.EmitterHelper.PropertyDef> {
 		var params = PROPERTIES.copy();
@@ -2074,20 +2067,12 @@ class Emitter extends Object3D {
 			removeParam("killOnCollision");
 		}
 
-		if(!useRandomColor) {
-			removeParam("useRandomGradient");
+		if(randomColorMode != RandomColorMode.Colors) {
 			removeParam("randomColor1");
 			removeParam("randomColor2");
+		}
+		if(randomColorMode != RandomColorMode.Gradient)
 			removeParam("randomGradient");
-		}
-		else {
-			if (useRandomGradient) {
-				removeParam("randomColor1");
-				removeParam("randomColor2");
-			} else {
-				removeParam("randomGradient");
-			}
-		}
 
 		switch (emitType) {
 			case Infinity:
@@ -2133,8 +2118,8 @@ class Emitter extends Object3D {
 		super.edit2(ctx);
 
 		function onChange(pname: String, isTemp: Bool) {
-			if (pname == "useRandomGradient")
-				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
+			if (pname == "randomColorMode")
+				randomGradient = randomColorMode == RandomColorMode.Gradient ? Gradient.getDefaultGradientData() : null;
 			if (pname == "warmUpTime" && warmUpTime < 0) {
 				warmUpTime = 0;
 				ctx.quickError("Warm up time can no longer be negative. Use the Delay property instead");

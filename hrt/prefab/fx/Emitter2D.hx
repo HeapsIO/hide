@@ -299,8 +299,7 @@ class Emitter2DObject extends h2d.Object {
 	public var animationLoop : Bool = true;
 	public var animationUseSourceUVs : Bool = true;
 	public var animationBlendBetweenFrames : Bool = true;
-	public var useRandomColor : Bool = false;
-	public var useRandomGradient : Bool = false;
+	public var randomColorMode : RandomColorMode = None;
 	public var randomColor1 : h3d.Vector;
 	public var randomColor2 : h3d.Vector;
 	public var randomGradient : GradientData;
@@ -441,15 +440,15 @@ class Emitter2DObject extends h2d.Object {
 		var t = h2d.Tile.fromColor(0xFF00FF, 10, 10);
 		switch (spriteType) {
 			case Color:
-				if (!useRandomColor && !useRandomGradient)
-					t = h2d.Tile.fromColor(color.toColor(), 10, 10);
-				else if (useRandomColor && !useRandomGradient) {
-					var c = new h3d.Vector();
-					c.lerp(randomColor1, randomColor2, rand.rand());
-					t = h2d.Tile.fromColor(c.toColor(), 10, 10);
-				}
-				else if (useRandomGradient) {
-					t = h2d.Tile.fromColor(Gradient.evalData(randomGradient, rand.rand()).toColor(), 10, 10);
+				switch (randomColorMode) {
+					case None:
+						t = h2d.Tile.fromColor(color.toColor(), 10, 10);
+					case Colors:
+						var c = new h3d.Vector();
+						c.lerp(randomColor1, randomColor2, rand.rand());
+						t = h2d.Tile.fromColor(c.toColor(), 10, 10);
+					case Gradient:
+						t = h2d.Tile.fromColor(Gradient.evalData(randomGradient, rand.rand()).toColor(), 10, 10);
 				}
 			case Texture:
 				t = h2d.Tile.fromTexture(hxd.res.Loader.currentInstance.load(texture).toTexture());
@@ -563,10 +562,8 @@ class Emitter2D extends Object2D {
 	public var color : Array<Float> = [0., 0., 0., 1.];
 	@:s @:disp("Texture", "Texture of the particles")
 	public var texture : String = "";
-	@:s @:disp("Random Color", "Gives each particle a random color instead of the color")
-	public var useRandomColor : Bool = false;
-	@:s @:disp("Random Gradient", "The random color is taken in a gradient instead of between two colors")
-	public var useRandomGradient : Bool = false;
+	@:s @:disp("Random Color", "Gives each particle a random color instead of the color, taken between two colors or in a gradient")
+	public var randomColorMode : RandomColorMode = RandomColorMode.None;
 	@:s @:disp("Color 1", "First bound of the random color")
 	public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
 	@:s @:disp("Color 2", "Second bound of the random color")
@@ -599,7 +596,7 @@ class Emitter2D extends Object2D {
 	override function save() {
 		var data = super.save();
 		saveParams(data);
-		if( !useRandomColor || !useRandomGradient )
+		if( randomColorMode != RandomColorMode.Gradient )
 			Reflect.deleteField(data, "randomGradient");
 		if( !FX.inFXData(this) )
 			data.version = FX.VERSION;
@@ -612,7 +609,7 @@ class Emitter2D extends Object2D {
 			FX.checkVersion(this, obj);
 		super.load(obj);
 		loadParams(obj);
-		if( randomGradient == null && useRandomGradient )
+		if( randomGradient == null && randomColorMode == RandomColorMode.Gradient )
 			randomGradient = Gradient.getDefaultGradientData();
 	}
 
@@ -656,8 +653,7 @@ class Emitter2D extends Object2D {
 		emitterObj.animationLoop 		= 	animationLoop;
 		emitterObj.animationUseSourceUVs 			= 	animationUseSourceUVs;
 		emitterObj.animationBlendBetweenFrames 		= 	animationBlendBetweenFrames;
-		emitterObj.useRandomColor 		= 	useRandomColor;
-		emitterObj.useRandomGradient 	= 	useRandomGradient;
+		emitterObj.randomColorMode 		= 	randomColorMode;
 		emitterObj.randomColor1 		= 	h3d.Vector.fromArray(randomColor1);
 		emitterObj.randomColor2 		= 	h3d.Vector.fromArray(randomColor2);
 		emitterObj.randomGradient 		= 	randomGradient;
@@ -689,7 +685,7 @@ class Emitter2D extends Object2D {
 
 		if (spriteType != SpriteType.Color) {
 			removeParam("color");
-			removeParam("useRandomColor");
+			removeParam("randomColorMode");
 		}
 		if (spriteType != SpriteType.Texture) {
 			removeParam("texture");
@@ -705,20 +701,12 @@ class Emitter2D extends Object2D {
 			removeParam("animationBlendBetweenFrames");
 		}
 
-		if(!useRandomColor) {
-			removeParam("useRandomGradient");
+		if (spriteType != SpriteType.Color || randomColorMode != RandomColorMode.Colors) {
 			removeParam("randomColor1");
 			removeParam("randomColor2");
+		}
+		if (spriteType != SpriteType.Color || randomColorMode != RandomColorMode.Gradient)
 			removeParam("randomGradient");
-		}
-		else {
-			if (useRandomGradient){
-				removeParam("randomColor1");
-				removeParam("randomColor2");
-			} else {
-				removeParam("randomGradient");
-			}
-		}
 
 		switch (emitType) {
 			case Infinity:
@@ -759,15 +747,15 @@ class Emitter2D extends Object2D {
 		return params;
 	}
 
-	static var REFRESH_PARAMS = ["emitShape", "emitType", "spriteType", "useRandomColor", "useRandomGradient"];
+	static var REFRESH_PARAMS = ["emitShape", "emitType", "spriteType", "randomColorMode"];
 	#end
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
 		super.edit2(ctx);
 
 		function onChange(pname: String, isTemp: Bool) {
-			if (pname == "useRandomGradient")
-				randomGradient = useRandomGradient ? Gradient.getDefaultGradientData() : null;
+			if (pname == "randomColorMode")
+				randomGradient = randomColorMode == RandomColorMode.Gradient ? Gradient.getDefaultGradientData() : null;
 			if (pname == "spriteType" && spriteType != SpriteType.SpriteSheet)
 				spriteSheet = null;
 			ctx.rebuildPrefab(this);
