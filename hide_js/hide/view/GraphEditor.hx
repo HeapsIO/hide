@@ -1260,6 +1260,16 @@ class GraphEditor extends hide.comp.Component {
 
 			openContextMenu(box.node);
 		}
+
+		if (box.info.doubleClick != null) {
+			elt.get(0).ondblclick = function(e: js.html.MouseEvent) {
+				if (e.button != 0)
+					return;
+				e.stopPropagation();
+				box.info.doubleClick();
+			}
+		}
+
 		if (box.node.id == null) {
 			throw "null id";
 		}

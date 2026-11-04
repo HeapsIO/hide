@@ -45,6 +45,9 @@ typedef GraphNodeInfo = {
     **/
     ?contextMenu : () -> Array<hrt.ui.HuiMenu.MenuItem>,
 
+    /**Called when the user double clicks the box**/
+    ?doubleClick : () -> Void,
+
     /**
         If true, this node cannot be added, removed, or cloned. It must be created externaly. Used for things like fixed inputs or ouputs
     **/

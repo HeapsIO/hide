@@ -93,6 +93,7 @@ class SubGraph extends ShaderNode {
 		info.contextMenu = () -> [
 			{label: "Open Subgraph", click: () -> hide.Ide.inst.openFile(pathShaderGraph)},
 		];
+		info.doubleClick = () -> hide.Ide.inst.openFile(pathShaderGraph);
 		return info;
 	}
 
