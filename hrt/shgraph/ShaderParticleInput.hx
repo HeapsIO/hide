@@ -21,6 +21,7 @@ class ShaderParticleInputs extends ShaderNode {
 				group: group,
 				description: description,
 				args: [key],
+				searchAlias: [input.display],
 			});
 		}
 		return aliases;

@@ -677,11 +677,12 @@ class GraphEditor extends hide.comp.Component {
 		for (group => entries in groups) {
 			var submenu: Array<hrt.ui.HuiMenu.MenuItem> = [];
 			for (entry in entries) {
-				submenu.push({label: entry.name, click: doAdd.bind(entry.onConstructNode), tooltip: entry.description});
+				submenu.push({label: entry.name, click: doAdd.bind(entry.onConstructNode), tooltip: entry.description, searchAlias: entry.searchAlias});
 			}
 			menu.push({
 				label: group,
 				menu: submenu,
+				searchInclude: true,
 			});
 		}
 		return menu;

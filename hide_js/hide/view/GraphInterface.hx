@@ -76,6 +76,7 @@ typedef AddNodeMenuEntry = {
     name: String,
     description: String,
     group: String,
+    ?searchAlias: Array<String>,
 
     /**This function will be called when the user chooses to add a node from the add node menu
         You should generate a unique ID for the new IGraphNode. Don't add the node to your graph datastructure yet,

@@ -2334,6 +2334,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 							name: alias.nameSearch ?? alias.nameOverride ?? name,
 							group: alias.group ?? group,
 							description: alias.description ?? description,
+							searchAlias: alias.searchAlias,
 							onConstructNode: () -> {
 								@:privateAccess var id = currentGraph.current_node_id++;
 								var inst = std.Type.createInstance(node, alias.args ?? []);

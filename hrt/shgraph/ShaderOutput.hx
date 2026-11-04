@@ -43,6 +43,7 @@ class ShaderOutput extends ShaderNode {
 				group: group,
 				description: description,
 				args: [key],
+				searchAlias: [output.display],
 			});
 		}
 		return aliases;

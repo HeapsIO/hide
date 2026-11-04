@@ -54,6 +54,7 @@ class ShaderGlobalInput extends ShaderNode {
 				group: group,
 				description: description,
 				args: [i],
+				searchAlias: [input.display],
 			});
 		}
 		return aliases;

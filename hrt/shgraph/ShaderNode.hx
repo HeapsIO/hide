@@ -39,7 +39,7 @@ class AlphaPreview extends hxsl.Shader {
 typedef InputInfo = {name: String, type: SgType, def: ShaderDefInput, ?inlineEditable: Bool};
 typedef OutputInfo = {name: String, type: SgType};
 typedef VariableDecl = {v: TVar, display: String, ?vertexOnly: Bool};
-typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description : String, ?args : Array<Dynamic>, ?group: String};
+typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description : String, ?args : Array<Dynamic>, ?group: String, ?searchAlias: Array<String>};
 @:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
 @:keepSub
 @:keep
