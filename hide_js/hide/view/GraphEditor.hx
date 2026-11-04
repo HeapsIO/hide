@@ -99,11 +99,11 @@ class GraphEditor extends hide.comp.Component {
 	var lastCurveY : Float = 0;
 	var snapToGrid : Bool = true;
 
+	var edgeAddMenu: hide.comp.ContextMenu;
 	var miniPreviews : Element = null;
 
 	public var currentUndoBuffer : UndoBuffer = [];
 
-	var contextMenu : hide.comp.ContextMenu = null;
 	var onDocumentPointerUp : js.html.PointerEvent -> Void;
 
 
@@ -217,7 +217,13 @@ class GraphEditor extends hide.comp.Component {
 		});
 
 		heapsScene.on("contextmenu", function(e) {
-			openContextMenu();
+			var edge = getCreationEdge();
+			if (edge != null) {
+				createLink(ide.mouseX, ide.mouseY);
+				openEdgeAddMenu(edge);
+			}
+			else
+				openContextMenu();
 			e.preventDefault();
 		});
 
@@ -240,18 +246,6 @@ class GraphEditor extends hide.comp.Component {
 				}
 
 				// Stop rectangle selection
-				if (edgeCreationInput != null || edgeCreationOutput != null) {
-					if ((edgeCreationInput != null && edgeCreationOutput != null) || edgeCreationFromExisting) {
-						finalizeUserCreateEdge();
-						e.stopPropagation();
-						return;
-					}
-					else {
-						openContextMenu();
-						e.stopPropagation();
-						return;
-					}
-				}
 				startClickDrag = null;
 				startRecSelection = null;
 				if (recSelection != null) {
@@ -552,25 +546,70 @@ class GraphEditor extends hide.comp.Component {
 		exec(false);
 	}
 
-	static var lastOpenAddMenuPoint = new Point();
+	var lastOpenAddMenuPoint = new Point();
 
-	function openContextMenu(?nodeMenu : Array<hrt.ui.HuiMenu.MenuItem>) {
-		if (contextMenu != null) {
-			contextMenu.onClose = () -> {};
-			contextMenu.close();
-			createLink(ide.mouseX, ide.mouseY);
+	function openContextMenu(?node : IGraphNode) {
+		lastOpenAddMenuPoint.set(lX(ide.mouseX), lY(ide.mouseY));
+
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [];
+		var addEntryCount = 0;
+		if (node != null) {
+			var nodeMenu = boxes[node.id].info.contextMenu;
+			if (nodeMenu != null)
+				menu = nodeMenu();
+		} else {
+			menu = getAddMenu(null);
+			for (group in menu)
+				addEntryCount += group.menu.length;
+		}
+
+		var hasSelection = boxesSelected.iterator().hasNext();
+		var pastePos = lastOpenAddMenuPoint.clone();
+		if (menu.length > 0)
+			menu.push({isSeparator: true});
+		menu.push({label: "Cut", click: cutSelection, enabled: hasSelection, keys: config.get("key.cut")});
+		menu.push({label: "Copy", click: copySelection, enabled: hasSelection, keys: config.get("key.copy")});
+		menu.push({label: "Paste", click: () -> paste(pastePos), keys: config.get("key.paste")});
+		menu.push({label: "Delete selection", click: deleteSelection, enabled: hasSelection, keys: config.get("key.delete")});
+		menu.push({label: "Comment selection", click: commentFromSelection, enabled: hasSelection, keys: config.get("key.shadergraph.comment")});
+		for (item in editor.getSelectionMenu([for (id in boxesSelected.keys()) boxes[id].node]))
+			menu.push(item);
+
+		var search = addEntryCount > 0 ? hide.comp.ContextMenu.SearchMode.Visible : hide.comp.ContextMenu.SearchMode.Hidden;
+		hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu, {search: search, noIcons: true, flat: addEntryCount < 10});
+	}
+
+	function openEdgeAddMenu(edge : Edge) {
+		if (edgeAddMenu != null) {
+			edgeAddMenu.onClose = () -> {};
+			edgeAddMenu = null;
 		}
 		lastOpenAddMenuPoint.set(lX(ide.mouseX), lY(ide.mouseY));
 
-		var edge : Edge = null;
+		var menu = getAddMenu(edge);
+		var addEntryCount = 0;
+		for (group in menu)
+			addEntryCount += group.menu.length;
+
+		edgeAddMenu = hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu, {search: Visible, noIcons: true, flat: addEntryCount < 10});
+		edgeAddMenu.onClose = () -> {
+			edgeAddMenu = null;
+		};
+	}
+
+	function getCreationEdge() : Edge {
 		if (edgeCreationOutput != null) {
 			var unpack = unpackIO(edgeCreationOutput);
-			edge = { nodeFromId: unpack.nodeId, outputFromId: unpack.ioId};
-		} else if (edgeCreationInput != null) {
-			var unpack = unpackIO(edgeCreationInput);
-			edge = { nodeToId: unpack.nodeId, inputToId: unpack.ioId};
+			return { nodeFromId: unpack.nodeId, outputFromId: unpack.ioId};
 		}
+		if (edgeCreationInput != null) {
+			var unpack = unpackIO(edgeCreationInput);
+			return { nodeToId: unpack.nodeId, inputToId: unpack.ioId};
+		}
+		return null;
+	}
 
+	function getAddMenu(edge : Edge) : Array<hrt.ui.HuiMenu.MenuItem> {
 		var nodes = editor.getAddNodesMenu(edge);
 
 		var groups: Map<String, Array<hide.view.GraphInterface.AddNodeMenuEntry>> = [];
@@ -634,10 +673,8 @@ class GraphEditor extends hide.comp.Component {
 			commitUndo();
 		}
 
-		var search = hide.comp.ContextMenu.SearchMode.Hidden;
-
-		var menu : Array<hrt.ui.HuiMenu.MenuItem> = nodeMenu?.copy() ?? [];
-		if (nodeMenu == null) for (group => entries in groups) {
+		var menu : Array<hrt.ui.HuiMenu.MenuItem> = [];
+		for (group => entries in groups) {
 			var submenu: Array<hrt.ui.HuiMenu.MenuItem> = [];
 			for (entry in entries) {
 				submenu.push({label: entry.name, click: doAdd.bind(entry.onConstructNode), tooltip: entry.description});
@@ -646,47 +683,24 @@ class GraphEditor extends hide.comp.Component {
 				label: group,
 				menu: submenu,
 			});
-			search = hide.comp.ContextMenu.SearchMode.Visible;
 		}
-
-		if (edge == null) {
-			var hasSelection = boxesSelected.iterator().hasNext();
-			var pastePos = lastOpenAddMenuPoint.clone();
-			if (menu.length > 0)
-				menu.push({isSeparator: true});
-			menu.push({label: "Cut", click: cutSelection, enabled: hasSelection, keys: config.get("key.cut")});
-			menu.push({label: "Copy", click: copySelection, enabled: hasSelection, keys: config.get("key.copy")});
-			menu.push({label: "Paste", click: () -> paste(pastePos), keys: config.get("key.paste")});
-			menu.push({label: "Delete selection", click: deleteSelection, enabled: hasSelection, keys: config.get("key.delete")});
-			menu.push({label: "Comment selection", click: commentFromSelection, enabled: hasSelection, keys: config.get("key.shadergraph.comment")});
-			for (item in editor.getSelectionMenu([for (id in boxesSelected.keys()) boxes[id].node]))
-				menu.push(item);
-		}
-
-		contextMenu = hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu, {search: search, noIcons: true, flat: nodes.length < 10});
-		contextMenu.onClose = () -> {
-			contextMenu = null;
-		};
+		return menu;
 	}
 
 	function mouseMoveFunction(e: js.jquery.Event) {
 		var clientX = e.clientX;
 		var clientY = e.clientY;
 
-		if (contextMenu != null)
+		if (edgeAddMenu != null)
 			return;
 
 		if (pendingEdgeDrag != null) {
 			if (hxd.Math.distance(clientX - pendingEdgeDrag.clientX, clientY - pendingEdgeDrag.clientY) < EDGE_DRAG_THRESHOLD)
 				return;
 			beginEdgeDrag();
-		}
-
-		if (edgeCreationInput != null || edgeCreationOutput != null) {
-			startUpdateViewPosition();
-			createLink(clientX, clientY);
 			return;
 		}
+
 		// Moving edge
 		/*if (currentEdge != null) {
 			var distOutput = distanceToElement(currentEdge.from.outputs[currentEdge.outputFrom], clientX, clientY);
@@ -1104,7 +1118,7 @@ class GraphEditor extends hide.comp.Component {
 		opEdge(drag.output, drag.input, false, currentUndoBuffer);
 		edgeCreationFromExisting = true;
 
-		heapsScene.get(0).setPointerCapture(drag.pointerId);
+		captureEdgeCreation(drag.pointerId);
 
 		var start = boxes[unpackIO(drag.output).nodeId].outputs[unpackIO(drag.output).ioId].offset();
 		var end = boxes[unpackIO(drag.input).nodeId].inputs[unpackIO(drag.input).ioId].offset();
@@ -1143,6 +1157,35 @@ class GraphEditor extends hide.comp.Component {
 		opEdge(output, packIO(node.id, 0), true, currentUndoBuffer);
 		opEdge(packIO(node.id, 0), input, true, currentUndoBuffer);
 		commitUndo();
+	}
+
+	/** Update the edge being created until the pointer is released, then finalize it or open the add menu **/
+	function captureEdgeCreation(pointerId : Int) {
+		var elt = heapsScene.get(0);
+		elt.setPointerCapture(pointerId);
+
+		function onMove(e : js.html.PointerEvent) {
+			if (edgeAddMenu != null)
+				return;
+			startUpdateViewPosition();
+			createLink(e.clientX, e.clientY);
+		}
+
+		function onRelease(e : js.html.PointerEvent) {
+			elt.removeEventListener("pointermove", onMove);
+			elt.removeEventListener("lostpointercapture", onRelease);
+
+			var edge = getCreationEdge();
+			if (edge == null)
+				return;
+			if ((edgeCreationInput != null && edgeCreationOutput != null) || edgeCreationFromExisting)
+				finalizeUserCreateEdge();
+			else
+				openEdgeAddMenu(edge);
+		}
+
+		elt.addEventListener("pointermove", onMove);
+		elt.addEventListener("lostpointercapture", onRelease);
 	}
 
 	function finalizeUserCreateEdge() {
@@ -1214,7 +1257,7 @@ class GraphEditor extends hide.comp.Component {
 				commitUndo(true);
 			}
 
-			openContextMenu(box.info.contextMenu != null ? box.info.contextMenu() : []);
+			openContextMenu(box.node);
 		}
 		if (box.node.id == null) {
 			throw "null id";
@@ -1269,7 +1312,7 @@ class GraphEditor extends hide.comp.Component {
 				if (e.button == 0) {
 					e.stopPropagation();
 					cancelAll();
-					heapsScene.get(0).setPointerCapture(e.pointerId);
+					captureEdgeCreation(e.pointerId);
 					var input = packIO(box.node.id, inputId);
 					var output = outputsToInputs.getLeft(input);
 					if (output != null) {
@@ -1297,7 +1340,7 @@ class GraphEditor extends hide.comp.Component {
 				if (e.button == 0) {
 					e.stopPropagation();
 					cancelAll();
-					heapsScene.get(0).setPointerCapture(e.pointerId);
+					captureEdgeCreation(e.pointerId);
 					edgeCreationOutput = packIO(box.node.id, outputId);
 					edgeCreationMode = FromOutput;
 				}
@@ -1749,7 +1792,7 @@ class GraphEditor extends hide.comp.Component {
 				var x = lX(e.clientX);
 				var y = lY(e.clientY);
 				hide.comp.ContextMenu.createFromEvent(e, [
-					{label: "Create Reroute", click: () -> insertReroute(packedOutput, packedInput, x, y)},
+					{label: "Create Reroute", click: () -> insertReroute(packedOutput, packedInput, x, y), keys: "Double click"},
 					{label: "Delete", click: function() {
 							var edge = edgeFromPack(packedOutput, packedInput);
 							opEdge(packedOutput, packedInput, false, currentUndoBuffer);
@@ -1779,7 +1822,7 @@ class GraphEditor extends hide.comp.Component {
 			return;
 		timerUpdateView = new Timer(0);
 		timerUpdateView.run = function() {
-			if (contextMenu != null)
+			if (edgeAddMenu != null)
 				return;
 
 			function speed(d: Float) {
