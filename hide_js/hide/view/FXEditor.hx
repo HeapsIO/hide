@@ -1449,7 +1449,7 @@ class FXEditor extends hide.view.FileView {
 				}
 			}
 		}
-		function addParam(param : hrt.prefab.fx.EmitterHelper.ParamDef, prefix: String) {
+		function addParam(param : hrt.prefab.fx.EmitterHelper.PropertyDef, prefix: String) {
 			var label = prefix + (param.disp != null ? param.disp : upperCase(param.name));
 			var item : hrt.ui.HuiMenu.MenuItem = switch(param.t) {
 				case PVec(n, _):
@@ -1464,10 +1464,10 @@ class FXEditor extends hide.view.FileView {
 		}
 
 		if(isEmitter) {
-			for(param in hrt.prefab.fx.EmitterHelper.getParams(elt))
+			for(param in hrt.prefab.fx.EmitterHelper.getProperties(elt))
 				if(param.animate)
 					addParam(param, "");
-			for(p in hrt.prefab.fx.EmitterHelper.getModeParams(elt))
+			for(p in hrt.prefab.fx.EmitterHelper.getParams(elt))
 				if(p.kind != Particle)
 					addParam({ name: p.name, t: p.t, def: p.def.length > 1 ? p.def : p.def[0], disp: p.disp }, "");
 		}
@@ -1727,7 +1727,7 @@ class FXEditor extends hide.view.FileView {
 		inline function num(v: Dynamic) : Null<Float> return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : null;
 		var parts = key.split(":");
 		var isEmitter = hrt.prefab.fx.EmitterHelper.isEmitter(element);
-		var def = Lambda.find(hrt.prefab.fx.EmitterHelper.getModeParams(element), p -> p.name == parts[0]);
+		var def = Lambda.find(hrt.prefab.fx.EmitterHelper.getParams(element), p -> p.name == parts[0]);
 		if(def != null) {
 			var i = parts.length > 1 ? hxd.Math.imax(0, hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1])) : 0;
 			var isMin = parts[parts.length - 1] == "min";

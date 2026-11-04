@@ -62,7 +62,7 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	  hold their values, their bounds baked into them.
 	- Animation curves hold the value they animate: the constants the old FX composed them with are
 	  baked into them (exactly when the old value is linear in the curve), and the ones of the emitter
-	  params are named after what they animate (`startSpeed:x:min`, `scaleOverTime`).
+	  params are named after what they animate (`partStartSpeed:x:min`, `scaleMultiplier`), like the particle params (`partScale`).
 	- Orbit speeds go from radians to degrees per second.
 	- Transforms are re-baked exactly, the curves of the rotation and scale affine in the old ones: the
 	  base rotation folded into the euler angles (from another euler triple of the same rotation, which
@@ -1510,51 +1510,54 @@ class Upgrade0 {
 	// Emitters
 
 	static var EMITTER_3D : Array<ParamDef> = [
-		{ name: "lifeTime", old: "lifeTime", group: Spawn, def: [1.] },
-		{ name: "worldAcceleration", old: "instWorldAcceleration", group: Particle, def: [0., 0., 0.] },
-		{ name: "speed", old: "instSpeed", group: Particle, def: [0., 0., 0.] },
-		{ name: "worldSpeed", old: "instWorldSpeed", group: Particle, def: [0., 0., 0.] },
-		{ name: "startSpeed", old: "instStartSpeed", group: Spawn, def: [0., 0., 0.] },
-		{ name: "startWorldSpeed", old: "instStartWorldSpeed", group: Spawn, def: [0., 0., 0.] },
-		{ name: "orbitSpeed", old: "instOrbitSpeed", group: Particle, def: [0., 0., 0.] },
-		{ name: "orbitSpeedOverTime", old: "instOrbitSpeedOverTime", group: OverTime, def: [1.] },
-		{ name: "acceleration", old: "instAcceleration", group: Particle, def: [0., 0., 0.] },
-		{ name: "maxVelocity", old: "instMaxVelocity", group: Particle, def: [0.] },
-		{ name: "dampen", old: "instDampen", group: Particle, def: [0.] },
-		{ name: "scale", old: "instScale", group: Particle, def: [1.] },
-		{ name: "scaleOverTime", old: "instScaleOverTime", group: OverTime, def: [1.] },
-		{ name: "stretch", old: "instStretch", group: Particle, def: [1., 1., 1.] },
-		{ name: "stretchVelocity", old: "instStretchVelocity", group: Particle, def: [0.] },
-		{ name: "particleRotation", old: "instRotation", group: Particle, def: [0., 0., 0.] },
-		{ name: "pivot", old: "instPivot", group: Particle, def: [0., 0., 0.] },
-		{ name: "offset", old: "instOffset", group: Particle, def: [0., 0., 0.] },
+		{ name: "partLifeTime", old: "lifeTime", group: Spawn, def: [1.] },
+		{ name: "partWorldAcceleration", old: "instWorldAcceleration", group: Particle, def: [0., 0., 0.] },
+		{ name: "partSpeed", old: "instSpeed", group: Particle, def: [0., 0., 0.] },
+		{ name: "partWorldSpeed", old: "instWorldSpeed", group: Particle, def: [0., 0., 0.] },
+		{ name: "partStartSpeed", old: "instStartSpeed", group: Spawn, def: [0., 0., 0.] },
+		{ name: "partStartWorldSpeed", old: "instStartWorldSpeed", group: Spawn, def: [0., 0., 0.] },
+		{ name: "partOrbitSpeed", old: "instOrbitSpeed", group: Particle, def: [0., 0., 0.] },
+		{ name: "orbitSpeedMultiplier", old: "instOrbitSpeedOverTime", group: OverTime, def: [1.] },
+		{ name: "partAcceleration", old: "instAcceleration", group: Particle, def: [0., 0., 0.] },
+		{ name: "partMaxVelocity", old: "instMaxVelocity", group: Particle, def: [0.] },
+		{ name: "partDampen", old: "instDampen", group: Particle, def: [0.] },
+		{ name: "partScale", old: "instScale", group: Particle, def: [1.] },
+		{ name: "scaleMultiplier", old: "instScaleOverTime", group: OverTime, def: [1.] },
+		{ name: "partStretch", old: "instStretch", group: Particle, def: [1., 1., 1.] },
+		{ name: "partStretchVelocity", old: "instStretchVelocity", group: Particle, def: [0.] },
+		{ name: "partRotation", old: "instRotation", group: Particle, def: [0., 0., 0.] },
+		{ name: "partPivot", old: "instPivot", group: Particle, def: [0., 0., 0.] },
+		{ name: "partOffset", old: "instOffset", group: Particle, def: [0., 0., 0.] },
 	];
 
 	static var EMITTER_2D : Array<ParamDef> = [
-		{ name: "lifeTime", old: "lifeTime", group: Spawn, def: [1.] },
-		{ name: "scale", old: "instScale", group: Particle, def: [1.] },
-		{ name: "scaleOverTime", old: "instScaleOverTime", group: OverTime, def: [1.] },
-		{ name: "stretch", old: "instStretch", group: Particle, def: [1., 1.] },
-		{ name: "particleRotation", old: "instRotation", group: Particle, def: [0.] },
-		{ name: "offset", old: "instOffset", group: Particle, def: [0., 0.] },
-		{ name: "acceleration", old: "instAcceleration", group: Particle, def: [0., 0.] },
-		{ name: "worldAcceleration", old: "instWorldAcceleration", group: Particle, def: [0., 0.] },
-		{ name: "speed", old: "instSpeed", group: Particle, def: [0., 0.] },
-		{ name: "worldSpeed", old: "instWorldSpeed", group: Particle, def: [0., 0.] },
-		{ name: "startSpeed", old: "instStartSpeed", group: Spawn, def: [0., 0.] },
-		{ name: "startWorldSpeed", old: "instStartWorldSpeed", group: Spawn, def: [0., 0.] },
-		{ name: "orbitSpeed", old: "instOrbitSpeed", group: Particle, def: [0.] },
-		{ name: "orbitSpeedOverTime", old: "instOrbitSpeedOverTime", group: OverTime, def: [1.] },
-		{ name: "maxVelocity", old: "instMaxVelocity", group: Particle, def: [0.] },
-		{ name: "dampen", old: "instDampen", group: Particle, def: [0.] },
+		{ name: "partLifeTime", old: "lifeTime", group: Spawn, def: [1.] },
+		{ name: "partScale", old: "instScale", group: Particle, def: [1.] },
+		{ name: "scaleMultiplier", old: "instScaleOverTime", group: OverTime, def: [1.] },
+		{ name: "partStretch", old: "instStretch", group: Particle, def: [1., 1.] },
+		{ name: "partRotation", old: "instRotation", group: Particle, def: [0.] },
+		{ name: "partOffset", old: "instOffset", group: Particle, def: [0., 0.] },
+		{ name: "partAcceleration", old: "instAcceleration", group: Particle, def: [0., 0.] },
+		{ name: "partWorldAcceleration", old: "instWorldAcceleration", group: Particle, def: [0., 0.] },
+		{ name: "partSpeed", old: "instSpeed", group: Particle, def: [0., 0.] },
+		{ name: "partWorldSpeed", old: "instWorldSpeed", group: Particle, def: [0., 0.] },
+		{ name: "partStartSpeed", old: "instStartSpeed", group: Spawn, def: [0., 0.] },
+		{ name: "partStartWorldSpeed", old: "instStartWorldSpeed", group: Spawn, def: [0., 0.] },
+		{ name: "partOrbitSpeed", old: "instOrbitSpeed", group: Particle, def: [0.] },
+		{ name: "orbitSpeedMultiplier", old: "instOrbitSpeedOverTime", group: OverTime, def: [1.] },
+		{ name: "partMaxVelocity", old: "instMaxVelocity", group: Particle, def: [0.] },
+		{ name: "partDampen", old: "instDampen", group: Particle, def: [0.] },
 	];
 
-	/** The emitter settings animated over the FX time, with their default **/
-	static var SETTINGS_3D = [{ name: "emitRate", def: 5. }, { name: "emitRateMin", def: 5. }, { name: "emitRateMax", def: 5. },
+	/** The emitter properties animated over the FX time, with their default **/
+	static var PROPERTIES_3D = [{ name: "emitRate", def: 5. }, { name: "emitRateMin", def: 5. }, { name: "emitRateMax", def: 5. },
 		{ name: "burstParticleCount", def: 1. }, { name: "emitAngle", def: 30. }];
-	static var SETTINGS_2D = [{ name: "burstParticleCount", def: 1. }, { name: "emitRate", def: 5. }, { name: "emitRateMin", def: 5. },
+	static var PROPERTIES_2D = [{ name: "burstParticleCount", def: 1. }, { name: "emitRate", def: 5. }, { name: "emitRateMin", def: 5. },
 		{ name: "emitRateMax", def: 5. }, { name: "emitRadius", def: 20. }, { name: "emitAngle1", def: 20. }, { name: "emitAngle2", def: 40. },
 		{ name: "emitWidth", def: 1. }, { name: "emitHeight", def: 1. }];
+
+	/** The properties saved under another name **/
+	static var PROPERTY_RENAMES = ["seedGroup" => "seed"];
 
 	/** The old params added to their curve instead of being multiplied by it **/
 	static var ADDITIVE_3D = ["Rotation", "Offset", "Pivot"];
@@ -1576,14 +1579,14 @@ class Upgrade0 {
 		var defs = is2D ? EMITTER_2D : EMITTER_3D;
 		var props : Dynamic = get(e.data, "props") ?? {};
 		var params = upgradeParams(e, props, defs, is2D ? ADDITIVE_2D : ADDITIVE_3D);
-		var settings = [for( s in (is2D ? SETTINGS_2D : SETTINGS_3D) ) { name: s.name, value: num(get(props, s.name), s.def) }];
-		upgradeEmitterAnims(e, settings, defs, params);
+		var properties = [for( s in (is2D ? PROPERTIES_2D : PROPERTIES_3D) ) { name: s.name, value: num(get(props, s.name), s.def) }];
+		upgradeEmitterAnims(e, properties, defs, params);
 
 		// orbit speeds in degrees per second
-		var orbit = params.get("orbitSpeed");
+		var orbit = params.get("partOrbitSpeed");
 		if( orbit != null ) {
 			var k = 180.0 / Math.PI;
-			params.set("orbitSpeed", [for( m in orbit ) switch( m ) {
+			params.set("partOrbitSpeed", [for( m in orbit ) switch( m ) {
 				case null: null;
 				case MConstant(v): MConstant(v * k);
 				case MRange(a, b): MRange(a * k, b * k);
@@ -1594,13 +1597,23 @@ class Upgrade0 {
 			change(e, "orbit speed in degrees per second");
 		}
 
+		var renames = [];
 		for( d in defs ) {
 			var v = params.get(d.name);
-			if( v != null )
-				params.set(d.name, [for( m in v ) bakeModeCurves(e, m)]);
+			if( v == null )
+				continue;
+			params.set(d.name, [for( m in v ) bakeModeCurves(e, m)]);
+			// the curve of a particle param is the one named after it
+			for( i => m in v ) {
+				var path = switch( m ) { case MCurve(s, _), MRandomCurve(s, _), MCurveRange(s, _): s; case null, _: null; };
+				var n = path == null ? null : locate(path, e);
+				if( n != null )
+					renames.push({ node: n, name: d.name + (d.def.length == 1 ? "" : ":" + COMPONENTS[i]) });
+			}
 		}
+		renameCurves(renames);
 
-		// format 1: the settings, the over time ones and the params with modes are fields of the emitter
+		// the properties and the params with modes are fields of the emitter
 		var old = new Map();
 		for( d in defs ) {
 			old.set(d.name, true);
@@ -1609,7 +1622,7 @@ class Upgrade0 {
 		}
 		for( f in Reflect.fields(props) )
 			if( !old.exists(f) )
-				RawNode.setField(e.data, f, Reflect.field(props, f));
+				RawNode.setField(e.data, PROPERTY_RENAMES.get(f) ?? f, Reflect.field(props, f));
 		Reflect.deleteField(e.data, "props");
 		for( d in defs ) {
 			var v = params.get(d.name);
@@ -1831,7 +1844,7 @@ class Upgrade0 {
 		// the life time was already a plain value
 		var life : Dynamic = get(props, "lifeTime");
 		if( Std.isOfType(life, Float) || Std.isOfType(life, Int) )
-			params.set("lifeTime", [MConstant(life)]);
+			params.set("partLifeTime", [MConstant(life)]);
 		inline function findCurve( name : String ) : RawNode {
 			return Lambda.find(e.children, c -> c.isCurve && c.enabled() && sameName(c.name, name));
 		}
@@ -1850,7 +1863,7 @@ class Upgrade0 {
 					return v == null ? null : dim == 1 ? (Std.isOfType(v, Array) ? null : num(v, 0)) : (Std.isOfType(v, Array) ? num((v : Array<Dynamic>)[i], 0) : null);
 				}
 				var base = comp(baseField);
-				if( d.name == "lifeTime" && out[i] != null )
+				if( d.name == "partLifeTime" && out[i] != null )
 					base = switch( out[i] ) { case MConstant(v): v; default: base; };
 				var rand = comp(randField);
 				var hasRand = rand != null && rand != 0;
@@ -1953,7 +1966,7 @@ class Upgrade0 {
 
 		// spawn params and over time settings
 		for( d in defs ) {
-			if( d.group == Particle || d.name == "lifeTime" ) continue;
+			if( d.group == Particle || d.name == "partLifeTime" ) continue;
 			var dim = d.def.length;
 			var value = params.get(d.name);
 			var out : Array<Mode> = [for( i in 0...dim ) value == null ? null : value[i]];
@@ -2024,7 +2037,10 @@ class Upgrade0 {
 		markAll(e, e, false);
 	}
 
-	/** Renames curves, the paths of the file to them or through them follow **/
+	/**
+		Renames curves, the paths of the file to them or through them follow. The other curves of their old name (disabled, or after an
+		enabled one) were not read: they keep it, their values are not upgraded.
+	**/
 	function renameCurves( renames : Array<{ node : RawNode, name : String }> ) {
 		if( renames.length == 0 )
 			return;
@@ -2108,15 +2124,22 @@ class Upgrade0 {
 		}
 		if( !out.iterator().hasNext() )
 			return;
-		var names = [for( k in out.keys() ) k];
-		names.sort(Reflect.compare);
-		function comp( m : Mode ) : Dynamic {
-			return switch( bakeModeCurves(s, m) ) {
-			case MCurve(path, _): obj(["curve", path]);
-			case null, _: null;
-			}
-		}
-		RawNode.setField(s.data, "particleParams", [for( n in names ) obj(["name", n, "comps", [for( m in out.get(n) ) comp(m)]])]);
+		// the curves read over the particle life, named after their param and component (`EmitterParam.curveName`)
+		var keys = [], renames = [];
+		for( name => v in out )
+			for( i => m in v )
+				switch( bakeModeCurves(s, m) ) {
+				case MCurve(path, _):
+					var key = v.length == 1 ? name : name + ":" + COMPONENTS[i];
+					keys.push(key);
+					var n = locate(path, s);
+					if( n != null && n.name != key )
+						renames.push({ node: n, name: key });
+				case null, _:
+				}
+		renameCurves(renames);
+		keys.sort(Reflect.compare);
+		RawNode.setField(s.data, "particleParams", keys);
 		change(s, "particle shader params with modes");
 	}
 
@@ -2134,19 +2157,19 @@ class Upgrade0 {
 		return o;
 	}
 
-	/** The bounds of MCurve, MRandomCurve and MCurveRange are baked (`bakeModeCurves`) **/
+	/** The bounds of MCurve, MRandomCurve and MCurveRange are baked (`bakeModeCurves`), their curve is the one named after their param **/
 	static function saveMode( m : Mode ) : Dynamic {
 		return switch( m ) {
 		case null: null;
 		case MConstant(v): v;
 		case MRange(min, max): obj(["mode", "Range", "min", min, "max", max]);
-		case MCurve(s, _): obj(["mode", "Curve", "curve", s]);
-		case MRandomCurve(s, f0, f1, t0, t1):
-			var o : Dynamic = obj(["mode", "RandomCurve", "curve", s]);
+		case MCurve(_): obj(["mode", "Curve"]);
+		case MRandomCurve(_, f0, f1, t0, t1):
+			var o : Dynamic = obj(["mode", "RandomCurve"]);
 			if( f1 != f0 ) o.spreadMin = (f1 - f0) * 0.5;
 			if( t1 != t0 ) o.spreadMax = (t1 - t0) * 0.5;
 			o;
-		case MCurveRange(s, _): obj(["mode", "CurveRange", "curve", s]);
+		case MCurveRange(_): obj(["mode", "CurveRange"]);
 		}
 	}
 

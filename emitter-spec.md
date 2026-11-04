@@ -18,7 +18,7 @@ Scope: `Emitter` and `Emitter2D`. Editing through the new inspector only (edit2 
 
 Vector params have one mode per component. Rotations are in degrees, rotation speeds (orbit speed) in degrees per second.
 Particle shaders get their per-particle randomness on the GPU, from the emitter's `particleRandom`.
-A shader under an emitter stores its particle params on itself, in a field only used under an emitter: per param, a curve per component, which gives the value (`curve`, `from` / `to`); a component without curve keeps the prop.
+A shader under an emitter lists its components read over the particle life in `particleParams`, by the name of their curve (`alpha`, `UVOffset:y`), a curve of the shader that gives the value; a component without curve keeps the prop.
 
 ## Modes
 
@@ -38,7 +38,7 @@ A shader under an emitter stores its particle params on itself, in a field only 
 
 ## Shapes
 
-A shape is a **curve**: a reference, by path, to a curve prefab in the hierarchy. A curve is one of: plain keys (with loop); a blend of two plain curves by an FX parameter; plain keys remapped by an FX parameter (read at its value instead of the time); a reference to one of these (resolved when the values are built, its scale and offset folded into the range).
+A shape is a **curve**: the child curve of the emitter named after the param component (`partScale`, `partRotation:z`), the first enabled one, as every curve of an emitter. A curve is one of: plain keys (with loop); a blend of two plain curves by an FX parameter; plain keys remapped by an FX parameter (read at its value instead of the time); a reference to one of these (resolved when the values are built, its scale and offset folded into the range).
 
 The range (`from` / `to`) belongs to the param; a reference shares the shape only.
 Rejected when the values are built (an error), and not offered by the curve inspector: a remap by another curve, a remapped blend or reference, a blend of curves that are not plain, a curve by a parameter in Curve Range.
@@ -49,11 +49,11 @@ Rejected when the values are built (an error), and not offered by the curve insp
 - They hold plain keys: no range, no random. Constants of the old data are baked into the keys. They take the same curve forms as the shapes, over the FX time, and a random between two plain curves (Random Blend, on Emitter and Spawn `value` fields).
 - A Spawn param is read when the particle spawns: its value, or a random between its `min` and `max`, both at the FX time.
 - Targets: transforms, shader params outside emitters, Emitter params, Spawn `value` / `min` / `max`.
-- Animation curves are children of the animated prefab, found by name (the property name, `:x` / `:y` / `:z` per component, e.g. `position:x`, `emitRate`, `startSpeed:x:min`). The inspector marks properties that have one.
+- Animation curves are children of the animated prefab, found by name (the property name, `:x` / `:y` / `:z` per component, e.g. `position:x`, `emitRate`, `partStartSpeed:x:min`), the first enabled one. The inspector marks properties that have one.
 
 ## Storage
 
-- Params are stored directly on the emitter, under their field name (`scale`, `startSpeed`, `particleRotation`...), like the settings: a mode, or for a vector an object of the modes of its components (`x`, `y`, `z`, an unset one left out).
+- Params are stored directly on the emitter, under their field name, `part` and the param (`partScale`, `partStartSpeed`, `partRotation`...), like the properties: a mode, or for a vector an object of the modes of its components (`x`, `y`, `z`, an unset one left out). A curve mode stores no curve, its curve is the one of its name; a curve mode whose curve was deleted is not saved (the param goes back to its default).
 - Old files are converted once by a migration tool in `hide/tools`, run over a whole project: it rewrites every old-format file, updates the files that override or point at what it changes, only touches the nodes it changes, and is idempotent. Loading an old-format file still works as a fallback: the same migration code upgrades it in memory, alone (no fixes in other files), with a warning recommending the tool.
 - Every FX file carries a format `version` at its root (no version = 0, the old format); everything inside the file, including its Reference overrides, follows it. Upgrade steps are keyed by version. A project is always migrated as a whole.
 
@@ -87,7 +87,7 @@ Validation (fxbench, outside the repo): old hide on the old files against new hi
 ## UI
 
 - The right click menu of a param component (on its field, or on the label of its line) switches its mode, restricted to the modes of its group, and removes it (**Remove X**) or the whole param (**Remove all**). The components of a vector are on one line while they are all constant or unset.
-- The shape dropdown: **New curve**, **Reference** (the curves under the emitter).
+- Switching to a curve mode makes the curve of the param component (or gives the existing one its new values), switching away from them removes it.
 - A curve mode made from a constant, a range or nothing gets a new linear curve, from 0 to 1.
 - Curve modes show their particle curves in an inline curve editor. Below the editor, on one line, the `from` fields at the left (the birth of the particle) and the `to` ones at the right (its death), a button between them swapping them. Random Curve: the shape at mid range as a solid line, the two extremes dashed. Keys are edited in display space, as in the timeline curve editor: key modes (Aligned, Free, Linear, Constant) and tangent handles, Ctrl + click adds a key, Delete removes it, right click for the key menu, double click for its time and value. The editor has a labelled Y grid in integer steps (0 stronger) and shows at least 0 to 1: framed on the curve when built or with F, zoomed vertically around its center with its +/- buttons or Shift + wheel.
 - Curve Range: two stacked curve editors.

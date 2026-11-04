@@ -19,7 +19,8 @@ class Shader extends Prefab {
 
 	public var shader : hxsl.Shader;
 
-	@:s public var particleParams : Array<hrt.prefab.fx.EmitterParam.ParticleShaderParam> = [];
+	/** The curves of its params read over the life of the particles, under an emitter (`EmitterParam.curveName`) **/
+	@:s public var particleParams : Array<String> = [];
 
 	function new(parent, sh: ContextShared) {
 		super(parent, sh);

@@ -41,8 +41,6 @@ class Curve extends Element {
 	public var label : String;
 	public var tracks : Array<CurveTrack> = [];
 	public var bands : Array<CurveBand> = [];
-	public var curvePath : String;
-	public var curveChoices : Array<Select.SelectEntry>;
 
 	public static var PRESETS : Array<CurvePreset> = [
 		{ name: "Constant", keys: [{ t: 0, v: 1 }, { t: 1, v: 1 }] },
@@ -186,16 +184,6 @@ class Curve extends Element {
 		fields.classList.push("kit-curve-fields-root");
 		win.fields = fields;
 		var view : CurveEditor = null;
-		var reference : Line = null;
-		if (curveChoices != null) {
-			reference = new Line(fields, "reference");
-			reference.full = true;
-			reference.classList.push("kit-curve-reference");
-			new Text(reference, "curveLabel", "Reference");
-			var select = new Select(reference, "curve", curveChoices);
-			select.value = curvePath;
-			select.onValueChange = (_) -> onCurveChange(select.value);
-		}
 		var rows = [];
 		for (i => t in tracks) {
 			var line = new Line(fields, "track" + i);
@@ -242,7 +230,6 @@ class Curve extends Element {
 		}
 		fields.make();
 		body.appendChild(fields.native.get());
-		reference?.native.get().style.setProperty("grid-row", "span " + tracks.length);
 
 		for (i => row in rows) {
 			if (tracks.length > 1) {
@@ -307,8 +294,6 @@ class Curve extends Element {
 	#end
 
 	public dynamic function onValueChange(temporaryEdit: Bool) : Void {}
-
-	public dynamic function onCurveChange(path: String) : Void {}
 
 	public dynamic function onSpreadChange(spread: TrackSpread) : Void {}
 }

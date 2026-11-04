@@ -73,7 +73,7 @@ enum SubEmitterKind {
 }
 
 @:publicFields
-class InstanceDef {
+class ParticleDef {
 	var speed: Value;
 	var worldSpeed: Value;
 	var orbitSpeed: Value;
@@ -84,7 +84,7 @@ class InstanceDef {
 	var scale: Value;
 	var stretch: Value;
 	var stretchVelocity: Value;
-	var particleRotation: Value;
+	var rotation: Value;
 	var dampen: Value;
 	var maxVelocity : Value;
 	public function new() { }
@@ -291,10 +291,10 @@ class ParticleInstance {
 		var evaluator = emitter.evaluator;
 
 		//SCALE
-		var def = emitter.instDef;
+		var def = emitter.particleDef;
 		evaluator.getFastVec(idx, def.stretch, t, v);
 		v.scale3(evaluator.getFast(idx, def.scale, t));
-		v.scale3(emitter.curScaleOverTime);
+		v.scale3(emitter.curScaleMultiplier);
 		localMat.initScale(v.x, v.y, v.z);
 
 
@@ -307,8 +307,8 @@ class ParticleInstance {
 		}
 
 		// ROTATION
-		if(def.particleRotation != VZero) {
-			evaluator.getFastVec(idx, def.particleRotation, t, v);
+		if(def.rotation != VZero) {
+			evaluator.getFastVec(idx, def.rotation, t, v);
 			v.scale3(Math.PI / 180.0);
 			if(v.x == 0 && v.y == 0)
 				EmitterHelper.rotateZ(localMat, v.z);
@@ -338,7 +338,7 @@ class ParticleInstance {
 		var speed = new h3d.Vector();
 		speed.set(0,0,0);
 
-		var def = emitter.instDef;
+		var def = emitter.particleDef;
 		var evaluator = emitter.evaluator;
 		var emitOrientation = emitOrientation.toMatrix();
 		var speedAccumulation = this.speedAccumulation.toVector();
@@ -439,7 +439,7 @@ class ParticleInstance {
 		if(def.orbitSpeed != VZero) {
 			evaluator.getFastVec(idx, def.orbitSpeed, t, v);
 
-			var factorOverTime = emitter.curOrbitSpeedOverTime;
+			var factorOverTime = emitter.curOrbitSpeedMultiplier;
 			v.scale3(factorOverTime * (Math.PI / 180.0));
 
 			tmpMat.initRotation(v.x * dt, v.y * dt, v.z * dt);
@@ -516,7 +516,7 @@ class ParticleInstance {
 @:allow(hrt.prefab.fx.Emitter)
 class EmitterObject extends h3d.scene.Object {
 
-	public var instDef : InstanceDef;
+	public var particleDef : ParticleDef;
 
 	public var particles : PartArray;
 	public var particlesCount : Int;
@@ -584,8 +584,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var applyMeshTransform = false;
 	public var startSpeed: Array<SpawnValue>;
 	public var startWorldSpeed: Array<SpawnValue>;
-	public var scaleOverTime : Value;
-	public var orbitSpeedOverTime : Value;
+	public var scaleMultiplier : Value;
+	public var orbitSpeedMultiplier : Value;
 
 	// EMIT SHAPE
 	public var emitShape : EmitShape = Cylinder;
@@ -635,8 +635,8 @@ class EmitterObject extends h3d.scene.Object {
 	var emitTarget = 0.0;
 	var curTime = 0.0;
 	// the values of the over time settings at the current tick, shared by the particles
-	var curScaleOverTime = 1.0;
-	var curOrbitSpeedOverTime = 1.0;
+	var curScaleMultiplier = 1.0;
+	var curOrbitSpeedMultiplier = 1.0;
 	var evaluator : Evaluator;
 	var numInstances = 0;
 	var instanceCounter = 0;
@@ -1029,7 +1029,7 @@ class EmitterObject extends h3d.scene.Object {
 		if( count == 0 )
 			return;
 
-		if( instDef == null)
+		if( particleDef == null)
 			return;
 
 		@:privateAccess var globalTime = scene?.renderer.ctx.globalTime ?? curTime;
@@ -1266,8 +1266,8 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 		}
 
-		curScaleOverTime = evaluator.getFloat(scaleOverTime, curTime);
-		curOrbitSpeedOverTime = evaluator.getFloat(orbitSpeedOverTime, curTime);
+		curScaleMultiplier = evaluator.getFloat(scaleMultiplier, curTime);
+		curOrbitSpeedMultiplier = evaluator.getFloat(orbitSpeedMultiplier, curTime);
 
 		if(subEmitters != null) {
 			for( se in subEmitters ) {
@@ -1540,7 +1540,7 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		// Particle space <-> emitter space, for orbit speed
-		if (instDef.orbitSpeed != VZero) {
+		if (particleDef.orbitSpeed != VZero) {
 			orbitToEmitter.multiply(parentTransform, getInvPos());
 			orbitFromEmitter.initInverse(orbitToEmitter);
 		}
@@ -1747,7 +1747,7 @@ class Emitter extends Object3D {
 	@:s @:range(0, null) @:disp("Warm Up", "Time simulated before the start, in seconds: the emitter starts already filled")
 	public var warmUpTime : Float = 0.0;
 	@:s @:range(0, null) @:disp("Seed", "Changes the random values of the emitter, to differentiate two identical emitters")
-	public var seedGroup : Int = 0;
+	public var seed : Int = 0;
 	@:s @:disp("Simulation Space", "Local: the particles move with the emitter. World: once emitted, they no longer follow it")
 	public var simulationSpace : SimulationSpace = SimulationSpace.Local;
 	@:s @:disp("Parent Scaling", "Whether the particles are scaled by the parents of the emitter")
@@ -1783,7 +1783,7 @@ class Emitter extends Object3D {
 	@:s @:range(0, null) @:disp("Max Count", "Maximum number of particles alive at the same time: no particle is emitted beyond")
 	public var maxCount : Int = 20;
 	@:param(PFloat(0), Spawn, 1.) @:disp("Lifetime", "Life duration of the particle, in seconds")
-	public var lifeTime : ParamMode;
+	public var partLifeTime : ParamMode;
 
 	@:group("Emit Shape")
 	@:s @:disp("Shape", "Volume in which the particles are emitted")
@@ -1805,43 +1805,43 @@ class Emitter extends Object3D {
 
 	@:group("Particle Movement")
 	@:param(PVec(3), Spawn) @:disp("Start Speed", "Initial speed in the emitter orientation, set at the spawn of the particle")
-	public var startSpeed : ParamVec3;
+	public var partStartSpeed : ParamVec3;
 	@:param(PVec(3), Spawn) @:disp("Start World Speed", "Initial speed in world space, set at the spawn of the particle")
-	public var startWorldSpeed : ParamVec3;
+	public var partStartWorldSpeed : ParamVec3;
 	@:param(PVec(3), Particle) @:disp("Constant Speed", "Speed in the emitter orientation, added to the velocity without being accumulated")
-	public var speed : ParamVec3;
+	public var partSpeed : ParamVec3;
 	@:param(PVec(3), Particle) @:disp("Constant World Speed", "Speed in world space, added to the velocity without being accumulated")
-	public var worldSpeed : ParamVec3;
+	public var partWorldSpeed : ParamVec3;
 	@:param(PVec(3), Particle) @:disp("Acceleration", "Acceleration in the emitter orientation, accumulated in the velocity")
-	public var acceleration : ParamVec3;
+	public var partAcceleration : ParamVec3;
 	@:param(PVec(3), Particle) @:disp("World Acceleration", "Acceleration in world space (gravity, wind...), accumulated in the velocity")
-	public var worldAcceleration : ParamVec3;
+	public var partWorldAcceleration : ParamVec3;
 	@:param(PVec(3, -360, 360), Particle) @:disp("Orbit Speed", "Rotation speed around the emitter, in degrees per second")
-	public var orbitSpeed : ParamVec3;
+	public var partOrbitSpeed : ParamVec3;
 	@:s @:range(0, null) @:animate @:disp("Orbit Speed Multiplier", "Multiplier of the orbit speed of all the particles, animated over the emitter time")
-	public var orbitSpeedOverTime : Float = 1;
+	public var orbitSpeedMultiplier : Float = 1;
 
 	@:group("Limit Velocity")
 	@:param(PFloat(0), Particle) @:disp("Damping", "Damping of the accumulated velocity (start speed and accelerations), per second")
-	public var dampen : ParamMode;
+	public var partDampen : ParamMode;
 	@:param(PFloat(0), Particle) @:disp("Max Speed", "Maximum speed of the particle")
-	public var maxVelocity : ParamMode;
+	public var partMaxVelocity : ParamMode;
 
 	@:group("Particle Transform")
 	@:param(PVec(3), Particle) @:disp("Offset", "Offset of the particle position, without effect on its movement")
-	public var offset : ParamVec3;
+	public var partOffset : ParamVec3;
 	@:param(PVec(3), Particle) @:disp("Pivot", "Pivot of the particle, relative to its size")
-	public var pivot : ParamVec3;
+	public var partPivot : ParamVec3;
 	@:param(PVec(3, 0, 360), Particle) @:disp("Rotation", "Rotation of the particle, in degrees")
-	public var particleRotation : ParamVec3;
+	public var partRotation : ParamVec3;
 	@:param(PFloat(), Particle, 1.) @:disp("Scale", "Uniform scale of the particle")
-	public var scale : ParamMode;
+	public var partScale : ParamMode;
 	@:s @:range(0, null) @:animate @:disp("Scale Multiplier", "Multiplier of the scale of all the particles, animated over the emitter time")
-	public var scaleOverTime : Float = 1;
+	public var scaleMultiplier : Float = 1;
 	@:param(PVec(3), Particle, [1., 1., 1.]) @:disp("Stretch", "Scale of the particle on each of its axes")
-	public var stretch : ParamVec3;
+	public var partStretch : ParamVec3;
 	@:param(PFloat(0), Particle) @:disp("Stretch By Speed", "Stretches the particle along its velocity")
-	public var stretchVelocity : ParamMode;
+	public var partStretchVelocity : ParamMode;
 
 	@:group("Alignment")
 	@:s @:disp("Align Mode", "Alignment of the particles: none, facing the screen, around an axis, or along their speed")
@@ -1964,7 +1964,7 @@ class Emitter extends Object3D {
 		emitterObj.trailsTemplate = trailsTemplate;
 
 		// RANDOM
-		emitterObj.seedGroup 			= 	seedGroup;
+		emitterObj.seedGroup 			= 	seed;
 		emitterObj.subEmitterKind		= 	subEmitterKind;
 		emitterObj.speedFactor 			= 	speedFactor;
 		emitterObj.warmUpTime 			= 	warmUpTime;
@@ -2041,8 +2041,8 @@ class Emitter extends Object3D {
 
 	static var REFRESH_PARAMS = ["emitShape", "alignMode", "useCollision", "emitType", "useRandomColor", "useRandomGradient"];
 
-	function getVisibleParams() : Array<hrt.prefab.fx.EmitterHelper.ParamDef> {
-		var params = emitterParams.copy();
+	function getVisibleParams() : Array<hrt.prefab.fx.EmitterHelper.PropertyDef> {
+		var params = PROPERTIES.copy();
 		inline function removeParam(pname: String) {
 			params.remove(params.find(p -> p.name == pname));
 		}

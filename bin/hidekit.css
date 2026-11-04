@@ -167,14 +167,6 @@ kit-root {
 			grid-template-columns: auto 1fr;
 			align-items: center;
 		}
-		kit-line.kit-curve-reference {
-			grid-column: 1;
-			margin: 0 8px 0 0;
-			max-width: none;
-			kit-select {
-				min-width: 120px;
-			}
-		}
 		kit-line.kit-curve-fields {
 			grid-column: 2;
 			flex-wrap: wrap;

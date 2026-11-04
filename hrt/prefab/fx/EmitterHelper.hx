@@ -2,7 +2,7 @@ package hrt.prefab.fx;
 
 import hrt.prefab.fx.EmitterParam;
 
-typedef ParamDef = {
+typedef PropertyDef = {
 	> hrt.prefab.Props.PropDef,
 	?animate: Bool,
 	?groupName: String
@@ -14,19 +14,19 @@ class EmitterHelper {
 		return p is Emitter || p is Emitter2D;
 	}
 
+	public static function getProperties( p : Prefab ) : Array<PropertyDef> {
+		var e = Std.downcast(p, Emitter);
+		if( e != null ) return e.getProperties();
+		var e2 = Std.downcast(p, Emitter2D);
+		if( e2 != null ) return e2.getProperties();
+		return [];
+	}
+
 	public static function getParams( p : Prefab ) : Array<ParamDef> {
 		var e = Std.downcast(p, Emitter);
 		if( e != null ) return e.getParams();
 		var e2 = Std.downcast(p, Emitter2D);
 		if( e2 != null ) return e2.getParams();
-		return [];
-	}
-
-	public static function getModeParams( p : Prefab ) : Array<ModeParamDef> {
-		var e = Std.downcast(p, Emitter);
-		if( e != null ) return e.getModeParams();
-		var e2 = Std.downcast(p, Emitter2D);
-		if( e2 != null ) return e2.getModeParams();
 		return [];
 	}
 
@@ -38,7 +38,10 @@ class EmitterHelper {
 		return [];
 	}
 
-	/** The mode of the component `comp` of the param `name` of an emitter, or of a shader under an emitter (a particle curve or null) **/
+	/**
+		The mode of the component `comp` of the param `name` of an emitter, or of a shader under an emitter: Curve when the curve of
+		that component (`EmitterParam.curveName`) is in its `particleParams`, else null
+	**/
 	public static function getMode( p : Prefab, name : String, comp : Int ) : ParamMode {
 		var e = Std.downcast(p, Emitter);
 		if( e != null ) return e.getMode(name, comp);
@@ -46,13 +49,13 @@ class EmitterHelper {
 		if( e2 != null ) return e2.getMode(name, comp);
 		var shader = Std.downcast(p, hrt.prefab.Shader);
 		if( shader != null ) {
-			var c = Lambda.find(shader.particleParams, p -> p.name == name)?.comps[comp];
-			return c == null ? null : Curve(c.curve);
+			var pp = shader.particleParams;
+			return pp.contains(name + ":" + EmitterParam.COMPONENTS[comp]) || (comp == 0 && pp.contains(name)) ? Curve : null;
 		}
 		return null;
 	}
 
-	/** For a shader, a Constant sets its prop, a Curve its particle curve **/
+	/** For a shader, a Constant sets its prop, a Curve adds its particle curve **/
 	public static function setMode( p : Prefab, name : String, comp : Int, m : ParamMode ) {
 		var e = Std.downcast(p, Emitter);
 		if( e != null ) {
@@ -68,13 +71,12 @@ class EmitterHelper {
 		if( shader == null )
 			throw "Not an emitter or a shader: " + p.getAbsPath(true);
 		var size = EmitterParam.getParamSize(Lambda.find(shader.getShaderDefinition().data.vars, v -> v.name == name));
-		var param = Lambda.find(shader.particleParams, p -> p.name == name);
-		if( param == null ) {
-			param = { name: name, comps: [for( _ in 0...size ) null] };
-			shader.particleParams.push(param);
-		}
-		param.comps[comp] = switch( m ) {
-			case Curve(curve): { curve: curve };
+		var key = EmitterParam.curveName(name, size, comp);
+		shader.particleParams.remove(key);
+		switch( m ) {
+			case Curve:
+				shader.particleParams.push(key);
+				shader.particleParams.sort(Reflect.compare);
 			case Constant(k):
 				if( size == 1 )
 					Reflect.setField(shader.props, name, k);
@@ -86,11 +88,8 @@ class EmitterHelper {
 					}
 					prop[comp] = k;
 				}
-				null;
-			case null, _: null;
+			case null, _:
 		}
-		if( !Lambda.exists(param.comps, c -> c != null) )
-			shader.particleParams.remove(param);
 	}
 
 	/** `m.rotate(0, 0, angle)` without the 4 other sin/cos and the full multiply **/
@@ -181,7 +180,7 @@ class EmitterHelper {
 	#if domkit
 
 	// Build inspector for an emitter parameter
-	public static function editParam(ctx: EditContext2, prefab: Prefab, def: ModeParamDef, allowed: Array<ModeKind>, parent: hide.kit.Element) {
+	public static function editParam(ctx: EditContext2, prefab: Prefab, def: ParamDef, allowed: Array<ModeKind>, parent: hide.kit.Element) {
 		var size = def.def.length;
 		var label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
 		var range = switch (def.t) {
@@ -189,7 +188,7 @@ class EmitterHelper {
 			default: { min: null, max: null };
 		}
 		var comps = [for (i in 0...size) i];
-		var value = [for (i in comps) getMode(prefab, def.name, i)];
+		var value = [for (i in comps) shownMode(prefab, def, i)];
 
 		function applyMode(comps: Array<Int>, mode: Null<ModeKind>) {
 			var before = getModeCurves(prefab);
@@ -202,7 +201,7 @@ class EmitterHelper {
 		}
 
 		function contextMenu(i: Int) : Array<hrt.ui.HuiMenu.MenuItem> {
-			var m = getMode(prefab, def.name, i);
+			var m = shownMode(prefab, def, i);
 			var kind : ModeKind = m == null ? Constant : cast m.getName();
 			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
 			if (size > 1)
@@ -274,26 +273,14 @@ class EmitterHelper {
 				return s;
 			}
 
-			function selectCurve(path: String) {
-				ctx.recordPrefabUndoWithChildren(prefab, () -> {
-					setParamMode(prefab, def, i, switch (getMode(prefab, def.name, i)) {
-						case RandomCurve(_, spreadMin, spreadMax): RandomCurve(path, spreadMin, spreadMax);
-						case CurveRange(_): CurveRange(path);
-						case null, _: Curve(path);
-					});
-				});
-				ctx.rebuildInspector();
-			}
-
-			function curveEditor(path: String, ?spread: hide.kit.Curve.TrackSpread, ?onSpreadChange: hide.kit.Curve.TrackSpread -> Void) {
+			function curveEditor(?spread: hide.kit.Curve.TrackSpread, ?onSpreadChange: hide.kit.Curve.TrackSpread -> Void) {
 				var g = new hide.kit.Curve(line, "curve", (size == 1 ? label : label + " " + compName(i)) + " - " + prefab.name);
 				g.onValueChange = (_) -> ctx.rebuildPrefab(prefab);
 				if (onSpreadChange != null)
 					g.onSpreadChange = onSpreadChange;
-				g.onCurveChange = selectCurve;
 				if (size > 1)
 					menuOwners.push(g);
-				var edited = getEditableCurve(prefab, path);
+				var edited = getEditableCurve(prefab, EmitterParam.animKey(def, i));
 				if (edited == null)
 					g.addTrack(null, spread);
 				else
@@ -304,20 +291,6 @@ class EmitterHelper {
 					g.tracks[0].name = "Min";
 					g.tracks[1].name = "Max";
 				}
-				var count = value[i].match(CurveRange(_)) ? 2 : 1;
-				var entries : Array<hide.kit.Select.SelectEntry> = [];
-				for (c in prefab.children) {
-					var curve = Std.downcast(c, hrt.prefab.fx.Curve);
-					if (curve == null || !curve.isParticleCurve())
-						continue;
-					var cpath = EmitterParam.curvePath(prefab, curve);
-					if ((count == 2 ? curve.blendMode == hrt.prefab.fx.Curve.CurveBlendMode.Range : curve.isPlain()) || cpath == path)
-						entries.push({ value: cpath, label: cpath });
-				}
-				if (!Lambda.exists(entries, e -> e.value == path))
-					entries.push({ value: path, label: path + " (missing)" });
-				g.curvePath = path;
-				g.curveChoices = entries;
 			}
 
 			switch (value[i]) {
@@ -356,12 +329,10 @@ class EmitterHelper {
 						apply();
 					}
 					bound();
-				case Curve(s):
-					curveEditor(s);
-				case RandomCurve(s, spreadMin, spreadMax):
-					curveEditor(s, { min: spreadMin, max: spreadMax }, sp -> setParamMode(prefab, def, i, RandomCurve(s, sp.min, sp.max)));
-				case CurveRange(s):
-					curveEditor(s);
+				case Curve, CurveRange:
+					curveEditor();
+				case RandomCurve(spreadMin, spreadMax):
+					curveEditor({ min: spreadMin, max: spreadMax }, sp -> setParamMode(prefab, def, i, RandomCurve(sp.min, sp.max)));
 			}
 			for (o in menuOwners)
 				o.menuItems = () -> contextMenu(i);
@@ -369,7 +340,7 @@ class EmitterHelper {
 	}
 
 	// Build inspector for an emitter
-	public static function edit(ctx: EditContext2, emitter: Prefab, settings: Array<ParamDef>, changed: (name: String, temp: Bool) -> Void) {
+	public static function edit(ctx: EditContext2, emitter: Prefab, properties: Array<PropertyDef>, changed: (name: String, temp: Bool) -> Void) {
 
 		var categories = new Map<String, hide.kit.Category>();
 		function getCategory(name: String) {
@@ -381,20 +352,20 @@ class EmitterHelper {
 			return cat;
 		}
 
-		var modeParams = getModeParams(emitter);
+		var params = getParams(emitter);
 		for (name in getFieldsOrder(emitter)) {
-			var setting = Lambda.find(settings, p -> p.name == name);
-			if (setting != null) {
-				editSetting(getCategory(setting.groupName ?? "Emitter"), emitter, setting, changed);
+			var property = Lambda.find(properties, p -> p.name == name);
+			if (property != null) {
+				editProperty(getCategory(property.groupName ?? "Emitter"), emitter, property, changed);
 				continue;
 			}
-			var param = Lambda.find(modeParams, p -> p.name == name);
+			var param = Lambda.find(params, p -> p.name == name);
 			if (param != null)
 				editParam(ctx, emitter, param, getAllowedModes(param.kind), getCategory(param.groupName));
 		}
 	}
 
-	static function editSetting(cat: hide.kit.Category, emitter: Prefab, p: ParamDef, changed: (name: String, temp: Bool) -> Void) {
+	static function editProperty(cat: hide.kit.Category, emitter: Prefab, p: PropertyDef, changed: (name: String, temp: Bool) -> Void) {
 		switch (p.t) {
 			case PVec(n, min, max) if (p.name.toLowerCase().indexOf("color") < 0):
 				var line = new hide.kit.Line(cat, p.name);
@@ -433,7 +404,7 @@ class EmitterHelper {
 		return EmitterParam.COMPONENTS[i].toUpperCase();
 	}
 
-	static function isDefault(def: ModeParamDef, i: Int, m: ParamMode) {
+	static function isDefault(def: ParamDef, i: Int, m: ParamMode) {
 		return switch (m) {
 			case null: true;
 			case Constant(v): v == def.def[i];
@@ -441,91 +412,98 @@ class EmitterHelper {
 		}
 	}
 
-	static function isSet(prefab: Prefab, def: ModeParamDef, i: Int) {
-		return !isDefault(def, i, getMode(prefab, def.name, i));
+	/** A curve mode whose curve was deleted is shown as the default value: it is not saved (`EmitterParam.saved`) **/
+	static function shownMode(prefab: Prefab, def: ParamDef, i: Int) {
+		return EmitterParam.saved(prefab, def, i, getMode(prefab, def.name, i));
 	}
 
-	static function isAnySet(prefab: Prefab, def: ModeParamDef) {
+	static function isSet(prefab: Prefab, def: ParamDef, i: Int) {
+		return !isDefault(def, i, shownMode(prefab, def, i));
+	}
+
+	static function isAnySet(prefab: Prefab, def: ParamDef) {
 		return Lambda.exists([for (i in 0...def.def.length) i], i -> isSet(prefab, def, i));
 	}
 
 	/** A mode set back to the default value of the param unsets it **/
-	static function setParamMode(prefab: Prefab, def: ModeParamDef, i: Int, m: ParamMode) {
+	static function setParamMode(prefab: Prefab, def: ParamDef, i: Int, m: ParamMode) {
 		setMode(prefab, def.name, i, isDefault(def, i, m) ? null : m);
 	}
 
-	static function convert(prefab: Prefab, def: ModeParamDef, i: Int, mode: ModeKind) : ParamMode {
+	/** The mode `mode` for the component `i` of `def`, from its current one: its curve (`EmitterParam.animKey`) gets the new values **/
+	static function convert(prefab: Prefab, def: ParamDef, i: Int, mode: ModeKind) : ParamMode {
 		var base = def.def[i];
-		function at(s: String, k: Int, t: Float) { return EmitterParam.resolveCurve(prefab, s)?.datas[k]?.getVal(t) ?? base; }
-		function data(src: String, from: Float, to: Float) { return newModeData(prefab, src, from, to); }
+		var key = EmitterParam.animKey(def, i);
+		var cur = getEditableCurve(prefab, key);
+		function at(k: Int, t: Float) { return cur?.datas[k]?.getVal(t) ?? base; }
+		// the keys of the current curve remapped from 0..1 to `from`..`to`, or a line
+		function data(src: Bool, from: Float, to: Float) { return newModeData(src ? cur : null, from, to); }
 		// the spread of a RandomCurve, `spread + slope * value`
-		function spread(s: String, spreadMin: Float, spreadMax: Float) {
-			var c = EmitterParam.resolveCurve(prefab, s)?.datas[0];
+		function spread(spreadMin: Float, spreadMax: Float) {
+			var c = cur?.datas[0];
 			return EmitterParam.spreadLine(c == null ? { min: base, max: base } : c.getValueRange(), spreadMin, spreadMax);
 		}
-		function curve(datas: Array<hrt.impl.Curve>) { return newModeCurve(prefab, def, i, datas); }
-		var m = getMode(prefab, def.name, i) ?? Constant(base);
+		function curve(datas: Array<hrt.impl.Curve>) { setModeCurve(prefab, key, datas); }
+		var m = shownMode(prefab, def, i) ?? Constant(base);
 		var f0 = base, f1 = base, t0 = base, t1 = base;
 		switch (m) {
 			case Constant(v): f0 = f1 = t0 = t1 = v;
 			case Range(min, max): f0 = t0 = min; f1 = t1 = max;
-			case Curve(s): f0 = f1 = at(s, 0, 0); t0 = t1 = at(s, 0, 1);
-			case RandomCurve(s, spreadMin, spreadMax):
-				var l = spread(s, spreadMin, spreadMax), v0 = at(s, 0, 0), v1 = at(s, 0, 1);
+			case Curve: f0 = f1 = at(0, 0); t0 = t1 = at(0, 1);
+			case RandomCurve(spreadMin, spreadMax):
+				var l = spread(spreadMin, spreadMax), v0 = at(0, 0), v1 = at(0, 1);
 				var a0 = l.spread + l.slope * v0, a1 = l.spread + l.slope * v1;
 				f0 = v0 - a0; f1 = v0 + a0; t0 = v1 - a1; t1 = v1 + a1;
-			case CurveRange(s): f0 = at(s, 0, 0); t0 = at(s, 0, 1); f1 = at(s, 1, 0); t1 = at(s, 1, 1);
+			case CurveRange: f0 = at(0, 0); t0 = at(0, 1); f1 = at(1, 0); t1 = at(1, 1);
 		}
 		var fm = (f0 + f1) * 0.5, tm = (t0 + t1) * 0.5;
 		return switch [mode, m] {
 			case [Constant, _]: Constant(tm);
 			case [Range, _]: Range(t0, t1);
-			case [Curve, Curve(_)]: m;
-			case [Curve, CurveRange(s)]: Curve(curve([data(s, 0, 1)]));
-			case [Curve, RandomCurve(s, _)]: Curve(s);
-			case [Curve, _]: Curve(curve([data(null, fm, tm)]));
+			case [Curve, Curve]: m;
+			case [Curve, CurveRange]: curve([data(true, 0, 1)]); Curve;
+			case [Curve, RandomCurve(_)]: Curve;
+			case [Curve, _]: curve([data(false, fm, tm)]); Curve;
 			case [RandomCurve, RandomCurve(_)]: m;
-			case [RandomCurve, Curve(s)]: RandomCurve(s, 0, 0);
-			case [RandomCurve, CurveRange(s)]: RandomCurve(curve([data(s, 0, 1)]), 0, 0);
+			case [RandomCurve, Curve]: RandomCurve(0, 0);
+			case [RandomCurve, CurveRange]: curve([data(true, 0, 1)]); RandomCurve(0, 0);
 			// a line from fm to tm: `spreadMin` is the spread at its lowest end
-			case [RandomCurve, _]: fm <= tm ? RandomCurve(curve([data(null, fm, tm)]), (f1 - f0) * 0.5, (t1 - t0) * 0.5)
-				: RandomCurve(curve([data(null, fm, tm)]), (t1 - t0) * 0.5, (f1 - f0) * 0.5);
-			case [CurveRange, CurveRange(_)]: m;
-			case [CurveRange, Curve(s)]: CurveRange(curve([data(s, 0, 1), data(null, f1, t1)]));
+			case [RandomCurve, _]:
+				curve([data(false, fm, tm)]);
+				fm <= tm ? RandomCurve((f1 - f0) * 0.5, (t1 - t0) * 0.5) : RandomCurve((t1 - t0) * 0.5, (f1 - f0) * 0.5);
+			case [CurveRange, CurveRange]: m;
+			case [CurveRange, Curve]: curve([data(true, 0, 1), data(false, f1, t1)]); CurveRange;
 			// v -+ (spread + slope * v): the values of the curve remapped
-			case [CurveRange, RandomCurve(s, spreadMin, spreadMax)]:
-				var l = spread(s, spreadMin, spreadMax);
-				CurveRange(curve([data(s, -l.spread, 1 - l.slope - l.spread), data(s, l.spread, 1 + l.slope + l.spread)]));
-			case [CurveRange, _]: CurveRange(curve([data(null, f0, t0), data(null, f1, t1)]));
+			case [CurveRange, RandomCurve(spreadMin, spreadMax)]:
+				var l = spread(spreadMin, spreadMax);
+				curve([data(true, -l.spread, 1 - l.slope - l.spread), data(true, l.spread, 1 + l.slope + l.spread)]);
+				CurveRange;
+			case [CurveRange, _]: curve([data(false, f0, t0), data(false, f1, t1)]); CurveRange;
 		}
 	}
 
-	static function newModeCurve(owner: Prefab, def: ModeParamDef, i: Int, datas: Array<hrt.impl.Curve>) : String {
-		var c = new Curve(owner, owner.shared);
-		var base = def.name + (def.def.length == 1 ? "" : compName(i)) + "Curve";
-		var name = base;
-		var n = 1;
-		while (Lambda.exists(owner.children, p -> p.name != null && p.name.toLowerCase() == name.toLowerCase())) {
-			name = base + n;
-			n++;
+	/** The curve `name` of `owner` gets `datas` (two for a Range), made when it has none **/
+	static function setModeCurve(owner: Prefab, name: String, datas: Array<hrt.impl.Curve>) {
+		var c = hrt.prefab.fx.Curve.getCurve(owner, name);
+		if (c == null) {
+			c = new hrt.prefab.fx.Curve(owner, owner.shared);
+			c.name = name;
 		}
-		c.name = name;
 		c.datas = datas;
-		if (datas.length == 2)
-			c.blendMode = hrt.prefab.fx.Curve.CurveBlendMode.Range;
-		return EmitterParam.curvePath(owner, c);
+		c.blendMode = datas.length == 2 ? hrt.prefab.fx.Curve.CurveBlendMode.Range : None;
+		c.param = null;
+		c.refPath = null;
 	}
 
 	/** The keys of the curve `src` remapped from 0..1 to `from`..`to`, or a line from `from` to `to` without `src` **/
-	static function newModeData(owner: Prefab, src: String, from: Float, to: Float) : hrt.impl.Curve {
+	static function newModeData(src: Curve, from: Float, to: Float) : hrt.impl.Curve {
 		var d = new hrt.impl.Curve();
-		var s = src == null ? null : getEditableCurve(owner, src);
-		if (s == null) {
+		if (src == null) {
 			d.addKey(0, from, Linear);
 			d.addKey(1, to, Linear);
 			return d;
 		}
-		@:privateAccess d.copyFromDynamic(hrt.prefab.Diff.deepCopy(s.data.copyToDynamic(null)));
+		@:privateAccess d.copyFromDynamic(hrt.prefab.Diff.deepCopy(src.data.copyToDynamic(null)));
 		for (k in d.keys) {
 			k.value = hxd.Math.lerp(from, to, k.value);
 			for (h in [k.prevHandle, k.nextHandle])
@@ -535,26 +513,20 @@ class EmitterHelper {
 		return d;
 	}
 
+	/** The curves the params of `owner` read **/
 	static function getModeCurves(owner: Prefab) : Array<Curve> {
-		var modes : Array<ParamMode> = [];
-		for (p in getModeParams(owner))
-			for (i in 0...p.def.length)
-				modes.push(getMode(owner, p.name, i));
+		var names = [];
 		var shader = Std.downcast(owner, hrt.prefab.Shader);
 		if (shader != null)
-			for (p in shader.particleParams)
-				for (c in p.comps)
-					if (c != null)
-						modes.push(Curve(c.curve));
-		var paths = [];
-		for (m in modes)
-			switch (m) {
-				case Curve(s), RandomCurve(s, _), CurveRange(s): paths.push(s);
-				case null, Constant(_), Range(_):
-			}
+			names = shader.particleParams.copy();
+		else
+			for (p in getParams(owner))
+				for (i in 0...p.def.length)
+					if (EmitterParam.isCurveMode(getMode(owner, p.name, i)))
+						names.push(EmitterParam.animKey(p, i));
 		var curves = [];
-		for (path in paths) {
-			var c = owner.locatePrefab(path)?.to(hrt.prefab.fx.Curve);
+		for (n in names) {
+			var c = hrt.prefab.fx.Curve.getCurve(owner, n);
 			if (c != null)
 				curves.push(c);
 		}
@@ -568,8 +540,8 @@ class EmitterHelper {
 				c.remove();
 	}
 
-	static function getEditableCurve(owner: Prefab, path: String) : Curve {
-		var c = EmitterParam.resolveCurve(owner, path);
+	static function getEditableCurve(owner: Prefab, name: String) : Curve {
+		var c = hrt.prefab.fx.Curve.getCurve(owner, name);
 		return c != null && (c.isPlain() || c.blendMode == hrt.prefab.fx.Curve.CurveBlendMode.Range) ? c : null;
 	}
 

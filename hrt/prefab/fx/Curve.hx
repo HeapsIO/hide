@@ -385,7 +385,7 @@ class Curve extends hrt.prefab.Curve {
 
 	static function isParamName(emitter: Prefab, name: String) {
 		var base = name?.split(":")[0];
-		return Lambda.exists(EmitterHelper.getParams(emitter), p -> p.animate == true && p.name == base) || Lambda.exists(EmitterHelper.getModeParams(emitter), p -> p.kind != Particle && p.name == base);
+		return Lambda.exists(EmitterHelper.getProperties(emitter), p -> p.animate == true && p.name == base) || Lambda.exists(EmitterHelper.getParams(emitter), p -> p.kind != Particle && p.name == base);
 	}
 
 	static var _ = Prefab.register("fxcurve", Curve);

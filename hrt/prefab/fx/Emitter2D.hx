@@ -75,7 +75,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 	}
 
 	function getInitialAbsPos(m : h2d.col.Matrix, dt : Float) {
-		var def = emitter.instDef;
+		var def = emitter.particleDef;
 		var evaluator = @:privateAccess emitter.evaluator;
 		var t = hxd.Math.clamp(curLifeTime / lifeTime);
 
@@ -88,20 +88,20 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		}
 
 		// ROTATION
-		if (def.particleRotation != VZero) {
-			var r = evaluator.getFast(idx, def.particleRotation, t) * Math.PI / 180.0;
+		if (def.rotation != VZero) {
+			var r = evaluator.getFast(idx, def.rotation, t) * Math.PI / 180.0;
 			m.rotate(r);
 		}
 
 		// SCALE
 		evaluator.getVector2(idx, def.stretch, t, tmpVec);
 		tmpVec *= evaluator.getFast(idx, def.scale, t);
-		tmpVec *= emitter.curScaleOverTime;
+		tmpVec *= emitter.curScaleMultiplier;
 		m.scale(tmpVec.x, tmpVec.y);
 	}
 
 	function getCurrentAbsPos(m : h2d.col.Matrix, dt : Float) {
-		var def = emitter.instDef;
+		var def = emitter.particleDef;
 		var evaluator = @:privateAccess emitter.evaluator;
 		var t = hxd.Math.clamp(curLifeTime / lifeTime);
 
@@ -220,7 +220,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		if (def.orbitSpeed != VZero) {
 			var orbitSpeed = evaluator.getFast(idx, def.orbitSpeed, t);
 
-			var factorOverTime = emitter.curOrbitSpeedOverTime;
+			var factorOverTime = emitter.curOrbitSpeedMultiplier;
 			orbitSpeed *= factorOverTime * (Math.PI / 180.0);
 
 			var prevPos = m.getPosition().clone();
@@ -251,15 +251,15 @@ class Emitter2DObject extends h2d.Object {
 	var prevTime : Float;
 	var curTime = 0.;
 	// the values of the over time settings at the current tick, shared by the particles
-	var curScaleOverTime = 1.;
-	var curOrbitSpeedOverTime = 1.;
+	var curScaleMultiplier = 1.;
+	var curOrbitSpeedMultiplier = 1.;
 	var countToEmit = 0.;
 	var totalBurstCount = 0;
 	var instanceCounter = 0;
 	var animatedTexShader : h3d.shader.AnimatedTexture = null;
 
 	// Emitter parameters
-	public var instDef : InstanceDef;
+	public var particleDef : ParticleDef;
 	public var seed = 0;
 	public var lifeTime : SpawnValue;
 	public var speedFactor = 1.0;
@@ -279,8 +279,8 @@ class Emitter2DObject extends h2d.Object {
 	public var maxCount = 20;
 	public var startSpeed: Array<SpawnValue>;
 	public var startWorldSpeed: Array<SpawnValue>;
-	public var scaleOverTime : Value;
-	public var orbitSpeedOverTime : Value;
+	public var scaleMultiplier : Value;
+	public var orbitSpeedMultiplier : Value;
 	public var emitShape : Emit2DShape = Circle;
 	public var emitRadius : Value;
 	public var emitAngle1 : Value;
@@ -363,8 +363,8 @@ class Emitter2DObject extends h2d.Object {
 	}
 
 	function tick(dt : Float) {
-		curScaleOverTime = evaluator.getFloat(scaleOverTime, curTime);
-		curOrbitSpeedOverTime = evaluator.getFloat(orbitSpeedOverTime, curTime);
+		curScaleMultiplier = evaluator.getFloat(scaleMultiplier, curTime);
+		curOrbitSpeedMultiplier = evaluator.getFloat(orbitSpeedMultiplier, curTime);
 
 		switch (emitType) {
 			case Infinity:
@@ -500,7 +500,7 @@ class Emitter2D extends Object2D {
 	@:s @:range(0, 100) @:disp("Max Count", "Maximum number of particles alive at the same time: no particle is emitted beyond")
 	public var maxCount : Int = 20;
 	@:param(PFloat(0, 10), Spawn, 1.) @:disp("Lifetime", "Life duration of the particle, in seconds")
-	public var lifeTime : ParamMode;
+	public var partLifeTime : ParamMode;
 
 	@:group("Emit Shape")
 	@:s @:disp("Shape", "Area in which the particles are emitted")
@@ -522,39 +522,39 @@ class Emitter2D extends Object2D {
 
 	@:group("Particle Movement")
 	@:param(PVec(2, -10, 10), Spawn) @:disp("Start Speed", "Initial speed in the emitter orientation, set at the spawn of the particle")
-	public var startSpeed : ParamVec2;
+	public var partStartSpeed : ParamVec2;
 	@:param(PVec(2, -10, 10), Spawn) @:disp("Start World Speed", "Initial speed in world space, set at the spawn of the particle")
-	public var startWorldSpeed : ParamVec2;
+	public var partStartWorldSpeed : ParamVec2;
 	@:param(PVec(2, -10, 10), Particle) @:disp("Constant Speed", "Speed in the emitter orientation, added to the velocity without being accumulated")
-	public var speed : ParamVec2;
+	public var partSpeed : ParamVec2;
 	@:param(PVec(2, -10, 10), Particle) @:disp("Constant World Speed", "Speed in world space, added to the velocity without being accumulated")
-	public var worldSpeed : ParamVec2;
+	public var partWorldSpeed : ParamVec2;
 	@:param(PVec(2, -10, 10), Particle) @:disp("Acceleration", "Acceleration in the emitter orientation, accumulated in the velocity")
-	public var acceleration : ParamVec2;
+	public var partAcceleration : ParamVec2;
 	@:param(PVec(2, -10, 10), Particle) @:disp("World Acceleration", "Acceleration in world space (gravity, wind...), accumulated in the velocity")
-	public var worldAcceleration : ParamVec2;
+	public var partWorldAcceleration : ParamVec2;
 	@:param(PFloat(-360, 360), Particle) @:disp("Orbit Speed", "Rotation speed around the emitter, in degrees per second")
-	public var orbitSpeed : ParamMode;
+	public var partOrbitSpeed : ParamMode;
 	@:s @:range(0, 2) @:animate @:disp("Orbit Speed Multiplier", "Multiplier of the orbit speed of all the particles, animated over the emitter time")
-	public var orbitSpeedOverTime : Float = 1;
+	public var orbitSpeedMultiplier : Float = 1;
 
 	@:group("Limit Velocity")
 	@:param(PFloat(0, 10), Particle) @:disp("Damping", "Damping of the accumulated velocity (start speed and accelerations), per second")
-	public var dampen : ParamMode;
+	public var partDampen : ParamMode;
 	@:param(PFloat(0, 10), Particle) @:disp("Max Speed", "Maximum speed of the particle")
-	public var maxVelocity : ParamMode;
+	public var partMaxVelocity : ParamMode;
 
 	@:group("Particle Transform")
 	@:param(PVec(2, -10, 10), Particle) @:disp("Offset", "Offset of the particle position, without effect on its movement")
-	public var offset : ParamVec2;
+	public var partOffset : ParamVec2;
 	@:param(PFloat(0, 360), Particle) @:disp("Rotation", "Rotation of the particle, in degrees")
-	public var particleRotation : ParamMode;
+	public var partRotation : ParamMode;
 	@:param(PFloat(0, 2), Particle, 1.) @:disp("Scale", "Uniform scale of the particle")
-	public var scale : ParamMode;
+	public var partScale : ParamMode;
 	@:s @:range(0, 2) @:animate @:disp("Scale Multiplier", "Multiplier of the scale of all the particles, animated over the emitter time")
-	public var scaleOverTime : Float = 1;
+	public var scaleMultiplier : Float = 1;
 	@:param(PVec(2, 0, 2), Particle, [1., 1.]) @:disp("Stretch", "Scale of the particle on each of its axes")
-	public var stretch : ParamVec2;
+	public var partStretch : ParamVec2;
 
 	@:group("Color")
 	@:s @:disp("Sprite Type", "Drawing of the particles: a plain color, a texture or a sprite sheet")
@@ -671,8 +671,8 @@ class Emitter2D extends Object2D {
 	}
 
 	#if (editor || editor_hl)
-	function getVisibleParams() : Array<hrt.prefab.fx.EmitterHelper.ParamDef> {
-		var params = emitterParams.copy();
+	function getVisibleParams() : Array<hrt.prefab.fx.EmitterHelper.PropertyDef> {
+		var params = PROPERTIES.copy();
 		inline function removeParam(pname: String) {
 			params.remove(params.find(p -> p.name == pname));
 		}
