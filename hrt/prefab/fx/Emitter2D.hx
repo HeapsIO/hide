@@ -469,72 +469,128 @@ class Emitter2DObject extends h2d.Object {
 class Emitter2D extends Object2D {
 
 	@:group("Properties")
-	@:s @:range(0, 1) public var speedFactor : Float = 1.0;
-	@:s @:range(0, 100) public var seed : Int = 0;
+	@:s @:range(0, 1) @:disp("Time Scale", "Time multiplier of the simulation")
+	public var speedFactor : Float = 1.0;
+	@:s @:range(0, 10) @:disp("Start Delay", "Time before the start of the emitter, in seconds")
+	public var delay : Float = 0.0;
+	@:s @:range(0, 1) @:disp("Warm Up", "Time simulated before the start, in seconds: the emitter starts already filled")
+	public var warmUpTime : Float = 0.0;
+	@:s @:range(0, 100) @:disp("Seed", "Seed of the random values of the emitter")
+	public var seed : Int = 0;
 
-	@:group("Emission")
-	@:s @:range(0, 1) @:disp("Warm Up") public var warmUpTime : Float = 0.0;
-	@:s @:range(0, 10) public var delay : Float = 0.0;
-	@:s @:disp("Type") public var emitType : EmitType = EmitType.Infinity;
-	@:s @:range(0, 10.0) @:disp("Duration") public var emitDuration : Float = 1.0;
-	@:s @:range(0, 100) @:animate @:disp("Rate") public var emitRate : Float = 5;
-	@:s @:range(0, 100) @:animate @:disp("Rate Min") public var emitRateMin : Float = 5;
-	@:s @:range(0, 100) @:animate @:disp("Rate Max") public var emitRateMax : Float = 5;
-	@:s @:range(0.01, 5.0) @:disp("Rate Change Time") public var emitRateChangeDelay : Float = 1.0;
-	@:s @:range(1, 10) @:disp("Count") public var burstCount : Int = 1;
-	@:s @:range(0, 1.0) @:disp("Delay") public var burstDelay : Float = 1.0;
-	@:s @:range(1, 10) @:animate @:disp("Particle Count") public var burstParticleCount : Float = 1;
-	@:s @:range(0, 100) public var maxCount : Int = 20;
-	@:s @:disp("Orientation") public var emitOrientation : Orientation = Orientation.Forward;
+	@:group("Emit Params")
+	@:s @:disp("Type", "Infinity: constant rate. Infinity Random: rate changing between min and max. Duration: rate during a duration. Burst / Burst Duration: groups of particles at regular intervals")
+	public var emitType : EmitType = EmitType.Infinity;
+	@:s @:range(0, 10.0) @:disp("Duration", "Emission duration, in seconds")
+	public var emitDuration : Float = 1.0;
+	@:s @:range(0, 100) @:animate @:disp("Rate", "Number of particles emitted per second")
+	public var emitRate : Float = 5;
+	@:s @:range(0, 100) @:animate @:disp("Rate Min", "Minimum number of particles emitted per second")
+	public var emitRateMin : Float = 5;
+	@:s @:range(0, 100) @:animate @:disp("Rate Max", "Maximum number of particles emitted per second")
+	public var emitRateMax : Float = 5;
+	@:s @:range(0.01, 5.0) @:disp("Rate Change Interval", "Time between two random rates, in seconds: the rate goes from one to the next during this time")
+	public var emitRateChangeDelay : Float = 1.0;
+	@:s @:range(1, 10) @:disp("Burst Count", "Number of bursts")
+	public var burstCount : Int = 1;
+	@:s @:range(0, 1.0) @:disp("Burst Interval", "Time between two bursts, in seconds")
+	public var burstDelay : Float = 1.0;
+	@:s @:range(1, 10) @:animate @:disp("Particles Per Burst", "Number of particles emitted by each burst")
+	public var burstParticleCount : Float = 1;
+	@:s @:range(0, 100) @:disp("Max Count", "Maximum number of particles alive at the same time: no particle is emitted beyond")
+	public var maxCount : Int = 20;
+	@:param(PFloat(0, 10), Spawn, 1.) @:disp("Lifetime", "Life duration of the particle, in seconds")
+	public var lifeTime : ParamMode;
 
-	@:group("Shape Emission")
-	@:s @:disp("Shape") public var emitShape : Emit2DShape = Emit2DShape.Circle;
-	@:s @:range(0, 360.0) @:animate @:disp("Radius") public var emitRadius : Float = 20.0;
-	@:s @:range(0, 360.0) @:animate @:disp("Angle 1") public var emitAngle1 : Float = 20.0;
-	@:s @:range(0, 360.0) @:animate @:disp("Angle 2") public var emitAngle2 : Float = 40.0;
-	@:s @:range(0, 10.0) @:animate @:disp("Width") public var emitWidth : Float = 1.0;
-	@:s @:range(0, 10.0) @:animate @:disp("Height") public var emitHeight : Float = 1.0;
-	@:s @:disp("Surface") public var emitSurface : Bool = false;
-
-	@:group("Particle")
-	@:s public var spriteType : SpriteType = SpriteType.Color;
-	@:s public var color : Array<Float> = [0., 0., 0., 1.];
-	@:s public var texture : String = "";
-	@:s @:disp("Random Color") public var useRandomColor : Bool = false;
-	@:s @:disp("Random Gradient") public var useRandomGradient : Bool = false;
-	@:s @:disp("Color 1") public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
-	@:s @:disp("Color 2") public var randomColor2 : Array<Float> = [1., 1., 1., 1.];
-	@:s @:disp("Gradient") public var randomGradient : GradientData;
-	@:s @:t(PFile(["jpg", "png"])) @:disp("Sheet") public var spriteSheet : String;
-	@:s @:range(0) @:disp("Frames") public var frameCount : Int = 0;
-	@:s @:range(1) @:disp("Divisions X") public var frameDivisionX : Int = 1;
-	@:s @:range(1) @:disp("Divisions Y") public var frameDivisionY : Int = 1;
-	@:s @:range(0, 2.0) @:disp("Speed") public var animationSpeed : Float = 1.0;
-	@:s @:disp("Loop") public var animationLoop : Bool = true;
-	@:s @:disp("Use Source UV") public var animationUseSourceUVs : Bool = true;
-	@:s @:disp("Blend Frames") public var animationBlendBetweenFrames : Bool = true;
+	@:group("Emit Shape")
+	@:s @:disp("Shape", "Area in which the particles are emitted")
+	public var emitShape : Emit2DShape = Emit2DShape.Circle;
+	@:s @:range(0, 360.0) @:animate @:disp("Radius", "Radius of the circle")
+	public var emitRadius : Float = 20.0;
+	@:s @:range(0, 360.0) @:animate @:disp("Start Angle", "Start angle of the circle arc, in degrees")
+	public var emitAngle1 : Float = 20.0;
+	@:s @:range(0, 360.0) @:animate @:disp("End Angle", "End angle of the circle arc, in degrees")
+	public var emitAngle2 : Float = 40.0;
+	@:s @:range(0, 10.0) @:animate @:disp("Width", "Width of the rectangle")
+	public var emitWidth : Float = 1.0;
+	@:s @:range(0, 10.0) @:animate @:disp("Height", "Height of the rectangle")
+	public var emitHeight : Float = 1.0;
+	@:s @:disp("Surface", "Emits on the outline of the shape instead of inside it")
+	public var emitSurface : Bool = false;
+	@:s @:disp("Orientation", "Initial orientation of the particles: the emitter one, the normal of the shape, their speed, or random")
+	public var emitOrientation : Orientation = Orientation.Forward;
 
 	@:group("Particle Movement")
-	@:param(PVec(2, -10, 10), Particle) @:disp("Fixed Speed") public var speed : ParamVec2;
-	@:param(PVec(2, -10, 10), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamVec2;
-	/** Degrees per second **/
-	@:param(PFloat(-360, 360), Particle) public var orbitSpeed : ParamMode;
-	@:s @:range(0, 2) @:animate public var orbitSpeedOverTime : Float = 1;
-	@:param(PVec(2, -10, 10), Particle) public var acceleration : ParamVec2;
-	@:param(PVec(2, -10, 10), Particle) public var worldAcceleration : ParamVec2;
-	@:param(PVec(2, -10, 10), Spawn) public var startSpeed : ParamVec2;
-	@:param(PVec(2, -10, 10), Spawn) public var startWorldSpeed : ParamVec2;
+	@:param(PVec(2, -10, 10), Spawn) @:disp("Start Speed", "Initial speed in the emitter orientation, set at the spawn of the particle")
+	public var startSpeed : ParamVec2;
+	@:param(PVec(2, -10, 10), Spawn) @:disp("Start World Speed", "Initial speed in world space, set at the spawn of the particle")
+	public var startWorldSpeed : ParamVec2;
+	@:param(PVec(2, -10, 10), Particle) @:disp("Constant Speed", "Speed in the emitter orientation, added to the velocity without being accumulated")
+	public var speed : ParamVec2;
+	@:param(PVec(2, -10, 10), Particle) @:disp("Constant World Speed", "Speed in world space, added to the velocity without being accumulated")
+	public var worldSpeed : ParamVec2;
+	@:param(PVec(2, -10, 10), Particle) @:disp("Acceleration", "Acceleration in the emitter orientation, accumulated in the velocity")
+	public var acceleration : ParamVec2;
+	@:param(PVec(2, -10, 10), Particle) @:disp("World Acceleration", "Acceleration in world space (gravity, wind...), accumulated in the velocity")
+	public var worldAcceleration : ParamVec2;
+	@:param(PFloat(-360, 360), Particle) @:disp("Orbit Speed", "Rotation speed around the emitter, in degrees per second")
+	public var orbitSpeed : ParamMode;
+	@:s @:range(0, 2) @:animate @:disp("Orbit Speed Multiplier", "Multiplier of the orbit speed of all the particles, animated over the emitter time")
+	public var orbitSpeedOverTime : Float = 1;
+
+	@:group("Limit Velocity")
+	@:param(PFloat(0, 10), Particle) @:disp("Damping", "Damping of the accumulated velocity (start speed and accelerations), per second")
+	public var dampen : ParamMode;
+	@:param(PFloat(0, 10), Particle) @:disp("Max Speed", "Maximum speed of the particle")
+	public var maxVelocity : ParamMode;
+
 	@:group("Particle Transform")
-	@:param(PVec(2, -10, 10), Particle) public var offset : ParamVec2;
-	@:param(PFloat(0, 2), Particle, 1.) public var scale : ParamMode;
-	@:s @:range(0, 2) @:animate public var scaleOverTime : Float = 1;
-	@:param(PVec(2, 0, 2), Particle, [1., 1.]) public var stretch : ParamVec2;
-	@:param(PFloat(0, 360), Particle) @:disp("Rotation") public var particleRotation : ParamMode;
-	@:group("Particle Limit Velocity")
-	@:param(PFloat(0, 10), Particle) public var dampen : ParamMode;
-	@:param(PFloat(0, 10), Particle) public var maxVelocity : ParamMode;
-	@:group("Particle")
-	@:param(PFloat(0, 10), Spawn, 1.) public var lifeTime : ParamMode;
+	@:param(PVec(2, -10, 10), Particle) @:disp("Offset", "Offset of the particle position, without effect on its movement")
+	public var offset : ParamVec2;
+	@:param(PFloat(0, 360), Particle) @:disp("Rotation", "Rotation of the particle, in degrees")
+	public var particleRotation : ParamMode;
+	@:param(PFloat(0, 2), Particle, 1.) @:disp("Scale", "Uniform scale of the particle")
+	public var scale : ParamMode;
+	@:s @:range(0, 2) @:animate @:disp("Scale Multiplier", "Multiplier of the scale of all the particles, animated over the emitter time")
+	public var scaleOverTime : Float = 1;
+	@:param(PVec(2, 0, 2), Particle, [1., 1.]) @:disp("Stretch", "Scale of the particle on each of its axes")
+	public var stretch : ParamVec2;
+
+	@:group("Color")
+	@:s @:disp("Sprite Type", "Drawing of the particles: a plain color, a texture or a sprite sheet")
+	public var spriteType : SpriteType = SpriteType.Color;
+	@:s @:disp("Color", "Color of the particles")
+	public var color : Array<Float> = [0., 0., 0., 1.];
+	@:s @:disp("Texture", "Texture of the particles")
+	public var texture : String = "";
+	@:s @:disp("Random Color", "Gives each particle a random color instead of the color")
+	public var useRandomColor : Bool = false;
+	@:s @:disp("Random Gradient", "The random color is taken in a gradient instead of between two colors")
+	public var useRandomGradient : Bool = false;
+	@:s @:disp("Color 1", "First bound of the random color")
+	public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
+	@:s @:disp("Color 2", "Second bound of the random color")
+	public var randomColor2 : Array<Float> = [1., 1., 1., 1.];
+	@:s @:disp("Gradient", "Gradient in which the random color is taken")
+	public var randomGradient : GradientData;
+
+	@:group("Sprite Sheet Animation")
+	@:s @:t(PFile(["jpg", "png"])) @:disp("Sheet", "Texture containing the frames of the animation")
+	public var spriteSheet : String;
+	@:s @:range(0) @:disp("Frames", "Number of frames of the animation")
+	public var frameCount : Int = 0;
+	@:s @:range(1) @:disp("Divisions X", "Number of columns of the sheet")
+	public var frameDivisionX : Int = 1;
+	@:s @:range(1) @:disp("Divisions Y", "Number of rows of the sheet")
+	public var frameDivisionY : Int = 1;
+	@:s @:range(0, 2.0) @:disp("Loops Per Life", "Number of times the animation is played during the life of a particle")
+	public var animationSpeed : Float = 1.0;
+	@:s @:disp("Loop", "Loops the animation during the life of the particle")
+	public var animationLoop : Bool = true;
+	@:s @:disp("Use Source UV", "Keeps the UVs of the sprite inside each frame")
+	public var animationUseSourceUVs : Bool = true;
+	@:s @:disp("Blend Frames", "Blends two consecutive frames for a smooth animation")
+	public var animationBlendBetweenFrames : Bool = true;
 
 	#if editor
 	var graphics : h2d.Graphics;

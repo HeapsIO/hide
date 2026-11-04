@@ -1740,91 +1740,158 @@ class EmitterObject extends h3d.scene.Object {
 class Emitter extends Object3D {
 
 	@:group("Properties")
-	@:s @:disp("Sub Kind") public var subEmitterKind : SubEmitterKind = SubEmitterKind.SpawnOnDeath;
-	@:s @:range(0, null) public var speedFactor : Float = 1.0;
-	@:s @:range(0, null) @:disp("Warm Up") public var warmUpTime : Float = 0.0;
-	@:s @:range(0, null) public var delay : Float = 0.0;
-	@:s @:range(0, null) @:disp("Seed") public var seedGroup : Int = 0;
-	@:s @:disp("Mode") public var alignMode : AlignMode = AlignMode.None;
-	@:s @:disp("Lock Axis") public var alignLockAxis : AlignLockAxis = AlignLockAxis.ScreenZ;
-	@:s public var simulationSpace : SimulationSpace = SimulationSpace.Local;
-	@:s @:disp("Scaling") public var particleScaling : ParticleScaling = ParticleScaling.Parent;
-	@:s public var followRotation : Bool = false;
-	@:s public var applyMeshTransform : Bool = false;
-	@:s public var enableSort : Bool = true;
-	@:s public var sortMode : SortMode = SortMode.Depth;
+	@:s @:range(0, null) @:disp("Time Scale", "Time multiplier of the simulation")
+	public var speedFactor : Float = 1.0;
+	@:s @:range(0, null) @:disp("Start Delay", "Time before the start of the emitter, in seconds")
+	public var delay : Float = 0.0;
+	@:s @:range(0, null) @:disp("Warm Up", "Time simulated before the start, in seconds: the emitter starts already filled")
+	public var warmUpTime : Float = 0.0;
+	@:s @:range(0, null) @:disp("Seed", "Changes the random values of the emitter, to differentiate two identical emitters")
+	public var seedGroup : Int = 0;
+	@:s @:disp("Simulation Space", "Local: the particles move with the emitter. World: once emitted, they no longer follow it")
+	public var simulationSpace : SimulationSpace = SimulationSpace.Local;
+	@:s @:disp("Parent Scaling", "Whether the particles are scaled by the parents of the emitter")
+	public var particleScaling : ParticleScaling = ParticleScaling.Parent;
+	@:s @:disp("Apply Mesh Transform", "The particles take the transform of the mesh of the emitter")
+	public var applyMeshTransform : Bool = false;
+	@:s @:disp("Enable Sort", "Sorts the particles before drawing them")
+	public var enableSort : Bool = true;
+	@:s @:disp("Sort Mode", "Depth: back to front from the camera. Instance: in their emission order")
+	public var sortMode : SortMode = SortMode.Depth;
+	@:s @:disp("Sub Emitter Mode", "For a sub emitter: spawned at the death of each particle of its parent, or following each of them")
+	public var subEmitterKind : SubEmitterKind = SubEmitterKind.SpawnOnDeath;
 
 	@:group("Emit Params")
-	@:s @:disp("Type") public var emitType : EmitType = EmitType.Infinity;
-	@:s @:range(0, null) @:disp("Duration") public var emitDuration : Float = 1.0;
-	@:s @:range(0, null) @:animate @:disp("Rate") public var emitRate : Float = 5;
-	@:s @:range(0, null) @:animate @:disp("Rate Min") public var emitRateMin : Float = 5;
-	@:s @:range(0, null) @:animate @:disp("Rate Max") public var emitRateMax : Float = 5;
-	@:s @:range(0.01, null) @:disp("Rate Change Time") public var emitRateChangeDelay : Float = 1.0;
-	@:s @:range(1, null) @:disp("Count") public var burstCount : Float = 1;
-	@:s @:range(0, null) @:disp("Delay") public var burstDelay : Float = 1.0;
-	@:s @:range(1, null) @:animate @:disp("Particle Count") public var burstParticleCount : Float = 1;
-	@:s @:range(0, null) public var maxCount : Int = 20;
-	@:s @:disp("Orientation") public var emitOrientation : Orientation = Orientation.Forward;
+	@:s @:disp("Type", "Infinity: constant rate. Infinity Random: rate changing between min and max. Duration: rate during a duration. Burst / Burst Duration: groups of particles at regular intervals")
+	public var emitType : EmitType = EmitType.Infinity;
+	@:s @:range(0, null) @:disp("Duration", "Emission duration, in seconds")
+	public var emitDuration : Float = 1.0;
+	@:s @:range(0, null) @:animate @:disp("Rate", "Number of particles emitted per second")
+	public var emitRate : Float = 5;
+	@:s @:range(0, null) @:animate @:disp("Rate Min", "Minimum number of particles emitted per second")
+	public var emitRateMin : Float = 5;
+	@:s @:range(0, null) @:animate @:disp("Rate Max", "Maximum number of particles emitted per second")
+	public var emitRateMax : Float = 5;
+	@:s @:range(0.01, null) @:disp("Rate Change Interval", "Time between two random rates, in seconds: the rate goes from one to the next during this time")
+	public var emitRateChangeDelay : Float = 1.0;
+	@:s @:range(1, null) @:disp("Burst Count", "Number of bursts")
+	public var burstCount : Float = 1;
+	@:s @:range(0, null) @:disp("Burst Interval", "Time between two bursts, in seconds")
+	public var burstDelay : Float = 1.0;
+	@:s @:range(1, null) @:animate @:disp("Particles Per Burst", "Number of particles emitted by each burst")
+	public var burstParticleCount : Float = 1;
+	@:s @:range(0, null) @:disp("Max Count", "Maximum number of particles alive at the same time: no particle is emitted beyond")
+	public var maxCount : Int = 20;
+	@:param(PFloat(0), Spawn, 1.) @:disp("Lifetime", "Life duration of the particle, in seconds")
+	public var lifeTime : ParamMode;
 
 	@:group("Emit Shape")
-	@:s @:disp("Shape") public var emitShape : EmitShape = EmitShape.Sphere;
-	@:s @:range(0, 360.0) @:animate @:disp("Angle") public var emitAngle : Float = 30.0;
-	@:s @:range(0, null) @:disp("Radius 1") public var emitRad1 : Float = 1.0;
-	@:s @:range(0, null) @:disp("Radius 2") public var emitRad2 : Float = 1.0;
-	@:s @:disp("Surface") public var emitSurface : Bool = false;
-	@:s @:range(0, null) @:disp("Cut") public var emitDomeCut : Float = 0.5;
-	@:s @:disp("Flip") public var emitDomeFlip : Bool = false;
-
-	@:group("Color")
-	@:s @:disp("Random Color") public var useRandomColor : Bool = false;
-	@:s @:disp("Random Gradient") public var useRandomGradient : Bool = false;
-	@:s @:disp("Color 1") public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
-	@:s @:disp("Color 2") public var randomColor2 : Array<Float> = [1., 1., 1., 1.];
-	@:s @:disp("Gradient") public var randomGradient : GradientData;
-
-	@:group("Sprite Sheet Animation")
-	@:s @:t(PFile(["jpg", "png"])) @:disp("Sheet") public var spriteSheet : String;
-	@:s @:range(0) @:disp("Frames") public var frameCount : Int = 0;
-	@:s @:range(1) @:disp("Divisions X") public var frameDivisionX : Int = 1;
-	@:s @:range(1) @:disp("Divisions Y") public var frameDivisionY : Int = 1;
-	@:s @:range(0, 2.0) @:disp("Speed") public var animationSpeed : Float = 1.0;
-	@:s @:disp("Loop") public var animationLoop : Bool = true;
-	@:s @:disp("Use Source UV") public var animationUseSourceUVs : Bool = true;
-	@:s @:disp("Blend Frames") public var animationBlendBetweenFrames : Bool = true;
-
-	@:group("Ground Collision")
-	@:s public var useCollision : Bool = false;
-	@:s @:range(0, 1.0) public var elasticity : Float = 1.0;
-	@:s @:range(0, 1.0) public var killOnCollision : Float = 0.0;
-
-	@:group("Debug")
-	@:s @:disp("Show Debug") public var viewDebug : Bool = false;
+	@:s @:disp("Shape", "Volume in which the particles are emitted")
+	public var emitShape : EmitShape = EmitShape.Sphere;
+	@:s @:range(0, 360.0) @:animate @:disp("Angle", "Opening angle of the cone, or angle of the cylinder sector, in degrees")
+	public var emitAngle : Float = 30.0;
+	@:s @:range(0, null) @:disp("Bottom Radius", "Radius of the bottom of the cylinder")
+	public var emitRad1 : Float = 1.0;
+	@:s @:range(0, null) @:disp("Top Radius", "Radius of the top of the cylinder")
+	public var emitRad2 : Float = 1.0;
+	@:s @:range(0, null) @:disp("Dome Height", "Height of the dome: 0.5 for a half sphere, 1 for a full sphere")
+	public var emitDomeCut : Float = 0.5;
+	@:s @:disp("Flip Dome", "Flips the dome upside down")
+	public var emitDomeFlip : Bool = false;
+	@:s @:disp("Surface", "Emits on the surface of the shape instead of in its volume")
+	public var emitSurface : Bool = false;
+	@:s @:disp("Orientation", "Initial orientation of the particles: the emitter one, the normal of the shape, their speed, or random")
+	public var emitOrientation : Orientation = Orientation.Forward;
 
 	@:group("Particle Movement")
-	@:param(PVec(3), Particle) @:disp("Fixed Speed") public var speed : ParamVec3;
-	@:param(PVec(3), Particle) @:disp("Fixed World Speed") public var worldSpeed : ParamVec3;
-	/** Degrees per second **/
-	@:param(PVec(3, -360, 360), Particle) public var orbitSpeed : ParamVec3;
-	@:s @:range(0, null) @:animate public var orbitSpeedOverTime : Float = 1;
-	@:param(PVec(3), Particle) public var acceleration : ParamVec3;
-	@:param(PVec(3), Particle) public var worldAcceleration : ParamVec3;
-	@:param(PVec(3), Spawn) public var startSpeed : ParamVec3;
-	@:param(PVec(3), Spawn) public var startWorldSpeed : ParamVec3;
-	@:group("Particle Transform")
-	@:param(PVec(3), Particle) public var offset : ParamVec3;
-	@:param(PFloat(), Particle, 1.) public var scale : ParamMode;
-	@:s @:range(0, null) @:animate public var scaleOverTime : Float = 1;
-	@:param(PVec(3), Particle, [1., 1., 1.]) public var stretch : ParamVec3;
-	@:param(PFloat(0), Particle) public var stretchVelocity : ParamMode;
-	/** Degrees **/
-	@:param(PVec(3, 0, 360), Particle) @:disp("Rotation") public var particleRotation : ParamVec3;
-	@:param(PVec(3), Particle) public var pivot : ParamVec3;
+	@:param(PVec(3), Spawn) @:disp("Start Speed", "Initial speed in the emitter orientation, set at the spawn of the particle")
+	public var startSpeed : ParamVec3;
+	@:param(PVec(3), Spawn) @:disp("Start World Speed", "Initial speed in world space, set at the spawn of the particle")
+	public var startWorldSpeed : ParamVec3;
+	@:param(PVec(3), Particle) @:disp("Constant Speed", "Speed in the emitter orientation, added to the velocity without being accumulated")
+	public var speed : ParamVec3;
+	@:param(PVec(3), Particle) @:disp("Constant World Speed", "Speed in world space, added to the velocity without being accumulated")
+	public var worldSpeed : ParamVec3;
+	@:param(PVec(3), Particle) @:disp("Acceleration", "Acceleration in the emitter orientation, accumulated in the velocity")
+	public var acceleration : ParamVec3;
+	@:param(PVec(3), Particle) @:disp("World Acceleration", "Acceleration in world space (gravity, wind...), accumulated in the velocity")
+	public var worldAcceleration : ParamVec3;
+	@:param(PVec(3, -360, 360), Particle) @:disp("Orbit Speed", "Rotation speed around the emitter, in degrees per second")
+	public var orbitSpeed : ParamVec3;
+	@:s @:range(0, null) @:animate @:disp("Orbit Speed Multiplier", "Multiplier of the orbit speed of all the particles, animated over the emitter time")
+	public var orbitSpeedOverTime : Float = 1;
+
 	@:group("Limit Velocity")
-	@:param(PFloat(0), Particle) public var dampen : ParamMode;
-	@:param(PFloat(0), Particle) public var maxVelocity : ParamMode;
-	@:group("Properties")
-	@:param(PFloat(0), Spawn, 1.) public var lifeTime : ParamMode;
+	@:param(PFloat(0), Particle) @:disp("Damping", "Damping of the accumulated velocity (start speed and accelerations), per second")
+	public var dampen : ParamMode;
+	@:param(PFloat(0), Particle) @:disp("Max Speed", "Maximum speed of the particle")
+	public var maxVelocity : ParamMode;
+
+	@:group("Particle Transform")
+	@:param(PVec(3), Particle) @:disp("Offset", "Offset of the particle position, without effect on its movement")
+	public var offset : ParamVec3;
+	@:param(PVec(3), Particle) @:disp("Pivot", "Pivot of the particle, relative to its size")
+	public var pivot : ParamVec3;
+	@:param(PVec(3, 0, 360), Particle) @:disp("Rotation", "Rotation of the particle, in degrees")
+	public var particleRotation : ParamVec3;
+	@:param(PFloat(), Particle, 1.) @:disp("Scale", "Uniform scale of the particle")
+	public var scale : ParamMode;
+	@:s @:range(0, null) @:animate @:disp("Scale Multiplier", "Multiplier of the scale of all the particles, animated over the emitter time")
+	public var scaleOverTime : Float = 1;
+	@:param(PVec(3), Particle, [1., 1., 1.]) @:disp("Stretch", "Scale of the particle on each of its axes")
+	public var stretch : ParamVec3;
+	@:param(PFloat(0), Particle) @:disp("Stretch By Speed", "Stretches the particle along its velocity")
+	public var stretchVelocity : ParamMode;
+
+	@:group("Alignment")
+	@:s @:disp("Align Mode", "Alignment of the particles: none, facing the screen, around an axis, or along their speed")
+	public var alignMode : AlignMode = AlignMode.None;
+	@:s @:disp("Align Axis", "Axis around which the particles rotate to face the camera")
+	public var alignLockAxis : AlignLockAxis = AlignLockAxis.ScreenZ;
+	@:s @:disp("Follow Rotation", "The aligned particles keep their own rotation and the one of the emitter")
+	public var followRotation : Bool = false;
+
+	@:group("Color")
+	@:s @:disp("Random Color", "Multiplies the color of each particle by a random color")
+	public var useRandomColor : Bool = false;
+	@:s @:disp("Random Gradient", "The random color is taken in a gradient instead of between two colors")
+	public var useRandomGradient : Bool = false;
+	@:s @:disp("Color 1", "First bound of the random color")
+	public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
+	@:s @:disp("Color 2", "Second bound of the random color")
+	public var randomColor2 : Array<Float> = [1., 1., 1., 1.];
+	@:s @:disp("Gradient", "Gradient in which the random color is taken")
+	public var randomGradient : GradientData;
+
+	@:group("Sprite Sheet Animation")
+	@:s @:t(PFile(["jpg", "png"])) @:disp("Sheet", "Texture containing the frames of the animation")
+	public var spriteSheet : String;
+	@:s @:range(0) @:disp("Frames", "Number of frames, 0 for all the cells of the sheet")
+	public var frameCount : Int = 0;
+	@:s @:range(1) @:disp("Divisions X", "Number of columns of the sheet")
+	public var frameDivisionX : Int = 1;
+	@:s @:range(1) @:disp("Divisions Y", "Number of rows of the sheet")
+	public var frameDivisionY : Int = 1;
+	@:s @:range(0, 2.0) @:disp("Loops Per Life", "Number of times the animation is played during the life of a particle")
+	public var animationSpeed : Float = 1.0;
+	@:s @:disp("Loop", "Loops the animation, each particle starting on a random frame")
+	public var animationLoop : Bool = true;
+	@:s @:disp("Use Source UV", "Keeps the UVs of the mesh inside each frame")
+	public var animationUseSourceUVs : Bool = true;
+	@:s @:disp("Blend Frames", "Blends two consecutive frames for a smooth animation")
+	public var animationBlendBetweenFrames : Bool = true;
+
+	@:group("Ground Collision")
+	@:s @:disp("Use Collision", "The particles bounce on the ground plane")
+	public var useCollision : Bool = false;
+	@:s @:range(0, 1.0) @:disp("Elasticity", "Bounce of the particles: 0 makes them slide on the ground, 1 bounces them with their whole speed")
+	public var elasticity : Float = 1.0;
+	@:s @:range(0, 1.0) @:disp("Death Chance On Collision", "Probability for a particle to die when it touches the ground")
+	public var killOnCollision : Float = 0.0;
+
+	@:group("Debug")
+	@:s @:disp("Show Debug", "Draws a cross at the position of each sub emitter")
+	public var viewDebug : Bool = false;
 
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);

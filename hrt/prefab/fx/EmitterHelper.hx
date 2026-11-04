@@ -30,6 +30,14 @@ class EmitterHelper {
 		return [];
 	}
 
+	public static function getFieldsOrder( p : Prefab ) : Array<String> {
+		var e = Std.downcast(p, Emitter);
+		if( e != null ) return e.getFieldsOrder();
+		var e2 = Std.downcast(p, Emitter2D);
+		if( e2 != null ) return e2.getFieldsOrder();
+		return [];
+	}
+
 	/** The mode of the component `comp` of the param `name` of an emitter, or of a shader under an emitter (a particle curve or null) **/
 	public static function getMode( p : Prefab, name : String, comp : Int ) : ParamMode {
 		var e = Std.downcast(p, Emitter);
@@ -222,6 +230,7 @@ class EmitterHelper {
 		if (isCompact) {
 			line = new hide.kit.Line(parent, def.name);
 			line.stealLabel = false;
+			line.tooltip = def.desc;
 			setupVectorHeader(line);
 		}
 
@@ -230,6 +239,7 @@ class EmitterHelper {
 			if (!isCompact) {
 				line = new hide.kit.Line(parent, def.name + (size == 1 ? "" : compName(i)));
 				line.stealLabel = false;
+				line.tooltip = def.desc;
 				if (size == 1) {
 					line.label = label;
 					line.unset = !isSet(prefab, def, i);
@@ -371,42 +381,51 @@ class EmitterHelper {
 			return cat;
 		}
 
-		for (p in settings) {
-			var cat = getCategory(p.groupName ?? "Emitter");
-			switch (p.t) {
-				case PVec(n, min, max) if (p.name.toLowerCase().indexOf("color") < 0):
-					var line = new hide.kit.Line(cat, p.name);
-					line.label = p.disp ?? hide.kit.Macros.camelToSpaceCase(p.name);
-					var vec : Array<Float> = Reflect.field(emitter, p.name);
-					for (i in 0...n) {
-						var s = new hide.kit.Slider<Float>(line, p.name + i);
-						s.label = compName(i);
-						s.value = vec[i];
-						s.min = min;
-						s.max = max;
-						s.showRange = min != null && max != null;
-						@:privateAccess s.onFieldChange = (_) -> vec[i] = s.value;
-						s.onValueChange = (temp) -> changed(p.name, temp);
-					}
-				default:
-					var widget = cat.buildProp(p, emitter);
-					if (widget == null)
-						continue;
-					if (!p.animate)
-						widget.anim = null;
-					widget.onValueChange = (temp) -> changed(p.name, temp);
+		var modeParams = getModeParams(emitter);
+		for (name in getFieldsOrder(emitter)) {
+			var setting = Lambda.find(settings, p -> p.name == name);
+			if (setting != null) {
+				editSetting(getCategory(setting.groupName ?? "Emitter"), emitter, setting, changed);
+				continue;
 			}
+			var param = Lambda.find(modeParams, p -> p.name == name);
+			if (param != null)
+				editParam(ctx, emitter, param, getAllowedModes(param.kind), getCategory(param.groupName));
 		}
+	}
 
-		function getAllowedModes(kind: ParamKind) : Array<ModeKind> {
-			return switch (kind) {
-				case Spawn: [Constant, Range];
-				case Particle: [Constant, Range, Curve, RandomCurve, CurveRange];
-			}
+	static function editSetting(cat: hide.kit.Category, emitter: Prefab, p: ParamDef, changed: (name: String, temp: Bool) -> Void) {
+		switch (p.t) {
+			case PVec(n, min, max) if (p.name.toLowerCase().indexOf("color") < 0):
+				var line = new hide.kit.Line(cat, p.name);
+				line.label = p.disp ?? hide.kit.Macros.camelToSpaceCase(p.name);
+				line.tooltip = p.desc;
+				var vec : Array<Float> = Reflect.field(emitter, p.name);
+				for (i in 0...n) {
+					var s = new hide.kit.Slider<Float>(line, p.name + i);
+					s.label = compName(i);
+					s.value = vec[i];
+					s.min = min;
+					s.max = max;
+					s.showRange = min != null && max != null;
+					@:privateAccess s.onFieldChange = (_) -> vec[i] = s.value;
+					s.onValueChange = (temp) -> changed(p.name, temp);
+				}
+			default:
+				var widget = cat.buildProp(p, emitter);
+				if (widget == null)
+					return;
+				if (!p.animate)
+					widget.anim = null;
+				widget.onValueChange = (temp) -> changed(p.name, temp);
 		}
+	}
 
-		for (p in getModeParams(emitter))
-			editParam(ctx, emitter, p, getAllowedModes(p.kind), getCategory(p.groupName));
+	static function getAllowedModes(kind: ParamKind) : Array<ModeKind> {
+		return switch (kind) {
+			case Spawn: [Constant, Range];
+			case Particle: [Constant, Range, Curve, RandomCurve, CurveRange];
+		}
 	}
 
 

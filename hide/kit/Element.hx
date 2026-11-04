@@ -746,6 +746,7 @@ class Element {
 				} else {
 					var line = new Line(this, def.name);
 					line.label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
+					line.tooltip = def.desc;
 					var vec : Array<Dynamic> = Reflect.field(props, def.name);
 					if (vec == null) {
 						vec = [];
@@ -785,6 +786,7 @@ class Element {
 		}
 		if (widget != null) {
 			widget.label =  def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
+			widget.tooltip = def.desc;
 			widget.anim = def.name;
 			widget.value = Reflect.field(props, def.name) ?? defValue;
 			@:privateAccess widget.onFieldChange = (_) -> {

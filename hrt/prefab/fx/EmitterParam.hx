@@ -29,6 +29,7 @@ typedef ModeParamDef = {
 	var kind : ParamKind;
 	var groupName : String;
 	var ?disp : String;
+	var ?desc : String;
 }
 
 class EmitterParam {
