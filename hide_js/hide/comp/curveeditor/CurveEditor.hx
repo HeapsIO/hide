@@ -9,6 +9,7 @@ import hide.comp.curveeditor.CurveDrawing;
 @:access(hide.kit.Element)
 class CurveEditor extends SVG {
 	static inline var PADDING = 4;
+	static inline var PIXELS_PER_SAMPLE = 2;
 	static inline var KEY_SIZE = 6;
 	static inline var HANDLE_SIZE = 3;
 	static inline var MAX_LINES = 6;
@@ -87,7 +88,7 @@ class CurveEditor extends SVG {
 		}
 
 		var view : CurveView = { minX: minX, maxX: maxX, minY: minY, maxY: maxY, w: w, h: h, pad: PADDING };
-		CurveDrawing.drawTracks(this, editor.tracks, editor.bands, view, editor.maxTime, track);
+		CurveDrawing.drawTracks(this, editor.tracks, editor.bands, view, editor.maxTime, Math.ceil(w / PIXELS_PER_SAMPLE), track);
 
 		function key(t: CurveTrack, k: hrt.impl.Curve.CurveKey) return square(g, px(k.time), py(k.value), KEY_SIZE).addClass("key");
 		for (t in editor.tracks)

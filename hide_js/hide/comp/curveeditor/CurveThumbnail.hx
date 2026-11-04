@@ -5,6 +5,8 @@ package hide.comp.curveeditor;
 import hide.kit.Curve;
 
 class CurveThumbnail extends hide.comp.Component {
+	static inline var SAMPLES = 64;
+
 	var drawing : SVG;
 	var tracks : Array<CurveTrack>;
 	var bands : Array<CurveBand>;
@@ -30,7 +32,7 @@ class CurveThumbnail extends hide.comp.Component {
 		var view : CurveDrawing.CurveView = { minX: bounds.minX, maxX: bounds.maxX, minY: bounds.minY, maxY: bounds.maxY, w: 1, h: 1, pad: 0 };
 		var zero = CurveDrawing.y(view, 0);
 		drawing.line(drawing.element, 0, zero, 1, zero).addClass("zero");
-		CurveDrawing.drawTracks(drawing, tracks, bands, view, maxTime);
+		CurveDrawing.drawTracks(drawing, tracks, bands, view, maxTime, SAMPLES);
 	}
 }
 
