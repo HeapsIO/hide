@@ -84,7 +84,7 @@ class InstanceDef {
 	var scale: Value;
 	var stretch: Value;
 	var stretchVelocity: Value;
-	var rotation: Value;
+	var particleRotation: Value;
 	var dampen: Value;
 	var maxVelocity : Value;
 	public function new() { }
@@ -307,8 +307,8 @@ class ParticleInstance {
 		}
 
 		// ROTATION
-		if(def.rotation != VZero) {
-			evaluator.getFastVec(idx, def.rotation, t, v);
+		if(def.particleRotation != VZero) {
+			evaluator.getFastVec(idx, def.particleRotation, t, v);
 			v.scale3(Math.PI / 180.0);
 			if(v.x == 0 && v.y == 0)
 				EmitterHelper.rotateZ(localMat, v.z);
@@ -1818,7 +1818,7 @@ class Emitter extends Object3D {
 	@:param(PVec(3), Particle, [1., 1., 1.]) public var stretch : ParamVec3;
 	@:param(PFloat(0), Particle) public var stretchVelocity : ParamMode;
 	/** Degrees **/
-	@:param(PVec(3, 0, 360), Particle) public var rotation : ParamVec3;
+	@:param(PVec(3, 0, 360), Particle) @:disp("Rotation") public var particleRotation : ParamVec3;
 	@:param(PVec(3), Particle) public var pivot : ParamVec3;
 	@:group("Limit Velocity")
 	@:param(PFloat(0), Particle) public var dampen : ParamMode;

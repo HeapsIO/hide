@@ -9,8 +9,7 @@ import haxe.macro.Expr;
 	Emitter fields:
 	- `@:s` settings, `@:range(min, max)`, `@:animate` when an animation curve can set them, `@:disp("Label")`,
 	  `@:t(PFile([...]))` for a type other than the one of the field;
-	- `@:param(PVec(3, -10, 10), Particle, default)` params with modes (`EmitterParam`), saved in `params`,
-	  under `@:name("key")` when given;
+	- `@:param(PVec(3, -10, 10), Particle, default)` params with modes (`EmitterParam`), saved under their name like the settings;
 	- `@:group("Name")`: the inspector group of the field and of the next ones.
 	The random slots are allocated in the order of `makeValues`: particle params, settings, spawn params.
 **/
@@ -51,7 +50,7 @@ class EmitterMacros {
 		var fields = Context.getBuildFields();
 		var pos = Context.currentPos();
 		var settings = [], modeParams = [];
-		var load = [], unset = [], save = [], copy = [], getCases = [], setCases = [];
+		var load = [], save = [], copy = [], getCases = [], setCases = [];
 		var particleValues = [], settingValues = [], settingApply = [], spawnValues = [], spawnApply = [];
 		var group = "Params";
 
@@ -82,10 +81,6 @@ class EmitterMacros {
 			var a = meta(f, ":param");
 			if( a == null )
 				continue;
-			var key = n;
-			var nameArg = meta(f, ":name");
-			if( nameArg != null )
-				key = haxe.macro.ExprTools.getValue(nameArg[0]);
 			var dim = switch( a[0].expr ) {
 				case ECall({ expr: EConst(CIdent("PVec")) }, args): Std.parseInt(haxe.macro.ExprTools.toString(args[0]));
 				default: 1;
@@ -97,27 +92,26 @@ class EmitterMacros {
 				default: [a[2]];
 			}
 			var def = macro @:pos(p) MODE_PARAMS[$v{modeParams.length}];
-			modeParams.push(macro @:pos(p) { name: $v{key}, t: ${a[0]}, def: ($a{defs} : Array<Float>), kind: hrt.prefab.fx.EmitterParam.ParamKind.$kind,
+			modeParams.push(macro @:pos(p) { name: $v{n}, t: ${a[0]}, def: ($a{defs} : Array<Float>), kind: hrt.prefab.fx.EmitterParam.ParamKind.$kind,
 				groupName: $v{group}, disp: ${disp == null ? macro null : disp[0]} });
 			if( dim == 1 ) {
-				load.push(macro @:pos(p) this.$n = hrt.prefab.fx.EmitterParam.parseMode(params.$key));
-				save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.saveMode(this.$n); if( v != null ) { params.$key = v; any = true; } });
-				getCases.push({ values: [macro $v{key}], expr: macro this.$n });
-				setCases.push({ values: [macro $v{key}], expr: macro this.$n = m });
+				load.push(macro @:pos(p) this.$n = hrt.prefab.fx.EmitterParam.parseMode(data.$n));
+				save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.saveMode(this.$n); if( v != null ) data.$n = v; });
+				getCases.push({ values: [macro $v{n}], expr: macro this.$n });
+				setCases.push({ values: [macro $v{n}], expr: macro this.$n = m });
 			} else {
-				load.push(macro @:pos(p) this.$n = hrt.prefab.fx.EmitterParam.parseVec(params.$key));
-				save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.saveVec(this.$n); if( v != null ) { params.$key = v; any = true; } });
-				getCases.push({ values: [macro $v{key}], expr: macro hrt.prefab.fx.EmitterParam.comp(this.$n, comp) });
-				setCases.push({ values: [macro $v{key}], expr: macro this.$n = hrt.prefab.fx.EmitterParam.withComp(this.$n, comp, m) });
+				load.push(macro @:pos(p) this.$n = hrt.prefab.fx.EmitterParam.parseVec(data.$n));
+				save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.saveVec(this.$n); if( v != null ) data.$n = v; });
+				getCases.push({ values: [macro $v{n}], expr: macro hrt.prefab.fx.EmitterParam.comp(this.$n, comp) });
+				setCases.push({ values: [macro $v{n}], expr: macro this.$n = hrt.prefab.fx.EmitterParam.withComp(this.$n, comp, m) });
 			}
-			unset.push(macro @:pos(p) this.$n = null);
 			copy.push(macro @:pos(p) this.$n = from.$n);
 			if( kind == "Spawn" ) {
 				var i = spawnValues.length;
-				spawnApply.push(dim == 1 ? macro @:pos(p) obj.$key = v.spawn[$v{i}][0] : macro @:pos(p) obj.$key = v.spawn[$v{i}]);
+				spawnApply.push(dim == 1 ? macro @:pos(p) obj.$n = v.spawn[$v{i}][0] : macro @:pos(p) obj.$n = v.spawn[$v{i}]);
 				spawnValues.push(macro @:pos(p) v.spawn.push(b.spawn($def)));
 			} else
-				particleValues.push(macro @:pos(p) d.$key = b.param($def));
+				particleValues.push(macro @:pos(p) d.$n = b.param($def));
 		}
 
 		// out of the editor the values are built once, by the source of the clones (the prefab of a loaded resource): they only depend on
@@ -143,13 +137,10 @@ class EmitterMacros {
 		var methods = (macro class {
 			function loadParams( data : Dynamic ) {
 				$reset;
-				var params : Dynamic = data.params;
-				if( params == null ) $b{unset} else $b{load};
+				$b{load};
 			}
 			function saveParams( data : Dynamic ) {
-				var params : Dynamic = {}, any = false;
 				$b{save};
-				if( any ) data.params = params;
 			}
 			function copyParams( from : $selfType ) {
 				$b{copy};

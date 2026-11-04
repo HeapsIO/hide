@@ -53,7 +53,7 @@ Rejected when the values are built (an error), and not offered by the curve insp
 
 ## Storage
 
-- Params are stored under their plain name (`scale`, `startSpeed`...): a mode, or for a vector an object of the modes of its components (`x`, `y`, `z`, an unset one left out).
+- Params are stored directly on the emitter, under their field name (`scale`, `startSpeed`, `particleRotation`...), like the settings: a mode, or for a vector an object of the modes of its components (`x`, `y`, `z`, an unset one left out).
 - Old files are converted once by a migration tool in `hide/tools`, run over a whole project: it rewrites every old-format file, updates the files that override or point at what it changes, only touches the nodes it changes, and is idempotent. Loading an old-format file still works as a fallback: the same migration code upgrades it in memory, alone (no fixes in other files), with a warning recommending the tool.
 - Every FX file carries a format `version` at its root (no version = 0, the old format); everything inside the file, including its Reference overrides, follows it. Upgrade steps are keyed by version. A project is always migrated as a whole.
 

@@ -88,8 +88,8 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		}
 
 		// ROTATION
-		if (def.rotation != VZero) {
-			var r = evaluator.getFast(idx, def.rotation, t) * Math.PI / 180.0;
+		if (def.particleRotation != VZero) {
+			var r = evaluator.getFast(idx, def.particleRotation, t) * Math.PI / 180.0;
 			m.rotate(r);
 		}
 
@@ -529,8 +529,7 @@ class Emitter2D extends Object2D {
 	@:param(PFloat(0, 2), Particle, 1.) public var scale : ParamMode;
 	@:s @:range(0, 2) @:animate public var scaleOverTime : Float = 1;
 	@:param(PVec(2, 0, 2), Particle, [1., 1.]) public var stretch : ParamVec2;
-	/** Degrees. Not named `rotation`, the one of the emitter object **/
-	@:param(PFloat(0, 360), Particle) @:name("rotation") public var particleRotation : ParamMode;
+	@:param(PFloat(0, 360), Particle) @:disp("Rotation") public var particleRotation : ParamMode;
 	@:group("Particle Limit Velocity")
 	@:param(PFloat(0, 10), Particle) public var dampen : ParamMode;
 	@:param(PFloat(0, 10), Particle) public var maxVelocity : ParamMode;

@@ -1474,7 +1474,7 @@ class Upgrade0 {
 		{ name: "scaleOverTime", old: "instScaleOverTime", group: OverTime, def: [1.] },
 		{ name: "stretch", old: "instStretch", group: Particle, def: [1., 1., 1.] },
 		{ name: "stretchVelocity", old: "instStretchVelocity", group: Particle, def: [0.] },
-		{ name: "rotation", old: "instRotation", group: Particle, def: [0., 0., 0.] },
+		{ name: "particleRotation", old: "instRotation", group: Particle, def: [0., 0., 0.] },
 		{ name: "pivot", old: "instPivot", group: Particle, def: [0., 0., 0.] },
 		{ name: "offset", old: "instOffset", group: Particle, def: [0., 0., 0.] },
 	];
@@ -1484,7 +1484,7 @@ class Upgrade0 {
 		{ name: "scale", old: "instScale", group: Particle, def: [1.] },
 		{ name: "scaleOverTime", old: "instScaleOverTime", group: OverTime, def: [1.] },
 		{ name: "stretch", old: "instStretch", group: Particle, def: [1., 1.] },
-		{ name: "rotation", old: "instRotation", group: Particle, def: [0.] },
+		{ name: "particleRotation", old: "instRotation", group: Particle, def: [0.] },
 		{ name: "offset", old: "instOffset", group: Particle, def: [0., 0.] },
 		{ name: "acceleration", old: "instAcceleration", group: Particle, def: [0., 0.] },
 		{ name: "worldAcceleration", old: "instWorldAcceleration", group: Particle, def: [0., 0.] },
@@ -1549,7 +1549,7 @@ class Upgrade0 {
 				params.set(d.name, [for( m in v ) bakeModeCurves(e, m)]);
 		}
 
-		// format 1: the settings (and the over time ones) are fields of the emitter, the params with modes are in `params`
+		// format 1: the settings, the over time ones and the params with modes are fields of the emitter
 		var old = new Map();
 		for( d in defs ) {
 			old.set(d.name, true);
@@ -1560,22 +1560,12 @@ class Upgrade0 {
 			if( !old.exists(f) )
 				RawNode.setField(e.data, f, Reflect.field(props, f));
 		Reflect.deleteField(e.data, "props");
-		var out : Dynamic = {}, any = false;
 		for( d in defs ) {
 			var v = params.get(d.name);
 			var j = v == null ? null : saveValue(v);
-			if( j == null )
-				continue;
-			// an animated setting of format 1, a constant
-			if( d.group == OverTime )
+			if( j != null )
 				RawNode.setField(e.data, d.name, j);
-			else {
-				Reflect.setField(out, d.name, j);
-				any = true;
-			}
 		}
-		if( any )
-			RawNode.setField(e.data, "params", out);
 		change(e, "emitter params with modes");
 
 		// the shaders on its particles
