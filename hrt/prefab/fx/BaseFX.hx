@@ -220,7 +220,6 @@ class BaseFXTools {
 		var x = find(":x");
 		var y = find(":y");
 		var z = find(":z");
-		var w = find(":w");
 
 		inline function curveOrVal(c: Curve, defVal: Float) : Value {
 			return c == null ? VConst(defVal) : c.makeVal();
@@ -229,8 +228,7 @@ class BaseFXTools {
 		return VVector(
 			curveOrVal(x, defVal),
 			curveOrVal(y, defVal),
-			curveOrVal(z, defVal),
-			curveOrVal(w, 1.0));
+			curveOrVal(z, defVal));
 	}
 
 	public static function getColorValue(curves: Array<Curve>) : Value {
@@ -260,7 +258,7 @@ class BaseFXTools {
 		if(a == null && r == null && g == null && b == null)
 			return VConst(1.0); // White by default
 
-		return VVector(
+		return VColor(
 			r != null ? r.makeVal() : VConst(1.0),
 			g != null ? g.makeVal() : VConst(1.0),
 			b != null ? b.makeVal() : VConst(1.0),
@@ -292,7 +290,8 @@ class BaseFXTools {
 			var base = EmitterParam.baseComponent(prop, size, i);
 			return p.comps[i] == null ? Evaluator.vVal(base) : EmitterParam.ParamBuilder.particleCurve(shader, p.comps[i], base);
 		}
-		return size == 1 ? comp(0) : VVector(comp(0), comp(1), size > 2 ? comp(2) : VZero, size > 3 ? comp(3) : null);
+		// 4 components: a color
+		return size == 1 ? comp(0) : size > 3 ? VColor(comp(0), comp(1), comp(2), comp(3)) : VVector(comp(0), comp(1), size > 2 ? comp(2) : VZero);
 	}
 
 	public static function makeRendererFXParams(rfxElt: hrt.prefab.rfx.RendererFX) {

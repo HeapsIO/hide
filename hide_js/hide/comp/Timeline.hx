@@ -601,9 +601,9 @@ class Timeline extends hide.comp.Component {
 	}
 
 	public static function getCurveColor(name: String, index: Int) : Int {
-		var suffixes = [[":x", ":h"], [":y", ":s"], [":z", ":l"], [":w", ":a"]];
+		var suffixes = [[":x", ":h"], [":y", ":s"], [":z", ":l"], [":a"]];
 		for (i => s in suffixes)
-			if (StringTools.contains(name, s[0]) || StringTools.contains(name, s[1]))
+			if (Lambda.exists(s, x -> StringTools.contains(name, x)))
 				return CURVE_COLORS[i];
 		return CURVE_COLORS[index % CURVE_COLORS.length];
 	}

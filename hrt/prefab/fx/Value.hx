@@ -30,6 +30,7 @@ enum Value {
 	// lerp(a(t), b(t), u), a and b with absolute values for keys
 	VCurveRange(rid: Int, a: hrt.impl.Curve, b: hrt.impl.Curve);
 
-	VVector(x: Value, y: Value, z: Value, ?w: Value);  // TODO: ever need w?
+	VVector(x: Value, y: Value, z: Value);
+	VColor(r: Value, g: Value, b: Value, a: Value);
 	VHsl(h: Value, s: Value, l: Value, a: Value);
 }

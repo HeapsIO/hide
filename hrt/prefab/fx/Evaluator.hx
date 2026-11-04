@@ -68,7 +68,7 @@ class Evaluator {
 				var v = getParamCurve(pc, time);
 				v + (spread + slope * v) * (getRandom(pidx, rid) * 2 - 1);
 			case VCurveRange(rid, a, b): hxd.Math.lerp(a.getVal(time), b.getVal(time), getRandom(pidx, rid));
-			case VVector(_), VHsl(_): throw "getFloat: vector value";
+			case VVector(_), VColor(_), VHsl(_): throw "getFloat: vector value";
 		}
 	}
 
@@ -91,10 +91,10 @@ class Evaluator {
 
 	public function getVector(pidx: Int=0, v: Value, time: Float, vec: h3d.Vector4) {
 		switch(v) {
-			case VVector(x, y, z, null):
+			case VVector(x, y, z):
 				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), 1.0);
-			case VVector(x, y, z, w):
-				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), getFast(pidx, w, time));
+			case VColor(r, g, b, a):
+				vec.set(getFast(pidx, r, time), getFast(pidx, g, time), getFast(pidx, b, time), getFast(pidx, a, time));
 			case VHsl(h, s, l, a):
 				vec.makeColor(getFast(pidx, h, time), getFast(pidx, s, time), getFast(pidx, l, time));
 				vec.a = getFast(pidx, a, time);
@@ -115,10 +115,10 @@ class Evaluator {
 	// inlined, `vec` stays on the stack
 	public inline function getFastVec(pidx: Int, v: Value, time: Float, vec: h3d.Vector4) {
 		switch(v) {
-			case VVector(x, y, z, null):
+			case VVector(x, y, z):
 				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), 1.0);
-			case VVector(x, y, z, w):
-				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), getFast(pidx, w, time));
+			case VColor(r, g, b, a):
+				vec.set(getFast(pidx, r, time), getFast(pidx, g, time), getFast(pidx, b, time), getFast(pidx, a, time));
 			case VZero:
 				vec.set(0,0,0,1);
 			default:
@@ -130,7 +130,7 @@ class Evaluator {
 
 	public function getVector2(pidx: Int=0, v: Value, time: Float, vec: h2d.col.Point) {
 		switch(v) {
-			case VVector(x, y, _, _):
+			case VVector(x, y, _):
 				vec.set(getFast(pidx, x, time), getFast(pidx, y, time));
 			case VZero:
 				vec.set(0,0);

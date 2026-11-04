@@ -33,7 +33,7 @@ typedef ModeParamDef = {
 
 class EmitterParam {
 
-	public static var COMPONENTS = ["x", "y", "z", "w"];
+	public static var COMPONENTS = ["x", "y", "z"];
 
 	public static function animKey( def : ModeParamDef, comp : Int, ?field : String ) {
 		var k = def.def.length == 1 ? def.name : def.name + ":" + COMPONENTS[comp];
