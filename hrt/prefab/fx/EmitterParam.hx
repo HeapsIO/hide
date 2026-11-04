@@ -11,14 +11,12 @@ enum ParamMode {
 	Constant( value : Float );
 	Range( min : Float, max : Float );
 	Curve( curve : String );
-	/** The curve plus a signed random spread that follows its value: `spreadMin` where the curve is at its min, `spreadMax` where it is at its max **/
 	RandomCurve( curve : String, spreadMin : Float, spreadMax : Float );
 	CurveRange( curve : String );
 }
 
 typedef ParamVec2 = { ?x : ParamMode, ?y : ParamMode };
 typedef ParamVec3 = { > ParamVec2, ?z : ParamMode }; 
-// TODO TRE: duplicate of VectorAnimation..?
 
 typedef ParticleCurve = { curve : String };
 
@@ -59,8 +57,6 @@ class EmitterParam {
 		}
 	}
 
-	// A constant is a plain number, the other modes an object with a `mode` field, a vector an object of its components
-
 	public static function parseVec( v : Dynamic ) : ParamVec3 {
 		if( v == null )
 			return null;
@@ -87,7 +83,6 @@ class EmitterParam {
 		return out.x == null && out.y == null && out.z == null ? null : out;
 	}
 
-	/** The number of components of the shader param `v` as a particle param (a mode per component), 0 if it is not one (colors, textures...) **/
 	public static function getParamSize( v : hxsl.Ast.TVar ) : Int {
 		return switch( v.type ) {
 		case TVec(n, VFloat) if( v.name.toLowerCase().indexOf("color") < 0 ): n;
