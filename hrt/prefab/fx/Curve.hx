@@ -11,7 +11,7 @@ using Lambda;
 enum abstract CurveBlendMode(Int) {
 	var None = 0;
 	var Blend = 1;
-	var RandomBlend = 2;
+	// 2 was RandomBlend, a random between the two child curves: a Curve Range of the emitter params now
 	var Reference = 3;
 }
 
@@ -26,7 +26,7 @@ class Curve extends hrt.prefab.Curve {
 		if (blendMode == Reference)
 			return getRef()?.duration ?? 0.0;
 		if(keys.length == 0) return 0.0;
-		if (blendMode == Blend || blendMode == RandomBlend) {
+		if (blendMode == Blend) {
 			var c1:Curve = cast this.children[0];
 			var c2:Curve = cast this.children[1];
 			return Math.min(c1.duration, c2.duration);
@@ -137,8 +137,6 @@ class Curve extends hrt.prefab.Curve {
 		return switch(blendMode) {
 			case None:
 				param == null ? VCurve(data) : VParamCurve({ c1: data, c2: null, param: param });
-			case RandomBlend:
-				VCurve(data);
 			case Blend:
 				var ca = Std.downcast(this.children[0], Curve);
 				var cb = Std.downcast(this.children[1], Curve);
@@ -195,7 +193,7 @@ class Curve extends hrt.prefab.Curve {
 
 	function isBlendChild() {
 		var p = Std.downcast(parent, Curve);
-		return p != null && (p.blendMode == Blend || p.blendMode == RandomBlend);
+		return p != null && p.blendMode == Blend;
 	}
 
 	override function edit2(ctx: hrt.prefab.EditContext2) {
@@ -258,7 +256,6 @@ class Curve extends hrt.prefab.Curve {
 						<select class="blendmode-selector" id="blendMode">
 							<option value="0">None</option>
 							<option value="1">Blend curve</option>
-							<option value="2">Random between two curves</option>
 							<option value="3">Curve Reference</option>
 						</select>
 					</dd>
@@ -398,7 +395,7 @@ class Curve extends hrt.prefab.Curve {
 				return true;
 			}
 			visited.set(cur, true);
-			if (cur.blendMode == Blend || cur.blendMode == RandomBlend) {
+			if (cur.blendMode == Blend) {
 				for (i in 0...2) {
 					var subCurve = Std.downcast(cur.children[i], Curve);
 					if (subCurve.containsRefCycle(visited)) {

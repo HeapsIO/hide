@@ -378,7 +378,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 
 			@:privateAccess this.curveEditor.selectedElements = [];
 			for (c in this.curveEditor.curves){
-				if (Timeline.blendMode(c) == CurveBlendMode.Blend || Timeline.blendMode(c) == CurveBlendMode.RandomBlend)
+				if (Timeline.blendMode(c) == CurveBlendMode.Blend)
 					continue;
 
 				for (key in c.data.keys)
@@ -502,7 +502,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 		for (curve in this.curveEditor.curves){
 			// We don't want to show keys in overview if the
 			// concerned curve is a blended one
-			if (Timeline.blendMode(curve) != CurveBlendMode.Blend && Timeline.blendMode(curve) != CurveBlendMode.RandomBlend )
+			if (Timeline.blendMode(curve) != CurveBlendMode.Blend)
 				addCurveKeysToOverview(curve, { 'fill-opacity' : 1 });
 		}
 
@@ -936,7 +936,7 @@ class Timeline extends hide.comp.Component {
 
 			selectedElements = [];
 			for (c in curves){
-				if (blendMode(c) == CurveBlendMode.Blend ||  blendMode(c) == CurveBlendMode.RandomBlend)
+				if (blendMode(c) == CurveBlendMode.Blend)
 					continue;
 
 				for (key in c.data.keys)
@@ -1597,37 +1597,6 @@ class Timeline extends hide.comp.Component {
 			svg.polylineRawArray(curveGroup, pointBuffer, style);
 		}
 
-		function drawBlendArea(curve : EditedCurve, ?style: Dynamic) {
-			if (blendMode(curve) == CurveBlendMode.RandomBlend) {
-				var c1 : hrt.prefab.fx.Curve = cast fxCurveOf(curve).children[0];
-				var c2 : hrt.prefab.fx.Curve = cast fxCurveOf(curve).children[1];
-
-				var sampleSize = 500 * cast (xScale / 200.0);
-				var poly = [];
-
-				var ptsC1 = c1.sample(sampleSize);
-				for(i in 0...ptsC1.length) {
-					var x = xScale * (c1.duration * i / (ptsC1.length - 1));
-					var y = yScale * (-ptsC1[i]);
-					poly.push(new h2d.col.Point(x, y));
-				}
-
-				var ptsC2 = c2.sample(sampleSize);
-
-				var idx = ptsC2.length-1;
-				while (idx >= 0) {
-					var x = xScale * (c2.duration * idx / (ptsC2.length - 1));
-					var y = yScale * (-ptsC2[idx]);
-					poly.push(new h2d.col.Point(x, y));
-					idx--;
-				}
-
-				var blendAreaStyle: Dynamic = { opacity : 0.1 , fill : '#FFFFFF', stroke : '#000000'};
-
-				svg.polygon(curveGroup, poly, blendAreaStyle).attr("pointer-events","none");
-			}
-		}
-
 		for (i => curve in curves){
 			var colorInt = getCurveColor(curve.name, i);
 			var fxCurve = fxCurveOf(curve);
@@ -1649,17 +1618,11 @@ class Timeline extends hide.comp.Component {
 			if (blendMode(curve) == CurveBlendMode.Blend)
 				curveStyle = { opacity : 1, stroke : color, "stroke-width":'1px', "stroke-dasharray":"20,10,5,5,5,10"};
 
-			if (blendMode(curve) == CurveBlendMode.RandomBlend)
-				curveStyle = { opacity : 0};
-
 			drawCurve(curve, curveStyle, true, lowQuality);
 
 			if (fxCurve?.blendMode == None && fxCurve.param != null) {
 				drawCurve(curve, {opacity : 0.5, "stroke-width":'1px', "stroke-dasharray":"5, 3", stroke : color}, false, lowQuality);
 			}
-
-			// Draw the area where random blend curves will be picked
-			drawBlendArea(curve);
 		}
 	}
 

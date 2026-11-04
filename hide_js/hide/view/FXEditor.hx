@@ -739,7 +739,7 @@ class FXEditor extends hide.view.FileView {
 			}
 
 			if (curve != null) {
-				if (curve.blendMode == CurveBlendMode.Blend || curve.blendMode == CurveBlendMode.RandomBlend) {
+				if (curve.blendMode == CurveBlendMode.Blend) {
 					if (curve.children.length != 2) {
 						removeCurves();
 
@@ -1132,7 +1132,7 @@ class FXEditor extends hide.view.FileView {
 
 				// We don't want to show an header for the blending curve,
 				// just for the parent blend curves.
-				if (c.blendMode != CurveBlendMode.Blend && c.blendMode != CurveBlendMode.RandomBlend) {
+				if (c.blendMode != CurveBlendMode.Blend) {
 					var hexColor = '#${StringTools.hex(hide.comp.Timeline.getCurveColor(c.name, 0))}';
 					var trackEl = new Element('<div>
 						<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
@@ -1241,7 +1241,7 @@ class FXEditor extends hide.view.FileView {
 						var c = Std.downcast(child, Curve);
 						curvesToDraw.push(c);
 
-						if (c.blendMode == CurveBlendMode.Blend || c.blendMode == CurveBlendMode.RandomBlend)
+						if (c.blendMode == CurveBlendMode.Blend)
 							section.children.push(getSection(c,depth+1,particles));
 						else
 							section.curves.push(c);

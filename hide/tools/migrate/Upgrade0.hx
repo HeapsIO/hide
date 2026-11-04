@@ -151,6 +151,7 @@ class Upgrade0 {
 		checkInputs(root);
 		fxPass(root);
 		emitterPass(root);
+		randomBlendPass(root);
 		scaledReferencePass(root);
 		curvePass(data);
 	}
@@ -308,7 +309,7 @@ class Upgrade0 {
 				fail(n, "time remap by another curve, not supported");
 			else if( remap != null && remap != "" && (b == 1 || b == 3) )
 				fail(n, "time remap of a blend or a reference, not supported");
-			if( (b == 1 || b == 2) && !Lambda.foreach(n.curveChildren().slice(0, 2), c -> plain(c)) )
+			if( b == 1 && !Lambda.foreach(n.curveChildren().slice(0, 2), c -> plain(c)) )
 				fail(n, "blend of curves that are not plain, not supported");
 		}
 		for( c in n.children )
@@ -1707,17 +1708,6 @@ class Upgrade0 {
 		// the old runtime read the own keys of a random blend through a reference: they are lost
 		if( users.exists(n) && users.get(n).length > 0 )
 			warn(n, "random blend read by references, they read its first child curve now");
-		function datum( c : RawNode ) : Dynamic {
-			var keys : Array<Dynamic> = get(c.data, "keys");
-			if( keys == null || keys.length == 0 ) {
-				// the default keys of `Curve.load`
-				var mode = get(c.data, "keyMode") ?? 2;
-				keys = [obj(["time", 0., "value", 0., "mode", mode]), obj(["time", 1., "value", 1., "mode", mode])];
-			}
-			var d : Dynamic = obj(["keys", deepCopy(keys)]);
-			if( get(c.data, "loop") == true ) d.loop = true;
-			return d;
-		}
 		var d = n.data;
 		var datas = [datum(sub[0]), datum(sub[1])];
 		for( f in ["blendMode", "blendParam", "remapPath", "scale", "offset", "keys", "keyMode", "loop", "previewKeys", "children"] )
@@ -1725,6 +1715,42 @@ class Upgrade0 {
 		RawNode.setField(d, "datas", datas);
 		n.rebuildChildren();
 		change(n, "random blend, a curve of two datas");
+	}
+
+	/** The keys of the plain curve `c` as a data of a curve (`keys`, `loop`) **/
+	static function datum( c : RawNode ) : Dynamic {
+		var keys : Array<Dynamic> = get(c.data, "keys");
+		if( keys == null || keys.length == 0 ) {
+			// the default keys of `Curve.load`
+			var mode = get(c.data, "keyMode") ?? 2;
+			keys = [obj(["time", 0., "value", 0., "mode", mode]), obj(["time", 1., "value", 1., "mode", mode])];
+		}
+		var d : Dynamic = obj(["keys", deepCopy(keys)]);
+		if( get(c.data, "loop") == true ) d.loop = true;
+		return d;
+	}
+
+	/** The random blend `n` becomes a plain curve with the keys of `from`, one of its child curves, or its own **/
+	function flattenBlend( n : RawNode, from : RawNode ) {
+		var keys = datum(from), d = n.data;
+		for( f in ["blendMode", "blendParam", "keys", "keyMode", "loop", "children"] )
+			Reflect.deleteField(d, f);
+		RawNode.setField(d, "keys", keys.keys);
+		if( keys.loop == true ) RawNode.setField(d, "loop", true);
+		n.rebuildChildren();
+	}
+
+	/**
+		The runtime read a random blend as a random between its two child curves for the params of the emitters only
+		(`upgradeParams`, `upgradeEmitterAnims`), else as a plain curve, its own keys: what they become.
+	**/
+	function randomBlendPass( n : RawNode ) {
+		if( n.isCurve && blendMode(n) == 2 ) {
+			flattenBlend(n, n);
+			change(n, "random blend out of the emitter params, its own keys");
+		}
+		for( c in n.children )
+			randomBlendPass(c);
 	}
 
 	/** The shaders the particles of `e` get (`EmitterHelper.getParticleEmitter`) **/
@@ -1853,13 +1879,26 @@ class Upgrade0 {
 		inline function isBlend( n : RawNode ) return blendMode(n) == 2;
 		var renames = [];
 
+		// a random blend on a setting read the random of the first particle: its first child curve
+		function settingBlend( n : RawNode ) {
+			var sub = n.curveChildren();
+			if( sub.length == 0 ) {
+				fail(n, "random blend without its two child curves");
+				return;
+			}
+			warn(n, "random blend on an emitter setting, its first curve");
+			flattenBlend(n, sub[0]);
+		}
+
 		// emitter settings: value * curve
 		for( s in settings ) {
 			var n = find(s.name);
 			if( n == null || !isLegacy(n) ) continue;
-			if( !isBlend(n) )
+			if( isBlend(n) )
+				settingBlend(n);
+			else
 				bakeLinear(n, s.value, 0);
-			change(n, isBlend(n) ? "emitter setting, random blend" : "emitter setting");
+			change(n, "emitter setting");
 		}
 
 		// spawn params and over time settings
@@ -1879,22 +1918,29 @@ class Upgrade0 {
 				if( c == null || !isLegacy(c) ) continue;
 				if( d.group == OverTime ) {
 					renames.push({ node: c, name: key });
-					if( !isBlend(c) ) bakeLinear(c, k, 0);
-					change(c, isBlend(c) ? "over time, random blend" : "over time");
+					if( isBlend(c) )
+						settingBlend(c);
+					else
+						bakeLinear(c, k, 0);
+					change(c, "over time");
 					continue;
 				}
 				if( isBlend(c) ) {
-					// random between the two child curves, the value is not used
-					if( c.curveChildren().length < 2 ) {
+					// random between the two child curves, the value is not used: a range, its bounds the child curves
+					var sub = c.curveChildren();
+					if( sub.length < 2 ) {
 						warn(c, "random blend without its two child curves");
 						continue;
 					}
-					if( m != null ) {
-						out[i] = null;
-						changed = true;
-					}
-					renames.push({ node: c, name: key });
-					change(c, "spawn, random blend");
+					var min = newCurve(freeName(e, key + ":min"));
+					min.keys = datum(sub[0]).keys;
+					if( get(sub[0].data, "loop") == true ) min.loop = true;
+					e.addChild(min);
+					flattenBlend(c, sub[1]);
+					out[i] = MRange(0, 0);
+					changed = true;
+					renames.push({ node: c, name: key + ":max" });
+					change(c, "spawn, random blend: a range");
 					continue;
 				}
 				if( bounds == null ) {

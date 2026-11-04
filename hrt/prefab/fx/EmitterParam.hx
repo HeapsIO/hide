@@ -246,15 +246,7 @@ class ParamBuilder {
 	}
 
 	public function animated( name : String, base : Value ) : Value {
-		var c = hrt.prefab.fx.Curve.getCurve(owner, name);
-		if( c == null )
-			return base;
-		if( c.blendMode != RandomBlend )
-			return c.makeVal();
-		var a = Std.downcast(c.children[0], hrt.prefab.fx.Curve), b = Std.downcast(c.children[1], hrt.prefab.fx.Curve);
-		if( a == null || b == null || !a.isPlain() || !b.isPlain() )
-			throw c.getAbsPath(true) + ": a random blend needs two plain curves";
-		return VCurveRange(randomSlots++, a.data, b.data);
+		return hrt.prefab.fx.Curve.getCurve(owner, name)?.makeVal() ?? base;
 	}
 
 	function mode( def : ModeParamDef, i : Int ) : ParamMode {
@@ -272,17 +264,12 @@ class ParamBuilder {
 			var s : SpawnValue = switch( m ) {
 			case Range(min, max):
 				function bound( field : String, v : Float ) {
-					var c = hrt.prefab.fx.Curve.getCurve(owner, EmitterParam.animKey(def, i, field));
-					if( c != null && c.blendMode == RandomBlend )
-						throw c.getAbsPath(true) + ": a random blend on a range bound is not supported";
-					return c?.makeVal() ?? VConst(v);
+					return hrt.prefab.fx.Curve.getCurve(owner, EmitterParam.animKey(def, i, field))?.makeVal() ?? VConst(v);
 				}
 				{ rid: randomSlots++, min: bound("min", min), max: bound("max", max) };
 			case null, _:
-				switch( animated(EmitterParam.animKey(def, i), fixedValue(owner, m, def.def[i])) ) {
-				case VCurveRange(rid, a, b): { rid: rid, min: VCurve(a), max: VCurve(b) };
-				case v: { rid: -1, min: v, max: v };
-				}
+				var v = animated(EmitterParam.animKey(def, i), fixedValue(owner, m, def.def[i]));
+				{ rid: -1, min: v, max: v };
 			}
 			s;
 		}];
