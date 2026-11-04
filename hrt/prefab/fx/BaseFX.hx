@@ -279,15 +279,7 @@ class BaseFXTools {
 			case TVec(_, VFloat):
 				return name.toLowerCase().indexOf("color") >= 0 ? getColorValue(curves) : getVectorValue(curves);
 			default:
-				var curve = Curve.getCurve(basePrefab, name);
-				if(curve != null)
-					return curve.makeVal();
-				var prop = Reflect.field(basePrefab.props, name);
-				if (prop == null)
-					prop = Reflect.field(basePrefab, name);
-				if (prop == null)
-					prop = hrt.prefab.DynamicShader.getDefault(type);
-				return VConst(Std.isOfType(prop, Float) || Std.isOfType(prop, Int) ? (prop : Float) : 1.0);
+				return Curve.getCurve(basePrefab, name)?.makeVal();
 		}
 	}
 
@@ -312,16 +304,13 @@ class BaseFXTools {
 			if (!(Reflect.field(rfxElt, f.name) is Float))
 				continue;
 
-			var curves = Curve.getCurves(rfxElt, f.name);
-			if(curves == null || curves.length == 0)
-				continue;
-
 			var curve = Curve.getCurve(rfxElt, f.name);
-			var val = curve != null ? curve.makeVal() : VConst(1.0);
+			if(curve == null)
+				continue;
 			if(ret == null) ret = [];
 			ret.push({
 				field : f,
-				value : val
+				value : curve.makeVal()
 			});
 		}
 
