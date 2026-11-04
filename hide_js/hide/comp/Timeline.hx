@@ -9,6 +9,20 @@ typedef EditedCurve = {
 	var data(get, never) : hrt.impl.Curve;
 }
 
+/** A data of a curve of several (a blend, a range), edited as a curve of its own **/
+class CurveData {
+	public var name : String;
+	public var data(get, never) : hrt.impl.Curve;
+	var curve : hrt.prefab.fx.Curve;
+	var index : Int;
+	public function new(curve: hrt.prefab.fx.Curve, index: Int) {
+		this.curve = curve;
+		this.index = index;
+		name = curve.name + " " + index;
+	}
+	function get_data() return curve.datas[index];
+}
+
 interface CurveEditorComponent {
 	function refresh(?anim: Bool = false): Void;
 	function setPan(): Void;
@@ -1567,9 +1581,8 @@ class Timeline extends hide.comp.Component {
 			var fxCurve = fxCurveOf(curve);
 			var v = fxCurve == null || (bypassRemap && fxCurve.blendMode == CurveBlendMode.None) ? hrt.prefab.fx.Value.VCurve(curve.data) : fxCurve.makeVal();
 			evaluator.parameters.clear();
-			var fx = Std.downcast((cast curve : hrt.prefab.Prefab).getRoot(false), hrt.prefab.fx.FX);
-
 			if (fxCurve?.param != null) {
+				var fx = Std.downcast(fxCurve.getRoot(false), hrt.prefab.fx.FX);
 				for (param in fx.parameters) {
 					if (param.name == fxCurve.param) {
 						evaluator.parameters.set(param.name, param.def);

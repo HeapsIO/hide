@@ -237,8 +237,8 @@ class ParamBuilder {
 			var c = EmitterParam.resolveCurve(owner, s);
 			if( c == null )
 				Evaluator.vVal(def);
-			else if( !c.isPlain() || c.datas.length != 2 )
-				throw owner.getAbsPath(true) + ': a Curve Range needs a plain curve with two datas';
+			else if( c.blendMode != hrt.prefab.fx.Curve.CurveBlendMode.Range )
+				throw owner.getAbsPath(true) + ': a Curve Range needs a curve in Range mode';
 			else
 				VCurveRange(randomSlots++, c.datas[0], c.datas[1]);
 		case null, _: fixedValue(owner, m, def);

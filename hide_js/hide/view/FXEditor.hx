@@ -721,46 +721,7 @@ class FXEditor extends hide.view.FileView {
 			rebuildAnimPanel();
 
 		if (pname == "blendMode" || pname == "param") {
-			var curve = Std.downcast(p, Curve);
-
-			function removeCurves() {
-				var toRemove: Array<Curve> = [];
-				for (child in curve.children) {
-					var c = Std.downcast(child, Curve);
-					if (c != null)
-						toRemove.push(c);
-				}
-
-				while (toRemove.length > 0) {
-					var c = toRemove.pop();
-					//c.removeInstance();
-					c.remove();
-				}
-			}
-
-			if (curve != null) {
-				if (curve.blendMode == CurveBlendMode.Blend) {
-					if (curve.children.length != 2) {
-						removeCurves();
-
-						// We're currently supporting blending with only 2 curves
-						for (i in 0...2) {
-							var c = new Curve(curve, null);
-							c.name = '$i';
-							if (i == 0) {
-								for (k in curve.keys) {
-									var newK = new hrt.impl.Curve.CurveKey();
-									@:privateAccess newK.copyFromOther(k);
-									c.keys.push(newK);
-								}
-							}
-						}
-					}
-				}
-				else {
-					removeCurves();
-				}
-			}
+			Std.downcast(p, Curve)?.syncDatas();
 
 			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 			rebuildAnimPanel();
@@ -860,7 +821,12 @@ class FXEditor extends hide.view.FileView {
 			this.curveEditor.xOffset = xOffset;
 			this.curveEditor.xScale = xScale;
 
-			this.curveEditor.curves.push(curve);
+			// a curve of two datas: each one edited apart, the blend drawn as it is
+			if (curve.blendMode != CurveBlendMode.Range)
+				this.curveEditor.curves.push(curve);
+			if (curve.datas.length > 1)
+				for (i in 0...curve.datas.length)
+					this.curveEditor.curves.push(new hide.comp.Timeline.CurveData(curve, i));
 			this.curveEditor.onChange = function(anim) {
 				//refreshDopesheet();
 				forceTick = true;
@@ -1129,10 +1095,7 @@ class FXEditor extends hide.view.FileView {
 
 			if (section.root is Curve) {
 				var c: Curve = cast section.root;
-
-				// We don't want to show an header for the blending curve,
-				// just for the parent blend curves.
-				if (c.blendMode != CurveBlendMode.Blend) {
+				{
 					var hexColor = '#${StringTools.hex(hide.comp.Timeline.getCurveColor(c.name, 0))}';
 					var trackEl = new Element('<div>
 						<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
@@ -1241,10 +1204,7 @@ class FXEditor extends hide.view.FileView {
 						var c = Std.downcast(child, Curve);
 						curvesToDraw.push(c);
 
-						if (c.blendMode == CurveBlendMode.Blend)
-							section.children.push(getSection(c,depth+1,particles));
-						else
-							section.curves.push(c);
+						section.curves.push(c);
 					}
 					else {
 						section.children.push(getSection(child,depth+1,particles));

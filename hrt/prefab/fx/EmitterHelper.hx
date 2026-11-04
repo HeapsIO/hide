@@ -311,7 +311,7 @@ class EmitterHelper {
 					if (curve == null || !curve.isParticleCurve())
 						continue;
 					var cpath = EmitterParam.curvePath(prefab, curve);
-					if ((curve.isPlain() && curve.datas.length == count) || cpath == path)
+					if ((count == 2 ? curve.blendMode == hrt.prefab.fx.Curve.CurveBlendMode.Range : curve.isPlain()) || cpath == path)
 						entries.push({ value: cpath, label: cpath });
 				}
 				if (!Lambda.exists(entries, e -> e.value == path))
@@ -511,6 +511,8 @@ class EmitterHelper {
 		}
 		c.name = name;
 		c.datas = datas;
+		if (datas.length == 2)
+			c.blendMode = hrt.prefab.fx.Curve.CurveBlendMode.Range;
 		return EmitterParam.curvePath(owner, c);
 	}
 
@@ -568,7 +570,7 @@ class EmitterHelper {
 
 	static function getEditableCurve(owner: Prefab, path: String) : Curve {
 		var c = EmitterParam.resolveCurve(owner, path);
-		return c != null && c.isPlain() ? c : null;
+		return c != null && (c.isPlain() || c.blendMode == hrt.prefab.fx.Curve.CurveBlendMode.Range) ? c : null;
 	}
 
 	// Build inspector for the params of a shader under an emitter, false if the shader is not under one

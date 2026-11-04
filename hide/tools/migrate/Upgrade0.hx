@@ -168,10 +168,59 @@ class Upgrade0 {
 			scaledReferencePass(c);
 	}
 
+	/**
+		The curves get the format of `hrt.prefab.fx.Curve`: the blend mode by name, a blend holds the keys of its two child curves
+		(`datas`), the curve of two datas of a Curve Range is a Range, the parameter of a blend or a time remap is `param`, the
+		path of a reference `refPath`.
+	**/
 	function curvePass( d : Dynamic ) {
-		if( get(d, "type") == "curve" ) d.type = "fxcurve";
+		var type = get(d, "type");
+		if( type == "curve" || type == "fxcurve" ) {
+			d.type = "fxcurve";
+			upgradeCurve(d);
+			// the runtime never read the children of a curve but the two of a blend
+			var children : Array<Dynamic> = get(d, "children");
+			if( children != null && children.length > 0 ) {
+				report.warnings.push('$file ${d.name}: ${children.length} curves under a curve, never read, removed');
+				Reflect.deleteField(d, "children");
+			}
+		}
 		var children : Array<Dynamic> = get(d, "children");
 		if( children != null ) for( c in children ) if( c != null ) curvePass(c);
+	}
+
+	static function upgradeCurve( d : Dynamic ) {
+		var b : Dynamic = get(d, "blendMode");
+		var mode : Int = b == null ? 0 : Std.isOfType(b, Int) ? b : Std.parseInt(Std.string(b)) ?? 0;
+		var blendParam : String = get(d, "blendParam"), remap : String = get(d, "remapPath");
+		for( f in ["blendMode", "blendParam", "remapPath"] )
+			Reflect.deleteField(d, f);
+		switch( mode ) {
+		case 1:
+			var children : Array<Dynamic> = get(d, "children") ?? [];
+			var sub = [for( c in children ) if( c != null && (c.type == "curve" || c.type == "fxcurve") ) c].slice(0, 2);
+			for( f in ["keys", "keyMode", "loop", "children"] )
+				Reflect.deleteField(d, f);
+			if( sub.length == 2 && blendParam != null ) {
+				RawNode.setField(d, "blendMode", "Blend");
+				RawNode.setField(d, "param", blendParam);
+				RawNode.setField(d, "datas", [datum(sub[0]), datum(sub[1])]);
+			} else if( sub.length > 0 ) {
+				// the runtime read its first child curve
+				var k = datum(sub[0]);
+				RawNode.setField(d, "keys", k.keys);
+				if( k.loop == true ) RawNode.setField(d, "loop", true);
+			} else
+				RawNode.setField(d, "keys", [obj(["time", 0., "value", 0., "mode", 2])]);
+		case 3:
+			RawNode.setField(d, "blendMode", "Reference");
+			RawNode.setField(d, "refPath", blendParam);
+		default:
+			if( get(d, "datas") != null )
+				RawNode.setField(d, "blendMode", "Range");
+			else if( remap != null && StringTools.startsWith(remap, "$param.") )
+				RawNode.setField(d, "param", remap.substr("$param.".length));
+		}
 	}
 
 	/** Upgrades the overrides of the references of a file, true if any changed **/
@@ -458,6 +507,7 @@ class Upgrade0 {
 				if( get(d, "type") == "curve" ) {
 					var c : Dynamic = deepCopy(d);
 					c.type = "fxcurve";
+					upgradeCurve(c);
 					var ch : Array<Dynamic> = get(c, "children");
 					if( ch != null ) c.children = [for( x in ch ) if( x != null ) strip(x)];
 					return c;
@@ -1709,7 +1759,7 @@ class Upgrade0 {
 		if( users.exists(n) && users.get(n).length > 0 )
 			warn(n, "random blend read by references, they read its first child curve now");
 		var d = n.data;
-		var datas = [datum(sub[0]), datum(sub[1])];
+		var datas = [datum(sub[0].data), datum(sub[1].data)];
 		for( f in ["blendMode", "blendParam", "remapPath", "scale", "offset", "keys", "keyMode", "loop", "previewKeys", "children"] )
 			Reflect.deleteField(d, f);
 		RawNode.setField(d, "datas", datas);
@@ -1717,22 +1767,22 @@ class Upgrade0 {
 		change(n, "random blend, a curve of two datas");
 	}
 
-	/** The keys of the plain curve `c` as a data of a curve (`keys`, `loop`) **/
-	static function datum( c : RawNode ) : Dynamic {
-		var keys : Array<Dynamic> = get(c.data, "keys");
+	/** The keys of the plain curve `c` (its data) as a data of a curve (`keys`, `loop`) **/
+	static function datum( c : Dynamic ) : Dynamic {
+		var keys : Array<Dynamic> = get(c, "keys");
 		if( keys == null || keys.length == 0 ) {
 			// the default keys of `Curve.load`
-			var mode = get(c.data, "keyMode") ?? 2;
+			var mode = get(c, "keyMode") ?? 2;
 			keys = [obj(["time", 0., "value", 0., "mode", mode]), obj(["time", 1., "value", 1., "mode", mode])];
 		}
 		var d : Dynamic = obj(["keys", deepCopy(keys)]);
-		if( get(c.data, "loop") == true ) d.loop = true;
+		if( get(c, "loop") == true ) d.loop = true;
 		return d;
 	}
 
 	/** The random blend `n` becomes a plain curve with the keys of `from`, one of its child curves, or its own **/
 	function flattenBlend( n : RawNode, from : RawNode ) {
-		var keys = datum(from), d = n.data;
+		var keys = datum(from.data), d = n.data;
 		for( f in ["blendMode", "blendParam", "keys", "keyMode", "loop", "children"] )
 			Reflect.deleteField(d, f);
 		RawNode.setField(d, "keys", keys.keys);
@@ -1933,7 +1983,7 @@ class Upgrade0 {
 						continue;
 					}
 					var min = newCurve(freeName(e, key + ":min"));
-					min.keys = datum(sub[0]).keys;
+					min.keys = datum(sub[0].data).keys;
 					if( get(sub[0].data, "loop") == true ) min.loop = true;
 					e.addChild(min);
 					flattenBlend(c, sub[1]);

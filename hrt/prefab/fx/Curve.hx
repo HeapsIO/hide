@@ -8,11 +8,15 @@ import hrt.prefab.fx.Value;
 
 using Lambda;
 
-enum abstract CurveBlendMode(Int) {
-	var None = 0;
-	var Blend = 1;
-	// 2 was RandomBlend, a random between the two child curves: a Curve Range of the emitter params now
-	var Reference = 3;
+enum CurveBlendMode {
+	/** One data, read at the time or at the FX parameter `param` **/
+	None;
+	/** Two datas, blended by the FX parameter `param` **/
+	Blend;
+	/** Two datas, a random between them: the Curve Range of the emitter params **/
+	Range;
+	/** The curve at `refPath` **/
+	Reference;
 }
 
 @:prefabIcon(HuiRes.ui.icons.prefab.curve)
@@ -25,12 +29,8 @@ class Curve extends hrt.prefab.Curve {
 	override function get_duration() {
 		if (blendMode == Reference)
 			return getRef()?.duration ?? 0.0;
-		if(keys.length == 0) return 0.0;
-		if (blendMode == Blend) {
-			var c1:Curve = cast this.children[0];
-			var c2:Curve = cast this.children[1];
-			return Math.min(c1.duration, c2.duration);
-		}
+		if (blendMode == Blend)
+			return Math.min(datas[0].duration, datas[1].duration);
 		return data.duration;
 	}
 
@@ -41,28 +41,6 @@ class Curve extends hrt.prefab.Curve {
 
 	override function initData() {
 		datas = [new hrt.impl.Curve()];
-	}
-
-	override function load(o:Dynamic) {
-		if (o.blendMode != null && !Std.isOfType(o.blendMode, Int)) {
-			o.blendMode = Std.parseInt(o.blendMode);
-		}
-		var remap : String = o.remapPath;
-		var mode : CurveBlendMode = o.blendMode ?? None;
-		switch (mode) {
-			case Blend: o.param ??= o.blendParam;
-			case Reference: o.refPath ??= o.blendParam;
-			case None if (remap != null && StringTools.startsWith(remap, "$param.")): o.param ??= remap.substr("$param.".length);
-			default:
-		}
-		super.load(o);
-		#if editor
-		if (Std.downcast(parent, Curve) != null) {
-			if (StringTools.startsWith(name, parent.name)) {
-				name = StringTools.replace(name, parent.name + ":", "");
-			}
-		}
-		#end
 	}
 
 	override function loadData(o:Dynamic) {
@@ -79,6 +57,9 @@ class Curve extends hrt.prefab.Curve {
 	}
 
 	override function saveData(o:Dynamic) {
+		// a reference reads the keys of its curve
+		if (blendMode == Reference)
+			return;
 		if (datas.length == 1)
 			super.saveData(o);
 		else
@@ -87,7 +68,7 @@ class Curve extends hrt.prefab.Curve {
 
 	#if !editor
 	override function bakeValues() {
-		if (blendMode == None)
+		if (blendMode != Reference)
 			for (d in datas)
 				d.bakeValues();
 	}
@@ -138,16 +119,9 @@ class Curve extends hrt.prefab.Curve {
 			case None:
 				param == null ? VCurve(data) : VParamCurve({ c1: data, c2: null, param: param });
 			case Blend:
-				var ca = Std.downcast(this.children[0], Curve);
-				var cb = Std.downcast(this.children[1], Curve);
-				if ((ca != null && !ca.isPlain()) || (cb != null && !cb.isPlain()))
-					fail("a blend of curves that are not plain");
-				else if (ca == null && cb == null)
-					VConst(0.0);
-				else if (ca == null || cb == null || param == null)
-					VCurve((ca ?? cb).data);
-				else
-					VParamCurve({ c1: ca.data, c2: cb.data, param: param });
+				VParamCurve({ c1: datas[0], c2: datas[1], param: param });
+			case Range:
+				fail("a random range out of the Curve Range of the emitter params");
 			case Reference:
 				var ref = getRef();
 				switch(ref?.makeVal()) {
@@ -155,8 +129,6 @@ class Curve extends hrt.prefab.Curve {
 					case v = VConst(_) | VCurve(_) | VParamCurve(_): v;
 					case v: fail("a reference to " + v);
 				}
-			default:
-				throw "invalid blendMode value";
 		}
 	}
 
@@ -191,9 +163,15 @@ class Curve extends hrt.prefab.Curve {
 		return refCurve;
 	}
 
-	function isBlendChild() {
-		var p = Std.downcast(parent, Curve);
-		return p != null && p.blendMode == Blend;
+	/** Two datas for a blend or a range, one else (the second one starts as a copy of the first) **/
+	public function syncDatas() {
+		var two = blendMode == Blend || blendMode == Range;
+		if (two && datas.length < 2) {
+			var d = new hrt.impl.Curve();
+			@:privateAccess d.copyFromOther(datas[0]);
+			datas.push(d);
+		} else if (!two && datas.length > 1)
+			datas.resize(1);
 	}
 
 	override function edit2(ctx: hrt.prefab.EditContext2) {
@@ -202,11 +180,11 @@ class Curve extends hrt.prefab.Curve {
 			<root>
 				<category("Parameters")>
 					<checkbox field={loop}/>
-					<select field={blendMode} id="blend-mode-select" if (!isBlendChild() || this.blendMode != CurveBlendMode.None)/>
+					<select field={blendMode} id="blend-mode-select"/>
 					<select([{label: "None", value: null}]) label="Blend Param" field={param} id="blend-param-select" if (this.blendMode == CurveBlendMode.Blend)/>
 					<select([{label: "None", value: null}]) label="Reference" field={refPath} id="ref-select" if (this.blendMode == CurveBlendMode.Reference)/>
-					<select([{label: "None", value: null}]) label="Time Remap" id="remap-select" field={param} if (this.blendMode == CurveBlendMode.None && (!isBlendChild() || this.param != null))/>
-					<line label="Curve" if (this.blendMode == CurveBlendMode.None)><curve(name) id="curve-editor"/></line>
+					<select([{label: "None", value: null}]) label="Time Remap" id="remap-select" field={param} if (this.blendMode == CurveBlendMode.None)/>
+					<line label="Curve" if (this.blendMode != CurveBlendMode.Reference)><curve(name) id="curve-editor"/></line>
 				</category>
 			</root>
 		);
@@ -221,6 +199,7 @@ class Curve extends hrt.prefab.Curve {
 
 		if (blendModeSelect != null)
 			blendModeSelect.onValueChange = (_) -> {
+				syncDatas();
 				ctx.rebuildInspector();
 			}
 
@@ -254,9 +233,9 @@ class Curve extends hrt.prefab.Curve {
 				<div id="mode">
 					<dt>Blend Mode</dt><dd>
 						<select class="blendmode-selector" id="blendMode">
-							<option value="0">None</option>
-							<option value="1">Blend curve</option>
-							<option value="3">Curve Reference</option>
+							<option value="None">None</option>
+							<option value="Blend">Blend curve</option>
+							<option value="Reference">Curve Reference</option>
 						</select>
 					</dd>
 				</div>
@@ -316,9 +295,8 @@ class Curve extends hrt.prefab.Curve {
 				selecta.val(refPath);
 			}
 
-			props.find('#mode').toggle(!isBlendChild() || blendMode != None);
 			var remap = props.find('#remap');
-			if (blendMode != None || (isBlendChild() && param == null)) {
+			if (blendMode != None) {
 				remap.hide();
 			}
 			else {
@@ -336,17 +314,18 @@ class Curve extends hrt.prefab.Curve {
 
 		refreshBlend();
 
-		blendModeSelect.val(Std.string(blendMode));
+		blendModeSelect.val(blendMode.getName());
 		blendModeSelect.change((_) -> {
 			var oldBlend = this.blendMode;
 			var oldParam = this.param;
 			var oldRef = this.refPath;
-			var newBlend = cast Std.parseInt(blendModeSelect.val());
+			var newBlend = CurveBlendMode.createByName(blendModeSelect.val());
 
 			function exec(undo : Bool) {
 				blendMode = undo ? oldBlend : newBlend;
 				param = undo ? oldParam : null;
 				refPath = undo ? oldRef : null;
+				syncDatas();
 				refreshBlend();
 				ctx.onChange(this, "blendMode");
 				ctx.rebuildPrefab(this);
@@ -395,14 +374,6 @@ class Curve extends hrt.prefab.Curve {
 				return true;
 			}
 			visited.set(cur, true);
-			if (cur.blendMode == Blend) {
-				for (i in 0...2) {
-					var subCurve = Std.downcast(cur.children[i], Curve);
-					if (subCurve.containsRefCycle(visited)) {
-						return true;
-					}
-				}
-			}
 			cur = cur.getRef();
 		}
 		return false;
