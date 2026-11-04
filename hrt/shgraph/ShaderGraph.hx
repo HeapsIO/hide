@@ -959,6 +959,8 @@ class Graph {
 		}
 
 		for (e in edges) {
+			if (!this.nodes.exists(e.inputNodeId) || !this.nodes.exists(e.outputNodeId))
+				continue;
 			addEdge(e, false);
 		}
 	}
@@ -1079,6 +1081,9 @@ class Graph {
 			}
 		}
 
+		if (inputs[inputId] == null || outputs[outputId] == null)
+			return false;
+
 		node.connections[inputId] = {from: output, outputId: outputId};
 
 		#if editor
@@ -1092,11 +1097,6 @@ class Graph {
 
 		if (!areTypesCompatible(inputType, outputType)) {
 			removeEdge(edge.inputNodeId, inputId);
-		}
-		try {
-		} catch (e : Dynamic) {
-			removeEdge(edge.inputNodeId, inputId);
-			throw e;
 		}
 		#end
 		return true;
