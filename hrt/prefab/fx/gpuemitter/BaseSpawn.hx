@@ -2,9 +2,9 @@ package hrt.prefab.fx.gpuemitter;
 
 class BaseSpawn extends ComputeUtils {
 	static var SRC = {
-		@param var batchBuffer : RWPartialBuffer<{
-			modelView : Mat4,
-		}>;
+		@param var batchBuffer : RWBuffer<Vec4>;
+		@param var batchStride : Int;
+		@param var modelViewPos : Int;
 		@param var particleBuffer : RWPartialBuffer<{
 			speed : Vec3,
 			life : Float,
@@ -25,6 +25,7 @@ class BaseSpawn extends ComputeUtils {
 		@param var absPos : Mat4;
 
 		@:import h3d.shader.ColorSpaces;
+		@:import h3d.shader.BufferUtils;
 
 		var life : Float;
 		var particleRandom : Float;
@@ -49,7 +50,7 @@ class BaseSpawn extends ComputeUtils {
 			if ( FORCED || (!INFINITE && curLife > curLifeTime ) ) {
 				var c = atomicAdd(atomic, 0, 1);
 				if ( FORCED || (!INFINITE && c < rate) ) {
-					batchBuffer[idx].modelView = modelView;
+					writeMat4(batchBuffer, idx * batchStride + modelViewPos, modelView);
 					var s = vec3(0.0, 0.0, 1.0);
 					if ( SPEED_NORMAL )
 						s = emitNormal;

@@ -305,11 +305,18 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 						computeUtils.onDispatch(this);
 				}
 
+				var batchStride = b.format.strideBytes >> 4;
+				var modelViewPos = b.format.calculateInputOffset("modelView__m0") >> 4;
+
 				baseSpawn.batchBuffer = b;
+				baseSpawn.batchStride = batchStride;
+				baseSpawn.modelViewPos = modelViewPos;
 				baseSpawn.particleBuffer = particleBuffer;
 				baseSpawn.atomic = particleCounter.buffer;
 
 				baseSimulation.batchBuffer = b;
+				baseSimulation.batchStride = batchStride;
+				baseSimulation.modelViewPos = modelViewPos;
 				baseSimulation.particleBuffer = particleBuffer;
 
 				var s = simulationPass.getShader(PreviousModelViewSimulation);
@@ -319,6 +326,8 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 					if ( s == null )
 						simulationPass.addShader(prevModelViewSimulation);
 					prevModelViewSimulation.batchBuffer = b;
+					prevModelViewSimulation.batchStride = batchStride;
+					prevModelViewSimulation.previousModelViewPos = b.format.calculateInputOffset("previousModelView__m0") >> 4;
 				} else {
 					if ( s != null )
 						simulationPass.removeShader(s);

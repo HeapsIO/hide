@@ -97,14 +97,19 @@ class GPUBatcher extends Batcher {
 			var p = @:privateAccess copyUnit.batch.dataPasses;
 			var bakedMat = copyUnit.bakedMat;
 			while( p != null ) {
+					var fmt = p.buffers[0].format;
 					copyShader.positions = copyUnit.modelViews;
 					copyShader.positionsOut = p.buffers[0];
+					copyShader.stride = fmt.strideBytes >> 4;
+					copyShader.modelViewPos = fmt.calculateInputOffset("modelView__m0") >> 4;
 					copyShader.start = copyUnit.start;
 
-					if(p.buffers[0].format.hasInput("uvTransform") && p.buffers[0].format.hasInput("libraryParams")){
+					if(fmt.hasInput("uvTransform") && fmt.hasInput("libraryParams")){
 						uvTransformShader.uvTransformOut = p.buffers[0];
+						uvTransformShader.uvTransformPos = fmt.calculateInputOffset("uvTransform") >> 4;
 						uvTransformShader.uvTransform.set(bakedMat.uvX, bakedMat.uvY, bakedMat.uvSX, bakedMat.uvSY);
 						libraryParamShader.libraryParamsOut = p.buffers[0];
+						libraryParamShader.libraryParamsPos = fmt.calculateInputOffset("libraryParams") >> 4;
 						libraryParamShader.libraryParams.set(bakedMat.texId, 1.0 / library.atlasResolution / bakedMat.uvSX, 0.0, 0.0);
 						ctx.computeList(fullCopyShaders);
 					} else {

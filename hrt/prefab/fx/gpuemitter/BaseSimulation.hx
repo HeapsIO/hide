@@ -2,9 +2,9 @@ package hrt.prefab.fx.gpuemitter;
 
 class BaseSimulation extends ComputeUtils {
 	static var SRC = {
-		@param var batchBuffer : RWPartialBuffer<{
-			modelView : Mat4,
-		}>;
+		@param var batchBuffer : RWBuffer<Vec4>;
+		@param var batchStride : Int;
+		@param var modelViewPos : Int;
 		@param var particleBuffer : RWPartialBuffer<{
 			speed : Vec3,
 			life : Float,
@@ -14,6 +14,7 @@ class BaseSimulation extends ComputeUtils {
 		}>;
 
 		@:import h3d.shader.ColorSpaces;
+		@:import h3d.shader.BufferUtils;
 
 		@const var FACE_CAM : Bool = false;
 		@const var CAMERA_BOUNDS : Bool = false;
@@ -50,7 +51,7 @@ class BaseSimulation extends ComputeUtils {
 			speed = particleBuffer[computeVar.globalInvocation.x].speed;
 			life = particleBuffer[computeVar.globalInvocation.x].life;
 			lifeTime = particleBuffer[computeVar.globalInvocation.x].lifeTime;
-			prevModelView = batchBuffer[computeVar.globalInvocation.x].modelView;
+			prevModelView = readMat4(batchBuffer, computeVar.globalInvocation.x * batchStride + modelViewPos);
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
 			particleColor = unpackIntColor(floatBitsToInt(particleBuffer[computeVar.globalInvocation.x].color));
 			relativeTransform = scaleMatrix(((INFINITE || life < lifeTime) ? 1.0 : 0.0) * (computeVar.globalInvocation.x > curCount ? 0.0 : 1.0) * vec3(particleRandom * (maxSize - minSize) + minSize));
@@ -71,7 +72,7 @@ class BaseSimulation extends ComputeUtils {
 			particleBuffer[idx].life = life + dt;
 			particleBuffer[idx].speed = speed;
 			particleBuffer[idx].color = intBitsToFloat(packIntColor(particleColor));
-			batchBuffer[idx].modelView = modelView;
+			writeMat4(batchBuffer, idx * batchStride + modelViewPos, modelView);
 		}
 	}
 }
