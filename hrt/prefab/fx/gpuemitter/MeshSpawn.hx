@@ -17,23 +17,14 @@ class MeshSpawnShader extends ComputeUtils {
 		var skip = Math.floor(originalBuffer.vertices / vertexCount);
 
 		var alloc = hxd.impl.Allocator.get();
-		var fmt = if ( Std.isOfType(m, h3d.scene.Skin) ) {
-			hxd.BufferFormat.make([
-				{ name : "position", type : DVec3 },
-				{ name : "padding", type : DFloat },
-				{ name : "normal", type : DVec3 },
-				{ name : "padding2", type : DFloat },
-				{ name : "weights", type : DVec3 },
-				{ name : "indexes", type : DBytes4 },
-			]);
-		} else {
-			hxd.BufferFormat.make([
-				{ name : "position", type : DVec3 },
-				{ name : "padding", type : DFloat },
-				{ name : "normal", type : DVec3 },
-				{ name : "padding2", type : DFloat },
-			]);
-		}
+		var fmt = hxd.BufferFormat.make([
+			{ name : "position", type : DVec3 },
+			{ name : "padding", type : DFloat },
+			{ name : "normal", type : DVec3 },
+			{ name : "padding2", type : DFloat },
+			{ name : "weights", type : DVec3 },
+			{ name : "indexes", type : DBytes4 },
+		]);
 		vbuf = alloc.allocBuffer(vertexCount, fmt, UniformReadWrite);
 
 		var floatBuffer = alloc.allocFloats(vertexCount * vbuf.format.stride);
@@ -68,7 +59,7 @@ class MeshSpawnShader extends ComputeUtils {
 		@const(1024) var JOINTS_BUFFER_SIZE : Int;
 
 		@param var vertexCount : Int;
-		@param var vbuf : RWPartialBuffer<{
+		@param var vbuf : RWBuffer<{
 			position : Vec3,
 			padding : Float,
 			normal : Vec3,
