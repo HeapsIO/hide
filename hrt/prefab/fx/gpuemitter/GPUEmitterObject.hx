@@ -7,14 +7,11 @@ class ParticleShader extends hxsl.Shader {
 	static var SRC = {
 		@param var absPos : Mat4;
 
-		@param var particleBuffer : RWPartialBuffer<{
-			life : Float,
-			lifeTime : Float,
-			random : Float,
-			color : Float,
-		}>;
+		@param var particleBuffer : RWBuffer<Float>;
+		@param var particleStride : Int;
 
 		@:import h3d.shader.ColorSpaces;
+		@:import hrt.prefab.fx.gpuemitter.ParticleBuffer;
 
 		@flat var particleLife : Float;
 		@flat var particleLifeTime : Float;
@@ -30,10 +27,10 @@ class ParticleShader extends hxsl.Shader {
 		var transformedPosition : Vec3;
 		function __init__vertex() {
 			{
-				particleLife = particleBuffer[instanceID].life;
-				particleLifeTime = particleBuffer[instanceID].lifeTime;
-				particleRandom = particleBuffer[instanceID].random;
-				particleColor = unpackIntColor(floatBitsToInt(particleBuffer[instanceID].color));
+				particleLife = getParticleLife(instanceID);
+				particleLifeTime = getParticleLifeTime(instanceID);
+				particleRandom = getParticleRandom(instanceID);
+				particleColor = unpackIntColor(floatBitsToInt(getParticleColor(instanceID)));
 			}
 			meshToModel = meshTransform;
 			modelToMesh = meshTransformInverse;
@@ -49,6 +46,14 @@ class ParticleShader extends hxsl.Shader {
 
 @:allow(hrt.prefab.fx.GPUEmitter)
 class GPUEmitterObject extends h3d.scene.MeshBatch {
+	static var BASE_PARTICLE_INPUTS : Array<hxd.BufferFormat.BufferInput> = [
+		{ name : "speed", type : DVec3 },
+		{ name : "life", type : DFloat },
+		{ name : "lifeTime", type : DFloat },
+		{ name : "random", type : DFloat },
+		{ name : "color", type : DFloat },
+	];
+
 	public var simulationPass : h3d.mat.Pass;
 	public var spawnPass : h3d.mat.Pass;
 	public var updateParamPass : h3d.mat.Pass;
@@ -59,7 +64,8 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	var shaderParams : Array<{ param : hrt.prefab.fx.BaseFX.ShaderParam, shader : UpdateParamShader }> = [];
 	var paramTexture : h3d.mat.Texture;
 
-	var particleBuffer : h3d.Buffer;
+	public var particleBuffer(default, null) : h3d.Buffer;
+	var particleFormat : hxd.BufferFormat;
 	var particleShader : ParticleShader;
 	var applyTransformShader : h3d.shader.ApplyTransformShader;
 	var particleCounter : h3d.GPUCounter;
@@ -161,41 +167,60 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	}
 
 	function init() {
-		var alloc = hxd.impl.Allocator.get();
-		var particleBufferFormat = hxd.BufferFormat.make([
-			{ name : "speed", type : DVec3 },
-			{ name : "life", type : DFloat },
-			{ name : "lifeTime", type : DFloat },
-			{ name : "random", type : DFloat },
-			{ name : "color", type : DFloat },
-			{ name : "padding", type : DFloat },
-		]);
-
-		if ( particleBuffer == null ) {
-			var stride = particleBufferFormat.stride;
-			var floats = alloc.allocFloats(data.maxCount * stride);
-			for ( i in 0...data.maxCount ) {
-				// speed
-				// floats[i * stride] = 0.0;
-				// floats[i * stride + 1] = 0.0;
-				// floats[i * stride + 2] = 0.0;
-				var l = hxd.Math.random() * (data.maxLifeTime - data.minLifeTime) + data.minLifeTime;
-				floats[i * stride + 3] = l; // life warmup
-				floats[i * stride + 4] = l; // lifeTime
-				floats[i * stride + 5] = hxd.Math.random(); // random
-				// color
-				// floats[i * stride + 6] = 0.0;
-				// padding
-				// floats[i * stride + 7] = 0.0;
-			}
-			particleBuffer = alloc.ofFloats(floats, particleBufferFormat, UniformReadWrite);
-			particleCounter = new h3d.GPUCounter();
-			particleShader.particleBuffer = particleBuffer;
-		}
-
 		begin();
 		for ( _ in 0...data.maxCount )
 			emitInstance();
+	}
+
+	public inline function getParticleStride() {
+		return particleBuffer.format.stride;
+	}
+
+	public function getParticleInputPos( name : String ) {
+		return particleBuffer.format.calculateInputOffset(name) >> 2;
+	}
+
+	public function invalidateParticleFormat() {
+		particleFormat = null;
+	}
+
+	function getParticleFormat() {
+		var inputs = BASE_PARTICLE_INPUTS.copy();
+		for ( pass in [spawnPass, simulationPass] ) {
+			for ( s in pass.getShaders() ) {
+				var computeUtils = Std.downcast(s, ComputeUtils);
+				var shaderInputs = computeUtils?.getParticleInputs();
+				if ( shaderInputs == null )
+					continue;
+				for ( i in shaderInputs )
+					if ( !Lambda.exists(inputs, i2 -> i2.name == i.name) )
+						inputs.push(i);
+			}
+		}
+		return hxd.BufferFormat.make(inputs);
+	}
+
+	function allocParticleBuffer( format : hxd.BufferFormat ) {
+		if ( particleBuffer != null )
+			particleBuffer.dispose();
+		var alloc = hxd.impl.Allocator.get();
+		var stride = format.stride;
+		var floats = alloc.allocFloats(data.maxCount * stride);
+		for ( i in 0...data.maxCount ) {
+			// speed
+			// floats[i * stride] = 0.0;
+			// floats[i * stride + 1] = 0.0;
+			// floats[i * stride + 2] = 0.0;
+			var l = hxd.Math.random() * (data.maxLifeTime - data.minLifeTime) + data.minLifeTime;
+			floats[i * stride + 3] = l; // life warmup
+			floats[i * stride + 4] = l; // lifeTime
+			floats[i * stride + 5] = hxd.Math.random(); // random
+			// color
+			// floats[i * stride + 6] = 0.0;
+		}
+		particleBuffer = alloc.ofFloats(floats, format, UniformReadWrite);
+		particleShader.particleBuffer = particleBuffer;
+		particleShader.particleStride = stride;
 	}
 
 	function createUpdateParamShader() {
@@ -203,6 +228,14 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	}
 
 	function dispatch(ctx : h3d.scene.RenderContext) {
+		if ( particleFormat == null )
+			particleFormat = getParticleFormat();
+		if ( particleBuffer == null || particleBuffer.format != particleFormat )
+			allocParticleBuffer(particleFormat);
+		if ( particleCounter == null )
+			particleCounter = new h3d.GPUCounter();
+		var particleStride = particleFormat.stride;
+
 		var p = dataPasses;
 		particleCounter.reset();
 
@@ -312,12 +345,14 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				baseSpawn.batchStride = batchStride;
 				baseSpawn.modelViewPos = modelViewPos;
 				baseSpawn.particleBuffer = particleBuffer;
+				baseSpawn.particleStride = particleStride;
 				baseSpawn.atomic = particleCounter.buffer;
 
 				baseSimulation.batchBuffer = b;
 				baseSimulation.batchStride = batchStride;
 				baseSimulation.modelViewPos = modelViewPos;
 				baseSimulation.particleBuffer = particleBuffer;
+				baseSimulation.particleStride = particleStride;
 
 				var s = simulationPass.getShader(PreviousModelViewSimulation);
 				if ( b.format.hasInput("previousModelView__m0") ) {
@@ -344,6 +379,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 					p.shader.paramTexture = paramTexture;
 					p.shader.batchBuffer = b;
 					p.shader.particleBuffer = particleBuffer;
+					p.shader.particleStride = particleStride;
 					p.shader.stride = b.format.stride;
 					p.shader.row = (row + 0.5) / shaderParams.length;
 					var pos = 0;

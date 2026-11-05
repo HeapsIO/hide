@@ -5,15 +5,11 @@ class BaseSimulation extends ComputeUtils {
 		@param var batchBuffer : RWBuffer<Vec4>;
 		@param var batchStride : Int;
 		@param var modelViewPos : Int;
-		@param var particleBuffer : RWPartialBuffer<{
-			speed : Vec3,
-			life : Float,
-			lifeTime : Float,
-			random : Float,
-			color : Float,
-		}>;
+		@param var particleBuffer : RWBuffer<Float>;
+		@param var particleStride : Int;
 
 		@:import h3d.shader.ColorSpaces;
+		@:import hrt.prefab.fx.gpuemitter.ParticleBuffer;
 		@:import h3d.shader.BufferUtils;
 
 		@const var FACE_CAM : Bool = false;
@@ -48,12 +44,12 @@ class BaseSimulation extends ComputeUtils {
 			absoluteTranslation = translationMatrix(vec3(0.0));
 			preventCameraWrap = false;
 			dt = dtParam;
-			speed = particleBuffer[computeVar.globalInvocation.x].speed;
-			life = particleBuffer[computeVar.globalInvocation.x].life;
-			lifeTime = particleBuffer[computeVar.globalInvocation.x].lifeTime;
+			speed = getParticleSpeed(computeVar.globalInvocation.x);
+			life = getParticleLife(computeVar.globalInvocation.x);
+			lifeTime = getParticleLifeTime(computeVar.globalInvocation.x);
 			prevModelView = readMat4(batchBuffer, computeVar.globalInvocation.x * batchStride + modelViewPos);
-			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
-			particleColor = unpackIntColor(floatBitsToInt(particleBuffer[computeVar.globalInvocation.x].color));
+			particleRandom = getParticleRandom(computeVar.globalInvocation.x);
+			particleColor = unpackIntColor(floatBitsToInt(getParticleColor(computeVar.globalInvocation.x)));
 			relativeTransform = scaleMatrix(((INFINITE || life < lifeTime) ? 1.0 : 0.0) * (computeVar.globalInvocation.x > curCount ? 0.0 : 1.0) * vec3(particleRandom * (maxSize - minSize) + minSize));
 			prevPos = vec3(0.0) * prevModelView.mat3x4();
 			nextPos = prevPos + speed * dt;
@@ -69,9 +65,9 @@ class BaseSimulation extends ComputeUtils {
 			
 			modelView = relativeTransform * align * translationMatrix(nextPos) * absoluteTranslation;
 			var idx = computeVar.globalInvocation.x;
-			particleBuffer[idx].life = life + dt;
-			particleBuffer[idx].speed = speed;
-			particleBuffer[idx].color = intBitsToFloat(packIntColor(particleColor));
+			setParticleLife(idx, life + dt);
+			setParticleSpeed(idx, speed);
+			setParticleColor(idx, intBitsToFloat(packIntColor(particleColor)));
 			writeMat4(batchBuffer, idx * batchStride + modelViewPos, modelView);
 		}
 	}
