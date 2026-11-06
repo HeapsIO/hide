@@ -539,6 +539,17 @@ class EmitterObject extends h3d.scene.Object {
 
 	#if editor
 	public var debugGraphics: h3d.scene.Graphics;
+	public var debugShape : h3d.scene.Object;
+
+	override function getMaterials( ?a : Array<h3d.mat.Material>, recursive = true ) {
+		if( a == null ) a = [];
+		if( recursive ) {
+			for( o in children )
+				if( o != debugShape )
+					o.getMaterials(a);
+		}
+		return a;
+	}
 	#end
 
 	public var emitterPrefab : Emitter;
@@ -2333,9 +2344,8 @@ class Emitter extends Object3D {
 		var emitterObj = Std.downcast(local3d, EmitterObject);
 		if(emitterObj == null)
 			return false;
-		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
-		if(debugShape != null)
-			debugShape.visible = b;
+		if(emitterObj.debugShape != null)
+			emitterObj.debugShape.visible = b;
 
 		if( false && emitterObj.batch != null ) {  // Disabling, selection causes crashes
 			if( b ) {
@@ -2356,15 +2366,15 @@ class Emitter extends Object3D {
 
 	function updateEmitShape(emitterObj: EmitterObject) {
 
-		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
+		var debugShape = emitterObj.debugShape;
 		if(debugShape == null) {
 			debugShape = new h3d.scene.Object(emitterObj);
 			debugShape.name = "_highlight";
 			debugShape.visible = false;
+			emitterObj.debugShape = debugShape;
 		}
 
-		for(i in 0...debugShape.numChildren)
-			debugShape.removeChild(debugShape.getChildAt(i));
+		debugShape.removeChildren();
 
 		var mesh : h3d.scene.Mesh = null;
 		switch(emitterObj.emitShape) {
