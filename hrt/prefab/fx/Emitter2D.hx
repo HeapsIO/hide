@@ -109,8 +109,8 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 			switch (emitter.emitShape) {
 				case Circle:
 					var radius = evaluator.getFloat(emitter.emitRadius, emitter.curTime);
-					var startAngle = evaluator.getFloat(emitter.emitAngle1, emitter.curTime) * hxd.Math.PI / 180;
-					var endAngle = evaluator.getFloat(emitter.emitAngle2, emitter.curTime) * hxd.Math.PI / 180;
+					var startAngle = evaluator.getFloat(emitter.emitStartAngle, emitter.curTime) * hxd.Math.PI / 180;
+					var endAngle = evaluator.getFloat(emitter.emitEndAngle, emitter.curTime) * hxd.Math.PI / 180;
 
 					// normalize the angular span to [0, 2PI)
 					var twoPI = Math.PI * 2;
@@ -206,8 +206,8 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		}
 
 		// MAX VELOCITY
-		if (def.maxVelocity != VZero) {
-			var maxVel = evaluator.getFast(idx, def.maxVelocity, t);
+		if (def.maxSpeed != VZero) {
+			var maxVel = evaluator.getFast(idx, def.maxSpeed, t);
 			var curVelSq = tmpSpeed.lengthSq();
 			if (maxVel * maxVel < curVelSq) {
 				tmpSpeed.normalize();
@@ -262,19 +262,19 @@ class Emitter2DObject extends h2d.Object {
 	public var particleDef : ParticleDef;
 	public var seed = 0;
 	public var lifeTime : SpawnValue;
-	public var speedFactor = 1.0;
+	public var timeScale = 1.0;
 	public var warmUpTime = 0.0;
 	public var delay = 0.0;
 	public var emitOrientation : Orientation = Forward;
 	public var emitType : EmitType = Infinity;
 	public var burstCount : Int = 1;
 	public var burstParticleCount : Value;
-	public var burstDelay : Float = 1.0;
+	public var burstInterval : Float = 1.0;
 	public var emitDuration : Float = 1.0;
 	public var emitRate : Value;
 	public var emitRateMin : Value;
 	public var emitRateMax : Value;
-	public var emitRateChangeDelay : Float = 1.0;
+	public var emitRateChangeTime : Float = 1.0;
 	public var emitScale : Float = 1.0;
 	public var maxCount = 20;
 	public var startSpeed: Array<SpawnValue>;
@@ -283,8 +283,8 @@ class Emitter2DObject extends h2d.Object {
 	public var orbitSpeedMultiplier : Value;
 	public var emitShape : Emit2DShape = Circle;
 	public var emitRadius : Value;
-	public var emitAngle1 : Value;
-	public var emitAngle2 : Value;
+	public var emitStartAngle : Value;
+	public var emitEndAngle : Value;
 	public var emitWidth : Value;
 	public var emitHeight : Value;
 	public var emitSurface : Bool = false;
@@ -295,7 +295,7 @@ class Emitter2DObject extends h2d.Object {
 	public var frameCount : Int = 0;
 	public var frameDivisionX : Int = 1;
 	public var frameDivisionY : Int = 1;
-	public var animationSpeed : Float = 1;
+	public var animationCycles : Float = 1;
 	public var animationLoop : Bool = true;
 	public var animationUseSourceUVs : Bool = true;
 	public var animationBlendBetweenFrames : Bool = true;
@@ -324,7 +324,7 @@ class Emitter2DObject extends h2d.Object {
 		if (spriteSheet != null) {
 			var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
 			var meanLifeTime = evaluator.getMean(lifeTime);
-			animatedTexShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / meanLifeTime);
+			animatedTexShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationCycles / meanLifeTime);
 			animatedTexShader.useSourceUVs = animationUseSourceUVs;
 			animatedTexShader.startTime = 0;
 			animatedTexShader.loop = animationLoop;
@@ -336,7 +336,7 @@ class Emitter2DObject extends h2d.Object {
 
 	public function setTime(time : Float, inCatchup : Bool = false) {
 		prevTime = curTime;
-		curTime = (time * speedFactor + warmUpTime) - delay;
+		curTime = (time * timeScale + warmUpTime) - delay;
 
 		if (curTime < 0) {
 			if (prevTime > 0)
@@ -384,8 +384,8 @@ class Emitter2DObject extends h2d.Object {
 				doEmit(t);
 
 			case Burst:
-				if (burstDelay > 0) {
-					var burstTarget = hxd.Math.min(burstCount, 1 + hxd.Math.floor(curTime / burstDelay));
+				if (burstInterval > 0) {
+					var burstTarget = hxd.Math.min(burstCount, 1 + hxd.Math.floor(curTime / burstInterval));
 					while (totalBurstCount < burstTarget) {
 						var emitTarget = hxd.Math.ceil(hxd.Math.min(maxCount - particles.length, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
 						doEmit(emitTarget);
@@ -469,7 +469,7 @@ class Emitter2D extends Object2D {
 
 	@:group("Properties")
 	@:s @:range(0, 1) @:disp("Time Scale", "Time multiplier of the simulation")
-	public var speedFactor : Float = 1.0;
+	public var timeScale : Float = 1.0;
 	@:s @:range(0, 10) @:disp("Start Delay", "Time before the start of the emitter, in seconds")
 	public var delay : Float = 0.0;
 	@:s @:range(0, 1) @:disp("Warm Up", "Time simulated before the start, in seconds: the emitter starts already filled")
@@ -477,7 +477,7 @@ class Emitter2D extends Object2D {
 	@:s @:range(0, 100) @:disp("Seed", "Seed of the random values of the emitter")
 	public var seed : Int = 0;
 
-	@:group("Emit Params")
+	@:group("Emission")
 	@:s @:disp("Type", "Infinity: constant rate. Infinity Random: rate changing between min and max. Duration: rate during a duration. Burst / Burst Duration: groups of particles at regular intervals")
 	public var emitType : EmitType = EmitType.Infinity;
 	@:s @:range(0, 10.0) @:disp("Duration", "Emission duration, in seconds")
@@ -488,12 +488,12 @@ class Emitter2D extends Object2D {
 	public var emitRateMin : Float = 5;
 	@:s @:range(0, 100) @:animate @:disp("Rate Max", "Maximum number of particles emitted per second")
 	public var emitRateMax : Float = 5;
-	@:s @:range(0.01, 5.0) @:disp("Rate Change Interval", "Time between two random rates, in seconds: the rate goes from one to the next during this time")
-	public var emitRateChangeDelay : Float = 1.0;
+	@:s @:range(0.01, 5.0) @:disp("Rate Change Time", "Infinity Random: every this many seconds a new random rate is picked between min and max, and the rate goes to it during this time")
+	public var emitRateChangeTime : Float = 1.0;
 	@:s @:range(1, 10) @:disp("Burst Count", "Number of bursts")
 	public var burstCount : Int = 1;
 	@:s @:range(0, 1.0) @:disp("Burst Interval", "Time between two bursts, in seconds")
-	public var burstDelay : Float = 1.0;
+	public var burstInterval : Float = 1.0;
 	@:s @:range(1, 10) @:animate @:disp("Particles Per Burst", "Number of particles emitted by each burst")
 	public var burstParticleCount : Float = 1;
 	@:s @:range(0, 100) @:disp("Max Count", "Maximum number of particles alive at the same time: no particle is emitted beyond")
@@ -507,9 +507,9 @@ class Emitter2D extends Object2D {
 	@:s @:range(0, 360.0) @:animate @:disp("Radius", "Radius of the circle")
 	public var emitRadius : Float = 20.0;
 	@:s @:range(0, 360.0) @:animate @:disp("Start Angle", "Start angle of the circle arc, in degrees")
-	public var emitAngle1 : Float = 20.0;
+	public var emitStartAngle : Float = 20.0;
 	@:s @:range(0, 360.0) @:animate @:disp("End Angle", "End angle of the circle arc, in degrees")
-	public var emitAngle2 : Float = 40.0;
+	public var emitEndAngle : Float = 40.0;
 	@:s @:range(0, 10.0) @:animate @:disp("Width", "Width of the rectangle")
 	public var emitWidth : Float = 1.0;
 	@:s @:range(0, 10.0) @:animate @:disp("Height", "Height of the rectangle")
@@ -538,10 +538,10 @@ class Emitter2D extends Object2D {
 	public var orbitSpeedMultiplier : Float = 1;
 
 	@:group("Limit Velocity")
-	@:param(PFloat(0, 10), Particle) @:disp("Damping", "Damping of the accumulated velocity (start speed and accelerations), per second")
+	@:param(PFloat(0, 10), Particle) @:disp("Dampen", "Damping of the accumulated velocity (start speed and accelerations), per second")
 	public var partDampen : ParamMode;
 	@:param(PFloat(0, 10), Particle) @:disp("Max Speed", "Maximum speed of the particle")
-	public var partMaxVelocity : ParamMode;
+	public var partMaxSpeed : ParamMode;
 
 	@:group("Particle Transform")
 	@:param(PVec(2, -10, 10), Particle) @:disp("Offset", "Offset of the particle position, without effect on its movement")
@@ -580,8 +580,8 @@ class Emitter2D extends Object2D {
 	public var frameDivisionX : Int = 1;
 	@:s @:range(1) @:disp("Divisions Y", "Number of rows of the sheet")
 	public var frameDivisionY : Int = 1;
-	@:s @:range(0, 2.0) @:disp("Loops Per Life", "Number of times the animation is played during the life of a particle")
-	public var animationSpeed : Float = 1.0;
+	@:s @:range(0, 2.0) @:disp("Cycles", "Number of times the animation is played during the life of a particle")
+	public var animationCycles : Float = 1.0;
 	@:s @:disp("Loop", "Loops the animation during the life of the particle")
 	public var animationLoop : Bool = true;
 	@:s @:disp("Use Source UV", "Keeps the UVs of the sprite inside each frame")
@@ -633,23 +633,23 @@ class Emitter2D extends Object2D {
 		emitterObj.texture 			   	= 	texture;
 		emitterObj.color 			   	= 	h3d.Vector.fromArray(color);
 		emitterObj.seed 			    = 	seed;
-		emitterObj.speedFactor 			= 	speedFactor;
+		emitterObj.timeScale 			= 	timeScale;
 		emitterObj.warmUpTime 			= 	warmUpTime;
 		emitterObj.delay 				= 	delay;
 		emitterObj.emitType 			= 	emitType;
 		emitterObj.burstCount 			= 	burstCount;
-		emitterObj.burstDelay 			= 	burstDelay;
+		emitterObj.burstInterval 			= 	burstInterval;
 		emitterObj.emitDuration 		= 	emitDuration;
 		emitterObj.emitOrientation 		= 	emitOrientation;
 		emitterObj.maxCount 			= 	maxCount;
-		emitterObj.emitRateChangeDelay 	= 	emitRateChangeDelay;
+		emitterObj.emitRateChangeTime 	= 	emitRateChangeTime;
 		emitterObj.emitShape 			= 	emitShape;
 		emitterObj.emitSurface 			= 	emitSurface;
 		emitterObj.spriteSheet 			= 	spriteSheet;
 		emitterObj.frameCount 			= 	frameCount;
 		emitterObj.frameDivisionX 		= 	frameDivisionX;
 		emitterObj.frameDivisionY 		= 	frameDivisionY;
-		emitterObj.animationSpeed 		= 	animationSpeed;
+		emitterObj.animationCycles 		= 	animationCycles;
 		emitterObj.animationLoop 		= 	animationLoop;
 		emitterObj.animationUseSourceUVs 			= 	animationUseSourceUVs;
 		emitterObj.animationBlendBetweenFrames 		= 	animationBlendBetweenFrames;
@@ -661,7 +661,7 @@ class Emitter2D extends Object2D {
 		emitterObj.init(params.randomSlots, this);
 
 		#if editor
-		if(propName == null || ["emitShape", "emitRadius", "emitAngle1", "emitAngle2", "emitWidth", "emitHeight"].indexOf(propName) >= 0)
+		if(propName == null || ["emitShape", "emitRadius", "emitStartAngle", "emitEndAngle", "emitWidth", "emitHeight"].indexOf(propName) >= 0)
 			updateEmitShape(emitterObj);
 		#end
 	}
@@ -675,8 +675,8 @@ class Emitter2D extends Object2D {
 
 		if(!emitShape.match(Circle)) {
 			removeParam("emitRadius");
-			removeParam("emitAngle1");
-			removeParam("emitAngle2");
+			removeParam("emitStartAngle");
+			removeParam("emitEndAngle");
 		}
 		if(!emitShape.match(Rectangle)) {
 			removeParam("emitWidth");
@@ -695,7 +695,7 @@ class Emitter2D extends Object2D {
 			removeParam("frameCount");
 			removeParam("frameDivisionX");
 			removeParam("frameDivisionY");
-			removeParam("animationSpeed");
+			removeParam("animationCycles");
 			removeParam("animationLoop");
 			removeParam("animationUseSourceUVs");
 			removeParam("animationBlendBetweenFrames");
@@ -711,16 +711,16 @@ class Emitter2D extends Object2D {
 		switch (emitType) {
 			case Infinity:
 				removeParam("burstCount");
-				removeParam("burstDelay");
+				removeParam("burstInterval");
 				removeParam("burstParticleCount");
 				removeParam("emitDuration");
 				removeParam("emitRateMin");
 				removeParam("emitRateMax");
-				removeParam("emitRateChangeDelay");
+				removeParam("emitRateChangeTime");
 			case InfinityRandom:
 				removeParam("emitRate");
 				removeParam("burstCount");
-				removeParam("burstDelay");
+				removeParam("burstInterval");
 				removeParam("burstParticleCount");
 				removeParam("emitDuration");
 			case BurstDuration:
@@ -728,20 +728,20 @@ class Emitter2D extends Object2D {
 				removeParam("burstCount");
 				removeParam("emitRateMin");
 				removeParam("emitRateMax");
-				removeParam("emitRateChangeDelay");
+				removeParam("emitRateChangeTime");
 			case Burst:
 				removeParam("emitDuration");
 				removeParam("emitRate");
 				removeParam("emitRateMin");
 				removeParam("emitRateMax");
-				removeParam("emitRateChangeDelay");
+				removeParam("emitRateChangeTime");
 			case Duration:
 				removeParam("burstCount");
-				removeParam("burstDelay");
+				removeParam("burstInterval");
 				removeParam("burstParticleCount");
 				removeParam("emitRateMin");
 				removeParam("emitRateMax");
-				removeParam("emitRateChangeDelay");
+				removeParam("emitRateChangeTime");
 		}
 
 		return params;
@@ -786,8 +786,8 @@ class Emitter2D extends Object2D {
 		graphics.lineStyle(1, 0xFFFFFF, 1);
 		switch(e.emitShape) {
 			case Circle:
-				var radA1 = e.evaluator.getFloat(e.emitAngle1, 0) * hxd.Math.PI / 180;
-				var radA2 = e.evaluator.getFloat(e.emitAngle2, 0) * hxd.Math.PI / 180;
+				var radA1 = e.evaluator.getFloat(e.emitStartAngle, 0) * hxd.Math.PI / 180;
+				var radA2 = e.evaluator.getFloat(e.emitEndAngle, 0) * hxd.Math.PI / 180;
 				graphics.drawPie(0, 0, e.evaluator.getFloat(e.emitRadius, 0), radA1, radA2 - radA1);
 			case Rectangle:
 				var width = e.evaluator.getFloat(e.emitWidth, 0);

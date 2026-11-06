@@ -1517,7 +1517,7 @@ class Upgrade0 {
 		{ name: "partOrbitSpeed", old: "instOrbitSpeed", group: Particle, def: [0., 0., 0.] },
 		{ name: "orbitSpeedMultiplier", old: "instOrbitSpeedOverTime", group: OverTime, def: [1.] },
 		{ name: "partAcceleration", old: "instAcceleration", group: Particle, def: [0., 0., 0.] },
-		{ name: "partMaxVelocity", old: "instMaxVelocity", group: Particle, def: [0.] },
+		{ name: "partMaxSpeed", old: "instMaxVelocity", group: Particle, def: [0.] },
 		{ name: "partDampen", old: "instDampen", group: Particle, def: [0.] },
 		{ name: "partScale", old: "instScale", group: Particle, def: [1.] },
 		{ name: "scaleMultiplier", old: "instScaleOverTime", group: OverTime, def: [1.] },
@@ -1543,7 +1543,7 @@ class Upgrade0 {
 		{ name: "partStartWorldSpeed", old: "instStartWorldSpeed", group: Spawn, def: [0., 0.] },
 		{ name: "partOrbitSpeed", old: "instOrbitSpeed", group: Particle, def: [0.] },
 		{ name: "orbitSpeedMultiplier", old: "instOrbitSpeedOverTime", group: OverTime, def: [1.] },
-		{ name: "partMaxVelocity", old: "instMaxVelocity", group: Particle, def: [0.] },
+		{ name: "partMaxSpeed", old: "instMaxVelocity", group: Particle, def: [0.] },
 		{ name: "partDampen", old: "instDampen", group: Particle, def: [0.] },
 	];
 
@@ -1554,8 +1554,10 @@ class Upgrade0 {
 		{ name: "emitRateMax", def: 5. }, { name: "emitRadius", def: 20. }, { name: "emitAngle1", def: 20. }, { name: "emitAngle2", def: 40. },
 		{ name: "emitWidth", def: 1. }, { name: "emitHeight", def: 1. }];
 
-	/** The properties saved under another name **/
-	static var PROPERTY_RENAMES = ["seedGroup" => "seed"];
+	/** The properties saved under another name, their curves renamed with them **/
+	static var PROPERTY_RENAMES = ["seedGroup" => "seed", "speedFactor" => "timeScale", "burstDelay" => "burstInterval",
+		"emitRateChangeDelay" => "emitRateChangeTime", "emitAngle1" => "emitStartAngle", "emitAngle2" => "emitEndAngle",
+		"emitDomeCut" => "emitDomeHeight", "animationSpeed" => "animationCycles"];
 
 	/** The old params added to their curve instead of being multiplied by it **/
 	static var ADDITIVE_3D = ["Rotation", "Offset", "Pivot"];
@@ -1608,6 +1610,12 @@ class Upgrade0 {
 				if( n != null )
 					renames.push({ node: n, name: d.name + (d.def.length == 1 ? "" : ":" + COMPONENTS[i]) });
 			}
+		}
+		// the curve of a renamed property, the one the old runtime read
+		for( f => name in PROPERTY_RENAMES ) {
+			var n = Lambda.find(e.children, c -> c.isCurve && c.enabled() && sameName(c.name, f));
+			if( n != null )
+				renames.push({ node: n, name: name });
 		}
 		renameCurves(renames);
 

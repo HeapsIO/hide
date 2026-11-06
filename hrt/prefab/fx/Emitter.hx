@@ -86,7 +86,7 @@ class ParticleDef {
 	var stretchVelocity: Value;
 	var rotation: Value;
 	var dampen: Value;
-	var maxVelocity : Value;
+	var maxSpeed : Value;
 	public function new() { }
 }
 
@@ -399,8 +399,8 @@ class ParticleInstance {
 		}
 
 		// MAX VELOCITY
-		if (def.maxVelocity != VZero) {
-			var maxVel = evaluator.getFast(idx, def.maxVelocity, t);
+		if (def.maxSpeed != VZero) {
+			var maxVel = evaluator.getFast(idx, def.maxSpeed, t);
 			var curVelSq = speed.lengthSq();
 			if (maxVel * maxVel < curVelSq) {
 				speed.normalize();
@@ -557,7 +557,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var trailsTemplate : hrt.prefab.l3d.Trails;
 	// LIFE
 	public var lifeTime : SpawnValue;
-	public var speedFactor = 1.0;
+	public var timeScale = 1.0;
 	public var warmUpTime = 0.0;
 	public var delay = 0.0;
 	// EMIT PARAMS
@@ -567,13 +567,13 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitType : EmitType = Infinity;
 	public var burstCount : Int = 1;
 	public var burstParticleCount : Value;
-	public var burstDelay : Float = 1.0;
+	public var burstInterval : Float = 1.0;
 	public var emitDuration : Float = 1.0;
 	public var emitRate : Value;
 	public var emitRateMin : Value;
 	public var emitRateMax : Value;
-	public var emitRateChangeDelay : Float = 1.0;
-	public var emitRateChangeDelayStart : Float = 0.0;
+	public var emitRateChangeTime : Float = 1.0;
+	public var emitRateChangeStart : Float = 0.0;
 	public var emitRateCurrent : Float = Math.NaN;
 	public var emitRatePrevious : Float = Math.NaN;
 	public var emitRateTarget : Float = Math.NaN;
@@ -593,14 +593,14 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitRad1 : Float = 1.0;
 	public var emitRad2 : Float = 1.0;
 	public var emitSurface : Bool = false;
-	public var emitDomeCut : Float = 0.5;
+	public var emitDomeHeight : Float = 0.5;
 	public var emitDomeFlip : Bool = false;
 	// ANIMATION
 	public var spriteSheet : String;
 	public var frameCount : Int = 0;
 	public var frameDivisionX : Int = 1;
 	public var frameDivisionY : Int = 1;
-	public var animationSpeed : Float = 1;
+	public var animationCycles : Float = 1;
 	public var animationLoop : Bool = true;
 	public var animationUseSourceUVs : Bool = true;
 	public var animationBlendBetweenFrames : Bool = true;
@@ -793,7 +793,7 @@ class EmitterObject extends h3d.scene.Object {
 			if( frameCount > 1 && spriteSheet != null ) {
 				var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
 				var meanLifeTime = evaluator.getMean(lifeTime);
-				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / meanLifeTime);
+				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationCycles / meanLifeTime);
 				animatedTextureShader.useSourceUVs = animationUseSourceUVs;
 				animatedTextureShader.startTime = @:privateAccess scene?.renderer.ctx.globalTime ?? 0.0;
 				animatedTextureShader.loop = animationLoop;
@@ -1101,7 +1101,7 @@ class EmitterObject extends h3d.scene.Object {
 						if( emitOrientation == Normal )
 							tmpQuat.initDirection(tmpOffset);
 					case Dome:
-						var zMin = 1.0 - 2.0 * hxd.Math.clamp(emitDomeCut, 0, 1);
+						var zMin = 1.0 - 2.0 * hxd.Math.clamp(emitDomeHeight, 0, 1);
 						if( emitSurface ) {
 							var z = zMin + (1.0 - zMin) * random.rand();
 							var r = Math.sqrt(1.0 - z * z);
@@ -1301,7 +1301,7 @@ class EmitterObject extends h3d.scene.Object {
 					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
 						enable = false;
 				case InfinityRandom:
-					// Every emitRateChangeDelay time, we choose a new emit rate value between min and max
+					// Every emitRateChangeTime time, we choose a new emit rate value between min and max
 					// and lerp from previous emit rate value to the new one, to ensure
 					// there's no "step" effect visible (we want the emit rate changes to
 					// be smooth).
@@ -1310,9 +1310,9 @@ class EmitterObject extends h3d.scene.Object {
 					var max = evaluator.getFloat(emitRateMax, curTime);
 
 					var unInitiliazed = Math.isNaN(emitRateCurrent);
-					var needNewValue = curTime - emitRateChangeDelayStart >= emitRateChangeDelay || curTime - emitRateChangeDelayStart < 0;
+					var needNewValue = curTime - emitRateChangeStart >= emitRateChangeTime || curTime - emitRateChangeStart < 0;
 					if (unInitiliazed || needNewValue) {
-						emitRateChangeDelayStart = curTime;
+						emitRateChangeStart = curTime;
 						emitRatePrevious = emitRateTarget;
 						emitRateTarget = random.rand() * (max-min) + min;
 
@@ -1320,7 +1320,7 @@ class EmitterObject extends h3d.scene.Object {
 							emitRatePrevious = random.rand() * (max-min) + min;
 					}
 
-					var t = (curTime - emitRateChangeDelayStart) / emitRateChangeDelay;
+					var t = (curTime - emitRateChangeStart) / emitRateChangeTime;
 					emitRateCurrent = (emitRatePrevious - emitRateTarget) * t + emitRatePrevious;
 
 					emitTarget += emitRateCurrent * hxd.Math.clamp(emitScale) * dt;
@@ -1336,25 +1336,25 @@ class EmitterObject extends h3d.scene.Object {
 					if( isSubEmitter && curTime >= emitDuration )
 						enable = false;
 				case BurstDuration:
-					if( burstDelay > 0 ) {
-						var burstTarget = 1 + hxd.Math.floor(curTime / burstDelay);
-						var lastBurstTime = totalBurstCount * burstDelay;
-						var nextBurstTime = lastBurstTime + burstDelay;
+					if( burstInterval > 0 ) {
+						var burstTarget = 1 + hxd.Math.floor(curTime / burstInterval);
+						var lastBurstTime = totalBurstCount * burstInterval;
+						var nextBurstTime = lastBurstTime + burstInterval;
 						var needBurst = nextBurstTime <= emitDuration && totalBurstCount < burstTarget;
 						while( needBurst ) {
 							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
 							doEmit(delta);
 							totalBurstCount++;
-							lastBurstTime += burstDelay;
-							nextBurstTime = lastBurstTime + burstDelay;
+							lastBurstTime += burstInterval;
+							nextBurstTime = lastBurstTime + burstInterval;
 							needBurst = nextBurstTime <= emitDuration && totalBurstCount < burstTarget;
 						}
 					}
 					if( isSubEmitter && curTime > emitDuration )
 						enable = false;
 				case Burst:
-					if( burstDelay > 0 ) {
-						var burstTarget = hxd.Math.min(burstCount, 1 + hxd.Math.floor(curTime / burstDelay));
+					if( burstInterval > 0 ) {
+						var burstTarget = hxd.Math.min(burstCount, 1 + hxd.Math.floor(curTime / burstInterval));
 						while( totalBurstCount < burstTarget ) {
 							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
 							doEmit(delta);
@@ -1628,7 +1628,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	var lastParentTime = 0.0;
 	public function setTime(parentTime: Float, dt: Float, seek: Bool, full: Bool) {
-		var localTime = (parentTime-delay) * speedFactor;
+		var localTime = (parentTime-delay) * timeScale;
 		if (!full) {
 			curTime = localTime;
 			return;
@@ -1648,8 +1648,8 @@ class EmitterObject extends h3d.scene.Object {
 		else if (!seek) {
 			if (parentTime < lastParentTime) {
 				softReset();
-				if (burstDelay > 0)
-					totalBurstCount = hxd.Math.ceil(hxd.Math.max(0.0, localTime/burstDelay));
+				if (burstInterval > 0)
+					totalBurstCount = hxd.Math.ceil(hxd.Math.max(0.0, localTime/burstInterval));
 				if (emitType == Burst) {
 					if (totalBurstCount >= burstCount)
 						enable = false;
@@ -1677,7 +1677,7 @@ class EmitterObject extends h3d.scene.Object {
 			#if editor
 			var start = haxe.Timer.stamp();
 			#end
-			tick(dt * speedFactor, true);
+			tick(dt * timeScale, true);
 			#if editor
 			var end = haxe.Timer.stamp();
 			tickTime = end - start;
@@ -1709,7 +1709,7 @@ class EmitterObject extends h3d.scene.Object {
 		}
 		#end
 
-		var catchupTickRate = hxd.Timer.wantedFPS * speedFactor / catchupSpeed;
+		var catchupTickRate = hxd.Timer.wantedFPS * timeScale / catchupSpeed;
 		var numTicks = hxd.Math.ceil(catchupTickRate * catchupTime);
 		for(i in 0...numTicks)
 		{
@@ -1739,7 +1739,7 @@ class Emitter extends Object3D {
 
 	@:group("Properties")
 	@:s @:range(0, null) @:disp("Time Scale", "Time multiplier of the simulation")
-	public var speedFactor : Float = 1.0;
+	public var timeScale : Float = 1.0;
 	@:s @:range(0, null) @:disp("Start Delay", "Time before the start of the emitter, in seconds")
 	public var delay : Float = 0.0;
 	@:s @:range(0, null) @:disp("Warm Up", "Time simulated before the start, in seconds: the emitter starts already filled")
@@ -1748,7 +1748,7 @@ class Emitter extends Object3D {
 	public var seed : Int = 0;
 	@:s @:disp("Simulation Space", "Local: the particles move with the emitter. World: once emitted, they no longer follow it")
 	public var simulationSpace : SimulationSpace = SimulationSpace.Local;
-	@:s @:disp("Parent Scaling", "Whether the particles are scaled by the parents of the emitter")
+	@:s @:disp("Particle Scaling", "Whether the particles are scaled by the parents of the emitter")
 	public var particleScaling : ParticleScaling = ParticleScaling.Parent;
 	@:s @:disp("Apply Mesh Transform", "The particles take the transform of the mesh of the emitter")
 	public var applyMeshTransform : Bool = false;
@@ -1757,7 +1757,7 @@ class Emitter extends Object3D {
 	@:s @:disp("Sub Emitter Mode", "For a sub emitter: spawned at the death of each particle of its parent, or following each of them")
 	public var subEmitterKind : SubEmitterKind = SubEmitterKind.SpawnOnDeath;
 
-	@:group("Emit Params")
+	@:group("Emission")
 	@:s @:disp("Type", "Infinity: constant rate. Infinity Random: rate changing between min and max. Duration: rate during a duration. Burst / Burst Duration: groups of particles at regular intervals")
 	public var emitType : EmitType = EmitType.Infinity;
 	@:s @:range(0, null) @:disp("Duration", "Emission duration, in seconds")
@@ -1768,12 +1768,12 @@ class Emitter extends Object3D {
 	public var emitRateMin : Float = 5;
 	@:s @:range(0, null) @:animate @:disp("Rate Max", "Maximum number of particles emitted per second")
 	public var emitRateMax : Float = 5;
-	@:s @:range(0.01, null) @:disp("Rate Change Interval", "Time between two random rates, in seconds: the rate goes from one to the next during this time")
-	public var emitRateChangeDelay : Float = 1.0;
+	@:s @:range(0.01, null) @:disp("Rate Change Time", "Infinity Random: every this many seconds a new random rate is picked between min and max, and the rate goes to it during this time")
+	public var emitRateChangeTime : Float = 1.0;
 	@:s @:range(1, null) @:disp("Burst Count", "Number of bursts")
 	public var burstCount : Float = 1;
 	@:s @:range(0, null) @:disp("Burst Interval", "Time between two bursts, in seconds")
-	public var burstDelay : Float = 1.0;
+	public var burstInterval : Float = 1.0;
 	@:s @:range(1, null) @:animate @:disp("Particles Per Burst", "Number of particles emitted by each burst")
 	public var burstParticleCount : Float = 1;
 	@:s @:range(0, null) @:disp("Max Count", "Maximum number of particles alive at the same time: no particle is emitted beyond")
@@ -1791,7 +1791,7 @@ class Emitter extends Object3D {
 	@:s @:range(0, null) @:disp("Top Radius", "Radius of the top of the cylinder")
 	public var emitRad2 : Float = 1.0;
 	@:s @:range(0, null) @:disp("Dome Height", "Height of the dome: 0.5 for a half sphere, 1 for a full sphere")
-	public var emitDomeCut : Float = 0.5;
+	public var emitDomeHeight : Float = 0.5;
 	@:s @:disp("Flip Dome", "Flips the dome upside down")
 	public var emitDomeFlip : Bool = false;
 	@:s @:disp("Surface", "Emits on the surface of the shape instead of in its volume")
@@ -1818,10 +1818,10 @@ class Emitter extends Object3D {
 	public var orbitSpeedMultiplier : Float = 1;
 
 	@:group("Limit Velocity")
-	@:param(PFloat(0), Particle) @:disp("Damping", "Damping of the accumulated velocity (start speed and accelerations), per second")
+	@:param(PFloat(0), Particle) @:disp("Dampen", "Damping of the accumulated velocity (start speed and accelerations), per second")
 	public var partDampen : ParamMode;
 	@:param(PFloat(0), Particle) @:disp("Max Speed", "Maximum speed of the particle")
-	public var partMaxVelocity : ParamMode;
+	public var partMaxSpeed : ParamMode;
 
 	@:group("Particle Transform")
 	@:param(PVec(3), Particle) @:disp("Offset", "Offset of the particle position, without effect on its movement")
@@ -1836,13 +1836,13 @@ class Emitter extends Object3D {
 	public var scaleMultiplier : Float = 1;
 	@:param(PVec(3), Particle, [1., 1., 1.]) @:disp("Stretch", "Scale of the particle on each of its axes")
 	public var partStretch : ParamVec3;
-	@:param(PFloat(0), Particle) @:disp("Stretch By Speed", "Stretches the particle along its velocity")
+	@:param(PFloat(0), Particle) @:disp("Stretch By Velocity", "Stretches the particle along its velocity")
 	public var partStretchVelocity : ParamMode;
 
 	@:group("Alignment")
 	@:s @:disp("Align Mode", "Alignment of the particles: none, facing the screen, around an axis, or along their speed")
 	public var alignMode : AlignMode = AlignMode.None;
-	@:s @:disp("Align Axis", "Axis around which the particles rotate to face the camera")
+	@:s @:disp("Lock Axis", "Axis around which the particles rotate to face the camera")
 	public var alignLockAxis : AlignLockAxis = AlignLockAxis.ScreenZ;
 	@:s @:disp("Follow Rotation", "The aligned particles keep their own rotation and the one of the emitter")
 	public var followRotation : Bool = false;
@@ -1866,8 +1866,8 @@ class Emitter extends Object3D {
 	public var frameDivisionX : Int = 1;
 	@:s @:range(1) @:disp("Divisions Y", "Number of rows of the sheet")
 	public var frameDivisionY : Int = 1;
-	@:s @:range(0, 2.0) @:disp("Loops Per Life", "Number of times the animation is played during the life of a particle")
-	public var animationSpeed : Float = 1.0;
+	@:s @:range(0, 2.0) @:disp("Cycles", "Number of times the animation is played during the life of a particle")
+	public var animationCycles : Float = 1.0;
 	@:s @:disp("Loop", "Loops the animation, each particle starting on a random frame")
 	public var animationLoop : Bool = true;
 	@:s @:disp("Use Source UV", "Keeps the UVs of the mesh inside each frame")
@@ -1880,7 +1880,7 @@ class Emitter extends Object3D {
 	public var useCollision : Bool = false;
 	@:s @:range(0, 1.0) @:disp("Elasticity", "Bounce of the particles: 0 makes them slide on the ground, 1 bounces them with their whole speed")
 	public var elasticity : Float = 1.0;
-	@:s @:range(0, 1.0) @:disp("Death Chance On Collision", "Probability for a particle to die when it touches the ground")
+	@:s @:range(0, 1.0) @:disp("Kill Chance On Collision", "Probability for a particle to die when it touches the ground")
 	public var killOnCollision : Float = 0.0;
 
 	@:group("Debug")
@@ -1960,20 +1960,20 @@ class Emitter extends Object3D {
 		// RANDOM
 		emitterObj.seedGroup 			= 	seed;
 		emitterObj.subEmitterKind		= 	subEmitterKind;
-		emitterObj.speedFactor 			= 	speedFactor;
+		emitterObj.timeScale 			= 	timeScale;
 		emitterObj.warmUpTime 			= 	warmUpTime;
 		emitterObj.delay 				= 	delay;
 		// EMIT PARAMS
 		emitterObj.emitType 			= 	emitType;
 		emitterObj.burstCount 			= 	Std.int(burstCount);
-		emitterObj.burstDelay 			= 	burstDelay;
+		emitterObj.burstInterval 			= 	burstInterval;
 		emitterObj.emitDuration 		= 	emitDuration;
 		emitterObj.simulationSpace 		= 	simulationSpace;
 		emitterObj.particleScaling		= 	particleScaling;
 		emitterObj.emitOrientation 		= 	emitOrientation;
 		emitterObj.maxCount 			= 	maxCount;
 		emitterObj.sortMode 			= 	sortMode;
-		emitterObj.emitRateChangeDelay 	= 	emitRateChangeDelay;
+		emitterObj.emitRateChangeTime 	= 	emitRateChangeTime;
 		emitterObj.emitShape 			= 	emitShape;
 		emitterObj.followRotation 		= 	followRotation;
 		emitterObj.applyMeshTransform 	= 	applyMeshTransform;
@@ -1981,7 +1981,7 @@ class Emitter extends Object3D {
 		emitterObj.emitRad1 			= 	emitRad1;
 		emitterObj.emitRad2 			= 	emitRad2;
 		emitterObj.emitSurface 			= 	emitSurface;
-		emitterObj.emitDomeCut 			= 	emitDomeCut;
+		emitterObj.emitDomeHeight 			= 	emitDomeHeight;
 		emitterObj.emitDomeFlip 		= 	emitDomeFlip;
 		// ALIGNMENT
 		emitterObj.alignMode 			= 	alignMode;
@@ -1991,7 +1991,7 @@ class Emitter extends Object3D {
 		emitterObj.frameCount 			= 	frameCount;
 		emitterObj.frameDivisionX 		= 	frameDivisionX;
 		emitterObj.frameDivisionY 		= 	frameDivisionY;
-		emitterObj.animationSpeed 		= 	animationSpeed;
+		emitterObj.animationCycles 		= 	animationCycles;
 		emitterObj.animationLoop 		= 	animationLoop;
 		emitterObj.animationUseSourceUVs 			= 	animationUseSourceUVs;
 		emitterObj.animationBlendBetweenFrames 		= 	animationBlendBetweenFrames;
@@ -2014,7 +2014,7 @@ class Emitter extends Object3D {
 		emitterObj.init(params.randomSlots, this);
 
 		#if editor
-		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2", "emitDomeCut", "emitDomeFlip"].indexOf(propName) >= 0)
+		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2", "emitDomeHeight", "emitDomeFlip"].indexOf(propName) >= 0)
 			updateEmitShape(emitterObj);
 		#end
 	}
@@ -2047,7 +2047,7 @@ class Emitter extends Object3D {
 			removeParam("emitRad2");
 		}
 		if(emitShape != Dome) {
-			removeParam("emitDomeCut");
+			removeParam("emitDomeHeight");
 			removeParam("emitDomeFlip");
 		}
 
@@ -2077,16 +2077,16 @@ class Emitter extends Object3D {
 		switch (emitType) {
 			case Infinity:
 				removeParam("burstCount");
-				removeParam("burstDelay");
+				removeParam("burstInterval");
 				removeParam("burstParticleCount");
 				removeParam("emitDuration");
 				removeParam("emitRateMin");
 				removeParam("emitRateMax");
-				removeParam("emitRateChangeDelay");
+				removeParam("emitRateChangeTime");
 			case InfinityRandom:
 				removeParam("emitRate");
 				removeParam("burstCount");
-				removeParam("burstDelay");
+				removeParam("burstInterval");
 				removeParam("burstParticleCount");
 				removeParam("emitDuration");
 			case BurstDuration:
@@ -2094,20 +2094,20 @@ class Emitter extends Object3D {
 				removeParam("burstCount");
 				removeParam("emitRateMin");
 				removeParam("emitRateMax");
-				removeParam("emitRateChangeDelay");
+				removeParam("emitRateChangeTime");
 			case Burst:
 				removeParam("emitDuration");
 				removeParam("emitRate");
 				removeParam("emitRateMin");
 				removeParam("emitRateMax");
-				removeParam("emitRateChangeDelay");
+				removeParam("emitRateChangeTime");
 			case Duration:
 				removeParam("burstCount");
-				removeParam("burstDelay");
+				removeParam("burstInterval");
 				removeParam("burstParticleCount");
 				removeParam("emitRateMin");
 				removeParam("emitRateMax");
-				removeParam("emitRateChangeDelay");
+				removeParam("emitRateChangeTime");
 		}
 		return params;
 	}
@@ -2246,7 +2246,7 @@ class Emitter extends Object3D {
 			case Sphere:
 				mesh = new h3d.scene.Sphere(0xffffff, 0.5, true, debugShape);
 			case Dome: {
-				var maxPhi = Math.acos(1.0 - 2.0 * hxd.Math.clamp(emitDomeCut, 0, 1));
+				var maxPhi = Math.acos(1.0 - 2.0 * hxd.Math.clamp(emitDomeHeight, 0, 1));
 				var sz = emitDomeFlip ? -0.5 : 0.5;
 				var g = new h3d.scene.Graphics(debugShape);
 				inline function pt(phi : Float, t : Float, first : Bool) {
