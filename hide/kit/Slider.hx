@@ -224,6 +224,9 @@ class Slider<T:Float> extends Widget<T> {
 		});
 
 		slider.addEventListener("blur", (e: js.html.FocusEvent) -> {
+			// only trigger a change if the value was edited
+			if (slider.value == displayValue())
+				return;
 			var newValue = Std.parseFloat(slider.value);
 			slideTo(cast newValue ?? value, false, false);
 		});
@@ -363,6 +366,12 @@ class Slider<T:Float> extends Widget<T> {
 		return true;
 	}
 
+	#if js
+	function displayValue() : String {
+		return Std.string(int ? value : hxd.Math.fmt(value));
+	}
+	#end
+
 	override function syncValueUI() {
 		if (slider == null)
 			return;
@@ -374,7 +383,7 @@ class Slider<T:Float> extends Widget<T> {
 			return;
 		}
 		#if js
-		slider.value = Std.string(value);
+		slider.value = displayValue();
 		#elseif hui
 		slider.value = value;
 		#end
