@@ -146,14 +146,11 @@ class FancyArray<T> extends hide.comp.Component {
 						return;
 					var after = isAfter(e);
 
-					var newIndex = i;
-
-					if (!after) newIndex -= 1;
+					var newIndex = after ? i + 1 : i;
+					if (toMoveIndex < newIndex)
+						newIndex -= 1;
 					if (toMoveIndex == newIndex)
 						return;
-					if (newIndex < i) {
-						newIndex += 1;
-					}
 					reorderItem(toMoveIndex, newIndex);
 				});
 			} else {
