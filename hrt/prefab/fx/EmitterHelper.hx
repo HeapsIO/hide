@@ -65,6 +65,19 @@ class EmitterHelper {
 		return val;
 	}
 
+	public static inline function rotateZ( m : h3d.Matrix, angle : Float ) {
+		var c = Math.cos(angle);
+		var s = Math.sin(angle);
+		var a = m._11, b = m._12;
+		m._11 = a * c - b * s; m._12 = a * s + b * c;
+		a = m._21; b = m._22;
+		m._21 = a * c - b * s; m._22 = a * s + b * c;
+		a = m._31; b = m._32;
+		m._31 = a * c - b * s; m._32 = a * s + b * c;
+		a = m._41; b = m._42;
+		m._41 = a * c - b * s; m._42 = a * s + b * c;
+	}
+
 	#if editor
 	public static function generateEdit(params : Array<ParamDef>, instanceParams : Array<ParamDef>, props : Dynamic, properties : hide.comp.PropsEditor, onChange : (?pname : String) -> Void, refresh : Void -> Void, typed = false) {
 		inline function isSet(name: String) return typed ? Reflect.getProperty(props, name) != null : Reflect.hasField(props, name);
