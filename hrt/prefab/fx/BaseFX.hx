@@ -162,8 +162,6 @@ typedef ObjectAnimation = {
 	?position: VectorAnimation,
 	?scale: VectorAnimation,
 	?rotation: VectorAnimation,
-	?localPosition: Value,  // TODO TOMR: Why Values
-	?localRotation: Value,
 	?color: Value,
 	?visibility: Value,
 	?additionalProperies : AdditionalProperies

@@ -1376,16 +1376,8 @@ class FXEditor extends hide.view.FileView {
 				menu: groupedTracks("position", xyzwTracks(3)),
 			});
 			menuItems.push({
-				label: "Local Position",
-				menu: groupedTracks("localPosition", xyzwTracks(3)),
-			});
-			menuItems.push({
 				label: "Rotation",
 				menu: groupedTracks("rotation", xyzwTracks(3)),
-			});
-			menuItems.push({
-				label: "Local Rotation",
-				menu: groupedTracks("localRotation", xyzwTracks(3)),
 			});
 			menuItems.push({
 				label: "Scale",
@@ -1743,7 +1735,6 @@ class FXEditor extends hide.view.FileView {
 				case "position": return num(Reflect.field(element, comp));
 				case "rotation" if(element is hrt.prefab.Object2D): return (cast element : hrt.prefab.Object2D).rotation;
 				case "rotation", "scale": return num(Reflect.field(element, parts[0] + comp.toUpperCase()));
-				case "localPosition", "localRotation": return 0.;
 				default:
 			}
 		}

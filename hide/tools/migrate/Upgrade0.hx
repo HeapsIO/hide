@@ -819,10 +819,17 @@ class Upgrade0 {
 		if( anyLegacy(gp) )
 			bakeVector(n, "position", channels(gp, "position", 3), [1, 1, 1], pos, "position");
 
-		// local rotation: offsets of the leaves, now in degrees
-		var glr = group(n, "localRotation");
-		if( anyLegacy(glr) )
-			bakeVector(n, "localRotation", channels(glr, "localRotation", 3), [360, 360, 360], [0, 0, 0], "local rotation");
+		// local position and rotation of the leaves: no longer supported
+		var local = [for( c in n.children ) if( c.isCurve && (sameName(c.name.split(":")[0], "localPosition") || sameName(c.name.split(":")[0], "localRotation")) ) c];
+		if( local.length > 0 ) {
+			var dataChildren : Array<Dynamic> = get(d, "children");
+			for( c in local ) {
+				n.children.remove(c);
+				dataChildren.remove(c.data);
+			}
+			warn(n, "local position and rotation animations are no longer supported, removed");
+			change(n, "local animation removed");
+		}
 
 		var gs = group(n, "scale"), gr = group(n, "rotation");
 		if( !anyLegacy(gs) && !anyLegacy(gr) )
@@ -910,15 +917,6 @@ class Upgrade0 {
 		for( cl in ([hrt.prefab.fx.ShaderTarget, hrt.prefab.fx.Swarm, hrt.prefab.fx.gpuemitter.GPUEmitter] : Array<Class<hrt.prefab.Prefab>>) )
 			if( n.parent.isA(cl) )
 				return 'the ${n.parent.type} reads its direct children';
-		// the animations of the leaves (`localRotation`) would take the object, which only has transform curves
-		if( !Lambda.exists(n.children, c -> !isTransformCurve(c)) ) {
-			var p = n.parent;
-			while( p != null ) {
-				if( group(p, "localRotation").length > 0 || group(p, "localPosition").length > 0 )
-					return "it would become a leaf of the local animation of " + p.name;
-				p = p.parent;
-			}
-		}
 		return null;
 	}
 

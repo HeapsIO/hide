@@ -583,34 +583,6 @@ class FXAnimation extends h3d.scene.Object {
 					anim.obj.setTransform(m);
 				}
 
-				// Animations that are only applied on local transforms of leafs objects
-				if (anim.localRotation != null || anim.localPosition != null) {
-					var leafObjects = anim.elt.findAll(Object3D, o -> o.children == null || o.children.length == 0);
-
-					for (o in leafObjects) {
-						if (o.local3d == null)
-							continue;
-						var baseMat = o.getTransform();
-
-						tempMat.identity();
-						var m = tempMat;
-
-						if(anim.localRotation != null) {
-							var localRotation = evaluator.getVector(anim.localRotation, newTime, tempVec);
-							localRotation.scale3(Math.PI / 180.0);
-							m.rotate(localRotation.x, localRotation.y, localRotation.z);
-						}
-
-						if(anim.localPosition != null) {
-							var localPosition = evaluator.getVector(anim.localPosition, newTime, tempVec);
-							m.translate(localPosition.x, localPosition.y, localPosition.z);
-						}
-
-						m.multiply(m, baseMat);
-						o.local3d.setTransform(m);
-					}
-				}
-
 				if(anim.visibility != null) {
 					var visible = anim.elt.visible;
 					#if editor
@@ -746,18 +718,6 @@ class FXAnimation extends h3d.scene.Object {
 			return c.makeVal();
 		}
 
-		function makeVector(name: String, defVal: Float) : Value {
-			var curves = Curve.getCurves(elt, name);
-			if(curves == null || curves.length == 0)
-				return null;
-
-			anyFound = true;
-
-			if(curves.length == 1 && curves[0].name == name)
-				return curves[0].makeVal();
-			return BaseFXTools.getVectorValue(curves, defVal);
-		}
-
 		function makeColor(name: String) {
 			var curves = Curve.getCurves(elt, name);
 			if(curves == null || curves.length == 0)
@@ -785,8 +745,6 @@ class FXAnimation extends h3d.scene.Object {
 			position: BaseFXTools.vectorAnimation(elt, "position"),
 			scale: BaseFXTools.vectorAnimation(elt, "scale"),
 			rotation: BaseFXTools.vectorAnimation(elt, "rotation"),
-			localPosition: makeVector("localPosition", 0.0),
-			localRotation: makeVector("localRotation", 0.0),
 			color: makeColor("color"),
 			visibility: makeVal("visibility", null),
 			additionalProperies: ap,
