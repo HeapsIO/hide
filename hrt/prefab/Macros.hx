@@ -158,8 +158,9 @@ class Macros {
 			case "Array" | "String":
 				return null;
 			default:
-				var name = cl.get().pack.copy();
-				name.push(cl.get().name);
+				var name = cl.get().module.split(".");
+				if (name[name.length - 1] != cl.get().name)
+					name.push(cl.get().name);
 				return macro {
 					if ($e{source} != null) {
 						var tmp = std.Type.createEmptyInstance($p{name});
@@ -180,8 +181,10 @@ class Macros {
 			switch (type) {
 				// Fixup string to enum
 				case TEnum(t, _):
-					var path = t.get().pack.copy();
-					path.push(t.get().name);
+					// the enum can be declared in the module of another type
+					var path = t.get().module.split(".");
+					if (path[path.length - 1] != t.get().name)
+						path.push(t.get().name);
 					if (defaultValue == null)
 						defaultValue = macro @:pos(source.pos) null;
 					return macro @:pos(source.pos) {
