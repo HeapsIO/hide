@@ -25,6 +25,7 @@ class Distortion extends RendererFX {
 			var passes = r.get("distortion");
 			if( passes.isEmpty() )
 				return;
+			r.ctx.engine.driver.beginEvent("Distortion");
 			var distortionMap = r.allocTarget("distortion", true, 1.0, RG16F);
 			r.ctx.setGlobal("distortion", distortionMap);
 			r.ctx.engine.pushTarget(distortionMap);
@@ -35,6 +36,7 @@ class Distortion extends RendererFX {
 			tonemap.amount = amount;
 			tonemap.distortionMap = distortionMap;
 			r.addShader(tonemap);
+			r.ctx.engine.driver.endEvent();
 		}
 	}
 

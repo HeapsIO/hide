@@ -424,6 +424,7 @@ class VolumetricLighting extends RendererFX {
 
 			var r = cast(r, h3d.scene.pbr.Renderer);
 			r.mark("VolumetricLighting");
+			r.ctx.engine.driver.beginEvent("VolumetricLighting");
 
 			var depth = r.textures.albedo.depthBuffer;
 
@@ -495,6 +496,7 @@ class VolumetricLighting extends RendererFX {
 			r.ctx.engine.popTarget();
 
 			depth.filter = prevFilter;
+			r.ctx.engine.driver.endEvent();
 		}
 	}
 

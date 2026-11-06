@@ -1,5 +1,37 @@
 package hide.html;
 
+/**
+	WebComponent docs :
+
+	WebComponent is a helper class around the new html webcomponent api, that allow declaring
+	new html tags that have custom scoped style and code behavior. This file tries to build a Haxe translation of this concept.
+
+	WebComponents should be used when a widget is self contained, like a button or a slider, or want to interact with the
+	dom tree natively (for example custom containers like TabContainer / SplitContainer). Complex
+	hierarchies like Editors should instead keep using the old hide.comp.Element pattern.
+
+	To use it, extends WebComponent and call `static var _ = register(MyClass, "hide-my-dom-tag");`
+	at the end of your class to register it.
+
+	You then get access to the WebComponent callbacks defined inside IWebComponent :
+	https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements#custom_element_lifecycle_callbacks
+
+	Attributes :
+		The `@:attr` metadata transform a class member into a dom attribute. Setting the member calls setAttribute("var_name", value).
+		Only String or Bool are supported, with Int variables being converted to String for convinience.
+		Each `@:attr` variable must have a matching set_varname(oldValue, newValue) member function, that will be called each time the
+		attribute is set somewhere (carefull, oldValue can be equal to newValue).
+		This is the preferred way to setup values inside your WebComponent.
+
+	Example class : `hide.html.comp.Button`
+	Example container : SplitContainer
+
+	Additional notes :
+	WebComponent rely on recent html api that is not present in haxe. for that we manually patch the haxe definitions inside hide.html.DomPatch
+
+**/
+
+
 #if !macro
 @:autoBuild(hide.html.WebComponentMacro.build())
 interface IWebComponent {

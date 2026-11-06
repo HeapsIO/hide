@@ -101,6 +101,7 @@ class GradientSky extends RendererFX {
 		if( tex == null )
 			return;
 		r.mark("GradientSky");
+		r.ctx.engine.driver.beginEvent("GradientSky");
 		var engine = r.ctx.engine;
 		var velocity = r.ctx.computeVelocity ? pbr.textures.velocity : null;
 		var fx = getPass(velocity != null);
@@ -120,6 +121,7 @@ class GradientSky extends RendererFX {
 		props.isScreen = prevIsScreen;
 		if( velocity != null )
 			engine.popTarget();
+		engine.driver.endEvent();
 	}
 
 	function getPass( velocity : Bool ) {

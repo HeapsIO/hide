@@ -12,6 +12,7 @@ class SimulationShader extends hrt.prefab.Shader {
 		if ( prevSh != null )
 			gpuEmitter.simulationPass.removeShader(prevSh);
 		gpuEmitter.simulationPass.addShader(sh);
+		gpuEmitter.invalidateParticleFormat();
 	}
 
 	override function editorAllowParent(cl: Class<Prefab>) {

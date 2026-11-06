@@ -6,6 +6,10 @@ class ComputeUtils extends hxsl.Shader {
 
 	public function onRemove(emitter : GPUEmitterObject) {}
 
+	public function getParticleInputs() : Array<hxd.BufferFormat.BufferInput> {
+		return null;
+	}
+
 	static var SRC = {
 
 		@global var global : {

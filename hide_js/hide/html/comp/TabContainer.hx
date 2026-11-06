@@ -7,7 +7,7 @@ import hrt.ui.HuiMenu.MenuItem;
 
 /**
 	Shows a tab bar with one tab per child (text from its `label` attribute, tooltip from `tab-title`) and only displays the child of the selected tab.
-	Tabs from the first one that doesn't fit in the bar are hidden and listed in a dropdown, which moves the picked tab to the front.
+	Tabs from the first one that doesn't fit in the bar are hidden and listed in a dropdown. A hidden tab is moved to the front when selected.
 	With `auto-hide-empty`, it is hidden while empty, except during a tab drag it accepts.
 	Tabs can't be dragged unless a subclass overrides `canDragPane` and `canDropPane`.
 **/
@@ -56,10 +56,7 @@ class TabContainer extends WebComponent {
 				if (!tabs.children[i].hidden)
 					continue;
 				var pane = children[i];
-				items.push({label: tabs.children[i].firstChild.textContent, click: () -> {
-					insertPane(pane, firstElementChild);
-					select(pane);
-				}});
+				items.push({label: tabs.children[i].firstChild.textContent, click: () -> select(pane)});
 			}
 			hide.comp.ContextMenu.createDropdown(more, items);
 		};
@@ -140,6 +137,20 @@ class TabContainer extends WebComponent {
 		}
 
 		updateOverflow();
+		revealSelected();
+	}
+
+	/** Moves the selected pane to the front if its tab overflows **/
+	function revealSelected() {
+		// Tabs are stale while child changes are pending
+		if (observer.takeRecords().length > 0) {
+			build();
+			return;
+		}
+
+		var tab = tabs.children[[for (i in 0...children.length) children[i]].indexOf(selected)];
+		if (tab != null && tab.hidden && selected != firstElementChild)
+			insertPane(selected, firstElementChild);
 	}
 
 	function updateOverflow() {
@@ -293,6 +304,7 @@ class TabContainer extends WebComponent {
 			tabs.children[i].classList.toggle("selected", children[i] == pane);
 
 		notify(pane, true);
+		revealSelected();
 	}
 
 	static var _ = register(TabContainer, "hide-tab-container");

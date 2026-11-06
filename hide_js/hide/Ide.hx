@@ -1094,7 +1094,10 @@ class Ide extends hide.tools.IdeData {
 
 		var includeReg : EReg = filesToInclude == null ? null : new EReg('.[.](${[for (i in filesToInclude) '${i}'].join("|")})$', "");
 		var exludeReg : EReg = filesToExclude == null ? null : new EReg('.[.](${[for (i in filesToExclude) '${i}'].join("|")})$', "");
-		var searchReg = new EReg(text, "g");
+		if (text == "")
+			return refs;
+
+		var searchReg = new EReg(EReg.escape(text), "g");
 		function rec(path : String, file : String) {
 			var absPath = path + "/" + file;
 			var files = sys.FileSystem.readDirectory(absPath);
@@ -1142,7 +1145,9 @@ class Ide extends hide.tools.IdeData {
 											opened = true;
 											var v = Std.downcast(view, hide.view.Prefab);
 											v.delaySceneEditor(() -> {
-												v.sceneEditor.selectElementsIndirect([getRefInPrefab(@:privateAccess v.data)]);
+												var p = getRefInPrefab(@:privateAccess v.data);
+												if (p != null)
+													v.sceneEditor.selectElementsIndirect([p]);
 											});
 										});
 
@@ -1151,7 +1156,9 @@ class Ide extends hide.tools.IdeData {
 											opened = true;
 											var v = Std.downcast(view, hide.view.FXEditor);
 											v.delaySceneEditor(() -> {
-												@:privateAccess v.sceneEditor.selectElementsIndirect([getRefInPrefab(@:privateAccess cast v.data)]);
+												var p = getRefInPrefab(@:privateAccess cast v.data);
+												if (p != null)
+													@:privateAccess v.sceneEditor.selectElementsIndirect([p]);
 											});
 										});
 
@@ -1174,7 +1181,8 @@ class Ide extends hide.tools.IdeData {
 														}
 
 														var sub = sheet.getSub(c);
-														var subObjs: Array<Dynamic> = c.type.match(cdb.Data.ColumnType.TProperties | cdb.Data.ColumnType.TPolymorph) ? [Reflect.field(obj, c.name)] : Reflect.field(obj, c.name);
+														var v : Dynamic = Reflect.field(obj, c.name);
+														var subObjs: Array<Dynamic> = v == null ? null : c.type.match(cdb.Data.ColumnType.TProperties | cdb.Data.ColumnType.TPolymorph) ? [v] : v;
 														if (sub != null && subObjs != null) {
 															var newPath = new hrt.tools.CdbUtils.Path();
 															for (p in path)
@@ -1191,7 +1199,8 @@ class Ide extends hide.tools.IdeData {
 										}
 
 
-										hide.comp.cdb.Editor.openReference2(hits[idx].sheet, hits[idx].path);
+										if (hits[idx] != null)
+											hide.comp.cdb.Editor.openReference2(hits[idx].sheet, hits[idx].path);
 
 									default:
 										hide.tools.IdeData.showFileInExplorer(absPath + "/" + f);

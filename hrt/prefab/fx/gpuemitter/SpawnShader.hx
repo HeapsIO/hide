@@ -12,6 +12,7 @@ class SpawnShader extends hrt.prefab.Shader {
 		if ( prevSh != null )
 			gpuEmitter.spawnPass.removeShader(prevSh);
 		gpuEmitter.spawnPass.addShader(sh);
+		gpuEmitter.invalidateParticleFormat();
 	}
 
 	override function editorAllowParent(cl: Class<Prefab>) {

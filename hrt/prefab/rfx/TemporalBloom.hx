@@ -111,6 +111,7 @@ class TemporalBloom extends RendererFX {
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( step == BeforeTonemapping ) {
 			r.mark("TBloom");
+			r.ctx.engine.driver.beginEvent("TBloom");
 			var ctx = r.ctx;
 
 			var baseSize = size;
@@ -179,6 +180,7 @@ class TemporalBloom extends RendererFX {
 
 			tonemap.bloomTexture = curTarget;
 			r.addShader(tonemap);
+			ctx.engine.driver.endEvent();
 		}
 	}
 

@@ -44,8 +44,10 @@ class Vignetting extends RendererFX {
 		if( !checkEnabled() ) return;
 		if( renderAfterUpscaling ? step == AfterUpscaling : step == AfterTonemapping ) {
 			r.mark("Vignetting");
+			r.ctx.engine.driver.beginEvent("Vignetting");
 			sync(r);
 			vignettingPass.render();
+			r.ctx.engine.driver.endEvent();
 		}
 	}
 
