@@ -1361,6 +1361,7 @@ class GraphEditor extends hide.comp.Component {
 		box.refreshPinColors(true);
 
 		box.generateProperties(this);
+		box.refreshBox();
 
 		return box;
 	}

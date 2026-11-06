@@ -273,7 +273,6 @@ class Box {
 			}, {capture: true});
 		}
 
-		refreshBox();
 		//editor.editorDisplay.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
 	}
 
@@ -348,7 +347,6 @@ class Box {
 		}
 
 		inputs.push(nodeCircle);
-		refreshBox();
 
 		return node;
 	}
@@ -390,7 +388,6 @@ class Box {
 
 		outputs.push(nodeCircle);
 
-		refreshBox();
 		return node;
 	}
 
@@ -501,8 +498,6 @@ class Box {
 		}
 
 		propsHeight += 10;
-
-		refreshBox();
 	}
 
 	public function dispose() {

@@ -2124,6 +2124,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			var pbr = Std.downcast(graphEditor.previewsScene.s3d.renderer, h3d.scene.pbr.Renderer);
 			if (pbr != null) {
 				// make sure globals are properly init
+				// reuse the targets of the previous call: s3d is not rendered between updates when unfocused
+				graphEditor.previewsScene.s3d.ctx.textures.begin();
 				pbr.beginPbr();
 				pbr.endPbr();
 			}
