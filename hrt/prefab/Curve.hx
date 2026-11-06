@@ -12,7 +12,11 @@ using Lambda;
 @:prefabIcon(HuiRes.ui.icons.prefab.curve)
 class Curve extends Prefab {
 	@:isVar public var data(get, null) : hrt.impl.Curve;
-	function get_data() { return data; }
+	function get_data() {
+		if (data == null)
+			data = new hrt.impl.Curve();
+		return data;
+	}
 
 	public var keys(get, set) : Array<CurveKey>;
 	function get_keys() return data.keys;
@@ -27,11 +31,6 @@ class Curve extends Prefab {
 
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
-		initData();
-	}
-
-	function initData() {
-		data = new hrt.impl.Curve();
 	}
 
 	public override function load(o:Dynamic) {
@@ -295,7 +294,17 @@ class Curve extends Prefab {
 
 	override function copy(o:Prefab) {
 		super.copy(o);
-		@:privateAccess data.copyFromOther((cast o : Curve).data);
+		copyData(cast o);
+	}
+
+	function copyData(o:Curve) {
+		#if (editor || editor_hl)
+		data = new hrt.impl.Curve();
+		@:privateAccess data.copyFromOther(o.data);
+		#else
+		// Optim: in game consider curves immutable to save allocs on FX play
+		data = o.data;
+		#end
 	}
 
 	override function edit2(ctx: hrt.prefab.EditContext2) {

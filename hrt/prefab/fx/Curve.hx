@@ -23,7 +23,13 @@ enum CurveBlendMode {
 class Curve extends hrt.prefab.Curve {
 	static var CHANNELS = ["position", "rotation", "scale", "color", "visibility", "localposition", "localrotation"];
 
-	public var datas : Array<hrt.impl.Curve>;
+	@:isVar public var datas(get, set) : Array<hrt.impl.Curve>;
+	function get_datas() {
+		if (datas == null)
+			datas = [new hrt.impl.Curve()];
+		return datas;
+	}
+	function set_datas(v) return datas = v;
 	override function get_data() : hrt.impl.Curve { return datas[0]; }
 
 	override function get_duration() {
@@ -38,10 +44,6 @@ class Curve extends hrt.prefab.Curve {
 	@:s public var param : String;
 	@:s public var refPath : String;
 	var refCurve : Curve = null;
-
-	override function initData() {
-		datas = [new hrt.impl.Curve()];
-	}
 
 	override function loadData(o:Dynamic) {
 		if (o.datas == null) {
@@ -140,14 +142,19 @@ class Curve extends hrt.prefab.Curve {
 		return hrt.prefab.Curve.findCurves(parent, prefix, c -> c.to(Curve));
 	}
 
-	override function copy(o:Prefab) {
-		super.copy(o);
+	override function copyData(o:hrt.prefab.Curve) {
+		#if (editor || editor_hl)
 		datas = [];
 		for (d in (cast o : Curve).datas) {
 			var c = new hrt.impl.Curve();
 			@:privateAccess c.copyFromOther(d);
 			datas.push(c);
 		}
+		#else
+		// Optim: curves are cloned for simplicity but particle Values don't even read the new ones
+		// and reuse the original curve references directly
+		datas = (cast o : Curve).datas;
+		#end
 	}
 
 	override function makeInstance() {
