@@ -701,10 +701,11 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	#end
 
 	override function onBeforeClose() {
-		isLoaded = false;
-		trace("on before close");
-
-		return true;
+		if (super.onBeforeClose()) {
+			isLoaded = false;
+			return true;
+		}
+		return false;
 	}
 
 	override function destroy() {
