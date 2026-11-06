@@ -152,6 +152,7 @@ class ShaderDynAnimation extends ShaderAnimation {
 	}
 }
 
+// Supports overriding xyz components separately
 typedef VectorAnimation = { ?x: Value, ?y: Value, ?z: Value };
 
 typedef ObjectAnimation = {

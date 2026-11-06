@@ -570,16 +570,43 @@ class FXAnimation extends h3d.scene.Object {
 	static var tempMat = new h3d.Matrix();
 	static var tempVec = new h3d.Vector4();
 
-	function syncAnims(newTime: Float, dt: Float) {
+	function syncAnims(t: Float, dt: Float) {
 		if(objAnims != null) {
 			for(anim in objAnims) {
 				if(anim.obj != null && (anim.scale != null || anim.rotation != null || anim.position != null)) {
-					var e = anim.elt, p = anim.position, s = anim.scale, r = anim.rotation;
-					inline function f(v: Value, base: Float) return v == null ? base : evaluator.getFloat(v, newTime);
+					var e = anim.elt;
+					inline function eval(v: Value, base: Float) return v == null ? base : evaluator.getFloat(v, t);
 					var m = tempMat;
-					m.initScale(f(s?.x, e.scaleX), f(s?.y, e.scaleY), f(s?.z, e.scaleZ));
-					m.rotate(hxd.Math.degToRad(f(r?.x, e.rotationX)), hxd.Math.degToRad(f(r?.y, e.rotationY)), hxd.Math.degToRad(f(r?.z, e.rotationZ)));
-					m.translate(f(p?.x, e.x), f(p?.y, e.y), f(p?.z, e.z));
+					if(anim.scale != null) {
+						var s = anim.scale;
+						if(s.x != null && s.x == s.y && s.x == s.z) {
+							var sc = evaluator.getFloat(s.x, t);  // Optim: get curve only once for uniform scales
+							m.initScale(sc, sc, sc);
+						} else {
+							var sx = eval(s.x, e.scaleX);
+							var sy = eval(s.y, e.scaleY);
+							var sz = eval(s.z, e.scaleZ);
+							m.initScale(sx, sy, sz);
+						}
+					}
+					else
+						m.initScale(e.scaleX, e.scaleY, e.scaleZ);
+
+					inline function radians(deg: Float) return hxd.Math.degToRad(deg);
+					var rot = anim.rotation;
+					if(rot != null)
+						m.rotate(
+							radians(eval(rot.x, e.rotationX)),
+							radians(eval(rot.y, e.rotationY)),
+							radians(eval(rot.z, e.rotationZ)));
+					else if(e.rotationX != 0 || e.rotationY != 0 || e.rotationZ != 0)
+						m.rotate(radians(e.rotationX), radians(e.rotationY), radians(e.rotationZ));
+
+					var pos = anim.position;
+					if(pos != null)
+						m.translate(eval(pos.x, e.x), eval(pos.y, e.y), eval(pos.z, e.z));
+					else
+						m.translate(e.x, e.y, e.z);
 					anim.obj.setTransform(m);
 				}
 
@@ -589,17 +616,17 @@ class FXAnimation extends h3d.scene.Object {
 					var editor = anim.elt.shared.editor;
 					visible = visible && (editor?.isVisible(anim.elt) ?? true);
 					#end
-					anim.obj.visible = visible && evaluator.getFloat(anim.visibility, newTime) > 0.5;
+					anim.obj.visible = visible && evaluator.getFloat(anim.visibility, t) > 0.5;
 				}
 
 				if(anim.color != null) {
 					switch(anim.color) {
 						case VCurve(_) | VParamCurve(_):
 							for(mat in anim.obj.getMaterials())
-								mat.color.a = evaluator.getFloat(anim.color, newTime);
+								mat.color.a = evaluator.getFloat(anim.color, t);
 						default:
 							for(mat in anim.obj.getMaterials())
-								mat.color.load(evaluator.getVector(anim.color, newTime, tempVec));
+								mat.color.load(evaluator.getVector(anim.color, t, tempVec));
 					}
 				}
 
@@ -610,33 +637,33 @@ class FXAnimation extends h3d.scene.Object {
 							var l = Std.downcast(anim.obj, h3d.scene.pbr.PointLight);
 							if( l != null ) {
 								if( color != null ) {
-									var v = evaluator.getVector(color, newTime, tempVec);
+									var v = evaluator.getVector(color, t, tempVec);
 									l.color.set(v.x, v.y, v.z);
 								}
-								if( power != null ) l.power = evaluator.getFloat(power, newTime);
-								if( size != null ) l.size = evaluator.getFloat(size, newTime);
-								if( range != null ) l.range = evaluator.getFloat(range, newTime);
+								if( power != null ) l.power = evaluator.getFloat(power, t);
+								if( size != null ) l.size = evaluator.getFloat(size, t);
+								if( range != null ) l.range = evaluator.getFloat(range, t);
 							}
 						case DirLight(color, power):
 							var l = Std.downcast(anim.obj, h3d.scene.pbr.DirLight);
 							if( l != null ) {
 								if( color != null ) {
-									var v = evaluator.getVector(color, newTime, tempVec);
+									var v = evaluator.getVector(color, t, tempVec);
 									l.color.set(v.x, v.y, v.z);
 								}
-								if( power != null ) l.power = evaluator.getFloat(power, newTime);
+								if( power != null ) l.power = evaluator.getFloat(power, t);
 							}
 						case SpotLight(color, power, range, angle, fallOff):
 							var l = Std.downcast(anim.obj, h3d.scene.pbr.SpotLight);
 							if( l != null ) {
 								if( color != null ) {
-									var v = evaluator.getVector(color, newTime, tempVec);
+									var v = evaluator.getVector(color, t, tempVec);
 									l.color.set(v.x, v.y, v.z);
 								}
-								if( power != null ) l.power = evaluator.getFloat(power, newTime);
-								if( range != null ) l.range = evaluator.getFloat(range, newTime);
-								if( angle != null ) l.angle = evaluator.getFloat(angle, newTime);
-								if( fallOff != null ) l.fallOff = evaluator.getFloat(fallOff, newTime);
+								if( power != null ) l.power = evaluator.getFloat(power, t);
+								if( range != null ) l.range = evaluator.getFloat(range, t);
+								if( angle != null ) l.angle = evaluator.getFloat(angle, t);
+								if( fallOff != null ) l.fallOff = evaluator.getFloat(fallOff, t);
 							}
 					}
 				}
