@@ -110,9 +110,13 @@ class HuiCurveBox extends HuiElement {
 
 		graphics.lineStyle(CURVE_WIDTH, CURVE_COLOR, 1);
 
+		var maxValue = value.data.getValueRange().max;
+		if (maxValue <= 0)
+			maxValue = 1;
+
 		graphics.moveTo(0, 0);
 		for (idx => v in value.sample(CURVE_PRECISION))
-			graphics.lineTo((idx / CURVE_PRECISION) * this.calculatedWidth, (v / value.maxValue) * -1 * this.calculatedHeight);
+			graphics.lineTo((idx / CURVE_PRECISION) * this.calculatedWidth, (v / maxValue) * -1 * this.calculatedHeight);
 	}
 
 	public dynamic function onValueChanged(isTemporary: Bool) {}
@@ -585,8 +589,6 @@ class HuiCurveEditor extends HuiPopup {
 			key.time = 0;
 		// if(maxLength > 0 && key.time > maxLength)
 		// 	key.time = maxLength;
-		if(key.time > value.maxTime)
-			key.time = value.maxTime;
 		if(prev != null && key.time < prev.time)
 			key.time = prev.time + 0.01;
 		if(next != null && key.time > next.time)
