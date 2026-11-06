@@ -2129,6 +2129,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				pbr.beginPbr();
 				pbr.endPbr();
 			}
+
+			// camera globals are only set by s3d.render, which runs after this on the first frame
+			graphEditor.previewsScene.s3d.ctx.setCamera(graphEditor.previewsScene.s3d.camera);
+
 			// copy 3d globals into 2d context for previews
 			for (id => val in graphEditor.previewsScene.s3d.ctx.globals.map) {
 				graphEditor.previewsScene.s2d.ctx.globals.fastSet(id, val);
