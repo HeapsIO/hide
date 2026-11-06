@@ -1089,8 +1089,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 							var curr = [for (i in 0...n) ranges[i].value];
 							saveValue = null;
 							function exec(isUndo : Bool) {
-								var v = isUndo ? old : curr;
-								parameter.defaultValue = parameter.id;
+								var v = isUndo ? old.copy() : curr.copy();
 								shaderGraph.setParameterDefaultValue(parameter.id, v);
 								for (i in 0 ... n)
 									ranges[i].value = v[i];
@@ -1313,11 +1312,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	function createParameter(type : HxslType, generic = false) {
 		@:privateAccess var paramShaderID : Int = shaderGraph.current_param_id++;
+		var name = "Param_" + paramShaderID;
+		var param = {id: paramShaderID, name : name, type : type, defaultValue : null, variable : shaderGraph.generateParameter(name, type), index : shaderGraph.parametersAvailable.count(), generic : generic ? true : null};
 		@:privateAccess
 		function exec(isUndo:Bool) {
 			if (!isUndo) {
-				var name = "Param_" + paramShaderID;
-				shaderGraph.parametersAvailable.set(paramShaderID, {id: paramShaderID, name : name, type : type, defaultValue : null, variable : shaderGraph.generateParameter(name, type), index : shaderGraph.parametersAvailable.count(), generic : generic ? true : null});
+				shaderGraph.parametersAvailable.set(paramShaderID, param);
 			} else {
 				shaderGraph.parametersAvailable.remove(paramShaderID);
 			}
