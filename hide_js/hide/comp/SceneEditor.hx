@@ -1161,7 +1161,7 @@ class SceneEditor {
 				reparentElement(children, parent, 0);
 			}
 		});
-		view.keys.register("sceneeditor.editPivot", {name: "Edit Pivot", category: "Scene"}, editPivot);
+		//view.keys.register("sceneeditor.editPivot", {name: "Edit Pivot", category: "Scene"}, editPivot);
 		view.keys.register("sceneeditor.gatherToMouse", {name: "Gather to mouse", category: "Scene"}, gatherToMouse);
 		view.keys.register("sceneeditor.radialViewModes", {name: "Radial view modes", category: "Scene"}, function() {
 			var renderer = Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer);
@@ -2321,7 +2321,7 @@ class SceneEditor {
 
 			var newItems = getNewContextMenu(p);
 			var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [
-				{ label : "New...", menu : newItems },
+				{ label : "New...", menu : newItems, searchInclude: true },
 			];
 			var actionItems : Array<hrt.ui.HuiMenu.MenuItem> = [
 				{ label : "Rename", enabled : p != null, click : function() { tree.rename(p); }, keys : view.config.get("key.rename") },
@@ -2437,7 +2437,7 @@ class SceneEditor {
 				}
 			}
 
-			hide.comp.ContextMenu.createFromEvent(cast e, menuItems);
+			hide.comp.ContextMenu.createFromEvent(cast e, menuItems, {search: Visible});
 		}
 		tree.onContextMenu = ctxMenu;
 		return tree;
@@ -3274,7 +3274,7 @@ class SceneEditor {
 				keys : view.config.get("key.sceneeditor.gatherToMouse"),
 			},
 		];
-		hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, cast menuItems);
+		hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, cast menuItems, {search: Visible});
 	}
 
 	public function refreshInteractive(elt : PrefabElement) {

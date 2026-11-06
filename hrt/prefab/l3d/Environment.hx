@@ -67,20 +67,6 @@ class Environment extends Object3D {
 		if( sourceMapPath == null )
 			return;
 
-		#if editor
-		var sourceMap = shared.loadTexture(sourceMapPath);
-		if( sourceMap == null )
-			return;
-		if( sourceMap.flags.has(Loading) ) {
-			haxe.Timer.delay(function() {
-				shared.scene.setCurrent();
-				if( h3d.Engine.getCurrent().driver == null ) return; // was disposed
-				updateInstance(propName);
-			},100);
-			return;
-		}
-		#end
-
 		var needLoad = false;
 		if( env == null ) {
 			env = new h3d.scene.pbr.Environment(null);
@@ -104,8 +90,22 @@ class Environment extends Object3D {
 		env.rotation = hxd.Math.degToRad(rotation);
 		env.power = power;
 
-		if( propName == "force" || (needLoad && !loadFromBinary()) )
+		if( propName == "force" || (needLoad && !loadFromBinary()) ) {
+			#if editor
+			var sourceMap = shared.loadTexture(sourceMapPath);
+			if( sourceMap == null )
+				return;
+			if( sourceMap.flags.has(Loading) ) {
+				haxe.Timer.delay(function() {
+					shared.scene.setCurrent();
+					if( h3d.Engine.getCurrent().driver == null ) return; // was disposed
+					updateInstance("force");
+				},100);
+				return;
+			}
+			#end
 			compute();
+		}
 
 		var scene = local3d.getScene();
 		// Auto Apply on change

@@ -16,6 +16,7 @@ hide_common.hxml
 cdb.ConstLoader
 
 #-D shader_debug_dump
+#-D keep_old_shader_dumps
 
 --next
 

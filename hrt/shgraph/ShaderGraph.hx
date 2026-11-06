@@ -68,7 +68,7 @@ function serializeSgType(t: SgType) : String {
 		case SgSampler, SgInt, SgBool:
 			return EnumValueTools.getName(t);
 		case SgGeneric(_,_):
-			throw "Can't serialize generic variables";
+			return "SgGeneric";
 	}
 }
 
@@ -78,6 +78,8 @@ function unserializeSgType(s: String) : SgType {
 	switch(name) {
 		case "SgFloat":
 			return SgFloat(Std.parseInt(split[0]));
+		case "SgGeneric":
+			return SgGeneric(0, ConstraintFloat);
 		default:
 			return std.Type.createEnum(SgType, name);
 	}
@@ -190,9 +192,10 @@ typedef Parameter = {
 	defaultValue : Dynamic,
 	?id : Int,
 	?variable : TVar,
-	?internal: Bool,
 	?min : Float,
 	?max : Float,
+	// Subgraph parameter typed by the input of the SubGraph node (SgGeneric). `type` is its type when not included
+	?generic : Bool,
 	index : Int
 };
 
@@ -260,11 +263,9 @@ class ShaderGraphGenContext {
 			node.node.generate(genContext);
 
 			for (outputId => expr in genContext.outputs) {
-				if (expr == null) {
-					// Unconnected reroutes leave their output null so downstream inputs stay unconnected
-					if (Std.isOfType(node.node, hrt.shgraph.nodes.Reroute)) continue;
-					throw "null expr for output " + outputId;
-				}
+				// Null outputs leave downstream inputs unconnected
+				if (expr == null)
+					continue;
 				var targets = node.outputs[outputId];
 				if (targets == null) continue;
 				for (target in targets) {
@@ -324,7 +325,7 @@ class ShaderGraphGenContext {
 			if (asShaderVar != null) {
 				var variable = graph.parent.variables[asShaderVar.varId];
 
-				if (variable.isGlobal) {
+				if (variable?.isGlobal == true) {
 					// Global Write depend on their Read counterpart (because the write must happen after all the reads)
 					var write = Std.downcast(asShaderVar, hrt.shgraph.nodes.VarWrite);
 					if (write != null) {
@@ -460,6 +461,10 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		}
 
 		loadParameters(json.parameters ?? []);
+		loadGraphs(json);
+	}
+
+	function loadGraphs(json : Dynamic) {
 		for (domain in haxe.EnumTools.getConstructors(Domain)) {
 			var graph = new Graph(this, haxe.EnumTools.createByName(Domain, domain));
 			var graphJson = Reflect.getProperty(json, domain);
@@ -480,7 +485,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		var json = super.save();
 
 		json.parameters = [
-			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal, min : p.min, max : p.max }
+			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, min : p.min, max : p.max, generic : p.generic }
 		];
 
 		// Fix parameters index that sometimes get f-ed up for an unknown reason
@@ -501,12 +506,16 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			}
 		];
 
+		saveGraphs(json);
+
+		return json;
+	}
+
+	function saveGraphs(json : Dynamic) {
 		for (graph in graphs) {
 			var serName = EnumValueTools.getName(graph.domain);
 			Reflect.setField(json, serName, graph.saveToDynamic());
 		}
-
-		return json;
 	}
 
 	public function saveToText() : String {
@@ -567,7 +576,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		};
 
 
-		var nodeGen = new NodeGenContext(null, Vertex);
+		var nodeGen = createNodeGenContext();
 		nodeGen.explicitVarNames = options.explicitVarNames ?? false;
 		nodeGen.previewDomain = previewDomain;
 
@@ -734,6 +743,10 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		return cachedDef;
 	}
 
+	function createNodeGenContext() : NodeGenContext {
+		return new NodeGenContext(null, Vertex);
+	}
+
 	public function makeShaderInstance() : hxsl.DynamicShader {
 		var def = compile({});
 		var s = new hxsl.DynamicShader(def.shader);
@@ -859,6 +872,32 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	}
 
 	#if editor
+	/** True if the subgraph at `path` is this graph or includes it, directly or through other subgraphs **/
+	public function isIncludedBy(path: String) : Bool {
+		var visited : Array<String> = [];
+		function rec(path: String) : Bool {
+			if (path == shared.currentPath)
+				return true;
+			if (visited.contains(path))
+				return false;
+			visited.push(path);
+
+			var sub = Std.downcast(hide.Ide.inst.loadPrefab(path), ShaderSubGraph);
+			if (sub == null)
+				return false;
+			for (graph in sub.graphs)
+				for (node in graph.getNodes()) {
+					var subNode = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
+					if (subNode != null && rec(subNode.pathShaderGraph))
+						return true;
+				}
+			return false;
+		}
+		return rec(path);
+	}
+	#end
+
+	#if editor
 	static var removeFnRegex = ~/@function var.*$/gm;
 	static var trimWhitepsaceStart = ~/^\s*/;
 	static var trimWhitepsaceEnd = ~/\s*$/;
@@ -945,6 +984,8 @@ class Graph {
 		}
 
 		for (e in edges) {
+			if (!this.nodes.exists(e.inputNodeId) || !this.nodes.exists(e.outputNodeId))
+				continue;
 			addEdge(e, false);
 		}
 	}
@@ -985,7 +1026,7 @@ class Graph {
 			if (asShaderVar != null) {
 				var variable = parent.variables[asShaderVar.varId];
 
-				if (variable.isGlobal) {
+				if (variable?.isGlobal == true) {
 					// Global Write depend on their Read counterpart (because the write must happen after all the reads)
 					var write = Std.downcast(asShaderVar, hrt.shgraph.nodes.VarWrite);
 					if (write != null) {
@@ -1065,6 +1106,9 @@ class Graph {
 			}
 		}
 
+		if (inputs[inputId] == null || outputs[outputId] == null)
+			return false;
+
 		node.connections[inputId] = {from: output, outputId: outputId};
 
 		#if editor
@@ -1078,11 +1122,6 @@ class Graph {
 
 		if (!areTypesCompatible(inputType, outputType)) {
 			removeEdge(edge.inputNodeId, inputId);
-		}
-		try {
-		} catch (e : Dynamic) {
-			removeEdge(edge.inputNodeId, inputId);
-			throw e;
 		}
 		#end
 		return true;

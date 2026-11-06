@@ -150,6 +150,53 @@ class Search {
 	}
 
 	/**
+		Case insensitive subsequence match of `needle` in `text`. Higher is better, -1 if a needle char is missing.
+		Rewards consecutive chars, word starts and plain substrings, penalizes gaps.
+	**/
+	public static function fuzzyScore(text: String, needle: String) : Int {
+		function isWordStart(i: Int) {
+			if (i == 0)
+				return true;
+			var p = text.fastCodeAt(i - 1);
+			var c = text.fastCodeAt(i);
+			return p == " ".code || p == "_".code || p == "-".code || p == ".".code || (p >= "a".code && p <= "z".code && c >= "A".code && c <= "Z".code);
+		}
+
+		var t = text.toLowerCase();
+		var n = needle.toLowerCase();
+
+		var score = 0;
+		var ni = 0;
+		var prev = -1;
+		for (ti in 0...t.length) {
+			if (ni >= n.length)
+				break;
+			if (t.fastCodeAt(ti) != n.fastCodeAt(ni))
+				continue;
+
+			score += 1;
+			if (prev >= 0 && ti == prev + 1)
+				score += 5;
+			if (isWordStart(ti))
+				score += 8;
+			if (prev >= 0)
+				score -= ti - prev - 1;
+
+			prev = ti;
+			ni++;
+		}
+
+		if (ni < n.length)
+			return -1;
+
+		var sub = t.indexOf(n);
+		if (sub >= 0)
+			score += sub == 0 ? 30 : 20;
+
+		return score < 0 ? 0 : score;
+	}
+
+	/**
 		Timeslice many fuzzySearch operations by taking around maxTimePerFrame and calling onProgress with the partial results each time.
 		Progress correspond to the last `texts` index processed, if equals texts.length, the process is finished. return false to cancel the search
 	**/
@@ -178,6 +225,7 @@ class Search {
 				pos += 1;
 			}
 
+			results.sort((a, b) -> Reflect.compare(a.distance, b.distance));
 			onProgress(results, pos);
 		}
 

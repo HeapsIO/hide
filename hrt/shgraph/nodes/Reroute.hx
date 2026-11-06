@@ -35,11 +35,7 @@ class Reroute extends ShaderNode {
 
 	override function generate(ctx: NodeGenContext) {
 		// Pass the input expression through directly so no extra variable is generated
-		var input = ctx.getInput(0);
-		if (input != null)
-			ctx.setOutput(0, input);
-		else
-			@:privateAccess ctx.outputs[0] = null;
+		ctx.setOutput(0, ctx.getInput(0));
 	}
 
 	override function canHavePreview() : Bool {

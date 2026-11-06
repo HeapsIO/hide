@@ -39,7 +39,7 @@ class AlphaPreview extends hxsl.Shader {
 typedef InputInfo = {name: String, type: SgType, def: ShaderDefInput, ?inlineEditable: Bool};
 typedef OutputInfo = {name: String, type: SgType};
 typedef VariableDecl = {v: TVar, display: String, ?vertexOnly: Bool};
-typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description : String, ?args : Array<Dynamic>, ?group: String};
+typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description : String, ?args : Array<Dynamic>, ?group: String, ?searchAlias: Array<String>};
 @:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
 @:keepSub
 @:keep
@@ -114,6 +114,7 @@ implements hide.view.GraphInterface.IGraphNode
 				fullSize: false,
 			},
 			width: metas.width != null ? metas.width[0] : null,
+			icon: metas.icon != null ? metas.icon[0] : null,
 			noHeader: Reflect.hasField(metas, "noheader"),
 		};
 	}
@@ -198,7 +199,8 @@ implements hide.view.GraphInterface.IGraphNode
 	}
 	#end
 
-	public function serializeToDynamic() : Dynamic {
+	/** If forClipboard, add the names of the graph data referenced by id, to bind them by name in another graph **/
+	public function serializeToDynamic(forClipboard: Bool = false) : Dynamic {
 		return {
 			x: x,
 			y: y,
@@ -208,15 +210,20 @@ implements hide.view.GraphInterface.IGraphNode
 		};
 	}
 
-	public static function createFromDynamic(data: Dynamic, graph: ShaderGraph.Graph) : ShaderNode {
+	/** If forClipboard, bind the graph data referenced by name, throw if missing **/
+	public function unserializeFromDynamic(data: Dynamic, forClipboard: Bool = false) : Void {
+		x = data.x;
+		y = data.y;
+		id = data.id;
+		connections = [];
+		loadProperties(data.properties);
+	}
+
+	public static function createFromDynamic(data: Dynamic, graph: ShaderGraph.Graph, forClipboard: Bool = false) : ShaderNode {
 		var type = std.Type.resolveClass(data.type);
 		var inst = std.Type.createInstance(type, []);
-		inst.x = data.x;
-		inst.y = data.y;
-		inst.id = data.id;
 		inst.graph = graph;
-		inst.connections = [];
-		inst.loadProperties(data.properties);
+		inst.unserializeFromDynamic(data, forClipboard);
 		return inst;
 	}
 

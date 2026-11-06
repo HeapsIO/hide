@@ -475,6 +475,91 @@ class Gym extends hide.ui.View<{}> {
 				</div>
 			);
 		}
+
+		{
+			var search = section(element, "Search Files");
+			hide.html.Html.build(search.get(0),
+				<div>
+					<input id="search-box" type="text" placeholder="Search ..."/>
+					<div id="search-time"></div>
+					<div id="search-results" style="height: 400px; overflow: auto"></div>
+				</div>
+			);
+
+			var maxDisplayed = 500;
+			var allFiles : Array<String> = [];
+			var allFilesLowercase : Array<String> = [];
+			var currentSearch = 0;
+
+			function addLine(text: String) {
+				var line = js.Browser.document.createDivElement();
+				line.textContent = text;
+				searchResults.append(line);
+				return line;
+			}
+
+			function searchFiles() {
+				currentSearch++;
+				var thisSearch = currentSearch;
+				var needle = searchBox.value.toLowerCase();
+
+				searchResults.innerHTML = "";
+
+				if (needle.length == 0) {
+					for (i in 0...hxd.Math.imin(allFiles.length, maxDisplayed))
+						addLine(allFiles[i]);
+					searchTime.textContent = "";
+					return;
+				}
+
+				hide.Search.batchFuzzySearchAsync(allFilesLowercase, needle, 0.01, 3, (results: Array<hide.Search.BatchFuzzySearchAsyncResult>, progress: Int) -> {
+					if (thisSearch != currentSearch)
+						return false;
+
+					searchTime.textContent = 'Searching $progress / ${allFiles.length} ( ${Std.int(progress / allFiles.length * 100)}% ) - ${results.length} results';
+
+					searchResults.innerHTML = "";
+					if (results.length == 0 && progress == allFiles.length)
+						addLine("no matches");
+
+					for (i in 0...hxd.Math.imin(results.length, maxDisplayed)) {
+						var r = results[i];
+						var str = allFiles[r.pos];
+						var start = hxd.Math.imax(0, r.lastCharPos - needle.length + 1);
+						var line = addLine(str.substr(0, start));
+
+						var highlight = js.Browser.document.createElement("b");
+						highlight.textContent = str.substr(start, r.lastCharPos + 1 - start);
+						line.append(highlight);
+						line.append(str.substr(r.lastCharPos + 1) + ' (${r.distance})');
+					}
+
+					return true;
+				});
+			}
+
+			searchBox.oninput = (_) -> searchFiles();
+
+			search.get(0).addEventListener("toggle", () -> {
+				if (allFiles.length > 0)
+					return;
+
+				function rec(path: String) {
+					for (file in sys.FileSystem.readDirectory(path)) {
+						var childPath = path + "/" + file;
+						if (sys.FileSystem.isDirectory(childPath)) {
+							rec(childPath);
+						} else {
+							allFiles.push(childPath);
+							allFilesLowercase.push(childPath.toLowerCase());
+						}
+					}
+				}
+
+				rec(hide.Ide.inst.resourceDir);
+				searchFiles();
+			});
+		}
 	}
 
 	function rethrowTest1() {

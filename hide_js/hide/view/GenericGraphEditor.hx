@@ -183,4 +183,8 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
         return undo;
     }
 
+    public function getSelectionMenu(selection: Array<IGraphNode>) : Array<hrt.ui.HuiMenu.MenuItem> {
+        return [];
+    }
+
 }
