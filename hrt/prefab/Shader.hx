@@ -19,6 +19,9 @@ class Shader extends Prefab {
 
 	public var shader : hxsl.Shader;
 
+	/** The curves of its params read over the life of the particles, under an emitter (`EmitterParam.curveName`) **/
+	@:s public var particleParams : Array<String> = [];
+
 	function new(parent, sh: ContextShared) {
 		super(parent, sh);
 		props = {};
@@ -293,7 +296,8 @@ class Shader extends Prefab {
 		ctx.build(
 			<category("Shader") id="shaderCat"/>
 		);
-		shaderCat.buildPropsList(props, this.props);
+		if (!hrt.prefab.fx.EmitterHelper.editParticleShader(ctx, this, props, shaderCat))
+			shaderCat.buildPropsList(props, this.props);
 	}
 
 	function getEditProps(shaderDef: hxsl.SharedShader) : Array<hrt.prefab.Props.PropDef> {

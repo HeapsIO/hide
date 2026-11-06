@@ -61,7 +61,7 @@ class Slider<T:Float> extends Widget<T> {
 	var slider = null;
 	#end
 
-	var showRange: Bool = false;
+	public var showRange: Bool = false;
 	var subPixelSlide : Float = 0;
 	var startValueLinear : Float = 0;
 	var expScale : Null<Float> = null;

@@ -1,8 +1,27 @@
 package hide.comp;
 
-import hrt.prefab.Curve;
+import hrt.prefab.fx.Curve.CurveBlendMode;
 
-typedef CurveKey = hrt.prefab.Curve.CurveKey;
+typedef CurveKey = hrt.impl.Curve.CurveKey;
+
+typedef EditedCurve = {
+	var name : String;
+	var data(get, never) : hrt.impl.Curve;
+}
+
+/** A data of a curve of several (a blend, a range), edited as a curve of its own **/
+class CurveData {
+	public var name : String;
+	public var data(get, never) : hrt.impl.Curve;
+	var curve : hrt.prefab.fx.Curve;
+	var index : Int;
+	public function new(curve: hrt.prefab.fx.Curve, index: Int) {
+		this.curve = curve;
+		this.index = index;
+		name = curve.name + " " + index;
+	}
+	function get_data() return curve.datas[index];
+}
 
 interface CurveEditorComponent {
 	function refresh(?anim: Bool = false): Void;
@@ -15,14 +34,14 @@ interface CurveEditorComponent {
 class EventsEditor extends Component implements CurveEditorComponent
 {
 	public var fxEditor : hide.view.FXEditor;
-	public var curveEditor : CurveEditor;
+	public var curveEditor : Timeline;
 	public var events : Array<hrt.prefab.fx.Event.IEvent> = [];
 
 	var lastValue : Array<Float>;
 	var svg : SVG;
 	var eventGroup: Element;
 
-	public function new(?parent, fxEditor: hide.view.FXEditor, curveEditor: CurveEditor) {
+	public function new(?parent, fxEditor: hide.view.FXEditor, curveEditor: Timeline) {
 		super(parent, null);
 
 		this.fxEditor = fxEditor;
@@ -331,14 +350,14 @@ class EventsEditor extends Component implements CurveEditorComponent
 
 class OverviewEditor extends Component implements CurveEditorComponent
 {
-	public var curveEditor : CurveEditor;
+	public var curveEditor : Timeline;
 
 	var svg : SVG;
 	var overviewGroup: Element;
 	var overviewKeys: Element;
 	var overviewSelection: Element;
 
-	public function new(?parent, curveEditor: CurveEditor) {
+	public function new(?parent, curveEditor: Timeline) {
 		super(parent, null);
 
 		this.curveEditor = curveEditor;
@@ -373,17 +392,12 @@ class OverviewEditor extends Component implements CurveEditorComponent
 
 			@:privateAccess this.curveEditor.selectedElements = [];
 			for (c in this.curveEditor.curves){
-				c.selected = false;
-
-				if (c.hidden || c.lock || c.blendMode == CurveBlendMode.Blend || c.blendMode == CurveBlendMode.RandomBlend)
+				if (Timeline.blendMode(c) == CurveBlendMode.Blend)
 					continue;
 
-				for (key in c.keys) {
-					if(key.time >= minT && key.time <= maxT) {
-						c.selected = true;
+				for (key in c.data.keys)
+					if(key.time >= minT && key.time <= maxT)
 						@:privateAccess this.curveEditor.selectedElements.push(key);
-					}
-				}
 			}
 
 			this.curveEditor.refresh();
@@ -452,8 +466,8 @@ class OverviewEditor extends Component implements CurveEditorComponent
 			});
 		}
 
-		function addCurveKeysToOverview(curve: Curve, ?style: Dynamic) {
-			for(key in curve.keys) {
+		function addCurveKeysToOverview(curve: EditedCurve, ?style: Dynamic) {
+			for(key in curve.data.keys) {
 				var kx = xScale*(key.time);
 				var ky = -yScale*(key.value);
 
@@ -465,13 +479,6 @@ class OverviewEditor extends Component implements CurveEditorComponent
 					keyEvent.addClass("selected");
 
 				keyEvent.mousedown(function(e) {
-					if (curve.lock || curve.hidden) return;
-
-					for (c in this.curveEditor.curves)
-						c.selected = false;
-
-					curve.selected = true;
-
 					if(e.which != 1) return;
 
 					e.preventDefault();
@@ -507,21 +514,10 @@ class OverviewEditor extends Component implements CurveEditorComponent
 		}
 
 		for (curve in this.curveEditor.curves){
-			if (curve.hidden)
-				continue;
-
-			var style: Dynamic = { 'fill-opacity' : curve.selected ? 1 : 0.5};
-
-			if (curve.lock || curve.blendMode == CurveBlendMode.Blend)
-				style = { 'fill-opacity' : curve.selected ? 1 : 0.5};
-
-			if (curve.hidden || curve.blendMode == CurveBlendMode.RandomBlend)
-				style = { 'fill-opacity' : 0};
-
 			// We don't want to show keys in overview if the
 			// concerned curve is a blended one
-			if (curve.blendMode != CurveBlendMode.Blend && curve.blendMode != CurveBlendMode.RandomBlend )
-				addCurveKeysToOverview(curve, style);
+			if (Timeline.blendMode(curve) != CurveBlendMode.Blend)
+				addCurveKeysToOverview(curve, { 'fill-opacity' : 1 });
 		}
 
 		var selectedKeys = @:privateAccess this.curveEditor.selectedElements.filter(item -> item is CurveKey);
@@ -589,10 +585,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 		@:privateAccess this.curveEditor.beforeChange();
 
 		for (c in this.curveEditor.curves)
-			if (c.selected || this.curveEditor.curves.length == 1) {
-				var previousKeyVal = c.getVal(time);
-				c.addKey(time, previousKeyVal, c.keyMode);
-			}
+			c.data.addKey(time, c.data.getVal(time));
 
 		@:privateAccess this.curveEditor.afterChange();
 	}
@@ -605,17 +598,37 @@ class OverviewEditor extends Component implements CurveEditorComponent
 }
 
 class CurvePopup extends hide.comp.Popup {
-	public var editor : CurveEditor;
+	public var editor : Timeline;
 	public function new(?parent : Element, undo: hide.ui.UndoHistory) {
 		super(parent);
 		element.addClass("curve-editor-popup");
 		reflow();
 
-		editor = new CurveEditor(undo, element, false);
+		editor = new Timeline(undo, element, false);
 	}
 }
 
-class CurveEditor extends hide.comp.Component {
+class Timeline extends hide.comp.Component {
+
+	public static function blendMode(c: EditedCurve) : CurveBlendMode {
+		return fxCurveOf(c)?.blendMode ?? None;
+	}
+
+	public static function getCurveColor(name: String, index: Int) : Int {
+		var suffixes = [[":x", ":h"], [":y", ":s"], [":z", ":l"], [":a"]];
+		for (i => s in suffixes)
+			if (Lambda.exists(s, x -> StringTools.contains(name, x)))
+				return CURVE_COLORS[i];
+		return CURVE_COLORS[index % CURVE_COLORS.length];
+	}
+
+	static function fxCurveOf(c: EditedCurve) : hrt.prefab.fx.Curve {
+		return Std.downcast((cast c : hrt.prefab.Prefab), hrt.prefab.fx.Curve);
+	}
+
+	static function snapshot(c: EditedCurve) : Dynamic {
+		return @:privateAccess c.data.copyToDynamic(null);
+	}
 
 	public static var CURVE_COLORS: Array<Int> = [
 		0xff3352,
@@ -629,7 +642,7 @@ class CurveEditor extends hide.comp.Component {
 	public var xOffset = 0.;
 	public var yOffset = 0.;
 
-	public var curves(default, set) : Array<hrt.prefab.Curve>;
+	public var curves(default, set) : Array<EditedCurve>;
 	public var undo : hide.ui.UndoHistory;
 
 	public var lockViewX = false;
@@ -690,7 +703,7 @@ class CurveEditor extends hide.comp.Component {
 		tlGroup = svg.group(root, "tlgroup");
 		markersGroup = svg.group(root, "markers").css({'pointer-events':'none'});
 
-		evaluator = new hrt.prefab.fx.Evaluator([]);
+		evaluator = new hrt.prefab.fx.Evaluator();
 
 		tlGroup.mousedown(function(e) {
 			var lastX = e.clientX;
@@ -788,10 +801,10 @@ class CurveEditor extends hide.comp.Component {
 			if(curves == null) return;
 			if(e.keyCode == 46) {
 				beforeChange();
-				var newVal = [for(c in curves) [for(k in c.keys) if(selectedElements.indexOf(k) < 0) k]];
+				var newVal = [for(c in curves) [for(k in c.data.keys) if(selectedElements.indexOf(k) < 0) k]];
 
 				for (i in 0...curves.length)
-					curves[i].keys = newVal[i];
+					curves[i].data.keys = newVal[i];
 
 				selectedElements = [];
 				e.preventDefault();
@@ -818,16 +831,10 @@ class CurveEditor extends hide.comp.Component {
 
 	}
 
-	function set_curves(curves: Array<hrt.prefab.Curve>) {
+	function set_curves(curves: Array<EditedCurve>) {
 		this.curves = curves;
 
-		var maxLength = 0.0;
-		for (c in curves){
-			if (c.maxTime > maxLength)
-				maxLength = c.maxTime;
-		}
-
-		@:privateAccess lastValue = [for (c in curves) c.serialize()];
+		lastValue = [for (c in curves) snapshot(c)];
 		if (getDisplayState("view") == null) {
 			zoomAll();
 		}
@@ -838,27 +845,10 @@ class CurveEditor extends hide.comp.Component {
 	function addKey(time: Float, ?val: Float) {
 		beforeChange();
 
-		for (c in curves)
-			if (c.selected || curves.length == 1) {
-				if(c.minValue < c.maxValue)
-					val = hxd.Math.clamp(val, c.minValue, c.maxValue);
-				c.selected = true;
-				var key = c.addKey(time, val, c.keyMode);
-				fixKey(key);
-			}
-
-		afterChange();
-	}
-
-	function addPreviewKey(time: Float, ?val: Float) {
-		beforeChange();
-		for (c in curves)
-			if (c.selected) {
-				if(c.minValue < c.maxValue)
-					val = hxd.Math.clamp(val, c.minValue, c.maxValue);
-
-				c.addPreviewKey(time, val);
-			}
+		for (c in curves) {
+			var key = c.data.addKey(time, val);
+			fixKey(key);
+		}
 
 		afterChange();
 	}
@@ -870,26 +860,23 @@ class CurveEditor extends hide.comp.Component {
 
 	function fixKey(key : CurveKey) {
 		for (c in curves) {
-			if (!c.selected)
-				continue;
-
-			var index = c.keys.indexOf(key);
+			var index = c.data.keys.indexOf(key);
 
 			// Meaning that this key isn't appartening to this curve
 			if (index == -1)
 				continue;
 
-			var prev = c.keys[index-1];
-			var next = c.keys[index+1];
+			var prev = c.data.keys[index-1];
+			var next = c.data.keys[index+1];
 
 			inline function addPrevH() {
 				if(key.prevHandle == null)
-					key.prevHandle = new hrt.prefab.Curve.CurveHandle(prev != null ? (prev.time - key.time) / 3 : -0.5, 0);
+					key.prevHandle = new hrt.impl.Curve.CurveHandle(prev != null ? (prev.time - key.time) / 3 : -0.5, 0);
 			}
 
 			inline function addNextH() {
 				if(key.nextHandle == null)
-					key.nextHandle = new hrt.prefab.Curve.CurveHandle(next != null ? (next.time - key.time) / 3 : -0.5, 0);
+					key.nextHandle = new hrt.impl.Curve.CurveHandle(next != null ? (next.time - key.time) / 3 : -0.5, 0);
 			}
 
 			switch(key.mode) {
@@ -911,8 +898,6 @@ class CurveEditor extends hide.comp.Component {
 				key.time = 0;
 			if(maxLength > 0 && key.time > maxLength)
 				key.time = maxLength;
-			if(key.time > c.maxTime)
-				key.time = c.maxTime;
 			if(prev != null && key.time < prev.time)
 				key.time = prev.time + 0.01;
 			if(next != null && key.time > next.time)
@@ -965,17 +950,12 @@ class CurveEditor extends hide.comp.Component {
 
 			selectedElements = [];
 			for (c in curves){
-				if (curves.length > 1)
-					c.selected = false;
-
-				if (c.hidden || c.lock || c.blendMode == CurveBlendMode.Blend ||  c.blendMode == CurveBlendMode.RandomBlend)
+				if (blendMode(c) == CurveBlendMode.Blend)
 					continue;
 
-				for (key in c.keys)
-					if(key.time >= minT && key.time <= maxT && key.value >= minV && key.value <= maxV) {
-						c.selected = true;
+				for (key in c.data.keys)
+					if(key.time >= minT && key.time <= maxT && key.value >= minV && key.value <= maxV)
 						selectedElements.push(key);
-					}
 			}
 
 			onSelectionEnd(minT, minV, maxT, maxV);
@@ -1056,12 +1036,8 @@ class CurveEditor extends hide.comp.Component {
 
 		// Compute a surrounding box that encapsulate all the visible curves
 		var bounds = new h2d.col.Bounds();
-		for (c in curves) {
-			if (c.hidden)
-				continue;
-
-			c.getBounds(bounds);
-		}
+		for (c in curves)
+			c.data.getBounds(bounds);
 
 		if(bounds.width <= 0) {
 			bounds.xMin = 0.0;
@@ -1107,25 +1083,19 @@ class CurveEditor extends hide.comp.Component {
 	}
 
 	function beforeChange() {
-		@:privateAccess lastValue = [for (c in curves) c.serialize()];
+		lastValue = [for (c in curves) snapshot(c)];
 
 		for (c in components)
 			c.beforeChange();
 	}
 
 	function afterChange() {
-		@:privateAccess var newVal = [for (c in curves) c.serialize()];
+		var newVal = [for (c in curves) snapshot(c)];
 		var oldVal = lastValue;
 		undo.change(Custom(function(undo) {
-			if(undo) {
-				for (i in 0...curves.length)
-					curves[i].load(oldVal[i]);
-			}
-			else {
-				for (i in 0...curves.length)
-					curves[i].load(newVal[i]);
-			}
-			@:privateAccess lastValue = [for (c in curves) c.serialize()];
+			for (i in 0...curves.length)
+				@:privateAccess curves[i].data.copyFromDynamic(hrt.prefab.Diff.deepCopy(undo ? oldVal[i] : newVal[i]));
+			lastValue = [for (c in curves) snapshot(c)];
 			selectedElements = [];
 			refresh();
 			onChange(false);
@@ -1270,25 +1240,8 @@ class CurveEditor extends hide.comp.Component {
 		var minX = xt(0) - 1;
 
 		var maxTime = this.duration == 0 ? 5000 : this.duration;
-		var curvesMaxTime = 0.0;
-
-		// Restrict the "time" to the max of the curves if all curves have a max time
-		// (usefull when editting Per instance values)
-		for (curve in curves) {
-			if (curve.maxTime > 0) {
-				curvesMaxTime = hxd.Math.max(curvesMaxTime, curve.maxTime);
-			} else {
-				curvesMaxTime = 0.0;
-				break;
-			}
-		}
-
-		if (curvesMaxTime > 0) {
-			maxTime = curvesMaxTime;
-		}
 
 		var maxX = xt(maxTime);
-		svg.line(overlayGroup, xt(1), svg.element.height(), xt(1), 0, { stroke:'#000000', 'stroke-width':'1px', 'stroke-dasharray':'10, 5' });
 		svg.line(overlayGroup, minX, svg.element.height(), minX, 0, { stroke:'#000000', 'stroke-width':'1px' });
 		svg.line(overlayGroup, maxX, svg.element.height(), maxX, 0, { stroke:'#000000', 'stroke-width':'1px' });
 		svg.rect(overlayGroup, 0, 0, Math.max(0,xt(0)), svg.element.height(), { 'fill':'#000000', opacity:0.3});
@@ -1321,7 +1274,7 @@ class CurveEditor extends hide.comp.Component {
 			});
 		}
 
-		function editPopup(curve: Curve, key: CurveKey, top: Float, left: Float) {
+		function editPopup(curve: EditedCurve, key: CurveKey, top: Float, left: Float) {
 			var popupWidget = new Popup(element, false);
 
 			var popup = new Element('<div class="keyPopup">
@@ -1342,9 +1295,8 @@ class CurveEditor extends hide.comp.Component {
 			popupWidget.position = Inside;
 			popupWidget.onClose = () -> popupWidget.element.remove();
 
-			function setMode(m: hrt.prefab.Curve.CurveKeyMode) {
+			function setMode(m: hrt.impl.Curve.CurveKeyMode) {
 					key.mode = m;
-					curve.keyMode = m;
 					fixKey(key);
 					refreshGraph();
 			}
@@ -1390,33 +1342,17 @@ class CurveEditor extends hide.comp.Component {
 
 
 
-		function drawKeys(curve : Curve, ?style: Dynamic) {
-			for(key in curve.previewKeys) {
+		function drawKeys(curve : EditedCurve, ?style: Dynamic) {
+			for(key in curve.data.keys) {
 				var kx = xScale*(key.time);
 				var ky = -yScale*(key.value);
 				var keyHandle = addCircle(keyHandles, kx, ky, style);
-				keyHandle.addClass("preview");
-			}
-			for(key in curve.keys) {
-				var kx = xScale*(key.time);
-				var ky = -yScale*(key.value);
-				var keyHandle = addCircle(keyHandles, kx, ky, style);
-
-				if(curve.lock)
-					keyHandle.addClass("no-hover");
 
 				var selected = selectedElements.indexOf(key) >= 0;
 				if(selected)
 					keyHandle.addClass("selected");
 				if(!anim) {
 					keyHandle.mousedown(function(e) {
-						if (curve.lock || curve.hidden) return;
-
-						for (c in curves)
-							c.selected = false;
-
-						curve.selected = true;
-
 						if(e.which != 1) return;
 
 						e.preventDefault();
@@ -1457,12 +1393,6 @@ class CurveEditor extends hide.comp.Component {
 						refreshGraph();
 					});
 					keyHandle.contextmenu(function(e) {
-						if (curve.lock || curve.hidden) return false;
-
-						for (c in curves)
-							c.selected = false;
-
-						curve.selected = true;
 						var offset = element.offset();
 						var popup = editPopup(curve, key, e.clientY - offset.top - 50, e.clientX - offset.left);
 						e.preventDefault();
@@ -1484,13 +1414,6 @@ class CurveEditor extends hide.comp.Component {
 					if(anim)
 						return circle;
 					circle.mousedown(function(e) {
-						if (curve.lock || curve.hidden) return;
-
-						for (c in curves)
-							c.selected = false;
-
-						curve.selected = true;
-
 						if(e.which != 1) return;
 						e.preventDefault();
 						e.stopPropagation();
@@ -1532,25 +1455,10 @@ class CurveEditor extends hide.comp.Component {
 		redrawCurves(lowQuality);
 
 		for (curve in curves) {
-
-			var keyStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5};
-
-			if (curve.lock) {
-				keyStyle = { opacity : curve.selected ? 1 : 0.5, 'cursor':'default'};
-			}
-
-			if (curve.blendMode == CurveBlendMode.Blend) {
-				keyStyle = { opacity : curve.selected ? 1 : 0.5};
-			}
-
-			if (curve.hidden || curve.blendMode == CurveBlendMode.RandomBlend) {
-				keyStyle = { opacity : 0};
-			}
-
 			// Blend curve are controlled with parent curve
 			// so we don't want to allow user to use keys on this.s
-			if (curve.blendMode == CurveBlendMode.None)
-				drawKeys(curve, keyStyle);
+			if (blendMode(curve) == CurveBlendMode.None)
+				drawKeys(curve, { opacity : 1 });
 		}
 
 		var selectedKeys = selectedElements.filter(item -> item is CurveKey);
@@ -1654,7 +1562,7 @@ class CurveEditor extends hide.comp.Component {
 		var curveGroup = element.find(".curve");
 		curveGroup.empty();
 
-		function drawCurve(curve : Curve, ?style: Dynamic, bypassRemap: Bool = false, lowQuality = false) {
+		function drawCurve(curve : EditedCurve, ?style: Dynamic, bypassRemap: Bool = false, lowQuality = false) {
 			// Basic value of xScale is 200
 			var min = xOffset;
 			var max = min + width / xScale;
@@ -1670,37 +1578,27 @@ class CurveEditor extends hide.comp.Component {
 			if (pointBuffer.length != num*2)
 				pointBuffer.resize(num*2);
 
-			var v = curve.makeVal(bypassRemap);
+			var fxCurve = fxCurveOf(curve);
+			var v = fxCurve == null || (bypassRemap && fxCurve.blendMode == CurveBlendMode.None) ? hrt.prefab.fx.Value.VCurve(curve.data) : fxCurve.makeVal();
 			evaluator.parameters.clear();
-			var paramName = curve.getRemapParameter();
-
-			var fx = Std.downcast(curve.getRoot(false), hrt.prefab.fx.FX);
-
-			if (curve.blendParam != null) {
+			if (fxCurve?.param != null) {
+				var fx = Std.downcast(fxCurve.getRoot(false), hrt.prefab.fx.FX);
 				for (param in fx.parameters) {
-					if (param.name == curve.blendParam) {
-						evaluator.parameters.set(curve.blendParam, param.def);
+					if (param.name == fxCurve.param) {
+						evaluator.parameters.set(param.name, param.def);
+						if (fxCurve.blendMode == None) {
+							var color = '#${StringTools.hex(param.color)}';
+							svg.polylineRawArray(curveGroup, [param.def * xScale, (-yOffset) * yScale - height / 2, param.def * xScale, (-yOffset) * yScale + height / 2], {"stroke": color, "stroke-width": "0.5px", "stroke-dasharray":"7, 5" });
+						}
 					}
 				}
 			}
-
-			if (paramName != null) {
-				for (param in fx.parameters) {
-					if (param.name == paramName) {
-						evaluator.parameters.set(paramName, param.def);
-						var color = '#${StringTools.hex(param.color)}';
-						svg.polylineRawArray(curveGroup, [param.def * xScale, (-yOffset) * yScale - height / 2, param.def * xScale, (-yOffset) * yScale + height / 2], {"stroke": color, "stroke-width": "0.5px", "stroke-dasharray":"7, 5" });
-					}
-				}
-			}
-			if (v == null) throw "wtf";
-
 			inline function getTime(i : Int) {
 				return hxd.Math.lerp(minTime, maxTime, i/(num-1));
 			}
 			for (i in 0...num) {
 				var t = getTime(i);
-				var y = evaluator.getFloat(v, getTime(i));
+				var y = evaluator.getFloat(v, t);
 
 				var x = xScale * t;
 				var y = yScale * (-y);
@@ -1712,50 +1610,15 @@ class CurveEditor extends hide.comp.Component {
 			svg.polylineRawArray(curveGroup, pointBuffer, style);
 		}
 
-		function drawBlendArea(curve : Curve, ?style: Dynamic) {
-			if (curve.blendMode == CurveBlendMode.RandomBlend) {
-				var c1: Curve = cast curve.children[0];
-				var c2: Curve = cast curve.children[1];
-
-				var sampleSize = 500 * cast (xScale / 200.0);
-				var poly = [];
-
-				var ptsC1 = c1.sample(sampleSize);
-				for(i in 0...ptsC1.length) {
-					var x = xScale * (c1.duration * i / (ptsC1.length - 1));
-					var y = yScale * (-ptsC1[i]);
-					poly.push(new h2d.col.Point(x, y));
-				}
-
-				var ptsC2 = c2.sample(sampleSize);
-
-				var idx = ptsC2.length-1;
-				while (idx >= 0) {
-					var x = xScale * (c2.duration * idx / (ptsC2.length - 1));
-					var y = yScale * (-ptsC2[idx]);
-					poly.push(new h2d.col.Point(x, y));
-					idx--;
-				}
-
-				var blendAreaStyle: Dynamic = { opacity : 0.1 , fill : '#FFFFFF', stroke : '#000000'};
-				if (c1.lock && c2.lock) blendAreaStyle = { opacity : 0.05 , fill : '#FFFFFF', stroke : '#000000'};
-				if (c1.hidden && c2.hidden) blendAreaStyle = { opacity : 0 , fill : '#FFFFFF', stroke : '#000000'};
-
-				svg.polygon(curveGroup, poly, blendAreaStyle).attr("pointer-events","none");
-			}
-		}
-
-		for (curve in curves){
-			if (curve.hidden)
-				continue;
-
-			var colorInt = curve.color ?? hide.comp.CurveEditor.CURVE_COLORS[0];
-			if (curve.blendMode == Blend) {
-				var root = curve.getRoot();
+		for (i => curve in curves){
+			var colorInt = getCurveColor(curve.name, i);
+			var fxCurve = fxCurveOf(curve);
+			if (blendMode(curve) == Blend) {
+				var root = fxCurve.getRoot();
 				var params = Std.downcast(root, hrt.prefab.fx.FX)?.parameters;
 				if (params != null) {
 					for (p in params) {
-						if (p.name == curve.blendParam) {
+						if (p.name == fxCurve.param) {
 							colorInt = p.color;
 							break;
 						}
@@ -1763,32 +1626,16 @@ class CurveEditor extends hide.comp.Component {
 				}
 			}
 			var color = '#${StringTools.hex(colorInt)}';
-			var curveStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5, stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px'};
-			var eventStyle: Dynamic = { 'fill-opacity' : curve.selected ? 1 : 0.5};
+			var curveStyle: Dynamic = { opacity : 1, stroke : color, "stroke-width":'1px'};
 
-			if (curve.lock) {
-				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"5, 3"};
-				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
-			}
-
-			if (curve.blendMode == CurveBlendMode.Blend) {
-				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"20,10,5,5,5,10"};
-				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
-			}
-
-			if (curve.hidden || curve.blendMode == CurveBlendMode.RandomBlend) {
-				curveStyle = { opacity : 0};
-				eventStyle = { 'fill-opacity' : 0};
-			}
+			if (blendMode(curve) == CurveBlendMode.Blend)
+				curveStyle = { opacity : 1, stroke : color, "stroke-width":'1px', "stroke-dasharray":"20,10,5,5,5,10"};
 
 			drawCurve(curve, curveStyle, true, lowQuality);
 
-			if (curve.remapPath != null) {
+			if (fxCurve?.blendMode == None && fxCurve.param != null) {
 				drawCurve(curve, {opacity : 0.5, "stroke-width":'1px', "stroke-dasharray":"5, 3", stroke : color}, false, lowQuality);
 			}
-
-			// Draw the area where random blend curves will be picked
-			drawBlendArea(curve);
 		}
 	}
 

@@ -70,6 +70,11 @@ class Element {
 	public var disabled(default, set) = false;
 
 	/**
+		If set, the element is shown grayed out but stays editable
+	**/
+	public var unset(default, set) = false;
+
+	/**
 		If set, the element will take width units of space in its line
 	**/
 	public var width : Null<Int> = null;
@@ -79,6 +84,15 @@ class Element {
 	**/
 	public var tooltip : String = null;
 
+	/**
+		The css classes added to the element
+	**/
+	public var classList : Array<String> = [];
+
+	/**
+		Items added to the context menu of this element (collected recursively with its children)
+	**/
+	public var menuItems : () -> Array<hrt.ui.HuiMenu.MenuItem> = null;
 
 	/**
 		Internal ID of this element that is unique between this element siblings (use getIdPath for a unique identifier in this element tree)
@@ -112,6 +126,12 @@ class Element {
 		disabled = v;
 		refreshDisabled();
 		return disabled;
+	}
+
+	function set_unset(v: Bool) {
+		unset = v;
+		native?.toggleClass("kit-unset", v);
+		return unset;
 	}
 
 	function isDisabled() {
@@ -155,6 +175,9 @@ class Element {
 
 		// call setters
 		disabled = disabled;
+		unset = unset;
+		for (c in classList)
+			native?.addClass(c);
 
 		makeChildren();
 
@@ -250,13 +273,36 @@ class Element {
 		}
 	}
 
-	function getEditMenuContent() : Array<hrt.ui.HuiMenu.MenuItem> {
-		return [
+	function getEditMenuItems(out: Array<hrt.ui.HuiMenu.MenuItem>, ?target: NativeElement) {
+		if (menuItems != null) {
+			var items = menuItems();
+			if (items.length > 0 && out.length > 0 && out[out.length - 1].isSeparator != true && items[0].isSeparator != true)
+				out.push({ isSeparator: true });
+			for (item in items)
+				out.push(item);
+		}
+		var from = children;
+		#if js
+		if (target != null)
+			from = from.filter(c -> c.native != null && c.native.get().contains(target));
+		#end
+		for (c in from)
+			c.getEditMenuItems(out, target);
+	}
+
+	function getEditMenuContent(?target: NativeElement) : Array<hrt.ui.HuiMenu.MenuItem> {
+		var items = [];
+		getEditMenuItems(items, target);
+		if (isDisabled())
+			return items;
+		if (items.length > 0)
+			items.push({isSeparator: true});
+		return items.concat([
 			{label: "Copy", click: copyToClipboard, enabled: canCopy()},
 			{label: "Paste", click: pasteFromClipboard, enabled: canPaste()},
 			{isSeparator: true},
 			{label: "Reset", click: resetWithUndo, enabled: canReset()}
-		];
+		]);
 	}
 
 	// Internal API
@@ -275,25 +321,29 @@ class Element {
 	}
 
 	function addEditMenu(el: NativeElement) {
-		if (!disabled) {
 		#if js
 		el.get().addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
 			if ((cast e.target:js.html.Element).closest(".is-cdb-editor") != null)
 				return;
+			var content = getEditMenuContent(cast e.target);
+			if (content.length == 0)
+				return;
 			e.preventDefault();
 			e.stopPropagation();
 
-			hide.comp.ContextMenu.createFromEvent(e, getEditMenuContent());
+			hide.comp.ContextMenu.createFromEvent(e, content);
 		});
 		#elseif hui
 		var element = Std.downcast(el.get(), hrt.ui.HuiElement);
 		element?.onClick = (e) -> {
 			if (e.button != hxd.Key.MOUSE_RIGHT)
 				return;
-			element.uiBase.contextMenu(getEditMenuContent());
+			var content = getEditMenuContent();
+			if (content.length == 0)
+				return;
+			element.uiBase.contextMenu(content);
 		}
 		#end
-		}
 	}
 
 	function canCopy() : Bool {
@@ -696,6 +746,7 @@ class Element {
 				} else {
 					var line = new Line(this, def.name);
 					line.label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
+					line.tooltip = def.desc;
 					var vec : Array<Dynamic> = Reflect.field(props, def.name);
 					if (vec == null) {
 						vec = [];
@@ -735,6 +786,8 @@ class Element {
 		}
 		if (widget != null) {
 			widget.label =  def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
+			widget.tooltip = def.desc;
+			widget.anim = def.name;
 			widget.value = Reflect.field(props, def.name) ?? defValue;
 			@:privateAccess widget.onFieldChange = (_) -> {
 				Reflect.setField(props, def.name, widget.value);

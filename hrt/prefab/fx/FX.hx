@@ -1,9 +1,9 @@
 package hrt.prefab.fx;
 import hrt.prefab.fx.BaseFX.AdditionalProperies;
-import hrt.prefab.Curve;
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.fx.BaseFX.ObjectAnimation;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
+import hrt.prefab.fx.BaseFX.BaseFXTools;
 import hrt.prefab.fx.Event;
 
 /**
@@ -124,7 +124,7 @@ class FXAnimation extends h3d.scene.Object {
 		updateCustomAnims(root);
 
 		events = initEvents(root, events);
-		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(def);
+		var root = BaseFXTools.getFXRoot(def);
 		initConstraints(root != null ? root : def);
 
 		trails = findAll((p) -> Std.downcast(p, hrt.prefab.l3d.Trails.TrailObj));
@@ -568,67 +568,46 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	static var tempMat = new h3d.Matrix();
-	static var tempTransform = new h3d.Matrix();
 	static var tempVec = new h3d.Vector4();
 
-	function syncAnims(newTime: Float, dt: Float) {
+	function syncAnims(t: Float, dt: Float) {
 		if(objAnims != null) {
 			for(anim in objAnims) {
 				if(anim.obj != null && (anim.scale != null || anim.rotation != null || anim.position != null)) {
+					var e = anim.elt;
+					inline function eval(v: Value, base: Float) return v == null ? base : evaluator.getFloat(v, t);
 					var m = tempMat;
 					if(anim.scale != null) {
-						var scale = evaluator.getVector(anim.scale, newTime, tempVec);
-						m.initScale(scale.x, scale.y, scale.z);
+						var s = anim.scale;
+						if(s.x != null && s.x == s.y && s.x == s.z) {
+							var sc = evaluator.getFloat(s.x, t);  // Optim: get curve only once for uniform scales
+							m.initScale(sc, sc, sc);
+						} else {
+							var sx = eval(s.x, e.scaleX);
+							var sy = eval(s.y, e.scaleY);
+							var sz = eval(s.z, e.scaleZ);
+							m.initScale(sx, sy, sz);
+						}
 					}
 					else
-						m.identity();
+						m.initScale(e.scaleX, e.scaleY, e.scaleZ);
 
-					if(anim.rotation != null) {
-						var rotation = evaluator.getVector(anim.rotation, newTime, tempVec);
-						rotation.scale3(Math.PI / 180.0);
-						m.rotate(rotation.x, rotation.y, rotation.z);
-					}
+					inline function radians(deg: Float) return hxd.Math.degToRad(deg);
+					var rot = anim.rotation;
+					if(rot != null)
+						m.rotate(
+							radians(eval(rot.x, e.rotationX)),
+							radians(eval(rot.y, e.rotationY)),
+							radians(eval(rot.z, e.rotationZ)));
+					else if(e.rotationX != 0 || e.rotationY != 0 || e.rotationZ != 0)
+						m.rotate(radians(e.rotationX), radians(e.rotationY), radians(e.rotationZ));
 
-					var baseMat = anim.elt.getTransform(tempTransform);
-					var offset = baseMat.getPosition();
-					baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
-					m.multiply(baseMat, m);
-					m.translate(offset.x, offset.y, offset.z);
-
-					if(anim.position != null) {
-						var pos = evaluator.getVector(anim.position, newTime, tempVec);
-						m.translate(pos.x, pos.y, pos.z);
-					}
-
+					var pos = anim.position;
+					if(pos != null)
+						m.translate(eval(pos.x, e.x), eval(pos.y, e.y), eval(pos.z, e.z));
+					else
+						m.translate(e.x, e.y, e.z);
 					anim.obj.setTransform(m);
-				}
-
-				// Animations that are only applied on local transforms of leafs objects
-				if (anim.localRotation != null || anim.localPosition != null) {
-					var leafObjects = anim.elt.findAll(Object3D, o -> o.children == null || o.children.length == 0);
-
-					for (o in leafObjects) {
-						if (o.local3d == null)
-							continue;
-						var baseMat = o.getTransform();
-
-						tempMat.identity();
-						var m = tempMat;
-
-						if(anim.localRotation != null) {
-							var localRotation = evaluator.getVector(anim.localRotation, newTime, tempVec);
-							localRotation.scale3(Math.PI / 180.0);
-							m.rotate(localRotation.x, localRotation.y, localRotation.z);
-						}
-
-						if(anim.localPosition != null) {
-							var localPosition = evaluator.getVector(anim.localPosition, newTime, tempVec);
-							m.translate(localPosition.x, localPosition.y, localPosition.z);
-						}
-
-						m.multiply(m, baseMat);
-						o.local3d.setTransform(m);
-					}
 				}
 
 				if(anim.visibility != null) {
@@ -637,17 +616,17 @@ class FXAnimation extends h3d.scene.Object {
 					var editor = anim.elt.shared.editor;
 					visible = visible && (editor?.isVisible(anim.elt) ?? true);
 					#end
-					anim.obj.visible = visible && evaluator.getFloat(anim.visibility, newTime) > 0.5;
+					anim.obj.visible = visible && evaluator.getFloat(anim.visibility, t) > 0.5;
 				}
 
 				if(anim.color != null) {
 					switch(anim.color) {
-						case VCurve(a):
+						case VCurve(_) | VParamCurve(_):
 							for(mat in anim.obj.getMaterials())
-								mat.color.a = evaluator.getFloat(anim.color, newTime);
+								mat.color.a = evaluator.getFloat(anim.color, t);
 						default:
 							for(mat in anim.obj.getMaterials())
-								mat.color.load(evaluator.getVector(anim.color, newTime, tempVec));
+								mat.color.load(evaluator.getVector(anim.color, t, tempVec));
 					}
 				}
 
@@ -658,33 +637,33 @@ class FXAnimation extends h3d.scene.Object {
 							var l = Std.downcast(anim.obj, h3d.scene.pbr.PointLight);
 							if( l != null ) {
 								if( color != null ) {
-									var v = evaluator.getVector(color, newTime, tempVec);
+									var v = evaluator.getVector(color, t, tempVec);
 									l.color.set(v.x, v.y, v.z);
 								}
-								if( power != null ) l.power = evaluator.getFloat(power, newTime);
-								if( size != null ) l.size = evaluator.getFloat(size, newTime);
-								if( range != null ) l.range = evaluator.getFloat(range, newTime);
+								if( power != null ) l.power = evaluator.getFloat(power, t);
+								if( size != null ) l.size = evaluator.getFloat(size, t);
+								if( range != null ) l.range = evaluator.getFloat(range, t);
 							}
 						case DirLight(color, power):
 							var l = Std.downcast(anim.obj, h3d.scene.pbr.DirLight);
 							if( l != null ) {
 								if( color != null ) {
-									var v = evaluator.getVector(color, newTime, tempVec);
+									var v = evaluator.getVector(color, t, tempVec);
 									l.color.set(v.x, v.y, v.z);
 								}
-								if( power != null ) l.power = evaluator.getFloat(power, newTime);
+								if( power != null ) l.power = evaluator.getFloat(power, t);
 							}
 						case SpotLight(color, power, range, angle, fallOff):
 							var l = Std.downcast(anim.obj, h3d.scene.pbr.SpotLight);
 							if( l != null ) {
 								if( color != null ) {
-									var v = evaluator.getVector(color, newTime, tempVec);
+									var v = evaluator.getVector(color, t, tempVec);
 									l.color.set(v.x, v.y, v.z);
 								}
-								if( power != null ) l.power = evaluator.getFloat(power, newTime);
-								if( range != null ) l.range = evaluator.getFloat(range, newTime);
-								if( angle != null ) l.angle = evaluator.getFloat(angle, newTime);
-								if( fallOff != null ) l.fallOff = evaluator.getFloat(fallOff, newTime);
+								if( power != null ) l.power = evaluator.getFloat(power, t);
+								if( range != null ) l.range = evaluator.getFloat(range, t);
+								if( angle != null ) l.angle = evaluator.getFloat(angle, t);
+								if( fallOff != null ) l.fallOff = evaluator.getFloat(fallOff, t);
 							}
 					}
 				}
@@ -742,7 +721,18 @@ class FXAnimation extends h3d.scene.Object {
 		var obj3d = elt.to(hrt.prefab.Object3D);
 		if(obj3d == null)
 			return;
+		var anim = makeObjectAnimation(obj3d, Object3D.getLocal3d(elt));
+		if(anim != null) {
+			if(objAnims == null) objAnims = [];
+			objAnims.push(anim);
+		}
+	}
 
+	static function makeObjectAnimation(obj3d: hrt.prefab.Object3D, local3d: h3d.scene.Object) : ObjectAnimation {
+		var elt : PrefabElement = obj3d;
+		// most objects have no curve: none of the lookups below would find one
+		if(!Lambda.exists(elt.children, c -> c.enabled && Std.isOfType(c, Curve)))
+			return null;
 		var anyFound = false;
 
 		function makeVal(name, def) : Value {
@@ -755,31 +745,16 @@ class FXAnimation extends h3d.scene.Object {
 			return c.makeVal();
 		}
 
-		function makeVector(name: String, defVal: Float, uniform: Bool=true, scale: Float=1.0) : Value {
-			var curves = Curve.getCurves(elt, name);
-			if(curves == null || curves.length == 0)
-				return null;
-
-			anyFound = true;
-
-			if(uniform && curves.length == 1 && curves[0].name == name) {
-				return scale != 1.0 ? Evaluator.vMult(curves[0].makeVal(), VConst(scale)) : curves[0].makeVal();
-			}
-
-			return Curve.getVectorValue(curves, defVal, scale);
-		}
-
 		function makeColor(name: String) {
 			var curves = Curve.getCurves(elt, name);
 			if(curves == null || curves.length == 0)
 				return null;
 
 			anyFound = true;
-			return Curve.getColorValue(curves);
+			return BaseFXTools.getColorValue(curves);
 		}
 
 		var ap : AdditionalProperies = null;
-		var local3d = Object3D.getLocal3d(elt);
 
 		if( Std.isOfType(local3d, h3d.scene.pbr.PointLight)) {
 			ap = PointLight(makeColor("color"), makeVal("power", null), makeVal("size", null), makeVal("range", null) );
@@ -794,20 +769,14 @@ class FXAnimation extends h3d.scene.Object {
 		var anim : ObjectAnimation = {
 			elt: obj3d,
 			obj: local3d,
-			position: makeVector("position", 0.0),
-			localPosition: makeVector("localPosition", 0.0),
-			scale: makeVector("scale", 1.0, true),
-			rotation: makeVector("rotation", 0.0, 360.0),
-			localRotation: makeVector("localRotation", 0.0, 360.0),
+			position: BaseFXTools.vectorAnimation(elt, "position"),
+			scale: BaseFXTools.vectorAnimation(elt, "scale"),
+			rotation: BaseFXTools.vectorAnimation(elt, "rotation"),
 			color: makeColor("color"),
 			visibility: makeVal("visibility", null),
 			additionalProperies: ap,
 		};
-
-		if(anyFound) {
-			if(objAnims == null) objAnims = [];
-			objAnims.push(anim);
-		}
+		return anyFound || anim.position != null || anim.scale != null || anim.rotation != null ? anim : null;
 	}
 
 	function initEmitters(elt: PrefabElement) {
@@ -923,10 +892,56 @@ class FX extends Object3D implements BaseFX {
 		cullingRadius = 3.0;
 	}
 
+	/**
+		Version of the data of an FX, saved on its root (and on an emitter out of any FX), 0 when missing.
+		Older data is upgraded on load with `-D fx-migration`, or rejected.
+	**/
+	public static inline var VERSION = 2;
+
+	/** Whether `p` is in FX data: under an FX, or under an emitter out of any FX (the root of its FX data) **/
+	public static function inFXData( p : Prefab ) {
+		return p.findParent(Prefab, c -> c is BaseFX || c is Emitter || c is Emitter2D) != null;
+	}
+
+	/** Called before `p`, the root of FX data, loads `data` **/
+	public static function checkVersion( p : Prefab, data : Dynamic ) {
+		var v : Dynamic = data.version;
+		if( v == VERSION )
+			return;
+		var version : Int = v == null ? 0 : v;
+		#if fx_migration
+		if( hide.tools.migrate.Migrate.canUpgrade(version) ) {
+			hide.tools.migrate.Migrate.fallback(data, version, p.parent == null);
+			return;
+		}
+		#end
+		throw '${p.shared.currentPath} ${p.getAbsPath()}: FX data of version $version, this build reads version $VERSION. '
+			+ 'Migrate the project with the hide migration tool (hide/migrate.hxml), or upgrade it on load with -D fx-migration';
+	}
+
+	public static function inFX( p : Prefab ) {
+		return p.findParent(Prefab, c -> c is BaseFX, true) != null;
+	}
+
+	override function load( data : Dynamic ) {
+		checkVersion(this, data);
+		super.load(data);
+	}
+
+	override function copy( obj : Prefab ) {
+		super.copy(obj);
+	}
+
+	override function save() : Dynamic {
+		var data = super.save();
+		data.version = VERSION;
+		return data;
+	}
+
 	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab  {
 		var fromRef = shared.parentPrefab != null;
 		var useFXRoot = #if editor fromRef #else true #end;
-		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
+		var root = BaseFXTools.getFXRoot(this);
 		if(useFXRoot && root != null){
 			var childrenBackup = _children;
 			_children = [root];
@@ -975,7 +990,7 @@ class FX extends Object3D implements BaseFX {
 	}
 
 	public override function postMakeInstance() {
-		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
+		var root = BaseFXTools.getFXRoot(this);
 		var fxAnim = Std.downcast(local3d, FXAnimation);
 		if (fxAnim == null)
 			return;
@@ -1071,11 +1086,11 @@ class FX extends Object3D implements BaseFX {
 							var to = isUndo ? old : v;
 							p.name = to;
 
-							// rename all curves that used this param as a blendParam
+							// rename all curves driven by this param
 							var curves = flatten(Curve);
 							for (c in curves) {
-								if (c.blendMode == Blend && c.blendParam == from) {
-									c.blendParam = to;
+								if (c.param == from) {
+									c.param = to;
 								}
 							}
 

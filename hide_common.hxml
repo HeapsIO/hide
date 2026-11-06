@@ -1,6 +1,6 @@
 common.hxml
 -D hide
-
+-D fx-migration
 --macro include("h3d.shader")
 --macro include("h3d.anim")
 --macro include("h3d.prim")

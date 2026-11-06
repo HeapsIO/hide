@@ -1,13 +1,13 @@
 package hrt.prefab.fx;
 
+import hrt.prefab.fx.Value;
+
 class Evaluator {
 	var randValues : Array<Float>;
 	public var parameters: Map<String, Float> = [];
-	var stride : Int;
+	var slots = 0;
 
-	public function new(?randValues: Array<Float>, stride: Int=0) {
-		this.randValues = randValues;
-		this.stride = stride;
+	public function new() {
 	}
 
 	public static function vVal(f: Float) : Value {
@@ -17,61 +17,18 @@ class Evaluator {
 		}
 	}
 
-	static function canRemap(v: Value) : Bool {
-		return switch(v) {
-			case VZero, VConst(_), VRandom(_): true; // only values that we are sure do not use time
-			default: false;
-		}
+	public function allocRandom(count: Int, slots: Int) {
+		this.slots = slots;
+		randValues = [for(_ in 0...count * slots) 0.];
 	}
 
-	static inline function commute(a: Value, b: Value, fn: (Value, Value) -> Null<Value>) : Null<Value> {
-		var r = fn(a, b);
-		return r != null ? r : fn(b, a);
+	public function resetRandom(rand: hxd.Rand) {
+		for(i in 0...randValues.length)
+			randValues[i] = (rand.srand() + 1) * 0.5;
 	}
 
-	public static function vMult(a: Value, b: Value) : Value {
-		if(a == VZero || b == VZero) return VZero;
-		var r = commute(a, b, (a, b) -> switch [a, b] {
-			case [VConst(1.0), _]: b;
-			case [VConst(va), VConst(vb)]: VConst(va * vb);
-			case [VConst(va), VCurve(c)]: VCurveT(c, va, 0.0);
-			case [VConst(va), VCurveT(c, scale, add)]: VCurveT(c, scale * va, add * va);
-			case [VRandom(rid, scale, add), VCurve(c)]: VRandMultCurve(rid, scale, add, c);
-			case [VRandom(rid, scale, 0.0), VCurveT(c, cscale, 0.0)]: VRandMultCurve(rid, scale * cscale, 0.0, c);
-			case [VRandom(rid, scale, add), VBlendCurves(1.0, 0.0, ca, cb, bv)]:
-				VRandomBlendCurves(rid, scale, add, ca, cb, bv);
-			case [VConst(va), VBlendCurves(scale, add, ca, cb, bv)]:
-				VBlendCurves(scale * va, add * va, ca, cb, bv);
-			case [VConst(va), VRandomBlendCurves(rid, scale, add, ca, cb, bv)]:
-				VRandomBlendCurves(rid, scale * va, add * va, ca, cb, bv);
-			case [_, VParamRemap(v, param)] if(canRemap(a)): VParamRemap(vMult(a, v), param);
-			case [_, VValueRemap(v, remap)] if(canRemap(a)): VValueRemap(vMult(a, v), remap);
-			default: null;
-		});
-		return r != null ? r : VMult(a, b);
-	}
-
-	public static function vAdd(a: Value, b: Value) : Value {
-		if(a == VZero) return b;
-		if(b == VZero) return a;
-		var r = commute(a, b, (a, b) -> switch [a, b] {
-			case [VConst(va), VConst(vb)]: VConst(va + vb);
-			case [VConst(va), VRandom(rid, scale, add)]: VRandom(rid, scale, add + va);
-			case [VConst(va), VCurve(c)]: VCurveT(c, 1.0, va);
-			case [VConst(va), VCurveT(c, scale, add)]: VCurveT(c, scale, add + va);
-			case [VRandom(rid, scale, add), VCurve(c)]: VRandAddCurve(rid, scale, add, c);
-			case [VRandom(rid, scale, add), VCurveT(c, 1.0, cadd)]: VRandAddCurve(rid, scale, add + cadd, c);
-			case [VConst(va), VBlendCurves(scale, add, ca, cb, bv)]: VBlendCurves(scale, add + va, ca, cb, bv);
-			case [_, VParamRemap(v, param)] if(canRemap(a)): VParamRemap(vAdd(a, v), param);
-			case [_, VValueRemap(v, remap)] if(canRemap(a)): VValueRemap(vAdd(a, v), remap);
-			default: null;
-		});
-		return r != null ? r : VAdd(a, b);
-	}
-
-	inline function getRandom(pidx: Int, ridx: Int) {
-		var i = pidx * stride + ridx;
-		return randValues[i];
+	inline function getRandom(pidx: Int, rid: Int) {
+		return randValues[pidx * slots + rid];
 	}
 
 	public function setAllParameters(params: Array<hrt.prefab.fx.FX.Parameter>) {
@@ -83,106 +40,85 @@ class Evaluator {
 		}
 	}
 
-	public function getFast(pidx: Int, val: Value, time: Float) : Float {
+	public function getMean(s: SpawnValue) : Float {
+		return s.rid < 0 ? getFloat(s.min, 0) : (getFloat(s.min, 0) + getFloat(s.max, 0)) * 0.5;
+	}
+
+	public function getSpawn(pidx: Int, s: SpawnValue, time: Float) : Float {
+		var v = getFast(pidx, s.min, time);
+		return s.rid < 0 ? v : hxd.Math.lerp(v, getFast(pidx, s.max, time), getRandom(pidx, s.rid));
+	}
+
+	public inline function getFloat(val: Value, time: Float) : Float {
+		return getFast(0, val, time);
+	}
+
+	// no optional argument, causes boxing on HL
+	public inline function getFast(pidx: Int, val: Value, time: Float) : Float {
 		return switch(val) {
-			case null: 0.0;
-			case VZero: 0.0;
+			case null, VZero: 0.0;
 			case VConst(v): v;
+			case VRandom(rid, min, max): hxd.Math.lerp(min, max, getRandom(pidx, rid));
 			case VCurve(c): c.getVal(time);
-			case VCurveT(c, scale, add): c.getVal(time) * scale + add;
-			case VRandom(rid, scale, add): getRandom(pidx, rid) * scale + add;
-			case VRandMultCurve(rid, scale, add, c):
-				(getRandom(pidx, rid) * scale + add) * c.getVal(time);
-			case VRandAddCurve(rid, scale, add, c):
-				getRandom(pidx, rid) * scale + add + c.getVal(time);
-			case VBlendCurves(scale, add, a, b, blendVar):
-				var va = a.getVal(time);
-				var vb = b.getVal(time);
-				hxd.Math.lerp(va, vb, parameters[blendVar] ?? 0.0) * scale + add;
-			case VRandomBlendCurves(rid, scale, add, a, b, blendVar):
-				var rnd = getRandom(pidx, rid) * scale + add;
-				var va = a.getVal(time);
-				var vb = b.getVal(time);
-				rnd * hxd.Math.lerp(va, vb, parameters[blendVar] ?? 0.0);
-			case VRandomBetweenCurves(rid, a, b):
-				var va = a.getVal(time);
-				var vb = b.getVal(time);
-				va + (vb - va) * ((getRandom(pidx, rid) + 1) * 0.5);
-			case VParamRemap(a, param):
-				getFast(pidx, a, parameters[param] ?? 0.0);
-			case VValueRemap(a, remap):
-				getFast(pidx, a, getFast(pidx, remap, time));
-			default:
-				throw "getFast: non-flat Value " + Type.enumConstructor(val);
+			case VParamCurve(pc): getParamCurve(pc, time);
+			case VRandomCurve(rid, c, spread, slope):
+				var v = c.getVal(time);
+				v + (spread + slope * v) * (getRandom(pidx, rid) * 2 - 1);
+			case VRandomParamCurve(rid, pc, spread, slope):
+				var v = getParamCurve(pc, time);
+				v + (spread + slope * v) * (getRandom(pidx, rid) * 2 - 1);
+			case VCurveRange(rid, a, b): hxd.Math.lerp(a.getVal(time), b.getVal(time), getRandom(pidx, rid));
+			case VVector(_), VColor(_), VHsl(_): throw "getFloat: vector value";
 		}
 	}
 
-	public function getFloat(pidx: Int=0, val: Value, time: Float) : Float {
-		switch(val) {
-			case VParamRemap(a, param):
-				var time = parameters[param] ?? 0.0;
-				return getFloat(pidx, a, time);
-			case VValueRemap(a, remap):
-				var time = getFloat(pidx, remap, time);
-				return getFloat(pidx, a, time);
-			case VAdd(a, b):
-				return getFloat(pidx, a, time) + getFloat(pidx, b, time);
-			case VMult(a, b):
-				return getFloat(pidx, a, time) * getFloat(pidx, b, time);
-			default:
-				return getFast(pidx, val, time);
-		}
+	function getParamCurve(pc: ParamCurve, time: Float) : Float {
+		var p = parameters[pc.param] ?? 0.0;
+		return pc.c2 != null ? hxd.Math.lerp(pc.c1.getVal(time), pc.c2.getVal(time), p) : pc.c1.getVal(p);
 	}
 
 	public function getSum(val: Value, time: Float) : Float {
-		switch(val) {
-			case VZero: return 0;
-			case VConst(v): return v * time;
-			case VCurve(c): return c.getSum(time);
-			case VCurveT(c, scale, add): return c.getSum(time) * scale + add * time;
-			case VAdd(a, b):
-				return getSum(a, time) + getSum(b, time);
-			case VParamRemap(a, param):
-				var blend = parameters[param] ?? 0.0;
-				return getSum(a, blend) * time;
-			case VMult(a, VConst(b)), VMult(VConst(b), a): return getSum(a, time) * b;
-			case VBlendCurves(scale, add, a, b, blendVar):
-				var blend = parameters[blendVar] ?? 0.0;
-				return hxd.Math.lerp(a.getSum(time), b.getSum(time), blend) * scale + add * time;
-			case VRandomBlendCurves(rid, scale, add, a, b, blendVar):
-				var blend = parameters[blendVar] ?? 0.0;
-				return (getRandom(0, rid) * scale + add) * hxd.Math.lerp(a.getSum(time), b.getSum(time), blend);
+		return switch(val) {
+			case VZero: 0;
+			case VConst(v): v * time;
+			case VCurve(c): c.getSum(time);
+			case VParamCurve(pc):
+				var p = parameters[pc.param] ?? 0.0;
+				pc.c2 != null ? hxd.Math.lerp(pc.c1.getSum(time), pc.c2.getSum(time), p) : pc.c1.getVal(p) * time;
 			default: throw "not implemented";
 		}
-		return 0.0;
 	}
 
 	public function getVector(pidx: Int=0, v: Value, time: Float, vec: h3d.Vector4) {
 		switch(v) {
-			case VMult(a, b):
-				throw "need optimization";
-			case VVector(x, y, z, null):
-				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time), getFloat(pidx, z, time), 1.0);
-			case VVector(x, y, z, w):
-				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time), getFloat(pidx, z, time), getFloat(pidx, w, time));
+			case VVector(x, y, z):
+				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), 1.0);
+			case VColor(r, g, b, a):
+				vec.set(getFast(pidx, r, time), getFast(pidx, g, time), getFast(pidx, b, time), getFast(pidx, a, time));
 			case VHsl(h, s, l, a):
-				vec.makeColor(getFloat(pidx, h, time), getFloat(pidx, s, time), getFloat(pidx, l, time));
-				vec.a = getFloat(pidx, a, time);
+				vec.makeColor(getFast(pidx, h, time), getFast(pidx, s, time), getFast(pidx, l, time));
+				vec.a = getFast(pidx, a, time);
 			case VZero:
 				vec.set(0,0,0,1);
 			default:
-				var f = getFloat(pidx, v, time);
+				var f = getFast(pidx, v, time);
 				vec.set(f, f, f, 1.0);
 		}
 		return vec;
 	}
 
+	public inline function getSpawnVec(pidx: Int, s: Array<SpawnValue>, time: Float, vec: h3d.Vector4) {
+		vec.set(getSpawn(pidx, s[0], time), getSpawn(pidx, s[1], time), getSpawn(pidx, s[2], time), 1.0);
+		return vec;
+	}
+
+	// inlined, `vec` stays on the stack
 	public inline function getFastVec(pidx: Int, v: Value, time: Float, vec: h3d.Vector4) {
 		switch(v) {
-			case VVector(x, y, z, null):
+			case VVector(x, y, z):
 				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), 1.0);
-			case VVector(x, y, z, w):
-				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), getFast(pidx, w, time));
+			case VColor(r, g, b, a):
+				vec.set(getFast(pidx, r, time), getFast(pidx, g, time), getFast(pidx, b, time), getFast(pidx, a, time));
 			case VZero:
 				vec.set(0,0,0,1);
 			default:
@@ -194,16 +130,12 @@ class Evaluator {
 
 	public function getVector2(pidx: Int=0, v: Value, time: Float, vec: h2d.col.Point) {
 		switch(v) {
-			case VMult(a, b):
-				throw "need optimization";
-			case VVector(x, y, z, null):
-				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time));
-			case VVector(x, y, z, w):
-				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time));
+			case VVector(x, y, _):
+				vec.set(getFast(pidx, x, time), getFast(pidx, y, time));
 			case VZero:
 				vec.set(0,0);
 			default:
-				var f = getFloat(pidx, v, time);
+				var f = getFast(pidx, v, time);
 				vec.set(f, f);
 		}
 		return vec;

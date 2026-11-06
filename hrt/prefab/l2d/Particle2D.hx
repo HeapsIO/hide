@@ -138,8 +138,8 @@ class Particle2D extends Object2D {
 		}
 
 		function makeVal(name, def ) : Value {
-			var c = Curve.getCurve(this, name);
-			return c != null ? VCurve(c) : def;
+			var c = hrt.prefab.fx.Curve.getCurve(this, name);
+			return c != null ? c.makeVal() : def;
 		}
 
 		if (paramsParticleGroup != null) {
@@ -177,7 +177,7 @@ class Particle2D extends Object2D {
 
 	#if editor
 
-	public static var emitter2dParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [
+	public static var emitter2dParams : Array<hrt.prefab.fx.EmitterHelper.PropertyDef> = [
 		// EMIT PARAMS
 		{ name: "enable", t: PBool, disp: "Enable", def : 1.0, animate: true, groupName : "Emit Params" },
 		{ name: "speed", t: PFloat(), disp: "Initial Speed", def : 1.0, animate: true, groupName : "Emit Params" },
