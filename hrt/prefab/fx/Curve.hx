@@ -197,6 +197,16 @@ class Curve extends hrt.prefab.Curve {
 				curveEditor.addBand(curveEditor.tracks[0], curveEditor.tracks[1]);
 		}
 
+		if (blendModeSelect != null && isParticleCurve()) {
+			// Range is set by emitter, in read only
+			var modes : Array<CurveBlendMode> = [None, Blend];
+			var readOnly = !modes.contains(blendMode);
+			if (readOnly)
+				modes.push(blendMode);
+			blendModeSelect.setEntries([for (m in modes) { value: m, label: Std.string(m) }]);
+			blendModeSelect.value = blendMode;
+			blendModeSelect.disabled = readOnly;
+		}
 		if (blendModeSelect != null)
 			blendModeSelect.onValueChange = (_) -> {
 				syncDatas();
