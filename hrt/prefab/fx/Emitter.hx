@@ -223,13 +223,14 @@ class ParticleInstance {
 	}
 
 	function updateAbsPos(emitter: EmitterObject) {
+		var prefab = emitter.prefab;
 		var v = new h3d.Vector4();
 		var absPos = tmpMat;
 		var localMat = tmpMat2;
 
-		switch( emitter.alignMode ) {
+		switch( prefab.alignMode ) {
 			case Screen|Axis:
-				if ( emitter.followRotation ) {
+				if ( prefab.followRotation ) {
 					inline qRot.toQuat().toMatrix(absPos);
 					absPos.multiply(emitter.screenRot, absPos);
 				} else
@@ -319,6 +320,7 @@ class ParticleInstance {
 		var speed = new h3d.Vector();
 		speed.set(0,0,0);
 
+		var prefab = emitter.prefab;
 		var evaluator = emitter.evaluator;
 		var emitOrientation = emitOrientation.toMatrix();
 		var speedAccumulation = this.speedAccumulation.toVector();
@@ -344,7 +346,7 @@ class ParticleInstance {
 		if(emitter.partWorldAcceleration != VZero) {
 			evaluator.getFastVec(idx, emitter.partWorldAcceleration, t, v);
 			v.scale3(dt);
-			if(emitter.simulationSpace == Local)
+			if(prefab.simulationSpace == Local)
 				v.transform3x3(emitter.invTransform);
 			add(speedAccumulation, v);
 		}
@@ -367,7 +369,7 @@ class ParticleInstance {
 
 		if(emitter.partWorldSpeed != VZero) {
 			evaluator.getFastVec(idx, emitter.partWorldSpeed, t, v);
-			if(emitter.simulationSpace == Local)
+			if(prefab.simulationSpace == Local)
 				v.transform3x3(emitter.invTransform);
 			add(speed, v);
 		}
@@ -381,7 +383,7 @@ class ParticleInstance {
 			}
 		}
 
-		if(emitter.simulationSpace == World) {
+		if(prefab.simulationSpace == World) {
 			speed.x *= emitter.worldScale.x;
 			speed.y *= emitter.worldScale.y;
 			speed.z *= emitter.worldScale.z;
@@ -434,16 +436,16 @@ class ParticleInstance {
 			speed.z += delta.z;
 		}
 
-		if(emitter.useCollision) {
+		if(prefab.useCollision) {
 			var plane = emitter.collisionPlane;
 			var dist = plane.distance(getPosition());
 			if(dist < 0) {
-				var k = emitter.killOnCollision;
+				var k = prefab.killOnCollision;
 				if(k > 0 && (k >= 1 || emitter.random.rand() < k))
 					life = lifeTime;
 				var n = plane.getNormal();
 				var vn = speedAccumulation.dot(n);
-				var e = vn < 0 ? 1 + emitter.elasticity : 1;
+				var e = vn < 0 ? 1 + prefab.elasticity : 1;
 				if(vn < 0) {
 					speedAccumulation.x -= n.x * vn * e;
 					speedAccumulation.y -= n.y * vn * e;
@@ -458,7 +460,7 @@ class ParticleInstance {
 		this.speedAccumulation.load(speedAccumulation);
 
 
-		if((emitter.emitOrientation == Speed || emitter.alignMode == Speed || emitter.alignMode == ScreenSpeed || emitter.alignMode == AxisSpeed) && speed.lengthSq() > 0.01) {
+		if((prefab.emitOrientation == Speed || prefab.alignMode == Speed || prefab.alignMode == ScreenSpeed || prefab.alignMode == AxisSpeed) && speed.lengthSq() > 0.01) {
 			var q = qRot.toQuat();
 			inline q.initDirection(speed);
 			this.qRot.loadQuat(q);
@@ -487,20 +489,56 @@ class ParticleInstance {
 @:allow(hrt.prefab.fx.Emitter)
 class EmitterObject extends h3d.scene.Object {
 
-	// PARTICLE PARAMS, over the particle life
+	public var prefab : Emitter;
+
+	// Emission
+	public var emitRate : Value;
+	public var emitRateMin : Value;
+	public var emitRateMax : Value;
+	public var burstParticleCount : Value;
+	public var lifeTime : SpawnValue;
+	public var emitScale : Float = 1.0; // multiplier of the emission, set by the game
+	public var emitRateChangeStart : Float = 0.0;
+	public var emitRateCurrent : Float = Math.NaN;
+	public var emitRatePrevious : Float = Math.NaN;
+	public var emitRateTarget : Float = Math.NaN;
+	public var totalBurstCount : Int = 0;
+
+	// Emit Shape
+	public var emitAngle : Value;
+
+	// Particle Movement
+	public var startSpeed : Array<SpawnValue>;
+	public var startWorldSpeed : Array<SpawnValue>;
 	public var partSpeed : Value;
 	public var partWorldSpeed : Value;
-	public var partOrbitSpeed : Value;
 	public var partAcceleration : Value;
 	public var partWorldAcceleration : Value;
-	public var partOffset : Value;
-	public var partPivot : Value;
-	public var partScale : Value;
-	public var partStretch : Value;
-	public var partStretchVelocity : Value;
-	public var partRotation : Value;
+	public var partOrbitSpeed : Value;
+	public var orbitSpeedMultiplier : Value;
+
+	// Limit Velocity
 	public var partDampen : Value;
 	public var partMaxSpeed : Value;
+
+	// Particle Transform
+	public var partOffset : Value;
+	public var partPivot : Value;
+	public var partRotation : Value;
+	public var partScale : Value;
+	public var scaleMultiplier : Value;
+	public var partStretch : Value;
+	public var partStretchVelocity : Value;
+
+	// Ground Collision
+	var collisionPlane : h3d.col.Plane;
+
+	// made from the children of the prefab
+	public var particleTemplate : hrt.prefab.Object3D;
+	public var subEmitterTemplates : Array<Emitter>;
+	public var subEmitters : Array<EmitterObject>;
+	public var trails : hrt.prefab.l3d.Trails.TrailObj;
+	public var trailsTemplate : hrt.prefab.l3d.Trails;
 
 	public var particles : PartArray;
 	public var particlesCount : Int;
@@ -518,7 +556,6 @@ class EmitterObject extends h3d.scene.Object {
 	public var scene : h3d.scene.Scene;
 
 	public var catchupSpeed = 4; // Use larger ticks when catching-up to save calculations
-	public var totalBurstCount : Int = 0; // Keep track of burst count
 	#if !editor
 	public var maxCatchupWindow = 0.5; // How many seconds max to simulate when catching up
 	#end
@@ -538,82 +575,7 @@ class EmitterObject extends h3d.scene.Object {
 	}
 	#end
 
-	public var emitterPrefab : Emitter;
 	public var parentNonEmitter : h3d.scene.Object;
-
-	// RANDOM
-	public var seedGroup = 0;
-	// OBJECTS
-	public var particleTemplate : hrt.prefab.Object3D;
-	public var subEmitterTemplates : Array<Emitter>;
-	public var subEmitters : Array<EmitterObject>;
-	public var subEmitterKind : SubEmitterKind;
-	public var trails : hrt.prefab.l3d.Trails.TrailObj;
-	public var trailsTemplate : hrt.prefab.l3d.Trails;
-	// LIFE
-	public var lifeTime : SpawnValue;
-	public var timeScale = 1.0;
-	public var warmUpTime = 0.0;
-	public var delay = 0.0;
-	// EMIT PARAMS
-	public var emitOrientation : Orientation = Forward;
-	public var simulationSpace : SimulationSpace = Local;
-	public var particleScaling : ParticleScaling = Parent;
-	public var emitType : EmitType = Infinity;
-	public var burstCount : Int = 1;
-	public var burstParticleCount : Value;
-	public var burstInterval : Float = 1.0;
-	public var emitDuration : Float = 1.0;
-	public var emitRate : Value;
-	public var emitRateMin : Value;
-	public var emitRateMax : Value;
-	public var emitRateChangeTime : Float = 1.0;
-	public var emitRateChangeStart : Float = 0.0;
-	public var emitRateCurrent : Float = Math.NaN;
-	public var emitRatePrevious : Float = Math.NaN;
-	public var emitRateTarget : Float = Math.NaN;
-	public var emitScale : Float = 1.0;
-	public var maxCount = 20;
-	public var sortMode : SortMode = None;
-	public var followRotation = false;
-	public var applyMeshTransform = false;
-	public var startSpeed: Array<SpawnValue>;
-	public var startWorldSpeed: Array<SpawnValue>;
-	public var scaleMultiplier : Value;
-	public var orbitSpeedMultiplier : Value;
-
-	// EMIT SHAPE
-	public var emitShape : EmitShape = Cylinder;
-	public var emitAngle : Value;
-	public var emitRad1 : Float = 1.0;
-	public var emitRad2 : Float = 1.0;
-	public var emitSurface : Bool = false;
-	public var emitDomeHeight : Float = 0.5;
-	public var emitDomeFlip : Bool = false;
-	// ANIMATION
-	public var spriteSheet : String;
-	public var frameCount : Int = 0;
-	public var frameDivisionX : Int = 1;
-	public var frameDivisionY : Int = 1;
-	public var animationCycles : Float = 1;
-	public var animationLoop : Bool = true;
-	public var animationUseSourceUVs : Bool = true;
-	public var animationBlendBetweenFrames : Bool = true;
-
-	// ALIGNMENT
-	public var alignMode : AlignMode;
-	public var alignLockAxis : AlignLockAxis;
-	// COLLISION
-	public var elasticity : Float = 1.0;
-	public var killOnCollision : Float = 0.0;
-	public var useCollision : Bool = false;
-	var collisionPlane : h3d.col.Plane;
-	// RANDOM COLOR
-	public var randomColorMode : RandomColorMode = None;
-	public var randomColor1 : h3d.Vector;
-	public var randomColor2 : h3d.Vector;
-	public var randomGradient : GradientData;
-
 	public var invTransform = new h3d.Matrix();
 	public var screenRot = new h3d.Matrix();
 	public var worldScale = new h3d.Vector(1,1,1);
@@ -683,9 +645,9 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function init(randSlots: Int, prefab: Emitter) {
-		this.emitterPrefab = prefab;
+		this.prefab = prefab;
 		evaluator = new Evaluator();
-		evaluator.allocRandom(maxCount, randSlots);
+		evaluator.allocRandom(prefab.maxCount, randSlots);
 		var anim = getParentFX();
 		if(anim != null)
 			evaluator.parameters = @:privateAccess anim.evaluator.parameters;
@@ -726,7 +688,7 @@ class EmitterObject extends h3d.scene.Object {
 				var absPos = mesh.getAbsPos();
 				tmpMat.initInverse(baseEmitMat);
 				meshTransform.multiply(absPos, tmpMat);
-				if (applyMeshTransform)
+				if (prefab.applyMeshTransform)
 					baseEmitMat.load(absPos);
 				mesh.remove();
 			}
@@ -771,28 +733,28 @@ class EmitterObject extends h3d.scene.Object {
 			}
 
 			// Setup mats
-			var materials = findRec(emitterPrefab, hrt.prefab.Material);
+			var materials = findRec(prefab, hrt.prefab.Material);
 			for( mat in materials )
 				@:privateAccess mat.makeInstance();
 
 			// Setup shaders
 			customAnims = [];
-			var shaders = findRec(emitterPrefab, hrt.prefab.Shader);
+			var shaders = findRec(prefab, hrt.prefab.Shader);
 			for( shader in shaders ) {
 				makeShaderInstance(shader);
 				hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch, true);
 			}
 
 			// Animated textures animations
-			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
-			if( frameCount > 1 && spriteSheet != null ) {
-				var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
+			var frameCount = prefab.frameCount == 0 ? prefab.frameDivisionX * prefab.frameDivisionY : prefab.frameCount;
+			if( frameCount > 1 && prefab.spriteSheet != null ) {
+				var tex = hxd.res.Loader.currentInstance.load(prefab.spriteSheet).toTexture();
 				var meanLifeTime = evaluator.getMean(lifeTime);
-				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationCycles / meanLifeTime);
-				animatedTextureShader.useSourceUVs = animationUseSourceUVs;
+				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, prefab.frameDivisionX, prefab.frameDivisionY, frameCount, frameCount * prefab.animationCycles / meanLifeTime);
+				animatedTextureShader.useSourceUVs = prefab.animationUseSourceUVs;
 				animatedTextureShader.startTime = @:privateAccess scene?.renderer.ctx.globalTime ?? 0.0;
-				animatedTextureShader.loop = animationLoop;
-				animatedTextureShader.blendBetweenFrames = animationBlendBetweenFrames;
+				animatedTextureShader.loop = prefab.animationLoop;
+				animatedTextureShader.blendBetweenFrames = prefab.animationBlendBetweenFrames;
 				animatedTextureShader.setPriority(1);
 				batch.material.mainPass.addShader(animatedTextureShader);
 			}
@@ -802,7 +764,7 @@ class EmitterObject extends h3d.scene.Object {
 			baseEmitterShader.meshTransformInverse.initInverse(meshTransform);
 			batch.material.mainPass.addShader(baseEmitterShader);
 
-			if(randomColorMode != RandomColorMode.None) {
+			if(prefab.randomColorMode != RandomColorMode.None) {
 				colorMultShader = new h3d.shader.ColorMult();
 				batch.material.mainPass.addShader(colorMultShader);
 			}
@@ -816,13 +778,13 @@ class EmitterObject extends h3d.scene.Object {
 			}
 		}
 
-		if(trails != null && trails.numTrails != maxCount) {
+		if(trails != null && trails.numTrails != prefab.maxCount) {
 			trails.remove();
 			trails = null;
 		}
 
-		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
-		particlesCount = maxCount;
+		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, prefab.maxCount) #else [for(i in 0...prefab.maxCount) new ParticleInstance()] #end;
+		particlesCount = prefab.maxCount;
 		reset();
 	}
 
@@ -866,7 +828,7 @@ class EmitterObject extends h3d.scene.Object {
 		softReset();
 		random.init(randomSeed);
 		numInstances = 0;
-		curTime = -delay;
+		curTime = -prefab.delay;
 		emitCount = 0;
 		emitTarget = 0;
 		listHead = null;
@@ -944,7 +906,7 @@ class EmitterObject extends h3d.scene.Object {
 	#end
 
 	function allocInstance() {
-		if(numInstances >= maxCount) error("allocInstance");
+		if(numInstances >= prefab.maxCount) error("allocInstance");
 		var p = particles[numInstances++];
 		p.init(instanceCounter, this);
 		p.prev = null;
@@ -953,7 +915,7 @@ class EmitterObject extends h3d.scene.Object {
 			listHead.prev = p;
 		listHead = p;
 		newInstances++;
-		instanceCounter = (instanceCounter + 1) % maxCount;
+		instanceCounter = (instanceCounter + 1) % prefab.maxCount;
 		checkList();
 		return p;
 	}
@@ -1033,7 +995,7 @@ class EmitterObject extends h3d.scene.Object {
 		if (count > 0) {
 
 			if (trailsTemplate != null && trails == null) {
-				trails = trailsTemplate.create(this, maxCount);
+				trails = trailsTemplate.create(this, prefab.maxCount);
 				trailsTemplate.local3d = trails;
 				trails.autoTrackPosition = false;
 				for( mat in trailsTemplate.findAll(hrt.prefab.Material, checkEnabled) )
@@ -1047,42 +1009,41 @@ class EmitterObject extends h3d.scene.Object {
 				part.startTime = globalTime;
 				part.lifeTime = hxd.Math.max(0.01, evaluator.getSpawn(part.idx, lifeTime, curTime));
 
-				switch(randomColorMode) {
+				switch(prefab.randomColorMode) {
 					case None:
 					case Gradient:
-						part.colorMult = Gradient.evalData(randomGradient, random.rand()).toColor();
+						part.colorMult = Gradient.evalData(prefab.randomGradient, random.rand()).toColor();
 					case Colors:
-						var col = new h3d.Vector();
-						col.lerp(randomColor1, randomColor2, random.rand());
-						part.colorMult = col.toColor();
+						var c1 = prefab.randomColor1, c2 = prefab.randomColor2, k = random.rand();
+						part.colorMult = new h3d.Vector(hxd.Math.lerp(c1[0], c2[0], k), hxd.Math.lerp(c1[1], c2[1], k), hxd.Math.lerp(c1[2], c2[2], k)).toColor();
 				}
 
 				tmpQuat.identity();
 
-				switch( emitShape ) {
+				switch( prefab.emitShape ) {
 					case Box:
 						tmpOffset.set(random.srand(0.5), random.srand(0.5), random.srand(0.5));
-						if( emitSurface ) {
+						if( prefab.emitSurface ) {
 							var max = Math.max(Math.max(Math.abs(tmpOffset.x), Math.abs(tmpOffset.y)), Math.abs(tmpOffset.z));
 							tmpOffset.scale(0.5 / max);
 						}
-						if( emitOrientation == Normal )
+						if( prefab.emitOrientation == Normal )
 							tmpQuat.initDirection(tmpOffset);
 					case Cylinder:
 						var z = random.rand();
 						var dx = 0.0, dy = 0.0;
 						var shapeAngle = hxd.Math.degToRad(evaluator.getFloat(emitAngle, curTime)) / 2.0;
 						var a = random.srand(shapeAngle);
-						if(emitSurface) {
-							dx = Math.cos(a)*(emitRad2*z + emitRad1*(1.0-z));
-							dy = Math.sin(a)*(emitRad2*z + emitRad1*(1.0-z));
+						if(prefab.emitSurface) {
+							dx = Math.cos(a)*(prefab.emitRad2*z + prefab.emitRad1*(1.0-z));
+							dy = Math.sin(a)*(prefab.emitRad2*z + prefab.emitRad1*(1.0-z));
 						}
 						else {
-							dx = Math.cos(a)*(emitRad2*z + emitRad1*(1.0-z))*random.rand();
-							dy = Math.sin(a)*(emitRad2*z + emitRad1*(1.0-z))*random.rand();
+							dx = Math.cos(a)*(prefab.emitRad2*z + prefab.emitRad1*(1.0-z))*random.rand();
+							dy = Math.sin(a)*(prefab.emitRad2*z + prefab.emitRad1*(1.0-z))*random.rand();
 						}
 						tmpOffset.set(dx * 0.5, dy * 0.5, z - 0.5);
-						if( emitOrientation == Normal )
+						if( prefab.emitOrientation == Normal )
 							tmpQuat.initRotation(0, 0, hxd.Math.atan2(dy, dx));
 					case Sphere:
 						do {
@@ -1091,14 +1052,14 @@ class EmitterObject extends h3d.scene.Object {
 							tmpOffset.z = random.srand(1.0);
 						}
 						while( tmpOffset.lengthSq() > 1.0 );
-						if( emitSurface )
+						if( prefab.emitSurface )
 							tmpOffset.normalize();
 						tmpOffset.scale(0.5);
-						if( emitOrientation == Normal )
+						if( prefab.emitOrientation == Normal )
 							tmpQuat.initDirection(tmpOffset);
 					case Dome:
-						var zMin = 1.0 - 2.0 * hxd.Math.clamp(emitDomeHeight, 0, 1);
-						if( emitSurface ) {
+						var zMin = 1.0 - 2.0 * hxd.Math.clamp(prefab.emitDomeHeight, 0, 1);
+						if( prefab.emitSurface ) {
 							var z = zMin + (1.0 - zMin) * random.rand();
 							var r = Math.sqrt(1.0 - z * z);
 							var a = random.rand() * Math.PI * 2;
@@ -1113,10 +1074,10 @@ class EmitterObject extends h3d.scene.Object {
 							}
 							while( tmpOffset.lengthSq() > 1.0 );
 						}
-						if( emitDomeFlip )
+						if( prefab.emitDomeFlip )
 							tmpOffset.z = -tmpOffset.z;
 						tmpOffset.scale(0.5);
-						if( emitOrientation == Normal )
+						if( prefab.emitOrientation == Normal )
 							tmpQuat.initDirection(tmpOffset);
 					case Cone:
 						tmpOffset.set(0, 0, 0);
@@ -1132,10 +1093,10 @@ class EmitterObject extends h3d.scene.Object {
 
 				onEmit(tmpOffset, tmpQuat);
 
-				if( emitOrientation == Random )
+				if( prefab.emitOrientation == Random )
 					tmpQuat.initRotation(random.srand(Math.PI), random.srand(Math.PI), random.srand(Math.PI));
 
-				switch( simulationSpace ) {
+				switch( prefab.simulationSpace ) {
 					case Local:
 						if(emitterQuat == null) {
 							emitterQuat = tmpEmitterQuat;
@@ -1144,7 +1105,7 @@ class EmitterObject extends h3d.scene.Object {
 							tmpMat2.load(parentNonEmitter.getAbsPos());
 							tmpMat2.invert();
 							tmpMat.multiply(tmpMat, tmpMat2);
-							if (particleScaling == None) {
+							if (prefab.particleScaling == None) {
 								// // Re-introduce parent scaling in the spawn position calculations
 								var parentScale = inline parentNonEmitter.getAbsPos().getScale();
 								tmpMat2.initScale(parentScale.x, parentScale.y, parentScale.z);
@@ -1178,8 +1139,8 @@ class EmitterObject extends h3d.scene.Object {
 
 						part.setScale(worldScale.x, worldScale.y, worldScale.z);
 				}
-				var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
-				if(animationLoop)
+				var frameCount = prefab.frameCount == 0 ? prefab.frameDivisionX * prefab.frameDivisionY : prefab.frameCount;
+				if(prefab.animationLoop)
 					part.startFrame = random.random(frameCount);
 
 				if (subEmitterTemplates != null) {
@@ -1279,7 +1240,7 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 
 		if( parentNonEmitter != null ) {
-			if (particleScaling == None) {
+			if (prefab.particleScaling == None) {
 				worldScale.set(1.0,1.0,1.0);
 			}
 			else {
@@ -1289,10 +1250,10 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		if( enable && emitScale > 0. && curTime >= 0) {
-			switch emitType {
+			switch prefab.emitType {
 				case Infinity:
 					emitTarget += evaluator.getFloat(emitRate, curTime) * hxd.Math.clamp(emitScale) * dt;
-					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
+					var delta = hxd.Math.ceil(hxd.Math.min(prefab.maxCount - numInstances, emitTarget - emitCount));
 					doEmit(delta);
 					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
 						enable = false;
@@ -1306,7 +1267,7 @@ class EmitterObject extends h3d.scene.Object {
 					var max = evaluator.getFloat(emitRateMax, curTime);
 
 					var unInitiliazed = Math.isNaN(emitRateCurrent);
-					var needNewValue = curTime - emitRateChangeStart >= emitRateChangeTime || curTime - emitRateChangeStart < 0;
+					var needNewValue = curTime - emitRateChangeStart >= prefab.emitRateChangeTime || curTime - emitRateChangeStart < 0;
 					if (unInitiliazed || needNewValue) {
 						emitRateChangeStart = curTime;
 						emitRatePrevious = emitRateTarget;
@@ -1316,48 +1277,48 @@ class EmitterObject extends h3d.scene.Object {
 							emitRatePrevious = random.rand() * (max-min) + min;
 					}
 
-					var t = (curTime - emitRateChangeStart) / emitRateChangeTime;
+					var t = (curTime - emitRateChangeStart) / prefab.emitRateChangeTime;
 					emitRateCurrent = (emitRatePrevious - emitRateTarget) * t + emitRatePrevious;
 
 					emitTarget += emitRateCurrent * hxd.Math.clamp(emitScale) * dt;
 
-					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
+					var delta = hxd.Math.ceil(hxd.Math.min(prefab.maxCount - numInstances, emitTarget - emitCount));
 					doEmit(delta);
 					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
 						enable = false;
 				case Duration:
-					emitTarget += evaluator.getFloat(emitRate, hxd.Math.min(curTime, emitDuration)) * hxd.Math.clamp(emitScale) * dt;
-					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
+					emitTarget += evaluator.getFloat(emitRate, hxd.Math.min(curTime, prefab.emitDuration)) * hxd.Math.clamp(emitScale) * dt;
+					var delta = hxd.Math.ceil(hxd.Math.min(prefab.maxCount - numInstances, emitTarget - emitCount));
 					doEmit(delta);
-					if( isSubEmitter && curTime >= emitDuration )
+					if( isSubEmitter && curTime >= prefab.emitDuration )
 						enable = false;
 				case BurstDuration:
-					if( burstInterval > 0 ) {
-						var burstTarget = 1 + hxd.Math.floor(curTime / burstInterval);
-						var lastBurstTime = totalBurstCount * burstInterval;
-						var nextBurstTime = lastBurstTime + burstInterval;
-						var needBurst = nextBurstTime <= emitDuration && totalBurstCount < burstTarget;
+					if( prefab.burstInterval > 0 ) {
+						var burstTarget = 1 + hxd.Math.floor(curTime / prefab.burstInterval);
+						var lastBurstTime = totalBurstCount * prefab.burstInterval;
+						var nextBurstTime = lastBurstTime + prefab.burstInterval;
+						var needBurst = nextBurstTime <= prefab.emitDuration && totalBurstCount < burstTarget;
 						while( needBurst ) {
-							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
+							var delta = hxd.Math.ceil(hxd.Math.min(prefab.maxCount - numInstances, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
 							doEmit(delta);
 							totalBurstCount++;
-							lastBurstTime += burstInterval;
-							nextBurstTime = lastBurstTime + burstInterval;
-							needBurst = nextBurstTime <= emitDuration && totalBurstCount < burstTarget;
+							lastBurstTime += prefab.burstInterval;
+							nextBurstTime = lastBurstTime + prefab.burstInterval;
+							needBurst = nextBurstTime <= prefab.emitDuration && totalBurstCount < burstTarget;
 						}
 					}
-					if( isSubEmitter && curTime > emitDuration )
+					if( isSubEmitter && curTime > prefab.emitDuration )
 						enable = false;
 				case Burst:
-					if( burstInterval > 0 ) {
-						var burstTarget = hxd.Math.min(burstCount, 1 + hxd.Math.floor(curTime / burstInterval));
+					if( prefab.burstInterval > 0 ) {
+						var burstTarget = hxd.Math.min(prefab.burstCount, 1 + hxd.Math.floor(curTime / prefab.burstInterval));
 						while( totalBurstCount < burstTarget ) {
-							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
+							var delta = hxd.Math.ceil(hxd.Math.min(prefab.maxCount - numInstances, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
 							doEmit(delta);
 							totalBurstCount++;
 						}
 					}
-					if( isSubEmitter && totalBurstCount == burstCount )
+					if( isSubEmitter && totalBurstCount == prefab.burstCount )
 						enable = false;
 
 			}
@@ -1375,14 +1336,14 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function updateAlignment() {
-		if(alignMode == Screen || alignMode == ScreenSpeed || alignMode == AxisSpeed) {
+		if(prefab.alignMode == Screen || prefab.alignMode == ScreenSpeed || prefab.alignMode == AxisSpeed) {
 			var cam = scene?.camera;
 			if (cam == null)
 				return;
 			tmpMat.load(cam.mcam);
 			tmpMat.invert();
 
-			if(simulationSpace == Local) {  // Compensate parent rotation
+			if(prefab.simulationSpace == Local) {  // Compensate parent rotation
 				tmpMat2.load(parentNonEmitter.getAbsPos());
 				var s = tmpMat2.getScale();
 				tmpMat2.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
@@ -1393,14 +1354,14 @@ class EmitterObject extends h3d.scene.Object {
 			screenRot.initRotationAxis( new h3d.Vector(1,0,0),Math.PI);  // Flip Y axis so Y is pointing down
 			screenRot.multiply(screenRot, tmpMat);
 		}
-		else if(alignMode == Axis) {
+		else if(prefab.alignMode == Axis) {
 			var cam = scene?.camera;
 			if (cam == null)
 				return;
 			var lockAxis = new h3d.Vector();
 			var rightAxis = new h3d.Vector();
 			var upAxis = new h3d.Vector();
-			switch alignLockAxis {
+			switch prefab.alignLockAxis {
 				case X:
 					lockAxis.set(1, 0, 0);
 					rightAxis.set(0, 1, 0);
@@ -1421,7 +1382,7 @@ class EmitterObject extends h3d.scene.Object {
 			var lookAtPos = tmpVec;
 			lookAtPos.load(cam.pos);
 
-			if ( followRotation ) {
+			if ( prefab.followRotation ) {
 				var invAbsPos = getInvPos();
 				lookAtPos.transform(invAbsPos);
 			} else {
@@ -1442,7 +1403,7 @@ class EmitterObject extends h3d.scene.Object {
 				angle = -angle;
 
 			screenRot.initRotationAxis(lockAxis, angle);
-			if(alignLockAxis == ScreenZ) {
+			if(prefab.alignLockAxis == ScreenZ) {
 				tmpMat.initRotationAxis(new h3d.Vector(1.0, 0.0, 0.0),-Math.PI/2);
 				screenRot.multiply(tmpMat, screenRot);
 			}
@@ -1462,7 +1423,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	function updateMeshBatch() {
 		if(batch == null) return;
-		batch.begin(hxd.Math.nextPOT(maxCount));
+		batch.begin(hxd.Math.nextPOT(prefab.maxCount));
 
 		inline function emit(p: ParticleInstance) {
 			if (p.life > p.lifeTime)
@@ -1487,7 +1448,7 @@ class EmitterObject extends h3d.scene.Object {
 			batch.emitInstance();
 		}
 
-		switch(sortMode) {
+		switch(prefab.sortMode) {
 			case Depth:
 					depthSort();
 					var p = listHead;
@@ -1511,7 +1472,7 @@ class EmitterObject extends h3d.scene.Object {
 		if (scene == null)
 			return;
 
-		switch(simulationSpace){
+		switch(prefab.simulationSpace){
 			// Particles in Local are spawned next to emitter in the scene tree,
 			// so emitter shape can be transformed (especially scaled) without affecting children
 			case Local : parentTransform.load(parentNonEmitter.getAbsPos());
@@ -1519,12 +1480,12 @@ class EmitterObject extends h3d.scene.Object {
 			// Optim: set to null if identity to skip multiply in particle updates
 		}
 
-		if (particleScaling == None) {
+		if (prefab.particleScaling == None) {
 			var scale = parentTransform.getScale();
 			parentTransform.scale(1.0/scale.x, 1.0/scale.y, 1.0/scale.z);
 		}
 
-		if (useCollision) {
+		if (prefab.useCollision) {
 			var m = new h3d.Matrix();
 			m.initInverse(parentTransform);
 			m.multiply(parentNonEmitter.getAbsPos(), m);
@@ -1580,7 +1541,7 @@ class EmitterObject extends h3d.scene.Object {
 
 				if(full) {
 					p.updateAbsPos(this);
-					if(p.distToCam < 0 || sortMode == Depth)
+					if(p.distToCam < 0 || prefab.sortMode == Depth)
 						p.distToCam = camPos.distanceSq(p.absPos.getPosition());
 				}
 				p.life += dt;  // After updateAbsPos(), which uses current life
@@ -1613,7 +1574,7 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	public function setRandSeed(seed: Int) {
-		randomSeed = seed ^ seedGroup;
+		randomSeed = seed ^ prefab.seed;
 		reset();
 	}
 
@@ -1624,7 +1585,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	var lastParentTime = 0.0;
 	public function setTime(parentTime: Float, dt: Float, seek: Bool, full: Bool) {
-		var localTime = (parentTime-delay) * timeScale;
+		var localTime = (parentTime-prefab.delay) * prefab.timeScale;
 		if (!full) {
 			curTime = localTime;
 			return;
@@ -1644,13 +1605,13 @@ class EmitterObject extends h3d.scene.Object {
 		else if (!seek) {
 			if (parentTime < lastParentTime) {
 				softReset();
-				if (burstInterval > 0)
-					totalBurstCount = hxd.Math.ceil(hxd.Math.max(0.0, localTime/burstInterval));
-				if (emitType == Burst) {
-					if (totalBurstCount >= burstCount)
+				if (prefab.burstInterval > 0)
+					totalBurstCount = hxd.Math.ceil(hxd.Math.max(0.0, localTime/prefab.burstInterval));
+				if (prefab.emitType == Burst) {
+					if (totalBurstCount >= prefab.burstCount)
 						enable = false;
-				} else if (emitType == BurstDuration) {
-					if (curTime > emitDuration)
+				} else if (prefab.emitType == BurstDuration) {
+					if (curTime > prefab.emitDuration)
 						enable = false;
 				}
 
@@ -1662,7 +1623,7 @@ class EmitterObject extends h3d.scene.Object {
 		var abs = this.getAbsPos();
 		baseEmitterShader.emitPosition.set(abs.tx, abs.ty, abs.tz);
 
-		var time = localTime + warmUpTime;
+		var time = localTime + prefab.warmUpTime;
 		var catchupTime = time - curTime;
 
 		var seek = seek || (catchupTime > 1.5 * dt);
@@ -1673,7 +1634,7 @@ class EmitterObject extends h3d.scene.Object {
 			#if editor
 			var start = haxe.Timer.stamp();
 			#end
-			tick(dt * timeScale, true);
+			tick(dt * prefab.timeScale, true);
 			#if editor
 			var end = haxe.Timer.stamp();
 			tickTime = end - start;
@@ -1694,8 +1655,8 @@ class EmitterObject extends h3d.scene.Object {
 		#if !editor  // Limit catchup time to avoid spikes when showing long running FX
 		var longCatchup = catchupTime > maxCatchupWindow;
 		if(longCatchup) {
-			var firstWarmup = curTime <= 0.0 && warmUpTime > 0;
-			catchupTime = firstWarmup ? warmUpTime : maxCatchupWindow;
+			var firstWarmup = curTime <= 0.0 && prefab.warmUpTime > 0;
+			catchupTime = firstWarmup ? prefab.warmUpTime : maxCatchupWindow;
 			curTime = time - catchupTime;
 			emitCount = hxd.Math.ceil(evaluator.getSum(emitRate, curTime));
 
@@ -1705,7 +1666,7 @@ class EmitterObject extends h3d.scene.Object {
 		}
 		#end
 
-		var catchupTickRate = hxd.Timer.wantedFPS * timeScale / catchupSpeed;
+		var catchupTickRate = hxd.Timer.wantedFPS * prefab.timeScale / catchupSpeed;
 		var numTicks = hxd.Math.ceil(catchupTickRate * catchupTime);
 		for(i in 0...numTicks)
 		{
@@ -1953,55 +1914,6 @@ class Emitter extends Object3D {
 		var trailsTemplate : hrt.prefab.l3d.Trails = cast children.find(p -> EmitterObject.checkEnabled(p) && Std.isOfType(p, hrt.prefab.l3d.Trails) && p.to(Object3D).visible);
 		emitterObj.trailsTemplate = trailsTemplate;
 
-		// RANDOM
-		emitterObj.seedGroup 			= 	seed;
-		emitterObj.subEmitterKind		= 	subEmitterKind;
-		emitterObj.timeScale 			= 	timeScale;
-		emitterObj.warmUpTime 			= 	warmUpTime;
-		emitterObj.delay 				= 	delay;
-		// EMIT PARAMS
-		emitterObj.emitType 			= 	emitType;
-		emitterObj.burstCount 			= 	Std.int(burstCount);
-		emitterObj.burstInterval 			= 	burstInterval;
-		emitterObj.emitDuration 		= 	emitDuration;
-		emitterObj.simulationSpace 		= 	simulationSpace;
-		emitterObj.particleScaling		= 	particleScaling;
-		emitterObj.emitOrientation 		= 	emitOrientation;
-		emitterObj.maxCount 			= 	maxCount;
-		emitterObj.sortMode 			= 	sortMode;
-		emitterObj.emitRateChangeTime 	= 	emitRateChangeTime;
-		emitterObj.emitShape 			= 	emitShape;
-		emitterObj.followRotation 		= 	followRotation;
-		emitterObj.applyMeshTransform 	= 	applyMeshTransform;
-		// EMIT SHAPE
-		emitterObj.emitRad1 			= 	emitRad1;
-		emitterObj.emitRad2 			= 	emitRad2;
-		emitterObj.emitSurface 			= 	emitSurface;
-		emitterObj.emitDomeHeight 			= 	emitDomeHeight;
-		emitterObj.emitDomeFlip 		= 	emitDomeFlip;
-		// ALIGNMENT
-		emitterObj.alignMode 			= 	alignMode;
-		emitterObj.alignLockAxis 		= 	alignLockAxis;
-		// ANIMATION
-		emitterObj.spriteSheet 			= 	spriteSheet;
-		emitterObj.frameCount 			= 	frameCount;
-		emitterObj.frameDivisionX 		= 	frameDivisionX;
-		emitterObj.frameDivisionY 		= 	frameDivisionY;
-		emitterObj.animationCycles 		= 	animationCycles;
-		emitterObj.animationLoop 		= 	animationLoop;
-		emitterObj.animationUseSourceUVs 			= 	animationUseSourceUVs;
-		emitterObj.animationBlendBetweenFrames 		= 	animationBlendBetweenFrames;
-
-		// COLLISION
-		emitterObj.useCollision 		= 	useCollision;
-		emitterObj.killOnCollision 		= 	killOnCollision;
-		emitterObj.elasticity 			= 	elasticity;
-		// RANDOM COLOR
-		emitterObj.randomColorMode 		= 	randomColorMode;
-		emitterObj.randomColor1 		= 	h3d.Vector.fromArray(randomColor1);
-		emitterObj.randomColor2 		= 	h3d.Vector.fromArray(randomColor2);
-		emitterObj.randomGradient 		= 	randomGradient;
-
 		// DEBUG
 		#if editor
 		emitterObj.debugGraphics.visible = viewDebug;
@@ -2167,7 +2079,7 @@ class Emitter extends Object3D {
 		debugShape.removeChildren();
 
 		var mesh : h3d.scene.Mesh = null;
-		switch(emitterObj.emitShape) {
+		switch(emitShape) {
 			case Cylinder: {
 				var rad1 = emitRad1 * 0.5;
 				var rad2 = emitRad2 * 0.5;
