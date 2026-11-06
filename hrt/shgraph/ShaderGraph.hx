@@ -872,6 +872,32 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	}
 
 	#if editor
+	/** True if the subgraph at `path` is this graph or includes it, directly or through other subgraphs **/
+	public function isIncludedBy(path: String) : Bool {
+		var visited : Array<String> = [];
+		function rec(path: String) : Bool {
+			if (path == shared.currentPath)
+				return true;
+			if (visited.contains(path))
+				return false;
+			visited.push(path);
+
+			var sub = Std.downcast(hide.Ide.inst.loadPrefab(path), ShaderSubGraph);
+			if (sub == null)
+				return false;
+			for (graph in sub.graphs)
+				for (node in graph.getNodes()) {
+					var subNode = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
+					if (subNode != null && rec(subNode.pathShaderGraph))
+						return true;
+				}
+			return false;
+		}
+		return rec(path);
+	}
+	#end
+
+	#if editor
 	static var removeFnRegex = ~/@function var.*$/gm;
 	static var trimWhitepsaceStart = ~/^\s*/;
 	static var trimWhitepsaceEnd = ~/\s*$/;

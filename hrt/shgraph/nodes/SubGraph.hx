@@ -97,6 +97,12 @@ class SubGraph extends ShaderNode {
 		return info;
 	}
 
+	override public function unserializeFromDynamic(data: Dynamic, forClipboard: Bool = false) : Void {
+		super.unserializeFromDynamic(data, forClipboard);
+		if (forClipboard && graph.parent.isIncludedBy(pathShaderGraph))
+			throw 'Subgraph $pathShaderGraph includes this graph';
+	}
+
 	#end
 	function loadSubGraph() : hrt.shgraph.ShaderSubGraph {
 		#if !editor

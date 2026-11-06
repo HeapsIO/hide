@@ -635,12 +635,26 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			return;
 		}
 
+		var items = [ for (f in files) f.relPath];
+
+		var previewRect = previewElem?.get(0).getBoundingClientRect();
+		var overPreview = previewRect != null
+			&& dragData.mouseX >= previewRect.left && dragData.mouseX < previewRect.right
+			&& dragData.mouseY >= previewRect.top && dragData.mouseY < previewRect.bottom;
+
+		var nonSubGraph = overPreview ? null : Lambda.find(items, (item) -> !StringTools.endsWith(item, ".subgraph"));
+		if (nonSubGraph != null) {
+			dragData.dropTargetValidity = ForbidDrop;
+			if (event == Drop)
+				ide.quickError('$nonSubGraph is not a subgraph');
+			return;
+		}
+
 		if (event != Drop) {
 			return;
 		}
 
-		var items = [ for (f in files) f.relPath];
-		if (previewElem != null && previewElem.get(0).matches(":hover")) {
+		if (overPreview) {
 			for (item in items) {
 				if (StringTools.endsWith(item, ".prefab") || StringTools.endsWith(item, ".fx")) {
 					var renderProp = config.get("scene.renderProps");
@@ -662,8 +676,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		var pos = new Point(graphEditor.lX(dragData.mouseX - 25), graphEditor.lY(dragData.mouseY - 25));
 		for (item in items) {
-			if (!StringTools.endsWith(item, ".subgraph") || item == state.path)
+			if (shaderGraph.isIncludedBy(item)) {
+				ide.quickError('Subgraph $item includes this graph');
 				continue;
+			}
 
 			var node = @:privateAccess new SubGraph(item);
 			@:privateAccess node.id = currentGraph.current_node_id++;
