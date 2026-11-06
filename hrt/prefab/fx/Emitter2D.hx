@@ -75,33 +75,31 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 	}
 
 	function getInitialAbsPos(m : h2d.col.Matrix, dt : Float) {
-		var def = emitter.particleDef;
 		var evaluator = @:privateAccess emitter.evaluator;
 		var t = hxd.Math.clamp(curLifeTime / lifeTime);
 
 		m.identity();
 
 		// POSITION
-		if (def.offset != VZero) {
-			evaluator.getVector2(idx, def.offset, t, tmpVec);
+		if (emitter.partOffset != VZero) {
+			evaluator.getVector2(idx, emitter.partOffset, t, tmpVec);
 			m.initTranslate(tmpVec.x, tmpVec.y);
 		}
 
 		// ROTATION
-		if (def.rotation != VZero) {
-			var r = evaluator.getFast(idx, def.rotation, t) * Math.PI / 180.0;
+		if (emitter.partRotation != VZero) {
+			var r = evaluator.getFast(idx, emitter.partRotation, t) * Math.PI / 180.0;
 			m.rotate(r);
 		}
 
 		// SCALE
-		evaluator.getVector2(idx, def.stretch, t, tmpVec);
-		tmpVec *= evaluator.getFast(idx, def.scale, t);
+		evaluator.getVector2(idx, emitter.partStretch, t, tmpVec);
+		tmpVec *= evaluator.getFast(idx, emitter.partScale, t);
 		tmpVec *= emitter.curScaleMultiplier;
 		m.scale(tmpVec.x, tmpVec.y);
 	}
 
 	function getCurrentAbsPos(m : h2d.col.Matrix, dt : Float) {
-		var def = emitter.particleDef;
 		var evaluator = @:privateAccess emitter.evaluator;
 		var t = hxd.Math.clamp(curLifeTime / lifeTime);
 
@@ -166,16 +164,16 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		}
 
 		// ACCELERATION
-		if (def.acceleration != VZero) {
-			evaluator.getVector2(idx, def.acceleration, t, tmpVec);
+		if (emitter.partAcceleration != VZero) {
+			evaluator.getVector2(idx, emitter.partAcceleration, t, tmpVec);
 			tmpVec.scale(dt);
 			tmpVec.transform2x2(m);
 			speed += tmpVec;
 		}
 
 		// WORLD ACCELERATION
-		if (def.worldAcceleration != VZero) {
-			evaluator.getVector2(idx, def.worldAcceleration, t, tmpVec);
+		if (emitter.partWorldAcceleration != VZero) {
+			evaluator.getVector2(idx, emitter.partWorldAcceleration, t, tmpVec);
 			tmpVec.scale(dt);
 			tmpVec.transform2x2(emitter.invTransform);
 			speed += tmpVec;
@@ -184,30 +182,30 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		tmpSpeed.set(speed.x, speed.y);
 
 		// SPEED
-		if (def.speed != VZero) {
-			evaluator.getVector2(idx, def.speed, t, tmpVec);
+		if (emitter.partSpeed != VZero) {
+			evaluator.getVector2(idx, emitter.partSpeed, t, tmpVec);
 			tmpVec.transform2x2(m);
 			tmpSpeed += tmpVec;
 		}
 
 		// DAMPEN
-		if (def.dampen != VZero) {
-			var dampen = evaluator.getFast(idx, def.dampen, t);
+		if (emitter.partDampen != VZero) {
+			var dampen = evaluator.getFast(idx, emitter.partDampen, t);
 			var scale = Math.exp(dampen* -dt);
 			speed.scale(scale);
 		}
 
 
 		// WORLD SPEED
-		if (def.worldSpeed != VZero) {
-			evaluator.getVector2(idx, def.worldSpeed, t, tmpVec);
+		if (emitter.partWorldSpeed != VZero) {
+			evaluator.getVector2(idx, emitter.partWorldSpeed, t, tmpVec);
 			tmpVec.transform2x2(emitter.invTransform);
 			tmpSpeed += tmpVec;
 		}
 
 		// MAX VELOCITY
-		if (def.maxSpeed != VZero) {
-			var maxVel = evaluator.getFast(idx, def.maxSpeed, t);
+		if (emitter.partMaxSpeed != VZero) {
+			var maxVel = evaluator.getFast(idx, emitter.partMaxSpeed, t);
 			var curVelSq = tmpSpeed.lengthSq();
 			if (maxVel * maxVel < curVelSq) {
 				tmpSpeed.normalize();
@@ -217,8 +215,8 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 
 		m.translate(tmpSpeed.x * dt, tmpSpeed.y * dt);
 
-		if (def.orbitSpeed != VZero) {
-			var orbitSpeed = evaluator.getFast(idx, def.orbitSpeed, t);
+		if (emitter.partOrbitSpeed != VZero) {
+			var orbitSpeed = evaluator.getFast(idx, emitter.partOrbitSpeed, t);
 
 			var factorOverTime = emitter.curOrbitSpeedMultiplier;
 			orbitSpeed *= factorOverTime * (Math.PI / 180.0);
@@ -259,7 +257,18 @@ class Emitter2DObject extends h2d.Object {
 	var animatedTexShader : h3d.shader.AnimatedTexture = null;
 
 	// Emitter parameters
-	public var particleDef : ParticleDef;
+	// particle params, over the particle life
+	public var partSpeed : Value;
+	public var partWorldSpeed : Value;
+	public var partOrbitSpeed : Value;
+	public var partAcceleration : Value;
+	public var partWorldAcceleration : Value;
+	public var partOffset : Value;
+	public var partScale : Value;
+	public var partStretch : Value;
+	public var partRotation : Value;
+	public var partDampen : Value;
+	public var partMaxSpeed : Value;
 	public var seed = 0;
 	public var lifeTime : SpawnValue;
 	public var timeScale = 1.0;
@@ -499,7 +508,7 @@ class Emitter2D extends Object2D {
 	@:s @:range(0, 100) @:disp("Max Count", "Maximum number of particles alive at the same time: no particle is emitted beyond")
 	public var maxCount : Int = 20;
 	@:param(PFloat(0, 10), Spawn, 1.) @:disp("Lifetime", "Life duration of the particle, in seconds")
-	public var partLifeTime : ParamMode;
+	public var lifeTime : ParamMode;
 
 	@:group("Emit Shape")
 	@:s @:disp("Shape", "Area in which the particles are emitted")
@@ -521,9 +530,9 @@ class Emitter2D extends Object2D {
 
 	@:group("Particle Movement")
 	@:param(PVec(2, -10, 10), Spawn) @:disp("Start Speed", "Initial speed in the emitter orientation, set at the spawn of the particle")
-	public var partStartSpeed : ParamVec2;
+	public var startSpeed : ParamVec2;
 	@:param(PVec(2, -10, 10), Spawn) @:disp("Start World Speed", "Initial speed in world space, set at the spawn of the particle")
-	public var partStartWorldSpeed : ParamVec2;
+	public var startWorldSpeed : ParamVec2;
 	@:param(PVec(2, -10, 10), Particle) @:disp("Constant Speed", "Speed in the emitter orientation, added to the velocity without being accumulated")
 	public var partSpeed : ParamVec2;
 	@:param(PVec(2, -10, 10), Particle) @:disp("Constant World Speed", "Speed in world space, added to the velocity without being accumulated")

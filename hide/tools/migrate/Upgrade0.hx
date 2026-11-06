@@ -62,7 +62,7 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	  hold their values, their bounds baked into them.
 	- Animation curves hold the value they animate: the constants the old FX composed them with are
 	  baked into them (exactly when the old value is linear in the curve), and the ones of the emitter
-	  params are named after what they animate (`partStartSpeed:x:min`, `scaleMultiplier`), like the particle params (`partScale`).
+	  params are named after what they animate (`startSpeed:x:min`, `scaleMultiplier`), the particle params prefixed with `part` (`partScale`).
 	- Orbit speeds go from radians to degrees per second.
 	- Transforms are re-baked exactly, the curves of the rotation and scale affine in the old ones: the
 	  base rotation folded into the euler angles (from another euler triple of the same rotation, which
@@ -1508,12 +1508,12 @@ class Upgrade0 {
 	// Emitters
 
 	static var EMITTER_3D : Array<ParamDef> = [
-		{ name: "partLifeTime", old: "lifeTime", group: Spawn, def: [1.] },
+		{ name: "lifeTime", old: "lifeTime", group: Spawn, def: [1.] },
 		{ name: "partWorldAcceleration", old: "instWorldAcceleration", group: Particle, def: [0., 0., 0.] },
 		{ name: "partSpeed", old: "instSpeed", group: Particle, def: [0., 0., 0.] },
 		{ name: "partWorldSpeed", old: "instWorldSpeed", group: Particle, def: [0., 0., 0.] },
-		{ name: "partStartSpeed", old: "instStartSpeed", group: Spawn, def: [0., 0., 0.] },
-		{ name: "partStartWorldSpeed", old: "instStartWorldSpeed", group: Spawn, def: [0., 0., 0.] },
+		{ name: "startSpeed", old: "instStartSpeed", group: Spawn, def: [0., 0., 0.] },
+		{ name: "startWorldSpeed", old: "instStartWorldSpeed", group: Spawn, def: [0., 0., 0.] },
 		{ name: "partOrbitSpeed", old: "instOrbitSpeed", group: Particle, def: [0., 0., 0.] },
 		{ name: "orbitSpeedMultiplier", old: "instOrbitSpeedOverTime", group: OverTime, def: [1.] },
 		{ name: "partAcceleration", old: "instAcceleration", group: Particle, def: [0., 0., 0.] },
@@ -1529,7 +1529,7 @@ class Upgrade0 {
 	];
 
 	static var EMITTER_2D : Array<ParamDef> = [
-		{ name: "partLifeTime", old: "lifeTime", group: Spawn, def: [1.] },
+		{ name: "lifeTime", old: "lifeTime", group: Spawn, def: [1.] },
 		{ name: "partScale", old: "instScale", group: Particle, def: [1.] },
 		{ name: "scaleMultiplier", old: "instScaleOverTime", group: OverTime, def: [1.] },
 		{ name: "partStretch", old: "instStretch", group: Particle, def: [1., 1.] },
@@ -1539,15 +1539,15 @@ class Upgrade0 {
 		{ name: "partWorldAcceleration", old: "instWorldAcceleration", group: Particle, def: [0., 0.] },
 		{ name: "partSpeed", old: "instSpeed", group: Particle, def: [0., 0.] },
 		{ name: "partWorldSpeed", old: "instWorldSpeed", group: Particle, def: [0., 0.] },
-		{ name: "partStartSpeed", old: "instStartSpeed", group: Spawn, def: [0., 0.] },
-		{ name: "partStartWorldSpeed", old: "instStartWorldSpeed", group: Spawn, def: [0., 0.] },
+		{ name: "startSpeed", old: "instStartSpeed", group: Spawn, def: [0., 0.] },
+		{ name: "startWorldSpeed", old: "instStartWorldSpeed", group: Spawn, def: [0., 0.] },
 		{ name: "partOrbitSpeed", old: "instOrbitSpeed", group: Particle, def: [0.] },
 		{ name: "orbitSpeedMultiplier", old: "instOrbitSpeedOverTime", group: OverTime, def: [1.] },
 		{ name: "partMaxSpeed", old: "instMaxVelocity", group: Particle, def: [0.] },
 		{ name: "partDampen", old: "instDampen", group: Particle, def: [0.] },
 	];
 
-	/** The emitter properties animated over the FX time, with their default **/
+	/** The emitter properties animated over the emitter time, with their default **/
 	static var PROPERTIES_3D = [{ name: "emitRate", def: 5. }, { name: "emitRateMin", def: 5. }, { name: "emitRateMax", def: 5. },
 		{ name: "burstParticleCount", def: 1. }, { name: "emitAngle", def: 30. }];
 	static var PROPERTIES_2D = [{ name: "burstParticleCount", def: 1. }, { name: "emitRate", def: 5. }, { name: "emitRateMin", def: 5. },
@@ -1864,7 +1864,7 @@ class Upgrade0 {
 		// the life time was already a plain value
 		var life : Dynamic = get(props, "lifeTime");
 		if( Std.isOfType(life, Float) || Std.isOfType(life, Int) )
-			params.set("partLifeTime", [MConstant(life)]);
+			params.set("lifeTime", [MConstant(life)]);
 		inline function findCurve( name : String ) : RawNode {
 			return Lambda.find(e.children, c -> c.isCurve && c.enabled() && sameName(c.name, name));
 		}
@@ -1883,7 +1883,7 @@ class Upgrade0 {
 					return v == null ? null : dim == 1 ? (Std.isOfType(v, Array) ? null : num(v, 0)) : (Std.isOfType(v, Array) ? num((v : Array<Dynamic>)[i], 0) : null);
 				}
 				var base = comp(baseField);
-				if( d.name == "partLifeTime" && out[i] != null )
+				if( d.name == "lifeTime" && out[i] != null )
 					base = switch( out[i] ) { case MConstant(v): v; default: base; };
 				var rand = comp(randField);
 				var hasRand = rand != null && rand != 0;
@@ -1893,7 +1893,7 @@ class Upgrade0 {
 				var isBlend = ci != null && blendMode(ci) == 2;
 				var mode : Mode = null;
 				if( d.group != Particle ) {
-					// the curves of these params are animation curves over the FX time (`upgradeEmitterAnims`)
+					// the curves of these params are animation curves over the emitter time (`upgradeEmitterAnims`)
 					if( ri != null )
 						warn(e, '${old + suffix}:rand: a random curve on a ${d.group == Spawn ? "Spawn" : "over time"} param has no equivalent, ignored');
 					if( hasRand && d.group == Spawn )
@@ -1986,7 +1986,7 @@ class Upgrade0 {
 
 		// spawn params and over time settings
 		for( d in defs ) {
-			if( d.group == Particle || d.name == "partLifeTime" ) continue;
+			if( d.group == Particle || d.name == "lifeTime" ) continue;
 			var dim = d.def.length;
 			var value = params.get(d.name);
 			var out : Array<Mode> = [for( i in 0...dim ) value == null ? null : value[i]];

@@ -9,8 +9,8 @@ import haxe.macro.Expr;
 	Emitter fields:
 	- `@:s` properties, `@:range(min, max)`, `@:animate` when an animation curve can set them, `@:disp("Label", "Description")` (the description is the tooltip of its line),
 	  `@:t(PFile([...]))` for a type other than the one of the field;
-	- `@:param(PVec(3, -10, 10), Particle, default)` params with modes (`EmitterParam`), saved under their name like the properties. Named
-	  `partX`, the field of their value in the emitter object or its `ParticleDef` is `x`;
+	- `@:param(PVec(3, -10, 10), Particle, default)` params with modes (`EmitterParam`), saved under their name like the properties, which is
+	  also the field of their value in the emitter object. The Particle ones, read over the particle life, are named `partX`;
 	- `@:group("Name")`: the inspector group of the field and of the next ones.
 	The inspector shows the properties and the params in their declaration order.
 	The random slots are allocated in the order of `makeValues`: particle params, properties, spawn params.
@@ -53,7 +53,7 @@ class EmitterMacros {
 		var pos = Context.currentPos();
 		var properties = [], params = [], order = [];
 		var load = [], save = [], copy = [], getCases = [], setCases = [];
-		var particleValues = [], propertyValues = [], propertyApply = [], spawnValues = [], spawnApply = [];
+		var particleValues = [], particleApply = [], propertyValues = [], propertyApply = [], spawnValues = [], spawnApply = [];
 		var group = "Params";
 
 		for( f in fields ) {
@@ -99,8 +99,6 @@ class EmitterMacros {
 			var def = macro @:pos(p) PARAMS[$v{params.length}];
 			params.push(macro @:pos(p) { name: $v{n}, t: ${a[0]}, def: ($a{defs} : Array<Float>), kind: hrt.prefab.fx.EmitterParam.ParamKind.$kind,
 				groupName: $v{group}, disp: $label, desc: $desc });
-			// the field of the value: `partSpeed` is `speed`
-			var vn = StringTools.startsWith(n, "part") ? n.charAt(4).toLowerCase() + n.substr(5) : n;
 			if( dim == 1 ) {
 				load.push(macro @:pos(p) this.$n = hrt.prefab.fx.EmitterParam.parseMode(data.$n));
 				save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.saveMode(hrt.prefab.fx.EmitterParam.saved(this, $def, 0, this.$n)); if( v != null ) data.$n = v; });
@@ -115,10 +113,12 @@ class EmitterMacros {
 			copy.push(macro @:pos(p) this.$n = from.$n);
 			if( kind == "Spawn" ) {
 				var i = spawnValues.length;
-				spawnApply.push(dim == 1 ? macro @:pos(p) obj.$vn = v.spawn[$v{i}][0] : macro @:pos(p) obj.$vn = v.spawn[$v{i}]);
+				spawnApply.push(dim == 1 ? macro @:pos(p) obj.$n = v.spawn[$v{i}][0] : macro @:pos(p) obj.$n = v.spawn[$v{i}]);
 				spawnValues.push(macro @:pos(p) v.spawn.push(b.spawn($def)));
-			} else
-				particleValues.push(macro @:pos(p) d.$vn = b.param($def));
+			} else {
+				particleApply.push(macro @:pos(p) obj.$n = v.particle[$v{particleValues.length}]);
+				particleValues.push(macro @:pos(p) v.particle.push(b.param($def)));
+			}
 		}
 
 		// out of the editor the values are built once, by the source of the clones (the prefab of a loaded resource): they only depend on
@@ -165,9 +165,8 @@ class EmitterMacros {
 			}
 			function buildValues() : hrt.prefab.fx.EmitterParam.EmitterValues {
 				var b = new hrt.prefab.fx.EmitterParam.ParamBuilder(this);
-				var d = new hrt.prefab.fx.Emitter.ParticleDef();
+				var v = new hrt.prefab.fx.EmitterParam.EmitterValues();
 				$b{particleValues};
-				var v = new hrt.prefab.fx.EmitterParam.EmitterValues(d);
 				$b{propertyValues};
 				$b{spawnValues};
 				v.randomSlots = b.randomSlots;
@@ -178,7 +177,7 @@ class EmitterMacros {
 			}
 			public function makeValues( obj : $objCT ) : hrt.prefab.fx.EmitterParam.EmitterValues {
 				var v = getValues();
-				obj.particleDef = v.def;
+				$b{particleApply};
 				$b{propertyApply};
 				$b{spawnApply};
 				return v;

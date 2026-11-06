@@ -5,7 +5,7 @@ Scope: `Emitter` and `Emitter2D`. Editing through the new inspector only (edit2 
 ## Terms
 
 - **Particle curve**: a curve over the life of a particle, time in [0, 1]. Edited inline in the inspector, shown in the timeline only when it is selected.
-- **Animation curve**: a curve over the FX time. Shown and edited in the timeline.
+- **Animation curve**: a curve over the FX time, or over the emitter time for the ones of an emitter (its properties and Spawn params: the FX time minus its start delay, scaled by its time scale, plus its warm up). Shown and edited in the timeline.
 
 ## Param groups
 
@@ -46,14 +46,14 @@ Rejected when the values are built (an error), and not offered by the curve insp
 ## Animation curves
 
 - They set the animated value directly.
-- They hold plain keys: no range, no random. Constants of the old data are baked into the keys. They take the same curve forms as the shapes, over the FX time, and a random between two plain curves (Random Blend, on Emitter and Spawn `value` fields).
-- A Spawn param is read when the particle spawns: its value, or a random between its `min` and `max`, both at the FX time.
+- They hold plain keys: no range, no random. Constants of the old data are baked into the keys. They take the same curve forms as the shapes.
+- A Spawn param is read when the particle spawns: its value, or a random between its `min` and `max`, both at the emitter time.
 - Targets: transforms, shader params outside emitters, Emitter params, Spawn `value` / `min` / `max`.
-- Animation curves are children of the animated prefab, found by name (the property name, `:x` / `:y` / `:z` per component, e.g. `position:x`, `emitRate`, `partStartSpeed:x:min`), the first enabled one. The inspector marks properties that have one.
+- Animation curves are children of the animated prefab, found by name (the property name, `:x` / `:y` / `:z` per component, e.g. `position:x`, `emitRate`, `startSpeed:x:min`), the first enabled one. The inspector marks properties that have one.
 
 ## Storage
 
-- Params are stored directly on the emitter, under their field name, `part` and the param (`partScale`, `partStartSpeed`, `partRotation`...), like the properties: a mode, or for a vector an object of the modes of its components (`x`, `y`, `z`, an unset one left out). A curve mode stores no curve, its curve is the one of its name; a curve mode whose curve was deleted is not saved (the param goes back to its default).
+- Params are stored directly on the emitter, under their field name, like the properties. The name tells the clock of the curve: the Particle params, read over the particle life, are prefixed with `part` (`partScale`, `partRotation`); the Spawn params and the properties, read over the emitter time, are not (`lifeTime`, `startSpeed`, `emitRate`). A param is a mode, or for a vector an object of the modes of its components (`x`, `y`, `z`, an unset one left out). A curve mode stores no curve, its curve is the one of its name; a curve mode whose curve was deleted is not saved (the param goes back to its default).
 - Old files are converted once by a migration tool in `hide/tools`, run over a whole project: it rewrites every old-format file, updates the files that override or point at what it changes, only touches the nodes it changes, and is idempotent. Loading an old-format file still works as a fallback: the same migration code upgrades it in memory, alone (no fixes in other files), with a warning recommending the tool.
 - Every FX file carries a format `version` at its root (no version = 0, the old format); everything inside the file, including its Reference overrides, follows it. Upgrade steps are keyed by version. A project is always migrated as a whole.
 
@@ -74,7 +74,7 @@ Rule: runtime-equivalent whenever possible, while simplifying.
 | curve blend / time remap by a parameter / loop | kept on the curve |
 | time remap by another curve, remapped blend or reference, blend of curves that are not plain | migration error |
 | lifetime + lifetime random | Spawn, Range |
-| start speed curves (FX time) | animation curves on its Spawn fields, baked |
+| start speed curves (emitter time) | animation curves on its Spawn fields, baked |
 | scale / orbit speed over time | Emitter settings, Constant or animation curve |
 | emitter param `k·c` | animation curve, `k` baked |
 | object transform curves | animation curves overriding the transform, exact affine bakes of the old ones (rotation curves in turns become degrees): the base rotation folded into the euler angles (from another euler triple of the same rotation, then stored on the object), the animated scale moved before the base rotation (components permuted); a rotation the euler curves cannot follow gets a parent object with the original name, which takes the animation as it is, the object keeping its base transform as `<name>_base`, which the look at and constraint targets now name; a scale the base rotation shears, and such a rotation on an object that cannot get a parent (a look at with a lock axis, a billboard, an emitter, a swarm, the direct children of a shader target, swarm or GPU emitter, an object that would become a leaf of a local animation), are sampled to what the old runtime showed (`setTransform`: the shear dropped, the quaternion normalized, the previous rotation kept while a scale is 0), with a migration warning |

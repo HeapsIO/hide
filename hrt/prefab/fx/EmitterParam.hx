@@ -176,12 +176,11 @@ class EmitterParam {
 
 /** The values `makeValues` gives an emitter object, never modified: out of the editor, the clones of an emitter share the ones of their source **/
 class EmitterValues {
-	public var def : hrt.prefab.fx.Emitter.ParticleDef;
+	public var particle : Array<Value> = [];
 	public var properties : Array<Value> = [];
 	public var spawn : Array<Array<SpawnValue>> = [];
 	public var randomSlots : Int = 0;
-	public function new( def ) {
-		this.def = def;
+	public function new() {
 	}
 }
 
