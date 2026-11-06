@@ -324,17 +324,16 @@ class ParticleInstance {
 		var speedAccumulation = this.speedAccumulation.toVector();
 
 		if( life == 0 ) {
-			// START LOCAL SPEED
+			// local speed
 			evaluator.getSpawnVec(idx, emitter.startSpeed, emitter.curTime, v);
 			v.transform3x3(emitOrientation);
 			add(speedAccumulation, v);
-			// START WORLD SPEED
+			// world speed
 			evaluator.getSpawnVec(idx, emitter.startWorldSpeed, emitter.curTime, v);
 			v.transform3x3(emitter.invTransform);
 			add(speedAccumulation, v);
 		}
 
-		// ACCELERATION
 		if(emitter.partAcceleration != VZero) {
 			evaluator.getFastVec(idx, emitter.partAcceleration, t, v);
 			v.scale3(dt);
@@ -342,7 +341,6 @@ class ParticleInstance {
 			add(speedAccumulation, v);
 		}
 
-		// WORLD ACCELERATION
 		if(emitter.partWorldAcceleration != VZero) {
 			evaluator.getFastVec(idx, emitter.partWorldAcceleration, t, v);
 			v.scale3(dt);
@@ -355,22 +353,18 @@ class ParticleInstance {
 		speed.y += speedAccumulation.y;
 		speed.z += speedAccumulation.z;
 
-		// SPEED
 		if(emitter.partSpeed != VZero) {
 			evaluator.getFastVec(idx, emitter.partSpeed, t, v);
 			v.transform3x3(emitOrientation);
 			add(speed, v);
 		}
 
-		// DAMPEN
 		if (emitter.partDampen != VZero) {
 			var dampen = evaluator.getFast(idx, emitter.partDampen, t);
 			var scale = Math.exp(dampen* -dt);
 			speedAccumulation.scale(scale);
 		}
 
-
-		// WORLD SPEED
 		if(emitter.partWorldSpeed != VZero) {
 			evaluator.getFastVec(idx, emitter.partWorldSpeed, t, v);
 			if(emitter.simulationSpace == Local)
@@ -378,7 +372,6 @@ class ParticleInstance {
 			add(speed, v);
 		}
 
-		// MAX VELOCITY
 		if (emitter.partMaxSpeed != VZero) {
 			var maxVel = evaluator.getFast(idx, emitter.partMaxSpeed, t);
 			var curVelSq = speed.lengthSq();
@@ -394,7 +387,6 @@ class ParticleInstance {
 			speed.z *= emitter.worldScale.z;
 		}
 
-		// STRETCH VELOCITY
 		if (emitter.partStretchVelocity != VZero) {
 			var s = evaluator.getFast(idx, emitter.partStretchVelocity, t);
 			var absPos = this.absPos;
@@ -442,7 +434,6 @@ class ParticleInstance {
 			speed.z += delta.z;
 		}
 
-		// COLLISION
 		if(emitter.useCollision) {
 			var plane = emitter.collisionPlane;
 			var dist = plane.distance(getPosition());
@@ -514,8 +505,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var particles : PartArray;
 	public var particlesCount : Int;
 	public var listHead : ParticleInstance;
-	// the particles added at the head of the list since the last depth sort
-	var newInstances = 0;
+	var newInstances = 0;  // particles added at the head of the list since the last depth sort
+	
 	public var batch : h3d.scene.MeshBatch;
 	public var customAnims : Array<BaseFX.CustomAnimation>;
 
