@@ -78,6 +78,77 @@ class EmitterHelper {
 		m._41 = a * c - b * s; m._42 = a * s + b * c;
 	}
 
+	// Optim: up to 4x faster than a full sort when < 5% of the particles are new each frame
+	public static inline function depthSort<T:{prev:T, next:T}>( head : T, k : Int, budget : Int, cmp : T -> T -> Int ) : T {
+		var rest = head;
+		for( i in 0...k ) {
+			if( rest == null ) break;
+			rest = rest.next;
+		}
+		var fresh : T = null;
+		if( rest != head ) {
+			fresh = head;
+			if( rest != null ) {
+				rest.prev.next = null;
+				rest.prev = null;
+			}
+			fresh = haxe.ds.ListSort.sort(fresh, cmp);
+		}
+		return merge(fresh, insertionSort(rest, budget, cmp), cmp);
+	}
+
+	static inline function insertionSort<T:{prev:T, next:T}>( head : T, budget : Int, cmp : T -> T -> Int ) : T {
+		var cur = head == null ? null : head.next;
+		while( cur != null ) {
+			var next = cur.next;
+			var p = cur.prev;
+			if( cmp(p, cur) > 0 ) {
+				p.next = next;
+				if( next != null )
+					next.prev = p;
+				while( p.prev != null && cmp(p.prev, cur) > 0 && --budget >= 0 )
+					p = p.prev;
+				cur.prev = p.prev;
+				cur.next = p;
+				if( p.prev != null )
+					p.prev.next = cur;
+				else
+					head = cur;
+				p.prev = cur;
+				if( budget < 0 ) {
+					head = haxe.ds.ListSort.sort(head, cmp);
+					break;
+				}
+			}
+			cur = next;
+		}
+		// `ListSort.sort` sets the `prev` of the head to the tail
+		if( head != null )
+			head.prev = null;
+		return head;
+	}
+
+	static inline function merge<T:{prev:T, next:T}>( a : T, b : T, cmp : T -> T -> Int ) : T {
+		var head : T = null, tail : T = null;
+		while( a != null || b != null ) {
+			var e;
+			if( b == null || (a != null && cmp(a, b) <= 0) ) {
+				e = a;
+				a = a.next;
+			} else {
+				e = b;
+				b = b.next;
+			}
+			if( tail == null )
+				head = e;
+			else
+				tail.next = e;
+			e.prev = tail;
+			tail = e;
+		}
+		return head;
+	}
+
 	#if editor
 	public static function generateEdit(params : Array<ParamDef>, instanceParams : Array<ParamDef>, props : Dynamic, properties : hide.comp.PropsEditor, onChange : (?pname : String) -> Void, refresh : Void -> Void, typed = false) {
 		inline function isSet(name: String) return typed ? Reflect.getProperty(props, name) != null : Reflect.hasField(props, name);
