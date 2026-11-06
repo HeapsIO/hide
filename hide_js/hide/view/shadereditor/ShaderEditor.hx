@@ -1485,7 +1485,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	function updateParam(id : Int) : Bool {
 		// node previews read the parameters values each frame
-		if (meshPreviewScene == null)
+		if (meshPreviewScene == null || compiledShader == null)
 			return true;
 		meshPreviewScene.setCurrent(); // needed for texture changes
 
