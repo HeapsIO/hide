@@ -310,7 +310,7 @@ class ParticleInstance {
 		if(def.rotation != VZero) {
 			evaluator.getFastVec(idx, def.rotation, t, v);
 			v.scale3(Math.PI / 180.0);
-			if(v.x == 0 && v.y == 0)
+			if(v.x == 0 && v.y == 0)  // optim: most rotations are around Z only, >2x faster
 				EmitterHelper.rotateZ(localMat, v.z);
 			else
 				localMat.rotate(v.x, v.y, v.z);

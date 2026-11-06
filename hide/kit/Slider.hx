@@ -224,7 +224,7 @@ class Slider<T:Float> extends Widget<T> {
 		});
 
 		slider.addEventListener("blur", (e: js.html.FocusEvent) -> {
-			// the value shown rounded to `decimals`, not edited: keep the exact one
+			// only trigger a change if the value was edited
 			if (slider.value == displayValue())
 				return;
 			var newValue = Std.parseFloat(slider.value);
@@ -368,7 +368,7 @@ class Slider<T:Float> extends Widget<T> {
 
 	#if js
 	function displayValue() : String {
-		return int ? Std.string(value) : hrt.tools.MathUtils.formatDecimals(value, decimals);
+		return Std.string(int ? value : hxd.Math.fmt(value));
 	}
 	#end
 
