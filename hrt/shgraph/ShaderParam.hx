@@ -15,6 +15,8 @@ class ShaderParam extends ShaderNode {
 	}
 
 	override function getOutputs() : Array<ShaderNode.OutputInfo> {
+		if (graph.parent.getParameter(parameterId) == null)
+			return [{name: "error", type: SgBool}];
 		var variable = getVariable();
 		var t = isGeneric() ? SgGeneric(0, ShaderGraph.ConstraintFloat) : ShaderGraph.typeToSgType(variable.type);
 		return [{name: variable.name, type: t}];
@@ -40,11 +42,40 @@ class ShaderParam extends ShaderNode {
 	}
 
 	function getVariable() : TVar {
-		return graph.parent.getParameter(parameterId).variable;
+		var p = graph.parent.getParameter(parameterId);
+		if (p == null)
+			throw 'Missing parameter $parameterId';
+		return p.variable;
 	}
 
 	function isGeneric() : Bool {
-		return graph.parent.getParameter(parameterId).generic ?? false;
+		return graph.parent.getParameter(parameterId)?.generic ?? false;
+	}
+
+	static function getTypeName(p: ShaderGraph.Parameter) : String {
+		return p.generic == true ? "generic" : Std.string(p.type);
+	}
+
+	override public function serializeToDynamic(forClipboard: Bool = false) : Dynamic {
+		var data = super.serializeToDynamic(forClipboard);
+		var p = graph.parent.getParameter(parameterId);
+		if (forClipboard && p != null) {
+			data.parameterName = p.name;
+			data.parameterType = getTypeName(p);
+		}
+		return data;
+	}
+
+	override public function unserializeFromDynamic(data: Dynamic, forClipboard: Bool = false) : Void {
+		super.unserializeFromDynamic(data, forClipboard);
+		if (forClipboard) {
+			var p = Lambda.find(graph.parent.parametersAvailable, (p) -> p.name == data.parameterName);
+			if (p == null)
+				throw 'Missing parameter "${data.parameterName}"';
+			if (getTypeName(p) != data.parameterType)
+				throw 'Parameter "${p.name}" has a different type';
+			parameterId = p.id;
+		}
 	}
 
 	override public function loadProperties(props : Dynamic) {

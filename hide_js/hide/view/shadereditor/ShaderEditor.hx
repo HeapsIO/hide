@@ -2220,11 +2220,11 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	public function serializeNode(node: IGraphNode) : Dynamic {
-		return (cast node:ShaderNode).serializeToDynamic();
+		return (cast node:ShaderNode).serializeToDynamic(true);
 	}
 
 	public function unserializeNode(data : Dynamic, newId : Bool) : IGraphNode {
-		var node = ShaderNode.createFromDynamic(data, currentGraph);
+		var node = ShaderNode.createFromDynamic(data, currentGraph, newId);
 		if (newId) {
 			if (subGraph != null && Std.isOfType(node, hrt.shgraph.ShaderOutput))
 				throw "Shader outputs can't be used in a subgraph";

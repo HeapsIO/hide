@@ -326,7 +326,7 @@ class ShaderGraphGenContext {
 			if (asShaderVar != null) {
 				var variable = graph.parent.variables[asShaderVar.varId];
 
-				if (variable.isGlobal) {
+				if (variable?.isGlobal == true) {
 					// Global Write depend on their Read counterpart (because the write must happen after all the reads)
 					var write = Std.downcast(asShaderVar, hrt.shgraph.nodes.VarWrite);
 					if (write != null) {
@@ -1001,7 +1001,7 @@ class Graph {
 			if (asShaderVar != null) {
 				var variable = parent.variables[asShaderVar.varId];
 
-				if (variable.isGlobal) {
+				if (variable?.isGlobal == true) {
 					// Global Write depend on their Read counterpart (because the write must happen after all the reads)
 					var write = Std.downcast(asShaderVar, hrt.shgraph.nodes.VarWrite);
 					if (write != null) {

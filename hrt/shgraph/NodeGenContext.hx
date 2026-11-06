@@ -136,6 +136,8 @@ class NodeGenContext {
 
 	public function getShaderVariable(id: Int, init: TExpr = null) : TVar {
 		var graphVar = graph.parent.variables[id];
+		if (graphVar == null)
+			throw 'Missing variable $id';
 		var type = ShaderGraph.sgTypeToType(graphVar.type);
 		var variable = MapUtils.getOrPut(shaderVariables, id, {
 			var varId = hxsl.Ast.Tools.allocVarId();
