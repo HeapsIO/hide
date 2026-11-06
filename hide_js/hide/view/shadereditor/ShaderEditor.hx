@@ -1193,31 +1193,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			default:
 		}
 
-		var internal =new Element('<div><input type="checkbox" name="internal" id="internal"></input><label for="internal">Internal</label><div>').appendTo(content).find("#internal");
-		internal.prop("checked", parameter.internal ?? false);
-
-		internal.on('change', function(e) {
-			//beforeChange();
-			parameter.internal = internal.prop("checked");
-			//afterChange();
-		});
-
-		var perInstanceCb = new Element('<div><input type="checkbox" name="perinstance"/><label for="perinstance">Per instance</label><div>');
-		var shaderParams : Array<ShaderParam> = [];
-
-		var checkbox = perInstanceCb.find("input");
-		if (shaderParams.length > 0)
-			checkbox.prop("checked", shaderParams[0].perInstance);
-		checkbox.on("change", function() {
-			//beforeChange();
-			var checked : Bool = checkbox.prop("checked");
-			for (shaderParam in shaderParams)
-				shaderParam.perInstance = checked;
-			//afterChange();
-			requestRecompile();
-		});
-		perInstanceCb.appendTo(content);
-
 		return content;
 
 	}

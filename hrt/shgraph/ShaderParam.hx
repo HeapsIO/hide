@@ -8,7 +8,6 @@ import hrt.shgraph.ShaderGraph.SgType;
 @color("#d6d6d6")
 class ShaderParam extends ShaderNode {
 	@prop() public var parameterId : Int;
-	@prop() public var perInstance : Bool;
 
 	public function new() {
 
@@ -80,13 +79,11 @@ class ShaderParam extends ShaderNode {
 
 	override public function loadProperties(props : Dynamic) {
 		parameterId = Reflect.field(props, "parameterId");
-		perInstance = Reflect.field(props, "perInstance");
 	}
 
 	override public function saveProperties() : Dynamic {
 		var parameters = {
-			parameterId: parameterId,
-			perInstance: perInstance
+			parameterId: parameterId
 		};
 
 		return parameters;

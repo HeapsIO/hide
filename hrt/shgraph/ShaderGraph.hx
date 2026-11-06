@@ -192,7 +192,6 @@ typedef Parameter = {
 	defaultValue : Dynamic,
 	?id : Int,
 	?variable : TVar,
-	?internal: Bool,
 	?min : Float,
 	?max : Float,
 	// Subgraph parameter typed by the input of the SubGraph node (SgGeneric). `type` is its type when not included
@@ -486,7 +485,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		var json = super.save();
 
 		json.parameters = [
-			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal, min : p.min, max : p.max, generic : p.generic }
+			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, min : p.min, max : p.max, generic : p.generic }
 		];
 
 		// Fix parameters index that sometimes get f-ed up for an unknown reason
