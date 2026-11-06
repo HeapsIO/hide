@@ -1174,7 +1174,8 @@ class Ide extends hide.tools.IdeData {
 														}
 
 														var sub = sheet.getSub(c);
-														var subObjs: Array<Dynamic> = c.type.match(cdb.Data.ColumnType.TProperties | cdb.Data.ColumnType.TPolymorph) ? [Reflect.field(obj, c.name)] : Reflect.field(obj, c.name);
+														var v : Dynamic = Reflect.field(obj, c.name);
+														var subObjs: Array<Dynamic> = v == null ? null : c.type.match(cdb.Data.ColumnType.TProperties | cdb.Data.ColumnType.TPolymorph) ? [v] : v;
 														if (sub != null && subObjs != null) {
 															var newPath = new hrt.tools.CdbUtils.Path();
 															for (p in path)
@@ -1191,7 +1192,8 @@ class Ide extends hide.tools.IdeData {
 										}
 
 
-										hide.comp.cdb.Editor.openReference2(hits[idx].sheet, hits[idx].path);
+										if (hits[idx] != null)
+											hide.comp.cdb.Editor.openReference2(hits[idx].sheet, hits[idx].path);
 
 									default:
 										hide.tools.IdeData.showFileInExplorer(absPath + "/" + f);
