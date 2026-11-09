@@ -726,8 +726,9 @@ class Element {
 				new hide.kit.Texture(this, def.name);
 			case PColor:
 				var color = new hide.kit.Color(this, def.name);
-				color.arr = true;
-				defValue = [0,0,0,1];
+				color.arr = !Std.isOfType(Reflect.field(props, def.name), Int);
+				if (color.arr)
+					defValue = [0,0,0,1];
 				color;
 			case PGradient:
 				new hide.kit.Gradient(this, def.name);

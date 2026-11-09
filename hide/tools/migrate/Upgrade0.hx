@@ -1672,6 +1672,15 @@ class Upgrade0 {
 		}
 		for( f in ["enableSort", "useRandomColor", "useRandomGradient"] )
 			Reflect.deleteField(props, f);
+		// the colors are RGB ints, their alpha was never read
+		for( f in (is2D ? ["color", "randomColor1", "randomColor2"] : ["randomColor1", "randomColor2"]) ) {
+			var c : Dynamic = Reflect.field(props, f);
+			if( Std.isOfType(c, Array) ) {
+				var v = new h3d.Vector(num(c[0], 0), num(c[1], 0), num(c[2], 0));
+				Reflect.setField(props, f, v.toColor() & 0xFFFFFF);
+				change(e, "color as an int");
+			}
+		}
 
 		// the properties and the params with modes are fields of the emitter
 		var old = new Map();

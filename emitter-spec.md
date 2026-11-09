@@ -60,7 +60,7 @@ Rejected when the values are built (an error), and not offered by the curve insp
 ## Runtime
 
 - The emitter object reads its settings from its prefab (`prefab`, the clone made for this instance), when it uses them. It holds only the values built from the params and the animated properties (`emitRate`, `lifeTime`, `partScale`...) and its state (`emitScale`, `enable`, the particles).
-- Game code overrides a built value on the object (`e.emitRate = VConst(10)`, which replaces its curve too), and changes a setting on the prefab (`e.prefab.randomColor1 = [r, g, b, 1]`). A setting read at init (max count, sprite sheet, particle template) has no effect when changed after the make. A new `updateInstance` rebuilds the values, dropping their overrides.
+- Game code overrides a built value on the object (`e.emitRate = VConst(10)`, which replaces its curve too), and changes a setting on the prefab (`e.prefab.randomColor1 = 0xFF8000`). A setting read at init (max count, sprite sheet, particle template) has no effect when changed after the make. A new `updateInstance` rebuilds the values, dropping their overrides.
 
 ## Upgrade
 

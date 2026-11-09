@@ -1014,8 +1014,9 @@ class EmitterObject extends h3d.scene.Object {
 					case Gradient:
 						part.colorMult = Gradient.evalData(prefab.randomGradient, random.rand()).toColor();
 					case Colors:
-						var c1 = prefab.randomColor1, c2 = prefab.randomColor2, k = random.rand();
-						part.colorMult = new h3d.Vector(hxd.Math.lerp(c1[0], c2[0], k), hxd.Math.lerp(c1[1], c2[1], k), hxd.Math.lerp(c1[2], c2[2], k)).toColor();
+						var c = h3d.Vector.fromColor(prefab.randomColor1);
+						c.lerp(c, h3d.Vector.fromColor(prefab.randomColor2), random.rand());
+						part.colorMult = c.toColor();
 				}
 
 				tmpQuat.identity();
@@ -1807,10 +1808,10 @@ class Emitter extends Object3D {
 	@:group("Color")
 	@:s @:disp("Random Color", "Multiplies the color of each particle by a random color, taken between two colors or in a gradient")
 	public var randomColorMode : RandomColorMode = RandomColorMode.None;
-	@:s @:disp("Color 1", "First bound of the random color")
-	public var randomColor1 : Array<Float> = [0., 0., 0., 1.];
-	@:s @:disp("Color 2", "Second bound of the random color")
-	public var randomColor2 : Array<Float> = [1., 1., 1., 1.];
+	@:s @:t(PColor) @:disp("Color 1", "First bound of the random color")
+	public var randomColor1 : Int = 0x000000;
+	@:s @:t(PColor) @:disp("Color 2", "Second bound of the random color")
+	public var randomColor2 : Int = 0xFFFFFF;
 	@:s @:disp("Gradient", "Gradient in which the random color is taken")
 	public var randomGradient : GradientData;
 
