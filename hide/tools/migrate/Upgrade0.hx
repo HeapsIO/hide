@@ -2144,22 +2144,28 @@ class Upgrade0 {
 		}
 		if( !out.iterator().hasNext() )
 			return;
-		// the curves read over the particle life, named after their param and component (`EmitterParam.curveName`)
-		var keys = [], renames = [];
-		for( name => v in out )
-			for( i => m in v )
+		// the modes of the params by name, their curves read over the particle life named after their param and component (`EmitterParam.curveName`)
+		var names = [for( name in out.keys() ) name];
+		names.sort(Reflect.compare);
+		var params : Dynamic = {}, renames = [];
+		for( name in names ) {
+			var v = out.get(name);
+			var modes = [for( i => m in v )
 				switch( bakeModeCurves(s, m) ) {
-				case MCurve(path, _):
+				case m = MCurve(path, _):
 					var key = v.length == 1 ? name : name + ":" + COMPONENTS[i];
-					keys.push(key);
 					var n = locate(path, s);
 					if( n != null && n.name != key )
 						renames.push({ node: n, name: key });
-				case null, _:
-				}
+					m;
+				case null, _: null;
+				}];
+			var saved = saveValue(modes);
+			if( saved != null )
+				Reflect.setField(params, name, saved);
+		}
 		renameCurves(renames);
-		keys.sort(Reflect.compare);
-		RawNode.setField(s.data, "particleParams", keys);
+		RawNode.setField(s.data, "particleParams", params);
 		change(s, "particle shader params with modes");
 	}
 

@@ -147,6 +147,50 @@ class EmitterParam {
 		}
 	}
 
+	static function isSavedMode( v : Dynamic ) {
+		return Std.isOfType(v, Float) || Std.isOfType(v, Int) || Reflect.hasField(v, "mode");
+	}
+
+	public static function loadShaderModes( v : Dynamic ) : Map<String, ParamMode> {
+		if( v == null )
+			return null;
+		var out = new Map();
+		for( name in Reflect.fields(v) ) {
+			var p : Dynamic = Reflect.field(v, name);
+			if( isSavedMode(p) ) {
+				var m = parseMode(p);
+				if( m != null ) out.set(name, m);
+			} else
+				for( c in COMPONENTS ) {
+					var m = parseMode(Reflect.field(p, c));
+					if( m != null ) out.set(name + ":" + c, m);
+				}
+		}
+		return out;
+	}
+
+	public static function saveShaderModes( modes : Map<String, ParamMode> ) : Dynamic {
+		if( modes == null )
+			return null;
+		var keys = [for( k in modes.keys() ) k];
+		if( keys.length == 0 )
+			return null;
+		keys.sort(Reflect.compare);
+		var out : Dynamic = {};
+		for( k in keys ) {
+			var parts = k.split(":");
+			if( parts.length == 1 ) {
+				Reflect.setField(out, k, saveMode(modes.get(k)));
+				continue;
+			}
+			var v : Dynamic = Reflect.field(out, parts[0]);
+			if( v == null )
+				Reflect.setField(out, parts[0], v = {});
+			Reflect.setField(v, parts[1], saveMode(modes.get(k)));
+		}
+		return out;
+	}
+
 	// spread + slope * v: spreadMin at the lowest value of the curve, spreadMax at the highest
 	public static function spreadLine( range : { min : Float, max : Float }, spreadMin : Float, spreadMax : Float ) : { spread : Float, slope : Float } {
 		var d = range.max - range.min;

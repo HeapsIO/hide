@@ -281,13 +281,16 @@ class BaseFXTools {
 	}
 
 	public static function makeParticleShaderValue(shader: hrt.prefab.Shader, name: String, size: Int) : Value {
+		if(shader.particleParams == null)
+			return null;
 		var keys = [for(i in 0...size) EmitterParam.curveName(name, size, i)];
-		if(!Lambda.exists(keys, k -> shader.particleParams.contains(k)))
+		inline function isCurve(i: Int) return switch(shader.particleParams.get(keys[i])) { case Curve: true; default: false; };
+		if(![for(i in 0...size) isCurve(i)].contains(true))
 			return null;
 		var prop : Dynamic = Reflect.field(shader.props, name);
 		function comp(i: Int) {
 			var base = EmitterParam.baseComponent(prop, size, i);
-			return shader.particleParams.contains(keys[i]) ? EmitterParam.ParamBuilder.curve(shader, keys[i], base) : Evaluator.vVal(base);
+			return isCurve(i) ? EmitterParam.ParamBuilder.curve(shader, keys[i], base) : Evaluator.vVal(base);
 		}
 		// 4 components: a color
 		return size == 1 ? comp(0) : size > 3 ? VColor(comp(0), comp(1), comp(2), comp(3)) : VVector(comp(0), comp(1), size > 2 ? comp(2) : VZero);

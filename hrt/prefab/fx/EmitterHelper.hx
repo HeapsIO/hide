@@ -44,10 +44,8 @@ class EmitterHelper {
 		var e2 = Std.downcast(p, Emitter2D);
 		if( e2 != null ) return e2.getMode(name, comp);
 		var shader = Std.downcast(p, hrt.prefab.Shader);
-		if( shader != null ) {
-			var pp = shader.particleParams;
-			return pp.contains(name + ":" + EmitterParam.COMPONENTS[comp]) || (comp == 0 && pp.contains(name)) ? Curve : null;
-		}
+		if( shader != null && shader.particleParams != null )
+			return shader.particleParams.get(name + ":" + EmitterParam.COMPONENTS[comp]) ?? (comp == 0 ? shader.particleParams.get(name) : null);
 		return null;
 	}
 
@@ -67,11 +65,8 @@ class EmitterHelper {
 			throw "Not an emitter or a shader: " + p.getAbsPath(true);
 		var size = EmitterParam.getParamSize(Lambda.find(shader.getShaderDefinition().data.vars, v -> v.name == name));
 		var key = EmitterParam.curveName(name, size, comp);
-		shader.particleParams.remove(key);
+		shader.particleParams?.remove(key);
 		switch( m ) {
-			case Curve:
-				shader.particleParams.push(key);
-				shader.particleParams.sort(Reflect.compare);
 			case Constant(k):
 				if( size == 1 )
 					Reflect.setField(shader.props, name, k);
@@ -83,8 +78,14 @@ class EmitterHelper {
 					}
 					prop[comp] = k;
 				}
-			case null, _:
+			case null:
+			default:
+				if( shader.particleParams == null )
+					shader.particleParams = [];
+				shader.particleParams.set(key, m);
 		}
+		if( shader.particleParams != null && !shader.particleParams.iterator().hasNext() )
+			shader.particleParams = null;
 	}
 
 	public static inline function rotateZ( m : h3d.Matrix, angle : Float ) {
@@ -506,8 +507,10 @@ class EmitterHelper {
 	static function getModeCurves(owner: Prefab) : Array<Curve> {
 		var names = [];
 		var shader = Std.downcast(owner, hrt.prefab.Shader);
-		if (shader != null)
-			names = shader.particleParams.copy();
+		if (shader != null) {
+			if (shader.particleParams != null)
+				names = [for (k => m in shader.particleParams) if (EmitterParam.isCurveMode(m)) k];
+		}
 		else
 			for (p in getParams(owner))
 				for (i in 0...p.def.length)

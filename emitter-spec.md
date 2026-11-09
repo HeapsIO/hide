@@ -18,7 +18,7 @@ Scope: `Emitter` and `Emitter2D`. Editing through the new inspector only (edit2 
 
 Vector params have one mode per component. Rotations are in degrees, rotation speeds (orbit speed) in degrees per second.
 Particle shaders get their per-particle randomness on the GPU, from the emitter's `particleRandom`.
-A shader under an emitter lists its components read over the particle life in `particleParams`, by the name of their curve (`alpha`, `UVOffset:y`), a curve of the shader that gives the value; a component without curve keeps the prop.
+A shader under an emitter saves the modes of its params read over the particle life in `particleParams`, by param name, as the params of an emitter (`{ alpha: { mode: "Curve" }, UVOffset: { y: { mode: "Curve" } } }`); their curve is the one of the shader named after the param component (`alpha`, `UVOffset:y`); a component without mode keeps the prop.
 
 ## Modes
 

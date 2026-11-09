@@ -2,6 +2,7 @@ package hrt.prefab;
 
 import hrt.impl.Gradient;
 import hrt.impl.TextureType;
+import hrt.prefab.fx.EmitterParam;
 
 #if editor
 import hide.prefab.HideProps;
@@ -19,12 +20,30 @@ class Shader extends Prefab {
 
 	public var shader : hxsl.Shader;
 
-	/** The curves of its params read over the life of the particles, under an emitter (`EmitterParam.curveName`) **/
-	@:s public var particleParams : Array<String> = [];
+	// When under an emitter, shader params can use modes
+	public var particleParams : Map<String, ParamMode>;
 
 	function new(parent, sh: ContextShared) {
 		super(parent, sh);
 		props = {};
+	}
+
+	override function load(data: Dynamic) {
+		super.load(data);
+		particleParams = EmitterParam.loadShaderModes(data.particleParams);
+	}
+
+	override function save() : Dynamic {
+		var data = super.save();
+		var pp = EmitterParam.saveShaderModes(particleParams);
+		if (pp != null)
+			data.particleParams = pp;
+		return data;
+	}
+
+	override function copy(data: Prefab) {
+		super.copy(data);
+		particleParams = (cast data : Shader).particleParams?.copy();
 	}
 
 	public function makeShader() : hxsl.Shader {
