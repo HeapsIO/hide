@@ -15,6 +15,20 @@
             "env": {"ELECTRON_RUN_AS_NODE": null},
             "outputCapture": "std",
             "sourceMaps": true,
+            "preLaunchTask": "Build hide",
+            "presentation": { "hidden": true }
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "HIDE_jsdx main process",
+            "cwd": "${workspaceFolder}/bin",
+            "runtimeExecutable": "${workspaceFolder}/bin/electron/electron.exe",
+            "args": [".", "--remote-debugging-port=9222"],
+            "env": {"ELECTRON_RUN_AS_NODE": null},
+            "outputCapture": "std",
+            "sourceMaps": true,
+            "preLaunchTask": "Build hide_jsdx",
             "presentation": { "hidden": true }
         },
         {
@@ -27,6 +41,7 @@
             "env": {"ELECTRON_RUN_AS_NODE": null},
             "outputCapture": "std",
             "sourceMaps": true,
+            "preLaunchTask": "Build hide",
             "presentation": { "hidden": true }
         },
         // Editor (hide.js), waits for the window started by the main process
@@ -75,26 +90,24 @@
             "presentation": { "group": "2_hl", "order": 2 }
         }
     ],
-    // build first, then start Electron and debug both the main process and the editor
+    // start Electron and debug both the main process and the editor
+    // the build task is on the main process configuration, so that a restart rebuilds too
     "compounds": [
         {
             "name": "Launch HIDE",
             "configurations": ["HIDE main process", "HIDE editor"],
-            "preLaunchTask": "Build hide",
             "stopAll": true,
             "presentation": { "group": "1_hide", "order": 1 }
         },
         {
             "name": "Launch HIDE_jsdx",
-            "configurations": ["HIDE main process", "HIDE editor"],
-            "preLaunchTask": "Build hide_jsdx",
+            "configurations": ["HIDE_jsdx main process", "HIDE editor"],
             "stopAll": true,
             "presentation": { "group": "1_hide", "order": 1 }
         },
         {
             "name": "Launch CDB",
             "configurations": ["CDB main process", "HIDE editor"],
-            "preLaunchTask": "Build hide",
             "stopAll": true,
             "presentation": { "group": "1_hide", "order": 2 }
         }
