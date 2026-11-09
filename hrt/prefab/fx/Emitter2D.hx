@@ -258,13 +258,16 @@ class Emitter2DObject extends h2d.Object {
 
 	public var prefab : Emitter2D;
 
+	// Game overrides
+	public var emitScale : Float = 1.0;
+	public var lifeTimeScale : Float = 1.0;
+
 	// Emission
 	public var emitRate : Value;
 	public var emitRateMin : Value;
 	public var emitRateMax : Value;
 	public var burstParticleCount : Value;
 	public var lifeTime : SpawnValue;
-	public var emitScale : Float = 1.0; // multiplier of the emission, set by the game
 
 	// Emit Shape
 	public var emitRadius : Value;
@@ -411,7 +414,7 @@ class Emitter2DObject extends h2d.Object {
 		for (_ in 0...count) {
 			var part = new Particle2DInstance(getTile(), this);
 			part.idx = instanceCounter;
-			part.lifeTime = evaluator.getSpawn(part.idx, lifeTime, curTime);
+			part.lifeTime = evaluator.getSpawn(part.idx, lifeTime, curTime) * lifeTimeScale;
 			this.particles.push(part);
 			instanceCounter = (instanceCounter + 1) % prefab.maxCount;
 		}

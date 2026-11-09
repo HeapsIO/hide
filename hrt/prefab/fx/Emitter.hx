@@ -491,13 +491,16 @@ class EmitterObject extends h3d.scene.Object {
 
 	public var prefab : Emitter;
 
+	// Game overrides
+	public var emitScale : Float = 1.0;
+	public var lifeTimeScale : Float = 1.0;
+
 	// Emission
 	public var emitRate : Value;
 	public var emitRateMin : Value;
 	public var emitRateMax : Value;
 	public var burstParticleCount : Value;
 	public var lifeTime : SpawnValue;
-	public var emitScale : Float = 1.0; // multiplier of the emission, set by the game
 	public var emitRateChangeStart : Float = 0.0;
 	public var emitRateCurrent : Float = Math.NaN;
 	public var emitRatePrevious : Float = Math.NaN;
@@ -1008,7 +1011,7 @@ class EmitterObject extends h3d.scene.Object {
 			for( i in 0...count ) {
 				var part = allocInstance();
 				part.startTime = globalTime;
-				part.lifeTime = hxd.Math.max(0.01, evaluator.getSpawn(part.idx, lifeTime, curTime));
+				part.lifeTime = hxd.Math.max(0.01, evaluator.getSpawn(part.idx, lifeTime, curTime) * lifeTimeScale);
 
 				switch(prefab.randomColorMode) {
 					case None:
