@@ -560,6 +560,129 @@ class Gym extends hide.ui.View<{}> {
 				searchFiles();
 			});
 		}
+
+		virtualListSection();
+	}
+
+	function virtualListSection() {
+		var doc = js.Browser.document;
+		var root = section(element, "Virtual List").get(0);
+		hide.html.Html.build(root,
+			<div>
+				<hide-toolbar>
+					<hide-button id="benchButton" label="Benchmark"/>
+				</hide-toolbar>
+				<pre id="benchResults"></pre>
+				<div id="lists" class="virtual-list-gym"></div>
+			</div>
+		);
+
+		var rand = new hxd.Rand(42);
+		var words = "lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua".split(" ");
+		var kinds = ["Mesh", "Texture", "Prefab", "Sound", "Shader"];
+		var data : Array<GymListItem> = [for (i in 0...10000) {
+			id: i,
+			name: 'Item $i',
+			lines: [for (_ in 0...3 + rand.random(3)) [for (_ in 0...3 + rand.random(5)) words[rand.random(words.length)]].join(" ")],
+			kind: kinds[rand.random(kinds.length)],
+		}];
+
+		function makeItem(item : GymListItem) : js.html.Element {
+			var row = doc.createDivElement();
+			row.className = "vl-item";
+			for (text in ['#${item.id}', item.name, null, item.kind]) {
+				var col = doc.createDivElement();
+				if (text != null)
+					col.textContent = text;
+				else for (line in item.lines) {
+					var div = doc.createDivElement();
+					div.textContent = line;
+					col.append(div);
+				}
+				row.append(col);
+			}
+			return row;
+		}
+
+		var list = new hide.comp.VirtualList<GymListItem>(lists);
+		list.generateItem = makeItem;
+		list.setItems(data);
+
+		/**
+			Each frame : schedules a scroll, then measures the main thread time from requestAnimationFrame
+			to the next task (refresh, style, layout, paint) and the interval between frames.
+		**/
+		function bench(random : Bool, onDone : String -> Void) {
+			var win = js.Browser.window;
+			var perf = win.performance;
+			var channel = new js.html.MessageChannel();
+			var rand = new hxd.Rand(7);
+			var frames = random ? 300 : 600;
+			var frame = 0;
+			var frameStart = 0.0;
+			var lastFrame = -1.0;
+			var costs = [], intervals = [], refreshes = [];
+
+			function stats(name : String, values : Array<Float>) {
+				if (values.length == 0)
+					return "";
+				values.sort(Reflect.compare);
+				var sum = 0.0;
+				for (v in values)
+					sum += v;
+				inline function f(v : Float) return StringTools.lpad(js.Syntax.code("{0}.toFixed(2)", v), " ", 7);
+				return '  $name avg ${f(sum / values.length)}  p95 ${f(values[Std.int(values.length * 0.95)])}  max ${f(values[values.length - 1])} ms\n';
+			}
+
+			function step() {
+				win.requestAnimationFrame((t) -> {
+					frameStart = perf.now();
+					if (lastFrame >= 0)
+						intervals.push(t - lastFrame);
+					lastFrame = t;
+					channel.port2.postMessage(null);
+				});
+				if (random)
+					list.scrollToIndex(rand.random(data.length), Start);
+				else
+					list.element.dispatchEvent(new js.html.WheelEvent("wheel", {deltaY: 60, cancelable: true}));
+			}
+
+			channel.port1.onmessage = (_) -> {
+				costs.push(perf.now() - frameStart);
+				refreshes.push(@:privateAccess list.refreshTime);
+
+				frame++;
+				if (frame < frames) {
+					step();
+					return;
+				}
+
+				channel.port1.close();
+				onDone(stats("frame cost  ", costs) + stats("frame period", intervals) + stats("refresh     ", refreshes));
+			};
+
+			list.scrollToIndex(0, Start);
+			win.setTimeout(step, 100);
+		}
+
+		benchButton.onclick = () -> {
+			var tests = [
+				{name: "Normal scroll", random: false},
+				{name: "Random scroll", random: true},
+			];
+			benchResults.textContent = "";
+			function next() {
+				var test = tests.shift();
+				if (test == null)
+					return;
+				bench(test.random, (result) -> {
+					benchResults.textContent += test.name + "\n" + result;
+					next();
+				});
+			}
+			next();
+		}
 	}
 
 	function rethrowTest1() {
@@ -635,3 +758,5 @@ class Gym extends hide.ui.View<{}> {
 
 	static var _ = hide.ui.View.register(Gym);
 }
+
+private typedef GymListItem = {id : Int, name : String, lines : Array<String>, kind : String};

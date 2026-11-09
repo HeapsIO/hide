@@ -6253,6 +6253,74 @@ blend-space-2d-root {
 
 		border-radius: var(--basic-border-radius);
 	}
+
+	.virtual-list-gym {
+		display: flex;
+		gap: 1em;
+
+		.hide-virtual-list {
+			flex: 1;
+			height: 500px;
+		}
+
+		.vl-item {
+			display: flex;
+			border-bottom: 1px solid #444;
+			padding: 4px 0;
+
+			> div {
+				flex: none;
+				padding: 0 4px;
+				overflow: hidden;
+				white-space: nowrap;
+				text-overflow: ellipsis;
+			}
+
+			> :nth-child(1) { width: 60px; color: #888; }
+			> :nth-child(2) { width: 140px; }
+			> :nth-child(3) { width: 260px; }
+			> :nth-child(4) { width: 100px; color: #8ac; }
+
+			&:hover {
+				background-color: #333;
+			}
+		}
+	}
+}
+
+.hide-virtual-list {
+	position: relative;
+	overflow: hidden;
+
+	> .content {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		overflow: hidden;
+	}
+
+	> .content > .row {
+		position: absolute;
+		top: 0;
+		left: 0;
+		box-sizing: border-box;
+	}
+
+	> .scrollbar {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 8px;
+		height: 100%;
+
+		> .cursor {
+			position: absolute;
+			width: 100%;
+			border-radius: 4px;
+			background-color: #666;
+		}
+	}
 }
 
 
