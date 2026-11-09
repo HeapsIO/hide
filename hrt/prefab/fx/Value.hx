@@ -1,12 +1,5 @@
 package hrt.prefab.fx;
 
-/** Parameters that have a one-shot random at time of emission **/
-@:structInit class SpawnValue {
-	public var rid : Int;
-	public var min : Value;  // TODO
-	public var max : Value;
-}
-
 @:structInit class ParamCurve {
 	public var c1 : hrt.impl.Curve;
 	public var c2 : hrt.impl.Curve;

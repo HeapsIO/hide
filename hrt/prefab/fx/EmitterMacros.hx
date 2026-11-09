@@ -13,7 +13,7 @@ import haxe.macro.Expr;
 	  also the field of their value in the emitter object. The Particle ones, read over the particle life, are named `partX`;
 	- `@:group("Name")`: the inspector group of the field and of the next ones.
 	The inspector shows the properties and the params in their declaration order.
-	The random slots are allocated in the order of `makeValues`: particle params, properties, spawn params.
+	The random slots are allocated in the order of `makeValues`: Particle params, then Spawn ones (Emission ones have none).
 **/
 class EmitterMacros {
 
@@ -111,13 +111,12 @@ class EmitterMacros {
 				setCases.push({ values: [macro $v{n}], expr: macro this.$n = hrt.prefab.fx.EmitterParam.withComp(this.$n, comp, m) });
 			}
 			copy.push(macro @:pos(p) this.$n = from.$n);
-			if( kind == "Spawn" ) {
-				var i = spawnValues.length;
-				spawnApply.push(dim == 1 ? macro @:pos(p) obj.$n = v.spawn[$v{i}][0] : macro @:pos(p) obj.$n = v.spawn[$v{i}]);
-				spawnValues.push(macro @:pos(p) v.spawn.push(b.spawn($def)));
-			} else {
+			if( kind == "Particle" ) {
 				particleApply.push(macro @:pos(p) obj.$n = v.particle[$v{particleValues.length}]);
 				particleValues.push(macro @:pos(p) v.particle.push(b.param($def)));
+			} else {
+				spawnApply.push(macro @:pos(p) obj.$n = v.spawn[$v{spawnValues.length}]);
+				spawnValues.push(macro @:pos(p) v.spawn.push(b.param($def)));
 			}
 		}
 

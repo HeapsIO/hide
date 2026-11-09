@@ -62,7 +62,9 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	  hold their values, their bounds baked into them.
 	- Animation curves hold the value they animate: the constants the old FX composed them with are
 	  baked into them (exactly when the old value is linear in the curve), and the ones of the emitter
-	  params are named after what they animate (`startSpeed:x:min`, `scaleMultiplier`), the particle params prefixed with `part` (`partScale`).
+	  are named after what they animate (`scaleMultiplier`). The curves of the Spawn and Emission params
+	  are their Curve and Curve Range modes over the emitter time (`startSpeed:x`, `emitRate`), the
+	  particle params prefixed with `part` (`partScale`).
 	- Orbit speeds go from radians to degrees per second.
 	- Transforms are re-baked exactly, the curves of the rotation and scale affine in the old ones: the
 	  base rotation folded into the euler angles (from another euler triple of the same rotation, which
@@ -1681,6 +1683,7 @@ class Upgrade0 {
 				change(e, "color as an int");
 			}
 		}
+		upgradeEmission(e, props);
 
 		// the properties and the params with modes are fields of the emitter
 		var old = new Map();
@@ -1705,6 +1708,62 @@ class Upgrade0 {
 		if( !is2D )
 			for( s in particleShaders(e) )
 				upgradeParticleShader(s);
+	}
+
+	/**
+		The rate and the particles per burst are Emission params: their curve, baked with their value (`upgradeEmitterAnims`), makes
+		them a Curve. The random rate (`InfinityRandom`, between `emitRateMin` and `emitRateMax`) is a Range of the rate, a Curve Range
+		when a bound has a curve (its two datas the curves of the bounds, a flat one for a bound without). The rates the emit type did
+		not read are dropped, with their curves.
+	**/
+	function upgradeEmission( e : RawNode, props : Dynamic ) {
+		var random = get(props, "emitType") == "InfinityRandom";
+		function curves( name : String ) return [for( c in e.children ) if( c.isCurve && sameName(c.name, name) ) c];
+		function curve( name : String ) return Lambda.find(curves(name), c -> c.enabled());
+		var dataChildren : Array<Dynamic> = get(e.data, "children");
+		function remove( c : RawNode ) {
+			e.children.remove(c);
+			dataChildren.remove(c.data);
+		}
+		for( name in (random ? ["emitRate"] : ["emitRateMin", "emitRateMax"]) ) {
+			Reflect.deleteField(props, name);
+			for( c in curves(name) ) {
+				remove(c);
+				warn(c, 'curve of $name, which its emit type did not read, removed');
+			}
+		}
+		for( name in ["emitRate", "burstParticleCount"] ) {
+			var c = curve(name);
+			if( c != null ) {
+				Reflect.setField(props, name, obj(["mode", "Curve"]));
+				change(c, "emission curve, a Curve");
+			}
+		}
+		if( !random )
+			return;
+		var min = num(get(props, "emitRateMin"), 5), max = num(get(props, "emitRateMax"), 5);
+		var cmin = curve("emitRateMin"), cmax = curve("emitRateMax");
+		for( f in ["emitType", "emitRateMin", "emitRateMax"] )
+			Reflect.deleteField(props, f);
+		if( cmin == null && cmax == null ) {
+			props.emitRate = min == max ? min : obj(["mode", "Range", "min", min, "max", max]);
+			change(e, "random rate, a Range of the rate");
+			return;
+		}
+		function bound( c : RawNode, v : Float ) : Dynamic {
+			if( c == null )
+				return obj(["keys", [obj(["time", 0., "value", v, "mode", 2])]]);
+			if( blendMode(c) != 0 || get(c.data, "remapPath") != null )
+				warn(c, "bound of the random rate on a curve that is not a plain one, its own keys taken");
+			remove(c);
+			return datum(c.data);
+		}
+		var range = newCurve(freeName(e, "emitRate"));
+		Reflect.deleteField(range, "keys");
+		range.datas = [bound(cmin, min), bound(cmax, max)];
+		e.addChild(range);
+		props.emitRate = obj(["mode", "CurveRange"]);
+		change(e, "random rate with curves, a Curve Range of the rate");
 	}
 
 	/**
@@ -1737,7 +1796,7 @@ class Upgrade0 {
 			var r0 = n == null || wf == wt ? null : valueRange(n);
 			var flat = r0 != null && r0.max - r0.min <= 1e-9 * Math.max(1, Math.abs(r0.max));
 			if( n != null && wf != wt && (tm == fm || flat) && blendMode(n) == 0 && !bakedModeCurves.exists(n) ) {
-				splitRange(n, f0, t0, f1, t1);
+				splitRange(n, f0, t0, f1, t1, "random amount following a curve around a constant value, a curve of two datas");
 				bakedModeCurves.set(n, true);
 				return MCurveRange(s, 0, 1, 0, 1);
 			}
@@ -1772,7 +1831,7 @@ class Upgrade0 {
 	}
 
 	/** The plain curve `n` becomes a curve of two datas, its keys remapped from 0..1 to `a0`..`a1` and to `b0`..`b1` (a Curve Range) **/
-	function splitRange( n : RawNode, a0 : Float, a1 : Float, b0 : Float, b1 : Float ) {
+	function splitRange( n : RawNode, a0 : Float, a1 : Float, b0 : Float, b1 : Float, why : String ) {
 		var d = n.data;
 		var keys : Array<Dynamic> = get(d, "keys");
 		if( keys == null || keys.length == 0 ) {
@@ -1798,7 +1857,7 @@ class Upgrade0 {
 		for( f in ["keys", "keyMode", "loop", "previewKeys"] )
 			Reflect.deleteField(d, f);
 		RawNode.setField(d, "datas", datas);
-		change(n, "random amount following a curve around a constant value, a curve of two datas");
+		change(n, why);
 	}
 
 	/**
@@ -2000,7 +2059,7 @@ class Upgrade0 {
 	/**
 		The old animation curves of an emitter: the settings (`settings`, with their value), the spawn
 		params and the over time settings were multiplied by their curve, found by name (the old names). The
-		curves are baked and named after what they animate (`EmitterParam.animKey`). A range
+		curves are baked and named after what they animate (`EmitterParam.curveKey`). A range
 		`(k ± a) * curve` gets one curve per bound (the second one a reference to the first).
 	**/
 	function upgradeEmitterAnims( e : RawNode, settings : Array<{ name : String, value : Float }>, defs : Array<ParamDef>,
@@ -2057,43 +2116,23 @@ class Upgrade0 {
 					change(c, "over time");
 					continue;
 				}
+				// the curve is the one of the param mode, named after it (`bakeModeCurves`)
+				changed = true;
 				if( isBlend(c) ) {
-					// random between the two child curves, the value is not used: a range, its bounds the child curves
-					var sub = c.curveChildren();
-					if( sub.length < 2 ) {
-						warn(c, "random blend without its two child curves");
-						continue;
-					}
-					var min = newCurve(freeName(e, key + ":min"));
-					min.keys = datum(sub[0].data).keys;
-					if( get(sub[0].data, "loop") == true ) min.loop = true;
-					e.addChild(min);
-					flattenBlend(c, sub[1]);
-					out[i] = MRange(0, 0);
-					changed = true;
-					renames.push({ node: c, name: key + ":max" });
-					change(c, "spawn, random blend: a range");
-					continue;
-				}
-				if( bounds == null ) {
-					renames.push({ node: c, name: key });
-					bakeLinear(c, k, 0);
+					// random between the two child curves, the value is not used: a Curve Range, its two datas the child curves
+					out[i] = MCurveRange(c.uniqueName(), 0, 1, 0, 1);
+					change(c, "spawn, random blend: a curve range");
+				} else if( bounds == null ) {
+					out[i] = MCurve(c.uniqueName(), 0, k);
 					change(c, "spawn value");
-					continue;
+				} else {
+					// (k ± a) * c: a RandomCurve, as the particle params; a reference becomes a copy of its curve, for the range of its values
+					var depth = 0;
+					while( blendMode(c) == 3 && depth++ < 16 )
+						dereference(c);
+					out[i] = MRandomCurve(c.uniqueName(), 0, 0, bounds.lo, bounds.hi);
+					change(c, "spawn range, a random curve");
 				}
-				// (k ± a) * c: one curve per bound
-				var lo = bounds.lo, hi = bounds.hi;
-				if( hi != 0 ) {
-					renames.push({ node: c, name: key + ":max" });
-					// a reference to `c`, compensated by the bake of `c`
-					if( lo != 0 )
-						linearCopy(c, e, key + ":min", lo, 0);
-					bakeLinear(c, hi, 0);
-				} else if( lo != 0 ) {
-					renames.push({ node: c, name: key + ":min" });
-					bakeLinear(c, lo, 0);
-				}
-				change(c, "spawn range");
 			}
 			if( changed ) {
 				if( isUnset(out) )

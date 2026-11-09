@@ -40,13 +40,12 @@ class Evaluator {
 		}
 	}
 
-	public function getMean(s: SpawnValue) : Float {
-		return s.rid < 0 ? getFloat(s.min, 0) : (getFloat(s.min, 0) + getFloat(s.max, 0)) * 0.5;
+	public function getAtRandom(val: Value, time: Float, u: Float) : Float {
+		return eval(val, time, _ -> u);
 	}
 
-	public function getSpawn(pidx: Int, s: SpawnValue, time: Float) : Float {
-		var v = getFast(pidx, s.min, time);
-		return s.rid < 0 ? v : hxd.Math.lerp(v, getFast(pidx, s.max, time), getRandom(pidx, s.rid));
+	public inline function getMean(val: Value, time: Float) : Float {
+		return eval(val, time, _ -> 0.5);
 	}
 
 	public inline function getFloat(val: Value, time: Float) : Float {
@@ -55,19 +54,23 @@ class Evaluator {
 
 	// no optional argument, causes boxing on HL
 	public inline function getFast(pidx: Int, val: Value, time: Float) : Float {
+		return eval(val, time, rid -> getRandom(pidx, rid));
+	}
+
+	inline function eval(val: Value, time: Float, rand: Int -> Float) : Float {
 		return switch(val) {
 			case null, VZero: 0.0;
 			case VConst(v): v;
-			case VRandom(rid, min, max): hxd.Math.lerp(min, max, getRandom(pidx, rid));
+			case VRandom(rid, min, max): hxd.Math.lerp(min, max, rand(rid));
 			case VCurve(c): c.getVal(time);
 			case VParamCurve(pc): getParamCurve(pc, time);
 			case VRandomCurve(rid, c, spread, slope):
 				var v = c.getVal(time);
-				v + (spread + slope * v) * (getRandom(pidx, rid) * 2 - 1);
+				v + (spread + slope * v) * (rand(rid) * 2 - 1);
 			case VRandomParamCurve(rid, pc, spread, slope):
 				var v = getParamCurve(pc, time);
-				v + (spread + slope * v) * (getRandom(pidx, rid) * 2 - 1);
-			case VCurveRange(rid, a, b): hxd.Math.lerp(a.getVal(time), b.getVal(time), getRandom(pidx, rid));
+				v + (spread + slope * v) * (rand(rid) * 2 - 1);
+			case VCurveRange(rid, a, b): hxd.Math.lerp(a.getVal(time), b.getVal(time), rand(rid));
 			case VVector(_), VColor(_), VHsl(_): throw "getFloat: vector value";
 		}
 	}
@@ -104,11 +107,6 @@ class Evaluator {
 				var f = getFast(pidx, v, time);
 				vec.set(f, f, f, 1.0);
 		}
-		return vec;
-	}
-
-	public inline function getSpawnVec(pidx: Int, s: Array<SpawnValue>, time: Float, vec: h3d.Vector4) {
-		vec.set(getSpawn(pidx, s[0], time), getSpawn(pidx, s[1], time), getSpawn(pidx, s[2], time), 1.0);
 		return vec;
 	}
 

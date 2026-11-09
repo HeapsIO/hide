@@ -153,12 +153,12 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 			}
 
 			// START LOCAL SPEED
-			tmpVec.set(evaluator.getSpawn(idx, emitter.startSpeed[0], emitter.curTime), evaluator.getSpawn(idx, emitter.startSpeed[1], emitter.curTime));
+			evaluator.getVector2(idx, emitter.startSpeed, emitter.curTime, tmpVec);
 			tmpVec.transform2x2(m);
 			speed += tmpVec;
 
 			// START WORLD SPEED
-			tmpVec.set(evaluator.getSpawn(idx, emitter.startWorldSpeed[0], emitter.curTime), evaluator.getSpawn(idx, emitter.startWorldSpeed[1], emitter.curTime));
+			evaluator.getVector2(idx, emitter.startWorldSpeed, emitter.curTime, tmpVec);
 			tmpVec.transform2x2(emitter.invTransform);
 			speed += tmpVec;
 		}
@@ -264,10 +264,8 @@ class Emitter2DObject extends h2d.Object {
 
 	// Emission
 	public var emitRate : Value;
-	public var emitRateMin : Value;
-	public var emitRateMax : Value;
 	public var burstParticleCount : Value;
-	public var lifeTime : SpawnValue;
+	public var lifeTime : Value;
 
 	// Emit Shape
 	public var emitRadius : Value;
@@ -277,8 +275,8 @@ class Emitter2DObject extends h2d.Object {
 	public var emitHeight : Value;
 
 	// Particle Movement
-	public var startSpeed : Array<SpawnValue>;
-	public var startWorldSpeed : Array<SpawnValue>;
+	public var startSpeed : Value;
+	public var startWorldSpeed : Value;
 	public var partSpeed : Value;
 	public var partWorldSpeed : Value;
 	public var partAcceleration : Value;
@@ -318,7 +316,7 @@ class Emitter2DObject extends h2d.Object {
 
 		if (prefab.spriteSheet != null) {
 			var tex = hxd.res.Loader.currentInstance.load(prefab.spriteSheet).toTexture();
-			var meanLifeTime = evaluator.getMean(lifeTime);
+			var meanLifeTime = evaluator.getMean(lifeTime, 0);
 			animatedTexShader = new h3d.shader.AnimatedTexture(tex, prefab.frameDivisionX, prefab.frameDivisionY, prefab.frameCount, prefab.frameCount * prefab.animationCycles / meanLifeTime);
 			animatedTexShader.useSourceUVs = prefab.animationUseSourceUVs;
 			animatedTexShader.startTime = 0;
@@ -356,23 +354,28 @@ class Emitter2DObject extends h2d.Object {
 		}
 	}
 
+	inline function getBurstCount() {
+		return EmitterHelper.getBurstCount(evaluator, burstParticleCount, curTime, totalBurstCount, prefab.seed);
+	}
+
+	inline function getRate() {
+		return EmitterHelper.getRate(evaluator, emitRate, curTime, prefab.emitRateChangeTime, prefab.seed);
+	}
+
 	function tick(dt : Float) {
 		curScaleMultiplier = evaluator.getFloat(scaleMultiplier, curTime);
 		curOrbitSpeedMultiplier = evaluator.getFloat(orbitSpeedMultiplier, curTime);
 
 		switch (prefab.emitType) {
 			case Infinity:
-				var emitTarget = evaluator.getFloat(emitRate, curTime) * hxd.Math.clamp(emitScale) * dt;
+				var emitTarget = getRate() * hxd.Math.clamp(emitScale) * dt;
 				countToEmit += hxd.Math.min(prefab.maxCount - particles.length, emitTarget);
 				var t = hxd.Math.floor(countToEmit);
 				countToEmit -= t;
 				doEmit(t);
 
-			case InfinityRandom:
-				// TODO
-
 			case Duration:
-				var emitTarget = evaluator.getFloat(emitRate, curTime) * hxd.Math.clamp(emitScale) * dt;
+				var emitTarget = getRate() * hxd.Math.clamp(emitScale) * dt;
 				countToEmit += curTime >= prefab.emitDuration ? 0 : hxd.Math.min(prefab.maxCount - particles.length, emitTarget);
 				var t = hxd.Math.floor(countToEmit);
 				countToEmit -= t;
@@ -382,7 +385,7 @@ class Emitter2DObject extends h2d.Object {
 				if (prefab.burstInterval > 0) {
 					var burstTarget = hxd.Math.min(prefab.burstCount, 1 + hxd.Math.floor(curTime / prefab.burstInterval));
 					while (totalBurstCount < burstTarget) {
-						var emitTarget = hxd.Math.ceil(hxd.Math.min(prefab.maxCount - particles.length, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
+						var emitTarget = hxd.Math.ceil(hxd.Math.min(prefab.maxCount - particles.length, getBurstCount()));
 						doEmit(emitTarget);
 						totalBurstCount++;
 					}
@@ -390,8 +393,9 @@ class Emitter2DObject extends h2d.Object {
 
 			case BurstDuration:
 				if (curTime < prefab.emitDuration) {
-					var emitTarget = hxd.Math.ceil(hxd.Math.min(prefab.maxCount - particles.length, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
+					var emitTarget = hxd.Math.ceil(hxd.Math.min(prefab.maxCount - particles.length, getBurstCount()));
 					doEmit(emitTarget);
+					totalBurstCount++;
 				}
 		}
 
@@ -414,7 +418,7 @@ class Emitter2DObject extends h2d.Object {
 		for (_ in 0...count) {
 			var part = new Particle2DInstance(getTile(), this);
 			part.idx = instanceCounter;
-			part.lifeTime = evaluator.getSpawn(part.idx, lifeTime, curTime) * lifeTimeScale;
+			part.lifeTime = evaluator.getFast(part.idx, lifeTime, curTime) * lifeTimeScale;
 			this.particles.push(part);
 			instanceCounter = (instanceCounter + 1) % prefab.maxCount;
 		}
@@ -473,24 +477,20 @@ class Emitter2D extends Object2D {
 	public var seed : Int = 0;
 
 	@:group("Emission")
-	@:s @:disp("Type", "Infinity: constant rate. Infinity Random: rate changing between min and max. Duration: rate during a duration. Burst / Burst Duration: groups of particles at regular intervals")
+	@:s @:disp("Type", "Infinity: emits at its rate. Duration: emits at its rate during a duration. Burst / Burst Duration: groups of particles at regular intervals")
 	public var emitType : EmitType = EmitType.Infinity;
 	@:s @:range(0, 10.0) @:disp("Duration", "Emission duration, in seconds")
 	public var emitDuration : Float = 1.0;
-	@:s @:range(0, 100) @:animate @:disp("Rate", "Number of particles emitted per second")
-	public var emitRate : Float = 5;
-	@:s @:range(0, 100) @:animate @:disp("Rate Min", "Minimum number of particles emitted per second")
-	public var emitRateMin : Float = 5;
-	@:s @:range(0, 100) @:animate @:disp("Rate Max", "Maximum number of particles emitted per second")
-	public var emitRateMax : Float = 5;
-	@:s @:range(0.01, 5.0) @:disp("Rate Change Time", "Infinity Random: every this many seconds a new random rate is picked between min and max, and the rate goes to it during this time")
+	@:param(PFloat(0, 100), Emission, 5.) @:disp("Rate", "Number of particles emitted per second. A Range changes it at random between min and max, every Rate Change Time")
+	public var emitRate : ParamMode;
+	@:s @:range(0.01, 5.0) @:disp("Rate Change Time", "Random rate: every this many seconds a new random rate is picked between min and max, and the rate goes to it during this time")
 	public var emitRateChangeTime : Float = 1.0;
 	@:s @:range(1, 10) @:disp("Burst Count", "Number of bursts")
 	public var burstCount : Int = 1;
 	@:s @:range(0, 1.0) @:disp("Burst Interval", "Time between two bursts, in seconds")
 	public var burstInterval : Float = 1.0;
-	@:s @:range(1, 10) @:animate @:disp("Particles Per Burst", "Number of particles emitted by each burst")
-	public var burstParticleCount : Float = 1;
+	@:param(PFloat(1, 10), Emission, 1.) @:disp("Particles Per Burst", "Number of particles emitted by each burst. A Range draws it for each burst, between min and max")
+	public var burstParticleCount : ParamMode;
 	@:s @:range(0, 100) @:disp("Max Count", "Maximum number of particles alive at the same time: no particle is emitted beyond")
 	public var maxCount : Int = 20;
 	@:param(PFloat(0, 10), Spawn, 1.) @:disp("Lifetime", "Life duration of the particle, in seconds")
@@ -634,84 +634,69 @@ class Emitter2D extends Object2D {
 	}
 
 	#if (editor || editor_hl)
-	function getVisibleParams() : Array<hrt.prefab.fx.EmitterHelper.PropertyDef> {
-		var params = PROPERTIES.copy();
-		inline function removeParam(pname: String) {
-			params.remove(params.find(p -> p.name == pname));
-		}
+	function getHiddenFields() : Array<String> {
+		var hidden = [];
+		inline function hide(name: String)
+			hidden.push(name);
 
 		if(!emitShape.match(Circle)) {
-			removeParam("emitRadius");
-			removeParam("emitStartAngle");
-			removeParam("emitEndAngle");
+			hide("emitRadius");
+			hide("emitStartAngle");
+			hide("emitEndAngle");
 		}
 		if(!emitShape.match(Rectangle)) {
-			removeParam("emitWidth");
-			removeParam("emitHeight");
+			hide("emitWidth");
+			hide("emitHeight");
 		}
 
 		if (spriteType != SpriteType.Color) {
-			removeParam("color");
-			removeParam("randomColorMode");
+			hide("color");
+			hide("randomColorMode");
 		}
 		if (spriteType != SpriteType.Texture) {
-			removeParam("texture");
+			hide("texture");
 		}
 		if (spriteType != SpriteType.SpriteSheet) {
-			removeParam("spriteSheet");
-			removeParam("frameCount");
-			removeParam("frameDivisionX");
-			removeParam("frameDivisionY");
-			removeParam("animationCycles");
-			removeParam("animationLoop");
-			removeParam("animationUseSourceUVs");
-			removeParam("animationBlendBetweenFrames");
+			hide("spriteSheet");
+			hide("frameCount");
+			hide("frameDivisionX");
+			hide("frameDivisionY");
+			hide("animationCycles");
+			hide("animationLoop");
+			hide("animationUseSourceUVs");
+			hide("animationBlendBetweenFrames");
 		}
 
 		if (spriteType != SpriteType.Color || randomColorMode != RandomColorMode.Colors) {
-			removeParam("randomColor1");
-			removeParam("randomColor2");
+			hide("randomColor1");
+			hide("randomColor2");
 		}
 		if (spriteType != SpriteType.Color || randomColorMode != RandomColorMode.Gradient)
-			removeParam("randomGradient");
+			hide("randomGradient");
 
 		switch (emitType) {
 			case Infinity:
-				removeParam("burstCount");
-				removeParam("burstInterval");
-				removeParam("burstParticleCount");
-				removeParam("emitDuration");
-				removeParam("emitRateMin");
-				removeParam("emitRateMax");
-				removeParam("emitRateChangeTime");
-			case InfinityRandom:
-				removeParam("emitRate");
-				removeParam("burstCount");
-				removeParam("burstInterval");
-				removeParam("burstParticleCount");
-				removeParam("emitDuration");
-			case BurstDuration:
-				removeParam("emitRate");
-				removeParam("burstCount");
-				removeParam("emitRateMin");
-				removeParam("emitRateMax");
-				removeParam("emitRateChangeTime");
-			case Burst:
-				removeParam("emitDuration");
-				removeParam("emitRate");
-				removeParam("emitRateMin");
-				removeParam("emitRateMax");
-				removeParam("emitRateChangeTime");
+				hide("burstCount");
+				hide("burstInterval");
+				hide("burstParticleCount");
+				hide("emitDuration");
 			case Duration:
-				removeParam("burstCount");
-				removeParam("burstInterval");
-				removeParam("burstParticleCount");
-				removeParam("emitRateMin");
-				removeParam("emitRateMax");
-				removeParam("emitRateChangeTime");
+				hide("burstCount");
+				hide("burstInterval");
+				hide("burstParticleCount");
+			case Burst:
+				hide("emitDuration");
+				hide("emitRate");
+			case BurstDuration:
+				hide("burstCount");
+				hide("emitRate");
 		}
+		// the random rate only
+		var randomRate = switch (getMode("emitRate", 0)) { case Range(_), RandomCurve(_), CurveRange: !emitType.match(Burst | BurstDuration); default: false; };
+		if (!randomRate)
+			hide("emitRateChangeTime");
 
-		return params;
+		return hidden;
 	}
 
 	static var REFRESH_PARAMS = ["emitShape", "emitType", "spriteType", "randomColorMode"];
@@ -730,7 +715,7 @@ class Emitter2D extends Object2D {
 				ctx.rebuildInspector();
 		}
 
-		EmitterHelper.edit(ctx, this, getVisibleParams(), onChange);
+		EmitterHelper.edit(ctx, this, getHiddenFields(), onChange);
 	}
 
 	#if editor

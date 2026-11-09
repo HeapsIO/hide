@@ -88,6 +88,37 @@ class EmitterHelper {
 			shader.particleParams = null;
 	}
 
+	// a random in [0, 1) for the step `i` of an emitter of seed `seed`: the same whatever the ticks (a loop or a seek included)
+	public static inline function stepRandom( i : Int, seed : Int ) : Float {
+		return (hxd.Rand.inlineHash(i, seed) & 0xFFFFFF) / 0x1000000;
+	}
+
+	// the emission rate at `time`: its random goes to a new value every `changeTime`
+	public static function getRate( ev : Evaluator, rate : Value, time : Float, changeTime : Float, seed : Int ) : Float {
+		var step = time / Math.max(changeTime, 0.01), i = Math.floor(step);
+		return ev.getAtRandom(rate, time, hxd.Math.lerp(stepRandom(i, seed), stepRandom(i + 1, seed), step - i));
+	}
+
+	// the particles emitted from 0 to `time`, approximated for a random rate by the middle of its range
+	public static function getRateSum( ev : Evaluator, rate : Value, time : Float ) : Float {
+		return switch( rate ) {
+		case VRandom(_, min, max): (min + max) * 0.5 * time;
+		case VRandomCurve(_, c, _, _): c.getSum(time);
+		case VRandomParamCurve(_, pc, _, _): ev.getSum(VParamCurve(pc), time);
+		case VCurveRange(_, a, b): (a.getSum(time) + b.getSum(time)) * 0.5;
+		default: ev.getSum(rate, time);
+		}
+	}
+
+	// the particles of the burst number `burst`, a range drawn for each burst (both bounds included)
+	public static function getBurstCount( ev : Evaluator, count : Value, time : Float, burst : Int, seed : Int ) : Int {
+		var u = stepRandom(burst, seed + 1);
+		return switch( count ) {
+		case VRandom(_, min, max): Std.int(hxd.Math.lerp(Math.min(min, max), Math.max(min, max) + 1, u));
+		default: Std.int(ev.getAtRandom(count, time, u));
+		}
+	}
+
 	public static inline function rotateZ( m : h3d.Matrix, angle : Float ) {
 		var c = Math.cos(angle);
 		var s = Math.sin(angle);
@@ -248,12 +279,10 @@ class EmitterHelper {
 				}
 			}
 			var wasSet = isSet(prefab, def, i);
-			function slider(sid: String, label: String, value: Float, ?field: String) {
+			function slider(sid: String, label: String, value: Float) {
 				var s = new hide.kit.Slider<Float>(line, sid);
 				if (size > 1)
 					menuOwners.push(s);
-				if (def.kind != Particle)
-					s.anim = EmitterParam.animKey(def, i, field);
 				s.label = label;
 				s.value = value;
 				s.min = range.min;
@@ -270,12 +299,15 @@ class EmitterHelper {
 
 			function curveEditor(?spread: hide.kit.Curve.TrackSpread, ?onSpreadChange: hide.kit.Curve.TrackSpread -> Void) {
 				var g = new hide.kit.Curve(line, "curve", (size == 1 ? label : label + " " + compName(i)) + " - " + prefab.name);
+				// over the emitter time, else over the particle life
+				if (def.kind != Particle)
+					g.maxTime = Math.POSITIVE_INFINITY;
 				g.onValueChange = (_) -> ctx.rebuildPrefab(prefab);
 				if (onSpreadChange != null)
 					g.onSpreadChange = onSpreadChange;
 				if (size > 1)
 					menuOwners.push(g);
-				var edited = getEditableCurve(prefab, EmitterParam.animKey(def, i));
+				var edited = getEditableCurve(prefab, EmitterParam.curveKey(def, i));
 				if (edited == null)
 					g.addTrack(null, spread);
 				else
@@ -303,24 +335,31 @@ class EmitterHelper {
 					}
 
 				case Range(min, max):
-					var minSlider = slider("min", "Min", min, "min");
-					var maxSlider = slider("max", "Max", max, "max");
+					var minSlider = slider("min", "Min", min);
+					var maxSlider = slider("max", "Max", max);
 					function bound() {
 						minSlider.max = range.max == null ? maxSlider.value : Math.min(range.max, maxSlider.value);
 						maxSlider.min = range.min == null ? minSlider.value : Math.max(range.min, minSlider.value);
 					}
 
+					// typing sends the unchanged value: no edit, that would refresh the field being typed
 					function apply() {
+						if (minSlider.value == min && maxSlider.value == max)
+							return;
+						min = minSlider.value;
+						max = maxSlider.value;
 						bound();
-						setParamMode(prefab, def, i, Range(minSlider.value, maxSlider.value));
+						setParamMode(prefab, def, i, Range(min, max));
 					}
 
 					@:privateAccess minSlider.onFieldChange = (_) -> {
-						minSlider.value = Math.min(minSlider.value, maxSlider.value);
+						if (minSlider.value > maxSlider.value)
+							minSlider.value = maxSlider.value;
 						apply();
 					}
 					@:privateAccess maxSlider.onFieldChange = (_) -> {
-						maxSlider.value = Math.max(maxSlider.value, minSlider.value);
+						if (maxSlider.value < minSlider.value)
+							maxSlider.value = minSlider.value;
 						apply();
 					}
 					bound();
@@ -335,7 +374,7 @@ class EmitterHelper {
 	}
 
 	// Build inspector for an emitter
-	public static function edit(ctx: EditContext2, emitter: Prefab, properties: Array<PropertyDef>, changed: (name: String, temp: Bool) -> Void) {
+	public static function edit(ctx: EditContext2, emitter: Prefab, hidden: Array<String>, changed: (name: String, temp: Bool) -> Void) {
 
 		var categories = new Map<String, hide.kit.Category>();
 		function getCategory(name: String) {
@@ -347,8 +386,10 @@ class EmitterHelper {
 			return cat;
 		}
 
-		var params = getParams(emitter);
+		var properties = getProperties(emitter), params = getParams(emitter);
 		for (name in getFieldsOrder(emitter)) {
+			if (hidden.contains(name))
+				continue;
 			var property = Lambda.find(properties, p -> p.name == name);
 			if (property != null) {
 				editProperty(getCategory(property.groupName ?? "Emitter"), emitter, property, changed);
@@ -356,7 +397,7 @@ class EmitterHelper {
 			}
 			var param = Lambda.find(params, p -> p.name == name);
 			if (param != null)
-				editParam(ctx, emitter, param, getAllowedModes(param.kind), getCategory(param.groupName));
+				editParam(ctx, emitter, param, [Constant, Range, Curve, RandomCurve, CurveRange], getCategory(param.groupName));
 		}
 	}
 
@@ -384,13 +425,6 @@ class EmitterHelper {
 				if (!p.animate)
 					widget.anim = null;
 				widget.onValueChange = (temp) -> changed(p.name, temp);
-		}
-	}
-
-	static function getAllowedModes(kind: ParamKind) : Array<ModeKind> {
-		return switch (kind) {
-			case Spawn: [Constant, Range];
-			case Particle: [Constant, Range, Curve, RandomCurve, CurveRange];
 		}
 	}
 
@@ -426,7 +460,7 @@ class EmitterHelper {
 
 	static function convert(prefab: Prefab, def: ParamDef, i: Int, mode: ModeKind) : ParamMode {
 		var base = def.def[i];
-		var key = EmitterParam.animKey(def, i);
+		var key = EmitterParam.curveKey(def, i);
 		var cur = getEditableCurve(prefab, key);
 		function at(k: Int, t: Float) { return cur?.datas[k]?.getVal(t) ?? base; }
 		// the keys of the current curve remapped from 0..1 to `from`..`to`, or a line
@@ -515,7 +549,7 @@ class EmitterHelper {
 			for (p in getParams(owner))
 				for (i in 0...p.def.length)
 					if (EmitterParam.isCurveMode(getMode(owner, p.name, i)))
-						names.push(EmitterParam.animKey(p, i));
+						names.push(EmitterParam.curveKey(p, i));
 		var curves = [];
 		for (n in names) {
 			var c = hrt.prefab.fx.Curve.getCurve(owner, n);

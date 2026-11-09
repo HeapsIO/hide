@@ -3,7 +3,11 @@ package hrt.prefab.fx;
 import hrt.prefab.fx.Value;
 
 enum ParamKind {
+	// read at each emission step over the emitter time, random drawn by the emitter
+	Emission;
+	// read once per particle at spawn time, over the emitter time, random per particle
 	Spawn;
+	// read over the particle life, random per particle
 	Particle;
 }
 
@@ -32,29 +36,20 @@ class EmitterParam {
 
 	public static var COMPONENTS = ["x", "y", "z", "w"];
 
-	public static function animKey( def : ParamDef, comp : Int, ?field : String ) {
-		return curveName(def.name, def.def.length, comp, field);
+	// the curve of the component `comp` of a param in a curve mode: `name`, `name:x`
+	public static function curveKey( def : ParamDef, comp : Int ) {
+		return curveName(def.name, def.def.length, comp);
 	}
 
-	public static function curveName( name : String, size : Int, comp : Int, ?field : String ) {
-		var k = size == 1 ? name : name + ":" + COMPONENTS[comp];
-		return field == null ? k : k + ":" + field;
+	public static function curveName( name : String, size : Int, comp : Int ) {
+		return size == 1 ? name : name + ":" + COMPONENTS[comp];
 	}
 
+	// the params have their curves in their modes
 	public static function animKeys( prefab : Prefab, prop : String ) : Array<String> {
 		if( !EmitterHelper.isEmitter(prefab) )
 			return null;
-		var parts = prop.split(":");
-		var def = Lambda.find(EmitterHelper.getParams(prefab), p -> p.name == parts[0]);
-		if( def == null )
-			return Lambda.exists(EmitterHelper.getProperties(prefab), p -> p.animate == true && p.name == prop) ? [prop] : null;
-		var i = parts.length > 1 ? COMPONENTS.indexOf(parts[1]) : 0;
-		if( def.kind == Particle || i < 0 )
-			return null;
-		return switch( EmitterHelper.getMode(prefab, def.name, i) ) {
-		case Range(_): [animKey(def, i, "min"), animKey(def, i, "max")];
-		case null, _: [animKey(def, i)];
-		}
+		return Lambda.exists(EmitterHelper.getProperties(prefab), p -> p.animate == true && p.name == prop) ? [prop] : null;
 	}
 
 	public static function isCurveMode( m : ParamMode ) {
@@ -70,7 +65,7 @@ class EmitterParam {
 
 	// a curve mode whose curve was deleted is not saved
 	public static function saved( owner : Prefab, def : ParamDef, i : Int, m : ParamMode ) : ParamMode {
-		return isCurveMode(m) && !hasCurve(owner, animKey(def, i)) ? null : m;
+		return isCurveMode(m) && !hasCurve(owner, curveKey(def, i)) ? null : m;
 	}
 
 	public static function savedVec( owner : Prefab, def : ParamDef, v : Dynamic ) : ParamVec3 {
@@ -213,7 +208,7 @@ class EmitterParam {
 class EmitterValues {
 	public var particle : Array<Value> = [];
 	public var properties : Array<Value> = [];
-	public var spawn : Array<Array<SpawnValue>> = [];
+	public var spawn : Array<Value> = [];
 	public var randomSlots : Int = 0;
 	public function new() {
 	}
@@ -223,6 +218,8 @@ class ParamBuilder {
 
 	var owner : Prefab;
 	public var randomSlots(default, null) = 0;
+	// the random of an Emission param is drawn by the emitter: no slot
+	var withSlots = true;
 
 	public function new( owner : Prefab ) {
 		this.owner = owner;
@@ -241,11 +238,15 @@ class ParamBuilder {
 		}
 	}
 
+	inline function slot() {
+		return withSlots ? randomSlots++ : -1;
+	}
+
 	public function comp( m : ParamMode, name : String, def : Float ) : Value {
 		return switch( m ) {
-		case Range(min, max): VRandom(randomSlots++, min, max);
+		case Range(min, max): VRandom(slot(), min, max);
 		case RandomCurve(spreadMin, spreadMax):
-			var rid = randomSlots++;
+			var rid = slot();
 			switch( curve(owner, name, def) ) {
 			case VCurve(c):
 				var l = EmitterParam.spreadLine(c.getValueRange(), spreadMin, spreadMax);
@@ -259,13 +260,8 @@ class ParamBuilder {
 				VRandom(rid, k - spreadMin, k + spreadMin);
 			}
 		case CurveRange:
-			var c = hrt.prefab.fx.Curve.getCurve(owner, name);
-			if( c == null )
-				Evaluator.vVal(def);
-			else if( c.blendMode != hrt.prefab.fx.Curve.CurveBlendMode.Range )
-				throw owner.getAbsPath(true) + ': a Curve Range needs a curve in Range mode';
-			else
-				VCurveRange(randomSlots++, c.datas[0], c.datas[1]);
+			var c = rangeCurve(owner, name);
+			c == null ? Evaluator.vVal(def) : VCurveRange(slot(), c.datas[0], c.datas[1]);
 		case null, _: fixedValue(owner, m, name, def);
 		}
 	}
@@ -278,30 +274,20 @@ class ParamBuilder {
 		return EmitterHelper.getMode(owner, def.name, i);
 	}
 
-	function component( def : ParamDef, i : Int ) : Value {
-		var m = mode(def, i), key = EmitterParam.animKey(def, i);
-		return def.kind == Particle ? comp(m, key, def.def[i]) : animated(key, fixedValue(owner, m, key, def.def[i]));
+	// the curve of a Curve Range, its two datas the bounds
+	static function rangeCurve( owner : Prefab, name : String ) : hrt.prefab.fx.Curve {
+		var c = hrt.prefab.fx.Curve.getCurve(owner, name);
+		if( c != null && c.blendMode != hrt.prefab.fx.Curve.CurveBlendMode.Range )
+			throw owner.getAbsPath(true) + ': a Curve Range needs a curve in Range mode';
+		return c;
 	}
 
-	public function spawn( def : ParamDef ) : Array<SpawnValue> {
-		return [for( i in 0...def.def.length ) {
-			var m = mode(def, i);
-			var s : SpawnValue = switch( m ) {
-			case Range(min, max):
-				function bound( field : String, v : Float ) {
-					return hrt.prefab.fx.Curve.getCurve(owner, EmitterParam.animKey(def, i, field))?.makeVal() ?? VConst(v);
-				}
-				{ rid: randomSlots++, min: bound("min", min), max: bound("max", max) };
-			case null, _:
-				var key = EmitterParam.animKey(def, i);
-				var v = animated(key, fixedValue(owner, m, key, def.def[i]));
-				{ rid: -1, min: v, max: v };
-			}
-			s;
-		}];
+	function component( def : ParamDef, i : Int ) : Value {
+		return comp(mode(def, i), EmitterParam.curveKey(def, i), def.def[i]);
 	}
 
 	public function param( def : ParamDef ) : Value {
+		withSlots = def.kind != Emission;
 		if( def.def.length == 1 )
 			return component(def, 0);
 		var v = VVector(component(def, 0), component(def, 1), def.def.length > 2 ? component(def, 2) : VZero);

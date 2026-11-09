@@ -211,7 +211,7 @@ class Curve extends hrt.prefab.Curve {
 				curveEditor.addBand(curveEditor.tracks[0], curveEditor.tracks[1]);
 		}
 
-		if (blendModeSelect != null && isParticleCurve()) {
+		if (blendModeSelect != null && (isParticleCurve() || blendMode == Range)) {
 			// Range is set by emitter, in read only
 			var modes : Array<CurveBlendMode> = [None, Blend];
 			var readOnly = !modes.contains(blendMode);
