@@ -789,6 +789,12 @@ class EmitterObject extends h3d.scene.Object {
 				if( prefab.fadeColorMode == RandomColorMode.Gradient )
 					s.fadeGradient = hrt.impl.Gradient.textureFromData(prefab.fadeGradient, false);
 			}
+			if( prefab.fadeIn > 0 || prefab.fadeOut > 0 ) {
+				var s = getShader();
+				s.alphaFade = true;
+				s.fadeIn = prefab.fadeIn;
+				s.fadeOut = prefab.fadeOut;
+			}
 
 		}
 
@@ -1827,6 +1833,10 @@ class Emitter extends Object3D {
 	public var fadeColor2 : Int = 0x00FFFFFF;
 	@:s @:disp("Gradient", "Gradient along which the color fades, over the life of the particle")
 	public var fadeGradient : GradientData;
+	@:s @:range(0, 1) @:disp("Fade In", "Part of the particle life over which its alpha goes from 0 to 1, at its birth (0: none)")
+	public var fadeIn : Float = 0;
+	@:s @:range(0, 1) @:disp("Fade Out", "Part of the particle life over which its alpha goes from 1 to 0, before its death (0: none)")
+	public var fadeOut : Float = 0;
 
 	@:group("Sprite Sheet Animation")
 	@:s @:t(PFile(["jpg", "png"])) @:disp("Sheet", "Texture containing the frames of the animation")

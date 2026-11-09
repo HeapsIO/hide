@@ -1,9 +1,7 @@
 package hrt.shader;
 
 /**
-	The particle features of an emitter, added once to its batch when one of them is set. Each color multiplies the pixel color, alpha included:
-	- the random color, one per particle, between two colors or in a gradient;
-	- the fade color, over the life of the particle, from a color to another or along a gradient.
+	Base shader for Particles, following the general direction of reducing the size of the shader list
 **/
 class ParticleShader extends hxsl.Shader {
 
@@ -20,7 +18,10 @@ class ParticleShader extends hxsl.Shader {
 		@param var fadeColor2 : Vec4;
 		@param var fadeGradient : Sampler2D;
 
-		// the texel of the gradient texture made for `t` (`hrt.impl.Gradient.textureFromData`)
+		@const var alphaFade : Bool;
+		@param var fadeIn : Float;
+		@param var fadeOut : Float;
+
 		function gradientUV( t : Float, width : Float ) : Vec2 {
 			return vec2((t * (width - 1.0) + 0.5) / width, 0.5);
 		}
@@ -36,6 +37,11 @@ class ParticleShader extends hxsl.Shader {
 				pixelColor *= mix(fadeColor1, fadeColor2, t);
 			else if( fadeMode == Gradient )
 				pixelColor *= fadeGradient.get(gradientUV(t, fadeGradient.size().x));
+
+			if( alphaFade ) {
+				if( fadeIn > 0. ) pixelColor.a *= smoothstep(0., fadeIn, t);
+				if( fadeOut > 0. ) pixelColor.a *= smoothstep(0., fadeOut, 1.0 - t);
+			}
 		}
 	};
 }

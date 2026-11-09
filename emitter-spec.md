@@ -62,7 +62,7 @@ Rejected when the values are built (an error), and not offered by the curve insp
 
 ## Colors
 
-- The 3D emitter has two color settings, each a `RandomColorMode` (None, two colors, gradient), multiplying the pixel color alpha included: the **random color** (one per particle, the per-particle random of `BaseEmitter`) and the **fade color** (over the particle life, from a start color to an end color, or along a gradient). Their colors are ARGB ints.
+- The 3D emitter has two color settings, each a `RandomColorMode` (None, two colors, gradient), multiplying the pixel color alpha included: the **random color** (one per particle, the per-particle random of `BaseEmitter`) and the **fade color** (over the particle life, from a start color to an end color, or along a gradient). Their colors are ARGB ints. **Fade In** / **Fade Out** (parts of the particle life, 0 for none) fade its alpha in at its birth and out before its death (smoothstep ramps).
 - When one is set, the emitter adds a single `hrt.shader.ParticleShader` to its batch (no per-instance data beyond `BaseEmitter`). Its settings (modes, colors, gradients) are read at init. This shader is meant to take over the particle shaders (`ParticleColorRandom`, `ParticleColorLife`...).
 - The 2D emitter colors are ARGB ints too, alpha read (its random color replaces the color of the particle). The inspector edits an int color with its alpha.
 
