@@ -1220,9 +1220,8 @@ class EmitterObject extends h3d.scene.Object {
 		debugGraphics.clear();
 		#end
 
-		// Auto remove of sub emitters
-		if( !enable && (particles == null || numInstances <= 0) && isSubEmitter ) {
-			parentEmitter.subEmitters.remove(this);
+		// Auto remove of sub emitters: a Follow one is in the list of its particle until the particle dies
+		if( !enable && (particles == null || numInstances <= 0) && isSubEmitter && parentEmitter.subEmitters?.remove(this) == true ) {
 			remove();
 			return;
 		}
@@ -1584,13 +1583,14 @@ class EmitterObject extends h3d.scene.Object {
 		else if (!seek) {
 			if (parentTime < lastParentTime) {
 				softReset();
+				// the bursts before this tick are done, the ones since the start of the loop are emitted by it
 				if (prefab.burstInterval > 0)
-					totalBurstCount = hxd.Math.ceil(hxd.Math.max(0.0, localTime/prefab.burstInterval));
+					totalBurstCount = hxd.Math.ceil(hxd.Math.max(0.0, (localTime - dt * prefab.timeScale) / prefab.burstInterval));
 				if (prefab.emitType == Burst) {
 					if (totalBurstCount >= prefab.burstCount)
 						enable = false;
 				} else if (prefab.emitType == BurstDuration) {
-					if (curTime > prefab.emitDuration)
+					if (localTime > prefab.emitDuration)
 						enable = false;
 				}
 
