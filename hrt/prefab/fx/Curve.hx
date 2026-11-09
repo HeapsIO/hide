@@ -32,6 +32,12 @@ class Curve extends hrt.prefab.Curve {
 	function set_datas(v) return datas = v;
 	override function get_data() : hrt.impl.Curve { return datas[0]; }
 
+	override function set_loop(v) {
+		for (d in datas)
+			d.loop = v;
+		return v;
+	}
+
 	override function get_duration() {
 		if (blendMode == Reference)
 			return getRef()?.duration ?? 0.0;
@@ -56,6 +62,7 @@ class Curve extends hrt.prefab.Curve {
 			@:privateAccess c.copyFromDynamic(d);
 			datas.push(c);
 		}
+		loop = datas[0].loop;
 	}
 
 	override function saveData(o:Dynamic) {
