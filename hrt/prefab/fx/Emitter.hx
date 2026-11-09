@@ -886,6 +886,7 @@ class EmitterObject extends h3d.scene.Object {
 		softReset();
 		random.init(randomSeed);
 		numInstances = 0;
+		instanceCounter = 0;
 		curTime = -delay;
 		emitCount = 0;
 		emitTarget = 0;
