@@ -8,7 +8,14 @@ class Constraint extends Prefab {
 	@:s public var target(default,null) : String;
 	@:s public var positionOnly(default,null) : Bool;
 
+	var isMade = false;
+	var followObject : h3d.scene.Object;
+
 	public function apply(root : h3d.scene.Object = null) : Bool {
+		if (followObject != null)
+			followObject.follow = null;
+		followObject = null;
+
 		var binds = getBindedObjects(root);
 		if( binds.object != null && binds.target != null ){
 			#if editor
@@ -23,6 +30,7 @@ class Constraint extends Prefab {
 			#end
 			binds.object.follow = binds.target;
 			binds.object.followPositionOnly = positionOnly;
+			followObject = binds.object;
 		}
 		return true;
 	}
@@ -37,14 +45,32 @@ class Constraint extends Prefab {
 	}
 
 	override function makeInstance() {
+		isMade = true;
 		apply();
+	}
+
+	override function editorRemoveInstanceObjects() : Void {
+		if (followObject != null)
+			followObject.follow = null;
+		followObject = null;
+		isMade = false;
+		super.editorRemoveInstanceObjects();
+	}
+
+	override function onEditorAnyRebuild() : Void {
+		if (isMade)
+			apply();
+	}
+
+	override function updateInstance(?propName : String) {
+		super.updateInstance(propName);
+		if (isMade)
+			apply();
 	}
 
 	override function edit2(ctx: hrt.prefab.EditContext2) {
 		function checkLoop(_:Bool) {
-			var curObj = getRoot().locateObject(object);
-			if( curObj != null ) curObj.follow = null;
-			if (!apply(shared.root3d)) {
+			if (!apply()) {
 				ctx.quickError("Loop detected in constraints");
 				ctx.rebuildInspector();
 			}
@@ -56,7 +82,7 @@ class Constraint extends Prefab {
 			<category("Constraint")>
 				<object-3d-ref field={object} onValueChange={checkLoop}/>
 				<object-3d-ref field={target} onValueChange={checkLoop}/>
-				<checkbox field={positionOnly}/>
+				<checkbox field={positionOnly} onValueChange={checkLoop}/>
 			</category>
 		);
 	}
@@ -67,7 +93,7 @@ class Constraint extends Prefab {
 			icon : "lock",
 			name : "Constraint",
 			applyTreeStyle: (p : hrt.prefab.Prefab, element : js.html.Element) -> {
-				var binds = getBindedObjects(shared.root3d);
+				var binds = getBindedObjects(null);
 				if (binds.object != null && binds.target != null) {
 					element.classList.remove("warning");
 					element.title = this.name;

@@ -144,12 +144,20 @@ class LookAt extends Object3D {
 
 	override function updateInstance(?propName:String) {
 		super.updateInstance(propName);
+		applyTarget();
+	}
+
+	function applyTarget() {
 		var targetObj = null;
 		if(target != "camera")
 			targetObj = locateObject(target);
 		var lookAt = Std.downcast(local3d, LookAtObject);
 		if (lookAt != null)
 			@:privateAccess lookAt.target = targetObj;
+	}
+
+	override function onEditorAnyRebuild() : Void {
+		applyTarget();
 	}
 
 	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {

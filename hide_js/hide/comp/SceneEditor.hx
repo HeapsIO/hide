@@ -5640,6 +5640,9 @@ class SceneEditor {
 			callback();
 		}
 
+		for (p in flattenAll())
+			p.onEditorAnyRebuild();
+
 		if (sort2d.iterator().hasNext()) {
 			var flat = sceneData.flatten();
 			var indexes : Map<h2d.Object, Int> = [];
