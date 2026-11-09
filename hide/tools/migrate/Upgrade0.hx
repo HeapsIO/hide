@@ -154,6 +154,46 @@ class Upgrade0 {
 		randomBlendPass(root);
 		scaledReferencePass(root);
 		curvePass(data);
+		roundNew(data, pristine);
+	}
+
+	/** A number computed by the upgrade as it is written: 6 significant digits, 0 under 1e-6 (the float noise of the bakes) **/
+	static function roundNumber( v : Float ) : Float {
+		var a = Math.abs(v);
+		if( !Math.isFinite(v) || a == Math.ffloor(a) )
+			return v;
+		if( a < 1e-6 )
+			return 0.;
+		var scale = Math.pow(10, 5 - Math.floor(hxd.Math.log10(a)));
+		return Math.fround(v * scale) / scale;
+	}
+
+	/** Rounds the numbers of `d` that are not in `source`, its data before the upgrade (`roundNumber`): the ones of the data are kept as they are **/
+	static function roundNew( d : Dynamic, source : Dynamic ) {
+		var known = new Map<String, Bool>();
+		function isObject( v : Dynamic ) return v != null && Reflect.isObject(v) && !Std.isOfType(v, String) && !Std.isOfType(v, Array);
+		function collect( v : Dynamic ) {
+			if( isNumber(v) )
+				known.set(Std.string(v), true);
+			else if( Std.isOfType(v, Array) )
+				for( x in (v : Array<Dynamic>) ) collect(x);
+			else if( isObject(v) )
+				for( f in Reflect.fields(v) ) collect(Reflect.field(v, f));
+		}
+		collect(source);
+		function isNew( v : Dynamic ) return isNumber(v) && !known.exists(Std.string(v));
+		function round( v : Dynamic ) {
+			if( Std.isOfType(v, Array) ) {
+				var a : Array<Dynamic> = v;
+				for( i in 0...a.length )
+					if( isNew(a[i]) ) a[i] = roundNumber(a[i]) else round(a[i]);
+			} else if( isObject(v) )
+				for( f in Reflect.fields(v) ) {
+					var x : Dynamic = Reflect.field(v, f);
+					if( isNew(x) ) Reflect.setField(v, f, roundNumber(x)) else round(x);
+				}
+		}
+		round(d);
 	}
 
 	/** `Curve.makeVal` reads no scale or offset on a reference to a curve: the scaled references become a copy of their curve. A broken reference reads 0, it is kept. **/
@@ -2192,8 +2232,12 @@ class Upgrade0 {
 		case MCurve(_): obj(["mode", "Curve"]);
 		case MRandomCurve(_, f0, f1, t0, t1):
 			var o : Dynamic = obj(["mode", "RandomCurve"]);
-			if( f1 != f0 ) o.spreadMin = (f1 - f0) * 0.5;
-			if( t1 != t0 ) o.spreadMax = (t1 - t0) * 0.5;
+			// an amount negligible next to the other one is 0: the overshoot of the curve beyond its keys
+			var low = (f1 - f0) * 0.5, high = (t1 - t0) * 0.5;
+			if( Math.abs(low) < 1e-3 * Math.abs(high) ) low = 0;
+			if( Math.abs(high) < 1e-3 * Math.abs(low) ) high = 0;
+			if( low != 0 ) o.spreadMin = low;
+			if( high != 0 ) o.spreadMax = high;
 			o;
 		case MCurveRange(_): obj(["mode", "CurveRange"]);
 		}
