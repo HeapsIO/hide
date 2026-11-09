@@ -686,6 +686,12 @@ class Prefab {
 	function editorRemoveInstanceObjects() : Void {
 	}
 
+	/**
+		Called by the editor on all the prefabs after any prefab has been rebuilt.
+	**/
+	function onEditorAnyRebuild() : Void {
+	}
+
 
 	/**
 		Return a list of files required by this prefab to be eventually loaded. Not recursive.

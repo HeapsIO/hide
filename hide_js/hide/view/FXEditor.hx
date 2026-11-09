@@ -1682,6 +1682,7 @@ class FXEditor extends hide.view.FileView {
 					localDt = 0;
 					hasJumped = true;
 					fx.reset();
+					fx.setRandSeed(Std.random(0xFFFFFF));
 				}
 				@:privateAccess fx.setTimeInternal(nextTime, localDt, hasJumped);
 

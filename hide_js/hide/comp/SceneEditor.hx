@@ -4872,11 +4872,47 @@ class SceneEditor {
 		undo.change(Custom(doReset));
 	}
 
+	/** Like sceneData.flatten(), but also walks the refInstance of References in edit mode **/
+	function flattenAll() : Array<PrefabElement> {
+		var ret : Array<PrefabElement> = [];
+
+		function rec(p : PrefabElement) {
+			if (p == null)
+				return;
+
+			ret.push(p);
+
+			for (c in p.children)
+				rec(c);
+
+			var ref = Std.downcast(p, Reference);
+			if (ref != null && ref.editMode != None)
+				rec(ref.refInstance);
+		}
+
+		rec(sceneData);
+		return ret;
+	}
+
+	function getSelectionOrdered() : Array<PrefabElement> {
+		var indices : Map<PrefabElement, Int> = [];
+		for (i => p in flattenAll())
+			indices.set(p, i);
+
+		var selection = selectedPrefabs.copy();
+		selection.sort((a, b) -> (indices.get(a) ?? -1) - (indices.get(b) ?? -1));
+		return selection;
+	}
+
 	function onCopy() {
 		if(selectedPrefabs == null) return;
 
+		function getRoots(prefabs: Array<PrefabElement>) : Array<PrefabElement> {
+			return prefabs.filter((prefab) -> prefab.findParent((p) -> prefabs.contains(p)) == null);
+		}
+
 		var ser : Array<String> = [];
-		for (prefab in selectedPrefabs) {
+		for (prefab in getRoots(getSelectionOrdered())) {
 			ser.push(prefab.serialize());
 		}
 
@@ -5603,6 +5639,9 @@ class SceneEditor {
 		for (callback in rebuildEndCallbacks) {
 			callback();
 		}
+
+		for (p in flattenAll())
+			p.onEditorAnyRebuild();
 
 		if (sort2d.iterator().hasNext()) {
 			var flat = sceneData.flatten();
