@@ -10,6 +10,7 @@
 
 #define NAPI_VERSION 8
 #include <node_api.h>
+#include <unknwn.h>
 #include <type_traits>
 #include <utility>
 #include <map>
@@ -36,6 +37,9 @@ template<typename T> constexpr bool is64 =
 	|| (std::is_class_v<T> && sizeof(T) == 8);
 
 template<typename T> constexpr size_t argWidth = is64<T> ? 2 : 1;
+
+// set by the addon : called with each COM object returned to the page, which owns a reference to it
+inline void (*onOwned)( napi_env, IUnknown* ) = nullptr;
 
 template<typename T> inline T fromJs64( napi_env env, napi_value lo, napi_value hi ) {
 	int32_t l = 0, h = 0;
@@ -120,8 +124,12 @@ template<typename R, typename... A, R (*F)(A...)> struct Prim<F> {
 		if constexpr( std::is_void_v<R> ) {
 			F(arg<A>(env, argv, jsIndex(I))...);
 			return nullptr;
-		} else
-			return toJs<R>(env, F(arg<A>(env, argv, jsIndex(I))...));
+		} else {
+			R r = F(arg<A>(env, argv, jsIndex(I))...);
+			if constexpr( std::is_pointer_v<R> && std::is_base_of_v<IUnknown, std::remove_pointer_t<R>> )
+				if( r && onOwned ) onOwned(env, r);
+			return toJs<R>(env, r);
+		}
 	}
 	static napi_value call( napi_env env, napi_callback_info info ) {
 		constexpr size_t N = jsIndex(sizeof...(A));

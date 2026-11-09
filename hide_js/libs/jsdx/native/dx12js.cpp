@@ -320,15 +320,6 @@ static void js_shared_texture_release( ID3D12Resource *res ) {
 	if( it != js_shared.end() ) js_shared_texture_free(it);
 }
 
-// env cleanup hook : the GPU is idle (present waits for it), the copies recorded since are never submitted
-static void js_release_page( void *env ) {
-	for( auto it = js_shared.begin(); it != js_shared.end(); ) {
-		auto next = std::next(it);
-		if( it->second.env == (napi_env)env ) js_shared_texture_free(it);
-		it = next;
-	}
-}
-
 // The high performance GPU (as Chromium takes it with force_high_performance_gpu) : its index in
 // list_devices (the hardware adapters in the order of DXGI), -1 when it is unknown. The page passes
 // its name to the driver, so that the addon and Chromium share their textures on the same GPU.
@@ -469,12 +460,28 @@ static napi_value js_log( napi_env env, const char *msg ) {
 	return err;
 }
 
+// ---- COM objects owned by a page : what it has not released is released with it (js_release_page)
+
+struct js_owned { napi_env env; int refs; };
+static std::map<IUnknown*, js_owned> js_objects;
+
+static void js_own( napi_env env, IUnknown *obj ) {
+	// get_device / get_factory / get_adapter : shared by the pages, not owned
+	if( obj == static_driver->device || obj == static_driver->factory || obj == static_driver->adapter ) return;
+	auto &o = js_objects[obj];
+	o.env = env;
+	o.refs++;
+}
+
 static napi_value js_resource_release( napi_env env, napi_callback_info info ) {
 	size_t argc = 1;
 	napi_value argv[1];
 	napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 	IUnknown *res = hl_shim::fromJs<IUnknown*>(env, argv[0]);
 	if( res == NULL ) return nullptr;
+	auto own = js_objects.find(res);
+	if( own != js_objects.end() && --own->second.refs == 0 )
+		js_objects.erase(own);
 	auto it = js_heaps.find((ID3D12DescriptorHeap*)res);
 	if( res->Release() == 0 && it != js_heaps.end() ) {
 		if( getenv("GS_DX12_TRACE") ) {
@@ -486,6 +493,63 @@ static napi_value js_resource_release( napi_env env, napi_callback_info info ) {
 		js_heaps.erase(it);
 	}
 	return nullptr;
+}
+
+// the page's queues are idle once their fence is reached ; their emulated swapchains are released.
+// The fence is created on the queue's device : after a device loss, it can differ from static_driver's
+// (a fence of another device is never signaled), and a removed device creates none (nothing to wait for).
+static void js_wait_page_queues( napi_env env ) {
+	HANDLE ev = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+	for( auto &o : js_objects ) {
+		ID3D12CommandQueue *q = NULL;
+		if( o.second.env != env || FAILED(o.first->QueryInterface(IID_PPV_ARGS(&q))) ) continue;
+
+		ID3D12Device *dev = NULL;
+		ID3D12Fence *fence = NULL;
+		if( SUCCEEDED(q->GetDevice(IID_PPV_ARGS(&dev))) && SUCCEEDED(dev->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)))
+			&& SUCCEEDED(q->Signal(fence, 1)) && SUCCEEDED(fence->SetEventOnCompletion(1, ev)) )
+			WaitForSingleObject(ev, INFINITE);
+		if( fence ) fence->Release();
+		if( dev ) dev->Release();
+
+		auto sc = js_swaps.find(q);
+		if( sc != js_swaps.end() ) {
+			js_release_buffers(&sc->second);
+			if( sc->second.fence ) sc->second.fence->Release();
+			if( js_cur == &sc->second ) js_cur = NULL;
+			js_swaps.erase(sc);
+		}
+		q->Release();
+	}
+
+	CloseHandle(ev);
+}
+
+// env cleanup hook : the copies recorded since the last present are never submitted
+static void js_release_page( void *env ) {
+	if( static_driver && static_driver->device ) js_wait_page_queues((napi_env)env);
+
+	for( auto it = js_shared.begin(); it != js_shared.end(); ) {
+		auto next = std::next(it);
+		if( it->second.env == (napi_env)env ) js_shared_texture_free(it);
+		it = next;
+	}
+
+	for( auto it = js_objects.begin(); it != js_objects.end(); ) {
+		auto next = std::next(it);
+		if( it->second.env == (napi_env)env ) {
+			auto heap = js_heaps.find((ID3D12DescriptorHeap*)it->first);
+			if( heap != js_heaps.end() ) {
+				js_heap_starts.erase(heap->second.start);
+				js_heaps.erase(heap);
+			}
+			for( int i = 0; i < it->second.refs; i++ )
+				it->first->Release();
+			js_objects.erase(it);
+		}
+		it = next;
+	}
 }
 
 static bool js_heap_contains( uintptr_t p, size_t bytes ) {
@@ -548,6 +612,7 @@ static void js_high_qos() {
 NAPI_MODULE_INIT() {
 	js_preload_dxil();
 	js_high_qos();
+	hl_shim::onOwned = js_own;
 	napi_add_env_cleanup_hook(env, js_release_page, env);
 	for( auto &p : hl_shim::registry() ) {
 		napi_value f;
