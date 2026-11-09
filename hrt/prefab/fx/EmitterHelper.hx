@@ -38,10 +38,6 @@ class EmitterHelper {
 		return [];
 	}
 
-	/**
-		The mode of the component `comp` of the param `name` of an emitter, or of a shader under an emitter: Curve when the curve of
-		that component (`EmitterParam.curveName`) is in its `particleParams`, else null
-	**/
 	public static function getMode( p : Prefab, name : String, comp : Int ) : ParamMode {
 		var e = Std.downcast(p, Emitter);
 		if( e != null ) return e.getMode(name, comp);
@@ -55,7 +51,6 @@ class EmitterHelper {
 		return null;
 	}
 
-	/** For a shader, a Constant sets its prop, a Curve adds its particle curve **/
 	public static function setMode( p : Prefab, name : String, comp : Int, m : ParamMode ) {
 		var e = Std.downcast(p, Emitter);
 		if( e != null ) {
@@ -411,7 +406,7 @@ class EmitterHelper {
 		}
 	}
 
-	/** A curve mode whose curve was deleted is shown as the default value: it is not saved (`EmitterParam.saved`) **/
+	// a curve mode whose curve was deleted shows the default value
 	static function shownMode(prefab: Prefab, def: ParamDef, i: Int) {
 		return EmitterParam.saved(prefab, def, i, getMode(prefab, def.name, i));
 	}
@@ -424,12 +419,10 @@ class EmitterHelper {
 		return Lambda.exists([for (i in 0...def.def.length) i], i -> isSet(prefab, def, i));
 	}
 
-	/** A mode set back to the default value of the param unsets it **/
 	static function setParamMode(prefab: Prefab, def: ParamDef, i: Int, m: ParamMode) {
 		setMode(prefab, def.name, i, isDefault(def, i, m) ? null : m);
 	}
 
-	/** The mode `mode` for the component `i` of `def`, from its current one: its curve (`EmitterParam.animKey`) gets the new values **/
 	static function convert(prefab: Prefab, def: ParamDef, i: Int, mode: ModeKind) : ParamMode {
 		var base = def.def[i];
 		var key = EmitterParam.animKey(def, i);
@@ -481,7 +474,6 @@ class EmitterHelper {
 		}
 	}
 
-	/** The curve `name` of `owner` gets `datas` (two for a Range), made when it has none **/
 	static function setModeCurve(owner: Prefab, name: String, datas: Array<hrt.impl.Curve>) {
 		var c = hrt.prefab.fx.Curve.getCurve(owner, name);
 		if (c == null) {
@@ -494,7 +486,6 @@ class EmitterHelper {
 		c.refPath = null;
 	}
 
-	/** The keys of the curve `src` remapped from 0..1 to `from`..`to`, or a line from `from` to `to` without `src` **/
 	static function newModeData(src: Curve, from: Float, to: Float) : hrt.impl.Curve {
 		var d = new hrt.impl.Curve();
 		if (src == null) {
@@ -512,7 +503,6 @@ class EmitterHelper {
 		return d;
 	}
 
-	/** The curves the params of `owner` read **/
 	static function getModeCurves(owner: Prefab) : Array<Curve> {
 		var names = [];
 		var shader = Std.downcast(owner, hrt.prefab.Shader);
@@ -568,7 +558,7 @@ class EmitterHelper {
 		return true;
 	}
 
-	/** Not the one of a trail or a sub-emitter it is under **/
+	// stops at a trail: its shaders are not particle shaders
 	static function getParticleEmitter(shader: hrt.prefab.Shader) : Emitter {
 		var p = shader.parent;
 		while (p != null && !(p is Emitter) && !(p is hrt.prefab.l3d.Trails))

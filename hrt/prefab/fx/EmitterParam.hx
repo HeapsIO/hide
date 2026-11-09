@@ -10,7 +10,6 @@ enum ParamKind {
 enum ParamMode {
 	Constant( value : Float );
 	Range( min : Float, max : Float );
-	/** The curve named after the param (`EmitterParam.animKey`), like all the curves of an emitter **/
 	Curve;
 	RandomCurve( spreadMin : Float, spreadMax : Float );
 	CurveRange;
@@ -33,7 +32,6 @@ class EmitterParam {
 
 	public static var COMPONENTS = ["x", "y", "z", "w"];
 
-	/** The name of the curve of the component `comp` of a param (`name`, `name:x`), of one of its bounds with `field` (`name:x:min`) **/
 	public static function animKey( def : ParamDef, comp : Int, ?field : String ) {
 		return curveName(def.name, def.def.length, comp, field);
 	}
@@ -43,7 +41,6 @@ class EmitterParam {
 		return field == null ? k : k + ":" + field;
 	}
 
-	/** The animation curve names of the property `prop` of `prefab` (the min and max of a Range), null if it is not an emitter or not animatable **/
 	public static function animKeys( prefab : Prefab, prop : String ) : Array<String> {
 		if( !EmitterHelper.isEmitter(prefab) )
 			return null;
@@ -67,12 +64,11 @@ class EmitterParam {
 		}
 	}
 
-	/** A curve named `name` under `owner`, disabled or not **/
 	public static function hasCurve( owner : Prefab, name : String ) {
 		return Lambda.exists(owner.children, c -> c is hrt.prefab.fx.Curve && c.name != null && c.name.toLowerCase() == name.toLowerCase());
 	}
 
-	/** The mode of the component `i` of `def` as it is saved: a curve mode without its curve (deleted) is not **/
+	// a curve mode whose curve was deleted is not saved
 	public static function saved( owner : Prefab, def : ParamDef, i : Int, m : ParamMode ) : ParamMode {
 		return isCurveMode(m) && !hasCurve(owner, animKey(def, i)) ? null : m;
 	}
@@ -151,10 +147,7 @@ class EmitterParam {
 		}
 	}
 
-	/**
-		The random spread of a RandomCurve as an affine function of the value `v` of its curve, `spread + slope * v`: `spreadMin` at the
-		lowest value of the curve, `spreadMax` at the highest, `spreadMin` for a flat curve.
-	**/
+	// spread + slope * v: spreadMin at the lowest value of the curve, spreadMax at the highest
 	public static function spreadLine( range : { min : Float, max : Float }, spreadMin : Float, spreadMax : Float ) : { spread : Float, slope : Float } {
 		var d = range.max - range.min;
 		if( d <= 1e-9 * Math.max(1, Math.abs(range.max)) )
@@ -163,7 +156,6 @@ class EmitterParam {
 		return { spread: spreadMin - slope * range.min, slope: slope };
 	}
 
-	/** The range of the values of a param curve: both of its curves for a blend **/
 	public static function paramCurveRange( pc : ParamCurve ) : { min : Float, max : Float } {
 		var r = pc.c1.getValueRange();
 		if( pc.c2 != null ) {
@@ -174,7 +166,6 @@ class EmitterParam {
 	}
 }
 
-/** The values `makeValues` gives an emitter object, never modified: out of the editor, the clones of an emitter share the ones of their source **/
 class EmitterValues {
 	public var particle : Array<Value> = [];
 	public var properties : Array<Value> = [];
@@ -193,7 +184,6 @@ class ParamBuilder {
 		this.owner = owner;
 	}
 
-	/** The curve `name` of `owner`, `def` without it **/
 	public static function curve( owner : Prefab, name : String, def : Float ) : Value {
 		return hrt.prefab.fx.Curve.getCurve(owner, name)?.makeVal() ?? Evaluator.vVal(def);
 	}
@@ -207,7 +197,6 @@ class ParamBuilder {
 		}
 	}
 
-	/** A particle param component in mode `m`, `name` its curve **/
 	public function comp( m : ParamMode, name : String, def : Float ) : Value {
 		return switch( m ) {
 		case Range(min, max): VRandom(randomSlots++, min, max);
