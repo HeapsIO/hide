@@ -307,7 +307,7 @@ class VirtualList<T> {
 			var scrollbarMax = maxVisible / (items.length - 1) * scrollbarHeight;
 			var avg = (scrollbarMax + scrollbarMin) / 2.0;
 			var height = Math.max(10, (maxVisible - scrollIndex) / (items.length - 1) * scrollbarHeight);
-			scrollbarCursor.style.top = (avg - height * 0.5) + "px";
+			scrollbarCursor.style.top = hxd.Math.clamp(avg - height * 0.5, 0, scrollbarHeight - height) + "px";
 			scrollbarCursor.style.height = height + "px";
 			scrollbar.style.visibility = scrollbarMin > 0 || scrollbarMax < scrollbarHeight ? "visible" : "hidden";
 		}
