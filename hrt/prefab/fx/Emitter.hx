@@ -50,6 +50,8 @@ enum EmitShape {
 	Box;
 	Cylinder;
 	Dome;
+	Point;
+	Line;
 }
 
 enum Orientation {
@@ -1077,6 +1079,24 @@ class EmitterObject extends h3d.scene.Object {
 						tmpOffset.scale(0.5);
 						if( prefab.emitOrientation == Normal )
 							tmpQuat.initDirection(tmpOffset);
+					case Point:
+						tmpOffset.set(0, 0, 0);
+						if( prefab.emitOrientation == Normal ) {
+							do {
+								tmpDir.x = random.srand(1.0);
+								tmpDir.y = random.srand(1.0);
+								tmpDir.z = random.srand(1.0);
+							}
+							while( tmpDir.lengthSq() > 1.0 || tmpDir.lengthSq() < 1e-6 );
+							tmpQuat.initDirection(tmpDir);
+						}
+					case Line:
+						tmpOffset.set(random.srand(0.5), 0, 0);
+						if( prefab.emitOrientation == Normal ) {
+							var a = random.rand() * Math.PI * 2;
+							tmpDir.set(0, Math.cos(a), Math.sin(a));
+							tmpQuat.initDirection(tmpDir);
+						}
 					case Cone:
 						tmpOffset.set(0, 0, 0);
 						var theta = random.rand() * Math.PI * 2;
@@ -1932,6 +1952,8 @@ class Emitter extends Object3D {
 			hide("emitDomeHeight");
 			hide("emitDomeFlip");
 		}
+		if(emitShape == Point || emitShape == Line)
+			hide("emitSurface");
 
 		switch(alignMode) {
 			case None | Screen | Speed | ScreenSpeed | AxisSpeed:
@@ -2112,6 +2134,21 @@ class Emitter extends Object3D {
 			}
 			case Sphere:
 				mesh = new h3d.scene.Sphere(0xffffff, 0.5, true, debugShape);
+			case Point, Line: {
+				var g = new h3d.scene.Graphics(debugShape);
+				g.material.mainPass.setPassName("overlay");
+				g.lineStyle(1, 0xffffff);
+				g.moveTo(-0.5, 0, 0);
+				g.lineTo(0.5, 0, 0);
+				if(emitShape == Point) {
+					g.moveTo(0, -0.5, 0);
+					g.lineTo(0, 0.5, 0);
+					g.moveTo(0, 0, -0.5);
+					g.lineTo(0, 0, 0.5);
+				}
+				g.ignoreCollide = true;
+				mesh = g;
+			}
 			case Dome: {
 				var maxPhi = Math.acos(1.0 - 2.0 * hxd.Math.clamp(emitDomeHeight, 0, 1));
 				var sz = emitDomeFlip ? -0.5 : 0.5;
