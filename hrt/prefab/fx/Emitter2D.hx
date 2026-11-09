@@ -695,9 +695,12 @@ class Emitter2D extends Object2D {
 				hide("burstCount");
 				hide("emitRate");
 		}
-		// the random rate only
-		var randomRate = switch (getMode("emitRate", 0)) { case Range(_), RandomCurve(_), CurveRange: !emitType.match(Burst | BurstDuration); default: false; };
-		if (!randomRate)
+		// read only by a random rate, which bursts do not use
+		var randomRate = switch (getMode("emitRate", 0)) {
+			case Range(_), RandomCurve(_), CurveRange: true;
+			case null, _: false;
+		}
+		if (!randomRate || emitType == Burst || emitType == BurstDuration)
 			hide("emitRateChangeTime");
 
 		return hidden;
