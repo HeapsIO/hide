@@ -1,6 +1,6 @@
 # Emitter params — spec
 
-Scope: `Emitter` and `Emitter2D`. Editing through the new inspector only (edit2 / HideKit), in the JS editor (hide_js); HideHL is dropped. Colors (particle shader color curves, emitter random color / gradient) keep their current model.
+Scope: `Emitter` and `Emitter2D`. Editing through the new inspector only (edit2 / HideKit), in the JS editor (hide_js); HideHL is dropped. Particle shader color curves keep their current model.
 
 ## Terms
 
@@ -58,7 +58,13 @@ Rejected when the values are built (an error), and not offered by the curve insp
 ## Runtime
 
 - The emitter object reads its settings from its prefab (`prefab`, the clone made for this instance), when it uses them. It holds only the values built from the params and the animated properties (`emitRate`, `lifeTime`, `partScale`...) and its state (`emitScale`, `enable`, the particles).
-- Game code overrides a built value on the object (`e.emitRate = VConst(10)`, which replaces its curve too), and changes a setting on the prefab (`e.prefab.randomColor1 = 0xFF8000`). A setting read at init (max count, sprite sheet, particle template) has no effect when changed after the make. A new `updateInstance` rebuilds the values, dropping their overrides.
+- Game code overrides a built value on the object (`e.emitRate = VConst(10)`, which replaces its curve too), and changes a setting on the prefab (`e.prefab.emitDuration = 2`). A setting read at init (max count, sprite sheet, particle template) has no effect when changed after the make. A new `updateInstance` rebuilds the values, dropping their overrides.
+
+## Colors
+
+- The 3D emitter has two color settings, each a `RandomColorMode` (None, two colors, gradient), multiplying the pixel color alpha included: the **random color** (one per particle, the per-particle random of `BaseEmitter`) and the **fade color** (over the particle life, from a start color to an end color, or along a gradient). Their colors are ARGB ints.
+- When one is set, the emitter adds a single `hrt.shader.ParticleShader` to its batch (no per-instance data beyond `BaseEmitter`). Its settings (modes, colors, gradients) are read at init. This shader is meant to take over the particle shaders (`ParticleColorRandom`, `ParticleColorLife`...).
+- The 2D emitter colors are ARGB ints too, alpha read (its random color replaces the color of the particle). The inspector edits an int color with its alpha.
 
 ## Upgrade
 

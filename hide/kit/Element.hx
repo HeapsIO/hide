@@ -729,6 +729,8 @@ class Element {
 				color.arr = !Std.isOfType(Reflect.field(props, def.name), Int);
 				if (color.arr)
 					defValue = [0,0,0,1];
+				else
+					color.alpha = true; // an int is ARGB
 				color;
 			case PGradient:
 				new hide.kit.Gradient(this, def.name);

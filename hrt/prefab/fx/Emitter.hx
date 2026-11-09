@@ -73,6 +73,12 @@ enum SubEmitterKind {
 	Follow;
 }
 
+enum RandomColorMode {
+	None;
+	Colors;
+	Gradient;
+}
+
 typedef PartArray = #if (hl_ver >= version("1.14.0")) hl.CArray<ParticleInstance> #else Array<ParticleInstance> #end;
 typedef Single = #if (hl_ver >= version("1.13.0")) hl.F32 #else Float #end;
 
@@ -105,7 +111,6 @@ class ParticleInstance {
 	var emitOrientation(default, never) = new SMatrix3();
 	#end
 
-	var colorMult : Int;
 	var idx : Int;
 	var startFrame : hxd.impl.UInt16;
 	var life : Single;
@@ -131,7 +136,6 @@ class ParticleInstance {
 		absPos.load(p.absPos.toMatrix());
 		emitOrientation.load(p.emitOrientation.toMatrix());
 
-		colorMult = p.colorMult;
 		idx = p.idx;
 		startFrame = p.startFrame;
 		life = p.life;
@@ -174,7 +178,6 @@ class ParticleInstance {
 		scaleY = 1.0;
 		scaleZ = 1.0;
 
-		colorMult = -1;
 		if(this.idx != REMOVED_IDX) emitter.error();
 		this.idx = idx;
 		speedAccumulation.load(new h3d.Vector());
@@ -596,7 +599,7 @@ class EmitterObject extends h3d.scene.Object {
 	var instanceCounter = 0;
 	var baseEmitterShader : hrt.shader.BaseEmitter = null;
 	var animatedTextureShader : h3d.shader.AnimatedTexture = null;
-	var colorMultShader : h3d.shader.ColorMult = null;
+	var particleShader : hrt.shader.ParticleShader = null;
 
 	var parentTransform = new h3d.Matrix();
 	var orbitToEmitter = new h3d.Matrix();
@@ -762,9 +765,29 @@ class EmitterObject extends h3d.scene.Object {
 			baseEmitterShader.meshTransformInverse.initInverse(meshTransform);
 			batch.material.mainPass.addShader(baseEmitterShader);
 
-			if(prefab.randomColorMode != RandomColorMode.None) {
-				colorMultShader = new h3d.shader.ColorMult();
-				batch.material.mainPass.addShader(colorMultShader);
+			particleShader = null;
+			inline function getShader() {
+				if( particleShader == null ) {
+					particleShader = new hrt.shader.ParticleShader();
+					batch.material.mainPass.addShader(particleShader);
+				}
+				return particleShader;
+			}
+			if( prefab.randomColorMode != RandomColorMode.None ) {
+				var s = getShader();
+				s.randomMode = prefab.randomColorMode;
+				s.randomColor1.setColor(prefab.randomColor1);
+				s.randomColor2.setColor(prefab.randomColor2);
+				if( prefab.randomColorMode == RandomColorMode.Gradient )
+					s.randomGradient = hrt.impl.Gradient.textureFromData(prefab.randomGradient, false);
+			}
+			if( prefab.fadeColorMode != RandomColorMode.None ) {
+				var s = getShader();
+				s.fadeMode = prefab.fadeColorMode;
+				s.fadeColor1.setColor(prefab.fadeColor1);
+				s.fadeColor2.setColor(prefab.fadeColor2);
+				if( prefab.fadeColorMode == RandomColorMode.Gradient )
+					s.fadeGradient = hrt.impl.Gradient.textureFromData(prefab.fadeGradient, false);
 			}
 
 		}
@@ -1007,16 +1030,6 @@ class EmitterObject extends h3d.scene.Object {
 				var part = allocInstance();
 				part.startTime = globalTime;
 				part.lifeTime = hxd.Math.max(0.01, evaluator.getFast(part.idx, lifeTime, curTime) * lifeTimeScale);
-
-				switch(prefab.randomColorMode) {
-					case None:
-					case Gradient:
-						part.colorMult = Gradient.evalData(prefab.randomGradient, random.rand()).toColor();
-					case Colors:
-						var c = h3d.Vector.fromColor(prefab.randomColor1);
-						c.lerp(c, h3d.Vector.fromColor(prefab.randomColor2), random.rand());
-						part.colorMult = c.toColor();
-				}
 
 				tmpQuat.identity();
 
@@ -1441,8 +1454,6 @@ class EmitterObject extends h3d.scene.Object {
 			baseEmitterShader.lifeTime = p.lifeTime;
 			baseEmitterShader.random = p.random;
 
-			if(colorMultShader != null)
-				colorMultShader.color.setColor(p.colorMult);
 			batch.emitInstance();
 		}
 
@@ -1800,14 +1811,22 @@ class Emitter extends Object3D {
 	public var followRotation : Bool = false;
 
 	@:group("Color")
-	@:s @:disp("Random Color", "Multiplies the color of each particle by a random color, taken between two colors or in a gradient")
+	@:s @:disp("Random Color", "Multiplies the color of each particle (alpha included) by a random color, taken between two colors or in a gradient")
 	public var randomColorMode : RandomColorMode = RandomColorMode.None;
 	@:s @:t(PColor) @:disp("Color 1", "First bound of the random color")
-	public var randomColor1 : Int = 0x000000;
+	public var randomColor1 : Int = 0xFF000000;
 	@:s @:t(PColor) @:disp("Color 2", "Second bound of the random color")
-	public var randomColor2 : Int = 0xFFFFFF;
+	public var randomColor2 : Int = 0xFFFFFFFF;
 	@:s @:disp("Gradient", "Gradient in which the random color is taken")
 	public var randomGradient : GradientData;
+	@:s @:disp("Fade Color", "Multiplies the color of each particle (alpha included) by a color faded over its life, from a color to another or along a gradient")
+	public var fadeColorMode : RandomColorMode = RandomColorMode.None;
+	@:s @:t(PColor) @:disp("Start Color", "Color at the birth of the particle")
+	public var fadeColor1 : Int = 0xFFFFFFFF;
+	@:s @:t(PColor) @:disp("End Color", "Color at the death of the particle")
+	public var fadeColor2 : Int = 0x00FFFFFF;
+	@:s @:disp("Gradient", "Gradient along which the color fades, over the life of the particle")
+	public var fadeGradient : GradientData;
 
 	@:group("Sprite Sheet Animation")
 	@:s @:t(PFile(["jpg", "png"])) @:disp("Sheet", "Texture containing the frames of the animation")
@@ -1849,6 +1868,8 @@ class Emitter extends Object3D {
 		saveParams(data);
 		if( randomColorMode != RandomColorMode.Gradient )
 			Reflect.deleteField(data, "randomGradient");
+		if( fadeColorMode != RandomColorMode.Gradient )
+			Reflect.deleteField(data, "fadeGradient");
 		if( !FX.inFXData(this) )
 			data.version = FX.VERSION;
 		return data;
@@ -1866,7 +1887,9 @@ class Emitter extends Object3D {
 			warmUpTime = 0;
 		}
 		if( randomGradient == null && randomColorMode == RandomColorMode.Gradient )
-			randomGradient = Gradient.getDefaultGradientData();
+			randomGradient = hrt.impl.Gradient.getDefaultGradientData();
+		if( fadeGradient == null && fadeColorMode == RandomColorMode.Gradient )
+			fadeGradient = hrt.impl.Gradient.getDefaultGradientData();
 	}
 
 	override function copy(obj:Prefab) {
@@ -1935,7 +1958,7 @@ class Emitter extends Object3D {
 		return Rebuild;
 	}
 
-	static var REFRESH_PARAMS = ["emitShape", "alignMode", "useCollision", "emitType", "randomColorMode"];
+	static var REFRESH_PARAMS = ["emitShape", "alignMode", "useCollision", "emitType", "randomColorMode", "fadeColorMode"];
 
 	function getHiddenFields() : Array<String> {
 		var hidden = [];
@@ -1977,6 +2000,12 @@ class Emitter extends Object3D {
 		}
 		if(randomColorMode != RandomColorMode.Gradient)
 			hide("randomGradient");
+		if(fadeColorMode != RandomColorMode.Colors) {
+			hide("fadeColor1");
+			hide("fadeColor2");
+		}
+		if(fadeColorMode != RandomColorMode.Gradient)
+			hide("fadeGradient");
 
 		switch (emitType) {
 			case Infinity:
@@ -2009,7 +2038,9 @@ class Emitter extends Object3D {
 
 		function onChange(pname: String, isTemp: Bool) {
 			if (pname == "randomColorMode")
-				randomGradient = randomColorMode == RandomColorMode.Gradient ? Gradient.getDefaultGradientData() : null;
+				randomGradient = randomColorMode == RandomColorMode.Gradient ? hrt.impl.Gradient.getDefaultGradientData() : null;
+			if (pname == "fadeColorMode")
+				fadeGradient = fadeColorMode == RandomColorMode.Gradient ? hrt.impl.Gradient.getDefaultGradientData() : null;
 			if (pname == "warmUpTime" && warmUpTime < 0) {
 				warmUpTime = 0;
 				ctx.quickError("Warm up time can no longer be negative. Use the Delay property instead");

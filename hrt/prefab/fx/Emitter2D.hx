@@ -435,19 +435,23 @@ class Emitter2DObject extends h2d.Object {
 		evaluator.resetRandom(rand);
 	}
 
+	static function colorTile( c : Int ) {
+		return h2d.Tile.fromColor(c, 10, 10, (c >>> 24) / 255);
+	}
+
 	function getTile() {
 		var t = h2d.Tile.fromColor(0xFF00FF, 10, 10);
 		switch (prefab.spriteType) {
 			case Color:
 				switch (prefab.randomColorMode) {
 					case None:
-						t = h2d.Tile.fromColor(prefab.color, 10, 10);
+						t = colorTile(prefab.color);
 					case Colors:
-						var c = h3d.Vector.fromColor(prefab.randomColor1);
-						c.lerp(c, h3d.Vector.fromColor(prefab.randomColor2), rand.rand());
-						t = h2d.Tile.fromColor(c.toColor(), 10, 10);
+						var c = h3d.Vector4.fromColor(prefab.randomColor1);
+						c.lerp(c, h3d.Vector4.fromColor(prefab.randomColor2), rand.rand());
+						t = colorTile(c.toColor());
 					case Gradient:
-						t = h2d.Tile.fromColor(Gradient.evalData(prefab.randomGradient, rand.rand()).toColor(), 10, 10);
+						t = colorTile(Gradient.evalData(prefab.randomGradient, rand.rand()).toColor());
 				}
 			case Texture:
 				t = h2d.Tile.fromTexture(hxd.res.Loader.currentInstance.load(prefab.texture).toTexture());
@@ -554,15 +558,15 @@ class Emitter2D extends Object2D {
 	@:s @:disp("Sprite Type", "Drawing of the particles: a plain color, a texture or a sprite sheet")
 	public var spriteType : SpriteType = SpriteType.Color;
 	@:s @:t(PColor) @:disp("Color", "Color of the particles")
-	public var color : Int = 0x000000;
+	public var color : Int = 0xFF000000;
 	@:s @:disp("Texture", "Texture of the particles")
 	public var texture : String = "";
 	@:s @:disp("Random Color", "Gives each particle a random color instead of the color, taken between two colors or in a gradient")
 	public var randomColorMode : RandomColorMode = RandomColorMode.None;
 	@:s @:t(PColor) @:disp("Color 1", "First bound of the random color")
-	public var randomColor1 : Int = 0x000000;
+	public var randomColor1 : Int = 0xFF000000;
 	@:s @:t(PColor) @:disp("Color 2", "Second bound of the random color")
-	public var randomColor2 : Int = 0xFFFFFF;
+	public var randomColor2 : Int = 0xFFFFFFFF;
 	@:s @:disp("Gradient", "Gradient in which the random color is taken")
 	public var randomGradient : GradientData;
 
