@@ -147,12 +147,21 @@ class FXAnimation extends h3d.scene.Object {
 
 	public function initSubFXs(root: PrefabElement) {
 		subFXs = [];
-		for (fx in root.findAll(SubFX)) {
-			var anim = Std.downcast(fx.refInstance?.findFirstLocal3d(), FXAnimation);
-			if (anim != null) {
-				subFXs.push(anim);
+
+		function rec(elt: PrefabElement) {
+			var ref = Std.downcast(elt, hrt.prefab.Reference);
+			if (ref != null && (Std.isOfType(ref, SubFX) || Std.isOfType(ref.refInstance, FX))) {
+				var anim = Std.downcast(ref.refInstance?.findFirstLocal3d(), FXAnimation);
+				if (anim != null) {
+					subFXs.push(anim);
+				}
+				return;
 			}
+
+			for (c in BaseFXTools.getAnimatedChildren(elt))
+				rec(c);
 		}
+		rec(root);
 	}
 
 	public function initLoop() {
@@ -703,7 +712,7 @@ class FXAnimation extends h3d.scene.Object {
 			}
 		}
 
-		for(child in elt.children) {
+		for(child in BaseFXTools.getAnimatedChildren(elt)) {
 			out = initEvents(child, out);
 		}
 		return out;
@@ -713,7 +722,7 @@ class FXAnimation extends h3d.scene.Object {
 		if(@:privateAccess !elt.shouldBeInstanciated()) return;
 		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
 			// Don't extract animations for children of Emitters
-			for(c in elt.children) {
+			for(c in BaseFXTools.getAnimatedChildren(elt)) {
 				initObjAnimations(c);
 			}
 		}
@@ -796,7 +805,7 @@ class FXAnimation extends h3d.scene.Object {
 				}
 			}
 			else {
-				for(c in elt.children) {
+				for(c in BaseFXTools.getAnimatedChildren(elt)) {
 					rec(c);
 				}
 			}

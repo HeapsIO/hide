@@ -330,11 +330,22 @@ class BaseFXTools {
 		return { x: comp(":x"), y: comp(":y"), z: comp(":z") };
 	}
 
+	/**
+		Children of `elt`, plus the refInstance of a Reference so its content is animated by the FX.
+		SubFX and references to FX are animated by their own FXAnimation.
+	**/
+	public static function getAnimatedChildren(elt: PrefabElement) : haxe.ds.ReadOnlyArray<PrefabElement> {
+		var ref = Std.downcast(elt, hrt.prefab.Reference);
+		if (ref == null || ref.refInstance == null || Std.isOfType(ref, SubFX) || Std.isOfType(ref.refInstance, FX) || @:privateAccess !ref.shouldBeInstanciated())
+			return elt.children;
+		return elt.children.concat([ref.refInstance]);
+	}
+
 	static var emptyParams : Array<String> = [];
 	public static function getCustomAnimations(elt: PrefabElement, anims: Array<CustomAnimation>, ?batch: h3d.scene.MeshBatch, particle = false) {
 		// Init all animations recursively except Emitter ones (called in Emitter)
 		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
-			for(c in elt.children) {
+			for(c in getAnimatedChildren(elt)) {
 				getCustomAnimations(c, anims, batch, particle);
 			}
 		}
