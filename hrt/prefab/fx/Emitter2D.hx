@@ -468,7 +468,7 @@ class Emitter2DObject extends h2d.Object {
 @:prefabName("Emitter 2D")
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter2d)
 @:build(hrt.prefab.fx.EmitterMacros.build("hrt.prefab.fx.Emitter2D.Emitter2DObject"))
-class Emitter2D extends Object2D {
+class Emitter2D extends Object2D implements hrt.prefab.fx.EmitterParam.IEmitter {
 
 	@:group("Properties")
 	@:s @:range(0, 1) @:disp("Time Scale", "Time multiplier of the simulation")

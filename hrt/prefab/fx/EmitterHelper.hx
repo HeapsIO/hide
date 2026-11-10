@@ -10,82 +10,47 @@ typedef PropertyDef = {
 
 class EmitterHelper {
 
-	public static function isEmitter( p : Prefab ) {
-		return p is Emitter || p is Emitter2D;
+	// the mode inspector edits the params of an emitter or of a shader under one (in its `particleParams`)
+	static function getMode(p: Prefab, name: String, comp: Int) : ParamMode {
+		if (p is IEmitter)
+			return (cast p : IEmitter).getMode(name, comp);
+		var shader : hrt.prefab.Shader = cast p;
+		return shader.particleParams?.get(EmitterParam.curveName(name, shaderParamSize(shader, name), comp));
 	}
 
-	public static function getProperties( p : Prefab ) : Array<PropertyDef> {
-		var e = Std.downcast(p, Emitter);
-		if( e != null ) return e.getProperties();
-		var e2 = Std.downcast(p, Emitter2D);
-		if( e2 != null ) return e2.getProperties();
-		return [];
-	}
-
-	public static function getParams( p : Prefab ) : Array<ParamDef> {
-		var e = Std.downcast(p, Emitter);
-		if( e != null ) return e.getParams();
-		var e2 = Std.downcast(p, Emitter2D);
-		if( e2 != null ) return e2.getParams();
-		return [];
-	}
-
-	public static function getFieldsOrder( p : Prefab ) : Array<String> {
-		var e = Std.downcast(p, Emitter);
-		if( e != null ) return e.getFieldsOrder();
-		var e2 = Std.downcast(p, Emitter2D);
-		if( e2 != null ) return e2.getFieldsOrder();
-		return [];
-	}
-
-	public static function getMode( p : Prefab, name : String, comp : Int ) : ParamMode {
-		var e = Std.downcast(p, Emitter);
-		if( e != null ) return e.getMode(name, comp);
-		var e2 = Std.downcast(p, Emitter2D);
-		if( e2 != null ) return e2.getMode(name, comp);
-		var shader = Std.downcast(p, hrt.prefab.Shader);
-		if( shader != null && shader.particleParams != null )
-			return shader.particleParams.get(name + ":" + EmitterParam.COMPONENTS[comp]) ?? (comp == 0 ? shader.particleParams.get(name) : null);
-		return null;
-	}
-
-	public static function setMode( p : Prefab, name : String, comp : Int, m : ParamMode ) {
-		var e = Std.downcast(p, Emitter);
-		if( e != null ) {
-			e.setMode(name, comp, m);
+	static function setMode(p: Prefab, name: String, comp: Int, m: ParamMode) {
+		if (p is IEmitter) {
+			(cast p : IEmitter).setMode(name, comp, m);
 			return;
 		}
-		var e2 = Std.downcast(p, Emitter2D);
-		if( e2 != null ) {
-			e2.setMode(name, comp, m);
-			return;
-		}
-		var shader = Std.downcast(p, hrt.prefab.Shader);
-		if( shader == null )
-			throw "Not an emitter or a shader: " + p.getAbsPath(true);
-		var size = EmitterParam.getParamSize(Lambda.find(shader.getShaderDefinition().data.vars, v -> v.name == name));
+		var shader : hrt.prefab.Shader = cast p;
+		var size = shaderParamSize(shader, name);
 		var key = EmitterParam.curveName(name, size, comp);
 		shader.particleParams?.remove(key);
-		switch( m ) {
+		switch (m) {
 			case Constant(k):
-				if( size == 1 )
+				if (size == 1)
 					Reflect.setField(shader.props, name, k);
 				else {
 					var prop : Array<Dynamic> = Reflect.field(shader.props, name);
-					if( !Std.isOfType(prop, Array) ) {
-						prop = [for( j in 0...size ) EmitterParam.baseComponent(prop, size, j)];
+					if (!Std.isOfType(prop, Array)) {
+						prop = [for (j in 0...size) EmitterParam.baseComponent(prop, size, j)];
 						Reflect.setField(shader.props, name, prop);
 					}
 					prop[comp] = k;
 				}
 			case null:
 			default:
-				if( shader.particleParams == null )
+				if (shader.particleParams == null)
 					shader.particleParams = [];
 				shader.particleParams.set(key, m);
 		}
-		if( shader.particleParams != null && !shader.particleParams.iterator().hasNext() )
+		if (shader.particleParams != null && !shader.particleParams.iterator().hasNext())
 			shader.particleParams = null;
+	}
+
+	static function shaderParamSize(shader: hrt.prefab.Shader, name: String) {
+		return EmitterParam.getParamSize(Lambda.find(shader.getShaderDefinition().data.vars, v -> v.name == name));
 	}
 
 	// a random in [0, 1) for the step `i` of an emitter of seed `seed`: the same whatever the ticks (a loop or a seek included)
@@ -386,18 +351,14 @@ class EmitterHelper {
 			return cat;
 		}
 
-		var properties = getProperties(emitter), params = getParams(emitter);
-		for (name in getFieldsOrder(emitter)) {
-			if (hidden.contains(name))
-				continue;
-			var property = Lambda.find(properties, p -> p.name == name);
-			if (property != null) {
-				editProperty(getCategory(property.groupName ?? "Emitter"), emitter, property, changed);
-				continue;
+		for (f in (cast emitter : IEmitter).getFields()) {
+			switch (f) {
+				case Property(p) if (!hidden.contains(p.name)):
+					editProperty(getCategory(p.groupName ?? "Emitter"), emitter, p, changed);
+				case Param(p) if (!hidden.contains(p.name)):
+					editParam(ctx, emitter, p, [Constant, Range, Curve, RandomCurve, CurveRange], getCategory(p.groupName));
+				default:
 			}
-			var param = Lambda.find(params, p -> p.name == name);
-			if (param != null)
-				editParam(ctx, emitter, param, [Constant, Range, Curve, RandomCurve, CurveRange], getCategory(param.groupName));
 		}
 	}
 
@@ -545,11 +506,17 @@ class EmitterHelper {
 			if (shader.particleParams != null)
 				names = [for (k => m in shader.particleParams) if (EmitterParam.isCurveMode(m)) k];
 		}
-		else
-			for (p in getParams(owner))
-				for (i in 0...p.def.length)
-					if (EmitterParam.isCurveMode(getMode(owner, p.name, i)))
-						names.push(EmitterParam.curveKey(p, i));
+		else {
+			var emitter : IEmitter = cast owner;
+			for (f in emitter.getFields())
+				switch (f) {
+					case Param(p):
+						for (i in 0...p.def.length)
+							if (EmitterParam.isCurveMode(emitter.getMode(p.name, i)))
+								names.push(EmitterParam.curveKey(p, i));
+					default:
+				}
+		}
 		var curves = [];
 		for (n in names) {
 			var c = hrt.prefab.fx.Curve.getCurve(owner, n);

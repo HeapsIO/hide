@@ -1708,7 +1708,7 @@ class EmitterObject extends h3d.scene.Object {
 @:prefabName("Emitter")
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter)
 @:build(hrt.prefab.fx.EmitterMacros.build("hrt.prefab.fx.Emitter.EmitterObject"))
-class Emitter extends Object3D {
+class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 
 	@:group("Properties")
 	@:s @:range(0, null) @:disp("Time Scale", "Time multiplier of the simulation")

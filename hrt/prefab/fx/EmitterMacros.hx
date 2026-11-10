@@ -12,7 +12,7 @@ import haxe.macro.Expr;
 	- `@:param(PVec(3, -10, 10), Particle, default)` params with modes (`EmitterParam`), saved under their name like the properties, which is
 	  also the field of their value in the emitter object. The Particle ones, read over the particle life, are named `partX`;
 	- `@:group("Name")`: the inspector group of the field and of the next ones.
-	The inspector shows the properties and the params in their declaration order.
+	`FIELDS` has the properties and the params in their declaration order, the one of the inspector.
 	The random slots are allocated in the declaration order of the params (Emission ones have none).
 **/
 class EmitterMacros {
@@ -51,7 +51,7 @@ class EmitterMacros {
 	public static function build( objectType : String ) : Array<Field> {
 		var fields = Context.getBuildFields();
 		var pos = Context.currentPos();
-		var properties = [], params = [], order = [];
+		var fieldDefs = [], params = [];
 		var load = [], save = [], copy = [], getCases = [], setCases = [];
 		var values = [], apply = [];
 		var group = "Params";
@@ -68,9 +68,8 @@ class EmitterMacros {
 				switch( f.kind ) {
 				case FVar(t, init):
 					var animate = meta(f, ":animate") != null;
-					order.push(n);
-					properties.push(macro @:pos(p) { name: $v{n}, t: ${propType(f, t, init)}, def: (${init ?? macro null} : Dynamic), groupName: $v{group},
-						animate: $v{animate}, disp: $label, desc: $desc });
+					fieldDefs.push(macro @:pos(p) hrt.prefab.fx.EmitterParam.EmitterField.Property({ name: $v{n}, t: ${propType(f, t, init)},
+						def: (${init ?? macro null} : Dynamic), groupName: $v{group}, animate: $v{animate}, disp: $label, desc: $desc }));
 					if( init != null && init.expr.match(EArrayDecl(_)) )
 						save.push(macro @:pos(p) if( haxe.Json.stringify(this.$n) == haxe.Json.stringify($init) ) Reflect.deleteField(data, $v{n}));
 					if( animate ) {
@@ -85,7 +84,6 @@ class EmitterMacros {
 			var a = meta(f, ":param");
 			if( a == null )
 				continue;
-			order.push(n);
 			var dim = switch( a[0].expr ) {
 				case ECall({ expr: EConst(CIdent("PVec")) }, args): Std.parseInt(haxe.macro.ExprTools.toString(args[0]));
 				default: 1;
@@ -97,6 +95,7 @@ class EmitterMacros {
 				default: [a[2]];
 			}
 			var def = macro @:pos(p) PARAMS[$v{params.length}];
+			fieldDefs.push(macro @:pos(p) hrt.prefab.fx.EmitterParam.EmitterField.Param($def));
 			params.push(macro @:pos(p) { name: $v{n}, t: ${a[0]}, def: ($a{defs} : Array<Float>), kind: hrt.prefab.fx.EmitterParam.ParamKind.$kind,
 				groupName: $v{group}, disp: $label, desc: $desc });
 			if( dim == 1 ) {
@@ -104,13 +103,16 @@ class EmitterMacros {
 				save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.saveMode(hrt.prefab.fx.EmitterParam.saved(this, $def, 0, this.$n)); if( v != null ) data.$n = v; });
 				getCases.push({ values: [macro $v{n}], expr: macro this.$n });
 				setCases.push({ values: [macro $v{n}], expr: macro this.$n = m });
+				copy.push(macro @:pos(p) this.$n = from.$n);
 			} else {
+				// the modes of the components
+				f.kind = switch( f.kind ) { case FVar(t, _): FVar(t, macro [null, null, null]); default: f.kind; };
 				load.push(macro @:pos(p) this.$n = hrt.prefab.fx.EmitterParam.parseVec(data.$n));
-				save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.saveVec(hrt.prefab.fx.EmitterParam.savedVec(this, $def, this.$n)); if( v != null ) data.$n = v; });
-				getCases.push({ values: [macro $v{n}], expr: macro hrt.prefab.fx.EmitterParam.comp(this.$n, comp) });
-				setCases.push({ values: [macro $v{n}], expr: macro this.$n = hrt.prefab.fx.EmitterParam.withComp(this.$n, comp, m) });
+				save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.saveVec(this, $def, this.$n); if( v != null ) data.$n = v; });
+				getCases.push({ values: [macro $v{n}], expr: macro this.$n[comp] });
+				setCases.push({ values: [macro $v{n}], expr: macro this.$n[comp] = m });
+				copy.push(macro @:pos(p) this.$n = from.$n.copy());
 			}
-			copy.push(macro @:pos(p) this.$n = from.$n);
 			apply.push(macro @:pos(p) obj.$n = v.values[$v{values.length}]);
 			values.push(macro @:pos(p) b.values.push(b.param($def)));
 		}
@@ -132,9 +134,8 @@ class EmitterMacros {
 		var selfType = Context.toComplexType(Context.getLocalType());
 		// the statics first, the ones of the class can use them
 		var statics = (macro class {
-			public static var PROPERTIES : Array<hrt.prefab.fx.EmitterHelper.PropertyDef> = $a{properties};
-			public static var PARAMS : Array<hrt.prefab.fx.EmitterParam.ParamDef> = $a{params};
-			public static var FIELDS_ORDER : Array<String> = $v{order};
+			static var PARAMS : Array<hrt.prefab.fx.EmitterParam.ParamDef> = $a{params};
+			public static var FIELDS : Array<hrt.prefab.fx.EmitterParam.EmitterField> = $a{fieldDefs};
 		}).fields;
 		var methods = (macro class {
 			function loadParams( data : Dynamic ) {
@@ -148,9 +149,7 @@ class EmitterMacros {
 				$b{copy};
 				$copyValues;
 			}
-			public function getProperties() return PROPERTIES;
-			public function getParams() return PARAMS;
-			public function getFieldsOrder() return FIELDS_ORDER;
+			public function getFields() return FIELDS;
 			public function getMode( name : String, comp : Int ) : hrt.prefab.fx.EmitterParam.ParamMode {
 				return ${{ expr: ESwitch(macro name, getCases, macro null), pos: pos }};
 			}

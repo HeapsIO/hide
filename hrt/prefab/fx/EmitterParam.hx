@@ -19,8 +19,9 @@ enum ParamMode {
 	CurveRange;
 }
 
-typedef ParamVec2 = { ?x : ParamMode, ?y : ParamMode };
-typedef ParamVec3 = { > ParamVec2, ?z : ParamMode };
+// the modes of the components of a vector param, x y z
+typedef ParamVec2 = Array<ParamMode>;
+typedef ParamVec3 = Array<ParamMode>;
 
 typedef ParamDef = {
 	var name : String;
@@ -30,6 +31,20 @@ typedef ParamDef = {
 	var groupName : String;
 	var ?disp : String;
 	var ?desc : String;
+}
+
+enum EmitterField {
+	// plain field read as is (can be animated by curves in emitter time)
+	Property( def : EmitterHelper.PropertyDef );
+	// dynamic field with modes (constant, range, curves...), random per particle or per emission cycle
+	Param( def : ParamDef );
+}
+
+// see EmitterMacros
+interface IEmitter {
+	function getFields() : Array<EmitterField>;
+	function getMode( name : String, comp : Int ) : ParamMode;
+	function setMode( name : String, comp : Int, m : ParamMode ) : Void;
 }
 
 class EmitterParam {
@@ -47,9 +62,10 @@ class EmitterParam {
 
 	// the params have their curves in their modes
 	public static function animKeys( prefab : Prefab, prop : String ) : Array<String> {
-		if( !EmitterHelper.isEmitter(prefab) )
+		var emitter : IEmitter = prefab is IEmitter ? cast prefab : null;
+		if( emitter == null )
 			return null;
-		return Lambda.exists(EmitterHelper.getProperties(prefab), p -> p.animate == true && p.name == prop) ? [prop] : null;
+		return Lambda.exists(emitter.getFields(), f -> switch( f ) { case Property(p): p.animate && p.name == prop; default: false; }) ? [prop] : null;
 	}
 
 	public static function isCurveMode( m : ParamMode ) {
@@ -68,35 +84,22 @@ class EmitterParam {
 		return isCurveMode(m) && !hasCurve(owner, curveKey(def, i)) ? null : m;
 	}
 
-	public static function savedVec( owner : Prefab, def : ParamDef, v : Dynamic ) : ParamVec3 {
-		var out : ParamVec3 = { x: saved(owner, def, 0, comp(v, 0)), y: saved(owner, def, 1, comp(v, 1)), z: def.def.length > 2 ? saved(owner, def, 2, comp(v, 2)) : null };
-		return out.x == null && out.y == null && out.z == null ? null : out;
+	// a vector param is saved as { x, y, z }, with only its set components
+	public static function parseVec( v : Dynamic ) : Array<ParamMode> {
+		return [for( i in 0...3 ) v == null ? null : parseMode(Reflect.field(v, COMPONENTS[i]))];
 	}
 
-	public static function parseVec( v : Dynamic ) : ParamVec3 {
-		if( v == null )
-			return null;
-		var out : ParamVec3 = { x: parseMode(v.x), y: parseMode(v.y), z: parseMode(v.z) };
-		return out.x == null && out.y == null && out.z == null ? null : out;
-	}
-
-	public static function saveVec( v : Dynamic ) : Dynamic {
-		if( v == null || (v.x == null && v.y == null && v.z == null) )
-			return null;
-		var o : Dynamic = {};
-		if( v.x != null ) o.x = saveMode(v.x);
-		if( v.y != null ) o.y = saveMode(v.y);
-		if( v.z != null ) o.z = saveMode(v.z);
+	public static function saveVec( owner : Prefab, def : ParamDef, v : Array<ParamMode> ) : Dynamic {
+		var o : Dynamic = null;
+		for( i in 0...def.def.length ) {
+			var m = saved(owner, def, i, v[i]);
+			if( m == null )
+				continue;
+			if( o == null )
+				o = {};
+			Reflect.setField(o, COMPONENTS[i], saveMode(m));
+		}
 		return o;
-	}
-
-	public static function comp( v : Dynamic, i : Int ) : ParamMode {
-		return v == null ? null : i == 0 ? v.x : i == 1 ? v.y : v.z;
-	}
-
-	public static function withComp( v : Dynamic, i : Int, m : ParamMode ) : ParamVec3 {
-		var out : ParamVec3 = { x: i == 0 ? m : comp(v, 0), y: i == 1 ? m : comp(v, 1), z: i == 2 ? m : comp(v, 2) };
-		return out.x == null && out.y == null && out.z == null ? null : out;
 	}
 
 	public static function getParamSize( v : hxsl.Ast.TVar ) : Int {
@@ -264,7 +267,7 @@ class ParamBuilder {
 	}
 
 	function mode( def : ParamDef, i : Int ) : ParamMode {
-		return EmitterHelper.getMode(owner, def.name, i);
+		return (cast owner : IEmitter).getMode(def.name, i);
 	}
 
 	// the curve of a Curve Range, its two datas the bounds

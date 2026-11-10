@@ -1308,7 +1308,7 @@ class FXEditor extends hide.view.FileView {
 		var rfxElt = Std.downcast(elt, hrt.prefab.rfx.RendererFX);
 		var screenShaderGraph = Std.downcast(elt, hrt.prefab.rfx.ScreenShaderGraph);
 
-		var isEmitter = hrt.prefab.fx.EmitterHelper.isEmitter(elt);
+		var emitter : hrt.prefab.fx.EmitterParam.IEmitter = elt is hrt.prefab.fx.EmitterParam.IEmitter ? cast elt : null;
 
 		var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
 		var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [];
@@ -1455,10 +1455,12 @@ class FXEditor extends hide.view.FileView {
 			menuItems.push(item);
 		}
 
-		if(isEmitter) {
-			for(param in hrt.prefab.fx.EmitterHelper.getProperties(elt))
-				if(param.animate)
-					addParam(param, "");
+		if(emitter != null) {
+			for(f in emitter.getFields())
+				switch(f) {
+					case Property(p) if(p.animate): addParam(p, "");
+					default:
+				}
 		}
 
 		if (particle2dElt != null) {
@@ -1716,7 +1718,7 @@ class FXEditor extends hide.view.FileView {
 	static function getAnimValue(element : PrefabElement, key : String) : Null<Float> {
 		inline function num(v: Dynamic) : Null<Float> return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : null;
 		var parts = key.split(":");
-		var isEmitter = hrt.prefab.fx.EmitterHelper.isEmitter(element);
+		var isEmitter = element is hrt.prefab.fx.EmitterParam.IEmitter;
 		var comp = parts.length > 1 ? parts[1] : "x";
 		if(element is hrt.prefab.Object3D || element is hrt.prefab.Object2D) {
 			switch(parts[0]) {
