@@ -278,23 +278,21 @@ class ParticleInstance {
 		var evaluator = emitter.evaluator;
 
 		//SCALE
-		evaluator.getFastVec(idx, emitter.partStretch, t, v);
-		v.scale3(evaluator.getFast(idx, emitter.partScale, t));
+		evaluator.getPartStretch(idx, t, v);
+		v.scale3(evaluator.getPartScale(idx, t));
 		v.scale3(emitter.curScaleMultiplier);
 		localMat.initScale(v.x, v.y, v.z);
 
 
 		// PIVOT
-		if(emitter.partPivot != VZero) {
-			evaluator.getFastVec(idx, emitter.partPivot, t, v);
+		if(evaluator.getPartPivot(idx, t, v)) {
 			localMat.tx = v.x * localMat._11;
 			localMat.ty = v.y * localMat._22;
 			localMat.tz = v.z * localMat._33;
 		}
 
 		// ROTATION
-		if(emitter.partRotation != VZero) {
-			evaluator.getFastVec(idx, emitter.partRotation, t, v);
+		if(evaluator.getPartRotation(idx, t, v)) {
 			v.scale3(Math.PI / 180.0);
 			if(v.x == 0 && v.y == 0)  // optim: most rotations are around Z only, >2x faster
 				EmitterHelper.rotateZ(localMat, v.z);
@@ -303,8 +301,7 @@ class ParticleInstance {
 		}
 
 		//OFFSET
-		if(emitter.partOffset != VZero) {
-			evaluator.getFastVec(idx, emitter.partOffset, t, v);
+		if(evaluator.getPartOffset(idx, t, v)) {
 			localMat.tx += v.x;
 			localMat.ty += v.y;
 			localMat.tz += v.z;
@@ -331,24 +328,22 @@ class ParticleInstance {
 
 		if( life == 0 ) {
 			// local speed
-			evaluator.getFastVec(idx, emitter.startSpeed, emitter.curTime, v);
+			evaluator.getStartSpeed(idx, emitter.curTime, v);
 			v.transform3x3(emitOrientation);
 			add(speedAccumulation, v);
 			// world speed
-			evaluator.getFastVec(idx, emitter.startWorldSpeed, emitter.curTime, v);
+			evaluator.getStartWorldSpeed(idx, emitter.curTime, v);
 			v.transform3x3(emitter.invTransform);
 			add(speedAccumulation, v);
 		}
 
-		if(emitter.partAcceleration != VZero) {
-			evaluator.getFastVec(idx, emitter.partAcceleration, t, v);
+		if(evaluator.getPartAcceleration(idx, t, v)) {
 			v.scale3(dt);
 			v.transform3x3(emitOrientation);
 			add(speedAccumulation, v);
 		}
 
-		if(emitter.partWorldAcceleration != VZero) {
-			evaluator.getFastVec(idx, emitter.partWorldAcceleration, t, v);
+		if(evaluator.getPartWorldAcceleration(idx, t, v)) {
 			v.scale3(dt);
 			if(prefab.simulationSpace == Local)
 				v.transform3x3(emitter.invTransform);
@@ -359,27 +354,25 @@ class ParticleInstance {
 		speed.y += speedAccumulation.y;
 		speed.z += speedAccumulation.z;
 
-		if(emitter.partSpeed != VZero) {
-			evaluator.getFastVec(idx, emitter.partSpeed, t, v);
+		if(evaluator.getPartSpeed(idx, t, v)) {
 			v.transform3x3(emitOrientation);
 			add(speed, v);
 		}
 
-		if (emitter.partDampen != VZero) {
-			var dampen = evaluator.getFast(idx, emitter.partDampen, t);
+		if (evaluator.partDampen != VZero) {
+			var dampen = evaluator.getPartDampen(idx, t);
 			var scale = Math.exp(dampen* -dt);
 			speedAccumulation.scale(scale);
 		}
 
-		if(emitter.partWorldSpeed != VZero) {
-			evaluator.getFastVec(idx, emitter.partWorldSpeed, t, v);
+		if(evaluator.getPartWorldSpeed(idx, t, v)) {
 			if(prefab.simulationSpace == Local)
 				v.transform3x3(emitter.invTransform);
 			add(speed, v);
 		}
 
-		if (emitter.partMaxSpeed != VZero) {
-			var maxVel = evaluator.getFast(idx, emitter.partMaxSpeed, t);
+		if (evaluator.partMaxSpeed != VZero) {
+			var maxVel = evaluator.getPartMaxSpeed(idx, t);
 			var curVelSq = speed.lengthSq();
 			if (maxVel * maxVel < curVelSq) {
 				speed.normalize();
@@ -393,8 +386,8 @@ class ParticleInstance {
 			speed.z *= emitter.worldScale.z;
 		}
 
-		if (emitter.partStretchVelocity != VZero) {
-			var s = evaluator.getFast(idx, emitter.partStretchVelocity, t);
+		if (evaluator.partStretchVelocity != VZero) {
+			var s = evaluator.getPartStretchVelocity(idx, t);
 			var absPos = this.absPos;
 			var sx = hxd.Math.abs(speed.x * absPos._11 + speed.y * absPos._12 + speed.z * absPos._13);
 			sx = hxd.Math.min(sx, 0.25);
@@ -414,8 +407,7 @@ class ParticleInstance {
 		y += speed.y * dt;
 		z += speed.z * dt;
 
-		if(emitter.partOrbitSpeed != VZero) {
-			evaluator.getFastVec(idx, emitter.partOrbitSpeed, t, v);
+		if(evaluator.getPartOrbitSpeed(idx, t, v)) {
 
 			var factorOverTime = emitter.curOrbitSpeedMultiplier;
 			v.scale3(factorOverTime * (Math.PI / 180.0));
@@ -488,6 +480,9 @@ class ParticleInstance {
 	}
 }
 
+@:build(hrt.prefab.fx.EmitterMacros.buildEvaluator("hrt.prefab.fx.Emitter"))
+class EmitterEvaluator extends Evaluator {}
+
 @:access(hrt.prefab.Prefab)
 @:allow(hrt.prefab.fx.ParticleInstance)
 @:allow(hrt.prefab.fx.Emitter)
@@ -499,37 +494,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitScale : Float = 1.0;
 	public var lifeTimeScale : Float = 1.0;
 
-	// Emission
-	public var emitRate : Value;
-	public var burstParticleCount : Value;
-	public var lifeTime : Value;
 	public var totalBurstCount : Int = 0;
-
-	// Emit Shape
-	public var emitAngle : Value;
-
-	// Particle Movement
-	public var startSpeed : Value;
-	public var startWorldSpeed : Value;
-	public var partSpeed : Value;
-	public var partWorldSpeed : Value;
-	public var partAcceleration : Value;
-	public var partWorldAcceleration : Value;
-	public var partOrbitSpeed : Value;
-	public var orbitSpeedMultiplier : Value;
-
-	// Limit Velocity
-	public var partDampen : Value;
-	public var partMaxSpeed : Value;
-
-	// Particle Transform
-	public var partOffset : Value;
-	public var partPivot : Value;
-	public var partRotation : Value;
-	public var partScale : Value;
-	public var scaleMultiplier : Value;
-	public var partStretch : Value;
-	public var partStretchVelocity : Value;
 
 	// Ground Collision
 	var collisionPlane : h3d.col.Plane;
@@ -594,7 +559,8 @@ class EmitterObject extends h3d.scene.Object {
 	// the values of the over time settings at the current tick, shared by the particles
 	var curScaleMultiplier = 1.0;
 	var curOrbitSpeedMultiplier = 1.0;
-	var evaluator : Evaluator;
+	// built by the prefab, with a Value per param and animated property (EmitterMacros)
+	public var evaluator : EmitterEvaluator;
 	var numInstances = 0;
 	var instanceCounter = 0;
 	var baseEmitterShader : hrt.shader.BaseEmitter = null;
@@ -645,10 +611,9 @@ class EmitterObject extends h3d.scene.Object {
 		scene = getScene();
 	}
 
-	function init(randSlots: Int, prefab: Emitter) {
+	function init(prefab: Emitter) {
 		this.prefab = prefab;
-		evaluator = new Evaluator();
-		evaluator.allocRandom(prefab.maxCount, randSlots);
+		evaluator.allocRandom(prefab.maxCount, evaluator.randomSlots);
 		var anim = getParentFX();
 		if(anim != null)
 			evaluator.parameters = @:privateAccess anim.evaluator.parameters;
@@ -750,7 +715,7 @@ class EmitterObject extends h3d.scene.Object {
 			var frameCount = prefab.frameCount == 0 ? prefab.frameDivisionX * prefab.frameDivisionY : prefab.frameCount;
 			if( frameCount > 1 && prefab.spriteSheet != null ) {
 				var tex = hxd.res.Loader.currentInstance.load(prefab.spriteSheet).toTexture();
-				var meanLifeTime = evaluator.getMean(lifeTime, 0);
+				var meanLifeTime = evaluator.getMean(evaluator.lifeTime, 0);
 				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, prefab.frameDivisionX, prefab.frameDivisionY, frameCount, frameCount * prefab.animationCycles / meanLifeTime);
 				animatedTextureShader.useSourceUVs = prefab.animationUseSourceUVs;
 				animatedTextureShader.startTime = @:privateAccess scene?.renderer.ctx.globalTime ?? 0.0;
@@ -1014,7 +979,7 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 
 		// the values are not made yet
-		if( lifeTime == null )
+		if( evaluator == null )
 			return;
 
 		@:privateAccess var globalTime = scene?.renderer.ctx.globalTime ?? curTime;
@@ -1035,7 +1000,7 @@ class EmitterObject extends h3d.scene.Object {
 			for( i in 0...count ) {
 				var part = allocInstance();
 				part.startTime = globalTime;
-				part.lifeTime = hxd.Math.max(0.01, evaluator.getFast(part.idx, lifeTime, curTime) * lifeTimeScale);
+				part.lifeTime = hxd.Math.max(0.01, evaluator.getLifeTime(part.idx, curTime) * lifeTimeScale);
 
 				tmpQuat.identity();
 
@@ -1051,7 +1016,7 @@ class EmitterObject extends h3d.scene.Object {
 					case Cylinder:
 						var z = random.rand();
 						var dx = 0.0, dy = 0.0;
-						var shapeAngle = hxd.Math.degToRad(evaluator.getFloat(emitAngle, curTime)) / 2.0;
+						var shapeAngle = hxd.Math.degToRad(evaluator.getEmitAngle(curTime)) / 2.0;
 						var a = random.srand(shapeAngle);
 						if(prefab.emitSurface) {
 							dx = Math.cos(a)*(prefab.emitRad2*z + prefab.emitRad1*(1.0-z));
@@ -1119,7 +1084,7 @@ class EmitterObject extends h3d.scene.Object {
 					case Cone:
 						tmpOffset.set(0, 0, 0);
 						var theta = random.rand() * Math.PI * 2;
-						var shapeAngle = hxd.Math.degToRad(evaluator.getFloat(emitAngle, curTime)) / 2.0;
+						var shapeAngle = hxd.Math.degToRad(evaluator.getEmitAngle(curTime)) / 2.0;
 						var phi = shapeAngle * random.rand();
 						tmpDir.x = Math.cos(phi) * scaleX;
 						tmpDir.y = Math.sin(phi) * Math.sin(theta) * scaleY;
@@ -1244,11 +1209,11 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	inline function getBurstCount() {
-		return EmitterHelper.getBurstCount(evaluator, burstParticleCount, curTime, totalBurstCount, randomSeed);
+		return EmitterHelper.getBurstCount(evaluator, evaluator.burstParticleCount, curTime, totalBurstCount, randomSeed);
 	}
 
 	inline function getRate() {
-		return EmitterHelper.getRate(evaluator, emitRate, curTime, prefab.emitRateChangeTime, randomSeed);
+		return EmitterHelper.getRate(evaluator, evaluator.emitRate, curTime, prefab.emitRateChangeTime, randomSeed);
 	}
 
 	function tick( dt : Float, full=true) {
@@ -1265,8 +1230,8 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 		}
 
-		curScaleMultiplier = evaluator.getFloat(scaleMultiplier, curTime);
-		curOrbitSpeedMultiplier = evaluator.getFloat(orbitSpeedMultiplier, curTime);
+		curScaleMultiplier = evaluator.getScaleMultiplier(curTime);
+		curOrbitSpeedMultiplier = evaluator.getOrbitSpeedMultiplier(curTime);
 
 		if(subEmitters != null) {
 			for( se in subEmitters ) {
@@ -1280,7 +1245,7 @@ class EmitterObject extends h3d.scene.Object {
 			}
 		}
 
-		if( emitRate == null )
+		if( evaluator == null )
 			return;
 
 		if( parentNonEmitter != null ) {
@@ -1510,7 +1475,7 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		// Particle space <-> emitter space, for orbit speed
-		if (partOrbitSpeed != VZero) {
+		if (evaluator.partOrbitSpeed != VZero) {
 			orbitToEmitter.multiply(parentTransform, getInvPos());
 			orbitFromEmitter.initInverse(orbitToEmitter);
 		}
@@ -1674,7 +1639,7 @@ class EmitterObject extends h3d.scene.Object {
 			var firstWarmup = curTime <= 0.0 && prefab.warmUpTime > 0;
 			catchupTime = firstWarmup ? prefab.warmUpTime : maxCatchupWindow;
 			curTime = time - catchupTime;
-			emitCount = hxd.Math.ceil(EmitterHelper.getRateSum(evaluator, emitRate, prefab.emitType == Duration ? Math.min(curTime, prefab.emitDuration) : curTime));
+			emitCount = hxd.Math.ceil(EmitterHelper.getRateSum(evaluator, evaluator.emitRate, prefab.emitType == Duration ? Math.min(curTime, prefab.emitDuration) : curTime));
 
 			// Force sort after long time invisible
 			for(i in 0...numInstances)
@@ -1707,7 +1672,7 @@ class EmitterObject extends h3d.scene.Object {
 
 @:prefabName("Emitter")
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter)
-@:build(hrt.prefab.fx.EmitterMacros.build("hrt.prefab.fx.Emitter.EmitterObject"))
+@:build(hrt.prefab.fx.EmitterMacros.build("hrt.prefab.fx.Emitter.EmitterEvaluator"))
 class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 
 	@:group("Properties")
@@ -1931,7 +1896,7 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 			c.to(Emitter) == null &&
 			c.to(hrt.prefab.l3d.Trails) == null);
 
-		var params = makeValues(emitterObj);
+		emitterObj.evaluator = makeEvaluator();
 		emitterObj.particleTemplate = template;
 
 		// SUB-EMITTER
@@ -1947,7 +1912,7 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 		emitterObj.debugGraphics.visible = viewDebug;
 		#end
 
-		emitterObj.init(params.randomSlots, this);
+		emitterObj.init(this);
 
 		#if editor
 		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2", "emitDomeHeight", "emitDomeFlip"].indexOf(propName) >= 0)

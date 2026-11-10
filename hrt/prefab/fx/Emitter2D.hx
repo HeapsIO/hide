@@ -81,20 +81,19 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		m.identity();
 
 		// POSITION
-		if (emitter.partOffset != VZero) {
-			evaluator.getVector2(idx, emitter.partOffset, t, tmpVec);
+		if(evaluator.getPartOffset(idx, t, tmpVec)) {
 			m.initTranslate(tmpVec.x, tmpVec.y);
 		}
 
 		// ROTATION
-		if (emitter.partRotation != VZero) {
-			var r = evaluator.getFast(idx, emitter.partRotation, t) * Math.PI / 180.0;
+		if (evaluator.partRotation != VZero) {
+			var r = evaluator.getPartRotation(idx, t) * Math.PI / 180.0;
 			m.rotate(r);
 		}
 
 		// SCALE
-		evaluator.getVector2(idx, emitter.partStretch, t, tmpVec);
-		tmpVec *= evaluator.getFast(idx, emitter.partScale, t);
+		evaluator.getPartStretch(idx, t, tmpVec);
+		tmpVec *= evaluator.getPartScale(idx, t);
 		tmpVec *= emitter.curScaleMultiplier;
 		m.scale(tmpVec.x, tmpVec.y);
 	}
@@ -106,9 +105,9 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		if (t == 0) {
 			switch (emitter.prefab.emitShape) {
 				case Circle:
-					var radius = evaluator.getFloat(emitter.emitRadius, emitter.curTime);
-					var startAngle = evaluator.getFloat(emitter.emitStartAngle, emitter.curTime) * hxd.Math.PI / 180;
-					var endAngle = evaluator.getFloat(emitter.emitEndAngle, emitter.curTime) * hxd.Math.PI / 180;
+					var radius = evaluator.getEmitRadius(emitter.curTime);
+					var startAngle = evaluator.getEmitStartAngle(emitter.curTime) * hxd.Math.PI / 180;
+					var endAngle = evaluator.getEmitEndAngle(emitter.curTime) * hxd.Math.PI / 180;
 
 					// normalize the angular span to [0, 2PI)
 					var twoPI = Math.PI * 2;
@@ -134,8 +133,8 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 					m.translate(posX, posY);
 
 				case Rectangle:
-					var width = evaluator.getFloat(emitter.emitWidth, emitter.curTime);
-					var height = evaluator.getFloat(emitter.emitHeight, emitter.curTime);
+					var width = evaluator.getEmitWidth(emitter.curTime);
+					var height = evaluator.getEmitHeight(emitter.curTime);
 
 					var posX = (emitter.rand.rand() - 0.5) * width;
 					var posY = (emitter.rand.rand() - 0.5) * height;
@@ -153,27 +152,25 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 			}
 
 			// START LOCAL SPEED
-			evaluator.getVector2(idx, emitter.startSpeed, emitter.curTime, tmpVec);
+			evaluator.getStartSpeed(idx, emitter.curTime, tmpVec);
 			tmpVec.transform2x2(m);
 			speed += tmpVec;
 
 			// START WORLD SPEED
-			evaluator.getVector2(idx, emitter.startWorldSpeed, emitter.curTime, tmpVec);
+			evaluator.getStartWorldSpeed(idx, emitter.curTime, tmpVec);
 			tmpVec.transform2x2(emitter.invTransform);
 			speed += tmpVec;
 		}
 
 		// ACCELERATION
-		if (emitter.partAcceleration != VZero) {
-			evaluator.getVector2(idx, emitter.partAcceleration, t, tmpVec);
+		if(evaluator.getPartAcceleration(idx, t, tmpVec)) {
 			tmpVec.scale(dt);
 			tmpVec.transform2x2(m);
 			speed += tmpVec;
 		}
 
 		// WORLD ACCELERATION
-		if (emitter.partWorldAcceleration != VZero) {
-			evaluator.getVector2(idx, emitter.partWorldAcceleration, t, tmpVec);
+		if(evaluator.getPartWorldAcceleration(idx, t, tmpVec)) {
 			tmpVec.scale(dt);
 			tmpVec.transform2x2(emitter.invTransform);
 			speed += tmpVec;
@@ -182,30 +179,28 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		tmpSpeed.set(speed.x, speed.y);
 
 		// SPEED
-		if (emitter.partSpeed != VZero) {
-			evaluator.getVector2(idx, emitter.partSpeed, t, tmpVec);
+		if(evaluator.getPartSpeed(idx, t, tmpVec)) {
 			tmpVec.transform2x2(m);
 			tmpSpeed += tmpVec;
 		}
 
 		// DAMPEN
-		if (emitter.partDampen != VZero) {
-			var dampen = evaluator.getFast(idx, emitter.partDampen, t);
+		if (evaluator.partDampen != VZero) {
+			var dampen = evaluator.getPartDampen(idx, t);
 			var scale = Math.exp(dampen* -dt);
 			speed.scale(scale);
 		}
 
 
 		// WORLD SPEED
-		if (emitter.partWorldSpeed != VZero) {
-			evaluator.getVector2(idx, emitter.partWorldSpeed, t, tmpVec);
+		if(evaluator.getPartWorldSpeed(idx, t, tmpVec)) {
 			tmpVec.transform2x2(emitter.invTransform);
 			tmpSpeed += tmpVec;
 		}
 
 		// MAX VELOCITY
-		if (emitter.partMaxSpeed != VZero) {
-			var maxVel = evaluator.getFast(idx, emitter.partMaxSpeed, t);
+		if (evaluator.partMaxSpeed != VZero) {
+			var maxVel = evaluator.getPartMaxSpeed(idx, t);
 			var curVelSq = tmpSpeed.lengthSq();
 			if (maxVel * maxVel < curVelSq) {
 				tmpSpeed.normalize();
@@ -215,8 +210,8 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 
 		m.translate(tmpSpeed.x * dt, tmpSpeed.y * dt);
 
-		if (emitter.partOrbitSpeed != VZero) {
-			var orbitSpeed = evaluator.getFast(idx, emitter.partOrbitSpeed, t);
+		if (evaluator.partOrbitSpeed != VZero) {
+			var orbitSpeed = evaluator.getPartOrbitSpeed(idx, t);
 
 			var factorOverTime = emitter.curOrbitSpeedMultiplier;
 			orbitSpeed *= factorOverTime * (Math.PI / 180.0);
@@ -240,10 +235,14 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 	}
 }
 
+@:build(hrt.prefab.fx.EmitterMacros.buildEvaluator("hrt.prefab.fx.Emitter2D"))
+class Emitter2DEvaluator extends Evaluator {}
+
 class Emitter2DObject extends h2d.Object {
 	public var particles : Array<Particle2DInstance> = [];
 	public var batch : h2d.SpriteBatch;
-	var evaluator : Evaluator;
+	// built by the prefab, with a Value per param and animated property (EmitterMacros)
+	public var evaluator : Emitter2DEvaluator;
 	var rand : hxd.Rand;
 
 	var prevTime : Float;
@@ -262,38 +261,6 @@ class Emitter2DObject extends h2d.Object {
 	public var emitScale : Float = 1.0;
 	public var lifeTimeScale : Float = 1.0;
 
-	// Emission
-	public var emitRate : Value;
-	public var burstParticleCount : Value;
-	public var lifeTime : Value;
-
-	// Emit Shape
-	public var emitRadius : Value;
-	public var emitStartAngle : Value;
-	public var emitEndAngle : Value;
-	public var emitWidth : Value;
-	public var emitHeight : Value;
-
-	// Particle Movement
-	public var startSpeed : Value;
-	public var startWorldSpeed : Value;
-	public var partSpeed : Value;
-	public var partWorldSpeed : Value;
-	public var partAcceleration : Value;
-	public var partWorldAcceleration : Value;
-	public var partOrbitSpeed : Value;
-	public var orbitSpeedMultiplier : Value;
-
-	// Limit Velocity
-	public var partDampen : Value;
-	public var partMaxSpeed : Value;
-
-	// Particle Transform
-	public var partOffset : Value;
-	public var partRotation : Value;
-	public var partScale : Value;
-	public var scaleMultiplier : Value;
-	public var partStretch : Value;
 
 	public var invTransform = new h2d.col.Matrix();
 
@@ -302,13 +269,12 @@ class Emitter2DObject extends h2d.Object {
 
 		batch = new h2d.SpriteBatch(h2d.Tile.fromColor(0xFF00FF, 10, 10), this);
 		batch.hasRotationScale = true;
-		evaluator = new Evaluator();
 		rand = new hxd.Rand(0);
 	}
 
-	public function init(randSlots: Int, prefab: Emitter2D) {
+	public function init(prefab: Emitter2D) {
 		this.prefab = prefab;
-		evaluator.allocRandom(prefab.maxCount, randSlots);
+		evaluator.allocRandom(prefab.maxCount, evaluator.randomSlots);
 		evaluator.resetRandom(rand);
 
 		if (animatedTexShader != null)
@@ -316,7 +282,7 @@ class Emitter2DObject extends h2d.Object {
 
 		if (prefab.spriteSheet != null) {
 			var tex = hxd.res.Loader.currentInstance.load(prefab.spriteSheet).toTexture();
-			var meanLifeTime = evaluator.getMean(lifeTime, 0);
+			var meanLifeTime = evaluator.getMean(evaluator.lifeTime, 0);
 			animatedTexShader = new h3d.shader.AnimatedTexture(tex, prefab.frameDivisionX, prefab.frameDivisionY, prefab.frameCount, prefab.frameCount * prefab.animationCycles / meanLifeTime);
 			animatedTexShader.useSourceUVs = prefab.animationUseSourceUVs;
 			animatedTexShader.startTime = 0;
@@ -355,16 +321,16 @@ class Emitter2DObject extends h2d.Object {
 	}
 
 	inline function getBurstCount() {
-		return EmitterHelper.getBurstCount(evaluator, burstParticleCount, curTime, totalBurstCount, prefab.seed);
+		return EmitterHelper.getBurstCount(evaluator, evaluator.burstParticleCount, curTime, totalBurstCount, prefab.seed);
 	}
 
 	inline function getRate() {
-		return EmitterHelper.getRate(evaluator, emitRate, curTime, prefab.emitRateChangeTime, prefab.seed);
+		return EmitterHelper.getRate(evaluator, evaluator.emitRate, curTime, prefab.emitRateChangeTime, prefab.seed);
 	}
 
 	function tick(dt : Float) {
-		curScaleMultiplier = evaluator.getFloat(scaleMultiplier, curTime);
-		curOrbitSpeedMultiplier = evaluator.getFloat(orbitSpeedMultiplier, curTime);
+		curScaleMultiplier = evaluator.getScaleMultiplier(curTime);
+		curOrbitSpeedMultiplier = evaluator.getOrbitSpeedMultiplier(curTime);
 
 		switch (prefab.emitType) {
 			case Infinity:
@@ -418,7 +384,7 @@ class Emitter2DObject extends h2d.Object {
 		for (_ in 0...count) {
 			var part = new Particle2DInstance(getTile(), this);
 			part.idx = instanceCounter;
-			part.lifeTime = evaluator.getFast(part.idx, lifeTime, curTime) * lifeTimeScale;
+			part.lifeTime = evaluator.getLifeTime(part.idx, curTime) * lifeTimeScale;
 			this.particles.push(part);
 			instanceCounter = (instanceCounter + 1) % prefab.maxCount;
 		}
@@ -467,7 +433,7 @@ class Emitter2DObject extends h2d.Object {
 @:access(hrt.prefab.fx.Emitter2DObject)
 @:prefabName("Emitter 2D")
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter2d)
-@:build(hrt.prefab.fx.EmitterMacros.build("hrt.prefab.fx.Emitter2D.Emitter2DObject"))
+@:build(hrt.prefab.fx.EmitterMacros.build("hrt.prefab.fx.Emitter2D.Emitter2DEvaluator"))
 class Emitter2D extends Object2D implements hrt.prefab.fx.EmitterParam.IEmitter {
 
 	@:group("Properties")
@@ -625,11 +591,11 @@ class Emitter2D extends Object2D implements hrt.prefab.fx.EmitterParam.IEmitter 
 		super.updateInstance(propName);
 
 		var emitterObj = Std.downcast(local2d, Emitter2DObject);
-		var params = makeValues(emitterObj);
+		emitterObj.evaluator = makeEvaluator();
 		emitterObj.blendMode  			= 	this.blendMode;
 		emitterObj.batch.blendMode      =   this.blendMode;
 
-		emitterObj.init(params.randomSlots, this);
+		emitterObj.init(this);
 
 		#if editor
 		if(propName == null || ["emitShape", "emitRadius", "emitStartAngle", "emitEndAngle", "emitWidth", "emitHeight"].indexOf(propName) >= 0)
@@ -745,12 +711,12 @@ class Emitter2D extends Object2D implements hrt.prefab.fx.EmitterParam.IEmitter 
 		graphics.lineStyle(1, 0xFFFFFF, 1);
 		switch(emitShape) {
 			case Circle:
-				var radA1 = e.evaluator.getFloat(e.emitStartAngle, 0) * hxd.Math.PI / 180;
-				var radA2 = e.evaluator.getFloat(e.emitEndAngle, 0) * hxd.Math.PI / 180;
-				graphics.drawPie(0, 0, e.evaluator.getFloat(e.emitRadius, 0), radA1, radA2 - radA1);
+				var radA1 = e.evaluator.getFloat(e.evaluator.emitStartAngle, 0) * hxd.Math.PI / 180;
+				var radA2 = e.evaluator.getFloat(e.evaluator.emitEndAngle, 0) * hxd.Math.PI / 180;
+				graphics.drawPie(0, 0, e.evaluator.getFloat(e.evaluator.emitRadius, 0), radA1, radA2 - radA1);
 			case Rectangle:
-				var width = e.evaluator.getFloat(e.emitWidth, 0);
-				var height = e.evaluator.getFloat(e.emitHeight, 0);
+				var width = e.evaluator.getFloat(e.evaluator.emitWidth, 0);
+				var height = e.evaluator.getFloat(e.evaluator.emitHeight, 0);
 				graphics.drawRect(-width / 2, -height / 2, width, height);
 		}
 	}

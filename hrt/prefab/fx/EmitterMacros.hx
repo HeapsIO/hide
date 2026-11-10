@@ -9,11 +9,12 @@ import haxe.macro.Expr;
 	Emitter fields:
 	- `@:s` properties, `@:range(min, max)`, `@:animate` when an animation curve can set them, `@:disp("Label", "Description")` (the description is the tooltip of its line),
 	  `@:t(PFile([...]))` for a type other than the one of the field;
-	- `@:param(PVec(3, -10, 10), Particle, default)` params with modes (`EmitterParam`), saved under their name like the properties, which is
-	  also the field of their value in the emitter object. The Particle ones, read over the particle life, are named `partX`;
+	- `@:param(PVec(3, -10, 10), Particle, default)` params with modes (`EmitterParam`), saved under their name like the properties.
+	  The Particle ones, read over the particle life, are named `partX`;
 	- `@:group("Name")`: the inspector group of the field and of the next ones.
 	`FIELDS` has the properties and the params in their declaration order, the one of the inspector.
 	The random slots are allocated in the declaration order of the params (Emission ones have none).
+	The evaluator of the emitter (`buildEvaluator`) has a `Value` of the same name for each param and animated property, built by `makeEvaluator`.
 **/
 class EmitterMacros {
 
@@ -48,12 +49,19 @@ class EmitterMacros {
 		}
 	}
 
-	public static function build( objectType : String ) : Array<Field> {
+	// a type path from its full name, `pack.Module.Sub`
+	static function typePath( name : String ) : TypePath {
+		var parts = name.split(".");
+		var pack = [while( parts.length > 0 && parts[0].charAt(0) == parts[0].charAt(0).toLowerCase() ) parts.shift()];
+		return { pack: pack, name: parts[0], sub: parts[1] };
+	}
+
+	public static function build( evaluatorType : String ) : Array<Field> {
 		var fields = Context.getBuildFields();
 		var pos = Context.currentPos();
 		var fieldDefs = [], params = [];
 		var load = [], save = [], copy = [], getCases = [], setCases = [];
-		var values = [], apply = [];
+		var values = [];
 		var group = "Params";
 
 		for( f in fields ) {
@@ -72,10 +80,8 @@ class EmitterMacros {
 						def: (${init ?? macro null} : Dynamic), groupName: $v{group}, animate: $v{animate}, disp: $label, desc: $desc }));
 					if( init != null && init.expr.match(EArrayDecl(_)) )
 						save.push(macro @:pos(p) if( haxe.Json.stringify(this.$n) == haxe.Json.stringify($init) ) Reflect.deleteField(data, $v{n}));
-					if( animate ) {
-						apply.push(macro @:pos(p) obj.$n = v.values[$v{values.length}]);
-						values.push(macro @:pos(p) b.values.push(b.animated($v{n}, hrt.prefab.fx.Evaluator.vVal(this.$n))));
-					}
+					if( animate )
+						values.push(macro @:pos(p) v.$n = b.animated($v{n}, hrt.prefab.fx.Evaluator.vVal(this.$n)));
 				default:
 				}
 				continue;
@@ -113,8 +119,7 @@ class EmitterMacros {
 				setCases.push({ values: [macro $v{n}], expr: macro this.$n[comp] = m });
 				copy.push(macro @:pos(p) this.$n = from.$n.copy());
 			}
-			apply.push(macro @:pos(p) obj.$n = v.values[$v{values.length}]);
-			values.push(macro @:pos(p) b.values.push(b.param($def)));
+			values.push(macro @:pos(p) v.$n = b.param($def));
 		}
 
 		// out of the editor the values are built once, by the source of the clones (the prefab of a loaded resource): they only depend on
@@ -130,7 +135,9 @@ class EmitterMacros {
 			}
 			return sharedValues;
 		} : macro return buildValues();
-		var objCT = Context.toComplexType(Context.getType(objectType));
+		// each emitter object gets its own evaluator, a game can override its values
+		var makeEvaluator = share ? macro return getValues().copy() : macro return buildValues();
+		var valuesTP = typePath(evaluatorType), valuesCT = TPath(typePath(evaluatorType));
 		var selfType = Context.toComplexType(Context.getLocalType());
 		// the statics first, the ones of the class can use them
 		var statics = (macro class {
@@ -156,25 +163,87 @@ class EmitterMacros {
 			public function setMode( name : String, comp : Int, m : hrt.prefab.fx.EmitterParam.ParamMode ) {
 				${{ expr: ESwitch(macro name, setCases, macro throw "No param " + name), pos: pos }};
 			}
-			function buildValues() : hrt.prefab.fx.EmitterParam.ParamBuilder {
+			function buildValues() : $valuesCT {
 				var b = new hrt.prefab.fx.EmitterParam.ParamBuilder(this);
+				var v = new $valuesTP();
 				$b{values};
-				return b;
+				v.randomSlots = b.randomSlots;
+				return v;
 			}
-			public function getValues() : hrt.prefab.fx.EmitterParam.ParamBuilder {
+			function getValues() : $valuesCT {
 				$getValues;
 			}
-			public function makeValues( obj : $objCT ) : hrt.prefab.fx.EmitterParam.ParamBuilder {
-				var v = getValues();
-				$b{apply};
-				return v;
+			public function makeEvaluator() : $valuesCT {
+				$makeEvaluator;
 			}
 		}).fields;
 		if( share ) {
-			methods.push({ name: "sharedValues", access: [], kind: FVar(macro : hrt.prefab.fx.EmitterParam.ParamBuilder), pos: pos });
+			methods.push({ name: "sharedValues", access: [], kind: FVar(valuesCT), pos: pos });
 			methods.push({ name: "valuesFrom", access: [], kind: FVar(selfType), pos: pos });
 		}
 		return statics.concat(fields).concat(methods);
+	}
+
+	// the evaluator of the emitter `prefabType`, with its values: the Particle params first, read at each update of each particle
+	public static function buildEvaluator( prefabType : String ) : Array<Field> {
+		var fields = Context.getBuildFields();
+		var pos = Context.currentPos();
+		var prefab = switch( Context.getType(prefabType) ) {
+			case TInst(c, _): c.get();
+			default: Context.error(prefabType + " is not a class", pos);
+		}
+		var particle = [], other = [], getters = [];
+		for( f in prefab.fields.get() ) {
+			var n = f.name, get = "get" + n.charAt(0).toUpperCase() + n.substr(1);
+			var param = f.meta.extract(":param")[0];
+			if( param == null ) {
+				if( f.meta.has(":s") && f.meta.has(":animate") ) {
+					other.push(n);
+					getters.push(macro class { public extern inline function $get( t : Float ) : Float return getFloat($i{n}, t); });
+				}
+				continue;
+			}
+			var kind = haxe.macro.ExprTools.toString(param.params[1]);
+			(kind == "Particle" ? particle : other).push(n);
+			// the Emission ones are read with the random of the emitter (`EmitterHelper`)
+			if( kind == "Emission" )
+				continue;
+			// a vector: `out` is always set, false when the value is zero
+			switch( param.params[0].expr ) {
+			case ECall({ expr: EConst(CIdent("PVec")) }, args) if( haxe.macro.ExprTools.toString(args[0]) == "2" ):
+				getters.push(macro class { public extern inline function $get( pidx : Int, t : Float, out : h2d.col.Point ) : Bool {
+					getVector2(pidx, $i{n}, t, out);
+					return $i{n} != hrt.prefab.fx.Value.VZero;
+				}});
+			case ECall({ expr: EConst(CIdent("PVec")) }, _):
+				getters.push(macro class { public extern inline function $get( pidx : Int, t : Float, out : h3d.Vector4 ) : Bool {
+					getFastVec(pidx, $i{n}, t, out);
+					return $i{n} != hrt.prefab.fx.Value.VZero;
+				}});
+			default:
+				getters.push(macro class { public extern inline function $get( pidx : Int, t : Float ) : Float return getFast(pidx, $i{n}, t); });
+			}
+		}
+		var names = particle.concat(other);
+		for( n in names )
+			fields.push({ name: n, access: [APublic], kind: FVar(macro : hrt.prefab.fx.Value), pos: pos });
+		for( g in getters )
+			fields = fields.concat(g.fields);
+		var cl = Context.getLocalClass().get();
+		var tp : TypePath = { pack: cl.pack, name: cl.module.split(".").pop(), sub: cl.name };
+		return fields.concat((macro class {
+			// per particle
+			public var randomSlots = 0;
+			public function new() {
+				super();
+			}
+			public function copy() {
+				var v = new $tp();
+				$b{[for( n in names ) macro v.$n = $i{n}]};
+				v.randomSlots = randomSlots;
+				return v;
+			}
+		}).fields);
 	}
 	#end
 }
