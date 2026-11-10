@@ -507,6 +507,7 @@ class Element {
 		// reset values are broadcasted as temporary edits, commit them in the multi undo
 		@:privateAccess root.finishUndoPoint();
 		root.editor.finishMultiUndo();
+		root.editor.rebuildInspector();
 	}
 
 	/**
@@ -791,6 +792,8 @@ class Element {
 			widget.label =  def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
 			widget.tooltip = def.desc;
 			widget.anim = def.name;
+			if (def.def != null)
+				widget.defaultValue = def.def;
 			widget.value = Reflect.field(props, def.name) ?? defValue;
 			@:privateAccess widget.onFieldChange = (_) -> {
 				Reflect.setField(props, def.name, widget.value);
