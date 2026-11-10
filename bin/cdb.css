@@ -635,6 +635,42 @@
 		td.loc-pending {
 			color: #6fa8dc;
 		}
+		td:is(.loc-unknown, .loc-missing, .loc-pending, .loc-outdated, .loc-uptodate) {
+			/* inside .cell-root : its overflow would otherwise push it beside the badge instead of around it */
+			&:not(:has(> .cell-root))::before, > .cell-root::before {
+				content: var(--loc-badge);
+				background-color: var(--loc-badge-color);
+				float: left;
+				margin: 2px 4px 0 0;
+				padding: 0 3px;
+				border-radius: 3px;
+				font-size: 9px;
+				line-height: 12px;
+				font-weight: bold;
+				color: #111;
+				pointer-events: none;
+			}
+		}
+		td.loc-unknown {
+			--loc-badge: "???";
+			--loc-badge-color: #888;
+		}
+		td.loc-missing {
+			--loc-badge: "MISSING";
+			--loc-badge-color: #c05050;
+		}
+		td.loc-pending {
+			--loc-badge: "PENDING";
+			--loc-badge-color: #6fa8dc;
+		}
+		td.loc-outdated {
+			--loc-badge: "OUTDATED";
+			--loc-badge-color: #e0a050;
+		}
+		td.loc-uptodate {
+			--loc-badge: "OK";
+			--loc-badge-color: #6aa84f;
+		}
 
 		td.t_script {
 			div.script {

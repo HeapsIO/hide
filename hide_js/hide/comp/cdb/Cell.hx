@@ -304,6 +304,7 @@ class Cell {
 	#if js
 	// a cell is fit when its size changes : displayed, its column resized, its content changed
 	static var fitObserver : hide.comp.ResizeObserver;
+	static final LOC_CLASSES = ["loc-unknown", "loc-missing","loc-pending", "loc-outdated", "loc-uptodate"];
 
 	static function observeFit( root : js.html.Element ) {
 		if( fitObserver == null )
@@ -374,15 +375,20 @@ class Cell {
 		var langShown = isLangShown();
 		var langText = langShown ? editor.lang.sheets.getTranslation(line, column) : null;
 		var hasText = original != null && original != "";
-		var status = !langShown || !hasText ? null : switch( editor.lang.sheets.getStatus(line, column, original) ) {
-			case Unknown: null;
-			case s: s.getName().toLowerCase();
+		var status = !langShown || !hasText ? null : editor.lang.sheets.getStatus(line, column, original);
+		var statusClass = switch( status ) {
+			case null: null;
+			case Unknown: "loc-unknown";
+			case Missing: "loc-missing";
+			case Pending: "loc-pending";
+			case Outdated: "loc-outdated";
+			case UpToDate: "loc-uptodate";
 		}
-		for( s in ["uptodate", "outdated", "pending", "missing"] )
-			elementHtml.classList.toggle("loc-" + s, s == status);
+		for( c in LOC_CLASSES )
+			elementHtml.classList.toggle(c, c == statusClass);
 		elementHtml.classList.toggle("loc-translated", langText != null);
 		if( langShown )
-			elementHtml.title = status ?? "";
+			elementHtml.title = statusClass == null ? "" : status.getName();
 
 		var html = valueHtml(column, langText ?? original, line.table.getRealSheet(), line.obj, []);
 		if( !html.containsHtml )
