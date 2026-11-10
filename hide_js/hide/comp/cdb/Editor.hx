@@ -62,6 +62,7 @@ typedef FilterFlags = haxe.EnumFlags<FilterFlag>;
 
 // ordered from the best to the worst status
 enum abstract LangFilter(Int) to Int {
+	var Localizable = -1; // any status
 	var UpToDate;
 	var Pending;
 	var NeedSend;
@@ -693,7 +694,7 @@ class Editor extends Component {
 		if( langFilter == null )
 			return false;
 		var found = false;
-		visitLangStatus(line, s -> if( s == langFilter ) found = true);
+		visitLangStatus(line, s -> if( s == langFilter || langFilter == Localizable ) found = true);
 		return !found;
 	}
 

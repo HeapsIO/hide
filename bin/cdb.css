@@ -56,12 +56,13 @@
 }
 
 .cdb-view > .hide-tabs > .lang-bar {
-	order: 10000;
+	order: 9998;
 	display: flex;
 	align-items: center;
 	gap: 4px;
 	padding: 2px 4px;
 	background-color: #111;
+	border-top: 1px solid #3a3a3a;
 	select, input.file {
 		height: 18px;
 		font-size: 11px;
@@ -88,9 +89,9 @@
 			&:hover { color: #ddd; }
 			&.active { color: #fff; background-color: #3a3a3a; }
 		}
-		span:nth-child(2) { border-color: #6aa84f; }
-		span:nth-child(3) { border-color: #6fa8dc; }
-		span:nth-child(4) { border-color: #e0a050; }
+		.up-to-date { border-color: #6aa84f; }
+		.pending { border-color: #6fa8dc; }
+		.need-send { border-color: #e0a050; }
 	}
 }
 

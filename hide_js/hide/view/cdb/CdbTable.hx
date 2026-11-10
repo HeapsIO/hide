@@ -422,9 +422,16 @@ class CdbTable extends hide.ui.View<{}> {
 		langFilters = js.Browser.document.createSpanElement();
 		langFilters.className = "lang-filters";
 		langFilters.title = "Show only the lines with localizable texts of this status (all translations : the worst one)";
-		for( name in ["All", "Up To Date", "Pending", "Need Send"] ) {
+		for( f in [
+			{ name : "No Filter", cl : "no-filter" },
+			{ name : "Localizable Lines", cl : "localizable" },
+			{ name : "Up To Date", cl : "up-to-date" },
+			{ name : "Pending", cl : "pending" },
+			{ name : "Need Send", cl : "need-send" },
+		] ) {
 			var b = js.Browser.document.createSpanElement();
-			b.dataset.label = name;
+			b.className = f.cl;
+			b.dataset.label = f.name;
 			langFilters.appendChild(b);
 		}
 		langFilters.onclick = function( e : js.html.MouseEvent ) {
@@ -432,7 +439,7 @@ class CdbTable extends hide.ui.View<{}> {
 			if( b == null )
 				return;
 			var index = [for( c in langFilters.children ) c].indexOf(b);
-			@:privateAccess editor.langFilter = index == 0 ? null : cast (index - 1);
+			@:privateAccess editor.langFilter = index == 0 ? null : cast (index - 2);
 			editor.updateFilters();
 			refreshLangFilters();
 		}
@@ -605,22 +612,50 @@ class CdbTable extends hide.ui.View<{}> {
 			return;
 
 		var table = @:privateAccess editor.tables[0];
+
+		function hasLocalizable( sheet : cdb.Sheet ) : Bool {
+			for( c in sheet.columns )
+				switch( c.type ) {
+				case TString if( c.kind == Localizable ): return true;
+				case TList, TProperties, TPolymorph if( hasLocalizable(sheet.getSub(c)) ): return true;
+				default:
+				}
+			return false;
+		}
+		langFilters.parentElement.style.display = table == null || hasLocalizable(table.sheet) ? null : "none";
+
 		var shown = table != null && (editor.lang != null || editor.allLangs != null);
 		langFilters.style.display = shown ? null : "none";
 		if( !shown )
 			return;
 
-		var counts = [0, 0, 0, 0];
+		// the lines of `objs` and of their lists, recursively
+		function countLines( sheet : cdb.Sheet, objs : Array<Dynamic> ) : Int {
+			var n = objs.length;
+			for( c in sheet.columns ) {
+				if( c.type != TList )
+					continue;
+				var sub = sheet.getSub(c);
+				for( o in objs ) {
+					var v : Array<Dynamic> = Reflect.field(o, c.name);
+					if( v != null )
+						n += countLines(sub, v);
+				}
+			}
+			return n;
+		}
+
+		var counts = [countLines(table.sheet, [for( l in table.lines ) l.obj]), 0, 0, 0, 0];
 		for( l in table.lines )
 			@:privateAccess editor.visitLangStatus(l, s -> {
-				counts[0]++;
-				counts[(s : Int) + 1]++;
+				counts[1]++;
+				counts[(s : Int) + 2]++;
 			});
 
 		var cur = @:privateAccess editor.langFilter;
 		for( i => b in [for( c in langFilters.children ) c] ) {
 			b.textContent = b.dataset.label + " " + counts[i];
-			b.classList.toggle("active", i == 0 ? cur == null : cur != null && (cur : Int) == i - 1);
+			b.classList.toggle("active", i == 0 ? cur == null : cur != null && (cur : Int) == i - 2);
 		}
 	}
 
