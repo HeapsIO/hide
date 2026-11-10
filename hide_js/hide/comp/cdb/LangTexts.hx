@@ -111,6 +111,14 @@ class LangTexts {
 		return n.pending == normalize(original ?? "") ? Sent(n.pendingVersion) : SentOutdated(n.pendingVersion);
 	}
 
+	/**
+		The original text normalized, and the ones the translation was made from and sent to the translators (null if unknown).
+	**/
+	public function getOriginals( line : Line, column : cdb.Data.Column, original : String ) : { current : String, exported : Null<String>, sent : Null<String> } {
+		var n = find(line, column);
+		return { current : normalize(original ?? ""), exported : n?.originalExport, sent : n?.pending };
+	}
+
 	function find( line : Line, column : cdb.Data.Column ) : LangNode {
 		// same keys as cdb.Lang.apply : the id, else the index
 		function lineNode( parent : LangNode, line : Line ) {

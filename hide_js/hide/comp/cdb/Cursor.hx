@@ -98,7 +98,7 @@ class Cursor {
 		// Enter/leave subtable
 		if( dx == 0 && !shift && !ctrl && !alt) {
 			var c = getCell();
-			if( c != null && dy == 1 && c.line.subTable != null && c.line.subTable.cell == c ) {
+			if( c != null && dy == 1 && c.line.subTable != null && c.line.subTable.cell == c && !Std.isOfType(c.line.subTable, LangDiffTable) ) {
 				set(c.line.subTable);
 				return;
 			}

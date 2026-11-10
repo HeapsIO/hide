@@ -603,3 +603,141 @@ class Diff {
 		return target;
 	}
 }
+
+enum DiffTextKind {
+	Delete;
+	Common;
+	Add;
+}
+
+/**
+	Shortest edit script `ses` turning `a` into `b`.
+	Adapted from https://github.com/cubicdaiya/onp/blob/master/javascript/onp.js
+**/
+class DiffText {
+	var a : Array<String>;
+	var b : Array<String>;
+	var reverse : Bool = false;
+
+	var path : Array<Int> = [];
+	var pathposi : Array<{ x : Int, y : Int, k : Int }> = [];
+	public var ses(default, null) : Array<{ elem : String, kind : DiffTextKind }> = [];
+
+	var offset(get, never) : Int;
+	inline function get_offset() {
+		return a.length + 1;
+	}
+
+	public function new( a : Array<String>, b : Array<String> ) {
+		if( a.length >= b.length ) {
+			this.a = b;
+			this.b = a;
+			reverse = true;
+		} else {
+			this.a = a;
+			this.b = b;
+		}
+
+		compose();
+	}
+
+	/**
+		The elements of `ses` separated by spaces, the added ones in `<span class="a">`, the deleted ones in `<span class="d">`.
+		Between two common elements, the deleted ones are before the added ones.
+	**/
+	public function toHtml() : String {
+		var str = "";
+		var added = "";
+		var deleted = "";
+		function flush() {
+			if( deleted != "" )
+				str += '<span class="d">$deleted</span>';
+			if( added != "" )
+				str += '<span class="a">$added</span>';
+			added = deleted = "";
+		}
+
+		for( part in ses ) {
+			var elem = StringTools.htmlEscape(part.elem) + " ";
+			switch( part.kind ) {
+			case Add: added += elem;
+			case Delete: deleted += elem;
+			case Common:
+				flush();
+				str += elem;
+			}
+		}
+		flush();
+		return str;
+	}
+
+	function snake( k : Int, p : Int, pp : Int ) {
+		var r = p > pp ? path[k - 1 + offset] : path[k + 1 + offset];
+		var y = pp > p ? pp : p;
+		var x = y - k;
+
+		while( x < a.length && y < b.length && a[x] == b[y] ) {
+			x++;
+			y++;
+		}
+
+		path[k + offset] = pathposi.length;
+		pathposi[pathposi.length] = { x : x, y : y, k : r };
+		return y;
+	}
+
+	function compose() {
+		var delta = b.length - a.length;
+		var size = b.length + a.length + 3;
+		var fp = [];
+		for( i in 0...size ) {
+			fp[i] = -1;
+			path[i] = -1;
+		}
+
+		var p = -1;
+		do {
+			p += 1;
+			for( k in -p...delta )
+				fp[k + offset] = snake(k, fp[k - 1 + offset] + 1, fp[k + 1 + offset]);
+
+			var k = delta + p;
+			while( k >= delta + 1 ) {
+				fp[k + offset] = snake(k, fp[k - 1 + offset] + 1, fp[k + 1 + offset]);
+				k -= 1;
+			}
+			fp[delta + offset] = snake(delta, fp[delta - 1 + offset] + 1, fp[delta + 1 + offset]);
+		} while( fp[delta + offset] != b.length );
+
+		var epc : Array<{ x : Int, y : Int }> = [];
+		var r = path[delta + offset];
+		while( r != -1 ) {
+			epc.push({ x : pathposi[r].x, y : pathposi[r].y });
+			r = pathposi[r].k;
+		}
+
+		recordSeq(epc);
+	}
+
+	function recordSeq( epc : Array<{ x : Int, y : Int }> ) {
+		var px = 0;
+		var py = 0;
+		var i = epc.length - 1;
+		while( i >= 0 ) {
+			while( px < epc[i].x || py < epc[i].y ) {
+				if( epc[i].y - epc[i].x > py - px ) {
+					ses.push({ elem : b[py], kind : reverse ? Delete : Add });
+					py++;
+				} else if( epc[i].y - epc[i].x < py - px ) {
+					ses.push({ elem : a[px], kind : reverse ? Add : Delete });
+					px++;
+				} else {
+					ses.push({ elem : a[px], kind : Common });
+					py++;
+					px++;
+				}
+			}
+			i--;
+		}
+	}
+}

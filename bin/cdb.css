@@ -1071,6 +1071,28 @@
 			}
 		}
 
+		table.cdb-lang-diff {
+			td {
+				color: inherit;
+				opacity: 1;
+				white-space: pre-wrap;
+				user-select: text;
+				vertical-align: top;
+				min-width: 200px;
+				max-width: 500px;
+			}
+			td.no-diff {
+				opacity: 0.5;
+			}
+			span.a {
+				background-color: rgba(120, 220, 110, 0.2);
+			}
+			span.d {
+				background-color: rgba(240, 120, 150, 0.2);
+				text-decoration: line-through;
+			}
+		}
+
 		.cdb-types {
 			position: absolute;
 			z-index: 900;

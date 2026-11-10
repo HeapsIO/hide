@@ -90,8 +90,10 @@ class Cell {
 				root.classList.add("t_readonly");
 		}
 
-		if( column.type == TString && column.kind == Localizable )
+		if( column.type == TString && column.kind == Localizable ) {
 			root.classList.add("t_loc");
+			elementHtml.addEventListener("dblclick", function(_) if( isLangShown() ) open());
+		}
 
 		elementHtml.addEventListener("click", function(e) {
 			editor.cursor.clickCell(this, e.shiftKey, e.ctrlKey);
@@ -438,7 +440,7 @@ class Cell {
 		updateClasses();
 		var subTable = line.subTable;
 		if( withSubtable && subTable != null && subTable.cell == this) {
-			if( column.type == TString && column.kind == Script )
+			if( column.type == TString && (column.kind == Script || isLangShown()) )
 				subTable.refresh();
 			else
 				table.refreshList(this);
@@ -1061,7 +1063,7 @@ class Cell {
 	public function isTextInput() {
 		var column = editColumn;
 		return switch( column.type ) {
-		case TString if( column.kind == Script ):
+		case TString if( column.kind == Script || isLangShown() ):
 			return false;
 		case TString, TInt, TFloat, TId, TCustom(_), TDynamic, TRef(_):
 			return true;
@@ -1133,6 +1135,10 @@ class Cell {
 	}
 
 	public function edit() {
+		if( isLangShown() ) {
+			open();
+			return;
+		}
 		if( !canEdit() )
 			return;
 		inEdit = true;
@@ -1663,7 +1669,9 @@ class Cell {
 
 			var str = value == null ? "" : editor.base.valToString(column.type, value);
 			table.toggleList(this, immediate, function() return new ScriptTable(editor, this));
-		} else
+		} else if( isLangShown() )
+			table.toggleList(this, immediate, function() return new LangDiffTable(editor, this));
+		else
 		#end
 			table.toggleList(this, immediate);
 	}
