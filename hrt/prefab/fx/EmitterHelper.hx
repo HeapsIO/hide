@@ -178,6 +178,8 @@ class EmitterHelper {
 			case PFloat(min, max), PVec(_, min, max): { min: min, max: max };
 			default: { min: null, max: null };
 		}
+		// the clock of the param: kit-param-emission, kit-param-spawn, kit-param-particle
+		var kindClass = "kit-param-" + def.kind.getName().toLowerCase();
 		var comps = [for (i in 0...size) i];
 		var value = [for (i in comps) shownMode(prefab, def, i)];
 
@@ -219,6 +221,7 @@ class EmitterHelper {
 		var isCompact = size > 1 && Lambda.foreach(value, m -> m == null || m.match(Constant(_)));
 		if (isCompact) {
 			line = new hide.kit.Line(parent, def.name);
+			line.classList.push(kindClass);
 			line.stealLabel = false;
 			line.tooltip = def.desc;
 			setupVectorHeader(line);
@@ -228,6 +231,7 @@ class EmitterHelper {
 			var menuOwners : Array<hide.kit.Element> = [];
 			if (!isCompact) {
 				line = new hide.kit.Line(parent, def.name + (size == 1 ? "" : compName(i)));
+				line.classList.push(kindClass);
 				line.stealLabel = false;
 				line.tooltip = def.desc;
 				if (size == 1) {
