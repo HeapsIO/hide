@@ -1588,6 +1588,7 @@ class Ide extends hide.tools.IdeData {
 				message("Import completed");
 			});
 		});
+		db.find(".dbLangStats").click(function(_) hide.comp.cdb.LangStats.open());
 
 		var proofing = projectState.get("dbProofread") == true;
 		db.find(".dbProofread").prop("checked", proofing).click(function(_) {

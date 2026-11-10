@@ -100,7 +100,23 @@ class LangTexts {
 	}
 
 	public function getStatus( line : Line, column : cdb.Data.Column, original : String ) : LangStatus {
-		var n = find(line, column);
+		return nodeStatus(find(line, column), original);
+	}
+
+	// null if the sent texts are unknown
+	public function getSentStatus( line : Line, column : cdb.Data.Column, original : String ) : Null<LangSentStatus> {
+		return nodeSentStatus(find(line, column), original);
+	}
+
+	/**
+		The status and sent status of a text of the line `index` of the root sheet `sheet`.
+	**/
+	public function getRootStatus( sheet : cdb.Sheet, obj : Dynamic, index : Int, column : cdb.Data.Column, original : String ) : { status : LangStatus, sent : Null<LangSentStatus> } {
+		var n = lineNode(root.get(sheet.name), sheet, obj, index)?.get(column.name);
+		return { status : nodeStatus(n, original), sent : nodeSentStatus(n, original) };
+	}
+
+	function nodeStatus( n : LangNode, original : String ) : LangStatus {
 		if( n?.text == null )
 			return Missing;
 
@@ -110,13 +126,11 @@ class LangTexts {
 		return n.originalExport == current ? UpToDate : Outdated;
 	}
 
-	// null if the sent texts are unknown
-	public function getSentStatus( line : Line, column : cdb.Data.Column, original : String ) : Null<LangSentStatus> {
+	function nodeSentStatus( n : LangNode, original : String ) : Null<LangSentStatus> {
 		if( !hasPending )
 			return null;
 		if( compareText )
 			return RefLang;
-		var n = find(line, column);
 		if( n?.pending == null )
 			return NotSent;
 		return n.pending == normalize(original ?? "") ? Sent(n.pendingVersion) : SentOutdated(n.pendingVersion);
@@ -130,33 +144,33 @@ class LangTexts {
 		return { current : normalize(original ?? ""), exported : n?.originalExport, sent : n?.pending };
 	}
 
+	// same keys as cdb.Lang.apply : the id, else the index
+	static function lineNode( parent : LangNode, sheet : cdb.Sheet, obj : Dynamic, index : Int ) {
+		if( parent == null )
+			return null;
+
+		var idCol = null, isGuid = false;
+		for( c in sheet.columns )
+			switch( c.type ) {
+			case TId if( idCol == null || isGuid ): idCol = c; isGuid = false;
+			case TGuid if( idCol == null ): idCol = c; isGuid = true;
+			default:
+			}
+		if( idCol == null )
+			return parent.get("line" + index);
+
+		var id : String = Reflect.field(obj, idCol.name);
+		if( id == null ) id = "null";
+		if( isGuid ) id = "id" + id.split("#").join("_").split("&").join("-");
+		return parent.get(id) ?? parent.get("line" + index);
+	}
+
 	function find( line : Line, column : cdb.Data.Column ) : LangNode {
-		// same keys as cdb.Lang.apply : the id, else the index
-		function lineNode( parent : LangNode, line : Line ) {
-			if( parent == null )
-				return null;
-
-			var idCol = null, isGuid = false;
-			for( c in line.table.sheet.columns )
-				switch( c.type ) {
-				case TId if( idCol == null || isGuid ): idCol = c; isGuid = false;
-				case TGuid if( idCol == null ): idCol = c; isGuid = true;
-				default:
-				}
-			if( idCol == null )
-				return parent.get("line" + line.index);
-
-			var id : String = Reflect.field(line.obj, idCol.name);
-			if( id == null ) id = "null";
-			if( isGuid ) id = "id" + id.split("#").join("_").split("&").join("-");
-			return parent.get(id) ?? parent.get("line" + line.index);
-		}
-
 		// the node of the line, and the prefix of its fields when in properties
 		function resolve( line : Line ) : { node : LangNode, prefix : String } {
 			var sub = Std.downcast(line.table, SubTable);
 			if( sub == null )
-				return { node : lineNode(root.get(line.table.sheet.name), line), prefix : "" };
+				return { node : lineNode(root.get(line.table.sheet.name), line.table.sheet, line.obj, line.index), prefix : "" };
 
 			var parent = resolve(sub.cell.line);
 			var name = parent.prefix + sub.cell.column.name;
@@ -164,7 +178,7 @@ class LangTexts {
 				name += "." + sub.polyVal.col.name;
 			if( sub.displayMode == Properties )
 				return { node : parent.node, prefix : name + "." };
-			return { node : lineNode(parent.node?.get(name), line), prefix : "" };
+			return { node : lineNode(parent.node?.get(name), line.table.sheet, line.obj, line.index), prefix : "" };
 		}
 
 		var r = resolve(line);

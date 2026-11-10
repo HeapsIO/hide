@@ -380,8 +380,8 @@ class Cell {
 		var original = Reflect.field(line.obj, column.name);
 		var langShown = isLangShown();
 		var langText = langShown ? editor.lang.sheets.getTranslation(line, column) : null;
-		var hasText = original != null && original != "";
-		var status = !langShown || !hasText ? null : editor.lang.sheets.getStatus(line, column, original);
+		var hasStatus = original != null && original != "" && !editor.isLocIgnored(line);
+		var status = !langShown || !hasStatus ? null : editor.lang.sheets.getStatus(line, column, original);
 		var sent = status == null ? null : editor.lang.sheets.getSentStatus(line, column, original);
 		var statusClass = switch( status ) {
 			case null: null;
@@ -418,7 +418,7 @@ class Cell {
 		var badges = status == null ? "" : '<span class="loc-badges"></span>';
 
 		var allBadges = "";
-		if( editor.allLangs != null && column.type == TString && column.kind == Localizable && hasText ) {
+		if( editor.allLangs != null && column.type == TString && column.kind == Localizable && hasStatus ) {
 			for( l in editor.allLangs ) {
 				var c = switch( [l.sheets.getStatus(line, column, original), l.sheets.getSentStatus(line, column, original)] ) {
 					case [UpToDate, _]: "loc-ok";

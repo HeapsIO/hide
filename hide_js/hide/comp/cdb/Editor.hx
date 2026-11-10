@@ -60,6 +60,13 @@ enum FilterFlag {
 
 typedef FilterFlags = haxe.EnumFlags<FilterFlag>;
 
+// ordered from the best to the worst status
+enum abstract LangFilter(Int) to Int {
+	var UpToDate;
+	var Pending;
+	var NeedSend;
+}
+
 @:allow(hide.comp.cdb)
 @:access(hide.comp.cdb.Table)
 @:access(hide.comp.cdb.Separator)
@@ -97,6 +104,8 @@ class Editor extends Component {
 	var searchExp : Bool = false; // Does filters are parsed by hscript parser
 	var filterFlags : FilterFlags = (Regular: FilterFlags) | (Warning: FilterFlags) | (Error: FilterFlags);
 	var filters : Array<String> = [];
+	// shows only the lines whose localizable texts have this status
+	var langFilter : Null<LangFilter>;
 	var insertedWhileFiltering : Array<Dynamic> = [];
 
 	public var view : cdb.DiffFile.ConfigView;
@@ -132,137 +141,141 @@ class Editor extends Component {
 	}
 
 	/**
+		Loads a translation file (an xml of `cdb.Lang.buildXML`), with the sent texts of the loc project of `cdb.locProject`. Cached until the files change.
+	**/
+	static function loadLang( file : String ) : EditorLang {
+		var ide = Ide.inst;
+		function parse( file : String ) : Xml {
+			var content = sys.io.File.getContent(file);
+			if( StringTools.fastCodeAt(content, 0) == 0xFEFF )
+				content = content.substr(1);
+			return Xml.parse(content).firstElement();
+		}
+
+		function load( root : Xml ) : Map<String, cdb.Lang.LangXml> {
+			var sheets = new Map();
+			@:privateAccess cdb.Lang.NODES = new Map();
+			for( s in root.elements() )
+				sheets.set(s.get("name"), @:privateAccess cdb.Lang.toLangXml(s));
+			@:privateAccess cdb.Lang.NODES = null;
+			return sheets;
+		}
+
+		function mtime( file : String ) return sys.FileSystem.stat(file).mtime.getTime();
+
+		// the modifLoc files of the exportTrad versions exported since the last import of the language
+		function getPending( locFile : String, code : String ) {
+			var locTime = mtime(locFile);
+			if( locCache?.path != locFile || locCache.mtime != locTime ) {
+				var root = Xml.parse(sys.io.File.getContent(locFile)).firstElement();
+				var locDir = haxe.io.Path.directory(locFile) + "/";
+				for( p in root.elementsNamed("path") )
+					for( l in p.elementsNamed("loc") )
+						if( l.firstChild() != null )
+							locDir += l.firstChild().nodeValue;
+
+				// same default as exportTrad
+				var refLang = "en";
+				for( ls in root.elementsNamed("langs") )
+					for( l in ls.elementsNamed("lang") )
+						if( l.get("ref") == "true" )
+							refLang = l.get("id");
+
+				var versions = new Map<String, Xml>();
+				var last : Xml = null;
+				for( h in root.elementsNamed("history") )
+					for( e in h.elementsNamed("version") ) {
+						versions.set(e.get("id"), e);
+						if( last == null || Std.parseInt(e.get("id")) > Std.parseInt(last.get("id")) )
+							last = e;
+					}
+				locCache = { path : locFile, mtime : locTime, locDir : locDir, versions : versions, last : last, refLang : refLang };
+			}
+
+			// the version of the translation file, read from its header to avoid parsing it
+			var input = sys.io.File.read(file);
+			var head = haxe.io.Bytes.alloc(1024);
+			var len = input.readBytes(head, 0, head.length);
+			input.close();
+			var r = ~/<cdb [^>]*version="([0-9]+)"/;
+			var fileVersion = r.match(head.getString(0, len)) ? Std.parseInt(r.matched(1)) : null;
+
+			var pending = [];
+			var v = locCache.last;
+			while( v != null ) {
+				function hasLang( att : String ) return (v.get(att) ?? "").split(",").contains(code);
+				var state = v.get("state");
+				if( state != "Empty" && state != "Prepared" ) {
+					var id = v.get("id");
+					// a version marked as imported may not be in the translation file yet
+					if( fileVersion != null ? Std.parseInt(id) <= fileVersion : state != "Exported" && hasLang("langIm") )
+						break;
+					var modif = locCache.locDir + 'versions/$id/modifLoc/modifCdb_$code-$id.xml';
+					if( hasLang("langEx") && sys.FileSystem.exists(modif) )
+						pending.push({ version : Std.parseInt(id), file : modif });
+				}
+				v = locCache.versions.get(v.get("parentId"));
+			}
+			return pending;
+		}
+
+		var dir = haxe.io.Path.directory(file);
+		var name = haxe.io.Path.withoutExtension(haxe.io.Path.withoutDirectory(file));
+		var code = name.substr(name.indexOf("_") + 1);
+		var oldFile = '$dir/old/${name}_old.xml';
+		var hasOld = sys.FileSystem.exists(oldFile);
+		var locFile : String = ide.projectState.get("cdb.locProject");
+		// null without loc project : the sent status is unknown
+		var pending = null;
+		if( locFile != null && sys.FileSystem.exists(locFile) ) {
+			try {
+				pending = getPending(locFile, code);
+			} catch( e : Dynamic ) {
+				ide.quickError("Could not load " + locFile + " : " + e);
+			}
+		}
+
+		// without loc project, the reference language is unknown
+		var compareText = pending == null || locCache.refLang == code;
+
+		var files = [file].concat([for( p in pending ?? [] ) p.file]);
+		if( hasOld )
+			files.push(oldFile);
+		if( pending != null )
+			files.push(locFile);
+		var mtimes = [for( f in files ) f => mtime(f)];
+
+		function isCacheValid( cached : EditorLang ) {
+			if( cached == null || Lambda.count(cached.mtimes) != Lambda.count(mtimes) )
+				return false;
+			for( f => t in mtimes ) {
+				var prev = cached.mtimes.get(f);
+				if( prev == null || t > prev )
+					return false;
+			}
+			return true;
+		}
+
+		var lang = langCache.get(code);
+		if( !isCacheValid(lang) ) {
+			var root = parse(file);
+			lang = {
+				file : file,
+				code : code,
+				version : Std.parseInt(root.get("version")),
+				sheets : new LangTexts(load(root), hasOld ? load(parse(oldFile)) : null, pending == null ? null : [for( p in pending ) { version : p.version, sheets : load(parse(p.file)) }], compareText),
+				mtimes : mtimes,
+			};
+			langCache.set(code, lang);
+		}
+		return lang;
+	}
+
+	/**
 		Displays the texts of a translation (an xml of `cdb.Lang.buildXML`) in the localizable cells, read only. Null displays the original texts.
 		`allFiles` : translations whose status is displayed as badges under the original texts.
 	**/
 	public function setLang( file : Null<String>, ?allFiles : Array<String> ) {
-		function loadLang( file : String ) : EditorLang {
-			function parse( file : String ) : Xml {
-				var content = sys.io.File.getContent(file);
-				if( StringTools.fastCodeAt(content, 0) == 0xFEFF )
-					content = content.substr(1);
-				return Xml.parse(content).firstElement();
-			}
-
-			function load( root : Xml ) : Map<String, cdb.Lang.LangXml> {
-				var sheets = new Map();
-				@:privateAccess cdb.Lang.NODES = new Map();
-				for( s in root.elements() )
-					sheets.set(s.get("name"), @:privateAccess cdb.Lang.toLangXml(s));
-				@:privateAccess cdb.Lang.NODES = null;
-				return sheets;
-			}
-
-			function mtime( file : String ) return sys.FileSystem.stat(file).mtime.getTime();
-
-			// the modifLoc files of the exportTrad versions exported since the last import of the language
-			function getPending( locFile : String, code : String ) {
-				var locTime = mtime(locFile);
-				if( locCache?.path != locFile || locCache.mtime != locTime ) {
-					var root = Xml.parse(sys.io.File.getContent(locFile)).firstElement();
-					var locDir = haxe.io.Path.directory(locFile) + "/";
-					for( p in root.elementsNamed("path") )
-						for( l in p.elementsNamed("loc") )
-							if( l.firstChild() != null )
-								locDir += l.firstChild().nodeValue;
-
-					// same default as exportTrad
-					var refLang = "en";
-					for( ls in root.elementsNamed("langs") )
-						for( l in ls.elementsNamed("lang") )
-							if( l.get("ref") == "true" )
-								refLang = l.get("id");
-
-					var versions = new Map<String, Xml>();
-					var last : Xml = null;
-					for( h in root.elementsNamed("history") )
-						for( e in h.elementsNamed("version") ) {
-							versions.set(e.get("id"), e);
-							if( last == null || Std.parseInt(e.get("id")) > Std.parseInt(last.get("id")) )
-								last = e;
-						}
-					locCache = { path : locFile, mtime : locTime, locDir : locDir, versions : versions, last : last, refLang : refLang };
-				}
-
-				// the version of the translation file, read from its header to avoid parsing it
-				var input = sys.io.File.read(file);
-				var head = haxe.io.Bytes.alloc(1024);
-				var len = input.readBytes(head, 0, head.length);
-				input.close();
-				var r = ~/<cdb [^>]*version="([0-9]+)"/;
-				var fileVersion = r.match(head.getString(0, len)) ? Std.parseInt(r.matched(1)) : null;
-
-				var pending = [];
-				var v = locCache.last;
-				while( v != null ) {
-					function hasLang( att : String ) return (v.get(att) ?? "").split(",").contains(code);
-					var state = v.get("state");
-					if( state != "Empty" && state != "Prepared" ) {
-						var id = v.get("id");
-						// a version marked as imported may not be in the translation file yet
-						if( fileVersion != null ? Std.parseInt(id) <= fileVersion : state != "Exported" && hasLang("langIm") )
-							break;
-						var modif = locCache.locDir + 'versions/$id/modifLoc/modifCdb_$code-$id.xml';
-						if( hasLang("langEx") && sys.FileSystem.exists(modif) )
-							pending.push({ version : Std.parseInt(id), file : modif });
-					}
-					v = locCache.versions.get(v.get("parentId"));
-				}
-				return pending;
-			}
-
-			var dir = haxe.io.Path.directory(file);
-			var name = haxe.io.Path.withoutExtension(haxe.io.Path.withoutDirectory(file));
-			var code = name.substr(name.indexOf("_") + 1);
-			var oldFile = '$dir/old/${name}_old.xml';
-			var hasOld = sys.FileSystem.exists(oldFile);
-			var locFile : String = ide.projectState.get("cdb.locProject");
-			// null without loc project : the sent status is unknown
-			var pending = null;
-			if( locFile != null && sys.FileSystem.exists(locFile) ) {
-				try {
-					pending = getPending(locFile, code);
-				} catch( e : Dynamic ) {
-					ide.quickError("Could not load " + locFile + " : " + e);
-				}
-			}
-
-			// without loc project, the reference language is unknown
-			var compareText = pending == null || locCache.refLang == code;
-
-			var files = [file].concat([for( p in pending ?? [] ) p.file]);
-			if( hasOld )
-				files.push(oldFile);
-			if( pending != null )
-				files.push(locFile);
-			var mtimes = [for( f in files ) f => mtime(f)];
-
-			function isCacheValid( cached : EditorLang ) {
-				if( cached == null || Lambda.count(cached.mtimes) != Lambda.count(mtimes) )
-					return false;
-				for( f => t in mtimes ) {
-					var prev = cached.mtimes.get(f);
-					if( prev == null || t > prev )
-						return false;
-				}
-				return true;
-			}
-
-			var lang = langCache.get(code);
-			if( !isCacheValid(lang) ) {
-				var root = parse(file);
-				lang = {
-					file : file,
-					code : code,
-					version : Std.parseInt(root.get("version")),
-					sheets : new LangTexts(load(root), hasOld ? load(parse(oldFile)) : null, pending == null ? null : [for( p in pending ) { version : p.version, sheets : load(parse(p.file)) }], compareText),
-					mtimes : mtimes,
-				};
-				langCache.set(code, lang);
-			}
-			return lang;
-		}
-
 		lang = file == null ? null : loadLang(file);
 		allLangs = allFiles == null ? null : [for( f in allFiles ) loadLang(f)];
 
@@ -395,6 +408,7 @@ class Editor extends Component {
 		keys.register("cdb.globalSeekIds", () -> new GlobalSeek(cdbTable.element, cdbTable, GlobalIds, currentSheet));
 
 		filterFlags = (Regular: FilterFlags) | (Warning: FilterFlags) | (Error: FilterFlags);
+		langFilter = null;
 
 		base = sheet.base;
 		if( cursor == null )
@@ -489,7 +503,7 @@ class Editor extends Component {
 
 
 	public function onLineInserted( obj : Dynamic ) {
-		if( filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error) )
+		if( filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error) && langFilter == null )
 			return;
 		insertedWhileFiltering.push(obj);
 		updateFilters();
@@ -501,7 +515,7 @@ class Editor extends Component {
 			return;
 
 		var seps = table.separators ?? [];
-		if (filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error)) {
+		if (filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error) && langFilter == null) {
 			for (l in table.lines)
 				l.filtered = false;
 			table.lockRows(function() {
@@ -536,7 +550,7 @@ class Editor extends Component {
 			if (!filtered)
 				results++;
 
-			filtered = filtered || (!inserted && isLineFilteredByStatus(l));
+			filtered = filtered || (!inserted && (isLineFilteredByStatus(l) || (langFilter != null && getLangFilter(l) != langFilter)));
 			l.filtered = filtered;
 			if (!filtered) {
 				var parentSeps = Separator.getParentSeparators(l.index, seps);
@@ -647,6 +661,51 @@ class Editor extends Component {
 		}
 
 		return isFiltered(line);
+	}
+
+	// the line or one of its parents is excluded from the localization export
+	function isLocIgnored( line : Line ) : Bool {
+		if( Reflect.hasField(line.obj, cdb.Lang.IGNORE_EXPORT_FIELD) )
+			return true;
+		var sub = Std.downcast(line.table, SubTable);
+		return sub != null && isLocIgnored(sub.cell.line);
+	}
+
+	/**
+		The worst status of the localizable texts of the line, in the translation displayed, else in all the translations of `allLangs`.
+		Null without translation or localizable text, or when the line is ignored by the localization export.
+	**/
+	function getLangFilter( line : Line ) : Null<LangFilter> {
+		var langs = lang != null ? [lang] : allLangs;
+		if( langs == null || isLocIgnored(line) )
+			return null;
+		return getWorstStatus(langs, line.table.columns, line.obj, (t, c, original) -> { status : t.getStatus(line, c, original), sent : t.getSentStatus(line, c, original) });
+	}
+
+	/**
+		The worst status of the localizable texts of `obj` in `langs`, null without localizable text.
+	**/
+	static function getWorstStatus( langs : Array<EditorLang>, columns : Array<cdb.Data.Column>, obj : Dynamic, getStatus : (LangTexts, cdb.Data.Column, String) -> { status : LangTexts.LangStatus, sent : Null<LangTexts.LangSentStatus> } ) : Null<LangFilter> {
+		var res : Null<LangFilter> = null;
+		for( c in columns ) {
+			if( c.type != TString || c.kind != Localizable )
+				continue;
+			var original : String = Reflect.field(obj, c.name);
+			if( original == null || original == "" )
+				continue;
+
+			for( l in langs ) {
+				var st = getStatus(l.sheets, c, original);
+				var s = switch( [st.status, st.sent] ) {
+					case [UpToDate, _]: LangFilter.UpToDate;
+					case [_, Sent(_)]: LangFilter.Pending;
+					default: LangFilter.NeedSend;
+				}
+				if( res == null || (s : Int) > (res : Int) )
+					res = s;
+			}
+		}
+		return res;
 	}
 
 	function isLineFilteredByStatus(line : Line) : Bool {
@@ -2771,6 +2830,10 @@ class Editor extends Component {
 					}
 					endChanges();
 					line.syncClasses();
+
+					// the loc status of the lines and their sub lines changes
+					if( lang != null || allLangs != null )
+						refresh();
 				},
 			});
 		}

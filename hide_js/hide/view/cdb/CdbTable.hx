@@ -11,6 +11,7 @@ class CdbTable extends hide.ui.View<{}> {
 	var view : cdb.DiffFile.ConfigView;
 
 	var topBar : Element;
+	var langFilters : js.html.Element;
 
 	public function new( ?state ) {
 		super(state);
@@ -180,6 +181,31 @@ class CdbTable extends hide.ui.View<{}> {
 		}
 		editor.focus();
 		haxe.Timer.delay(() -> editor.cursor.update(), 1); // scroll
+	}
+
+	/**
+		Shows `sheet` (else the current one) with the status of all the translations, its lines filtered by `filter` (null : all of them).
+	**/
+	public function showLangStatus( sheet : Null<cdb.Sheet>, filter : Null<hide.comp.cdb.Editor.LangFilter> ) {
+		if( tabs == null ) {
+			haxe.Timer.delay(() -> showLangStatus(sheet, filter), 50);
+			return;
+		}
+
+		var index = sheet == null ? -1 : [for( s in getSheets() ) s.name].indexOf(sheet.name);
+		if( index >= 0 )
+			tabs.currentTab = tabContents[index];
+
+		var langSelect : js.html.SelectElement = cast element.get(0).querySelector(".lang-bar select");
+		if( langSelect.value != "*" ) {
+			langSelect.value = "*";
+			langSelect.onchange();
+		}
+
+		@:privateAccess editor.langFilter = filter;
+		editor.updateFilters();
+		refreshLangFilters();
+		editor.focus();
 	}
 
 	#if js
@@ -367,6 +393,13 @@ class CdbTable extends hide.ui.View<{}> {
 			else
 				editor.setLang(v == "" ? null : langDir + "/" + v);
 			updateVersion();
+
+			if( @:privateAccess editor.langFilter != null ) {
+				if( v == "" )
+					@:privateAccess editor.langFilter = null;
+				editor.updateFilters();
+			}
+			refreshLangFilters();
 		}
 		updateVersion();
 		langSelect.onchange = () -> setLang();
@@ -385,6 +418,26 @@ class CdbTable extends hide.ui.View<{}> {
 			setLang();
 		}
 		langBar.appendChild(locSelect.element.get(0));
+
+		langFilters = js.Browser.document.createSpanElement();
+		langFilters.className = "lang-filters";
+		langFilters.title = "Show only the lines with localizable texts of this status (all translations : the worst one)";
+		for( name in ["All", "Up To Date", "Pending", "Need Send"] ) {
+			var b = js.Browser.document.createSpanElement();
+			b.dataset.label = name;
+			langFilters.appendChild(b);
+		}
+		langFilters.onclick = function( e : js.html.MouseEvent ) {
+			var b = (cast e.target : js.html.Element).closest(".lang-filters > span");
+			if( b == null )
+				return;
+			var index = [for( c in langFilters.children ) c].indexOf(b);
+			@:privateAccess editor.langFilter = index == 0 ? null : cast (index - 1);
+			editor.updateFilters();
+			refreshLangFilters();
+		}
+		langBar.appendChild(langFilters);
+		refreshLangFilters();
 
 		// shift+click adds or removes a status to the ones shown
 		function filterStatus( flag : hide.comp.cdb.Editor.FilterFlag, add : Bool ) {
@@ -543,6 +596,34 @@ class CdbTable extends hide.ui.View<{}> {
 		set(topBar.find(".error"), errors, Error);
 		set(topBar.find(".warning"), warnings, Warning);
 		refreshPinnedStatus(errors, warnings);
+		refreshLangFilters();
+	}
+
+	// the count of the lines of the current table by status of their localizable texts
+	function refreshLangFilters() {
+		if( langFilters == null )
+			return;
+
+		var table = @:privateAccess editor.tables[0];
+		var shown = table != null && (editor.lang != null || editor.allLangs != null);
+		langFilters.style.display = shown ? null : "none";
+		if( !shown )
+			return;
+
+		var counts = [0, 0, 0, 0];
+		for( l in table.lines ) {
+			var s = @:privateAccess editor.getLangFilter(l);
+			if( s == null )
+				continue;
+			counts[0]++;
+			counts[(s : Int) + 1]++;
+		}
+
+		var cur = @:privateAccess editor.langFilter;
+		for( i => b in [for( c in langFilters.children ) c] ) {
+			b.textContent = b.dataset.label + " " + counts[i];
+			b.classList.toggle("active", i == 0 ? cur == null : cur != null && (cur : Int) == i - 1);
+		}
 	}
 
 	// pinned sheets keep their errors (else warnings) count in their tab, which is wider to always have room for it
