@@ -27,7 +27,7 @@ import hrt.prefab.Object3D;
 import h3d.scene.Object;
 
 import hide.comp.cdb.DataFiles;
-import hide.view.CameraController;
+import hide.tools.CameraController;
 
 using hide.tools.Extensions.ArrayExtensions;
 import hide.comp.CameraControllerEditor;
@@ -153,11 +153,35 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 		super(parent);
 		this.editor = editor;
 
-		element.append(new Element("<p>Viewport Overlays</p>"));
 		element.addClass("settings-popup");
 		element.css("max-width", "300px");
-
 		element.append(new Element('
+			<div class="overlays-header">
+				<div class="tb-group small">
+					<div class="button2"><div class="icon ico ico-eye"></div></div>
+				</div>
+				<p>Viewport Overlays</p>
+			</div>'
+		));
+
+		var content = new Element('<div class="overlays-content"></div>').appendTo(element);
+		var overlaysBtn = element.find(".button2");
+		var toolbarBtn = parent.closest(".hide-toolbar2, hide-toolbar").find("#showViewportOverlays");
+		function refreshOverlaysState() {
+			var v = editor.showOverlays;
+			overlaysBtn.get(0).toggleAttribute("checked", v);
+			content.toggleClass("disabled", !v);
+		}
+
+		overlaysBtn.click(function(e) {
+			if (e.button == 0) {
+				toolbarBtn.get(0).click();
+				refreshOverlaysState();
+			}
+		});
+		refreshOverlaysState();
+
+		content.append(new Element('
 			<h2>Guides</h2>
 			<div class="form-grid" id="guidesGroup"></div>
 			<h2>Selection</h2>
@@ -195,7 +219,7 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 		}
 
 		{
-			var group = element.find("#guidesGroup");
+			var group = content.find("#guidesGroup");
 			addButton("Grid", "th", "gridToggle", () -> editor.updateGrid()).appendTo(group);
 			addButton("Joints", "share-alt", "jointsToggle", () -> editor.updateJointsVisibility()).appendTo(group);
 			addButton("Colliders", "codepen", "colliderToggle", () -> editor.updateCollidersVisibility()).appendTo(group);
@@ -226,21 +250,21 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 		}
 
 		{
-			var group = element.find("#selectionGroup");
+			var group = content.find("#selectionGroup");
 			addButton("Gizmo", "arrows-alt", "showGizmo", () -> editor.updateGizmoVisibility()).appendTo(group);
 			addButton("Outline", "dot-circle-o", "showOutlines", () -> editor.updateOutlineVisibility()).appendTo(group);
 		}
 
 
 		{
-			var group = element.find("#debug");
+			var group = content.find("#debug");
 			var btn = addButton("Scene Info", "info-circle", "sceneInformationToggle", () -> editor.updateStatusTextVisibility()).appendTo(group);
 			addButton("Wireframe", "connectdevelop", "wireframeToggle", () -> editor.updateWireframe()).appendTo(group);
 			addButton("Disable Scene Render", "eye-slash", "tog-scene-render", () -> {}).appendTo(group);
 		}
 
 
-		var allIcons = element.find("#allIcons");
+		var allIcons = content.find("#allIcons");
 		function refreshIconMenu() {
 			var visible = editor.ide.currentConfig.get("sceneeditor.iconVisibility");
 			if (visible) {
@@ -251,7 +275,7 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 		}
 
 		{
-			var group = element.find("#showIconGroup");
+			var group = content.find("#showIconGroup");
 			addButton("3D Icons", "image", "iconVisibility", () -> {refreshIconMenu(); editor.updateIconsVisibility();}).appendTo(group);
 
 			allIcons.css("margin-left", "3px");
@@ -361,7 +385,6 @@ class SnapSettingsPopup extends hide.comp.Popup {
 		}
 	}
 }
-
 @:access(hide.comp.SceneEditor)
 class SceneEditorContext extends hide.prefab.EditContext {
 
@@ -984,7 +1007,7 @@ class SceneEditor {
 	public var localTransform = true;
 	public var selfOnlyTransform = false;
 	public var cameraController : CameraControllerBase;
-	public var cameraController2D : hide.view.l3d.CameraController2D;
+	public var cameraController2D : hide.tools.CameraController2D;
 	public var editorDisplay(default,set) : Bool;
 	public var camera2D(default,set) : Bool = false;
 	public var objectAreSelectable = true;
@@ -994,7 +1017,7 @@ class SceneEditor {
 
 	var showGizmo = true;
 	var gizmo : hrt.tools.Gizmo;
-	var gizmo2d : hide.view.l3d.Gizmo2D;
+	var gizmo2d : hrt.tools.Gizmo2D;
 	static var customPivot : CustomPivot;
 	var interactives : Map<PrefabElement, h3d.scene.Interactive> = [];
 	var interactives2d : Map<PrefabElement, h2d.Interactive> = [];
@@ -1082,6 +1105,7 @@ class SceneEditor {
 		var sceneEl = new Element('<div class="heaps-scene"></div>');
 		scene = new hide.comp.Scene(view.config, null, sceneEl);
 		scene.editor = this;
+		scene.enableNewErrorSystem = true;
 		scene.onReady = onSceneReadyInternal;
 		scene.onResize = function() {
 			if( cameraController2D != null ) cameraController2D.toTarget();
@@ -1137,7 +1161,7 @@ class SceneEditor {
 				reparentElement(children, parent, 0);
 			}
 		});
-		view.keys.register("sceneeditor.editPivot", {name: "Edit Pivot", category: "Scene"}, editPivot);
+		//view.keys.register("sceneeditor.editPivot", {name: "Edit Pivot", category: "Scene"}, editPivot);
 		view.keys.register("sceneeditor.gatherToMouse", {name: "Gather to mouse", category: "Scene"}, gatherToMouse);
 		view.keys.register("sceneeditor.radialViewModes", {name: "Radial view modes", category: "Scene"}, function() {
 			var renderer = Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer);
@@ -1480,7 +1504,7 @@ class SceneEditor {
 	}
 
 	function makeCamController() : CameraControllerBase {
-		var c = new hide.view.CameraController.FlightController(scene.s3d, this);
+		var c = new hide.tools.CameraController.FlightController(scene.s3d, this);
 		return c;
 	}
 
@@ -1499,7 +1523,7 @@ class SceneEditor {
 	}
 
 	function makeCamController2D() {
-		return new hide.view.l3d.CameraController2D(root2d);
+		return new hide.tools.CameraController2D(root2d);
 	}
 
 	function focusSelection() {
@@ -1966,7 +1990,7 @@ class SceneEditor {
 		};
 		updateStats();
 
-		gizmo2d = new hide.view.l3d.Gizmo2D();
+		gizmo2d = new hrt.tools.Gizmo2D();
 		scene.s2d.add(gizmo2d, 2); // over local3d
 
 		loadCam3D();
@@ -1981,10 +2005,10 @@ class SceneEditor {
 		selectElements([], NoHistory);
 		this.camera2D = camera2D;
 
-		updateViewportOverlays();
-
 		outlineRfx = new hrt.prefab.rfx.Outline(null, null);
 		scene.s3d.renderer.effects.push(outlineRfx);
+
+		updateViewportOverlays();
 
 		makeGuide2d();
 
@@ -2024,8 +2048,10 @@ class SceneEditor {
 		for( f in Reflect.fields(iconsConfig) )
 			icons.set(f, Reflect.field(iconsConfig,f));
 
-		var saveDisplayKey = isSceneTree ? view.saveDisplayKey + '/tree' : view.saveDisplayKey + '/renderPropsTree';
-		var tree = new FancyTree<hrt.prefab.Prefab>(null, { saveDisplayKey: saveDisplayKey, quickGoto: false, search: true });
+		var saveKey = isSceneTree ? 'tree' : 'renderPropsTree';
+		var tree = new FancyTree<hrt.prefab.Prefab>(null, { quickGoto: false, search: true });
+		tree.state.setParent(view.fileState, saveKey);
+
 		tree.getChildren = (p : hrt.prefab.Prefab) -> {
 			if (p == null) {
 				if (isSceneTree)
@@ -2046,13 +2072,19 @@ class SceneEditor {
 			return p.name;
 		}
 		tree.getUniqueName = (p : hrt.prefab.Prefab) -> {
-			var path = p.getUniqueName();
-			var parent = p.parent;
-			while(parent != null) {
-				path += parent.getUniqueName() + "/" + path;
-				parent = parent.parent ?? parent.shared.parentPrefab;
-			}
-			return path;
+			return p.getAbsPath(true, true);
+			// var path = "";
+			// var self = p;
+			// while(p != null) {
+			// 	path = path
+			// }
+			// var path = p.getUniqueName();
+			// var parent = p.parent;
+			// while(parent != null) {
+			// 	path = parent.getUniqueName() + "/" + path;
+			// 	parent = parent.parent ?? parent.shared.parentPrefab;
+			// }
+			// return path;
 		}
 		tree.getIcon = (p: hrt.prefab.Prefab) -> {
 			var icon = p.getHideProps().icon;
@@ -2119,6 +2151,10 @@ class SceneEditor {
 			p.updateInstance("name");
 			sceneTree.refreshItem(p);
 		}
+		tree.getItemByUniqueName = (path: String) -> {
+			var root = isSceneTree ? sceneData : renderPropsRoot.refInstance;
+			return root?.locatePrefab(path);
+		}
 		tree.applyStyle = (p : hrt.prefab.Prefab, el : js.html.Element) -> {
 			applyTreeStyle(p, targetTree);
 			if (el == null)
@@ -2158,7 +2194,7 @@ class SceneEditor {
 		function sanitizeReparent(target: hrt.prefab.Prefab, elements: Array<hrt.prefab.Prefab>) {
 			// Avoid moving target onto itelf
 			for (prefab in elements.copy()) {
-				if (target.findParent((p) -> p == prefab, true) != null) {
+				if (target.findParent((p) -> p == prefab, true, true) != null) {
 					elements.remove(prefab);
 				}
 			}
@@ -2285,7 +2321,7 @@ class SceneEditor {
 
 			var newItems = getNewContextMenu(p);
 			var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [
-				{ label : "New...", menu : newItems },
+				{ label : "New...", menu : newItems, searchInclude: true },
 			];
 			var actionItems : Array<hrt.ui.HuiMenu.MenuItem> = [
 				{ label : "Rename", enabled : p != null, click : function() { tree.rename(p); }, keys : view.config.get("key.rename") },
@@ -2401,7 +2437,7 @@ class SceneEditor {
 				}
 			}
 
-			hide.comp.ContextMenu.createFromEvent(cast e, menuItems);
+			hide.comp.ContextMenu.createFromEvent(cast e, menuItems, {search: Visible});
 		}
 		tree.onContextMenu = ctxMenu;
 		return tree;
@@ -2484,6 +2520,7 @@ class SceneEditor {
 		function refresh(tree : FancyTree<hrt.prefab.Prefab>) @:privateAccess {
 			var selection = tree.getSelectedItems();
 			tree.rebuildTree();
+			selection = selection.filter(p -> tree.itemMap.exists(cast p));
 			var datas = [for (p in selection) tree.itemMap.get(cast p)];
 			if (datas != null) {
 				for (idx => d in datas) {
@@ -2509,6 +2546,7 @@ class SceneEditor {
 				sceneTree.rebuildTree();
 				renderPropsTree.rebuildTree();
 				var tree = selectInSceneTree ? sceneTree : renderPropsTree;
+				selection = selection.filter(p -> @:privateAccess tree.itemMap.exists(cast p));
 				var datas = [for (p in selection) @:privateAccess tree.itemMap.get(cast p)];
 				if (datas != null) {
 					for (idx => d in datas) {
@@ -2730,6 +2768,8 @@ class SceneEditor {
 		function filter(p: hrt.prefab.RenderProps) : Bool {
 			return p.enabled == true && p.visible == true && !isHidden(p);
 		}
+
+		scene.setCurrent();
 
 		// 1.
 		if (renderProps == null) {
@@ -3234,7 +3274,7 @@ class SceneEditor {
 				keys : view.config.get("key.sceneeditor.gatherToMouse"),
 			},
 		];
-		hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, cast menuItems);
+		hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, cast menuItems, {search: Visible});
 	}
 
 	public function refreshInteractive(elt : PrefabElement) {
@@ -3277,6 +3317,19 @@ class SceneEditor {
 		var localTransform = new Map<hrt.prefab.Object3D, h3d.Matrix>();
 		var initialCentroid = new h3d.Matrix();
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
+
+		function getParentAbs(obj3d : hrt.prefab.Object3D) {
+			if (obj3d.local3d != null && obj3d.local3d.follow != null) {
+				var follow = obj3d.local3d.follow.getAbsPos();
+				return obj3d.local3d.followPositionOnly ? h3d.Matrix.T(follow.tx, follow.ty, follow.tz) : follow.clone();
+			}
+
+			var parent3d = Std.downcast(obj3d.parent, hrt.prefab.Object3D);
+			if (parent3d == null)
+				parent3d = Std.downcast(obj3d.shared.parentPrefab, hrt.prefab.Object3D);
+			return parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
+		}
+
 		gizmo.shouldSnap = () -> { return this.snapForceOnGrid; };
 		gizmo.snap = gizmoSnap;
 		gizmo.onStartMove = (handle : hrt.tools.Gizmo.Handle) -> {
@@ -3290,7 +3343,9 @@ class SceneEditor {
 			initialTransform.clear();
 			for (o in obj3ds) {
 				initialTransform.set(o, o.getTransform().clone());
-				initialAbs.set(o, o.getAbsPos(true).clone());
+				var abs = o.getTransform();
+				abs.multiply(abs, getParentAbs(o));
+				initialAbs.set(o, abs);
 			}
 			initialCentroid.load(gizmo.getAbsPos());
 		};
@@ -3299,11 +3354,7 @@ class SceneEditor {
 				return;
 
 			for (obj3d in obj3ds) {
-				var parent3d = Std.downcast(obj3d.parent, hrt.prefab.Object3D);
-				if (parent3d == null)
-					parent3d = Std.downcast(obj3d.shared.parentPrefab, hrt.prefab.Object3D);
-				var parentAbs = parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
-				var parentInv = parentAbs.getInverse();
+				var parentInv = getParentAbs(obj3d).getInverse();
 				localTransform.set(obj3d, obj3d.getTransform().clone());
 
 				var trs = new h3d.Matrix();
@@ -3539,7 +3590,7 @@ class SceneEditor {
 	}
 
 	public function setWireframe(val = true) {
-		var engine = h3d.Engine.getCurrent();
+		var engine = scene.engine;
 		if( engine.driver.hasFeature(Wireframe) ) {
 			for( m in scene.s3d.getMaterials() ) {
 				if ( m.name == "$collider" )
@@ -4821,11 +4872,47 @@ class SceneEditor {
 		undo.change(Custom(doReset));
 	}
 
+	/** Like sceneData.flatten(), but also walks the refInstance of References in edit mode **/
+	function flattenAll() : Array<PrefabElement> {
+		var ret : Array<PrefabElement> = [];
+
+		function rec(p : PrefabElement) {
+			if (p == null)
+				return;
+
+			ret.push(p);
+
+			for (c in p.children)
+				rec(c);
+
+			var ref = Std.downcast(p, Reference);
+			if (ref != null && ref.editMode != None)
+				rec(ref.refInstance);
+		}
+
+		rec(sceneData);
+		return ret;
+	}
+
+	function getSelectionOrdered() : Array<PrefabElement> {
+		var indices : Map<PrefabElement, Int> = [];
+		for (i => p in flattenAll())
+			indices.set(p, i);
+
+		var selection = selectedPrefabs.copy();
+		selection.sort((a, b) -> (indices.get(a) ?? -1) - (indices.get(b) ?? -1));
+		return selection;
+	}
+
 	function onCopy() {
 		if(selectedPrefabs == null) return;
 
+		function getRoots(prefabs: Array<PrefabElement>) : Array<PrefabElement> {
+			return prefabs.filter((prefab) -> prefab.findParent((p) -> prefabs.contains(p)) == null);
+		}
+
 		var ser : Array<String> = [];
-		for (prefab in selectedPrefabs) {
+		for (prefab in getRoots(getSelectionOrdered())) {
 			ser.push(prefab.serialize());
 		}
 
@@ -5310,8 +5397,11 @@ class SceneEditor {
 			if (prevParent == toPrefab && prevIndex < index)
 				offset--; // fix offset
 			offset++;
+			// skip the instances of Edit references, they keep their own context
+			var prevShared = prefab.shared;
 			for (p in prefab.flatten(null, null))
-				p.shared = toPrefab.shared;
+				if (p.shared == prevShared)
+					p.shared = toPrefab.shared;
 			var obj3d = prefab.to(Object3D);
 			var preserveTransform = Std.isOfType(toPrefab, hrt.prefab.fx.Emitter) || Std.isOfType(prevParent, hrt.prefab.fx.Emitter);
 			var prevTransform = null;
@@ -5549,6 +5639,9 @@ class SceneEditor {
 		for (callback in rebuildEndCallbacks) {
 			callback();
 		}
+
+		for (p in flattenAll())
+			p.onEditorAnyRebuild();
 
 		if (sort2d.iterator().hasNext()) {
 			var flat = sceneData.flatten();

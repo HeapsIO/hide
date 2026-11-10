@@ -1,0 +1,54 @@
+:host {
+	display: grid;	position: relative;
+	overflow: hidden;
+	gap: 2px;
+
+	/* gap: var(--splitter-size, 4px); */
+}
+
+slot {
+	display: contents;
+}
+
+/* Centered on the gap before its pane, --splitter-hitbox wide */
+.splitter {
+	--size: var(--gap);
+	--hitbox: max(var(--size), var(--splitter-hitbox, 8px));
+	--offset: calc((var(--size) + var(--hitbox)) / -2);
+	--inner: calc((var(--hitbox) - var(--size)) / 2);
+
+	position: absolute;
+	z-index: 1;
+	top: 0;
+	bottom: 0;
+	left: var(--offset);
+	width: var(--hitbox);
+	cursor: col-resize;
+	touch-action: none;
+
+	&::before {
+		content: "";
+		position: absolute;
+		inset: 0 var(--inner);
+		background: var(--theme-crust);
+	}
+
+	&:hover::before {
+		background: #08f;
+	}
+
+	:host([direction=vertical]) & {
+		top: var(--offset);
+		bottom: auto;
+		left: 0;
+		right: 0;
+		width: auto;
+		height: var(--hitbox);
+		cursor: row-resize;
+
+		&::before {
+			inset: var(--inner) 0;
+		}
+	cursor: row-resize;
+	}
+}

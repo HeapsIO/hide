@@ -170,13 +170,14 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		}
 
 		var skipShadow : Bool = false;
+		var shadowRayStart : Vec3;
+		var shadowRayDir : Vec3;
 		function evaluateCascadeShadow() : Float {
 			var shadow = 1.0;
-			var shadowViewProj = mat3x4(lightInfos[2], lightInfos[3], lightInfos[4]);
+			var shadowPos0 = shadowRayStart + shadowRayDir * curDist;
 
 			@unroll for ( c in 0...MAX_CASCADE_COUNT ) {
 				var cascadeScale = lightInfos[5 + 2 * c];
-				var shadowPos0 = transformedPosition * shadowViewProj;
 				var shadowPos = c == 0 ? shadowPos0 : shadowPos0 * cascadeScale.xyz + lightInfos[6 + 2 * c].xyz;
 				if ( inside(shadowPos) ) {
 					var zMax = saturate(shadowPos.z);
@@ -324,6 +325,8 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var stepSize = cameraDistance / float(steps);
 			var dithering = ditheringNoise.getLod(calculatedUV * targetSize / ditheringSize, 0.0).r * stepSize * ditheringIntensity;
 			startPos += dithering * camDir;
+			shadowRayStart = startPos * mat3x4(lightInfos[2], lightInfos[3], lightInfos[4]);
+			shadowRayDir = vec3(dot(camDir, lightInfos[2].xyz), dot(camDir, lightInfos[3].xyz), dot(camDir, lightInfos[4].xyz));
 
 			var integrationValues = vec4(0.0,0.0,0.0,1.0);
 			skipShadow = false;
@@ -421,6 +424,7 @@ class VolumetricLighting extends RendererFX {
 
 			var r = cast(r, h3d.scene.pbr.Renderer);
 			r.mark("VolumetricLighting");
+			r.ctx.engine.driver.beginEvent("VolumetricLighting");
 
 			var depth = r.textures.albedo.depthBuffer;
 
@@ -492,6 +496,7 @@ class VolumetricLighting extends RendererFX {
 			r.ctx.engine.popTarget();
 
 			depth.filter = prevFilter;
+			r.ctx.engine.driver.endEvent();
 		}
 	}
 

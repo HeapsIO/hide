@@ -28,8 +28,12 @@ extern class ScriptEditor {
 	function revealLineNearTop( lineNumber : Int, ?ScrollType: ScrollType) : Void;
 	function getOption( opt : Int ) : Dynamic;
 	function setScrollTop( value : Int ) : Void;
+	function trigger( source : String, handlerId : String, payload : Dynamic ) : Void;
+	function hasTextFocus() : Bool;
 
 
 	public static function create( elt : js.html.Element, ?options : Dynamic ) : ScriptEditor;
+	public static function getEditors() : Array<ScriptEditor>;
+	public static function registerCommand( id : String, handler : Void -> Void ) : Void;
 
 }

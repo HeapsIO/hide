@@ -2,16 +2,11 @@ package hrt.prefab.fx.gpuemitter;
 
 class BaseSpawn extends ComputeUtils {
 	static var SRC = {
-		@param var batchBuffer : RWPartialBuffer<{
-			modelView : Mat4,
-		}>;
-		@param var particleBuffer : RWPartialBuffer<{
-			speed : Vec3,
-			life : Float,
-			lifeTime : Float,
-			random : Float,
-			color : Float,
-		}>;
+		@param var batchBuffer : RWBuffer<Vec4>;
+		@param var batchStride : Int;
+		@param var modelViewPos : Int;
+		@param var particleBuffer : RWBuffer<Float>;
+		@param var particleStride : Int;
 		@param var atomic : RWBuffer<Int>;
 
 		@const var FORCED : Bool = false;
@@ -25,6 +20,8 @@ class BaseSpawn extends ComputeUtils {
 		@param var absPos : Mat4;
 
 		@:import h3d.shader.ColorSpaces;
+		@:import hrt.prefab.fx.gpuemitter.ParticleBuffer;
+		@:import h3d.shader.BufferUtils;
 
 		var life : Float;
 		var particleRandom : Float;
@@ -35,7 +32,7 @@ class BaseSpawn extends ComputeUtils {
 		function __init__() {
 			setLayout(64,1,1);
 			emitNormal = vec3(0.0, 0.0, 1.0);
-			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
+			particleRandom = getParticleRandom(computeVar.globalInvocation.x);
 			life = mix(minLifeTime, maxLifeTime, (global.time + particleRandom) % 1.0);
 			relativeTransform = translationMatrix(vec3(0.0));
 			modelView = absPos * relativeTransform;
@@ -44,20 +41,20 @@ class BaseSpawn extends ComputeUtils {
 
 		function main() {
 			var idx = computeVar.globalInvocation.x;
-			var curLife = particleBuffer[idx].life;
-			var curLifeTime = particleBuffer[idx].lifeTime;
+			var curLife = getParticleLife(idx);
+			var curLifeTime = getParticleLifeTime(idx);
 			if ( FORCED || (!INFINITE && curLife > curLifeTime ) ) {
 				var c = atomicAdd(atomic, 0, 1);
 				if ( FORCED || (!INFINITE && c < rate) ) {
-					batchBuffer[idx].modelView = modelView;
+					writeMat4(batchBuffer, idx * batchStride + modelViewPos, modelView);
 					var s = vec3(0.0, 0.0, 1.0);
 					if ( SPEED_NORMAL )
 						s = emitNormal;
-					particleBuffer[idx].speed = s * maxStartSpeed;
-					particleBuffer[idx].life = 0.0;
+					setParticleSpeed(idx, s * maxStartSpeed);
+					setParticleLife(idx, 0.0);
 					// Keep in memory duration of particle to normalize curve update.
-					particleBuffer[idx].lifeTime = life;
-					particleBuffer[idx].color = intBitsToFloat(packIntColor(particleColor));
+					setParticleLifeTime(idx, life);
+					setParticleColor(idx, intBitsToFloat(packIntColor(particleColor)));
 				}
 			}
 		}

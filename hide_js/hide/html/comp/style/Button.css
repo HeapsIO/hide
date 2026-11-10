@@ -1,0 +1,101 @@
+:host {
+	--button-background: var(--theme-surface-0);
+	--button-foreground: var(--theme-foreground);
+	--button-size: 28px;
+	--button-padding: 4px;
+
+	display: inline-flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+
+	gap: 2px;
+
+	height: var(--button-size);
+	min-width: var(--button-size);
+	overflow-y: clip;
+	padding: 0 var(--button-padding);
+	box-sizing: border-box;
+
+	border-radius: var(--theme-border-radius);
+	outline: var(--theme-border);
+	outline-offset: -1px;
+	background-color: var(--button-background);
+	box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.5);
+
+	color: var(--button-foreground);
+	cursor: pointer;
+	user-select: none;
+
+	font-size: 12px;
+}
+
+:host(:hover) {
+	background-image: linear-gradient(color-mix(in srgb, var(--button-foreground) 15%, transparent) 0 0);
+}
+
+:host(:active) {
+	background-image: linear-gradient(color-mix(in srgb, var(--button-foreground) 25%, transparent) 0 0);
+	box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 1);
+	translate: 0 1px;
+}
+
+.label {
+	margin-top: -1px;
+	margin-left: 2px;
+	margin-right: 2px;
+}
+
+hide-icon, ::slotted(hide-icon) {
+	--icon-size: calc(var(--button-size) - var(--button-padding)  * 2);
+}
+
+:host(.small-square) {
+	--button-size: 16px;
+	--button-padding: 0px;
+	font-size: 9px;
+
+}
+
+:host(.medium-square) {
+	--button-size: 20px;
+	--button-padding: 2px;
+	font-size: 12px;
+}
+
+:host(.quiet) {
+	outline: none;
+}
+
+:host(.transparent) {
+	--button-background: transparent;
+	box-shadow: none;
+}
+
+:host(.small-dropdown) {
+	min-width: 0;
+	--button-padding: 0px;
+}
+
+:host(.dropdown)::after,
+:host(.small-dropdown)::after {
+	content: "";
+	height: 1.5em;
+	aspect-ratio: 1/1;
+	background-color: currentColor;
+	mask: url("res/icon/drop_down.svg") center / contain no-repeat;
+}
+
+:host(.small-dropdown)::after {
+	margin-right: -2px;
+	margin-left: -2px;
+}
+
+:host(.dropdown)::after {
+	margin-right: -4px;
+}
+
+:host([checked]) {
+	--button-background: var(--theme-accent-dimmed);
+}

@@ -25,6 +25,7 @@ class UndoHistory {
 	}
 
 	public function change(h, ?callb, ?noDataChange) {
+		hide.tools.CrashReport.log("change " + switch( h ) { case Field(_, field, _): field; case Array(_, index, _): "[" + index + "]"; case Custom(_): "custom"; });
 		if (undoElts.length >= maxHistoryCount)
 			undoElts.shift();
 		undoElts.push({ h : h, id : noDataChange ? currentID : ++uidGen, callb : callb });
@@ -38,11 +39,13 @@ class UndoHistory {
 	}
 
 	public function undo() {
+		hide.tools.CrashReport.log("undo");
 		var h = undoElts.pop();
 		return handleElement(h, redoElts);
 	}
 
 	public function redo() {
+		hide.tools.CrashReport.log("redo");
 		var h = redoElts.pop();
 		return handleElement(h, undoElts);
 	}

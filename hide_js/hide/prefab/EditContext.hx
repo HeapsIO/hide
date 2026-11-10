@@ -277,7 +277,7 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 		return ctx.scene.s2d;
 	}
 
-	public function getCameraController3d():hide.view.CameraController.CameraControllerBase {
+	public function getCameraController3d():hide.tools.CameraController.CameraControllerBase {
 		return ctx.scene.editor.cameraController;
 	}
 

@@ -842,6 +842,7 @@ class Trails extends Object3D {
 		var tr = new TrailObj(this, parent, numTrails);
 		applyTransform();
 		tr.name = name;
+		tr.setConstantSpeed(constantSpeedX, constantSpeedY, constantSpeedZ);
 		tr.updateShader();
 		return tr;
 	}
@@ -852,17 +853,21 @@ class Trails extends Object3D {
 
 	override function updateInstance(?props: String) {
 		super.updateInstance(props);
+		if ( props == "lifetime" )
+			lifetime = hxd.Math.max(lifetime, 0.00001);
+
 		var trailObj : TrailObj = cast local3d;
+		if ( trailObj == null )
+			return;  // trail object is only created once particles are emitted (possibly after delay)
+
 		if ( props == "uvRepeat")
 			trailObj.updateShader();
 
 		if ( props == "uvMode")
 			trailObj.reset();
 
-		if ( props == "lifetime" ) {
-			lifetime = hxd.Math.max(lifetime, 0.00001);
+		if ( props == "lifetime" )
 			@:privateAccess trailObj.init();
-		}
 
 		if( props == "framerate" )
 			@:privateAccess trailObj.init();
@@ -872,9 +877,7 @@ class Trails extends Object3D {
 			trailObj.updateShader();
 		}
 
-		@:privateAccess trailObj.constantSpeedX = constantSpeedX;
-		@:privateAccess trailObj.constantSpeedY = constantSpeedY;
-		@:privateAccess trailObj.constantSpeedZ = constantSpeedZ;
+		trailObj.setConstantSpeed(constantSpeedX, constantSpeedY, constantSpeedZ);
 	}
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
@@ -922,7 +925,7 @@ class Trails extends Object3D {
 
 		function onResetTrail() {
 			var trailObj : TrailObj = cast local3d;
-			trailObj.reset();
+			trailObj?.reset();
 		}
 
 		ctx.build(
@@ -976,7 +979,7 @@ class Trails extends Object3D {
 			if( debug && debugTxt != null ) {
 				var str = "";
 				var trailObj : TrailObj = cast local3d;
-				@:privateAccess for (i in 0...trailObj.numTrails) {
+				if( trailObj != null ) @:privateAccess for (i in 0...trailObj.numTrails) {
 					str += " trail[" + i + "].len = " + @:privateAccess trailObj.trails[i].totalLength + "\n";
 				}
 				debugTxt.content = str;
@@ -1059,7 +1062,7 @@ class Trails extends Object3D {
 		resetTrail = new hide.Element('<input type="button" value="Reset trail"/>').appendTo(props.find("#debug-properties"));
 		resetTrail.on('click', function(e) {
 			var trailObj : TrailObj = cast local3d;
-			trailObj.reset();
+			trailObj?.reset();
 		});
 		resetTrail.toggle(debug);
 

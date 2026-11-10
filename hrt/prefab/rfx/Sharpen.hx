@@ -32,6 +32,7 @@ class Sharpen extends RendererFX {
 	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		if( step == AfterTonemapping ) {
 			r.mark("Sharpen");
+			r.ctx.engine.driver.beginEvent("Sharpen");
 			var sharpen = r.allocTarget("sharpen", true, 1.0, RGBA);
 			var ctx = r.ctx;
 			ctx.engine.pushTarget(sharpen, NotBound);
@@ -42,6 +43,7 @@ class Sharpen extends RendererFX {
 			ctx.engine.popTarget();
 			ctx.setGlobal("ldrMap", sharpen);
 			r.setTarget(sharpen);
+			ctx.engine.driver.endEvent();
 		}
 	}
 

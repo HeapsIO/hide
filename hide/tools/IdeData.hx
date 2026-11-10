@@ -27,8 +27,12 @@ class IdeData {
 	function get_currentConfig() return config.projectUser;
 
 	// Editor states is basically editor UI state (camera position, last view opened, etc)
-	public var globalState(default, null) : EditorState;
-	public var projectState(default, null) : EditorState;
+	public var globalState(default, null) : hide.tools.EditorState.EditorStateRoot;
+	public var globalViewState(default, null) : EditorState;
+	public var projectState(default, null) : hide.tools.EditorState.EditorStateRoot;
+	public var projectViewState(default, null) : EditorState;
+	public var projectFileState(default, null) : EditorState;
+
 
 	public var currentProject(get, never) : String;
 	function get_currentProject() : String return projectOverride ?? globalState.get("currentProject", "");
@@ -52,13 +56,13 @@ class IdeData {
 
 	/** Default values of the user preferences, set in the defaults layer of the configs **/
 	public var defaultUserConfig : Map<String, Dynamic> = [
-		"hide.autoSaveLayout" => true,
 		"hide.enableDBFormulas" => true,
 		"hide.closeSearchOnFileOpen" => false,
 		"hide.typingDebounceThreshold" => 300,
 		"hide.autoSavePrefab" => false,
 		"hide.colorPickerEscUndo" => true,
 		"hide.trackGpuAlloc" => false,
+		"hide.textureStreaming" => true,
 		"hide.svnShowVersionedFiles" => true,
 		"hide.svnShowModifiedFiles" => true,
 		"hide.unfocusCPUSavingMode" => true,
@@ -92,8 +96,11 @@ class IdeData {
 	}
 
 	function initConfig( cwd : String ) {
-		globalState = new EditorState(defaultConfig ? null : userDataPath + "/editorState.json");
-		projectState = new EditorState();
+		globalState = new hide.tools.EditorState.EditorStateRoot(defaultConfig ? null : userDataPath + "/editorState.json");
+		globalViewState = new EditorState(globalState, "views");
+		projectState = new hide.tools.EditorState.EditorStateRoot(null);
+		projectViewState = new EditorState(projectState, "views");
+		projectFileState = new EditorState(projectState, "files");
 		config = Config.loadForProject(cwd, cwd+"/res");
 		fileWatcher = new hide.tools.FileWatcher();
 	}
@@ -105,16 +112,26 @@ class IdeData {
 	function setProject( dir : String ) {
 		fileWatcher.dispose();
 		dbWatcher = null;
-		if( dir != currentProject ) {
+		dir = dir.split("\\").join("/");
+		if( dir != projectDir ) {
 			projectOverride = null;
-			var recents = recentProjects;
-			recents.remove(dir);
-			recents.unshift(dir);
+			var recents = [dir];
+			for( p in recentProjects ) {
+				p = p.split("\\").join("/");
+				if( recents.indexOf(p) < 0 ) recents.push(p);
+			}
 			if( recents.length > 10 ) recents.pop();
 			globalState.set("recentProjects", recents);
 			globalState.set("currentProject", dir);
 		}
-		projectState = isProjectValid() && !defaultConfig ? new EditorState(getProjectDataPath(projectDir) + "/editorState.json") : new EditorState();
+		#if js
+		if( isProjectValid() ) fileWatcher.rootDir = resourceDir;
+		#end
+		var projectSavePath = isProjectValid() && !defaultConfig ? getProjectDataPath(projectDir) + "/editorState.json" : null;
+		projectState = new hide.tools.EditorState.EditorStateRoot(projectSavePath);
+		projectViewState = new EditorState(projectState, "views");
+		projectFileState = new EditorState(projectState, "files");
+
 		config = Config.loadForProject(projectDir, resourceDir);
 		databaseFile = currentConfig.get("cdb.databaseFile") ?? "data.cdb";
 		databaseDiff = currentConfig.get("cdb.databaseDiff");
@@ -178,6 +195,9 @@ class IdeData {
 			var prevPath = new haxe.io.Path(hidePath).dir;
 			if( sys.FileSystem.exists(prevPath + "/hide.js") )
 				return prevPath;
+			// packaged electron
+			if( sys.FileSystem.exists(hidePath + "/resources/app/hide.js") )
+				return hidePath + "/resources/app";
 			// nwjs launch
 			var path = Sys.getCwd().split("\\").join("/");
 			if( sys.FileSystem.exists(path+"/hide.js") )

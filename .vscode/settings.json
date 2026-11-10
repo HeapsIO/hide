@@ -3,5 +3,6 @@
         "imports": {
             "enableAutoImports": false
         }
-    }
+	},
+	"cmake.sourceDirectory": "C:/Shiro/Git/hide/hide_js/libs/jsdx"
 }

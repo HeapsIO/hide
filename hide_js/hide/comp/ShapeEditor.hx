@@ -125,6 +125,8 @@ class ShapeEditor extends Component {
 	}
 
 	override function remove() {
+		if (isInShapeEdition)
+			stopShapeEditing();
 		super.remove();
 		var body = new Element(element[0].ownerDocument.body);
 		body.off("keydown.shapeeditor");

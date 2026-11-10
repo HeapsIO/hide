@@ -553,6 +553,16 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	}
 
 	var queuedRequest : Int = -1;
+
+	// the animation frame loop keeps running while the preview is set
+	override function destroy() {
+		if (queuedRequest >= 0)
+			js.Browser.window.cancelAnimationFrame(queuedRequest);
+		queuedRequest = -1;
+		animPreview = null;
+		super.destroy();
+	}
+
 	function onRequestAnimationFrame(dt: Float) {
 		@:privateAccess
 		if (previewBlendPos != null && animPreview != null) {

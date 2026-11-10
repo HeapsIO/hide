@@ -1,0 +1,31 @@
+:root {
+	/* z-index layers */
+
+	--default-layer: 200;
+	--tooltip-layer: var(--default-layer);
+	--splitter-layer: var(--default-layer);
+	--domkit-layer: 400;
+	--popup-layer: 800;
+	--header-layer: 600;
+	--hidemodal-layer: 999;
+
+	/* This is also set in hide.comp.ContextMenu */
+	--contextmenu-layer: 900;
+
+	--cdb-error-layer: 300;
+	--cdb-flageditor-layer: var(--popup-layer);
+	--cdb-preview-layer: calc(var(--popup-layer) + 10);
+
+	--color-highlight-gray: #969696;
+	--color-highlight: #2c5d87;
+	--color-border: #3d3d3d;
+	--color-border-hover: #3d3d3d;
+
+	--color-menu-bg: #282828;
+	--color-menu-bg-highlight: #303030;
+
+	--color-tool-bg: #545454;
+	--color-tool-bg-hover: #656565;
+
+	--color-text: #e5e5e5;
+}

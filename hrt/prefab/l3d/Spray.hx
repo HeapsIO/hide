@@ -568,7 +568,9 @@ class Spray extends Object3D {
 			gBrush.material.shadows = false;
 			gBrush.material.color = newColor;
 			gBrushes.push(gBrush);
-			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), local3d);
+			var sphere = new h3d.prim.Sphere(Math.min(radius*0.05, 0.35));
+			sphere.addNormals();
+			gBrush = new h3d.scene.Mesh(sphere, local3d);
 			gBrush.ignoreParentTransform = true;
 			var pass = gBrush.material.mainPass;
 			pass.setPassName("overlay");

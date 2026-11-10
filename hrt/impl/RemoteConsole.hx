@@ -404,7 +404,7 @@ class RemoteConsoleConnection {
 		}
 		if( args.cdbsheet != null ) {
 			var sheet = hide.Ide.inst.database.getSheet(args.cdbsheet);
-			hide.Ide.inst.open("hide.view.CdbTable", {}, null, function(view) {
+			hide.Ide.inst.open("hide.view.cdb.CdbTable", {}, null, function(view) {
 				hide.Ide.inst.focus();
 				var line = args.line;
 				if( sheet != null && args.selectExpr != null ) {
@@ -420,7 +420,7 @@ class RemoteConsoleConnection {
 						hide.Ide.inst.quickError(e);
 					}
 				}
-				Std.downcast(view, hide.view.CdbTable).goto(sheet, line, args.column ?? -1);
+				Std.downcast(view, hide.view.cdb.CdbTable).goto(sheet, line, args.column ?? -1);
 			});
 		} else if( args.file != null ) {
 			hide.Ide.inst.showFileInResources(args.file);

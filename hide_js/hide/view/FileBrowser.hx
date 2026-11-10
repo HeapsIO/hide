@@ -22,6 +22,7 @@ enum abstract Layout(String) {
 
 class FileBrowser extends hide.ui.View<FileBrowserState> {
 	static var FAVORITES_KEY = "filebrowser_favorites";
+	static var DRAG_FILE_TREE_KEY = "drag/filetree";
 
 	var fileTree: Element;
 	var fileIcons: Element;
@@ -304,6 +305,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		if (delayedSelectItem != null) {
 			fancyGallery.selectItem(delayedSelectItem);
+			fancyGallery.queueRefresh(FocusCurrent);
 			delayedSelectItem = null;
 		}
 	}
@@ -421,9 +423,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 							<span class="ico ico-filter"></span>
 						</fancy-button>
 
-						<fancy-button class="compact bnt-filter-dropdown" title="Choose filters">
-							<span class="ico ico-chevron-down"></span>
-						</fancy-button>
+						<fancy-button class="compact bnt-filter-dropdown" title="Choose filters"></fancy-button>
 
 						<fancy-separator></fancy-separator>
 
@@ -472,7 +472,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		// Favorites tree
 
-		favoritesTree = new hide.comp.FancyTree<FavoriteEntry>(browserLayout.find(".left").find(".top"), { saveDisplayKey: "fileBrowserTree_Favorites" } );
+		favoritesTree = new hide.comp.FancyTree<FavoriteEntry>(browserLayout.find(".left").find(".top"), {} );
+		favoritesTree.state.setParent(projectState, "favoritesTree");
 		favoritesTree.getChildren = (file: FavoriteEntry) -> {
 			function rec(parent : FavoriteEntry) {
 				if (parent.ref.children == null)
@@ -667,15 +668,15 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 						fileEntries.push(s.ref);
 				}
 
-				e.data.set("drag/filetree", fileEntries);
-				ide.setData("drag/filetree", cast fileEntries);
+				e.data.set(DRAG_FILE_TREE_KEY, fileEntries);
+				ide.setData(DRAG_FILE_TREE_KEY, cast fileEntries);
 				return true;
 			},
 			getItemDropFlags: function(target: FavoriteEntry, e: hide.tools.DragAndDrop.DragData) : hide.comp.FancyTree.DropFlags {
 				if (target == null)
 					return Reorder;
 
-				var fileEntries : Array<FileEntry> = cast e.data.get("drag/filetree") ?? [];
+				var fileEntries : Array<FileEntry> = cast e.data.get(DRAG_FILE_TREE_KEY) ?? [];
 				fileEntries = fileEntries.copy();
 				var containsFiles = fileEntries != null && fileEntries.length > 0;
 
@@ -697,7 +698,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				if (target.ref.kind != Dir)
 					target = target.parent;
 
-				var fileEntries : Array<FileEntry> = cast e.data.get("drag/filetree") ?? [];
+				var fileEntries : Array<FileEntry> = cast e.data.get(DRAG_FILE_TREE_KEY) ?? [];
 				fileEntries = fileEntries.copy();
 				fileEntries.remove(target.ref);
 
@@ -721,7 +722,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			this.favoritesTree.element.parent().hide();
 
 		// Ressources tree
-		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left").find(".bot"), { saveDisplayKey: "fileBrowserTree_Main", search: true, customScroll: element.find("fancy-scroll").get(0) } );
+		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left").find(".bot"), { search: true, customScroll: element.find("fancy-scroll").get(0) } );
+		fancyTree.state.setParent(projectState, "tree");
 		fancyTree.getChildren = (file: FileEntry) -> {
 			if (file == null)
 				return [root];
@@ -760,15 +762,15 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				var selection = fancyTree.getSelectedItems();
 				if (selection.length <= 0)
 					return false;
-				e.data.set("drag/filetree", selection);
-				ide.setData("drag/filetree", cast selection);
+				e.data.set(DRAG_FILE_TREE_KEY, selection);
+				ide.setData(DRAG_FILE_TREE_KEY, cast selection);
 				return true;
 			},
 			getItemDropFlags: function(target: FileEntry, e: hide.tools.DragAndDrop.DragData) : hide.comp.FancyTree.DropFlags {
 				if (target == null)
 					return Reorder;
 
-				var fileEntries : Array<FileEntry> = cast e.data.get("drag/filetree") ?? [];
+				var fileEntries : Array<FileEntry> = cast e.data.get(DRAG_FILE_TREE_KEY) ?? [];
 				fileEntries = fileEntries.copy();
 				var containsFiles = fileEntries != null && fileEntries.length > 0;
 
@@ -787,10 +789,11 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				return Reorder;
 			},
 			onDrop: function(target: FileEntry, operation: hide.comp.FancyTree.DropOperation, e: hide.tools.DragAndDrop.DragData) : Bool {
+				target = target ?? root;
 				if (target.kind != Dir)
 					target = target.parent;
 
-				var fileEntries : Array<FileEntry> = cast e.data.get("drag/filetree") ?? [];
+				var fileEntries : Array<FileEntry> = cast e.data.get(DRAG_FILE_TREE_KEY) ?? [];
 				fileEntries = fileEntries.copy();
 				fileEntries.remove(target);
 
@@ -837,6 +840,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 		}
 
+		fancyGallery?.remove();
 		fancyGallery = new hide.comp.FancyGallery<FileEntry>(null, browserLayout.find(".right fancy-gallery"));
 		fancyGallery.getItems = () -> {
 			return currentSearch;
@@ -866,8 +870,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyGallery.dragAndDropInterface = {
 			onDragStart: (item: FileEntry, dragData: hide.tools.DragAndDrop.DragData) -> {
 				var selection = getItemAndSelection(item, true);
-				dragData.data.set("drag/filetree", selection);
-				ide.setData("drag/filetree", cast selection);
+				dragData.data.set(DRAG_FILE_TREE_KEY, selection);
+				ide.setData(DRAG_FILE_TREE_KEY, cast selection);
 				return true;
 			}
 		}
@@ -975,6 +979,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 		syncGallerySearchFullPath();
 
+		// onDisplay runs again on rebuild : don't register twice
+		FileManager.inst.onFileChangeHandlers.remove(onFileChange);
+		FileManager.inst.onVCSStatusUpdateHandlers.remove(refreshVCS);
 		FileManager.inst.onFileChangeHandlers.push(onFileChange);
 		FileManager.inst.onVCSStatusUpdateHandlers.push(refreshVCS);
 
@@ -1030,6 +1037,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	override function destroy() {
 		super.destroy();
 		FileManager.inst.onFileChangeHandlers.remove(onFileChange);
+		FileManager.inst.onVCSStatusUpdateHandlers.remove(refreshVCS);
+		fancyGallery?.remove();
 	}
 
 	function createNew( directoryFullPath : String, ext : Extension.ExtensionDesc, isGallery: Bool) {

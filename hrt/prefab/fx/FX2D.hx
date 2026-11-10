@@ -1,8 +1,8 @@
 package hrt.prefab.fx;
-import hrt.prefab.Curve;
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.fx.BaseFX.ObjectAnimation;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
+import hrt.prefab.fx.BaseFX.BaseFXTools;
 import hrt.prefab.fx.Event;
 
 @:allow(hrt.prefab.fx.FX2D)
@@ -104,35 +104,30 @@ class FX2DAnimation extends h2d.Object {
 	}
 
 
-	static var tmpPt = new h3d.Vector4();
 	public function setTime( time : Float ) {
 
 		this.localTime = time;
 
 		for(anim in objects) {
-			if(anim.scale != null) {
-				evaluator.getVector(anim.scale, time, tmpPt);
-				anim.obj2d.scaleX = anim.elt2d.scaleX * tmpPt.x;
-				anim.obj2d.scaleY = anim.elt2d.scaleY * tmpPt.y;
+			var e = anim.elt2d, o = anim.obj2d, p = anim.position, s = anim.scale, r = anim.rotation;
+			inline function f(v: Value, base: Float) return v == null ? base : evaluator.getFloat(v, time);
+			if(p != null) {
+				o.x = f(p.x, e.x);
+				o.y = f(p.y, e.y);
 			}
-
-			if(anim.rotation != null) {
-				var rotation = evaluator.getFloat(anim.rotation, time);
-				anim.obj2d.rotation = anim.elt2d.rotation + rotation * (Math.PI / 180.0);
+			if(s != null) {
+				o.scaleX = f(s.x, e.scaleX);
+				o.scaleY = f(s.y, e.scaleY);
 			}
-
-			if(anim.position != null) {
-				evaluator.getVector(anim.position, time, tmpPt);
-				anim.obj2d.x = anim.elt2d.x + tmpPt.x;
-				anim.obj2d.y = anim.elt2d.y + tmpPt.y;
-			}
+			if(r != null)
+				o.rotation = hxd.Math.degToRad(f(r.x, e.rotation));
 
 			if(anim.visibility != null)
 				anim.obj2d.visible = anim.elt2d.visible && evaluator.getFloat(anim.visibility, time) > 0.5;
 
 			if(anim.color != null) {
 				switch(anim.color) {
-					case VCurve(a):
+					case VCurve(_) | VParamCurve(_):
 						anim.obj2d.alpha = evaluator.getFloat(anim.color, time);
 					default:
 						var drawable = Std.downcast(anim.obj2d, h2d.Drawable);
@@ -210,6 +205,21 @@ class FX2D extends Object2D implements BaseFX {
 	@:s var loop : Bool = false;
 	@:s var startLoop : Float = 0.0;
 
+	override function load( data : Dynamic ) {
+		FX.checkVersion(this, data);
+		super.load(data);
+	}
+
+	override function copy( obj : Prefab ) {
+		super.copy(obj);
+	}
+
+	override function save() : Dynamic {
+		var data = super.save();
+		data.version = FX.VERSION;
+		return data;
+	}
+
 
 	function getObjAnimations(elt: PrefabElement, anims: Array<ObjectAnimation>) {
 		for(c in elt.children) {
@@ -219,7 +229,13 @@ class FX2D extends Object2D implements BaseFX {
 		var obj2d = elt.to(hrt.prefab.Object2D);
 		if(obj2d == null || obj2d.local2d == null)
 			return;
+		var anim = makeObjectAnimation(obj2d, obj2d.local2d);
+		if(anim != null)
+			anims.push(anim);
+	}
 
+	static function makeObjectAnimation(obj2d: hrt.prefab.Object2D, local2d: h2d.Object) : ObjectAnimation {
+		var elt : PrefabElement = obj2d;
 		// TODO: Support references?
 		var anyFound = false;
 
@@ -227,20 +243,7 @@ class FX2D extends Object2D implements BaseFX {
 			var c = Curve.getCurve(elt, name);
 			if(c != null)
 				anyFound = true;
-			return c != null ? VCurve(c) : def;
-		}
-
-		function makeVector(name: String, defVal: Float, uniform: Bool=true, scale: Float=1.0) : Value {
-			var curves = Curve.getCurves(elt, name);
-			if(curves == null || curves.length == 0)
-				return null;
-
-			anyFound = true;
-
-			if(uniform && curves.length == 1 && curves[0].name == name)
-				return scale != 1.0 ? VMult(curves[0].makeVal(), VConst(scale)) : curves[0].makeVal();
-
-			return Curve.getVectorValue(curves, defVal, scale);
+			return c != null ? c.makeVal() : def;
 		}
 
 		function makeColor(name: String) {
@@ -249,24 +252,23 @@ class FX2D extends Object2D implements BaseFX {
 				return null;
 
 			anyFound = true;
-			return Curve.getColorValue(curves);
+			return BaseFXTools.getColorValue(curves);
 		}
 
 		var anim : ObjectAnimation = {
 			elt2d: obj2d,
-			obj2d: obj2d.local2d,
-			position: makeVector("position", 0.0),
-			scale: makeVector("scale", 1.0, true),
-			rotation: makeVector("rotation", 0.0, 360.0),
+			obj2d: local2d,
+			position: BaseFXTools.vectorAnimation(elt, "position"),
+			scale: BaseFXTools.vectorAnimation(elt, "scale"),
+			rotation: BaseFXTools.vectorAnimation(elt, "rotation"),
 			color: makeColor("color"),
 			visibility: makeVal("visibility", null),
 		};
 
-		if (Std.isOfType(elt, hrt.prefab.l2d.Anim2D) || Std.isOfType(elt, hrt.prefab.l2d.Atlas))
+		if (anim.position != null || anim.scale != null || anim.rotation != null || Std.isOfType(elt, hrt.prefab.l2d.Anim2D) || Std.isOfType(elt, hrt.prefab.l2d.Atlas))
 			anyFound = true;
 
-		if(anyFound)
-			anims.push(anim);
+		return anyFound ? anim : null;
 	}
 
 	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
@@ -275,7 +277,7 @@ class FX2D extends Object2D implements BaseFX {
 		#else
 		var fromRef = shared.parentPrefab != null;
 		var useFXRoot = #if editor fromRef #else true #end;
-		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
+		var root = BaseFXTools.getFXRoot(this);
 		if( useFXRoot && root != null ) {
 			var childrenBackup = _children;
 			_children = [root];
@@ -292,7 +294,7 @@ class FX2D extends Object2D implements BaseFX {
 		var fxanim : FX2DAnimation = cast local2d;
 		fxanim.init(this);
 		getObjAnimations(this, fxanim.objects);
-		hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(this, fxanim.customAnims);
+		BaseFXTools.getCustomAnimations(this, fxanim.customAnims);
 	}
 
 	override function makeObject(parent2d: h2d.Object) : h2d.Object {

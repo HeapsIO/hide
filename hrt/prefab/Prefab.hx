@@ -334,6 +334,14 @@ class Prefab {
 		}
 	}
 
+	#if !release
+	/**
+		The prefab data has been loaded again from its file : clears the static caches built from its previous version.
+	**/
+	public function clearCaches() {
+	}
+	#end
+
 	public function addChild(child: Prefab) : Void {
 		inline addChildAt(child, children.length);
 	}
@@ -678,6 +686,12 @@ class Prefab {
 	function editorRemoveInstanceObjects() : Void {
 	}
 
+	/**
+		Called by the editor on all the prefabs after any prefab has been rebuilt.
+	**/
+	function onEditorAnyRebuild() : Void {
+	}
+
 
 	/**
 		Return a list of files required by this prefab to be eventually loaded. Not recursive.
@@ -850,24 +864,17 @@ class Prefab {
 		var p = this;
 		while (parts.length > 0 && p != null) {
 			var name = parts.shift();
-			var subIndex = name.split("-");
-			var chooseNth = 0;
-			if (subIndex.length > 1) {
-				chooseNth = Std.parseInt(subIndex.pop()) ?? 0;
-				name = subIndex[0];
-			}
-			var found = null;
-			var currentNth = 0;
-			for (o in p.children) {
-				if (o.name == name)
-				{
-					if (currentNth == chooseNth) {
+			// support name-with-dash-index
+			var found = Lambda.find(p.children, o -> o.name == name);
+			var dash = name.lastIndexOf("-");
+			if (found == null && dash > 0) {
+				var chooseNth = Std.parseInt(name.substr(dash + 1)) ?? 0;
+				name = name.substr(0, dash);
+				for (o in p.children)
+					if (o.name == name && chooseNth-- == 0) {
 						found = o;
 						break;
-					} else {
-						currentNth ++;
 					}
-				}
 			}
 			p = found;
 		}

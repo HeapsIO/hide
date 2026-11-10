@@ -17,25 +17,25 @@ enum abstract SuggestTriggerKind(Int) {
 }
 
 enum abstract CompletionItemKind(Int) {
-	var Class = 6;
-	var Color = 15;
-	var Constructor = 3;
-	var Enum = 12;
-	var Field = 4;
-	var File = 16;
-	var Folder = 18;
-	var Function = 2;
+	var Class = 5;
+	var Color = 19;
+	var Constructor = 2;
+	var Enum = 15;
+	var Field = 3;
+	var File = 20;
+	var Folder = 23;
+	var Function = 1;
 	var Interface = 7;
-	var Keyword = 13;
-	var Method = 1;
+	var Keyword = 17;
+	var Method = 0;
 	var Module = 8;
 	var Property = 9;
-	var Reference = 17;
-	var Snippet = 14;
-	var Text = 0;
-	var Unit = 10;
-	var Value = 11;
-	var Variable = 5;
+	var Reference = 21;
+	var Snippet = 28;
+	var Text = 18;
+	var Unit = 12;
+	var Value = 13;
+	var Variable = 4;
 }
 
 enum abstract CompletionItemInsertTextRule(Int) {
@@ -108,5 +108,11 @@ extern class Languages {
 	public static function registerCompletionItemProvider( language : String, provider : CompletionProvider ) : Void;
 
 	public static function registerSignatureHelpProvider( language : String, provider : SignatureHelpProvider ) : Void;
+
+	public static function register( language : { id : String, ?extensions : Array<String> } ) : Void;
+
+	public static function setLanguageConfiguration( language : String, configuration : Any ) : Void;
+
+	public static function setMonarchTokensProvider( language : String, definition : Any ) : Void;
 
 }

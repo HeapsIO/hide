@@ -1,5 +1,4 @@
 package hrt.prefab.fx;
-import hrt.prefab.Curve;
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.fx.Value as Value;
 
@@ -153,16 +152,17 @@ class ShaderDynAnimation extends ShaderAnimation {
 	}
 }
 
+// Supports overriding xyz components separately
+typedef VectorAnimation = { ?x: Value, ?y: Value, ?z: Value };
+
 typedef ObjectAnimation = {
 	?elt: hrt.prefab.Object3D,
 	?obj: h3d.scene.Object,
 	?elt2d: hrt.prefab.Object2D,
 	?obj2d: h2d.Object,
-	?position: Value,
-	?localPosition: Value,
-	?scale: Value,
-	?rotation: Value,
-	?localRotation: Value,
+	?position: VectorAnimation,
+	?scale: VectorAnimation,
+	?rotation: VectorAnimation,
 	?color: Value,
 	?visibility: Value,
 	?additionalProperies : AdditionalProperies
@@ -184,7 +184,7 @@ interface BaseFX {
 class BaseFXTools {
 	public static var useAutoPerInstance = true;
 
-	public static function makeShaderParams(basePrefab: hrt.prefab.Prefab, shaderDef: hxsl.SharedShader) {
+	public static function makeShaderParams(basePrefab: hrt.prefab.Prefab, shaderDef: hxsl.SharedShader, particle = false) {
 		if(shaderDef == null)
 			return null;
 
@@ -197,45 +197,103 @@ class BaseFXTools {
 
 			paramCount++;
 
-			var prop = Reflect.field(basePrefab.props, v.name);
-			if (prop == null)
-				prop = Reflect.field(basePrefab, v.name);
-			if (prop == null)
-				prop = hrt.prefab.DynamicShader.getDefault(v.type);
-
-			var curves = Curve.getCurves(basePrefab, v.name);
-			if(curves == null || curves.length == 0)
+			var size = particle ? EmitterParam.getParamSize(v) : 0;
+			var val = size > 0 ? makeParticleShaderValue(cast basePrefab, v.name, size) : makeShaderParamValue(basePrefab, v.name, v.type);
+			if(val == null)
 				continue;
-
-			switch(v.type) {
-				case TVec(_, VFloat) :
-					var isColor = v.name.toLowerCase().indexOf("color") >= 0;
-					var val = isColor ? Curve.getColorValue(curves) : Curve.getVectorValue(curves);
-					if(ret == null) ret = [];
-					ret.push({
-						idx: paramCount - 1,
-						def: v,
-						value: val,
-					});
-
-				default:
-					var base = 1.0;
-					if(Std.isOfType(prop, Float) || Std.isOfType(prop, Int))
-						base = cast prop;
-					var curve = Curve.getCurve(basePrefab, v.name);
-					var val = Value.VConst(base);
-					if(curve != null)
-						val = Value.VMult(curve.makeVal(), VConst(base));
-					if(ret == null) ret = [];
-					ret.push({
-						idx: paramCount - 1,
-						def: v,
-						value: val,
-					});
-			}
+			if(ret == null) ret = [];
+			ret.push({
+				idx: paramCount - 1,
+				def: v,
+				value: val,
+			});
 		}
 
 		return ret;
+	}
+
+	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0) : Value {
+		inline function find(s) {
+			return findSuffix(curves, s);
+		}
+		var x = find(":x");
+		var y = find(":y");
+		var z = find(":z");
+
+		inline function curveOrVal(c: Curve, defVal: Float) : Value {
+			return c == null ? VConst(defVal) : c.makeVal();
+		}
+
+		return VVector(
+			curveOrVal(x, defVal),
+			curveOrVal(y, defVal),
+			curveOrVal(z, defVal));
+	}
+
+	public static function getColorValue(curves: Array<Curve>) : Value {
+		inline function find(s) {
+			return findSuffix(curves, s);
+		}
+
+		var r = find(":r");
+		var g = find(":g");
+		var b = find(":b");
+		var a = find(":a");
+		var h = find(":h");
+		var s = find(":s");
+		var l = find(":l");
+
+		if(h != null || s != null || l != null) {
+			return VHsl(
+				h != null ? h.makeVal() : VConst(0.0),
+				s != null ? s.makeVal() : VConst(1.0),
+				l != null ? l.makeVal() : VConst(1.0),
+				a != null ? a.makeVal() : VConst(1.0));
+		}
+
+		if(a != null && r == null && g == null && b == null)
+			return a.makeVal();
+
+		if(a == null && r == null && g == null && b == null)
+			return VConst(1.0); // White by default
+
+		return VColor(
+			r != null ? r.makeVal() : VConst(1.0),
+			g != null ? g.makeVal() : VConst(1.0),
+			b != null ? b.makeVal() : VConst(1.0),
+			a != null ? a.makeVal() : VConst(1.0));
+	}
+
+	static inline function findSuffix(curves: Array<Curve>, suffix: String) {
+		return Lambda.find(curves, c -> StringTools.endsWith(c.name.toLowerCase(), suffix));
+	}
+
+	public static function makeShaderParamValue(basePrefab: hrt.prefab.Prefab, name: String, type: hxsl.Ast.Type) : Value {
+		var curves = Curve.getCurves(basePrefab, name);
+		if(curves == null || curves.length == 0)
+			return null;
+		switch(type) {
+			case TVec(_, VFloat):
+				return name.toLowerCase().indexOf("color") >= 0 ? getColorValue(curves) : getVectorValue(curves);
+			default:
+				return Curve.getCurve(basePrefab, name)?.makeVal();
+		}
+	}
+
+	public static function makeParticleShaderValue(shader: hrt.prefab.Shader, name: String, size: Int) : Value {
+		if(shader.particleParams == null)
+			return null;
+		var keys = [for(i in 0...size) EmitterParam.curveName(name, size, i)];
+		inline function isCurve(i: Int) return switch(shader.particleParams.get(keys[i])) { case Curve: true; default: false; };
+		if(![for(i in 0...size) isCurve(i)].contains(true))
+			return null;
+		var prop : Dynamic = Reflect.field(shader.props, name);
+		function comp(i: Int) {
+			var base = EmitterParam.baseComponent(prop, size, i);
+			return isCurve(i) ? EmitterParam.ParamBuilder.curve(shader, keys[i], base) : Evaluator.vVal(base);
+		}
+		// 4 components: a color
+		return size == 1 ? comp(0) : size > 3 ? VColor(comp(0), comp(1), comp(2), comp(3)) : VVector(comp(0), comp(1), size > 2 ? comp(2) : VZero);
 	}
 
 	public static function makeRendererFXParams(rfxElt: hrt.prefab.rfx.RendererFX) {
@@ -247,37 +305,54 @@ class BaseFXTools {
 			if (!(Reflect.field(rfxElt, f.name) is Float))
 				continue;
 
-			var curves = Curve.getCurves(rfxElt, f.name);
-			if(curves == null || curves.length == 0)
-				continue;
-
-			var base = 1.0;
 			var curve = Curve.getCurve(rfxElt, f.name);
-			var val = Value.VConst(base);
-			if(curve != null)
-				val = Value.VMult(curve.makeVal(), VConst(base));
+			if(curve == null)
+				continue;
 			if(ret == null) ret = [];
 			ret.push({
 				field : f,
-				value : val
+				value : curve.makeVal()
 			});
 		}
 
 		return ret;
 	}
 
+	public static function vectorAnimation(elt: PrefabElement, name: String) : VectorAnimation {
+		var curves = Curve.getCurves(elt, name);
+		if(curves == null || curves.length == 0)
+			return null;
+		if(curves.length == 1 && curves[0].name == name) {
+			var v = curves[0].makeVal();
+			return { x: v, y: v, z: v };
+		}
+		inline function comp(suffix: String) return Lambda.find(curves, c -> StringTools.endsWith(c.name.toLowerCase(), suffix))?.makeVal();
+		return { x: comp(":x"), y: comp(":y"), z: comp(":z") };
+	}
+
+	/**
+		Children of `elt`, plus the refInstance of a Reference so its content is animated by the FX.
+		SubFX and references to FX are animated by their own FXAnimation.
+	**/
+	public static function getAnimatedChildren(elt: PrefabElement) : haxe.ds.ReadOnlyArray<PrefabElement> {
+		var ref = Std.downcast(elt, hrt.prefab.Reference);
+		if (ref == null || ref.refInstance == null || Std.isOfType(ref, SubFX) || Std.isOfType(ref.refInstance, FX) || @:privateAccess !ref.shouldBeInstanciated())
+			return elt.children;
+		return elt.children.concat([ref.refInstance]);
+	}
+
 	static var emptyParams : Array<String> = [];
-	public static function getCustomAnimations(elt: PrefabElement, anims: Array<CustomAnimation>, ?batch: h3d.scene.MeshBatch) {
+	public static function getCustomAnimations(elt: PrefabElement, anims: Array<CustomAnimation>, ?batch: h3d.scene.MeshBatch, particle = false) {
 		// Init all animations recursively except Emitter ones (called in Emitter)
 		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
-			for(c in elt.children) {
-				getCustomAnimations(c, anims, batch);
+			for(c in getAnimatedChildren(elt)) {
+				getCustomAnimations(c, anims, batch, particle);
 			}
 		}
 
 		var shader = elt.to(hrt.prefab.Shader);
 		if (shader != null && shader.shader != null && !Std.isOfType(shader.shader, hrt.prefab.fx.gpuemitter.ComputeUtils) ) {
-			var params = makeShaderParams(shader, shader.getShaderDefinition());
+			var params = makeShaderParams(shader, shader.getShaderDefinition(), particle);
 			var shader = shader.shader;
 
 			if(useAutoPerInstance && batch != null) @:privateAccess {

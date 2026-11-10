@@ -1,0 +1,22 @@
+# The FX data migration tool, usage: hl migrate.hl --help
+# What a prefab animates, and from which values, depends on its class: a type the build does not have is
+# not upgraded (an error). A game with its own prefab classes builds the tool from its own hxml instead, with
+# its libs, class paths and prefab packages, e.g. from the game dir:
+#   haxe common.hxml -D fx-migration -main hide.tools.migrate.Cli -hl migrate.hl
+-cp .
+-lib heaps
+-lib hscript
+-lib domkit
+-D hide
+-D hscriptPos
+-D fx-migration
+-D resourcesPath=hide_hl/emptyres
+-main hide.tools.migrate.Cli
+-hl migrate.hl
+--macro keep('h3d.shader')
+--macro include("hrt.prefab", false)
+--macro include("hrt.prefab.fx")
+--macro include("hrt.prefab.l3d", false)
+--macro include("hrt.prefab.l2d", false)
+--macro include("hrt.prefab.rfx", false)
+--macro include("hrt.shader", false)

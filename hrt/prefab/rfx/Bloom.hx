@@ -36,6 +36,7 @@ class Bloom extends RendererFX {
 	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		if( step == BeforeTonemapping ) {
 			r.mark("Bloom");
+			r.ctx.engine.driver.beginEvent("Bloom");
 			var bloom = r.allocTarget("bloom", false, size, RGBA16F);
 			var ctx = r.ctx;
 			ctx.engine.pushTarget(bloom);
@@ -54,6 +55,7 @@ class Bloom extends RendererFX {
 
 			tonemap.bloomTexture = bloom;
 			r.addShader(tonemap);
+			r.ctx.engine.driver.endEvent();
 		}
 	}
 

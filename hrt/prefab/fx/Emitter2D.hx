@@ -1,8 +1,9 @@
 package hrt.prefab.fx;
 
 import hrt.prefab.fx.Emitter;
+import hrt.prefab.fx.Value;
+import hrt.prefab.fx.EmitterParam;
 import hrt.impl.Gradient;
-import hrt.prefab.Curve;
 
 using Lambda;
 
@@ -74,42 +75,39 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 	}
 
 	function getInitialAbsPos(m : h2d.col.Matrix, dt : Float) {
-		var def = emitter.instDef;
 		var evaluator = @:privateAccess emitter.evaluator;
 		var t = hxd.Math.clamp(curLifeTime / lifeTime);
 
 		m.identity();
 
 		// POSITION
-		if (def.localOffset != VZero) {
-			evaluator.getVector2(idx, def.localOffset, t, tmpVec);
+		if(evaluator.getPartOffset(idx, t, tmpVec)) {
 			m.initTranslate(tmpVec.x, tmpVec.y);
 		}
 
 		// ROTATION
-		if (def.rotation != VZero) {
-			var r = evaluator.getFloat(idx, def.rotation, t) * Math.PI / 180.0;
+		if (evaluator.partRotation != VZero) {
+			var r = evaluator.getPartRotation(idx, t) * Math.PI / 180.0;
 			m.rotate(r);
 		}
 
 		// SCALE
-		evaluator.getVector2(idx, def.stretch, t, tmpVec);
-		tmpVec *= evaluator.getFloat(idx, def.scale, t);
-		tmpVec *= evaluator.getFloat(idx, def.scaleOverTime, emitter.curTime);
+		evaluator.getPartStretch(idx, t, tmpVec);
+		tmpVec *= evaluator.getPartScale(idx, t);
+		tmpVec *= emitter.curScaleMultiplier;
 		m.scale(tmpVec.x, tmpVec.y);
 	}
 
 	function getCurrentAbsPos(m : h2d.col.Matrix, dt : Float) {
-		var def = emitter.instDef;
 		var evaluator = @:privateAccess emitter.evaluator;
 		var t = hxd.Math.clamp(curLifeTime / lifeTime);
 
 		if (t == 0) {
-			switch (emitter.emitShape) {
+			switch (emitter.prefab.emitShape) {
 				case Circle:
-					var radius = evaluator.getFloat(emitter.emitRadius, emitter.curTime);
-					var startAngle = evaluator.getFloat(emitter.emitAngle1, emitter.curTime) * hxd.Math.PI / 180;
-					var endAngle = evaluator.getFloat(emitter.emitAngle2, emitter.curTime) * hxd.Math.PI / 180;
+					var radius = evaluator.getEmitRadius(emitter.curTime);
+					var startAngle = evaluator.getEmitStartAngle(emitter.curTime) * hxd.Math.PI / 180;
+					var endAngle = evaluator.getEmitEndAngle(emitter.curTime) * hxd.Math.PI / 180;
 
 					// normalize the angular span to [0, 2PI)
 					var twoPI = Math.PI * 2;
@@ -125,56 +123,54 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 
 					// pick radius so area is uniform: r = sqrt(u*(R^2 - r0^2) + r0^2)
 					var rsq = emitter.rand.rand() * Math.max(0, radius) * Math.max(0, radius);
-					var r = emitter.emitSurface ? radius : Math.sqrt(rsq);
+					var r = emitter.prefab.emitSurface ? radius : Math.sqrt(rsq);
 
 					var posX = r * Math.cos(a);
 					var posY = r * Math.sin(a);
-					if (emitter.emitOrientation.match(Normal))
+					if (emitter.prefab.emitOrientation.match(Normal))
 						m.initRotate(new Vector(posX, posY).getRotation());
 
 					m.translate(posX, posY);
 
 				case Rectangle:
-					var width = evaluator.getFloat(emitter.emitWidth, emitter.curTime);
-					var height = evaluator.getFloat(emitter.emitHeight, emitter.curTime);
+					var width = evaluator.getEmitWidth(emitter.curTime);
+					var height = evaluator.getEmitHeight(emitter.curTime);
 
 					var posX = (emitter.rand.rand() - 0.5) * width;
 					var posY = (emitter.rand.rand() - 0.5) * height;
-					if (emitter.emitSurface) {
+					if (emitter.prefab.emitSurface) {
 						if (emitter.rand.rand() < 0.5)
 							posX = emitter.rand.rand() < 0.5 ? -width / 2 : width / 2;
 						else
 							posY = emitter.rand.rand() < 0.5 ? -height / 2 : height / 2;
 					}
 
-					if (emitter.emitOrientation.match(Normal))
+					if (emitter.prefab.emitOrientation.match(Normal))
 						m.initRotate(new Vector(posX, posY).getRotation());
 
 					m.translate(posX, posY);
 			}
 
 			// START LOCAL SPEED
-			evaluator.getVector2(idx, emitter.startSpeed, emitter.curTime, tmpVec);
+			evaluator.getStartSpeed(idx, emitter.curTime, tmpVec);
 			tmpVec.transform2x2(m);
 			speed += tmpVec;
 
 			// START WORLD SPEED
-			evaluator.getVector2(idx, emitter.startWorldSpeed, emitter.curTime, tmpVec);
+			evaluator.getStartWorldSpeed(idx, emitter.curTime, tmpVec);
 			tmpVec.transform2x2(emitter.invTransform);
 			speed += tmpVec;
 		}
 
 		// ACCELERATION
-		if (def.acceleration != VZero) {
-			evaluator.getVector2(idx, def.acceleration, t, tmpVec);
+		if(evaluator.getPartAcceleration(idx, t, tmpVec)) {
 			tmpVec.scale(dt);
 			tmpVec.transform2x2(m);
 			speed += tmpVec;
 		}
 
 		// WORLD ACCELERATION
-		if (def.worldAcceleration != VZero) {
-			evaluator.getVector2(idx, def.worldAcceleration, t, tmpVec);
+		if(evaluator.getPartWorldAcceleration(idx, t, tmpVec)) {
 			tmpVec.scale(dt);
 			tmpVec.transform2x2(emitter.invTransform);
 			speed += tmpVec;
@@ -183,30 +179,28 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		tmpSpeed.set(speed.x, speed.y);
 
 		// SPEED
-		if (def.localSpeed != VZero) {
-			evaluator.getVector2(idx, def.localSpeed, t, tmpVec);
+		if(evaluator.getPartSpeed(idx, t, tmpVec)) {
 			tmpVec.transform2x2(m);
 			tmpSpeed += tmpVec;
 		}
 
 		// DAMPEN
-		if (def.dampen != VZero) {
-			var dampen = evaluator.getFloat(idx, def.dampen, t);
+		if (evaluator.partDampen != VZero) {
+			var dampen = evaluator.getPartDampen(idx, t);
 			var scale = Math.exp(dampen* -dt);
 			speed.scale(scale);
 		}
 
 
 		// WORLD SPEED
-		if (def.worldSpeed != VZero) {
-			evaluator.getVector2(idx, def.worldSpeed, t, tmpVec);
+		if(evaluator.getPartWorldSpeed(idx, t, tmpVec)) {
 			tmpVec.transform2x2(emitter.invTransform);
 			tmpSpeed += tmpVec;
 		}
 
 		// MAX VELOCITY
-		if (def.maxVelocity != VZero) {
-			var maxVel = evaluator.getFloat(idx, def.maxVelocity, t);
+		if (evaluator.partMaxSpeed != VZero) {
+			var maxVel = evaluator.getPartMaxSpeed(idx, t);
 			var curVelSq = tmpSpeed.lengthSq();
 			if (maxVel * maxVel < curVelSq) {
 				tmpSpeed.normalize();
@@ -216,11 +210,11 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 
 		m.translate(tmpSpeed.x * dt, tmpSpeed.y * dt);
 
-		if (def.orbitSpeed != VZero) {
-			var orbitSpeed = evaluator.getFloat(idx, def.orbitSpeed, t);
+		if (evaluator.partOrbitSpeed != VZero) {
+			var orbitSpeed = evaluator.getPartOrbitSpeed(idx, t);
 
-			var factorOverTime = evaluator.getFloat(idx, def.orbitSpeedOverTime, emitter.curTime);
-			orbitSpeed *= factorOverTime;
+			var factorOverTime = emitter.curOrbitSpeedMultiplier;
+			orbitSpeed *= factorOverTime * (Math.PI / 180.0);
 
 			var prevPos = m.getPosition().clone();
 			tmpMat.initRotate(orbitSpeed * dt);
@@ -234,73 +228,40 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 			tmpSpeed.y += delta.y;
 		}
 
-		if (emitter.emitOrientation.match(Speed) && hxd.Math.abs(tmpSpeed.length()) > 0.0001) {
+		if (emitter.prefab.emitOrientation.match(Speed) && hxd.Math.abs(tmpSpeed.length()) > 0.0001) {
 			var targetRotation = tmpSpeed.getRotation();
 			basisAbsPos.rotate(targetRotation);
 		}
 	}
 }
 
+@:build(hrt.prefab.fx.EmitterMacros.buildEvaluator("hrt.prefab.fx.Emitter2D"))
+class Emitter2DEvaluator extends Evaluator {}
+
 class Emitter2DObject extends h2d.Object {
 	public var particles : Array<Particle2DInstance> = [];
 	public var batch : h2d.SpriteBatch;
-	var evaluator : Evaluator;
+	// built by the prefab, with a Value per param and animated property (EmitterMacros)
+	public var evaluator : Emitter2DEvaluator;
 	var rand : hxd.Rand;
 
 	var prevTime : Float;
 	var curTime = 0.;
+	// the values of the over time settings at the current tick, shared by the particles
+	var curScaleMultiplier = 1.;
+	var curOrbitSpeedMultiplier = 1.;
 	var countToEmit = 0.;
 	var totalBurstCount = 0;
-	var randomValues : Array<Float>;
-	var randSlots : Int;
 	var instanceCounter = 0;
 	var animatedTexShader : h3d.shader.AnimatedTexture = null;
 
-	// Emitter parameters
-	public var instDef : InstanceDef;
-	public var seed = 0;
-	public var lifeTime = 2.0;
-	public var lifeTimeRand = 0.0;
-	public var speedFactor = 1.0;
-	public var warmUpTime = 0.0;
-	public var delay = 0.0;
-	public var emitOrientation : Orientation = Forward;
-	public var emitType : EmitType = Infinity;
-	public var burstCount : Int = 1;
-	public var burstParticleCount : Value;
-	public var burstDelay : Float = 1.0;
-	public var emitDuration : Float = 1.0;
-	public var emitRate : Value;
-	public var emitRateMin : Value;
-	public var emitRateMax : Value;
-	public var emitRateChangeDelay : Float = 1.0;
+	public var prefab : Emitter2D;
+
+	// Game overrides
 	public var emitScale : Float = 1.0;
-	public var maxCount = 20;
-	public var startSpeed: Value;
-	public var startWorldSpeed: Value;
-	public var emitShape : Emit2DShape = Circle;
-	public var emitRadius : Value;
-	public var emitAngle1 : Value;
-	public var emitAngle2 : Value;
-	public var emitWidth : Value;
-	public var emitHeight : Value;
-	public var emitSurface : Bool = false;
-	public var spriteType : SpriteType = Color;
-	public var color : h3d.Vector;
-	public var texture : String;
-	public var spriteSheet : String;
-	public var frameCount : Int = 0;
-	public var frameDivisionX : Int = 1;
-	public var frameDivisionY : Int = 1;
-	public var animationSpeed : Float = 1;
-	public var animationLoop : Bool = true;
-	public var animationUseSourceUVs : Bool = true;
-	public var animationBlendBetweenFrames : Bool = true;
-	public var useRandomColor : Bool = false;
-	public var useRandomGradient : Bool = false;
-	public var randomColor1 : h3d.Vector;
-	public var randomColor2 : h3d.Vector;
-	public var randomGradient : GradientData;
+	public var lifeTimeScale : Float = 1.0;
+
+
 	public var invTransform = new h2d.col.Matrix();
 
 	public function new(?parent) {
@@ -308,24 +269,25 @@ class Emitter2DObject extends h2d.Object {
 
 		batch = new h2d.SpriteBatch(h2d.Tile.fromColor(0xFF00FF, 10, 10), this);
 		batch.hasRotationScale = true;
-		evaluator = new Evaluator([0], 1);
-		rand = new hxd.Rand(seed);
+		rand = new hxd.Rand(0);
 	}
 
-	public function init(randSlots: Int, prefab: Emitter2D) {
-		var randomValues = [for(_ in 0...(maxCount * randSlots)) rand.srand()];
-		evaluator = new Evaluator(randomValues, randSlots);
+	public function init(prefab: Emitter2D) {
+		this.prefab = prefab;
+		evaluator.allocRandom(prefab.maxCount, evaluator.randomSlots);
+		evaluator.resetRandom(rand);
 
 		if (animatedTexShader != null)
 			batch.removeShader(animatedTexShader);
 
-		if (spriteSheet != null) {
-			var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
-			animatedTexShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / lifeTime);
-			animatedTexShader.useSourceUVs = animationUseSourceUVs;
+		if (prefab.spriteSheet != null) {
+			var tex = hxd.res.Loader.currentInstance.load(prefab.spriteSheet).toTexture();
+			var meanLifeTime = evaluator.getMean(evaluator.lifeTime, 0);
+			animatedTexShader = new h3d.shader.AnimatedTexture(tex, prefab.frameDivisionX, prefab.frameDivisionY, prefab.frameCount, prefab.frameCount * prefab.animationCycles / meanLifeTime);
+			animatedTexShader.useSourceUVs = prefab.animationUseSourceUVs;
 			animatedTexShader.startTime = 0;
-			animatedTexShader.loop = animationLoop;
-			animatedTexShader.blendBetweenFrames = animationBlendBetweenFrames;
+			animatedTexShader.loop = prefab.animationLoop;
+			animatedTexShader.blendBetweenFrames = prefab.animationBlendBetweenFrames;
 			animatedTexShader.setPriority(1);
 			batch.addShader(animatedTexShader);
 		}
@@ -333,7 +295,7 @@ class Emitter2DObject extends h2d.Object {
 
 	public function setTime(time : Float, inCatchup : Bool = false) {
 		prevTime = curTime;
-		curTime = (time * speedFactor + warmUpTime) - delay;
+		curTime = (time * prefab.timeScale + prefab.warmUpTime) - prefab.delay;
 
 		if (curTime < 0) {
 			if (prevTime > 0)
@@ -350,7 +312,7 @@ class Emitter2DObject extends h2d.Object {
 			var t = 0.;
 			while (curTime < targetTime) {
 				t = hxd.Math.min(t + hxd.Timer.dt, targetTime);
-				setTime(t - warmUpTime + delay, true);
+				setTime(t - prefab.warmUpTime + prefab.delay, true);
 			}
 		}
 		else if (dt > 0) {
@@ -358,39 +320,48 @@ class Emitter2DObject extends h2d.Object {
 		}
 	}
 
+	inline function getBurstCount() {
+		return EmitterHelper.getBurstCount(evaluator, evaluator.burstParticleCount, curTime, totalBurstCount, prefab.seed);
+	}
+
+	inline function getRate() {
+		return EmitterHelper.getRate(evaluator, evaluator.emitRate, curTime, prefab.emitRateChangeTime, prefab.seed);
+	}
+
 	function tick(dt : Float) {
-		switch (emitType) {
+		curScaleMultiplier = evaluator.getScaleMultiplier(curTime);
+		curOrbitSpeedMultiplier = evaluator.getOrbitSpeedMultiplier(curTime);
+
+		switch (prefab.emitType) {
 			case Infinity:
-				var emitTarget = evaluator.getFloat(emitRate, curTime) * hxd.Math.clamp(emitScale) * dt;
-				countToEmit += hxd.Math.min(maxCount - particles.length, emitTarget);
+				var emitTarget = getRate() * hxd.Math.clamp(emitScale) * dt;
+				countToEmit += hxd.Math.min(prefab.maxCount - particles.length, emitTarget);
 				var t = hxd.Math.floor(countToEmit);
 				countToEmit -= t;
 				doEmit(t);
 
-			case InfinityRandom:
-				// TODO
-
 			case Duration:
-				var emitTarget = evaluator.getFloat(emitRate, curTime) * hxd.Math.clamp(emitScale) * dt;
-				countToEmit += curTime >= emitDuration ? 0 : hxd.Math.min(maxCount - particles.length, emitTarget);
+				var emitTarget = getRate() * hxd.Math.clamp(emitScale) * dt;
+				countToEmit += curTime >= prefab.emitDuration ? 0 : hxd.Math.min(prefab.maxCount - particles.length, emitTarget);
 				var t = hxd.Math.floor(countToEmit);
 				countToEmit -= t;
 				doEmit(t);
 
 			case Burst:
-				if (burstDelay > 0) {
-					var burstTarget = hxd.Math.min(burstCount, 1 + hxd.Math.floor(curTime / burstDelay));
+				if (prefab.burstInterval > 0) {
+					var burstTarget = hxd.Math.min(prefab.burstCount, 1 + hxd.Math.floor(curTime / prefab.burstInterval));
 					while (totalBurstCount < burstTarget) {
-						var emitTarget = hxd.Math.ceil(hxd.Math.min(maxCount - particles.length, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
+						var emitTarget = hxd.Math.ceil(hxd.Math.min(prefab.maxCount - particles.length, getBurstCount()));
 						doEmit(emitTarget);
 						totalBurstCount++;
 					}
 				}
 
 			case BurstDuration:
-				if (curTime < emitDuration) {
-					var emitTarget = hxd.Math.ceil(hxd.Math.min(maxCount - particles.length, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
+				if (curTime < prefab.emitDuration) {
+					var emitTarget = hxd.Math.ceil(hxd.Math.min(prefab.maxCount - particles.length, getBurstCount()));
 					doEmit(emitTarget);
+					totalBurstCount++;
 				}
 		}
 
@@ -412,10 +383,10 @@ class Emitter2DObject extends h2d.Object {
 	function doEmit(count : Int) {
 		for (_ in 0...count) {
 			var part = new Particle2DInstance(getTile(), this);
-			part.lifeTime = lifeTime + rand.srand(lifeTimeRand);
 			part.idx = instanceCounter;
+			part.lifeTime = evaluator.getLifeTime(part.idx, curTime) * lifeTimeScale;
 			this.particles.push(part);
-			instanceCounter = (instanceCounter + 1) % maxCount;
+			instanceCounter = (instanceCounter + 1) % prefab.maxCount;
 		}
 	}
 
@@ -426,29 +397,30 @@ class Emitter2DObject extends h2d.Object {
 		totalBurstCount = 0;
 		instanceCounter = 0;
 
-		rand.init(seed);
-		if (randomValues != null) {
-			for(i in 0...randomValues.length)
-				randomValues[i] = rand.srand();
-		}
+		rand.init(prefab.seed);
+		evaluator.resetRandom(rand);
+	}
+
+	static function colorTile( c : Int ) {
+		return h2d.Tile.fromColor(c, 10, 10, (c >>> 24) / 255);
 	}
 
 	function getTile() {
 		var t = h2d.Tile.fromColor(0xFF00FF, 10, 10);
-		switch (spriteType) {
+		switch (prefab.spriteType) {
 			case Color:
-				if (!useRandomColor && !useRandomGradient)
-					t = h2d.Tile.fromColor(color.toColor(), 10, 10);
-				else if (useRandomColor && !useRandomGradient) {
-					var c = new h3d.Vector();
-					c.lerp(randomColor1, randomColor2, rand.rand());
-					t = h2d.Tile.fromColor(c.toColor(), 10, 10);
-				}
-				else if (useRandomGradient) {
-					t = h2d.Tile.fromColor(Gradient.evalData(randomGradient, rand.rand()).toColor(), 10, 10);
+				switch (prefab.randomColorMode) {
+					case None:
+						t = colorTile(prefab.color);
+					case Colors:
+						var c = h3d.Vector4.fromColor(prefab.randomColor1);
+						c.lerp(c, h3d.Vector4.fromColor(prefab.randomColor2), rand.rand());
+						t = colorTile(c.toColor());
+					case Gradient:
+						t = colorTile(Gradient.evalData(prefab.randomGradient, rand.rand()).toColor());
 				}
 			case Texture:
-				t = h2d.Tile.fromTexture(hxd.res.Loader.currentInstance.load(texture).toTexture());
+				t = h2d.Tile.fromTexture(hxd.res.Loader.currentInstance.load(prefab.texture).toTexture());
 			default:
 		}
 
@@ -461,172 +433,154 @@ class Emitter2DObject extends h2d.Object {
 @:access(hrt.prefab.fx.Emitter2DObject)
 @:prefabName("Emitter 2D")
 @:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter2d)
-class Emitter2D extends Object2D {
+@:build(hrt.prefab.fx.EmitterMacros.build("hrt.prefab.fx.Emitter2D.Emitter2DEvaluator"))
+class Emitter2D extends Object2D implements hrt.prefab.fx.EmitterParam.IEmitter {
 
-	public static var emitterParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [
-		// PROPERTIES
-		{ name: "speedFactor", disp: "Speed Factor", t: PFloat(0, 1), def: 1.0, groupName : "Properties" },
-		{ name: "seed", t: PInt(0, 100), def: 0, groupName : "Properties", disp: "Seed"},
+	@:group("Properties")
+	@:s @:range(0, 1) @:disp("Time Scale", "Time multiplier of the simulation")
+	public var timeScale : Float = 1.0;
+	@:s @:range(0, 10) @:disp("Start Delay", "Time before the start of the emitter, in seconds")
+	public var delay : Float = 0.0;
+	@:s @:range(0, 1) @:disp("Warm Up", "Time simulated before the start, in seconds: the emitter starts already filled")
+	public var warmUpTime : Float = 0.0;
+	@:s @:range(0, 100) @:disp("Seed", "Seed of the random values of the emitter")
+	public var seed : Int = 0;
 
-		// EMISSION
-		{ name: "warmUpTime", disp: "Warm Up", t: PFloat(0, 1), def: 0.0, groupName : "Emission" },
-		{ name: "delay", disp: "Delay", t: PFloat(0, 10), def: 0.0, groupName : "Emission" },
-		{ name: "emitType", t: PEnum(EmitType), def: EmitType.Infinity, disp: "Type", groupName : "Emission"  },
-		{ name: "emitDuration", t: PFloat(0, 10.0), disp: "Duration", def : 1.0, groupName : "Emission" },
-		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true, groupName : "Emission" },
-		{ name: "emitRateMin", t: PInt(0, 100), def: 5, disp: "Rate Min", animate: true, groupName : "Emission" },
-		{ name: "emitRateMax", t: PInt(0, 100), def: 5, disp: "Rate Max", animate: true, groupName : "Emission" },
-		{ name: "emitRateChangeDelay", t: PFloat(0.01, 5.0), def: 1.0, disp: "Rate Change Time", groupName : "Emission" },
-		{ name: "burstCount", t: PInt(1, 10), disp: "Count", def : 1, groupName : "Emission" },
-		{ name: "burstDelay", t: PFloat(0, 1.0), disp: "Delay", def : 1.0, groupName : "Emission" },
-		{ name: "burstParticleCount", t: PInt(1, 10), disp: "Particle Count", def : 1, groupName : "Emission", animate: true },
-		{ name: "maxCount", t: PInt(0, 100), def: 20, groupName : "Emission" },
-		{ name: "emitOrientation", t: PEnum(Orientation), def: Orientation.Forward, disp: "Orientation", groupName : "Emission" },
+	@:group("Emission")
+	@:s @:disp("Type", "Infinity: emits at its rate. Duration: emits at its rate during a duration. Burst / Burst Duration: groups of particles at regular intervals")
+	public var emitType : EmitType = EmitType.Infinity;
+	@:s @:range(0, 10.0) @:disp("Duration", "Emission duration, in seconds")
+	public var emitDuration : Float = 1.0;
+	@:param(PFloat(0, 100), Emission, 5.) @:disp("Rate", "Number of particles emitted per second. A Range changes it at random between min and max, every Rate Change Time")
+	public var emitRate : ParamMode;
+	@:s @:range(0.01, 5.0) @:disp("Rate Change Time", "Random rate: every this many seconds a new random rate is picked between min and max, and the rate goes to it during this time")
+	public var emitRateChangeTime : Float = 1.0;
+	@:s @:range(1, 10) @:disp("Burst Count", "Number of bursts")
+	public var burstCount : Int = 1;
+	@:s @:range(0, 1.0) @:disp("Burst Interval", "Time between two bursts, in seconds")
+	public var burstInterval : Float = 1.0;
+	@:param(PFloat(1, 10), Emission, 1.) @:disp("Particles Per Burst", "Number of particles emitted by each burst. A Range draws it for each burst, between min and max")
+	public var burstParticleCount : ParamMode;
+	@:s @:range(0, 100) @:disp("Max Count", "Maximum number of particles alive at the same time: no particle is emitted beyond")
+	public var maxCount : Int = 20;
+	@:param(PFloat(0, 10), Spawn, 1.) @:disp("Lifetime", "Life duration of the particle, in seconds")
+	public var lifeTime : ParamMode;
 
-		// SHAPE EMISSION
-		{ name: "emitShape", t: PEnum(Emit2DShape), def: Emit2DShape.Circle, disp: "Shape", groupName : "Shape Emission" },
-		{ name: "emitRadius", t: PFloat(0, 360.0), def: 20.0, disp: "Radius", groupName : "Shape Emission", animate: true },
-		{ name: "emitAngle1", t: PFloat(0, 360.0), def: 20.0, disp: "Angle 1", groupName : "Shape Emission", animate: true },
-		{ name: "emitAngle2", t: PFloat(0, 360.0), def: 40.0, disp: "Angle 2", groupName : "Shape Emission", animate: true },
-		{ name: "emitWidth", t: PFloat(0, 10.0), def: 1.0, disp: "Width", groupName : "Shape Emission", animate: true },
-		{ name: "emitHeight", t: PFloat(0, 10.0), def: 1.0, disp: "Height", groupName : "Shape Emission", animate: true },
-		{ name: "emitSurface", t: PBool, def: false, disp: "Surface", groupName : "Shape Emission" },
+	@:group("Emit Shape")
+	@:s @:disp("Shape", "Area in which the particles are emitted")
+	public var emitShape : Emit2DShape = Emit2DShape.Circle;
+	@:s @:range(0, 360.0) @:animate @:disp("Radius", "Radius of the circle")
+	public var emitRadius : Float = 20.0;
+	@:s @:range(0, 360.0) @:animate @:disp("Start Angle", "Start angle of the circle arc, in degrees")
+	public var emitStartAngle : Float = 20.0;
+	@:s @:range(0, 360.0) @:animate @:disp("End Angle", "End angle of the circle arc, in degrees")
+	public var emitEndAngle : Float = 40.0;
+	@:s @:range(0, 10.0) @:animate @:disp("Width", "Width of the rectangle")
+	public var emitWidth : Float = 1.0;
+	@:s @:range(0, 10.0) @:animate @:disp("Height", "Height of the rectangle")
+	public var emitHeight : Float = 1.0;
+	@:s @:disp("Surface", "Emits on the outline of the shape instead of inside it")
+	public var emitSurface : Bool = false;
+	@:s @:disp("Orientation", "Initial orientation of the particles: the emitter one, the normal of the shape, their speed, or random")
+	public var emitOrientation : Orientation = Orientation.Forward;
 
-		// PARTICLE
-		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0, groupName : "Particle" },
-		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0, groupName : "Particle" },
-		{ name: "spriteType", t: PEnum(SpriteType), def: SpriteType.Color, groupName : "Particle" },
-		{ name: "color", t: PVec(4), def: [0,0,0,1], groupName : "Particle" },
-		{ name: "texture", t: PTexture, def: "", groupName : "Particle" },
-		{ name: "useRandomColor", t: PBool, def: false, disp: "Random Color", groupName : "Particle" },
-		{ name: "useRandomGradient", t: PBool, def: false, disp: "Random Gradient", groupName : "Particle" },
-		{ name: "randomColor1", t: PVec(4), disp: "Color 1", def : [0,0,0,1], groupName : "Particle" },
-		{ name: "randomColor2", t: PVec(4), disp: "Color 2", def : [1,1,1,1], groupName : "Particle" },
-		{ name: "randomGradient", t:PGradient, disp: "Gradient", def: null, groupName : "Particle" },
-		{ name: "spriteSheet", t: PFile(["jpg","png"]), def: null, groupName : "Particle", disp: "Sheet" },
-		{ name: "frameCount", t: PInt(0), def: 0, groupName : "Particle", disp: "Frames" },
-		{ name: "frameDivisionX", t: PInt(1), def: 1, groupName : "Particle", disp: "Divisions X" },
-		{ name: "frameDivisionY", t: PInt(1), def: 1, groupName : "Particle", disp: "Divisions Y" },
-		{ name: "animationSpeed", t: PFloat(0, 2.0), def: 1.0, groupName : "Particle", disp: "Speed" },
-		{ name: "animationLoop", t: PBool, def: true, groupName : "Particle", disp: "Loop" },
-		{ name: "animationUseSourceUVs", t: PBool, def: true, groupName : "Particle", disp: "Use Source UV" },
-		{ name: "animationBlendBetweenFrames", t: PBool, def: true, groupName : "Particle", disp: "Blend frames" },
-	];
+	@:group("Particle Movement")
+	@:param(PVec(2, -10, 10), Spawn) @:disp("Start Speed", "Initial speed in the emitter orientation, set at the spawn of the particle")
+	public var startSpeed : ParamVec2;
+	@:param(PVec(2, -10, 10), Spawn) @:disp("Start World Speed", "Initial speed in world space, set at the spawn of the particle")
+	public var startWorldSpeed : ParamVec2;
+	@:param(PVec(2, -10, 10), Particle) @:disp("Constant Speed", "Speed in the emitter orientation, added to the velocity without being accumulated")
+	public var partSpeed : ParamVec2;
+	@:param(PVec(2, -10, 10), Particle) @:disp("Constant World Speed", "Speed in world space, added to the velocity without being accumulated")
+	public var partWorldSpeed : ParamVec2;
+	@:param(PVec(2, -10, 10), Particle) @:disp("Acceleration", "Acceleration in the emitter orientation, accumulated in the velocity")
+	public var partAcceleration : ParamVec2;
+	@:param(PVec(2, -10, 10), Particle) @:disp("World Acceleration", "Acceleration in world space (gravity, wind...), accumulated in the velocity")
+	public var partWorldAcceleration : ParamVec2;
+	@:param(PFloat(-360, 360), Particle) @:disp("Orbit Speed", "Rotation speed around the emitter, in degrees per second")
+	public var partOrbitSpeed : ParamMode;
+	@:s @:range(0, 2) @:animate @:disp("Orbit Speed Multiplier", "Multiplier of the orbit speed of all the particles, animated over the emitter time")
+	public var orbitSpeedMultiplier : Float = 1;
 
-	public static var instanceParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [
-		// PARTICLE TRANSFORM
-		{ name: "instScale",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale", groupName: "Particle Transform"},
-		{ name: "instScaleOverTime",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale over time", groupName: "Particle Transform"},
-		{ name: "instStretch",    			t: PVec(2, 0.0, 2.0), def: [1.,1.], disp: "Stretch", groupName: "Particle Transform"},
-		{ name: "instRotation",   			t: PFloat(0, 360),   def: 0., disp: "Rotation", groupName: "Particle Transform"},
-		{ name: "instOffset",     			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Offset", groupName: "Particle Transform"},
+	@:group("Limit Velocity")
+	@:param(PFloat(0, 10), Particle) @:disp("Dampen", "Damping of the accumulated velocity (start speed and accelerations), per second")
+	public var partDampen : ParamMode;
+	@:param(PFloat(0, 10), Particle) @:disp("Max Speed", "Maximum speed of the particle")
+	public var partMaxSpeed : ParamMode;
 
-		// PARTICLE MOVEMENT
-		{ name: "instAcceleration",			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Acceleration", groupName: "Particle Movement"},
-		{ name: "instWorldAcceleration",	t: PVec(2, -10, 10),  def: [0.,0.], disp: "World Acceleration", groupName: "Particle Movement"},
-		{ name: "instSpeed",      			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Fixed Speed", groupName: "Particle Movement" },
-		{ name: "instWorldSpeed", 			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Fixed World Speed", groupName: "Particle Movement"},
-		// In instance param to avoid refactoring the param editor more, but this is no longer linked to the instances (hence the instance: false in the declaration)
-		{ name: "instStartSpeed",      		t: PVec(2, -10, 10),  def: [0.,0.], disp: "Start Speed",			groupName: "Particle Movement", instance: false},
-		{ name: "instStartWorldSpeed", 		t: PVec(2, -10, 10),  def: [0.,0.], disp: "Start World Speed",	groupName: "Particle Movement", instance: false},
-		{ name: "instOrbitSpeed", 			t: PFloat(-10., 10.),  def: 0., disp: "Orbit Speed", groupName: "Particle Movement"},
-		{ name: "instOrbitSpeedOverTime", 			t: PFloat(0, 2.0),  def: 1., disp: "Orbit Speed over time", groupName: "Particle Movement"},
+	@:group("Particle Transform")
+	@:param(PVec(2, -10, 10), Particle) @:disp("Offset", "Offset of the particle position, without effect on its movement")
+	public var partOffset : ParamVec2;
+	@:param(PFloat(0, 360), Particle) @:disp("Rotation", "Rotation of the particle, in degrees")
+	public var partRotation : ParamMode;
+	@:param(PFloat(0, 2), Particle, 1.) @:disp("Scale", "Uniform scale of the particle")
+	public var partScale : ParamMode;
+	@:s @:range(0, 2) @:animate @:disp("Scale Multiplier", "Multiplier of the scale of all the particles, animated over the emitter time")
+	public var scaleMultiplier : Float = 1;
+	@:param(PVec(2, 0, 2), Particle, [1., 1.]) @:disp("Stretch", "Scale of the particle on each of its axes")
+	public var partStretch : ParamVec2;
 
-		// PARTICLE LIMIT VELOCITY
-		{ name: "instMaxVelocity",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Max Velocity", groupName: "Particle Limit Velocity"},
-		{ name: "instDampen",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Dampen", groupName: "Particle Limit Velocity"},
-	];
+	@:group("Color")
+	@:s @:disp("Sprite Type", "Drawing of the particles: a plain color, a texture or a sprite sheet")
+	public var spriteType : SpriteType = SpriteType.Color;
+	@:s @:t(PColor) @:disp("Color", "Color of the particles")
+	public var color : Int = 0xFF000000;
+	@:s @:disp("Texture", "Texture of the particles")
+	public var texture : String = "";
+	@:s @:disp("Random Color", "Gives each particle a random color instead of the color, taken between two colors or in a gradient")
+	public var randomColorMode : RandomColorMode = RandomColorMode.None;
+	@:s @:t(PColor) @:disp("Color 1", "First bound of the random color")
+	public var randomColor1 : Int = 0xFF000000;
+	@:s @:t(PColor) @:disp("Color 2", "Second bound of the random color")
+	public var randomColor2 : Int = 0xFFFFFFFF;
+	@:s @:disp("Gradient", "Gradient in which the random color is taken")
+	public var randomGradient : GradientData;
 
-	public static var PARAMS : Map<String, hrt.prefab.fx.EmitterHelper.ParamDef> = {
-		var map = new Map();
-		for(e in emitterParams) {
-			map.set(e.name, e);
-		}
-		for(i in instanceParams) {
-			i.instance = i.instance ?? true;
-			i.animate = true;
-			map.set(i.name, i);
-		}
-		map;
-	};
+	@:group("Sprite Sheet Animation")
+	@:s @:t(PFile(["jpg", "png"])) @:disp("Sheet", "Texture containing the frames of the animation")
+	public var spriteSheet : String;
+	@:s @:range(0) @:disp("Frames", "Number of frames of the animation")
+	public var frameCount : Int = 0;
+	@:s @:range(1) @:disp("Divisions X", "Number of columns of the sheet")
+	public var frameDivisionX : Int = 1;
+	@:s @:range(1) @:disp("Divisions Y", "Number of rows of the sheet")
+	public var frameDivisionY : Int = 1;
+	@:s @:range(0, 2.0) @:disp("Cycles", "Number of times the animation is played during the life of a particle")
+	public var animationCycles : Float = 1.0;
+	@:s @:disp("Loop", "Loops the animation during the life of the particle")
+	public var animationLoop : Bool = true;
+	@:s @:disp("Use Source UV", "Keeps the UVs of the sprite inside each frame")
+	public var animationUseSourceUVs : Bool = true;
+	@:s @:disp("Blend Frames", "Blends two consecutive frames for a smooth animation")
+	public var animationBlendBetweenFrames : Bool = true;
 
 	#if editor
 	var graphics : h2d.Graphics;
 	#end
 
-	public function new(parent, shared: ContextShared) {
-		super(parent, shared);
-
-		props = { };
-		for(param in emitterParams) {
-			if(param.def != null)
-				EmitterHelper.resetParam(props, param);
-		}
-	}
-
 	override function save() {
 		var data = super.save();
-		data.props = Reflect.copy(props);
-		for(param in PARAMS) {
-			var f : Dynamic = Reflect.field(props, param.name);
-			if(f != null && haxe.Json.stringify(f) != haxe.Json.stringify(param.def)) {
-				var val : Dynamic = f;
-				switch(param.t) {
-					case PEnum(en):
-						val = Type.enumConstructor(val);
-					default:
-				}
-				Reflect.setField(data.props, param.name, val);
-			}
-			else {
-				Reflect.deleteField(data.props, param.name);
-			}
-		}
+		saveParams(data);
+		if( randomColorMode != RandomColorMode.Gradient )
+			Reflect.deleteField(data, "randomGradient");
+		if( !FX.inFXData(this) )
+			data.version = FX.VERSION;
 		return data;
 	}
 
 	override function load( obj : Dynamic ) {
+		// an emitter out of any FX (in a prefab) is the root of its FX data
+		if( !FX.inFXData(this) )
+			FX.checkVersion(this, obj);
 		super.load(obj);
-		for(param in emitterParams) {
-			if(Reflect.hasField(obj.props, param.name)) {
-				var val : Dynamic = Reflect.field(obj.props, param.name);
-				switch(param.t) {
-					case PEnum(en):
-						#if editor
-						try {
-						#end
-							val = Type.createEnum(en, val);
-						#if editor
-						} catch (e) {
-							val = param.def;
-						};
-						#end
-					default:
-				}
-				Reflect.setField(props, param.name, val);
-			}
-			else if(param.def != null)
-				EmitterHelper.resetParam(props, param);
-			else if (param.name == "randomGradient")
-				(props:Dynamic).randomGradient = Gradient.getDefaultGradientData();
-		}
+		loadParams(obj);
+		if( randomGradient == null && randomColorMode == RandomColorMode.Gradient )
+			randomGradient = Gradient.getDefaultGradientData();
 	}
 
 	override function copy(obj:Prefab) {
 		super.copy(obj);
-		for(param in emitterParams) {
-			if(Reflect.hasField(obj.props, param.name)) {
-				var val : Dynamic = Reflect.field(obj.props, param.name);
-				/*switch(param.t) {
-					case PEnum(en):
-						val = Type.createEnum(en, val);
-					default:
-				}*/
-				Reflect.setField(props, param.name, val);
-			}
-			else if(param.def != null)
-				EmitterHelper.resetParam(props, param);
-		}
+		copyParams(cast obj);
 	}
 
 	override function makeObject(parent2d : h2d.Object) {
@@ -637,267 +591,107 @@ class Emitter2D extends Object2D {
 		super.updateInstance(propName);
 
 		var emitterObj = Std.downcast(local2d, Emitter2DObject);
-		var randIdx = 0;
-
-		function makeParam(scope: Prefab, name: String): Value {
-			var getCurve = hrt.prefab.Curve.getCurve.bind(scope);
-
-			function makeCompVal(baseProp: Null<Float>, defVal: Float, randProp: Null<Float>, pname: String, suffix: String) : Value {
-				var xVal = Evaluator.vVal(baseProp != null ? baseProp : defVal);
-				var randCurve = getCurve(pname + suffix + ":rand");
-				var randVal : Value = VZero;
-				if(randCurve != null)
-					randVal = Evaluator.vMult(VRandom(randIdx++, 1.0, 0.0), Evaluator.vMult(randCurve.makeVal(), VConst(randProp != null ? randProp : 1.0)));
-				else if(randProp != null && randProp != 0.0)
-					randVal = VRandom(randIdx++, randProp, 0.0);
-
-				var xCurve = getCurve(pname + suffix);
-				if (xCurve != null) {
-					if (xCurve.blendMode == CurveBlendMode.RandomBlend) {
-						var ca = Std.downcast(xCurve.children[0], Curve);
-						var cb = Std.downcast(xCurve.children[1], Curve);
-						return VRandomBetweenCurves(randIdx++, ca, cb);
-					}
-					else {
-						if (pname.indexOf("Rotation") >= 0 || pname.indexOf("Offset") >= 0)
-							return Evaluator.vAdd(Evaluator.vAdd(xVal, randVal), xCurve.makeVal());
-						else
-							return Evaluator.vMult(Evaluator.vAdd(xVal, randVal), xCurve.makeVal());
-					}
-				}
-				else
-					return Evaluator.vAdd(xVal, randVal);
-			}
-
-			var baseProp: Dynamic = Reflect.field(props, name);
-			var randProp: Dynamic = Reflect.field(props, EmitterHelper.randProp(name));
-			var param = PARAMS.get(name);
-			switch(param.t) {
-				case PVec(_):
-					inline function makeComp(idx, suffix) {
-						return makeCompVal(
-							baseProp != null ? (baseProp[idx] : Float) : null,
-							param.def != null ? param.def[idx] : 0.0,
-							randProp != null ? (randProp[idx] : Float) : null,
-							param.name, suffix);
-					}
-					var v : Value = VVector(
-						makeComp(0, ":x"),
-						makeComp(1, ":y"),
-						makeComp(2, ":z"));
-					if(v.match(VVector(VZero, VZero, VZero)))
-						v = VZero;
-					else if(v.match(VVector(VConst(1.0), VConst(1.0), VConst(1.0))))
-						v = VConst(1.0);
-					return v;
-
-				default:
-					return makeCompVal(baseProp, param.def != null ? param.def : 0.0, randProp, param.name, "");
-			}
-		}
-
-		var d = new InstanceDef();
-		d.localSpeed = makeParam(this, "instSpeed");
-		d.worldSpeed = makeParam(this, "instWorldSpeed");
-		d.orbitSpeed = makeParam(this, "instOrbitSpeed");
-		d.orbitSpeedOverTime = makeParam(this, "instOrbitSpeedOverTime");
-		d.acceleration = makeParam(this, "instAcceleration");
-		d.worldAcceleration = makeParam(this, "instWorldAcceleration");
-		d.localOffset = makeParam(this, "instOffset");
-		d.scale = makeParam(this, "instScale");
-		d.scaleOverTime = makeParam(this, "instScaleOverTime");
-		d.dampen = makeParam(this, "instDampen");
-		d.maxVelocity = makeParam(this, "instMaxVelocity");
-		d.stretch = makeParam(this, "instStretch");
-		d.rotation = makeParam(this, "instRotation");
-		emitterObj.instDef = d;
+		emitterObj.evaluator = makeEvaluator();
 		emitterObj.blendMode  			= 	this.blendMode;
 		emitterObj.batch.blendMode      =   this.blendMode;
-		emitterObj.spriteType          	= 	EmitterHelper.getParamVal(PARAMS, props, "spriteType");
-		emitterObj.texture 			   	= 	EmitterHelper.getParamVal(PARAMS, props, "texture");
-		emitterObj.color 			   	= 	EmitterHelper.getParamVal(PARAMS, props, "color");
-		emitterObj.seed 			    = 	EmitterHelper.getParamVal(PARAMS, props, "seed");
-		emitterObj.lifeTime 			= 	EmitterHelper.getParamVal(PARAMS, props, "lifeTime");
-		emitterObj.lifeTimeRand 		= 	EmitterHelper.getParamVal(PARAMS, props, "lifeTimeRand");
-		emitterObj.speedFactor 			= 	EmitterHelper.getParamVal(PARAMS, props, "speedFactor");
-		emitterObj.warmUpTime 			= 	EmitterHelper.getParamVal(PARAMS, props, "warmUpTime");
-		emitterObj.delay 				= 	EmitterHelper.getParamVal(PARAMS, props, "delay");
-		emitterObj.emitType 			= 	EmitterHelper.getParamVal(PARAMS, props, "emitType");
-		emitterObj.burstCount 			= 	EmitterHelper.getParamVal(PARAMS, props, "burstCount");
-		emitterObj.burstDelay 			= 	EmitterHelper.getParamVal(PARAMS, props, "burstDelay");
-		emitterObj.burstParticleCount 	= 	makeParam(this, "burstParticleCount");
-		emitterObj.emitDuration 		= 	EmitterHelper.getParamVal(PARAMS, props, "emitDuration");
-		emitterObj.emitOrientation 		= 	EmitterHelper.getParamVal(PARAMS, props, "emitOrientation");
-		emitterObj.maxCount 			= 	EmitterHelper.getParamVal(PARAMS, props, "maxCount");
-		emitterObj.emitRate 			= 	makeParam(this, "emitRate");
-		emitterObj.emitRateMin 			= 	makeParam(this, "emitRateMin");
-		emitterObj.emitRateMax 			= 	makeParam(this, "emitRateMax");
-		emitterObj.emitRateChangeDelay 	= 	EmitterHelper.getParamVal(PARAMS, props, "emitRateChangeDelay");
-		emitterObj.emitShape 			= 	EmitterHelper.getParamVal(PARAMS, props, "emitShape");
-		emitterObj.emitRadius 			= 	makeParam(this, "emitRadius");
-		emitterObj.emitAngle1 			= 	makeParam(this, "emitAngle1");
-		emitterObj.emitAngle2 			= 	makeParam(this, "emitAngle2");
-		emitterObj.emitWidth 			= 	makeParam(this, "emitWidth");
-		emitterObj.emitHeight 			= 	makeParam(this, "emitHeight");
-		emitterObj.emitSurface 			= 	EmitterHelper.getParamVal(PARAMS, props, "emitSurface");
-		emitterObj.spriteSheet 			= 	EmitterHelper.getParamVal(PARAMS, props, "spriteSheet");
-		emitterObj.frameCount 			= 	EmitterHelper.getParamVal(PARAMS, props, "frameCount");
-		emitterObj.frameDivisionX 		= 	EmitterHelper.getParamVal(PARAMS, props, "frameDivisionX");
-		emitterObj.frameDivisionY 		= 	EmitterHelper.getParamVal(PARAMS, props, "frameDivisionY");
-		emitterObj.animationSpeed 		= 	EmitterHelper.getParamVal(PARAMS, props, "animationSpeed");
-		emitterObj.animationLoop 		= 	EmitterHelper.getParamVal(PARAMS, props, "animationLoop");
-		emitterObj.animationUseSourceUVs 			= 	EmitterHelper.getParamVal(PARAMS, props, "animationUseSourceUVs");
-		emitterObj.animationBlendBetweenFrames 		= 	EmitterHelper.getParamVal(PARAMS, props, "animationBlendBetweenFrames");
-		emitterObj.useRandomColor 		= 	EmitterHelper.getParamVal(PARAMS, props, "useRandomColor");
-		emitterObj.useRandomGradient 	= 	EmitterHelper.getParamVal(PARAMS, props, "useRandomGradient");
-		emitterObj.randomColor1 		= 	EmitterHelper.getParamVal(PARAMS, props, "randomColor1");
-		emitterObj.randomColor2 		= 	EmitterHelper.getParamVal(PARAMS, props, "randomColor2");
-		emitterObj.randomGradient 		= 	EmitterHelper.getParamVal(PARAMS, props, "randomGradient");
-		emitterObj.startSpeed			=	makeParam(this, "instStartSpeed");
-		emitterObj.startWorldSpeed 		= 	makeParam(this, "instStartWorldSpeed");
 
-		emitterObj.init(randIdx, this);
+		emitterObj.init(this);
 
 		#if editor
-		if(propName == null || ["emitShape", "emitRadius", "emitAngle1", "emitAngle2", "emitWidth", "emitHeight"].indexOf(propName) >= 0)
+		if(propName == null || ["emitShape", "emitRadius", "emitStartAngle", "emitEndAngle", "emitWidth", "emitHeight"].indexOf(propName) >= 0)
 			updateEmitShape(emitterObj);
 		#end
 	}
 
-	#if editor
-	override function edit( ctx : hide.prefab.EditContext ) {
-		super.edit(ctx);
+	#if (editor || editor_hl)
+	function getHiddenFields() : Array<String> {
+		var hidden = [];
+		inline function hide(name: String)
+			hidden.push(name);
 
-		function refresh() {
-			ctx.rebuildProperties();
-		}
-
-		function onChange(?pname: String) {
-			if (pname == "useRandomGradient") {
-				if ((props:Dynamic).useRandomGradient == true) {
-					(props:Dynamic).randomGradient = Gradient.getDefaultGradientData();
-				} else {
-					Reflect.deleteField(props, "randomGradient");
-				}
-				refresh();
-			}
-
-			if (pname == "spriteType") {
-				if ((props:Dynamic).spriteType != SpriteType.SpriteSheet)
-					(props:Dynamic).spriteSheet = null;
-				refresh();
-			}
-
-			ctx.onChange(this, pname);
-
-			if (pname == "warmUpTime") {
-				var props : Dynamic = cast props;
-				if (props.warmUpTime < 0) {
-					props.warmUpTime = 0;
-					hide.Ide.inst.quickError("Warm up time can no longer be negative. Use the Delay property instead");
-					refresh();
-				}
-			}
-
-			if(["emitShape",
-				"useCollision",
-				"emitType",
-				"useRandomColor"
-				].indexOf(pname) >= 0) {
-					refresh();
-				}
-		}
-
-		var params = emitterParams.copy();
-		inline function removeParam(pname: String) {
-			params.remove(params.find(p -> p.name == pname));
-		}
-
-		var emitShape : Emit2DShape = EmitterHelper.getParamVal(PARAMS, props, "emitShape");
 		if(!emitShape.match(Circle)) {
-			removeParam("emitRadius");
-			removeParam("emitAngle1");
-			removeParam("emitAngle2");
+			hide("emitRadius");
+			hide("emitStartAngle");
+			hide("emitEndAngle");
 		}
 		if(!emitShape.match(Rectangle)) {
-			removeParam("emitWidth");
-			removeParam("emitHeight");
+			hide("emitWidth");
+			hide("emitHeight");
 		}
 
-		var spriteType = EmitterHelper.getParamVal(PARAMS, props, "spriteType");
 		if (spriteType != SpriteType.Color) {
-			removeParam("color");
-			removeParam("useRandomColor");
+			hide("color");
+			hide("randomColorMode");
 		}
 		if (spriteType != SpriteType.Texture) {
-			removeParam("texture");
+			hide("texture");
 		}
 		if (spriteType != SpriteType.SpriteSheet) {
-			removeParam("spriteSheet");
-			removeParam("frameCount");
-			removeParam("frameDivisionX");
-			removeParam("frameDivisionY");
-			removeParam("animationSpeed");
-			removeParam("animationLoop");
-			removeParam("animationUseSourceUVs");
-			removeParam("animationBlendBetweenFrames");
+			hide("spriteSheet");
+			hide("frameCount");
+			hide("frameDivisionX");
+			hide("frameDivisionY");
+			hide("animationCycles");
+			hide("animationLoop");
+			hide("animationUseSourceUVs");
+			hide("animationBlendBetweenFrames");
 		}
 
-		if(!EmitterHelper.getParamVal(PARAMS, props, "useRandomColor")) {
-			removeParam("useRandomGradient");
-			removeParam("randomColor1");
-			removeParam("randomColor2");
-			removeParam("randomGradient");
+		if (spriteType != SpriteType.Color || randomColorMode != RandomColorMode.Colors) {
+			hide("randomColor1");
+			hide("randomColor2");
 		}
-		else {
-			if (EmitterHelper.getParamVal(PARAMS, props, "useRandomGradient")){
-				removeParam("randomColor1");
-				removeParam("randomColor2");
-			} else {
-				removeParam("randomGradient");
-			}
-		}
+		if (spriteType != SpriteType.Color || randomColorMode != RandomColorMode.Gradient)
+			hide("randomGradient");
 
-		var emitType : EmitType = EmitterHelper.getParamVal(PARAMS, props, "emitType");
 		switch (emitType) {
 			case Infinity:
-				removeParam("burstCount");
-				removeParam("burstDelay");
-				removeParam("burstParticleCount");
-				removeParam("emitDuration");
-				removeParam("emitRateMin");
-				removeParam("emitRateMax");
-				removeParam("emitRateChangeDelay");
-			case InfinityRandom:
-				removeParam("emitRate");
-				removeParam("burstCount");
-				removeParam("burstDelay");
-				removeParam("burstParticleCount");
-				removeParam("emitDuration");
-			case BurstDuration:
-				removeParam("emitRate");
-				removeParam("burstCount");
-				removeParam("emitRateMin");
-				removeParam("emitRateMax");
-				removeParam("emitRateChangeDelay");
-			case Burst:
-				removeParam("emitDuration");
-				removeParam("emitRate");
-				removeParam("emitRateMin");
-				removeParam("emitRateMax");
-				removeParam("emitRateChangeDelay");
+				hide("burstCount");
+				hide("burstInterval");
+				hide("burstParticleCount");
+				hide("emitDuration");
 			case Duration:
-				removeParam("burstCount");
-				removeParam("burstDelay");
-				removeParam("burstParticleCount");
-				removeParam("emitRateMin");
-				removeParam("emitRateMax");
-				removeParam("emitRateChangeDelay");
+				hide("burstCount");
+				hide("burstInterval");
+				hide("burstParticleCount");
+			case Burst:
+				hide("emitDuration");
+				hide("emitRate");
+			case BurstDuration:
+				hide("burstCount");
+				hide("emitRate");
 		}
+		// read only by a random rate, which bursts do not use
+		var randomRate = switch (getMode("emitRate", 0)) {
+			case Range(_), RandomCurve(_), CurveRange: true;
+			case null, _: false;
+		}
+		if (!randomRate || emitType == Burst || emitType == BurstDuration)
+			hide("emitRateChangeTime");
 
-		EmitterHelper.generateEdit(params, instanceParams, props, ctx.properties, onChange, refresh);
+		return hidden;
 	}
 
+	static var REFRESH_PARAMS = ["emitShape", "emitType", "spriteType", "randomColorMode"];
+	#end
+
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+
+		function onChange(pname: String, isTemp: Bool) {
+			if (pname == "randomColorMode")
+				randomGradient = randomColorMode == RandomColorMode.Gradient ? Gradient.getDefaultGradientData() : null;
+			if (pname == "spriteType" && spriteType != SpriteType.SpriteSheet)
+				spriteSheet = null;
+			ctx.rebuildPrefab(this);
+			if (!isTemp && REFRESH_PARAMS.contains(pname))
+				ctx.rebuildInspector();
+		}
+
+		EmitterHelper.edit(ctx, this, getHiddenFields(), onChange);
+	}
+
+	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		return {
 			icon : "asterisk",
@@ -915,14 +709,14 @@ class Emitter2D extends Object2D {
 
 		graphics = new h2d.Graphics(e);
 		graphics.lineStyle(1, 0xFFFFFF, 1);
-		switch(e.emitShape) {
+		switch(emitShape) {
 			case Circle:
-				var radA1 = e.evaluator.getFloat(0, e.emitAngle1, 0) * hxd.Math.PI / 180;
-				var radA2 = e.evaluator.getFloat(0, e.emitAngle2, 0) * hxd.Math.PI / 180;
-				graphics.drawPie(0, 0, e.evaluator.getFloat(0, e.emitRadius, 0), radA1, radA2 - radA1);
+				var radA1 = e.evaluator.getFloat(e.evaluator.emitStartAngle, 0) * hxd.Math.PI / 180;
+				var radA2 = e.evaluator.getFloat(e.evaluator.emitEndAngle, 0) * hxd.Math.PI / 180;
+				graphics.drawPie(0, 0, e.evaluator.getFloat(e.evaluator.emitRadius, 0), radA1, radA2 - radA1);
 			case Rectangle:
-				var width = e.evaluator.getFloat(0, e.emitWidth, 0);
-				var height = e.evaluator.getFloat(0, e.emitHeight, 0);
+				var width = e.evaluator.getFloat(e.evaluator.emitWidth, 0);
+				var height = e.evaluator.getFloat(e.evaluator.emitHeight, 0);
 				graphics.drawRect(-width / 2, -height / 2, width, height);
 		}
 	}

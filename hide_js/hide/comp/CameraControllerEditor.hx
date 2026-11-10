@@ -1,5 +1,5 @@
 package hide.comp;
-import hide.view.CameraController;
+import hide.tools.CameraController;
 import hide.comp.Popup;
 import hide.comp.Range;
 import hide.comp.ExpRange;

@@ -146,14 +146,11 @@ class FancyArray<T> extends hide.comp.Component {
 						return;
 					var after = isAfter(e);
 
-					var newIndex = i;
-
-					if (!after) newIndex -= 1;
+					var newIndex = after ? i + 1 : i;
+					if (toMoveIndex < newIndex)
+						newIndex -= 1;
 					if (toMoveIndex == newIndex)
 						return;
-					if (newIndex < i) {
-						newIndex += 1;
-					}
 					reorderItem(toMoveIndex, newIndex);
 				});
 			} else {
@@ -210,6 +207,9 @@ class FancyArray<T> extends hide.comp.Component {
 			menu.push({label: "Delete", click: () -> removeItem(index)});
 		}
 
+		if (getItemMenu != null)
+			menu = menu.concat(getItemMenu(getItems()[index]));
+
 		return menu;
 	}
 
@@ -260,6 +260,11 @@ class FancyArray<T> extends hide.comp.Component {
 		like adding icons or type information
 	**/
 	public var customizeHeader: (item: T, header: Element) -> Void;
+
+	/**
+		If set, the returned items are appended to the item menu
+	**/
+	public var getItemMenu: (item: T) -> Array<hrt.ui.HuiMenu.MenuItem> = null;
 
 	public dynamic function getItems() : Array<T> {
 		return [];

@@ -70,18 +70,14 @@ class Gym extends hide.ui.View<{}> {
 					<fancy-button>
 						<span class="ico ico-eye"></span>
 					</fancy-button>
-					<fancy-button class="compact">
-						<span class="ico ico-chevron-down"></span>
-					</fancy-button>
+					<fancy-button class="compact"></fancy-button>
 
 					<fancy-separator></fancy-separator>
 
 					<fancy-button class="selected">
 						<span class="ico ico-eye"></span>
 					</fancy-button>
-					<fancy-button class="compact">
-						<span class="ico ico-chevron-down"></span>
-					</fancy-button>
+					<fancy-button class="compact"></fancy-button>
 				</fancy-toolbar>
 				'));
 
@@ -107,9 +103,7 @@ class Gym extends hide.ui.View<{}> {
 						<span class="ico ico-gear"></span>
 						<span class="label">Options</span>
 					</fancy-button>
-					<fancy-button class="compact">
-						<span class="ico ico-chevron-down"></span>
-					</fancy-button>
+					<fancy-button class="compact"></fancy-button>
 			'));
 
 
@@ -282,11 +276,10 @@ class Gym extends hide.ui.View<{}> {
 					}
 				});
 
-				nw.Window.open('app.html?thumbnail=true', {new_instance: true}, (win: nw.Window) -> {
-					win.on("close", () -> {
-						sock.close();
-						sock = null;
-					});
+				var win = electron.Window.open('app.html?thumbnail=true');
+				win.on("closed", () -> {
+					sock.close();
+					sock = null;
 				});
 			}
 
@@ -334,6 +327,238 @@ class Gym extends hide.ui.View<{}> {
 
 				});
 			}
+		}
+
+		{
+			var toolbar = section(element, "Html");
+			hide.html.Html.build(toolbar.get(0),
+				<hide-split-container style="height: 500px">
+					<hide-tab-container anchor="previous" size="250">
+						<div label="Scene">Scene tree</div>
+						<div label="Files">Files</div>
+					</hide-tab-container>
+					<hide-split-container direction="vertical">
+						<hide-tab-container>
+							<div label="Viewport">
+								<button onclick={() -> logs.append(js.Browser.document.createDivElement())}>Add log tab</button>
+							</div>
+						</hide-tab-container>
+						<hide-tab-container id="logs" anchor="next" size="150">
+							for (i in 0...3)
+								<div label={'Log $i'}>Log content</div>
+						</hide-tab-container>
+					</hide-split-container>
+					<hide-tab-container anchor="next" size="300">
+						<div label="Properties">Properties</div>
+					</hide-tab-container>
+				</hide-split-container>
+			);
+		}
+
+		{
+			function buttons(parent : js.html.Element) {
+				hide.html.Html.build(parent,
+					<div style="display: contents">
+						<hide-group>
+							<hide-button icon={HideRes.icon.edit}/>
+							<hide-button icon={HideRes.icon.clear}/>
+							<hide-button checked icon={HideRes.icon.stroke}/>
+						</hide-group>
+						<hide-button icon={HideRes.icon.settings}/>
+						<hide-button label="Options"/>
+						<hide-button icon={HideRes.icon.settings} label="Options"/>
+						<hide-button class="small-square" icon={HideRes.icon.sort}/>
+						<hide-button class="medium-square" icon={HideRes.icon.sort}/>
+						<hide-button class="quiet" icon={HideRes.icon.settings}/>
+						<hide-button class="quiet" label="Options"/>
+						<hide-button class="quiet" icon={HideRes.icon.settings} label="Options"/>
+
+						<hide-button class="transparent" icon={HideRes.icon.settings}/>
+						<hide-button class="transparent" label="Options"/>
+						<hide-button class="transparent" checked label="Options"/>
+						<hide-button class="transparent" icon={HideRes.icon.settings} label="Options"/>
+
+						<hide-button class="quiet transparent" icon={HideRes.icon.settings}/>
+						<hide-button class="quiet transparent" label="Options"/>
+						<hide-button class="quiet transparent" checked label="Options"/>
+						<hide-button class="quiet transparent" icon={HideRes.icon.settings} label="Options"/>
+
+					</div>
+				);
+			}
+
+			var toolbar = section(element, "Toolbar");
+			hide.html.Html.build(toolbar.get(0), <hide-toolbar id="bar"></hide-toolbar>);
+			buttons(bar);
+
+			var hideButtons = section(element, "Hide Buttons");
+			hide.html.Html.build(hideButtons.get(0), <div id="flex" style="display: flex; flex-direction: row; border: 1px solid red"></div>);
+			buttons(flex);
+
+			function openDropdown(e : js.html.MouseEvent) {
+				hide.comp.ContextMenu.createDropdown(cast e.currentTarget, getContextMenuContent(), {});
+			}
+
+			hide.html.Html.build(hideButtons.get(0),
+				<div>
+					<h1>Size</h1>
+					<hide-toolbar>
+						<hide-button class="small-square" icon={HideRes.icon.settings}/>
+						<hide-button class="medium-square" icon={HideRes.icon.settings}/>
+						<hide-button icon={HideRes.icon.settings}/>
+					</hide-toolbar>
+
+					<h1>Button</h1>
+					<hide-button icon={HideRes.icon.settings}/>
+
+					<h1>Quiet</h1>
+					<hide-button class="quiet" icon={HideRes.icon.settings}/>
+
+					<h1>Text button</h1>
+					<hide-button label="Options"/>
+
+					<h1>Icon and text button</h1>
+					<hide-button icon={HideRes.icon.settings} label="Options"/>
+
+					<h1>Icon and really long text button</h1>
+					<hide-button icon={HideRes.icon.settings} label="Lorem ispum sit dolor amet"/>
+
+					<h1>Icon and dropdown aside</h1>
+					<hide-group>
+						<hide-button icon={HideRes.icon.visibility}/>
+						<hide-button class="small-dropdown" onclick={openDropdown}></hide-button>
+					</hide-group>
+
+					<h1>With dropdown</h1>
+					<hide-toolbar>
+						<hide-button class="dropdown" onclick={openDropdown} label="Options"/>
+						<hide-button class="dropdown" onclick={openDropdown} icon={HideRes.icon.sort}/>
+					</hide-toolbar>
+
+					<h1>Icon text and dropdown aside</h1>
+					<hide-group>
+						<hide-button icon={HideRes.icon.settings} label="Options"/>
+						<hide-button class="small-dropdown" onclick={openDropdown}></hide-button>
+					</hide-group>
+
+					<h1>Toolbar</h1>
+					<hide-toolbar>
+						<hide-group>
+							<hide-button icon={HideRes.icon.folder}/>
+							<hide-button icon={HideRes.icon.copy}/>
+							<hide-button icon={HideRes.icon.settings}/>
+						</hide-group>
+						<hide-group>
+							<hide-button icon={HideRes.icon.edit}/>
+							<hide-button icon={HideRes.icon.clear}/>
+							<hide-button icon={HideRes.icon.stroke}/>
+						</hide-group>
+					</hide-toolbar>
+				</div>
+			);
+
+			var hideIcons = section(element, "Hide Icons");
+			hide.html.Html.build(hideIcons.get(0),
+				<div>
+					<hide-icon icon={HideRes.icon.add}/>
+					<hide-button icon={HideRes.icon.add}/>
+					<hide-group>
+						<hide-button icon={HideRes.icon.axis}/>
+						<hide-button icon={HideRes.icon.rotation}/>
+						<hide-button icon={HideRes.icon.scale}/>
+					</hide-group>
+					<hide-group>
+						<hide-button class="small-square" icon={HideRes.icon.axis}/>
+						<hide-button class="small-square" icon={HideRes.icon.rotation}/>
+						<hide-button class="medium-square" icon={HideRes.icon.scale}/>
+					</hide-group>
+				</div>
+			);
+		}
+
+		{
+			var search = section(element, "Search Files");
+			hide.html.Html.build(search.get(0),
+				<div>
+					<input id="search-box" type="text" placeholder="Search ..."/>
+					<div id="search-time"></div>
+					<div id="search-results" style="height: 400px; overflow: auto"></div>
+				</div>
+			);
+
+			var maxDisplayed = 500;
+			var allFiles : Array<String> = [];
+			var allFilesLowercase : Array<String> = [];
+			var currentSearch = 0;
+
+			function addLine(text: String) {
+				var line = js.Browser.document.createDivElement();
+				line.textContent = text;
+				searchResults.append(line);
+				return line;
+			}
+
+			function searchFiles() {
+				currentSearch++;
+				var thisSearch = currentSearch;
+				var needle = searchBox.value.toLowerCase();
+
+				searchResults.innerHTML = "";
+
+				if (needle.length == 0) {
+					for (i in 0...hxd.Math.imin(allFiles.length, maxDisplayed))
+						addLine(allFiles[i]);
+					searchTime.textContent = "";
+					return;
+				}
+
+				hide.Search.batchFuzzySearchAsync(allFilesLowercase, needle, 0.01, 3, (results: Array<hide.Search.BatchFuzzySearchAsyncResult>, progress: Int) -> {
+					if (thisSearch != currentSearch)
+						return false;
+
+					searchTime.textContent = 'Searching $progress / ${allFiles.length} ( ${Std.int(progress / allFiles.length * 100)}% ) - ${results.length} results';
+
+					searchResults.innerHTML = "";
+					if (results.length == 0 && progress == allFiles.length)
+						addLine("no matches");
+
+					for (i in 0...hxd.Math.imin(results.length, maxDisplayed)) {
+						var r = results[i];
+						var str = allFiles[r.pos];
+						var start = hxd.Math.imax(0, r.lastCharPos - needle.length + 1);
+						var line = addLine(str.substr(0, start));
+
+						var highlight = js.Browser.document.createElement("b");
+						highlight.textContent = str.substr(start, r.lastCharPos + 1 - start);
+						line.append(highlight);
+						line.append(str.substr(r.lastCharPos + 1) + ' (${r.distance})');
+					}
+
+					return true;
+				});
+			}
+
+			searchBox.oninput = (_) -> searchFiles();
+
+			search.get(0).addEventListener("toggle", () -> {
+				if (allFiles.length > 0)
+					return;
+
+				function rec(path: String) {
+					for (file in sys.FileSystem.readDirectory(path)) {
+						var childPath = path + "/" + file;
+						if (sys.FileSystem.isDirectory(childPath)) {
+							rec(childPath);
+						} else {
+							allFiles.push(childPath);
+							allFilesLowercase.push(childPath.toLowerCase());
+						}
+					}
+				}
+
+				rec(hide.Ide.inst.resourceDir);
+				searchFiles();
+			});
 		}
 	}
 

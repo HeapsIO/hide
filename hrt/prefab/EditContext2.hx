@@ -108,7 +108,7 @@ abstract class EditContext2 {
 	/**
 		Return the camera controller of the current editor
 	**/
-	public abstract function getCameraController3d() : #if (js && domkit) hide.view.CameraController.CameraControllerBase #else Dynamic #end;
+	public abstract function getCameraController3d() : #if (js && domkit) hide.tools.CameraController.CameraControllerBase #else Dynamic #end;
 
 	/**
 		Open the given file path in the editor
@@ -160,6 +160,40 @@ abstract class EditContext2 {
 			return;
 		}
 		recordUndoImpl(callback, prefabs);
+	}
+
+	/** Applies `f` and records the change of `p` (its data and its list of children) as an undo step **/
+	public function recordPrefabUndoWithChildren(p: Prefab, f: () -> Void) {
+		var before = Diff.deepCopy(@:privateAccess p.save());
+		var childrenBefore = p.children.copy();
+		f();
+		var after = Diff.deepCopy(@:privateAccess p.save());
+		var childrenAfter = p.children.copy();
+		function apply(isUndo: Bool) {
+			var children = isUndo ? childrenBefore : childrenAfter;
+			for (c in p.children.copy())
+				if (!children.contains(c))
+					c.remove();
+			for (i => c in children)
+				if (c.parent != p)
+					p.addChildAt(c, i);
+			tempLoad(p, Diff.deepCopy(isUndo ? before : after));
+			rebuildTree(p);
+			rebuildPrefab(p);
+			rebuildInspector();
+		}
+		rebuildTree(p);
+		rebuildPrefab(p);
+		recordUndo(apply, [p]);
+	}
+
+	/** Loads `data`, a copy of the `save()` of `p`, as an undo step does **/
+	public static function tempLoad(p: Prefab, data: Dynamic) {
+		#if (editor || editor_hl)
+		@:privateAccess p.editorTempLoad(data);
+		#else
+		@:privateAccess p.load(data);
+		#end
 	}
 
 	/**

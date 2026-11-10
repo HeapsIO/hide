@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<style>
+		html, body { margin: 0; padding: 0; background: #222; color: #ddd; font-family: sans-serif; font-size: 13px; overflow: hidden; }
+		body { display: flex; flex-direction: column; gap: 10px; padding: 14px; box-sizing: border-box; height: 100vh; }
+		#text { white-space: pre-wrap; flex: 1; overflow: auto; }
+		input { background: #111; color: #eee; border: 1px solid #555; padding: 5px; font-size: 13px; outline: none; }
+		input:focus { border-color: #888; }
+		.buttons { display: flex; justify-content: flex-end; gap: 8px; }
+		button { background: #444; color: #eee; border: 1px solid #555; padding: 4px 16px; cursor: pointer; }
+		button:hover { background: #555; }
+	</style>
+</head>
+<body>
+	<div id="text"></div>
+	<input id="value" type="text" spellcheck="false"/>
+	<div class="buttons">
+		<button id="ok">OK</button>
+		<button id="cancel">Cancel</button>
+	</div>
+	<script>
+		const { ipcRenderer } = require('electron');
+		const params = new URLSearchParams(window.location.search);
+		const input = document.getElementById('value');
+		document.getElementById('text').textContent = params.get('text');
+		input.value = params.get('value');
+		input.focus();
+		input.select();
+		function answer( v ) {
+			ipcRenderer.send('hide-prompt-answer', v);
+		}
+		document.getElementById('ok').onclick = () => answer(input.value);
+		document.getElementById('cancel').onclick = () => answer(null);
+		window.addEventListener('keydown', (e) => {
+			if( e.key == 'Enter' ) answer(input.value);
+			if( e.key == 'Escape' ) answer(null);
+		});
+	</script>
+</body>
+</html>

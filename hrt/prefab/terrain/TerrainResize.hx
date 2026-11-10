@@ -44,6 +44,7 @@ class TerrainResize {
 
 		var engine = h3d.Engine.getCurrent();
 		var terrainCopy = new ScreenFx(new TerrainCopy());
+		terrainCopy.primitive = h3d.prim.Plane2D.get();
 
 		var prevTiles = prefab.terrain.tiles;
 		var prevSize = prefab.terrain.tileSize;

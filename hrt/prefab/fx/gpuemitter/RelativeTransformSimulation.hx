@@ -113,7 +113,6 @@ class RelativeTransformSimulation extends SimulationShader {
 	override function updateInstance(?propName) {
 		super.updateInstance(propName);
 
-		#if !editor
 		var s = Std.downcast(shader, RelativeTransformSimulationShader);
 		if ( s.curveTexture != null )
 			s.curveTexture.dispose();
@@ -141,7 +140,7 @@ class RelativeTransformSimulation extends SimulationShader {
 
 		s.curveTexture = new h3d.mat.Texture(width, height, null, R32F);
 
-		var curves = findAll(hrt.prefab.Curve, p -> p.shouldBeInstanciated());
+		var curves = findAll(hrt.prefab.fx.Curve, p -> p.shouldBeInstanciated());
 		if ( curves.length == 0 )
 			return;
 
@@ -162,7 +161,6 @@ class RelativeTransformSimulation extends SimulationShader {
 		}
 
 		s.curveTexture.uploadPixels(pixels);
-		#end
 	}
 
 	override function postMakeInstance() {

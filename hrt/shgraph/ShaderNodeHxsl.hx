@@ -152,6 +152,23 @@ class ShaderNodeHxsl extends ShaderNode {
 				};
 				fn.expr.iter(hasShaderInput);
 
+				if (!needPatching) {
+					fn.ref.id = hxsl.Ast.Tools.allocVarId();
+
+					// Serialized ids collide with runtime allocated ones
+					for (arg in fn.args)
+						arg.id = hxsl.Ast.Tools.allocVarId();
+					function allocLocals(e: TExpr) : Void {
+						switch (e.e) {
+							case TVarDecl(v, _), TFor(v, _, _):
+								v.id = hxsl.Ast.Tools.allocVarId();
+							default:
+						}
+						e.iter(allocLocals);
+					}
+					allocLocals(fn.expr);
+				}
+
 				funs.push({
 					fun: fn,
 					needPatching: needPatching,
@@ -177,6 +194,8 @@ class ShaderNodeHxsl extends ShaderNode {
 		function patch(e: TExpr) : TExpr {
 			switch (e.e) {
 				case TVar(v):
+					if (v.type.match(TFun(_)) && !varsRemap.exists(v.id))
+						return e;
 					var replacement = varsOverride.get(v.id);
 					if (replacement != null)
 						return replacement;

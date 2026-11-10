@@ -143,7 +143,7 @@ class ContextMenu {
         var nearest : js.html.Element = if (parentMenu != null) {
                 parentElement;
             } else if (parentElement != null) {
-                parentElement.closest("[popover]") ?? js.Browser.document.body;
+                parentElement.closest("[popover]") ?? parentElement.ownerDocument.body;
             } else {
                 js.Browser.document.body;
             };
@@ -216,7 +216,7 @@ class ContextMenu {
         if (parentMenu == null && parentElement != null) {
             autoCleanupTimer = new haxe.Timer(10);
             autoCleanupTimer.run = () -> {
-                if (parentElement.closest("body") == null) {
+                if (!parentElement.isConnected) {
                     close();
                 }
             };
@@ -235,13 +235,15 @@ class ContextMenu {
     function refreshPos() {
         // Make sure the menu never goes out of bounds
         var rect = rootElement.getBoundingClientRect();
-        var y = originalPos.y + Std.parseInt(js.Browser.window.getComputedStyle(rootElement).getPropertyValue("--offset-y"));
-        var x = originalPos.x + Std.parseInt(js.Browser.window.getComputedStyle(rootElement).getPropertyValue("--offset-x"));
+
+        var window = rootElement.ownerDocument.defaultView;
+        var y = originalPos.y + Std.parseInt(window.getComputedStyle(rootElement).getPropertyValue("--offset-y"));
+        var x = originalPos.x + Std.parseInt(window.getComputedStyle(rootElement).getPropertyValue("--offset-x"));
 
 
-        if (y + rect.height > js.Browser.window.innerHeight) {
+        if (y + rect.height > window.innerHeight) {
             if (parentMenu != null) {
-                y = js.Browser.window.innerHeight - rect.height;
+                y = window.innerHeight - rect.height;
             } else {
                 y = originalPos.y - rect.height;
                 if (options.placementHeight != null) {
@@ -254,7 +256,7 @@ class ContextMenu {
             y = 0;
         }
 
-        if (x + rect.width > js.Browser.window.innerWidth) {
+        if (x + rect.width > window.innerWidth) {
             if (parentMenu != null) {
                 x = parentMenu.rootElement.getBoundingClientRect().left - rect.width;
             } else {
@@ -379,26 +381,50 @@ class ContextMenu {
 
             var filterLower = filter.toLowerCase();
 
-            function filterElements(items: Array<MenuItem>, parentMatch: Bool) : Array<MenuItem> {
-                var filteredItems : Array<MenuItem> = [];
+            function hasSearchInclude(items: Array<MenuItem>) : Bool {
+                for (item in items) {
+                    if (item.searchInclude == true || (item.menu != null && hasSearchInclude(item.menu)))
+                        return true;
+                }
+                return false;
+            }
+
+            var restrictSearch = hasSearchInclude(items);
+
+            // sorted by score, a submenu takes the score of its best child
+            function filterElements(items: Array<MenuItem>, parentScore: Int, parentIncluded: Bool) : Array<{item: MenuItem, score: Int}> {
+                var filteredItems : Array<{item: MenuItem, score: Int}> = [];
                 for (id => item in items) {
-                    var match = parentMatch || (item.label != null && StringTools.contains(item.label.toLowerCase(), filterLower));
+                    var included = item.searchInclude ?? parentIncluded;
+                    if (item.menu == null && restrictSearch && !included)
+                        continue;
+
+                    var score = parentScore;
+                    if (item.label != null)
+                        score = hxd.Math.imax(score, hide.Search.fuzzyScore(item.label, filterLower));
+                    if (item.searchAlias != null) {
+                        for (alias in item.searchAlias)
+                            score = hxd.Math.imax(score, hide.Search.fuzzyScore(alias, filterLower));
+                    }
+
                     if (item.menu != null) {
-                        var subItems = filterElements(item.menu, match);
+                        var subItems = filterElements(item.menu, score, included);
                         if (subItems.length > 0) {
-                            filteredItems.push({label: item.label, menu: subItems, click: item.click});
+                            filteredItems.push({item: {label: item.label, menu: [for (s in subItems) s.item], click: item.click}, score: subItems[0].score});
                         }
                     }
                     else {
-                        if (match) {
-                            filteredItems.push(item);
+                        if (score >= 0) {
+                            filteredItems.push({item: item, score: score});
                         }
                     }
                 }
+
+                haxe.ds.ArraySort.sort(filteredItems, (a, b) -> b.score - a.score);
                 return filteredItems;
             }
 
-            filteredItems = filterElements(items, false);
+            filteredItems = [for (f in filterElements(items, -1, false)) f.item];
 
             var submenuStack : Array<Iterator<MenuItem>> = [];
             submenuStack.push(filteredItems.iterator());

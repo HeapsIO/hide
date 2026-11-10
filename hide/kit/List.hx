@@ -166,7 +166,7 @@ class List<T> extends Widget<Array<T>> {
 
 	function regenerateItems() {
 		#if js
-		untyped listElement.replaceChildren();
+		(listElement : js.html.Element).replaceChildren();
 		for (i => item in value) {
 			var header = new KitListHeader(this, 'item_header_$i');
 			var content = new Element(this, 'item_content_$i');

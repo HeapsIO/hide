@@ -111,6 +111,11 @@ class Select extends Widget<Dynamic> {
 		return null;
 	}
 
+	override function resetSelf() {
+		value = defaultValue ?? (entries?.length > 0 ? entries[0].value : null);
+		broadcastValueChange(true);
+	}
+
 	function stringToValue(obj: String) : Dynamic {
 		for (entry in entries) {
 			if (haxe.Json.stringify(entry.value) == obj) {

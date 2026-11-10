@@ -1,7 +1,7 @@
 package hide.view;
 
 class FileView extends hide.ui.View<{ path : String }> {
-
+	public var fileState : hide.tools.EditorState = new hide.tools.EditorState();
 	public var extension(get,never) : String;
 	public var modified(default, set) : Bool = false;
 	var skipNextChange : Bool;
@@ -11,7 +11,9 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 	public function new(state) {
 		super(state);
-		if( state.path != null )
+		if( state.path != null ) {
+			var fileViewState = new hide.tools.EditorState(hide.Ide.inst.projectFileState, state.path);
+			fileState.setParent(fileViewState, Type.getClassName(Type.getClass(this)));
 			watch(state.path, function() {
 				if( skipNextChange ) {
 					skipNextChange = false;
@@ -33,6 +35,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 				onFileChanged(!exists(fs));
 			}, { checkDelete : true, keepOnRebuild : true });
+		}
 	}
 
 	override function onRebuild() {
@@ -114,7 +117,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 		keys.register("redo", function() undo.redo());
 		keys.register("save", function() save());
 		keys.register("view.refresh", function() rebuild());
-		keys.register("view.refreshApp", function() untyped chrome.runtime.reload());
+		keys.register("view.refreshApp", function() js.Browser.location.reload());
 	}
 
 	public function canSave() {
@@ -202,7 +205,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 	override function syncTitle() {
 		super.syncTitle();
 		if( state.path != null )
-			haxe.Timer.delay(function() if( container.tab != null ) container.tab.element.attr("title",getPath()), 100);
+			element[0].setAttribute("tab-title", getPath());
 	}
 
 	override function buildTabMenu() {

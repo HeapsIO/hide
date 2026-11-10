@@ -32,9 +32,55 @@ class DetachablePanel extends hide.comp.Component {
 		</div>');
 			// <div class="splitter vertical handle-bottom"><div class="drag-handle"></div></div>
 
-		var document = new Element(js.Browser.document);
+		var document = js.Browser.document;
+		var el = element.get(0);
 
 		var startState = { x : 0, y : 0, left : 0, right : 0, top : 0, bottom : 0, width : 0, height : 0 };
+		function onMove(e : js.html.MouseEvent) {
+			switch (currentSide) {
+			case Left:
+				e.stopPropagation();
+				var newLeft = e.clientX;
+				if( newLeft < 0 )
+					return;
+				var diff = newLeft - startState.left;
+				var newWidth = startState.width - diff;
+				if( newWidth < minWidth ) {
+					newLeft = startState.left + startState.width - minWidth;
+					newWidth = minWidth;
+				}
+				el.style.left = newLeft + "px";
+				el.style.width = newWidth + "px";
+			case Right:
+				e.stopPropagation();
+				var newWidth = startState.width + e.clientX - startState.x;
+				if( startState.left + newWidth > js.Browser.window.innerWidth )
+					newWidth = Std.int(js.Browser.window.innerWidth) - e.clientX;
+				if( newWidth < minWidth )
+					newWidth = minWidth;
+				el.style.width = newWidth + "px";
+			case Top:
+				e.stopPropagation();
+				var diffx = startState.x - e.clientX;
+				var newLeft = startState.left - diffx;
+				if( newLeft < 0 )
+					newLeft = 0;
+				if( newLeft + startState.width > js.Browser.window.innerWidth )
+					newLeft = Std.int(js.Browser.window.innerWidth) - startState.width;
+				el.style.left = newLeft + "px";
+			case Bottom:
+			case None:
+			}
+		}
+		// the document listeners only live during a drag : the panel is recreated with each inspector
+		function onEnd(e : js.html.MouseEvent) {
+			document.removeEventListener("mousemove", onMove);
+			document.removeEventListener("mouseup", onEnd);
+			document.removeEventListener("mouseleave", onEnd);
+			if( e.type == "mouseup" && currentSide != None )
+				saveLayout();
+			currentSide = None;
+		}
 		function initDrag(e : js.jquery.Event) {
 			startState = {
 				x : e.clientX,
@@ -46,8 +92,11 @@ class DetachablePanel extends hide.comp.Component {
 				width : Std.parseInt(element.css("width")),
 				height : Std.parseInt(element.css("height")),
 			}
-			element.css("width", startState.width + "px");
-			element.css("right", "unset");
+			el.style.width = startState.width + "px";
+			el.style.right = "unset";
+			document.addEventListener("mousemove", onMove);
+			document.addEventListener("mouseup", onEnd);
+			document.addEventListener("mouseleave", onEnd);
 		}
 
 		layoutControls.find(".handle-right .drag-handle").first().mousedown((e : js.jquery.Event) -> {
@@ -67,52 +116,6 @@ class DetachablePanel extends hide.comp.Component {
 				e.preventDefault();
 				resetLayout();
 			});
-
-		document.mousemove((e : js.jquery.Event) -> {
-			switch (currentSide) {
-			case Left:
-				e.stopPropagation();
-				var newLeft = e.clientX;
-				if( newLeft < 0 )
-					return;
-				var diff = newLeft - startState.left;
-				var newWidth = startState.width - diff;
-				if( newWidth < minWidth ) {
-					newLeft = startState.left + startState.width - minWidth;
-					newWidth = minWidth;
-				}
-				element.css("left", newLeft + "px");
-				element.css("width", newWidth + "px");
-			case Right:
-				e.stopPropagation();
-				var newWidth = startState.width + e.clientX - startState.x;
-				if( startState.left + newWidth > js.Browser.window.innerWidth )
-					newWidth = Std.int(js.Browser.window.innerWidth) - e.clientX;
-				if( newWidth < minWidth )
-					newWidth = minWidth;
-				element.css("width", newWidth + "px");
-			case Top:
-				e.stopPropagation();
-				var diffx = startState.x - e.clientX;
-				var newLeft = startState.left - diffx;
-				if( newLeft < 0 )
-					newLeft = 0;
-				if( newLeft + startState.width > js.Browser.window.innerWidth )
-					newLeft = Std.int(js.Browser.window.innerWidth) - startState.width;
-				element.css("left", newLeft + "px");
-			case Bottom:
-			case None:
-			}
-		});
-		document.mouseleave((_) -> {
-			currentSide = None;
-		});
-		document.mouseup((_) -> {
-			if( currentSide != None ) {
-				currentSide = None;
-				saveLayout();
-			}
-		});
 
 		layoutControls.appendTo(element);
 	}

@@ -12,6 +12,9 @@ typedef GraphNodeInfo = {
     outputs: Array<NodeOutput>,
     ?width: Int,
 
+    /**Icon shown before the name in the header, path relative to bin/res**/
+    ?icon: String,
+
     /**If set, the node can show a preview pannel**/
     ?preview: {
         getVisible : () -> Bool,
@@ -38,9 +41,12 @@ typedef GraphNodeInfo = {
     },
 
     /**
-        If set, a custom context menu will be created when the user right clicks the box
+        If set, these items replace the add section of the editor context menu when the user right clicks the box
     **/
-    ?contextMenu : (e: js.html.MouseEvent) -> Void,
+    ?contextMenu : () -> Array<hrt.ui.HuiMenu.MenuItem>,
+
+    /**Called when the user double clicks the box**/
+    ?doubleClick : () -> Void,
 
     /**
         If true, this node cannot be added, removed, or cloned. It must be created externaly. Used for things like fixed inputs or ouputs
@@ -73,6 +79,7 @@ typedef AddNodeMenuEntry = {
     name: String,
     description: String,
     group: String,
+    ?searchAlias: Array<String>,
 
     /**This function will be called when the user chooses to add a node from the add node menu
         You should generate a unique ID for the new IGraphNode. Don't add the node to your graph datastructure yet,
@@ -138,4 +145,7 @@ interface IGraphEditor {
     public function removeEdge(nodeToId: Int, inputToId : Int) : Void;
 
     public function getUndo() : hide.ui.UndoHistory;
+
+    /**Extra entries of the graph context menu, acting on the selected nodes**/
+    public function getSelectionMenu(selection: Array<IGraphNode>) : Array<hrt.ui.HuiMenu.MenuItem>;
 }

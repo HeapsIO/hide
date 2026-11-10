@@ -14,7 +14,9 @@ typedef MenuItem = {
     ?checked: Bool,
     ?tooltip: String,
     ?radio: () -> Bool, // Radio button instead of checked.
-	?color: Int
+	?color: Int,
+	?searchInclude: Bool, // If any item of the menu is true, search only matches items set to true. Children inherit it unless set
+	?searchAlias: Array<String>, // Search score is the best of label and aliases
 }
 
 #if hui

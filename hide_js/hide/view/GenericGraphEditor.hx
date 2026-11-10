@@ -38,6 +38,11 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
         graphEditor.centerView();
     }
 
+    override function destroy() {
+        graphEditor?.remove();
+        super.destroy();
+    }
+
     function initGraphEditor() {
         if (graphEditor != null) {
             graphEditor.remove();
@@ -176,6 +181,10 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
 
     public function getUndo() : hide.ui.UndoHistory {
         return undo;
+    }
+
+    public function getSelectionMenu(selection: Array<IGraphNode>) : Array<hrt.ui.HuiMenu.MenuItem> {
+        return [];
     }
 
 }

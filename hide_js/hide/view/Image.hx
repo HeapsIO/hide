@@ -143,6 +143,11 @@ class Image extends FileView {
 		}
 
 		var compressionInfo = element.find(".compression-infos");
+		var fileFormat = js.Browser.document.createDivElement();
+		fileFormat.className = "field";
+		fileFormat.innerHTML = '<label>Loaded as :</label><label class="file-format">Unknown</label>';
+		compressionInfo.append(fileFormat);
+
 		var nativeFormat = new Element('<div class="field">
 		<label>Native format :</label>
 		<label class="native-format">Unknown</label>
@@ -440,7 +445,7 @@ class Image extends FileView {
 
 		var scale = Math.min(1,Math.min((contentWidth - 20) / bmp.tile.width, (contentHeight - 20) / bmp.tile.height));
 
-		var cam2d = Std.downcast(cam, hide.view.l3d.CameraController2D);
+		var cam2d = Std.downcast(cam, hide.tools.CameraController2D);
 		if (cam2d != null) {
 			@:privateAccess cam2d.curPos.set(bmp.tile.width / 2, bmp.tile.width / 2, (1 / bmp.tile.width) * 500);
 		}
@@ -479,7 +484,7 @@ class Image extends FileView {
 			shader.compressedTex = compressedTexture;
 			shader.uncompressedTex = uncompressedTexture;
 			shader.comparisonFactor = 0.5;
-			this.cam = new hide.view.l3d.CameraController2D(scene.s2d);
+			this.cam = new hide.tools.CameraController2D(scene.s2d);
 		} else {
 			var r = new h3d.scene.fwd.Renderer();
 			var ls = new h3d.scene.fwd.LightSystem();
@@ -681,12 +686,14 @@ class Image extends FileView {
 		uncompTWeight.text('Uncompressed texture weight : ${getTextureMemSize(state.path)} MB');
 
 		nativeFormat.text(getTextureNativeFormat(state.path).getName());
+		setFileFormat(new hxd.res.Image(localEntry).getFormat());
 	}
 
 	public function replaceImage(path : String) {
 		var bytes = sys.io.File.getBytes(path);
 		var res = hxd.res.Any.fromBytes(path, bytes);
 		var t = res.toTexture();
+		setFileFormat(res.toImage().getFormat());
 
 		if (bmp != null) {
 			if (!bmp.tile.isDisposed())
@@ -793,13 +800,17 @@ class Image extends FileView {
 		return t.format;
 	}
 
+	function setFileFormat(format: hxd.res.Image.ImageFormat) {
+		element.get(0).querySelector(".file-format").textContent = format.getName();
+	}
+
 	public function floatToStringPrecision(number:Float, ?precision=2) {
 		number *= Math.pow(10, precision);
 		return Math.round(number) / Math.pow(10, precision);
 	}
 
 	public function updateSliderVisual() {
-		var cam2d = Std.downcast(cam, hide.view.l3d.CameraController2D);
+		var cam2d = Std.downcast(cam, hide.tools.CameraController2D);
 		if (cam2d != null && sliderBmp != null) {
 			var oldWidth = sliderBmp.getSize().width;
 			@:privateAccess sliderBmp.scaleX = (1 / (cam2d.curPos.z)) * 2;

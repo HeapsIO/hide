@@ -433,7 +433,7 @@ class Model extends FileView {
 
 
 		sceneEditor.view.keys.register("view.refresh", function() rebuild());
-		sceneEditor.view.keys.register("view.refreshApp", function() untyped chrome.runtime.reload());
+		sceneEditor.view.keys.register("view.refreshApp", function() js.Browser.location.reload());
 
 		sceneEditor.view.keys.register("sceneeditor.radialViewModes", {name: "Radial view modes", category: "Scene"}, function() {
 			var renderer = Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer);
@@ -484,6 +484,13 @@ class Model extends FileView {
 			tools.refreshToggles();
 
 		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
+	}
+
+	override function destroy() {
+		for (s in shapesEditor)
+			s.remove();
+		shapesEditor.clear();
+		super.destroy();
 	}
 
 	override function save() {
@@ -2369,12 +2376,10 @@ class Model extends FileView {
 			sceneEditor.cameraController.toTarget();
 		}
 
-		// Reset parent obj of shapeEditors
-		for (s in shapesEditor) {
-			var objName = s.rootDebugObj.name;
-			s.rootDebugObj.remove();
-			s.rootDebugObj = obj.getObjectByName(objName);
-		}
+		// Shape editors reference the previous model, selection creates new ones
+		for (s in shapesEditor)
+			s.remove();
+		shapesEditor.clear();
 	}
 
 	function changeAnim(offset: Int) : Void {

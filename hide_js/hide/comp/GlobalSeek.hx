@@ -8,7 +8,7 @@ enum SeekMode {
 }
 
 class GlobalSeek extends Modal {
-    var cdbTable: hide.view.CdbTable;
+    var cdbTable: hide.view.cdb.CdbTable;
 
     // Seeking files is not supported yet
     public function new(?parent, cdbTable, mode: SeekMode, ?currentSheet: cdb.Sheet) {
