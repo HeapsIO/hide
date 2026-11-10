@@ -485,13 +485,13 @@ class Emitter2D extends Object2D implements hrt.prefab.fx.EmitterParam.IEmitter 
 	public var emitOrientation : Orientation = Orientation.Forward;
 
 	@:group("Particle Movement")
-	@:param(PVec(2, -10, 10), Spawn) @:disp("Start Speed", "Initial speed in the emitter orientation, set at the spawn of the particle")
+	@:param(PVec(2, -10, 10), Spawn) @:disp("Start Speed", "Initial speed in the emitter orientation")
 	public var startSpeed : ParamVec2;
-	@:param(PVec(2, -10, 10), Spawn) @:disp("Start World Speed", "Initial speed in world space, set at the spawn of the particle")
+	@:param(PVec(2, -10, 10), Spawn) @:disp("Start World Speed", "Initial speed in world space")
 	public var startWorldSpeed : ParamVec2;
-	@:param(PVec(2, -10, 10), Particle) @:disp("Constant Speed", "Speed in the emitter orientation, added to the velocity without being accumulated")
+	@:param(PVec(2, -10, 10), Particle) @:disp("Speed", "Speed in the emitter orientation, added to the velocity without being accumulated")
 	public var partSpeed : ParamVec2;
-	@:param(PVec(2, -10, 10), Particle) @:disp("Constant World Speed", "Speed in world space, added to the velocity without being accumulated")
+	@:param(PVec(2, -10, 10), Particle) @:disp("World Speed", "Speed in world space, added to the velocity without being accumulated")
 	public var partWorldSpeed : ParamVec2;
 	@:param(PVec(2, -10, 10), Particle) @:disp("Acceleration", "Acceleration in the emitter orientation, accumulated in the velocity")
 	public var partAcceleration : ParamVec2;
@@ -520,7 +520,7 @@ class Emitter2D extends Object2D implements hrt.prefab.fx.EmitterParam.IEmitter 
 	@:param(PVec(2, 0, 2), Particle, [1., 1.]) @:disp("Stretch", "Scale of the particle on each of its axes")
 	public var partStretch : ParamVec2;
 
-	@:group("Color")
+	@:group("Rendering")
 	@:s @:disp("Sprite Type", "Drawing of the particles: a plain color, a texture or a sprite sheet")
 	public var spriteType : SpriteType = SpriteType.Color;
 	@:s @:t(PColor) @:disp("Color", "Color of the particles")
@@ -529,11 +529,11 @@ class Emitter2D extends Object2D implements hrt.prefab.fx.EmitterParam.IEmitter 
 	public var texture : String = "";
 	@:s @:disp("Random Color", "Gives each particle a random color instead of the color, taken between two colors or in a gradient")
 	public var randomColorMode : RandomColorMode = RandomColorMode.None;
-	@:s @:t(PColor) @:disp("Color 1", "First bound of the random color")
+	@:s @:sameLine @:t(PColor) @:disp("Color 1", "First bound of the random color")
 	public var randomColor1 : Int = 0xFF000000;
-	@:s @:t(PColor) @:disp("Color 2", "Second bound of the random color")
+	@:s @:sameLine @:t(PColor) @:disp("Color 2", "Second bound of the random color")
 	public var randomColor2 : Int = 0xFFFFFFFF;
-	@:s @:disp("Gradient", "Gradient in which the random color is taken")
+	@:s @:sameLine @:disp("Gradient", "Gradient in which the random color is taken")
 	public var randomGradient : GradientData;
 
 	@:group("Sprite Sheet Animation")

@@ -5,7 +5,9 @@ import hrt.prefab.fx.EmitterParam;
 typedef PropertyDef = {
 	> hrt.prefab.Props.PropDef,
 	?animate: Bool,
-	?groupName: String
+	?groupName: String,
+	?sameLine: Bool,
+	?line: String
 }
 
 class EmitterHelper {
@@ -170,6 +172,15 @@ class EmitterHelper {
 
 	#if domkit
 
+	// when a param is read, and the time of its curves
+	static function clockDesc(kind: ParamKind) {
+		return switch (kind) {
+			case Emission: "Read at each emission step, curves over the emitter time";
+			case Spawn: "Read once at the spawn of the particle, curves over the emitter time";
+			case Particle: "Read over the life of the particle, curves over its life (0 to 1)";
+		}
+	}
+
 	// Build inspector for an emitter parameter
 	public static function editParam(ctx: EditContext2, prefab: Prefab, def: ParamDef, allowed: Array<ModeKind>, parent: hide.kit.Element) {
 		var size = def.def.length;
@@ -178,6 +189,9 @@ class EmitterHelper {
 			case PFloat(min, max), PVec(_, min, max): { min: min, max: max };
 			default: { min: null, max: null };
 		}
+		// the clock of the param: kit-param-emission, kit-param-spawn, kit-param-particle
+		var kindClass = "kit-param-" + def.kind.getName().toLowerCase();
+		var tooltip = (def.desc == null ? "" : def.desc + "\n") + clockDesc(def.kind);
 		var comps = [for (i in 0...size) i];
 		var value = [for (i in comps) shownMode(prefab, def, i)];
 
@@ -219,8 +233,9 @@ class EmitterHelper {
 		var isCompact = size > 1 && Lambda.foreach(value, m -> m == null || m.match(Constant(_)));
 		if (isCompact) {
 			line = new hide.kit.Line(parent, def.name);
+			line.classList.push(kindClass);
 			line.stealLabel = false;
-			line.tooltip = def.desc;
+			line.tooltip = tooltip;
 			setupVectorHeader(line);
 		}
 
@@ -228,8 +243,9 @@ class EmitterHelper {
 			var menuOwners : Array<hide.kit.Element> = [];
 			if (!isCompact) {
 				line = new hide.kit.Line(parent, def.name + (size == 1 ? "" : compName(i)));
+				line.classList.push(kindClass);
 				line.stealLabel = false;
-				line.tooltip = def.desc;
+				line.tooltip = tooltip;
 				if (size == 1) {
 					line.label = label;
 					line.unset = !isSet(prefab, def, i);
@@ -351,21 +367,49 @@ class EmitterHelper {
 			return cat;
 		}
 
-		for (f in (cast emitter : IEmitter).getFields()) {
+		function isShown(f: EmitterField) {
+			return switch (f) {
+				case Property(p): !hidden.contains(p.name);
+				case Param(p): !hidden.contains(p.name);
+			}
+		}
+		var fields = [for (f in (cast emitter : IEmitter).getFields()) if (isShown(f)) f];
+		// the line of a property followed by `sameLine` ones: named by its `line`, the widgets keep their labels,
+		// else it takes the label of the first one and the others show none
+		var line : hide.kit.Line = null;
+		for (i => f in fields) {
 			switch (f) {
-				case Property(p) if (!hidden.contains(p.name)):
-					editProperty(getCategory(p.groupName ?? "Emitter"), emitter, p, changed);
-				case Param(p) if (!hidden.contains(p.name)):
+				case Property(p) if (p.sameLine == true && line != null):
+					var widget = editProperty(line, emitter, p, changed);
+					if (widget != null && line.label == null)
+						widget.label = null;
+				case Property(p):
+					var parent : hide.kit.Element = getCategory(p.groupName ?? "Emitter");
+					line = switch (fields[i + 1]) {
+						case Property(next) if (next.sameLine == true):
+							var l = new hide.kit.Line(parent, p.name + "Line");
+							if (p.line != null) {
+								l.label = p.line;
+								l.stealLabel = false;
+							} else
+								l.tooltip = p.desc;
+							l;
+						case null, _: null;
+					}
+					var widget = editProperty(line ?? parent, emitter, p, changed);
+					if (line != null && line.label == null && widget != null)
+						widget.classList.push("kit-line-first");
+				case Param(p):
+					line = null;
 					editParam(ctx, emitter, p, [Constant, Range, Curve, RandomCurve, CurveRange], getCategory(p.groupName));
-				default:
 			}
 		}
 	}
 
-	static function editProperty(cat: hide.kit.Category, emitter: Prefab, p: PropertyDef, changed: (name: String, temp: Bool) -> Void) {
+	static function editProperty(parent: hide.kit.Element, emitter: Prefab, p: PropertyDef, changed: (name: String, temp: Bool) -> Void) : hide.kit.Widget<Dynamic> {
 		switch (p.t) {
 			case PVec(n, min, max) if (p.name.toLowerCase().indexOf("color") < 0):
-				var line = new hide.kit.Line(cat, p.name);
+				var line = new hide.kit.Line(parent, p.name);
 				line.label = p.disp ?? hide.kit.Macros.camelToSpaceCase(p.name);
 				line.tooltip = p.desc;
 				var vec : Array<Float> = Reflect.field(emitter, p.name);
@@ -379,13 +423,15 @@ class EmitterHelper {
 					@:privateAccess s.onFieldChange = (_) -> vec[i] = s.value;
 					s.onValueChange = (temp) -> changed(p.name, temp);
 				}
+				return null;
 			default:
-				var widget = cat.buildProp(p, emitter);
+				var widget = parent.buildProp(p, emitter);
 				if (widget == null)
-					return;
+					return null;
 				if (!p.animate)
 					widget.anim = null;
 				widget.onValueChange = (temp) -> changed(p.name, temp);
+				return widget;
 		}
 	}
 

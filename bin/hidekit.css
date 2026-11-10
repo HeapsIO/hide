@@ -50,6 +50,15 @@ kit-root {
 		margin-left: 3px;
 	}
 
+	/* the first widget of a line shared with others: the same width on every such line */
+	kit-div.kit-line-first > :not(kit-label) {
+		flex: 0 0 90px;
+	}
+	kit-div.kit-line-first ~ kit-div > .gradient-box {
+		flex: 1 1 0;
+		min-width: 0;
+	}
+
 	kit-curve-editor {
 		flex: 1 1;
 		display: flex;

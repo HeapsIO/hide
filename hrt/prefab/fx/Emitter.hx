@@ -744,7 +744,7 @@ class EmitterObject extends h3d.scene.Object {
 				s.randomColor1.setColor(prefab.randomColor1);
 				s.randomColor2.setColor(prefab.randomColor2);
 				if( prefab.randomColorMode == RandomColorMode.Gradient )
-					s.randomGradient = hrt.impl.Gradient.textureFromData(prefab.randomGradient, false);
+					s.randomGradient = gradientTexture(prefab.randomGradient);
 			}
 			if( prefab.fadeColorMode != RandomColorMode.None ) {
 				var s = getShader();
@@ -752,7 +752,7 @@ class EmitterObject extends h3d.scene.Object {
 				s.fadeColor1.setColor(prefab.fadeColor1);
 				s.fadeColor2.setColor(prefab.fadeColor2);
 				if( prefab.fadeColorMode == RandomColorMode.Gradient )
-					s.fadeGradient = hrt.impl.Gradient.textureFromData(prefab.fadeGradient, false);
+					s.fadeGradient = gradientTexture(prefab.fadeGradient);
 			}
 			if( prefab.fadeIn > 0 || prefab.fadeOut > 0 ) {
 				var s = getShader();
@@ -778,6 +778,15 @@ class EmitterObject extends h3d.scene.Object {
 		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, prefab.maxCount) #else [for(i in 0...prefab.maxCount) new ParticleInstance()] #end;
 		particlesCount = prefab.maxCount;
 		reset();
+	}
+
+	// a Constant gradient steps at its stops: filtered, its colors would blend around each stop
+	static function gradientTexture( g : GradientData ) : h3d.mat.Texture {
+		if( g.interpolation != Constant )
+			return hrt.impl.Gradient.textureFromData(g, false);
+		var tex : h3d.mat.Texture = hrt.impl.Gradient.textureFromData(g, false);
+		tex.filter = h3d.mat.Data.Filter.Nearest;
+		return tex;
 	}
 
 	public static function checkEnabled(prefab: Prefab) {
@@ -1734,13 +1743,13 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 	public var emitOrientation : Orientation = Orientation.Forward;
 
 	@:group("Particle Movement")
-	@:param(PVec(3), Spawn) @:disp("Start Speed", "Initial speed in the emitter orientation, set at the spawn of the particle")
+	@:param(PVec(3), Spawn) @:disp("Start Speed", "Initial speed in the emitter orientation")
 	public var startSpeed : ParamVec3;
-	@:param(PVec(3), Spawn) @:disp("Start World Speed", "Initial speed in world space, set at the spawn of the particle")
+	@:param(PVec(3), Spawn) @:disp("Start World Speed", "Initial speed in world space")
 	public var startWorldSpeed : ParamVec3;
-	@:param(PVec(3), Particle) @:disp("Constant Speed", "Speed in the emitter orientation, added to the velocity without being accumulated")
+	@:param(PVec(3), Particle) @:disp("Speed", "Speed in the emitter orientation, added to the velocity without being accumulated")
 	public var partSpeed : ParamVec3;
-	@:param(PVec(3), Particle) @:disp("Constant World Speed", "Speed in world space, added to the velocity without being accumulated")
+	@:param(PVec(3), Particle) @:disp("World Speed", "Speed in world space, added to the velocity without being accumulated")
 	public var partWorldSpeed : ParamVec3;
 	@:param(PVec(3), Particle) @:disp("Acceleration", "Acceleration in the emitter orientation, accumulated in the velocity")
 	public var partAcceleration : ParamVec3;
@@ -1781,26 +1790,26 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 	@:s @:disp("Follow Rotation", "The aligned particles keep their own rotation and the one of the emitter")
 	public var followRotation : Bool = false;
 
-	@:group("Color")
+	@:group("Rendering")
 	@:s @:disp("Random Color", "Multiplies the color of each particle (alpha included) by a random color, taken between two colors or in a gradient")
 	public var randomColorMode : RandomColorMode = RandomColorMode.None;
-	@:s @:t(PColor) @:disp("Color 1", "First bound of the random color")
+	@:s @:sameLine @:t(PColor) @:disp("Color 1", "First bound of the random color")
 	public var randomColor1 : Int = 0xFF000000;
-	@:s @:t(PColor) @:disp("Color 2", "Second bound of the random color")
+	@:s @:sameLine @:t(PColor) @:disp("Color 2", "Second bound of the random color")
 	public var randomColor2 : Int = 0xFFFFFFFF;
-	@:s @:disp("Gradient", "Gradient in which the random color is taken")
+	@:s @:sameLine @:disp("Gradient", "Gradient in which the random color is taken")
 	public var randomGradient : GradientData;
 	@:s @:disp("Fade Color", "Multiplies the color of each particle (alpha included) by a color faded over its life, from a color to another or along a gradient")
 	public var fadeColorMode : RandomColorMode = RandomColorMode.None;
-	@:s @:t(PColor) @:disp("Start Color", "Color at the birth of the particle")
+	@:s @:sameLine @:t(PColor) @:disp("Start Color", "Color at the birth of the particle")
 	public var fadeColor1 : Int = 0xFFFFFFFF;
-	@:s @:t(PColor) @:disp("End Color", "Color at the death of the particle")
+	@:s @:sameLine @:t(PColor) @:disp("End Color", "Color at the death of the particle")
 	public var fadeColor2 : Int = 0x00FFFFFF;
-	@:s @:disp("Gradient", "Gradient along which the color fades, over the life of the particle")
+	@:s @:sameLine @:disp("Gradient", "Gradient along which the color fades, over the life of the particle")
 	public var fadeGradient : GradientData;
-	@:s @:range(0, 1) @:disp("Fade In", "Part of the particle life over which its alpha goes from 0 to 1, at its birth (0: none)")
+	@:s @:range(0, 1) @:line("Alpha Fade") @:disp("In", "Part of the particle life over which its alpha goes from 0 to 1, at its birth (0: none)")
 	public var fadeIn : Float = 0;
-	@:s @:range(0, 1) @:disp("Fade Out", "Part of the particle life over which its alpha goes from 1 to 0, before its death (0: none)")
+	@:s @:range(0, 1) @:sameLine @:disp("Out", "Part of the particle life over which its alpha goes from 1 to 0, before its death (0: none)")
 	public var fadeOut : Float = 0;
 
 	@:group("Sprite Sheet Animation")
