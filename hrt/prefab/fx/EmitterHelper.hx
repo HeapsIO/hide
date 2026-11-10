@@ -56,7 +56,7 @@ class EmitterHelper {
 	}
 
 	// a random in [0, 1) for the step `i` of an emitter of seed `seed`: the same whatever the ticks (a loop or a seek included)
-	public static inline function stepRandom( i : Int, seed : Int ) : Float {
+	static inline function stepRandom( i : Int, seed : Int ) : Float {
 		return (hxd.Rand.inlineHash(i, seed) & 0xFFFFFF) / 0x1000000;
 	}
 
@@ -182,7 +182,7 @@ class EmitterHelper {
 	}
 
 	// Build inspector for an emitter parameter
-	public static function editParam(ctx: EditContext2, prefab: Prefab, def: ParamDef, allowed: Array<ModeKind>, parent: hide.kit.Element) {
+	static function editParam(ctx: EditContext2, prefab: Prefab, def: ParamDef, allowed: Array<ModeKind>, parent: hide.kit.Element) {
 		var size = def.def.length;
 		var label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
 		var range = switch (def.t) {

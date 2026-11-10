@@ -75,7 +75,7 @@ class EmitterParam {
 		}
 	}
 
-	public static function hasCurve( owner : Prefab, name : String ) {
+	static function hasCurve( owner : Prefab, name : String ) {
 		return Lambda.exists(owner.children, c -> c is hrt.prefab.fx.Curve && c.name != null && c.name.toLowerCase() == name.toLowerCase());
 	}
 
@@ -223,7 +223,7 @@ class ParamBuilder {
 		return hrt.prefab.fx.Curve.getCurve(owner, name)?.makeVal() ?? Evaluator.vVal(def);
 	}
 
-	public static function fixedValue( owner : Prefab, m : ParamMode, name : String, def : Float ) : Value {
+	static function fixedValue( owner : Prefab, m : ParamMode, name : String, def : Float ) : Value {
 		return switch( m ) {
 		case null: Evaluator.vVal(def);
 		case Constant(v): Evaluator.vVal(v);

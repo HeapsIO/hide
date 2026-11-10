@@ -494,18 +494,6 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitScale : Float = 1.0;
 	public var lifeTimeScale : Float = 1.0;
 
-	public var totalBurstCount : Int = 0;
-
-	// Ground Collision
-	var collisionPlane : h3d.col.Plane;
-
-	// made from the children of the prefab
-	public var particleTemplate : hrt.prefab.Object3D;
-	public var subEmitterTemplates : Array<Emitter>;
-	public var subEmitters : Array<EmitterObject>;
-	public var trails : hrt.prefab.l3d.Trails.TrailObj;
-	public var trailsTemplate : hrt.prefab.l3d.Trails;
-
 	public var particles : PartArray;
 	public var particlesCount : Int;
 	public var listHead : ParticleInstance;
@@ -542,6 +530,17 @@ class EmitterObject extends h3d.scene.Object {
 	#end
 
 	public var parentNonEmitter : h3d.scene.Object;
+
+	// made from the children of the prefab
+	public var particleTemplate : hrt.prefab.Object3D;
+	public var subEmitterTemplates : Array<Emitter>;
+	public var subEmitters : Array<EmitterObject>;
+	public var trails : hrt.prefab.l3d.Trails.TrailObj;
+	public var trailsTemplate : hrt.prefab.l3d.Trails;
+
+	// Ground Collision
+	var collisionPlane : h3d.col.Plane;
+
 	public var invTransform = new h3d.Matrix();
 	public var screenRot = new h3d.Matrix();
 	public var worldScale = new h3d.Vector(1,1,1);
@@ -555,12 +554,13 @@ class EmitterObject extends h3d.scene.Object {
 	var subEmitterSeed = 0;
 	var emitCount = 0;
 	var emitTarget = 0.0;
+	var totalBurstCount = 0;
 	var curTime = 0.0;
-	// the values of the over time settings at the current tick, shared by the particles
 	var curScaleMultiplier = 1.0;
 	var curOrbitSpeedMultiplier = 1.0;
-	// built by the prefab, with a Value per param and animated property (EmitterMacros)
+	
 	public var evaluator : EmitterEvaluator;
+
 	var numInstances = 0;
 	var instanceCounter = 0;
 	var baseEmitterShader : hrt.shader.BaseEmitter = null;
@@ -744,7 +744,7 @@ class EmitterObject extends h3d.scene.Object {
 				s.randomColor1.setColor(prefab.randomColor1);
 				s.randomColor2.setColor(prefab.randomColor2);
 				if( prefab.randomColorMode == RandomColorMode.Gradient )
-					s.randomGradient = gradientTexture(prefab.randomGradient);
+					s.randomGradient = hrt.impl.Gradient.textureFromData(prefab.randomGradient, false);
 			}
 			if( prefab.fadeColorMode != RandomColorMode.None ) {
 				var s = getShader();
@@ -752,7 +752,7 @@ class EmitterObject extends h3d.scene.Object {
 				s.fadeColor1.setColor(prefab.fadeColor1);
 				s.fadeColor2.setColor(prefab.fadeColor2);
 				if( prefab.fadeColorMode == RandomColorMode.Gradient )
-					s.fadeGradient = gradientTexture(prefab.fadeGradient);
+					s.fadeGradient = hrt.impl.Gradient.textureFromData(prefab.fadeGradient, false);
 			}
 			if( prefab.fadeIn > 0 || prefab.fadeOut > 0 ) {
 				var s = getShader();
@@ -778,15 +778,6 @@ class EmitterObject extends h3d.scene.Object {
 		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, prefab.maxCount) #else [for(i in 0...prefab.maxCount) new ParticleInstance()] #end;
 		particlesCount = prefab.maxCount;
 		reset();
-	}
-
-	// a Constant gradient steps at its stops: filtered, its colors would blend around each stop
-	static function gradientTexture( g : GradientData ) : h3d.mat.Texture {
-		if( g.interpolation != Constant )
-			return hrt.impl.Gradient.textureFromData(g, false);
-		var tex : h3d.mat.Texture = hrt.impl.Gradient.textureFromData(g, false);
-		tex.filter = h3d.mat.Data.Filter.Nearest;
-		return tex;
 	}
 
 	public static function checkEnabled(prefab: Prefab) {
