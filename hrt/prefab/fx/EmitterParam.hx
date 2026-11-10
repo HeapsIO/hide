@@ -205,18 +205,11 @@ class EmitterParam {
 	}
 }
 
-class EmitterValues {
-	public var particle : Array<Value> = [];
-	public var properties : Array<Value> = [];
-	public var spawn : Array<Value> = [];
-	public var randomSlots : Int = 0;
-	public function new() {
-	}
-}
-
 class ParamBuilder {
 
 	var owner : Prefab;
+	// in the order the fields are applied (`EmitterMacros`)
+	public var values(default, null) : Array<Value> = [];
 	public var randomSlots(default, null) = 0;
 	// the random of an Emission param is drawn by the emitter: no slot
 	var withSlots = true;
