@@ -1790,7 +1790,7 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 	@:s @:disp("Follow Rotation", "The aligned particles keep their own rotation and the one of the emitter")
 	public var followRotation : Bool = false;
 
-	@:group("Color")
+	@:group("Rendering")
 	@:s @:disp("Random Color", "Multiplies the color of each particle (alpha included) by a random color, taken between two colors or in a gradient")
 	public var randomColorMode : RandomColorMode = RandomColorMode.None;
 	@:s @:t(PColor) @:disp("Color 1", "First bound of the random color")

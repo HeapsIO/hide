@@ -520,7 +520,7 @@ class Emitter2D extends Object2D implements hrt.prefab.fx.EmitterParam.IEmitter 
 	@:param(PVec(2, 0, 2), Particle, [1., 1.]) @:disp("Stretch", "Scale of the particle on each of its axes")
 	public var partStretch : ParamVec2;
 
-	@:group("Color")
+	@:group("Rendering")
 	@:s @:disp("Sprite Type", "Drawing of the particles: a plain color, a texture or a sprite sheet")
 	public var spriteType : SpriteType = SpriteType.Color;
 	@:s @:t(PColor) @:disp("Color", "Color of the particles")
