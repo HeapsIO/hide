@@ -350,16 +350,29 @@ class CdbTable extends hide.ui.View<{}> {
 			addOption(f.substr(7, f.length - 11), f);
 		if( editor.lang != null )
 			langSelect.value = haxe.io.Path.withoutDirectory(editor.lang.file);
-		langSelect.onchange = () -> editor.setLang(langSelect.value == "" ? null : langDir + "/" + langSelect.value);
 		langBar.appendChild(langSelect);
 
-		var locButton = js.Browser.document.createButtonElement();
-		locButton.textContent = "Choose Loc Folder";
-		locButton.onclick = () -> ide.chooseFileOptions(function(files) {
-			ide.projectState.set("cdb.locProject", files[0]);
-			editor.setLang(editor.lang?.file);
-		}, { exts : ["loc"], isAbsolute : true });
-		langBar.appendChild(locButton);
+		var langVersion = js.Browser.document.createSpanElement();
+		langVersion.className = "lang-version";
+		langVersion.title = "The exportTrad version of the translation";
+		function updateVersion() langVersion.textContent = editor.lang?.version == null ? "" : "v" + editor.lang.version;
+		function setLang( file : String ) {
+			editor.setLang(file);
+			updateVersion();
+		}
+		updateVersion();
+		langSelect.onchange = () -> setLang(langSelect.value == "" ? null : langDir + "/" + langSelect.value);
+		langBar.appendChild(langVersion);
+
+		var locSelect = new hide.comp.FileSelect(["loc"]);
+		locSelect.absolutePath = true;
+		locSelect.nullPrompt = "Choose a .loc file to show export status";
+		locSelect.path = ide.projectState.get("cdb.locProject");
+		locSelect.onChange = function() {
+			ide.projectState.set("cdb.locProject", locSelect.path);
+			setLang(editor.lang?.file);
+		}
+		langBar.appendChild(locSelect.element.get(0));
 
 		// shift+click adds or removes a status to the ones shown
 		function filterStatus( flag : hide.comp.cdb.Editor.FilterFlag, add : Bool ) {

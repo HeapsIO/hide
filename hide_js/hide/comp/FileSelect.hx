@@ -6,6 +6,10 @@ class FileSelect extends Component {
 	public var path(default, set) : String;
 	public var disabled(default, set) = false;
 	public var directory : Bool = false;
+	// the path is saved as absolute, instead of relative to the resources
+	public var absolutePath : Bool = false;
+	// displayed when the path is null
+	public var nullPrompt : String = "-- select --";
 
 	public function new(extensions,?parent,?root, handleDragAndDrop=true) {
 		if( root == null )
@@ -19,15 +23,15 @@ class FileSelect extends Component {
 			if (disabled) return;
 			if( e.button == 0 ) {
 				if (!directory) {
-					ide.chooseFile(extensions, function(path) {
-						this.path = path;
+					ide.chooseFileOptions(function(files) {
+						this.path = files.pop();
 						onChange();
-					}, false, path);
+					}, { exts : extensions, workingDir : path, isAbsolute : absolutePath });
 				} else {
 					ide.chooseDirectory(function(path) {
 						this.path = path;
 						onChange();
-					}, false);
+					}, absolutePath);
 				}
 			}
 		});
@@ -65,7 +69,7 @@ class FileSelect extends Component {
 					return;
 				}
 
-				var newPath = ide.makeRelative(paths[0].path);
+				var newPath = absolutePath ? ide.getPath(paths[0].path) : ide.makeRelative(paths[0].path);
 				if (!pathIsValid(newPath)) {
 					dragData.dropTargetValidity = ForbidDrop;
 					return;
@@ -135,7 +139,9 @@ class FileSelect extends Component {
 		var fullPath = ide.getPath(p);
 		var exists = false;
 		try {
-			if (fullPath != null) {
+			if (absolutePath)
+				exists = p != null && sys.FileSystem.exists(p);
+			else if (fullPath != null) {
 				var filename = fullPath.substr(fullPath.lastIndexOf('/') + 1);
 				var parentDir = fullPath.substring(0, fullPath.lastIndexOf('/'));
 				var files = sys.FileSystem.readDirectory(parentDir);
@@ -149,7 +155,7 @@ class FileSelect extends Component {
 		} catch(e) {
 		}
 
-		var text = p == null ? "-- select --" : (exists ? "" : "[NOT FOUND] ") + p;
+		var text = p == null ? nullPrompt : (exists ? "" : "[NOT FOUND] ") + p;
 		element.val(text);
 		element.attr("title", p == null ? "" : p);
 		return this.path = p;

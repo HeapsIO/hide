@@ -23,6 +23,8 @@ typedef UndoState = {
 
 typedef EditorLang = {
 	var file : String;
+	// the exportTrad version of the file
+	var version : Null<Int>;
 	var sheets : LangTexts;
 	// the mtime of each loaded xml file
 	var mtimes : Map<String, Float>;
@@ -130,14 +132,17 @@ class Editor extends Component {
 	public function setLang( file : Null<String> ) {
 		lang = null;
 		if( file != null ) {
-			function load( file : String ) : Map<String, cdb.Lang.LangXml> {
+			function parse( file : String ) : Xml {
 				var content = sys.io.File.getContent(file);
 				if( StringTools.fastCodeAt(content, 0) == 0xFEFF )
 					content = content.substr(1);
+				return Xml.parse(content).firstElement();
+			}
 
+			function load( root : Xml ) : Map<String, cdb.Lang.LangXml> {
 				var sheets = new Map();
 				@:privateAccess cdb.Lang.NODES = new Map();
-				for( s in Xml.parse(content).firstElement().elements() )
+				for( s in root.elements() )
 					sheets.set(s.get("name"), @:privateAccess cdb.Lang.toLangXml(s));
 				@:privateAccess cdb.Lang.NODES = null;
 				return sheets;
@@ -178,7 +183,7 @@ class Editor extends Component {
 						var id = v.get("id");
 						var modif = locCache.locDir + 'versions/$id/modifLoc/modifCdb_$code-$id.xml';
 						if( hasLang("langEx") && sys.FileSystem.exists(modif) )
-							pending.push(modif);
+							pending.push({ version : Std.parseInt(id), file : modif });
 					}
 					v = locCache.versions.get(v.get("parentId"));
 				}
@@ -191,7 +196,8 @@ class Editor extends Component {
 			var oldFile = '$dir/old/${name}_old.xml';
 			var hasOld = sys.FileSystem.exists(oldFile);
 			var locFile : String = ide.projectState.get("cdb.locProject");
-			var pending = [];
+			// null without loc project : the sent status is unknown
+			var pending = null;
 			if( locFile != null && sys.FileSystem.exists(locFile) ) {
 				try {
 					pending = getPending(locFile, code);
@@ -200,9 +206,11 @@ class Editor extends Component {
 				}
 			}
 
-			var files = [file].concat(pending);
+			var files = [file].concat([for( p in pending ?? [] ) p.file]);
 			if( hasOld )
 				files.push(oldFile);
+			if( pending != null )
+				files.push(locFile);
 			var mtimes = [for( f in files ) f => mtime(f)];
 
 			function isCacheValid( cached : EditorLang ) {
@@ -218,9 +226,11 @@ class Editor extends Component {
 
 			lang = langCache.get(code);
 			if( !isCacheValid(lang) ) {
+				var root = parse(file);
 				lang = {
 					file : file,
-					sheets : new LangTexts(load(file), hasOld ? load(oldFile) : null, [for( f in pending ) load(f)]),
+					version : Std.parseInt(root.get("version")),
+					sheets : new LangTexts(load(root), hasOld ? load(parse(oldFile)) : null, pending == null ? null : [for( p in pending ) { version : p.version, sheets : load(parse(p.file)) }]),
 					mtimes : mtimes,
 				};
 				langCache.set(code, lang);

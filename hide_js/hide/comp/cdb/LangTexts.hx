@@ -4,14 +4,20 @@ package hide.comp.cdb;
 	The status of a translation, as exportTrad computes it.
 **/
 enum LangStatus {
-	// no old file
-	Unknown;
 	Missing;
-	// sent to the translators and not imported yet
-	Pending;
 	// the original text changed since the export of the translation
 	Outdated;
 	UpToDate;
+}
+
+/**
+	The status of the text sent to the translators and not imported yet, with its exportTrad version.
+**/
+enum LangSentStatus {
+	NotSent;
+	Sent( version : Int );
+	// the original text changed since it was sent
+	SentOutdated( version : Int );
 }
 
 private class LangNode {
@@ -19,7 +25,9 @@ private class LangNode {
 	public var text : Null<String>;
 	// the normalized original text the translation was made from
 	public var originalExport : Null<String>;
-	public var status : LangStatus;
+	// the normalized original text sent to the translators, from the last version
+	public var pending : Null<String>;
+	public var pendingVersion : Int;
 
 	public function new() {
 	}
@@ -54,32 +62,28 @@ private class LangNode {
 /**
 	The texts of a file of `cdb.Lang.buildXML`, indexed by node name, with their status.
 	`old` : the original texts the translations were made from (null if unknown).
-	`pending` : the texts sent to the translators and not imported yet.
+	`pending` : the texts sent to the translators and not imported yet, from the last version (null if unknown).
 **/
 class LangTexts {
 	var root = new LangNode();
+	var hasPending : Bool;
 
-	public function new( sheets : Map<String, cdb.Lang.LangXml>, old : Null<Map<String, cdb.Lang.LangXml>>, pending : Array<Map<String, cdb.Lang.LangXml>> ) {
+	public function new( sheets : Map<String, cdb.Lang.LangXml>, old : Null<Map<String, cdb.Lang.LangXml>>, pending : Null<Array<{ version : Int, sheets : Map<String, cdb.Lang.LangXml> }>> ) {
+		hasPending = pending != null;
+		pending ??= [];
 		function mergeAll( sheets : Map<String, cdb.Lang.LangXml>, onText ) {
 			for( name => s in sheets )
 				root.getOrCreate(name).merge(s, onText);
 		}
 
-		var pendingStatus = old == null ? Unknown : Pending;
 		mergeAll(sheets, (n, t) -> if( n.text == null ) n.text = t);
 		if( old != null )
 			mergeAll(old, (n, t) -> if( n.originalExport == null ) n.originalExport = normalize(t));
 		for( p in pending )
-			mergeAll(p, (n, _) -> n.status = pendingStatus);
-
-		function setStatus( n : LangNode ) {
-			if( n.status == null )
-				n.status = n.text == null ? Missing : old == null ? Unknown : Outdated;
-			if( n.children != null )
-				for( c in n.children )
-					setStatus(c);
-		}
-		setStatus(root);
+			mergeAll(p.sheets, (n, t) -> if( n.pending == null ) {
+				n.pending = normalize(t);
+				n.pendingVersion = p.version;
+			});
 	}
 
 	static function normalize( s : String ) {
@@ -92,13 +96,19 @@ class LangTexts {
 
 	public function getStatus( line : Line, column : cdb.Data.Column, original : String ) : LangStatus {
 		var n = find(line, column);
-		if( n == null )
+		if( n?.text == null )
 			return Missing;
-		if( n.text != null && n.originalExport != null && n.originalExport == normalize(original ?? "") )
-			return UpToDate;
-		if( n.status == Unknown && n.text == null )
-			return Missing;
-		return n.status;
+		return n.originalExport == normalize(original ?? "") ? UpToDate : Outdated;
+	}
+
+	// null if the sent texts are unknown
+	public function getSentStatus( line : Line, column : cdb.Data.Column, original : String ) : Null<LangSentStatus> {
+		if( !hasPending )
+			return null;
+		var n = find(line, column);
+		if( n?.pending == null )
+			return NotSent;
+		return n.pending == normalize(original ?? "") ? Sent(n.pendingVersion) : SentOutdated(n.pendingVersion);
 	}
 
 	function find( line : Line, column : cdb.Data.Column ) : LangNode {

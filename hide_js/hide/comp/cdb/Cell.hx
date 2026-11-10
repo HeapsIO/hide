@@ -304,7 +304,7 @@ class Cell {
 	#if js
 	// a cell is fit when its size changes : displayed, its column resized, its content changed
 	static var fitObserver : hide.comp.ResizeObserver;
-	static final LOC_CLASSES = ["loc-unknown", "loc-missing","loc-pending", "loc-outdated", "loc-uptodate"];
+	static final LOC_CLASSES = ["loc-missing", "loc-outdated", "loc-uptodate", "loc-notsent", "loc-sent", "loc-sentoutdated"];
 
 	static function observeFit( root : js.html.Element ) {
 		if( fitObserver == null )
@@ -376,25 +376,46 @@ class Cell {
 		var langText = langShown ? editor.lang.sheets.getTranslation(line, column) : null;
 		var hasText = original != null && original != "";
 		var status = !langShown || !hasText ? null : editor.lang.sheets.getStatus(line, column, original);
+		var sent = status == null ? null : editor.lang.sheets.getSentStatus(line, column, original);
 		var statusClass = switch( status ) {
 			case null: null;
-			case Unknown: "loc-unknown";
 			case Missing: "loc-missing";
-			case Pending: "loc-pending";
 			case Outdated: "loc-outdated";
 			case UpToDate: "loc-uptodate";
 		}
+
+		var version : Null<Int> = null;
+		var sentClass = switch( sent ) {
+			case null: null;
+			case NotSent: "loc-notsent";
+			case Sent(v): version = v; "loc-sent";
+			case SentOutdated(v): version = v; "loc-sentoutdated";
+		}
+
 		for( c in LOC_CLASSES )
-			elementHtml.classList.toggle(c, c == statusClass);
+			elementHtml.classList.toggle(c, c == statusClass || c == sentClass);
+		if( version == null )
+			elementHtml.style.removeProperty("--loc-version");
+		else
+			elementHtml.style.setProperty("--loc-version", '"$version"');
 		elementHtml.classList.toggle("loc-translated", langText != null);
 		if( langShown )
-			elementHtml.title = statusClass == null ? "" : status.getName();
+			elementHtml.title = switch( status ) {
+				case null: "";
+				case UpToDate: status.getName();
+				case _ if( sent == null ): status.getName();
+				default: status.getName() + ", " + sent.getName() + (version == null ? "" : " v" + version);
+			}
 
+		// inside .cell-root : its overflow would otherwise push it beside the badges instead of around them
+		var badges = status == null ? "" : '<span class="loc-badges"></span>';
 		var html = valueHtml(column, langText ?? original, line.table.getRealSheet(), line.obj, []);
-		if( !html.containsHtml )
+		if( !html.containsHtml && badges == "" )
 			elementHtml.textContent = html.str;
+		else if( !html.containsHtml )
+			elementHtml.innerHTML = badges + StringTools.htmlEscape(html.str);
 		else
-			elementHtml.innerHTML = '<div class="cell-root" style="max-height: ${MAX_HEIGHT_FIT}px; overflow-y:auto; overflow-x:hidden;">' + html.str + "</div>";
+			elementHtml.innerHTML = '<div class="cell-root" style="max-height: ${MAX_HEIGHT_FIT}px; overflow-y:auto; overflow-x:hidden;">' + badges + html.str + "</div>";
 		#if js
 		if( html.containsHtml )
 			observeFit(cast elementHtml.firstElementChild);
