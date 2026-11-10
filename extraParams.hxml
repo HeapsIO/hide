@@ -1,1 +1,2 @@
 --macro include("hide.kit")
+-D fx-migration
