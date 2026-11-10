@@ -1691,6 +1691,8 @@ class Upgrade0 {
 			change(e, "small sphere is a Point");
 		}
 		upgradeEmission(e, props);
+		if( !is2D )
+			upgradeParticleFade(e, props);
 
 		// the properties and the params with modes are fields of the emitter
 		var old = new Map();
@@ -1715,6 +1717,38 @@ class Upgrade0 {
 		if( !is2D )
 			for( s in particleShaders(e) )
 				upgradeParticleShader(s);
+	}
+
+	/**
+		A `ParticleFade` on the particles of an emitter is its Fade In / Fade Out (the same linear ramps), when it is the only
+		one the emitter applies, static, with a power of 1 (the emitter fade has none), not under a disabled or editor only
+		prefab: the shader is removed. The others stay.
+	**/
+	function upgradeParticleFade( e : RawNode, props : Dynamic ) {
+		// the runtime applies the enabled ones (`EmitterObject.init`)
+		var fades = [for( s in particleShaders(e) ) if( s.enabled() && get(s.data, "source") == "hrt.shader.ParticleFade" ) s];
+		if( fades.length != 1 )
+			return;
+		var s = fades[0];
+		var p = s;
+		while( p != e ) {
+			if( !p.enabled() || get(p.data, "editorOnly") == true )
+				return;
+			p = p.parent;
+		}
+		if( Lambda.exists(s.children, c -> c.isCurve && c.enabled()) )
+			return;
+		var sp : Dynamic = get(s.data, "props");
+		inline function value( name : String, def : Float ) return num(get(sp, propName(sp, name.toLowerCase()) ?? name), def);
+		if( Math.abs(value("power", 1) - 1) > 1e-3 )
+			return;
+		// the defaults of the shader
+		var fadeIn = value("fadeInLife", 0.1), fadeOut = value("fadeOutLife", 0.1);
+		if( fadeIn != 0 ) props.fadeIn = fadeIn;
+		if( fadeOut != 0 ) props.fadeOut = fadeOut;
+		s.parent.children.remove(s);
+		(get(s.parent.data, "children") : Array<Dynamic>).remove(s.data);
+		change(e, "ParticleFade is the emitter fade in / out");
 	}
 
 	/**

@@ -39,8 +39,10 @@ class ParticleShader extends hxsl.Shader {
 				pixelColor *= fadeGradient.get(gradientUV(t, fadeGradient.size().x));
 
 			if( alphaFade ) {
-				if( fadeIn > 0. ) pixelColor.a *= smoothstep(0., fadeIn, t);
-				if( fadeOut > 0. ) pixelColor.a *= smoothstep(0., fadeOut, 1.0 - t);
+				var a = 1.0;
+				if( fadeIn > 0. ) a = min(a, t / fadeIn);
+				if( fadeOut > 0. ) a = min(a, (1.0 - t) / fadeOut);
+				pixelColor.a *= saturate(a);
 			}
 		}
 	};
