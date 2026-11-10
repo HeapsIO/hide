@@ -170,6 +170,15 @@ class EmitterHelper {
 
 	#if domkit
 
+	// when a param is read, and the time of its curves
+	static function clockDesc(kind: ParamKind) {
+		return switch (kind) {
+			case Emission: "Read at each emission step, curves over the emitter time";
+			case Spawn: "Read once at the spawn of the particle, curves over the emitter time";
+			case Particle: "Read over the life of the particle, curves over its life (0 to 1)";
+		}
+	}
+
 	// Build inspector for an emitter parameter
 	public static function editParam(ctx: EditContext2, prefab: Prefab, def: ParamDef, allowed: Array<ModeKind>, parent: hide.kit.Element) {
 		var size = def.def.length;
@@ -180,6 +189,7 @@ class EmitterHelper {
 		}
 		// the clock of the param: kit-param-emission, kit-param-spawn, kit-param-particle
 		var kindClass = "kit-param-" + def.kind.getName().toLowerCase();
+		var tooltip = (def.desc == null ? "" : def.desc + "\n") + clockDesc(def.kind);
 		var comps = [for (i in 0...size) i];
 		var value = [for (i in comps) shownMode(prefab, def, i)];
 
@@ -223,7 +233,7 @@ class EmitterHelper {
 			line = new hide.kit.Line(parent, def.name);
 			line.classList.push(kindClass);
 			line.stealLabel = false;
-			line.tooltip = def.desc;
+			line.tooltip = tooltip;
 			setupVectorHeader(line);
 		}
 
@@ -233,7 +243,7 @@ class EmitterHelper {
 				line = new hide.kit.Line(parent, def.name + (size == 1 ? "" : compName(i)));
 				line.classList.push(kindClass);
 				line.stealLabel = false;
-				line.tooltip = def.desc;
+				line.tooltip = tooltip;
 				if (size == 1) {
 					line.label = label;
 					line.unset = !isSet(prefab, def, i);

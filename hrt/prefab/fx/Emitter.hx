@@ -1743,13 +1743,13 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 	public var emitOrientation : Orientation = Orientation.Forward;
 
 	@:group("Particle Movement")
-	@:param(PVec(3), Spawn) @:disp("Start Speed", "Initial speed in the emitter orientation, set at the spawn of the particle")
+	@:param(PVec(3), Spawn) @:disp("Start Speed", "Initial speed in the emitter orientation")
 	public var startSpeed : ParamVec3;
-	@:param(PVec(3), Spawn) @:disp("Start World Speed", "Initial speed in world space, set at the spawn of the particle")
+	@:param(PVec(3), Spawn) @:disp("Start World Speed", "Initial speed in world space")
 	public var startWorldSpeed : ParamVec3;
-	@:param(PVec(3), Particle) @:disp("Constant Speed", "Speed in the emitter orientation, added to the velocity without being accumulated")
+	@:param(PVec(3), Particle) @:disp("Speed", "Speed in the emitter orientation, added to the velocity without being accumulated")
 	public var partSpeed : ParamVec3;
-	@:param(PVec(3), Particle) @:disp("Constant World Speed", "Speed in world space, added to the velocity without being accumulated")
+	@:param(PVec(3), Particle) @:disp("World Speed", "Speed in world space, added to the velocity without being accumulated")
 	public var partWorldSpeed : ParamVec3;
 	@:param(PVec(3), Particle) @:disp("Acceleration", "Acceleration in the emitter orientation, accumulated in the velocity")
 	public var partAcceleration : ParamVec3;
