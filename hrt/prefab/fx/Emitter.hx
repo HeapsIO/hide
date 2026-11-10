@@ -1793,23 +1793,23 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 	@:group("Rendering")
 	@:s @:disp("Random Color", "Multiplies the color of each particle (alpha included) by a random color, taken between two colors or in a gradient")
 	public var randomColorMode : RandomColorMode = RandomColorMode.None;
-	@:s @:t(PColor) @:disp("Color 1", "First bound of the random color")
+	@:s @:sameLine @:t(PColor) @:disp("Color 1", "First bound of the random color")
 	public var randomColor1 : Int = 0xFF000000;
-	@:s @:t(PColor) @:disp("Color 2", "Second bound of the random color")
+	@:s @:sameLine @:t(PColor) @:disp("Color 2", "Second bound of the random color")
 	public var randomColor2 : Int = 0xFFFFFFFF;
-	@:s @:disp("Gradient", "Gradient in which the random color is taken")
+	@:s @:sameLine @:disp("Gradient", "Gradient in which the random color is taken")
 	public var randomGradient : GradientData;
 	@:s @:disp("Fade Color", "Multiplies the color of each particle (alpha included) by a color faded over its life, from a color to another or along a gradient")
 	public var fadeColorMode : RandomColorMode = RandomColorMode.None;
-	@:s @:t(PColor) @:disp("Start Color", "Color at the birth of the particle")
+	@:s @:sameLine @:t(PColor) @:disp("Start Color", "Color at the birth of the particle")
 	public var fadeColor1 : Int = 0xFFFFFFFF;
-	@:s @:t(PColor) @:disp("End Color", "Color at the death of the particle")
+	@:s @:sameLine @:t(PColor) @:disp("End Color", "Color at the death of the particle")
 	public var fadeColor2 : Int = 0x00FFFFFF;
-	@:s @:disp("Gradient", "Gradient along which the color fades, over the life of the particle")
+	@:s @:sameLine @:disp("Gradient", "Gradient along which the color fades, over the life of the particle")
 	public var fadeGradient : GradientData;
-	@:s @:range(0, 1) @:disp("Fade In", "Part of the particle life over which its alpha goes from 0 to 1, at its birth (0: none)")
+	@:s @:range(0, 1) @:line("Alpha Fade") @:disp("In", "Part of the particle life over which its alpha goes from 0 to 1, at its birth (0: none)")
 	public var fadeIn : Float = 0;
-	@:s @:range(0, 1) @:disp("Fade Out", "Part of the particle life over which its alpha goes from 1 to 0, before its death (0: none)")
+	@:s @:range(0, 1) @:sameLine @:disp("Out", "Part of the particle life over which its alpha goes from 1 to 0, before its death (0: none)")
 	public var fadeOut : Float = 0;
 
 	@:group("Sprite Sheet Animation")

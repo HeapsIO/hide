@@ -5,7 +5,9 @@ import hrt.prefab.fx.EmitterParam;
 typedef PropertyDef = {
 	> hrt.prefab.Props.PropDef,
 	?animate: Bool,
-	?groupName: String
+	?groupName: String,
+	?sameLine: Bool,
+	?line: String
 }
 
 class EmitterHelper {
@@ -365,21 +367,49 @@ class EmitterHelper {
 			return cat;
 		}
 
-		for (f in (cast emitter : IEmitter).getFields()) {
+		function isShown(f: EmitterField) {
+			return switch (f) {
+				case Property(p): !hidden.contains(p.name);
+				case Param(p): !hidden.contains(p.name);
+			}
+		}
+		var fields = [for (f in (cast emitter : IEmitter).getFields()) if (isShown(f)) f];
+		// the line of a property followed by `sameLine` ones: named by its `line`, the widgets keep their labels,
+		// else it takes the label of the first one and the others show none
+		var line : hide.kit.Line = null;
+		for (i => f in fields) {
 			switch (f) {
-				case Property(p) if (!hidden.contains(p.name)):
-					editProperty(getCategory(p.groupName ?? "Emitter"), emitter, p, changed);
-				case Param(p) if (!hidden.contains(p.name)):
+				case Property(p) if (p.sameLine == true && line != null):
+					var widget = editProperty(line, emitter, p, changed);
+					if (widget != null && line.label == null)
+						widget.label = null;
+				case Property(p):
+					var parent : hide.kit.Element = getCategory(p.groupName ?? "Emitter");
+					line = switch (fields[i + 1]) {
+						case Property(next) if (next.sameLine == true):
+							var l = new hide.kit.Line(parent, p.name + "Line");
+							if (p.line != null) {
+								l.label = p.line;
+								l.stealLabel = false;
+							} else
+								l.tooltip = p.desc;
+							l;
+						case null, _: null;
+					}
+					var widget = editProperty(line ?? parent, emitter, p, changed);
+					if (line != null && line.label == null && widget != null)
+						widget.classList.push("kit-line-first");
+				case Param(p):
+					line = null;
 					editParam(ctx, emitter, p, [Constant, Range, Curve, RandomCurve, CurveRange], getCategory(p.groupName));
-				default:
 			}
 		}
 	}
 
-	static function editProperty(cat: hide.kit.Category, emitter: Prefab, p: PropertyDef, changed: (name: String, temp: Bool) -> Void) {
+	static function editProperty(parent: hide.kit.Element, emitter: Prefab, p: PropertyDef, changed: (name: String, temp: Bool) -> Void) : hide.kit.Widget<Dynamic> {
 		switch (p.t) {
 			case PVec(n, min, max) if (p.name.toLowerCase().indexOf("color") < 0):
-				var line = new hide.kit.Line(cat, p.name);
+				var line = new hide.kit.Line(parent, p.name);
 				line.label = p.disp ?? hide.kit.Macros.camelToSpaceCase(p.name);
 				line.tooltip = p.desc;
 				var vec : Array<Float> = Reflect.field(emitter, p.name);
@@ -393,13 +423,15 @@ class EmitterHelper {
 					@:privateAccess s.onFieldChange = (_) -> vec[i] = s.value;
 					s.onValueChange = (temp) -> changed(p.name, temp);
 				}
+				return null;
 			default:
-				var widget = cat.buildProp(p, emitter);
+				var widget = parent.buildProp(p, emitter);
 				if (widget == null)
-					return;
+					return null;
 				if (!p.animate)
 					widget.anim = null;
 				widget.onValueChange = (temp) -> changed(p.name, temp);
+				return widget;
 		}
 	}
 

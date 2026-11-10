@@ -529,11 +529,11 @@ class Emitter2D extends Object2D implements hrt.prefab.fx.EmitterParam.IEmitter 
 	public var texture : String = "";
 	@:s @:disp("Random Color", "Gives each particle a random color instead of the color, taken between two colors or in a gradient")
 	public var randomColorMode : RandomColorMode = RandomColorMode.None;
-	@:s @:t(PColor) @:disp("Color 1", "First bound of the random color")
+	@:s @:sameLine @:t(PColor) @:disp("Color 1", "First bound of the random color")
 	public var randomColor1 : Int = 0xFF000000;
-	@:s @:t(PColor) @:disp("Color 2", "Second bound of the random color")
+	@:s @:sameLine @:t(PColor) @:disp("Color 2", "Second bound of the random color")
 	public var randomColor2 : Int = 0xFFFFFFFF;
-	@:s @:disp("Gradient", "Gradient in which the random color is taken")
+	@:s @:sameLine @:disp("Gradient", "Gradient in which the random color is taken")
 	public var randomGradient : GradientData;
 
 	@:group("Sprite Sheet Animation")

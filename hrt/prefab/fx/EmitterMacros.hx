@@ -8,7 +8,8 @@ import haxe.macro.Expr;
 /**
 	Emitter fields:
 	- `@:s` properties, `@:range(min, max)`, `@:animate` when an animation curve can set them, `@:disp("Label", "Description")` (the description is the tooltip of its line),
-	  `@:t(PFile([...]))` for a type other than the one of the field;
+	  `@:t(PFile([...]))` for a type other than the one of the field, `@:sameLine` to show it on the line of the previous property
+	  (`@:line("Label")` on the first one names the line, the widgets keep their labels; else the line takes the label of the first one, the others show none);
 	- `@:param(PVec(3, -10, 10), Particle, default)` params with modes (`EmitterParam`), saved under their name like the properties.
 	  The Particle ones, read over the particle life, are named `partX`;
 	- `@:group("Name")`: the inspector group of the field and of the next ones.
@@ -75,9 +76,10 @@ class EmitterMacros {
 			if( meta(f, ":s") != null ) {
 				switch( f.kind ) {
 				case FVar(t, init):
-					var animate = meta(f, ":animate") != null;
+					var animate = meta(f, ":animate") != null, sameLine = meta(f, ":sameLine") != null;
+					var lineMeta = meta(f, ":line"), lineLabel = lineMeta == null ? macro null : lineMeta[0];
 					fieldDefs.push(macro @:pos(p) hrt.prefab.fx.EmitterParam.EmitterField.Property({ name: $v{n}, t: ${propType(f, t, init)},
-						def: (${init ?? macro null} : Dynamic), groupName: $v{group}, animate: $v{animate}, disp: $label, desc: $desc }));
+						def: (${init ?? macro null} : Dynamic), groupName: $v{group}, animate: $v{animate}, sameLine: $v{sameLine}, line: $lineLabel, disp: $label, desc: $desc }));
 					if( init != null && init.expr.match(EArrayDecl(_)) )
 						save.push(macro @:pos(p) if( haxe.Json.stringify(this.$n) == haxe.Json.stringify($init) ) Reflect.deleteField(data, $v{n}));
 					if( animate )
