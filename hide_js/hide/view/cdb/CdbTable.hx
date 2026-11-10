@@ -331,6 +331,36 @@ class CdbTable extends hide.ui.View<{}> {
 		</div>');
 		tabs.element.prepend(topBar);
 
+		var langBar = js.Browser.document.createDivElement();
+		langBar.className = "lang-bar";
+		tabs.element.get(0).appendChild(langBar);
+
+		var langDir = ide.resourceDir + "/lang";
+		var langFiles = sys.FileSystem.exists(langDir) ? [for( f in sys.FileSystem.readDirectory(langDir) ) if( StringTools.startsWith(f, "export_") && StringTools.endsWith(f, ".xml") ) f] : [];
+		var langSelect = js.Browser.document.createSelectElement();
+		langSelect.title = "Display the localizable texts of a translation (read only)";
+		function addOption( label : String, value : String ) {
+			var o = js.Browser.document.createOptionElement();
+			o.text = label;
+			o.value = value;
+			langSelect.add(o);
+		}
+		addOption("No translation", "");
+		for( f in langFiles )
+			addOption(f.substr(7, f.length - 11), f);
+		if( editor.lang != null )
+			langSelect.value = haxe.io.Path.withoutDirectory(editor.lang.file);
+		langSelect.onchange = () -> editor.setLang(langSelect.value == "" ? null : langDir + "/" + langSelect.value);
+		langBar.appendChild(langSelect);
+
+		var locButton = js.Browser.document.createButtonElement();
+		locButton.textContent = "Choose Loc Folder";
+		locButton.onclick = () -> ide.chooseFileOptions(function(files) {
+			ide.projectState.set("cdb.locProject", files[0]);
+			editor.setLang(editor.lang?.file);
+		}, { exts : ["loc"], isAbsolute : true });
+		langBar.appendChild(locButton);
+
 		// shift+click adds or removes a status to the ones shown
 		function filterStatus( flag : hide.comp.cdb.Editor.FilterFlag, add : Bool ) {
 			var cur = @:privateAccess editor.filterFlags;

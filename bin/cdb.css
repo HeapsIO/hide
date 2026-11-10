@@ -55,6 +55,19 @@
 	}
 }
 
+.cdb-view > .hide-tabs > .lang-bar {
+	order: 10000;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 4px;
+	background-color: #111;
+	select, button {
+		height: 18px;
+		font-size: 11px;
+	}
+}
+
 .cdb-view > .hide-tabs > .tabs-header {
 	display: flex;
 	flex-wrap: wrap;
@@ -609,6 +622,18 @@
 		}
 		td.t_string.multiline.t_loc, td.t_string.n_desc:not(.t_script), .loc-multiline {
 			color: #5e6b82;
+		}
+		td.loc-translated {
+			color: #b39ddb;
+		}
+		td.loc-missing {
+			opacity: 0.5;
+		}
+		td.loc-outdated {
+			color: #e0a050;
+		}
+		td.loc-pending {
+			color: #6fa8dc;
 		}
 
 		td.t_script {
