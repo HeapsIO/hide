@@ -417,7 +417,7 @@ class Emitter2DObject extends h2d.Object {
 						c.lerp(c, h3d.Vector4.fromColor(prefab.randomColor2), rand.rand());
 						t = colorTile(c.toColor());
 					case Gradient:
-						t = colorTile(Gradient.evalData(prefab.randomGradient, rand.rand()).toColor());
+						t = colorTile(hrt.impl.Gradient.evalData(prefab.randomGradient, rand.rand()).toColor());
 				}
 			case Texture:
 				t = h2d.Tile.fromTexture(hxd.res.Loader.currentInstance.load(prefab.texture).toTexture());
@@ -575,7 +575,7 @@ class Emitter2D extends Object2D implements hrt.prefab.fx.EmitterParam.IEmitter 
 		super.load(obj);
 		loadParams(obj);
 		if( randomGradient == null && randomColorMode == RandomColorMode.Gradient )
-			randomGradient = Gradient.getDefaultGradientData();
+			randomGradient = hrt.impl.Gradient.getDefaultGradientData();
 	}
 
 	override function copy(obj:Prefab) {
@@ -680,7 +680,7 @@ class Emitter2D extends Object2D implements hrt.prefab.fx.EmitterParam.IEmitter 
 
 		function onChange(pname: String, isTemp: Bool) {
 			if (pname == "randomColorMode")
-				randomGradient = randomColorMode == RandomColorMode.Gradient ? Gradient.getDefaultGradientData() : null;
+				randomGradient = randomColorMode == RandomColorMode.Gradient ? hrt.impl.Gradient.getDefaultGradientData() : null;
 			if (pname == "spriteType" && spriteType != SpriteType.SpriteSheet)
 				spriteSheet = null;
 			ctx.rebuildPrefab(this);
