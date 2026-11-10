@@ -226,7 +226,37 @@ class Editor extends Component {
 				langCache.set(code, lang);
 			}
 		}
+
+		// the texts change the heights of the rows : the selected cell if visible, else the first line of the view, stays at the same place on screen
+		var scroll = element.get(0);
+		function getSelectedElement() : js.html.Element {
+			var l = cursor.getLine();
+			if( l == null ) return null;
+			var c = l.created && cursor.x >= 0 ? l.cells[cursor.x] : null;
+			return c != null ? c.elementHtml : l.element.get(0);
+		}
+		function getSelectedTop() : Null<Float> {
+			var e = getSelectedElement();
+			if( e == null || !e.isConnected ) return null;
+			var r = e.getBoundingClientRect();
+			var v = scroll.getBoundingClientRect();
+			return r.bottom > v.top && r.top < v.bottom ? r.top - v.top : null;
+		}
+		var selectedTop = getSelectedTop();
+		var viewLine = selectedTop == null ? tables[0]?.getViewLine() : null;
+
 		refresh();
+
+		if( selectedTop != null ) {
+			var l = cursor.getLine();
+			l?.table.revealRow(l);
+			var e = getSelectedElement();
+			if( e != null && e.isConnected ) {
+				scroll.scrollTop += Math.round(e.getBoundingClientRect().top - scroll.getBoundingClientRect().top - selectedTop);
+				tables[0]?.render();
+			}
+		} else if( viewLine != null )
+			tables[0].scrollToLine(viewLine.line, viewLine.offset);
 	}
 
 	public function show( sheet, ?parent : Element ) {
