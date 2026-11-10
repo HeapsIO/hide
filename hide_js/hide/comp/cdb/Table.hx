@@ -578,6 +578,8 @@ class Table extends Component {
 		}
 		#end
 
+		if( parent != null )
+			editor.filterLangLines(this);
 		refreshRows();
 	}
 

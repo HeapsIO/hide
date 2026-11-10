@@ -22,6 +22,11 @@ enum LangSentStatus {
 	RefLang;
 }
 
+/**
+	A line of a root sheet or of a list, with the line of the list. `field` : the name of the list column, prefixed by its properties.
+**/
+typedef LangLine = { sheet : cdb.Sheet, obj : Dynamic, index : Int, ?parent : LangLine, ?field : String }
+
 private class LangNode {
 	public var children : Map<String, LangNode>;
 	public var text : Null<String>;
@@ -109,10 +114,10 @@ class LangTexts {
 	}
 
 	/**
-		The status and sent status of a text of the line `index` of the root sheet `sheet`.
+		The status and sent status of the text `name` of `line`, prefixed by its properties.
 	**/
-	public function getRootStatus( sheet : cdb.Sheet, obj : Dynamic, index : Int, column : cdb.Data.Column, original : String ) : { status : LangStatus, sent : Null<LangSentStatus> } {
-		var n = lineNode(root.get(sheet.name), sheet, obj, index)?.get(column.name);
+	public function getLineStatus( line : LangLine, name : String, original : String ) : { status : LangStatus, sent : Null<LangSentStatus> } {
+		var n = langLineNode(line)?.get(name);
 		return { status : nodeStatus(n, original), sent : nodeSentStatus(n, original) };
 	}
 
@@ -165,23 +170,30 @@ class LangTexts {
 		return parent.get(id) ?? parent.get("line" + index);
 	}
 
+	function langLineNode( line : LangLine ) : LangNode {
+		var parent = line.parent == null ? root.get(line.sheet.name) : langLineNode(line.parent)?.get(line.field);
+		return lineNode(parent, line.sheet, line.obj, line.index);
+	}
+
+	/**
+		The line of the texts of `line`, and the prefix of its fields when in properties.
+	**/
+	public static function getLangLine( line : Line ) : { line : LangLine, prefix : String } {
+		var sub = Std.downcast(line.table, SubTable);
+		if( sub == null )
+			return { line : { sheet : line.table.sheet, obj : line.obj, index : line.index }, prefix : "" };
+
+		var parent = getLangLine(sub.cell.line);
+		var name = parent.prefix + sub.cell.column.name;
+		if( sub.polyVal != null )
+			name += "." + sub.polyVal.col.name;
+		if( sub.displayMode == Properties )
+			return { line : parent.line, prefix : name + "." };
+		return { line : { sheet : line.table.sheet, obj : line.obj, index : line.index, parent : parent.line, field : name }, prefix : "" };
+	}
+
 	function find( line : Line, column : cdb.Data.Column ) : LangNode {
-		// the node of the line, and the prefix of its fields when in properties
-		function resolve( line : Line ) : { node : LangNode, prefix : String } {
-			var sub = Std.downcast(line.table, SubTable);
-			if( sub == null )
-				return { node : lineNode(root.get(line.table.sheet.name), line.table.sheet, line.obj, line.index), prefix : "" };
-
-			var parent = resolve(sub.cell.line);
-			var name = parent.prefix + sub.cell.column.name;
-			if( sub.polyVal != null )
-				name += "." + sub.polyVal.col.name;
-			if( sub.displayMode == Properties )
-				return { node : parent.node, prefix : name + "." };
-			return { node : lineNode(parent.node?.get(name), line.table.sheet, line.obj, line.index), prefix : "" };
-		}
-
-		var r = resolve(line);
-		return r.node?.get(r.prefix + column.name);
+		var r = getLangLine(line);
+		return langLineNode(r.line)?.get(r.prefix + column.name);
 	}
 }

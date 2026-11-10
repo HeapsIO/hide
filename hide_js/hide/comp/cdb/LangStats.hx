@@ -28,19 +28,17 @@ class LangStats {
 		var rows = "";
 		var all = [0, 0, 0, 0];
 		for( s in ide.database.sheets ) {
-			if( s.props.hide || !Lambda.exists(s.columns, c -> c.type == TString && c.kind == Localizable) )
+			if( s.props.hide )
 				continue;
 
 			var counts = [0, 0, 0, 0];
-			for( i => obj in s.lines ) {
-				if( Reflect.hasField(obj, cdb.Lang.IGNORE_EXPORT_FIELD) )
-					continue;
-				var st = Editor.getWorstStatus(langs, s.columns, obj, (t, c, original) -> t.getRootStatus(s, obj, i, c, original));
-				if( st == null )
-					continue;
-				counts[0]++;
-				counts[(st : Int) + 1]++;
-			}
+			for( i => obj in s.lines )
+				Editor.visitLangLines(langs, { sheet : s, obj : obj, index : i }, st -> {
+					counts[0]++;
+					counts[(st : Int) + 1]++;
+				});
+			if( counts[0] == 0 )
+				continue;
 			for( i => c in counts )
 				all[i] += c;
 			rows += row(s.name, counts);

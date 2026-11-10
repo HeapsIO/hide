@@ -611,13 +611,11 @@ class CdbTable extends hide.ui.View<{}> {
 			return;
 
 		var counts = [0, 0, 0, 0];
-		for( l in table.lines ) {
-			var s = @:privateAccess editor.getLangFilter(l);
-			if( s == null )
-				continue;
-			counts[0]++;
-			counts[(s : Int) + 1]++;
-		}
+		for( l in table.lines )
+			@:privateAccess editor.visitLangStatus(l, s -> {
+				counts[0]++;
+				counts[(s : Int) + 1]++;
+			});
 
 		var cur = @:privateAccess editor.langFilter;
 		for( i => b in [for( c in langFilters.children ) c] ) {

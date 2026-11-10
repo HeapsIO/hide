@@ -514,6 +514,12 @@ class Editor extends Component {
 		if (table == null || table.displayMode != Table)
 			return;
 
+		for( t in tables )
+			if( t.parent != null ) {
+				filterLangLines(t);
+				t.refreshRows();
+			}
+
 		var seps = table.separators ?? [];
 		if (filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error) && langFilter == null) {
 			for (l in table.lines)
@@ -550,7 +556,7 @@ class Editor extends Component {
 			if (!filtered)
 				results++;
 
-			filtered = filtered || (!inserted && (isLineFilteredByStatus(l) || (langFilter != null && getLangFilter(l) != langFilter)));
+			filtered = filtered || (!inserted && (isLineFilteredByStatus(l) || isLangFiltered(l)));
 			l.filtered = filtered;
 			if (!filtered) {
 				var parentSeps = Separator.getParentSeparators(l.index, seps);
@@ -672,40 +678,74 @@ class Editor extends Component {
 	}
 
 	/**
-		The worst status of the localizable texts of the line, in the translation displayed, else in all the translations of `allLangs`.
-		Null without translation or localizable text, or when the line is ignored by the localization export.
+		Calls `onLine` with the worst status of the localizable texts of the line, then of each line of its lists, recursively, in the translation displayed, else in all the translations of `allLangs`.
+		The line must be in a root or list table.
 	**/
-	function getLangFilter( line : Line ) : Null<LangFilter> {
+	function visitLangStatus( line : Line, onLine : LangFilter -> Void ) {
 		var langs = lang != null ? [lang] : allLangs;
 		if( langs == null || isLocIgnored(line) )
-			return null;
-		return getWorstStatus(langs, line.table.columns, line.obj, (t, c, original) -> { status : t.getStatus(line, c, original), sent : t.getSentStatus(line, c, original) });
+			return;
+		visitLangLines(langs, LangTexts.getLangLine(line).line, onLine);
+	}
+
+	// neither the line nor a line of its lists has localizable texts of the status of `langFilter`
+	function isLangFiltered( line : Line ) : Bool {
+		if( langFilter == null )
+			return false;
+		var found = false;
+		visitLangStatus(line, s -> if( s == langFilter ) found = true);
+		return !found;
+	}
+
+	// the lines of a list sub table are only filtered by `langFilter`
+	function filterLangLines( table : Table ) {
+		if( table.displayMode != Table )
+			return;
+		for( l in table.lines )
+			l.filtered = isLangFiltered(l);
 	}
 
 	/**
-		The worst status of the localizable texts of `obj` in `langs`, null without localizable text.
+		Calls `onLine` with the worst status in `langs` of the localizable texts of `line`, then of each line of its lists, recursively.
+		The properties are part of their line. The lines without localizable text, or ignored by the localization export, are skipped.
 	**/
-	static function getWorstStatus( langs : Array<EditorLang>, columns : Array<cdb.Data.Column>, obj : Dynamic, getStatus : (LangTexts, cdb.Data.Column, String) -> { status : LangTexts.LangStatus, sent : Null<LangTexts.LangSentStatus> } ) : Null<LangFilter> {
-		var res : Null<LangFilter> = null;
-		for( c in columns ) {
-			if( c.type != TString || c.kind != Localizable )
-				continue;
-			var original : String = Reflect.field(obj, c.name);
-			if( original == null || original == "" )
-				continue;
+	static function visitLangLines( langs : Array<EditorLang>, line : LangTexts.LangLine, onLine : LangFilter -> Void ) {
+		if( Reflect.hasField(line.obj, cdb.Lang.IGNORE_EXPORT_FIELD) )
+			return;
 
-			for( l in langs ) {
-				var st = getStatus(l.sheets, c, original);
-				var s = switch( [st.status, st.sent] ) {
-					case [UpToDate, _]: LangFilter.UpToDate;
-					case [_, Sent(_)]: LangFilter.Pending;
-					default: LangFilter.NeedSend;
+		var res : Null<LangFilter> = null;
+		function visit( sheet : cdb.Sheet, obj : Dynamic, prefix : String ) {
+			for( c in sheet.columns ) {
+				var v : Dynamic = Reflect.field(obj, c.name);
+				if( v == null )
+					continue;
+
+				switch( c.type ) {
+				case TString if( c.kind == Localizable && v != "" ):
+					for( l in langs ) {
+						var st = l.sheets.getLineStatus(line, prefix + c.name, v);
+						var s = switch( [st.status, st.sent] ) {
+							case [UpToDate, _]: LangFilter.UpToDate;
+							case [_, Sent(_)]: LangFilter.Pending;
+							default: LangFilter.NeedSend;
+						}
+						if( res == null || (s : Int) > (res : Int) )
+							res = s;
+					}
+				case TProperties, TPolymorph:
+					visit(sheet.getSub(c), v, prefix + c.name + ".");
+				case TList:
+					var sub = sheet.getSub(c);
+					for( i => o in (v : Array<Dynamic>) )
+						visitLangLines(langs, { sheet : sub, obj : o, index : i, parent : line, field : prefix + c.name }, onLine);
+				default:
 				}
-				if( res == null || (s : Int) > (res : Int) )
-					res = s;
 			}
 		}
-		return res;
+
+		visit(line.sheet, line.obj, "");
+		if( res != null )
+			onLine(res);
 	}
 
 	function isLineFilteredByStatus(line : Line) : Bool {
