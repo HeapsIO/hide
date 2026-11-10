@@ -261,75 +261,6 @@ class Cell {
 		return editor.lang != null && column.type == TString && column.kind == Localizable;
 	}
 
-	// the text of the cell in a file of cdb.Lang.buildXML, null if missing
-	function getLangText( sheets : Editor.LangSheets ) : String {
-		function child( x : cdb.Lang.LangXml, name : String ) {
-			if( x?.elements() == null ) return null;
-			for( e in x.elements() )
-				if( e.nodeName == name )
-					return e;
-			return null;
-		}
-
-		// same keys as cdb.Lang.apply : the id, else the index
-		function lineNode( parent : cdb.Lang.LangXml, line : Line ) {
-			var idCol = null, isGuid = false;
-			for( c in line.table.sheet.columns )
-				switch( c.type ) {
-				case TId if( idCol == null || isGuid ): idCol = c; isGuid = false;
-				case TGuid if( idCol == null ): idCol = c; isGuid = true;
-				default:
-				}
-			if( idCol == null )
-				return child(parent, "line" + line.index);
-			var id : String = Reflect.field(line.obj, idCol.name);
-			if( id == null ) id = "null";
-			if( isGuid ) id = "id" + id.split("#").join("_").split("&").join("-");
-			return child(parent, id) ?? child(parent, "line" + line.index);
-		}
-
-		// the element of the line, and the prefix of its fields when in properties
-		function resolve( line : Line ) : { node : cdb.Lang.LangXml, prefix : String } {
-			var sub = Std.downcast(line.table, SubTable);
-			if( sub == null )
-				return { node : lineNode(sheets.get(line.table.sheet.name), line), prefix : "" };
-
-			var parent = resolve(sub.cell.line);
-			var name = parent.prefix + sub.cell.column.name;
-			if( sub.polyVal != null )
-				name += "." + sub.polyVal.col.name;
-			if( sub.displayMode == Properties )
-				return { node : parent.node, prefix : name + "." };
-			return { node : lineNode(child(parent.node, name), line), prefix : "" };
-		}
-
-		var r = resolve(line);
-		var text = child(r.node, r.prefix + column.name);
-		return text?._html == null ? null : StringTools.trim(text._html);
-	}
-
-	/**
-		The status of the translation of the cell, as exportTrad computes it :
-		up to date when the original text is the one the translation was made from,
-		pending when sent to the translators and not imported yet.
-		Null if unknown (no old file).
-	**/
-	function getLangStatus( translated : Bool, original : String ) : String {
-		var lang = editor.lang;
-		if( lang.old == null )
-			return null;
-
-		function normalize( s : String ) return StringTools.trim([for( l in s.split("\n") ) StringTools.trim(l)].join("\n"));
-		var old = getLangText(lang.old);
-		if( translated && old != null && normalize(old) == normalize(original ?? "") )
-			return "uptodate";
-
-		for( p in lang.pending )
-			if( getLangText(p) != null )
-				return "pending";
-		return translated ? "outdated" : "missing";
-	}
-
 	function get_table() return line.table;
 	function get_columnIndex() return table.columns.indexOf(column);
 	inline function get_value() return currentValue;
@@ -441,11 +372,12 @@ class Cell {
 		blurOff = true;
 		var original = Reflect.field(line.obj, column.name);
 		var langShown = isLangShown();
-		var langText = langShown ? getLangText(editor.lang.sheets) : null;
+		var langText = langShown ? editor.lang.sheets.getTranslation(line, column) : null;
 		var hasText = original != null && original != "";
-		var status = langShown && hasText ? getLangStatus(langText != null, original) : null;
-		if( status == null && langShown && hasText && langText == null )
-			status = "missing";
+		var status = !langShown || !hasText ? null : switch( editor.lang.sheets.getStatus(line, column, original) ) {
+			case Unknown: null;
+			case s: s.getName().toLowerCase();
+		}
 		for( s in ["uptodate", "outdated", "pending", "missing"] )
 			elementHtml.classList.toggle("loc-" + s, s == status);
 		elementHtml.classList.toggle("loc-translated", langText != null);

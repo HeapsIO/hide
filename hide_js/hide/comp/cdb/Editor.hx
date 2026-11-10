@@ -21,7 +21,12 @@ typedef UndoState = {
 	var tables : Array<UndoSheet>;
 }
 
-typedef LangSheets = Map<String, cdb.Lang.LangXml>;
+typedef EditorLang = {
+	var file : String;
+	var sheets : LangTexts;
+	// the mtime of each loaded xml file
+	var mtimes : Map<String, Float>;
+}
 
 typedef EditorApi = {
 	function load( data : Any ) : Void;
@@ -98,12 +103,10 @@ class Editor extends Component {
 	public var undo : hide.ui.UndoHistory;
 	public var formulas : Formulas;
 	public var showGUIDs = false;
-	/**
-		The translation displayed in the localizable cells.
-		`old` : the reference texts the translations were made from (null if unknown).
-		`pending` : the texts sent to the translators and not imported yet.
-	**/
-	public var lang(default, null) : { file : String, sheets : LangSheets, old : LangSheets, pending : Array<LangSheets> };
+	// The translation displayed in the localizable cells.
+	public var lang(default, null) : EditorLang;
+	static var langCache = new Map<String, EditorLang>();
+	static var locCache : { path : String, mtime : Float, locDir : String, versions : Map<String, Xml>, last : Xml };
 
 	public var gradientEditor: GradientEditor;
 
@@ -127,7 +130,7 @@ class Editor extends Component {
 	public function setLang( file : Null<String> ) {
 		lang = null;
 		if( file != null ) {
-			function load( file : String ) : LangSheets {
+			function load( file : String ) : Map<String, cdb.Lang.LangXml> {
 				var content = sys.io.File.getContent(file);
 				if( StringTools.fastCodeAt(content, 0) == 0xFEFF )
 					content = content.substr(1);
@@ -140,25 +143,32 @@ class Editor extends Component {
 				return sheets;
 			}
 
-			// the modifLoc files of the exportTrad versions exported since the last import of the language
-			function loadPending( locFile : String, code : String ) {
-				var root = Xml.parse(sys.io.File.getContent(locFile)).firstElement();
-				var locDir = haxe.io.Path.directory(locFile) + "/";
-				for( p in root.elementsNamed("path") )
-					for( l in p.elementsNamed("loc") )
-						if( l.firstChild() != null )
-							locDir += l.firstChild().nodeValue;
+			function mtime( file : String ) return sys.FileSystem.stat(file).mtime.getTime();
 
-				var versions = new Map<String, Xml>();
-				var v : Xml = null;
-				for( h in root.elementsNamed("history") )
-					for( e in h.elementsNamed("version") ) {
-						versions.set(e.get("id"), e);
-						if( v == null || Std.parseInt(e.get("id")) > Std.parseInt(v.get("id")) )
-							v = e;
-					}
+			// the modifLoc files of the exportTrad versions exported since the last import of the language
+			function getPending( locFile : String, code : String ) {
+				var locTime = mtime(locFile);
+				if( locCache?.path != locFile || locCache.mtime != locTime ) {
+					var root = Xml.parse(sys.io.File.getContent(locFile)).firstElement();
+					var locDir = haxe.io.Path.directory(locFile) + "/";
+					for( p in root.elementsNamed("path") )
+						for( l in p.elementsNamed("loc") )
+							if( l.firstChild() != null )
+								locDir += l.firstChild().nodeValue;
+
+					var versions = new Map<String, Xml>();
+					var last : Xml = null;
+					for( h in root.elementsNamed("history") )
+						for( e in h.elementsNamed("version") ) {
+							versions.set(e.get("id"), e);
+							if( last == null || Std.parseInt(e.get("id")) > Std.parseInt(last.get("id")) )
+								last = e;
+						}
+					locCache = { path : locFile, mtime : locTime, locDir : locDir, versions : versions, last : last };
+				}
 
 				var pending = [];
+				var v = locCache.last;
 				while( v != null ) {
 					function hasLang( att : String ) return (v.get(att) ?? "").split(",").contains(code);
 					var state = v.get("state");
@@ -166,11 +176,11 @@ class Editor extends Component {
 						if( state != "Exported" && hasLang("langIm") )
 							break;
 						var id = v.get("id");
-						var modif = locDir + 'versions/$id/modifLoc/modifCdb_$code-$id.xml';
+						var modif = locCache.locDir + 'versions/$id/modifLoc/modifCdb_$code-$id.xml';
 						if( hasLang("langEx") && sys.FileSystem.exists(modif) )
-							pending.push(load(modif));
+							pending.push(modif);
 					}
-					v = versions.get(v.get("parentId"));
+					v = locCache.versions.get(v.get("parentId"));
 				}
 				return pending;
 			}
@@ -179,21 +189,42 @@ class Editor extends Component {
 			var name = haxe.io.Path.withoutExtension(haxe.io.Path.withoutDirectory(file));
 			var code = name.substr(name.indexOf("_") + 1);
 			var oldFile = '$dir/old/${name}_old.xml';
+			var hasOld = sys.FileSystem.exists(oldFile);
 			var locFile : String = ide.projectState.get("cdb.locProject");
 			var pending = [];
 			if( locFile != null && sys.FileSystem.exists(locFile) ) {
 				try {
-					pending = loadPending(locFile, code);
+					pending = getPending(locFile, code);
 				} catch( e : Dynamic ) {
 					ide.quickError("Could not load " + locFile + " : " + e);
 				}
 			}
-			lang = {
-				file : file,
-				sheets : load(file),
-				old : sys.FileSystem.exists(oldFile) ? load(oldFile) : null,
-				pending : pending,
-			};
+
+			var files = [file].concat(pending);
+			if( hasOld )
+				files.push(oldFile);
+			var mtimes = [for( f in files ) f => mtime(f)];
+
+			function isCacheValid( cached : EditorLang ) {
+				if( cached == null || Lambda.count(cached.mtimes) != Lambda.count(mtimes) )
+					return false;
+				for( f => t in mtimes ) {
+					var prev = cached.mtimes.get(f);
+					if( prev == null || t > prev )
+						return false;
+				}
+				return true;
+			}
+
+			lang = langCache.get(code);
+			if( !isCacheValid(lang) ) {
+				lang = {
+					file : file,
+					sheets : new LangTexts(load(file), hasOld ? load(oldFile) : null, [for( f in pending ) load(f)]),
+					mtimes : mtimes,
+				};
+				langCache.set(code, lang);
+			}
 		}
 		refresh();
 	}
