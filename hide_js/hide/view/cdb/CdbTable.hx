@@ -345,23 +345,35 @@ class CdbTable extends hide.ui.View<{}> {
 			o.value = value;
 			langSelect.add(o);
 		}
+		var allStatus = "*";
 		addOption("No translation", "");
+		addOption("All status", allStatus);
 		for( f in langFiles )
 			addOption(f.substr(7, f.length - 11), f);
 		if( editor.lang != null )
 			langSelect.value = haxe.io.Path.withoutDirectory(editor.lang.file);
+		else if( editor.allLangs != null )
+			langSelect.value = allStatus;
 		langBar.appendChild(langSelect);
 
 		var langVersion = js.Browser.document.createSpanElement();
 		langVersion.className = "lang-version";
 		langVersion.title = "The exportTrad version of the translation";
 		function updateVersion() langVersion.textContent = editor.lang?.version == null ? "" : "v" + editor.lang.version;
-		function setLang( file : String ) {
-			editor.setLang(file);
+		function setLang() {
+			var v = langSelect.value;
+			if( v == allStatus )
+				editor.setLang(null, [for( f in langFiles ) langDir + "/" + f]);
+			else
+				editor.setLang(v == "" ? null : langDir + "/" + v);
 			updateVersion();
 		}
 		updateVersion();
-		langSelect.onchange = () -> setLang(langSelect.value == "" ? null : langDir + "/" + langSelect.value);
+		langSelect.onchange = () -> setLang();
+		@:privateAccess editor.onLangSelect = function( file ) {
+			langSelect.value = haxe.io.Path.withoutDirectory(file);
+			setLang();
+		}
 		langBar.appendChild(langVersion);
 
 		var locSelect = new hide.comp.FileSelect(["loc"]);
@@ -370,7 +382,7 @@ class CdbTable extends hide.ui.View<{}> {
 		locSelect.path = ide.projectState.get("cdb.locProject");
 		locSelect.onChange = function() {
 			ide.projectState.set("cdb.locProject", locSelect.path);
-			setLang(editor.lang?.file);
+			setLang();
 		}
 		langBar.appendChild(locSelect.element.get(0));
 

@@ -18,6 +18,8 @@ enum LangSentStatus {
 	Sent( version : Int );
 	// the original text changed since it was sent
 	SentOutdated( version : Int );
+	// the language of the original texts, never sent
+	RefLang;
 }
 
 private class LangNode {
@@ -63,13 +65,16 @@ private class LangNode {
 	The texts of a file of `cdb.Lang.buildXML`, indexed by node name, with their status.
 	`old` : the original texts the translations were made from (null if unknown).
 	`pending` : the texts sent to the translators and not imported yet, from the last version (null if unknown).
+	`compareText` : the status of a text never exported nor sent compares it to the original (the reference language).
 **/
 class LangTexts {
 	var root = new LangNode();
 	var hasPending : Bool;
+	var compareText : Bool;
 
-	public function new( sheets : Map<String, cdb.Lang.LangXml>, old : Null<Map<String, cdb.Lang.LangXml>>, pending : Null<Array<{ version : Int, sheets : Map<String, cdb.Lang.LangXml> }>> ) {
+	public function new( sheets : Map<String, cdb.Lang.LangXml>, old : Null<Map<String, cdb.Lang.LangXml>>, pending : Null<Array<{ version : Int, sheets : Map<String, cdb.Lang.LangXml> }>>, compareText : Bool ) {
 		hasPending = pending != null;
+		this.compareText = compareText;
 		pending ??= [];
 		function mergeAll( sheets : Map<String, cdb.Lang.LangXml>, onText ) {
 			for( name => s in sheets )
@@ -98,13 +103,19 @@ class LangTexts {
 		var n = find(line, column);
 		if( n?.text == null )
 			return Missing;
-		return n.originalExport == normalize(original ?? "") ? UpToDate : Outdated;
+
+		var current = normalize(original ?? "");
+		if( compareText && n.originalExport == null && n.pending == null )
+			return normalize(n.text) == current ? UpToDate : Outdated;
+		return n.originalExport == current ? UpToDate : Outdated;
 	}
 
 	// null if the sent texts are unknown
 	public function getSentStatus( line : Line, column : cdb.Data.Column, original : String ) : Null<LangSentStatus> {
 		if( !hasPending )
 			return null;
+		if( compareText )
+			return RefLang;
 		var n = find(line, column);
 		if( n?.pending == null )
 			return NotSent;

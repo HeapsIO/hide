@@ -230,6 +230,12 @@
 	overflow-anchor: none;
 	/* background-color : black; */
 
+	--loc-color-ok: #6aa84f;
+	--loc-color-outdated: #e0a050;
+	--loc-color-missing: #c05050;
+	--loc-color-pending: #6fa8dc;
+	--loc-color-notsent: #888;
+
 	&:focus {
 		outline: none;
 	}
@@ -638,7 +644,28 @@
 			opacity: 0.5;
 		}
 		td.loc-outdated {
-			color: #e0a050;
+			color: var(--loc-color-outdated);
+		}
+		td .loc-all-badges {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 2px;
+			margin-top: 2px;
+			pointer-events: none;
+			span {
+				pointer-events: auto;
+				cursor: pointer;
+				padding: 0 3px;
+				border-radius: 3px;
+				font-size: 9px;
+				line-height: 12px;
+				font-weight: bold;
+				color: #111;
+			}
+			.loc-ok { background-color: var(--loc-color-ok); }
+			.loc-outdated { background-color: var(--loc-color-outdated); }
+			.loc-missing { background-color: var(--loc-color-missing); }
+			.loc-pending { background-color: var(--loc-color-pending); }
 		}
 		td .loc-badges {
 			float: left;
@@ -668,27 +695,27 @@
 		}
 		td.loc-missing {
 			--loc-badge: "MISSING";
-			--loc-badge-color: #c05050;
+			--loc-badge-color: var(--loc-color-missing);
 		}
 		td.loc-outdated {
 			--loc-badge: "OUTDATED";
-			--loc-badge-color: #e0a050;
+			--loc-badge-color: var(--loc-color-outdated);
 		}
 		td.loc-uptodate {
 			--loc-badge: "OK";
-			--loc-badge-color: #6aa84f;
+			--loc-badge-color: var(--loc-color-ok);
 		}
 		td.loc-notsent {
 			--loc-sent-badge: "NOT SENT";
-			--loc-sent-color: #888;
+			--loc-sent-color: var(--loc-color-notsent);
 		}
 		td.loc-sent {
 			--loc-sent-badge: "SENT v" var(--loc-version, "");
-			--loc-sent-color: #6fa8dc;
+			--loc-sent-color: var(--loc-color-pending);
 		}
 		td.loc-sentoutdated {
 			--loc-sent-badge: "SENT OUTDATED v" var(--loc-version, "");
-			--loc-sent-color: #e0a050;
+			--loc-sent-color: var(--loc-color-outdated);
 		}
 
 		td.t_script {

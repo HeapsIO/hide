@@ -59,7 +59,10 @@ class LangDiffTable extends SubTable {
 			td.innerHTML = '<span class="loc-badges"></span>' + html;
 		}
 		addDiff(exported, "Unknown", ["loc-missing", "loc-outdated", "loc-uptodate"]);
-		addDiff(sent, "Load a .loc file to see the send status", status == UpToDate ? ["loc-uptodate"] : ["loc-notsent", "loc-sent", "loc-sentoutdated"]);
+		if( sentStatus == RefLang )
+			addDiff(null, "Reference language", []);
+		else
+			addDiff(sent, "Load a .loc file to see the send status", status == UpToDate ? ["loc-uptodate"] : ["loc-notsent", "loc-sent", "loc-sentoutdated"]);
 
 		lines = [new Line(this, [], 0, new Element(tr))];
 		alignUnderCell();

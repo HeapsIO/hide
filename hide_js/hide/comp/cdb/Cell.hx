@@ -98,6 +98,10 @@ class Cell {
 		elementHtml.addEventListener("click", function(e) {
 			editor.cursor.clickCell(this, e.shiftKey, e.ctrlKey);
 			e.stopPropagation();
+
+			var badge = (cast e.target : js.html.Element).closest(".loc-all-badges > span");
+			if( badge != null && editor.onLangSelect != null )
+				editor.onLangSelect(badge.dataset.file);
 		});
 
 		root.oncontextmenu = function(e) {
@@ -392,6 +396,7 @@ class Cell {
 			case NotSent: "loc-notsent";
 			case Sent(v): version = v; "loc-sent";
 			case SentOutdated(v): version = v; "loc-sentoutdated";
+			case RefLang: null;
 		}
 
 		for( c in LOC_CLASSES )
@@ -405,19 +410,34 @@ class Cell {
 			elementHtml.title = switch( status ) {
 				case null: "";
 				case UpToDate: status.getName();
-				case _ if( sent == null ): status.getName();
+				case _ if( sent == null || sent == RefLang ): status.getName();
 				default: status.getName() + ", " + sent.getName() + (version == null ? "" : " v" + version);
 			}
 
 		// inside .cell-root : its overflow would otherwise push it beside the badges instead of around them
 		var badges = status == null ? "" : '<span class="loc-badges"></span>';
+
+		var allBadges = "";
+		if( editor.allLangs != null && column.type == TString && column.kind == Localizable && hasText ) {
+			for( l in editor.allLangs ) {
+				var c = switch( [l.sheets.getStatus(line, column, original), l.sheets.getSentStatus(line, column, original)] ) {
+					case [UpToDate, _]: "loc-ok";
+					case [_, Sent(_)]: "loc-pending";
+					case [Outdated, _] | [_, SentOutdated(_)]: "loc-outdated";
+					case [Missing, _]: "loc-missing";
+				}
+				allBadges += '<span class="$c" data-file="${StringTools.htmlEscape(l.file, true)}">${StringTools.htmlEscape(l.code)}</span>';
+			}
+			allBadges = '<div class="loc-all-badges">$allBadges</div>';
+		}
+
 		var html = valueHtml(column, langText ?? original, line.table.getRealSheet(), line.obj, []);
-		if( !html.containsHtml && badges == "" )
+		if( !html.containsHtml && badges == "" && allBadges == "" )
 			elementHtml.textContent = html.str;
 		else if( !html.containsHtml )
-			elementHtml.innerHTML = badges + StringTools.htmlEscape(html.str);
+			elementHtml.innerHTML = badges + StringTools.htmlEscape(html.str) + allBadges;
 		else
-			elementHtml.innerHTML = '<div class="cell-root" style="max-height: ${MAX_HEIGHT_FIT}px; overflow-y:auto; overflow-x:hidden;">' + badges + html.str + "</div>";
+			elementHtml.innerHTML = '<div class="cell-root" style="max-height: ${MAX_HEIGHT_FIT}px; overflow-y:auto; overflow-x:hidden;">' + badges + html.str + "</div>" + allBadges;
 		#if js
 		if( html.containsHtml )
 			observeFit(cast elementHtml.firstElementChild);

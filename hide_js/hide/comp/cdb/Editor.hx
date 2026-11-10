@@ -23,6 +23,7 @@ typedef UndoState = {
 
 typedef EditorLang = {
 	var file : String;
+	var code : String;
 	// the exportTrad version of the file
 	var version : Null<Int>;
 	var sheets : LangTexts;
@@ -107,8 +108,12 @@ class Editor extends Component {
 	public var showGUIDs = false;
 	// The translation displayed in the localizable cells.
 	public var lang(default, null) : EditorLang;
+	// The translations whose status is displayed as badges in the localizable cells.
+	public var allLangs(default, null) : Array<EditorLang>;
+	// Selects the translation file displayed, from the cells.
+	var onLangSelect : String -> Void;
 	static var langCache = new Map<String, EditorLang>();
-	static var locCache : { path : String, mtime : Float, locDir : String, versions : Map<String, Xml>, last : Xml };
+	static var locCache : { path : String, mtime : Float, locDir : String, versions : Map<String, Xml>, last : Xml, refLang : String };
 
 	public var gradientEditor: GradientEditor;
 
@@ -128,10 +133,10 @@ class Editor extends Component {
 
 	/**
 		Displays the texts of a translation (an xml of `cdb.Lang.buildXML`) in the localizable cells, read only. Null displays the original texts.
+		`allFiles` : translations whose status is displayed as badges under the original texts.
 	**/
-	public function setLang( file : Null<String> ) {
-		lang = null;
-		if( file != null ) {
+	public function setLang( file : Null<String>, ?allFiles : Array<String> ) {
+		function loadLang( file : String ) : EditorLang {
 			function parse( file : String ) : Xml {
 				var content = sys.io.File.getContent(file);
 				if( StringTools.fastCodeAt(content, 0) == 0xFEFF )
@@ -161,6 +166,13 @@ class Editor extends Component {
 							if( l.firstChild() != null )
 								locDir += l.firstChild().nodeValue;
 
+					// same default as exportTrad
+					var refLang = "en";
+					for( ls in root.elementsNamed("langs") )
+						for( l in ls.elementsNamed("lang") )
+							if( l.get("ref") == "true" )
+								refLang = l.get("id");
+
 					var versions = new Map<String, Xml>();
 					var last : Xml = null;
 					for( h in root.elementsNamed("history") )
@@ -169,8 +181,16 @@ class Editor extends Component {
 							if( last == null || Std.parseInt(e.get("id")) > Std.parseInt(last.get("id")) )
 								last = e;
 						}
-					locCache = { path : locFile, mtime : locTime, locDir : locDir, versions : versions, last : last };
+					locCache = { path : locFile, mtime : locTime, locDir : locDir, versions : versions, last : last, refLang : refLang };
 				}
+
+				// the version of the translation file, read from its header to avoid parsing it
+				var input = sys.io.File.read(file);
+				var head = haxe.io.Bytes.alloc(1024);
+				var len = input.readBytes(head, 0, head.length);
+				input.close();
+				var r = ~/<cdb [^>]*version="([0-9]+)"/;
+				var fileVersion = r.match(head.getString(0, len)) ? Std.parseInt(r.matched(1)) : null;
 
 				var pending = [];
 				var v = locCache.last;
@@ -178,9 +198,10 @@ class Editor extends Component {
 					function hasLang( att : String ) return (v.get(att) ?? "").split(",").contains(code);
 					var state = v.get("state");
 					if( state != "Empty" && state != "Prepared" ) {
-						if( state != "Exported" && hasLang("langIm") )
-							break;
 						var id = v.get("id");
+						// a version marked as imported may not be in the translation file yet
+						if( fileVersion != null ? Std.parseInt(id) <= fileVersion : state != "Exported" && hasLang("langIm") )
+							break;
 						var modif = locCache.locDir + 'versions/$id/modifLoc/modifCdb_$code-$id.xml';
 						if( hasLang("langEx") && sys.FileSystem.exists(modif) )
 							pending.push({ version : Std.parseInt(id), file : modif });
@@ -206,6 +227,9 @@ class Editor extends Component {
 				}
 			}
 
+			// without loc project, the reference language is unknown
+			var compareText = pending == null || locCache.refLang == code;
+
 			var files = [file].concat([for( p in pending ?? [] ) p.file]);
 			if( hasOld )
 				files.push(oldFile);
@@ -224,18 +248,23 @@ class Editor extends Component {
 				return true;
 			}
 
-			lang = langCache.get(code);
+			var lang = langCache.get(code);
 			if( !isCacheValid(lang) ) {
 				var root = parse(file);
 				lang = {
 					file : file,
+					code : code,
 					version : Std.parseInt(root.get("version")),
-					sheets : new LangTexts(load(root), hasOld ? load(parse(oldFile)) : null, pending == null ? null : [for( p in pending ) { version : p.version, sheets : load(parse(p.file)) }]),
+					sheets : new LangTexts(load(root), hasOld ? load(parse(oldFile)) : null, pending == null ? null : [for( p in pending ) { version : p.version, sheets : load(parse(p.file)) }], compareText),
 					mtimes : mtimes,
 				};
 				langCache.set(code, lang);
 			}
+			return lang;
 		}
+
+		lang = file == null ? null : loadLang(file);
+		allLangs = allFiles == null ? null : [for( f in allFiles ) loadLang(f)];
 
 		// the texts change the heights of the rows : the selected cell if visible, else the first line of the view, stays at the same place on screen
 		var scroll = element.get(0);
