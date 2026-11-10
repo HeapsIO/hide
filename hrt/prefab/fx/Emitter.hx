@@ -744,7 +744,7 @@ class EmitterObject extends h3d.scene.Object {
 				s.randomColor1.setColor(prefab.randomColor1);
 				s.randomColor2.setColor(prefab.randomColor2);
 				if( prefab.randomColorMode == RandomColorMode.Gradient )
-					s.randomGradient = hrt.impl.Gradient.textureFromData(prefab.randomGradient, false);
+					s.randomGradient = gradientTexture(prefab.randomGradient);
 			}
 			if( prefab.fadeColorMode != RandomColorMode.None ) {
 				var s = getShader();
@@ -752,7 +752,7 @@ class EmitterObject extends h3d.scene.Object {
 				s.fadeColor1.setColor(prefab.fadeColor1);
 				s.fadeColor2.setColor(prefab.fadeColor2);
 				if( prefab.fadeColorMode == RandomColorMode.Gradient )
-					s.fadeGradient = hrt.impl.Gradient.textureFromData(prefab.fadeGradient, false);
+					s.fadeGradient = gradientTexture(prefab.fadeGradient);
 			}
 			if( prefab.fadeIn > 0 || prefab.fadeOut > 0 ) {
 				var s = getShader();
@@ -778,6 +778,15 @@ class EmitterObject extends h3d.scene.Object {
 		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, prefab.maxCount) #else [for(i in 0...prefab.maxCount) new ParticleInstance()] #end;
 		particlesCount = prefab.maxCount;
 		reset();
+	}
+
+	// a Constant gradient steps at its stops: filtered, its colors would blend around each stop
+	static function gradientTexture( g : GradientData ) : h3d.mat.Texture {
+		if( g.interpolation != Constant )
+			return hrt.impl.Gradient.textureFromData(g, false);
+		var tex : h3d.mat.Texture = hrt.impl.Gradient.textureFromData(g, false);
+		tex.filter = h3d.mat.Data.Filter.Nearest;
+		return tex;
 	}
 
 	public static function checkEnabled(prefab: Prefab) {
