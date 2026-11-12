@@ -1622,9 +1622,21 @@ class EmitterObject extends h3d.scene.Object {
 
 		var seek = seek || (catchupTime > 1.5 * dt);
 
+		inline function partialUpdate() {
+			updateAlignment();
+			for(i in 0...numInstances)
+				particles[i].updateAbsPos(this);
+			updateMeshBatch();
+		}
+
 		if (!seek) {
-			if (dt == 0)
+			if (dt == 0) {
+				#if editor
+				return partialUpdate();  // in editor, keep updating graphics so they pick up inspector changes
+				#else
 				return;
+				#end
+			}
 			#if editor
 			var start = haxe.Timer.stamp();
 			#end
@@ -1636,13 +1648,8 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 		}
 
-
 		if(hxd.Math.abs(time - curTime) < 1e-6) {  // Time imprecisions can occur during accumulation
-			updateAlignment();
-			for(i in 0...numInstances)
-				particles[i].updateAbsPos(this);
-			updateMeshBatch();
-			return;
+			return partialUpdate();
 		}
 
 

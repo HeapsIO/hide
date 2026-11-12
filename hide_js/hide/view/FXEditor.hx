@@ -827,10 +827,6 @@ class FXEditor extends hide.view.FileView {
 			if (curve.datas.length > 1)
 				for (i in 0...curve.datas.length)
 					this.curveEditor.curves.push(new hide.comp.Timeline.CurveData(curve, i));
-			this.curveEditor.onChange = function(anim) {
-				//refreshDopesheet();
-				forceTick = true;
-			}
 
 			rightPanel.on("mousewheel", function(e) {
 				var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
@@ -1672,23 +1668,21 @@ class FXEditor extends hide.view.FileView {
 				lastSeek = currentTime;
 			}
 
-			if(!paused || hasJumped || forceTick) {
-				var localDt = (hasJumped || (paused && forceTick)) ? 0 : scene.speed * dt;
-				hasJumped = hasJumped || forceTick;
-				var nextTime = currentTime + localDt;
-				if (nextTime > fx.duration && fx.duration > 0) {
-					nextTime = 0;
-					localDt = 0;
-					hasJumped = true;
-					fx.reset();
-					fx.setRandSeed(Std.random(0xFFFFFF));
-				}
-				@:privateAccess fx.setTimeInternal(nextTime, localDt, hasJumped);
-
-				currentTime = fx.localTime;
-				lastTime = currentTime;
-				forceTick = false;
+			var localDt = (hasJumped || paused) ? 0 : scene.speed * dt;
+			hasJumped = hasJumped || forceTick;
+			var nextTime = currentTime + localDt;
+			if (nextTime > fx.duration && fx.duration > 0) {
+				nextTime = 0;
+				localDt = 0;
+				hasJumped = true;
+				fx.reset();
+				fx.setRandSeed(Std.random(0xFFFFFF));
 			}
+			@:privateAccess fx.setTimeInternal(nextTime, localDt, hasJumped);
+
+			currentTime = fx.localTime;
+			lastTime = currentTime;
+			forceTick = false;
 
 			if (hasJumped || paused) {
 				@:privateAccess scene.s3d.renderer.ctx.time = currentTime;
