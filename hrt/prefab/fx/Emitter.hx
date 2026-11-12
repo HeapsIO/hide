@@ -1856,10 +1856,6 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 	override function save() {
 		var data = super.save();
 		saveParams(data);
-		if( randomColorMode != RandomColorMode.Gradient )
-			Reflect.deleteField(data, "randomGradient");
-		if( fadeColorMode != RandomColorMode.Gradient )
-			Reflect.deleteField(data, "fadeGradient");
 		if( !FX.inFXData(this) )
 			data.version = FX.VERSION;
 		return data;
