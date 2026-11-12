@@ -1027,12 +1027,12 @@ class Ide extends hide.tools.IdeData {
 	} = null) {
 		options = options ?? {};
 
-		var defaultPath = null;
+		var defaultPath = resourceDir;
 		if (options.workingDir != null && options.workingDir != "#MISSING")
 			defaultPath = getPath(options.workingDir);
 		if (options.saveAs != null)
-			defaultPath = defaultPath == null ? options.saveAs : defaultPath + "/" + options.saveAs;
-		if (defaultPath != null && isWindows)
+			defaultPath = haxe.io.Path.isAbsolute(options.saveAs) ? options.saveAs : defaultPath + "/" + options.saveAs;
+		if (isWindows)
 			defaultPath = defaultPath.split("/").join("\\");
 
 		function onResult(files: Array<String>) {
