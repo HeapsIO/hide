@@ -192,9 +192,6 @@ class ParticleInstance {
 		}
 	}
 
-	static var tmpMat = new h3d.Matrix();
-	static var tmpMat2 = new h3d.Matrix();
-
 	inline function add( v1 : h3d.Vector, v2 : h3d.Vector4 ) {
 		v1.x += v2.x;
 		v1.y += v2.y;
@@ -229,8 +226,8 @@ class ParticleInstance {
 	function updateAbsPos(emitter: EmitterObject) {
 		var prefab = emitter.prefab;
 		var v = new h3d.Vector4();
-		var absPos = tmpMat;
-		var localMat = tmpMat2;
+		static var absPos = new h3d.Matrix();
+		static var localMat = new h3d.Matrix();
 
 		switch( prefab.alignMode ) {
 			case Screen|Axis:
@@ -268,30 +265,45 @@ class ParticleInstance {
 		absPos._31 *= sz;
 		absPos._32 *= sz;
 		absPos._33 *= sz;
-		absPos._41 = x;
-		absPos._42 = y;
-		absPos._43 = z;
-		absPos.multiply3x4inline(absPos, emitter.parentTransform);
 
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
 
 		var evaluator = emitter.evaluator;
 
-		//SCALE
+		// Offset in particle orientation, affects actual position (subemitters, trails)
+		var pos = new h3d.Vector(x, y, z);
+		if(evaluator.getPartOffset(idx, t, v)) {
+			var o = new h3d.Vector(v.x, v.y, v.z);
+			if(emitter.baseEmitMat != null)
+				o.transform3x3(emitter.baseEmitMat);
+			o.x *= sx;
+			o.y *= sy;
+			o.z *= sz;
+			static var rot = new h3d.Matrix();
+			inline qRot.toQuat().toMatrix(rot);
+			o.transform3x3(rot);
+			pos.x += o.x;
+			pos.y += o.y;
+			pos.z += o.z;
+		}
+		absPos.setPosition(pos);
+		absPos.multiply3x4inline(absPos, emitter.parentTransform);
+
+		// Scale
 		evaluator.getPartStretch(idx, t, v);
 		v.scale3(evaluator.getPartScale(idx, t));
 		v.scale3(emitter.curScaleMultiplier);
 		localMat.initScale(v.x, v.y, v.z);
 
 
-		// PIVOT
+		// Pivot
 		if(evaluator.getPartPivot(idx, t, v)) {
 			localMat.tx = v.x * localMat._11;
 			localMat.ty = v.y * localMat._22;
 			localMat.tz = v.z * localMat._33;
 		}
 
-		// ROTATION
+		// Rotation
 		if(evaluator.getPartRotation(idx, t, v)) {
 			v.scale3(Math.PI / 180.0);
 			if(v.x == 0 && v.y == 0)  // optim: most rotations are around Z only, >2x faster
@@ -300,8 +312,8 @@ class ParticleInstance {
 				localMat.rotate(v.x, v.y, v.z);
 		}
 
-		//OFFSET
-		if(evaluator.getPartOffset(idx, t, v)) {
+		// Screen offset, in the frame of the alignment
+		if(evaluator.getPartScreenOffset(idx, t, v)) {
 			localMat.tx += v.x;
 			localMat.ty += v.y;
 			localMat.tz += v.z;
@@ -412,13 +424,14 @@ class ParticleInstance {
 			var factorOverTime = emitter.curOrbitSpeedMultiplier;
 			v.scale3(factorOverTime * (Math.PI / 180.0));
 
-			tmpMat.initRotation(v.x * dt, v.y * dt, v.z * dt);
+			static var rot = new h3d.Matrix();
+			rot.initRotation(v.x * dt, v.y * dt, v.z * dt);
 
 			// Rotate in emitter space and convert back to particle space
 			var prevPos = getPosition();
 			var pos = prevPos.clone();
 			pos.transform(emitter.orbitToEmitter);
-			pos.transform3x3(tmpMat);
+			pos.transform3x3(rot);
 			pos.transform(emitter.orbitFromEmitter);
 			x = pos.x;
 			y = pos.y;
@@ -1758,8 +1771,10 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 	public var partMaxSpeed : ParamMode;
 
 	@:group("Particle Transform")
-	@:param(PVec(3), Particle) @:disp("Offset", "Offset of the particle position, without effect on its movement")
+	@:param(PVec(3), Particle) @:disp("Offset", "Moves the particle along its own axes, without changing its movement")
 	public var partOffset : ParamVec3;
+	@:param(PVec(3), Particle) @:disp("Screen Offset", "Moves the particle along the screen axes when it faces the camera (X right, Y down, Z toward the camera)")
+	public var partScreenOffset : ParamVec3;
 	@:param(PVec(3), Particle) @:disp("Pivot", "Pivot of the particle, relative to its size")
 	public var partPivot : ParamVec3;
 	@:param(PVec(3, 0, 360), Particle) @:disp("Rotation", "Rotation of the particle, in degrees")
