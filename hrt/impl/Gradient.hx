@@ -246,12 +246,14 @@ class Gradient {
 				texture.resize(pixels.width, pixels.height);
 			}
 			texture.uploadPixels(pixels);
+			texture.filter = data.interpolation == Constant ? Nearest : Linear;
 
 			return texture;
 		}
 		#end
 
 		var texture = Texture.fromPixels(genPixels(), RGBA);
+		texture.filter = data.interpolation == Constant ? Nearest : Linear;
 		texture.realloc = function() {
 			texture.uploadPixels(genPixels());
 		}

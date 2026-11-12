@@ -1601,6 +1601,9 @@ class Upgrade0 {
 		"emitRateChangeDelay" => "emitRateChangeTime", "emitAngle1" => "emitStartAngle", "emitAngle2" => "emitEndAngle",
 		"emitDomeCut" => "emitDomeHeight", "animationSpeed" => "animationCycles"];
 
+	/** The align modes that depend on the camera **/
+	static var CAMERA_ALIGNED = ["Screen", "Axis", "ScreenSpeed", "AxisSpeed"];
+
 	/** The old params added to their curve instead of being multiplied by it **/
 	static var ADDITIVE_3D = ["Rotation", "Offset", "Pivot"];
 	static var ADDITIVE_2D = ["Rotation", "Offset"];
@@ -1623,6 +1626,14 @@ class Upgrade0 {
 		var params = upgradeParams(e, props, defs, is2D ? ADDITIVE_2D : ADDITIVE_3D);
 		var properties = [for( s in (is2D ? PROPERTIES_2D : PROPERTIES_3D) ) { name: s.name, value: num(get(props, s.name), s.def) }];
 		upgradeEmitterAnims(e, properties, defs, params);
+
+		// the offset of a camera aligned particle was in the frame of its alignment: its Screen Offset
+		if( !is2D && CAMERA_ALIGNED.contains(get(props, "alignMode")) && params.exists("partOffset") ) {
+			params.set("partScreenOffset", params.get("partOffset"));
+			params.remove("partOffset");
+			defs = [for( d in defs ) d.name == "partOffset" ? { name: "partScreenOffset", old: d.old, group: d.group, def: d.def } : d];
+			change(e, "offset of a camera aligned emitter is its screen offset");
+		}
 
 		// orbit speeds in degrees per second
 		var orbit = params.get("partOrbitSpeed");
