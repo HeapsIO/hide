@@ -5457,6 +5457,12 @@ hide-popover {
 	}
 }
 
+/* see hide.Search.cssHighlight */
+::highlight(search-hl) {
+	background-color: var(--selection);
+	color: white;
+}
+
 :root {
 	--hover-highlight: rgba(114, 180, 255, 0.5);
 	--selection: #3185ce;
@@ -6618,11 +6624,6 @@ fancy-tree-item {
 			outline-offset: 1px;
 		}
 
-		>span.search-hl {
-			background-color: var(--selection);
-			color: white;
-		}
-
 	}
 
 	&.feedback-drop-top::after {
@@ -7051,11 +7052,6 @@ fancy-gallery-item {
 		word-break: break-all;
 		text-overflow: ellipsis;
 		overflow: hidden;
-
-		>span.search-hl {
-			background-color: var(--selection);
-			color: white;
-		}
 	}
 
 	&.details fancy-name {

@@ -832,14 +832,15 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		var nameElement = element.querySelector("fancy-tree-name");
 		element.title = data.name;
 
-		var wantedName = if (data.searchRanges != null) {
-			hide.comp.FancySearch.splitSearchRanges(data.name, data.searchRanges);
-		} else {
-			data.name;
+		if (data.name != data.nameCache) {
+			data.nameCache = data.name;
+			nameElement.innerHTML = data.name;
 		}
-		if (wantedName != data.nameCache) {
-			data.nameCache = wantedName;
-			nameElement.innerHTML = wantedName;
+
+		if (data.searchRanges != null) {
+			hide.Search.cssHighlight(nameElement, data.searchRanges);
+		} else {
+			hide.Search.clearCssHighlight(nameElement);
 		}
 
 		for (button in data.buttons) {
