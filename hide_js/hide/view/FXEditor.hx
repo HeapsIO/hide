@@ -4,7 +4,7 @@ using Lambda;
 
 import hide.Element;
 import hrt.prefab.Prefab in PrefabElement;
-import hrt.prefab.Curve;
+import hrt.prefab.fx.Curve;
 import hrt.prefab.fx.Event;
 import hide.tools.CameraController.CamController;
 
@@ -155,7 +155,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			if (curve == null || (curve.blendMode != Blend && curve.blendMode != Reference))
 				return buttons;
 
-			var paramName = curve.blendParam;
+			var paramName = curve.param;
 			var color = 0xFFFFFF;
 			var icon = "ico-random";
 			var missing = false;
@@ -169,7 +169,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 				color = param?.color;
 			}
 			else {
-				var ref = (cast this.parent.data: hrt.prefab.Prefab).locatePrefab(curve.blendParam);
+				var ref = (cast this.parent.data: hrt.prefab.Prefab).locatePrefab(curve.refPath);
 				if (ref == null)
 					missing = true;
 				icon = "ico-link";
@@ -348,7 +348,7 @@ class FXEditor extends hide.view.FileView {
 	var selectMax : Float;
 	var previewMin : Float;
 	var previewMax : Float;
-	var curveEditor : hide.comp.CurveEditor;
+	var curveEditor : hide.comp.Timeline;
 	var afterPanRefreshes : Array<Bool->Void> = [];
 	var statusText : h2d.Text;
 	var forceTick : Bool = false;
@@ -720,53 +720,14 @@ class FXEditor extends hide.view.FileView {
 		if (pname == "speed" && p is hrt.prefab.fx.SubFX)
 			rebuildAnimPanel();
 
-		if (pname == "blendMode" || pname == "remapPath") {
-			var curve = Std.downcast(p, Curve);
-
-			function removeCurves() {
-				var toRemove: Array<Curve> = [];
-				for (child in curve.children) {
-					var c = Std.downcast(child, Curve);
-					if (c != null)
-						toRemove.push(c);
-				}
-
-				while (toRemove.length > 0) {
-					var c = toRemove.pop();
-					//c.removeInstance();
-					c.remove();
-				}
-			}
-
-			if (curve != null) {
-				if (curve.blendMode == CurveBlendMode.Blend || curve.blendMode == CurveBlendMode.RandomBlend) {
-					if (curve.children.length != 2) {
-						removeCurves();
-
-						// We're currently supporting blending with only 2 curves
-						for (i in 0...2) {
-							var c = new Curve(curve, null);
-							c.name = '$i';
-							if (i == 0) {
-								for (k in curve.keys) {
-									var newK = new hrt.prefab.Curve.CurveKey();
-									@:privateAccess newK.copyFromOther(k);
-									c.keys.push(newK);
-								}
-							}
-						}
-					}
-				}
-				else {
-					removeCurves();
-				}
-			}
+		if (pname == "blendMode" || pname == "param") {
+			Std.downcast(p, Curve)?.syncDatas();
 
 			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 			rebuildAnimPanel();
 		}
 
-		if (pname == "blendParam") {
+		if (pname == "refPath") {
 			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 			rebuildAnimPanel();
 		}
@@ -827,15 +788,15 @@ class FXEditor extends hide.view.FileView {
 		if (this.curveEditor != null)
 			previousTime = @:privateAccess this.curveEditor.currentTime;
 
-		this.curveEditor = new hide.comp.CurveEditor(this.undo, rightPanel);
+		this.curveEditor = new hide.comp.Timeline(this.undo, rightPanel);
 		this.curveEditor.onRefreshProps = () -> {
 			skipRebuildPannel++;
 			@:privateAccess sceneEditor.selectElements(sceneEditor.selectedPrefabs, NoHistory);
 			skipRebuildPannel--;
 		}
 
-		var overviewEditor = new hide.comp.CurveEditor.OverviewEditor(rightPanel, this.curveEditor);
-		var eventEditor = new hide.comp.CurveEditor.EventsEditor(rightPanel, this, this.curveEditor);
+		var overviewEditor = new hide.comp.Timeline.OverviewEditor(rightPanel, this.curveEditor);
+		var eventEditor = new hide.comp.Timeline.EventsEditor(rightPanel, this, this.curveEditor);
 		for (e in events)
 			eventEditor.events.push(e);
 
@@ -844,7 +805,6 @@ class FXEditor extends hide.view.FileView {
 
 		for (curve in curves){
 			var dispKey = getPath() + "/" + curve.getAbsPath(true);
-			curve.maxTime = data.duration == 0 ? 5000 : data.duration;
 			this.curveEditor.saveDisplayKey = dispKey;
 
 			this.curveEditor.requestXZoom = function(xMin, xMax) {
@@ -858,48 +818,15 @@ class FXEditor extends hide.view.FileView {
 				this.curveEditor.xScale = xScale;
 			}
 
-			if(["visibility", "s", "l", "a"].indexOf(curve.name.split(":").pop()) >= 0) {
-				curve.minValue = 0;
-				curve.maxValue = 1;
-			}
-			if(curve.name.indexOf("Rotation") >= 0 || curve.name.indexOf("Local Rotation") >= 0) {
-				curve.minValue = -360;
-				curve.maxValue = 360;
-			}
-			var shader = curve.parent.to(hrt.prefab.Shader);
-			if(shader != null) {
-				var sh = shader.getShaderDefinition();
-				if(sh != null) {
-					var v = sh.data.vars.find(v -> v.kind == Param && v.name == curve.name);
-					if(v != null && v.qualifiers != null) {
-						for( q in v.qualifiers )
-							switch( q ) {
-							case Range(rmin, rmax):
-								curve.minValue = rmin;
-								curve.maxValue = rmax;
-							default:
-						}
-					}
-				}
-			}
 			this.curveEditor.xOffset = xOffset;
 			this.curveEditor.xScale = xScale;
 
-			var isInstance = isInstanceCurve(curve);
-			if (isInstance) {
-				var name = curve.name.split(":")[0];
-				var param = hrt.prefab.fx.Emitter.PARAMS[name];
-				if (param != null) {
-					isInstance = param.instance;
-				} else {
-					isInstance = false;
-				}
-			}
-
-			if(isInstance) {
-				curve.maxTime = curve.name.indexOf("OverTime") >= 0 ? 5000 : 1.0;
-			}
-			this.curveEditor.curves.push(curve);
+			// a curve of two datas: each one edited apart, the blend drawn as it is
+			if (curve.blendMode != CurveBlendMode.Range)
+				this.curveEditor.curves.push(curve);
+			if (curve.datas.length > 1)
+				for (i in 0...curve.datas.length)
+					this.curveEditor.curves.push(new hide.comp.Timeline.CurveData(curve, i));
 			this.curveEditor.onChange = function(anim) {
 				//refreshDopesheet();
 				forceTick = true;
@@ -955,22 +882,6 @@ class FXEditor extends hide.view.FileView {
 					p = p.parent;
 				}
 				return null;
-			}
-
-			function areAllChildrenLocked(secRoot : PrefabElement) {
-				for (c in secRoot.flatten(Curve))
-					if(!c.lock)
-						return false;
-
-				return true;
-			}
-
-			function areAllChildrenHidden(secRoot : PrefabElement) {
-				for (c in secRoot.flatten(Curve))
-					if(!c.hidden)
-						return false;
-
-				return true;
 			}
 
 			function addVisibilityButtonListener(parentEl: Element, affectedElements : Array<Dynamic>) {
@@ -1042,10 +953,6 @@ class FXEditor extends hide.view.FileView {
 			function addOnSelectListener(parentEl: Element, affectedElements : Array<Dynamic>) {
 				var trackEl = parentEl.find(".track-header");
 				trackEl.click(function(e) {
-
-					for (c in this.curveEditor.curves)
-						c.selected = false;
-
 					for (c in affectedElements)
 						c.selected = true;
 
@@ -1103,12 +1010,9 @@ class FXEditor extends hide.view.FileView {
 
 			var allElements: Array<Dynamic> = [];
 			var curves = section.root.flatten(Curve);
-			for (c in curves)
-				allElements.push(c);
 
 			if (section.root is Curve) {
 				curves.push(cast section.root);
-				allElements.push(cast section.root);
 			}
 
 			var events: Array<IEvent> = [];
@@ -1122,14 +1026,17 @@ class FXEditor extends hide.view.FileView {
 				allElements.push(cast section.root);
 			}
 
+			var areEventsLocked = events.length > 0 && Lambda.foreach(events, e -> e.lock);
+			var areEventsHidden = events.length > 0 && Lambda.foreach(events, e -> e.hidden);
+
 			var sectionEl = new Element('<div class="section" name="${section.root.name}">
 			<div class="tracks-header" style="margin-left: ${depth * 10}px">
 			<div class="track-button fold ico ico-angle-down"></div>
-			<div class="track-button visibility ico ${areAllChildrenHidden(section.root) ? "ico-eye-slash" : "ico-eye"}"></div>
+			<div class="track-button visibility ico ${areEventsHidden ? "ico-eye-slash" : "ico-eye"}"></div>
 			<label class="name">${upperCase(section.root.name)}</label>
 			<label class="abspath">${section.root.getAbsPath(true)}</label>
 			${section.root is Curve ?'': '<div class="track-button align-right-first addtrack ico ico-plus-square"></div>'}
-			<div class="track-button lock align-right-second ico ${areAllChildrenLocked(section.root) ? "ico-lock" : "ico-unlock"}"></div>
+			<div class="track-button lock align-right-second ico ${areEventsLocked ? "ico-lock" : "ico-unlock"}"></div>
 			</div>
 			<div class="tracks"></div>
 			</div>');
@@ -1144,32 +1051,17 @@ class FXEditor extends hide.view.FileView {
 				for (i in 0...section.curves.length) {
 					var c = section.curves[i];
 
-					var curveColor = hide.comp.CurveEditor.CURVE_COLORS[i];
-					if (StringTools.contains(c.name, ":x") || StringTools.contains(c.name, ":h")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[0];
-					if (StringTools.contains(c.name, ":y") || StringTools.contains(c.name, ":s")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[1];
-					if (StringTools.contains(c.name, ":z") || StringTools.contains(c.name, ":l")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[2];
-					if (StringTools.contains(c.name, ":w") || StringTools.contains(c.name, ":a")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[3];
-
-					// Assign same color to curve and curve's header
-					c.color = curveColor;
-					var hexColor = '#${StringTools.hex(curveColor)}';
-
-					var colorStyle = c.selected ? "style = color:#d59320" : "";
+					var hexColor = '#${StringTools.hex(hide.comp.Timeline.getCurveColor(c.name, i))}';
 					var trackEl = new Element('<div>
 						<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
 							<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
-							<div class="track-button visibility ico ${c.hidden ? "ico-eye-slash" : "ico-eye"}"></div>
-							<label class="name" ${colorStyle}>${upperCase(c.name)}</label>
-							<div class="track-button lock align-right-second ico ${c.lock ? "ico-lock" : "ico-unlock"}"></div>
+							<label class="name">${upperCase(c.name)}</label>
 						</div>
 						<div class="tracks"></div>
 					</div>');
 
 					sectionEl.append(trackEl);
 
-					addVisibilityButtonListener(trackEl, [ c ]);
-					addLockButtonListener(trackEl, [ c ]);
-					addOnSelectListener(trackEl, [ c ]);
 					addFoldButtonListener(trackEl);
 				}
 
@@ -1203,27 +1095,18 @@ class FXEditor extends hide.view.FileView {
 
 			if (section.root is Curve) {
 				var c: Curve = cast section.root;
-
-				// We don't want to show an header for the blending curve,
-				// just for the parent blend curves.
-				if (c.blendMode != CurveBlendMode.Blend && c.blendMode != CurveBlendMode.RandomBlend) {
-					var hexColor = '#${StringTools.hex(c.color)}';
-					var colorStyle = c.selected ? "style = color:#d59320" : "";
+				{
+					var hexColor = '#${StringTools.hex(hide.comp.Timeline.getCurveColor(c.name, 0))}';
 					var trackEl = new Element('<div>
 						<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
 							<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
-							<div class="track-button visibility ico ${c.hidden ? "ico-eye-slash" : "ico-eye"}"></div>
-							<label class="name" ${colorStyle}>${upperCase(c.name)}</label>
-							<div class="track-button lock align-right-second ico ${c.lock ? "ico-lock" : "ico-unlock"}"></div>
+							<label class="name">${upperCase(c.name)}</label>
 						</div>
 						<div class="tracks"></div>
 					</div>');
 
 					sectionEl.append(trackEl);
 
-					addVisibilityButtonListener(trackEl, curves);
-					addLockButtonListener(trackEl, curves);
-					addOnSelectListener(trackEl, curves);
 					addFoldButtonListener(trackEl);
 				}
 			}
@@ -1302,29 +1185,29 @@ class FXEditor extends hide.view.FileView {
 		var curvesToDraw : Array<Curve> = [];
 		var eventsToDraw : Array<IEvent> = [];
 
-		function getSection(?root : PrefabElement, depth = 0): Section {
+		// the particle curves are edited in the inspector of their emitter, shown here only when they are selected
+		function getSection(?root : PrefabElement, depth = 0, particles = false): Section {
 			var section: Section = { root:root, curves: [], children: [], events: []};
 			var eventAdded = false;
+			particles = particles || (depth == 0 && root is Curve);
+			function shown(c: Curve) return particles || !c.isParticleCurve();
 
-			if (root is Curve)
+			if (root is Curve && shown(cast root))
 				curvesToDraw.push(cast root);
 
 			if (root is IEvent && depth == 0)
 				eventsToDraw.push(cast root);
 
 			for(child in root.children) {
-				if (child.flatten(Curve).length > 0) {
+				if (child.flatten(Curve).exists(shown)) {
 					if (child is Curve) {
 						var c = Std.downcast(child, Curve);
 						curvesToDraw.push(c);
 
-						if (c.blendMode == CurveBlendMode.Blend || c.blendMode == CurveBlendMode.RandomBlend)
-							section.children.push(getSection(c,depth+1));
-						else
-							section.curves.push(c);
+						section.curves.push(c);
 					}
 					else {
-						section.children.push(getSection(child,depth+1));
+						section.children.push(getSection(child,depth+1,particles));
 					}
 				}
 
@@ -1388,13 +1271,16 @@ class FXEditor extends hide.view.FileView {
 		var added = [];
 		for(prop in props) {
 			var id = prefix != null ? prefix + ":" + prop.name : prop.name;
-			if(Curve.getCurve(element, id) != null)
-				continue;
-			var curve = new Curve(element,null);
-			curve.name = id;
-			if(prop.def != null)
-				curve.addKey(0, prop.def, Linear);
-			added.push(curve);
+			for(k in hrt.prefab.fx.EmitterParam.animKeys(element, id) ?? [id]) {
+				if(Curve.getCurve(element, k, false) != null)
+					continue;
+				var curve = new Curve(element, null);
+				curve.name = k;
+				var v = getAnimValue(element, k) ?? prop.def;
+				if(v != null)
+					curve.addKey(0, v, Linear);
+				added.push(curve);
+			}
 		}
 
 		if(added.length == 0)
@@ -1422,8 +1308,7 @@ class FXEditor extends hide.view.FileView {
 		var rfxElt = Std.downcast(elt, hrt.prefab.rfx.RendererFX);
 		var screenShaderGraph = Std.downcast(elt, hrt.prefab.rfx.ScreenShaderGraph);
 
-		var emitterElt = Std.downcast(elt, hrt.prefab.fx.Emitter);
-		var emitter2DElt = Std.downcast(elt, hrt.prefab.fx.Emitter2D);
+		var emitter : hrt.prefab.fx.EmitterParam.IEmitter = elt is hrt.prefab.fx.EmitterParam.IEmitter ? cast elt : null;
 
 		var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
 		var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [];
@@ -1436,7 +1321,7 @@ class FXEditor extends hide.view.FileView {
 		function trackItem(name: String, props: Array<PropTrackDef>, ?prefix: String) : hrt.ui.HuiMenu.MenuItem {
 			var hasAllTracks = true;
 			for(p in props) {
-				if(getTrack(elt, prefix + ":" + p.name) == null)
+				if(getTrack(elt, prefix != null ? prefix + ":" + p.name : p.name) == null)
 					hasAllTracks = false;
 			}
 			return {
@@ -1491,16 +1376,8 @@ class FXEditor extends hide.view.FileView {
 				menu: groupedTracks("position", xyzwTracks(3)),
 			});
 			menuItems.push({
-				label: "Local Position",
-				menu: groupedTracks("localPosition", xyzwTracks(3)),
-			});
-			menuItems.push({
 				label: "Rotation",
 				menu: groupedTracks("rotation", xyzwTracks(3)),
-			});
-			menuItems.push({
-				label: "Local Rotation",
-				menu: groupedTracks("localRotation", xyzwTracks(3)),
 			});
 			menuItems.push({
 				label: "Scale",
@@ -1564,7 +1441,7 @@ class FXEditor extends hide.view.FileView {
 				}
 			}
 		}
-		function addParam(param : hrt.prefab.fx.EmitterHelper.ParamDef, prefix: String) {
+		function addParam(param : hrt.prefab.fx.EmitterHelper.PropertyDef, prefix: String) {
 			var label = prefix + (param.disp != null ? param.disp : upperCase(param.name));
 			var item : hrt.ui.HuiMenu.MenuItem = switch(param.t) {
 				case PVec(n, _):
@@ -1578,30 +1455,12 @@ class FXEditor extends hide.view.FileView {
 			menuItems.push(item);
 		}
 
-		if(emitterElt != null) {
-			for(param in hrt.prefab.fx.Emitter.emitterParams) {
-				if(!param.animate)
-					continue;
-				addParam(param, "");
-			}
-			for(param in hrt.prefab.fx.Emitter.instanceParams) {
-				if(!param.animate)
-					continue;
-				addParam(param, param.instance ? "Instance " : "");
-			}
-		}
-
-		if(emitter2DElt != null) {
-			for(param in hrt.prefab.fx.Emitter2D.emitterParams) {
-				if(!param.animate)
-					continue;
-				addParam(param, "");
-			}
-			for(param in hrt.prefab.fx.Emitter2D.instanceParams) {
-				if(!param.animate)
-					continue;
-				addParam(param, param.instance ? "Instance " : "");
-			}
+		if(emitter != null) {
+			for(f in emitter.getFields())
+				switch(f) {
+					case Property(p) if(p.animate): addParam(p, "");
+					default:
+				}
 		}
 
 		if (particle2dElt != null) {
@@ -1684,6 +1543,7 @@ class FXEditor extends hide.view.FileView {
 			onUpdate2D(dt);
 		else
 			onUpdate3D(dt);
+		sceneEditor.curEdit2?.root?.refreshAnimatedFields();
 	}
 
 	function onUpdate2D(dt:Float) {
@@ -1850,16 +1710,38 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	static function getTrack(element : PrefabElement, propName : String) {
-		return Curve.getCurve(element, propName, false);
+		var keys = hrt.prefab.fx.EmitterParam.animKeys(element, propName);
+		return Curve.getCurve(element, keys != null ? keys[0] : propName, false);
+	}
+
+	/** The current value of the property animated by the curve `key` **/
+	static function getAnimValue(element : PrefabElement, key : String) : Null<Float> {
+		inline function num(v: Dynamic) : Null<Float> return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : null;
+		var parts = key.split(":");
+		var isEmitter = element is hrt.prefab.fx.EmitterParam.IEmitter;
+		var comp = parts.length > 1 ? parts[1] : "x";
+		if(element is hrt.prefab.Object3D || element is hrt.prefab.Object2D) {
+			switch(parts[0]) {
+				case "position": return num(Reflect.field(element, comp));
+				case "rotation" if(element is hrt.prefab.Object2D): return (cast element : hrt.prefab.Object2D).rotation;
+				case "rotation", "scale": return num(Reflect.field(element, parts[0] + comp.toUpperCase()));
+				default:
+			}
+		}
+		if(element is hrt.prefab.Shader || element is hrt.prefab.rfx.ScreenShaderGraph) {
+			var prop : Dynamic = element.props == null ? null : Reflect.field(element.props, parts[0]);
+			if(Std.isOfType(prop, Array) && parts.length > 1)
+				prop = (prop : Array<Dynamic>)[hrt.prefab.fx.EmitterParam.COMPONENTS.indexOf(parts[1])];
+			return num(prop);
+		}
+		if(isEmitter || element is hrt.prefab.rfx.RendererFX || (element is Light && parts.length == 1))
+			return num(Reflect.field(element, key));
+		return null;
 	}
 
 	static function upperCase(prop: String) {
 		if(prop == null) return "";
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
-	}
-
-	static function isInstanceCurve(curve: Curve) {
-		return curve.findParent(hrt.prefab.fx.Emitter) != null;
 	}
 
 	static var _ = Extension.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX", name: "FX" });

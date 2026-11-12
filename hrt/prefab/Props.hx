@@ -20,5 +20,6 @@ typedef PropDef = {
 	name : String,
 	t : PropType,
 	?def: Dynamic,
-	?disp: String
+	?disp: String,
+	?desc: String
 };

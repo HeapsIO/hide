@@ -3,260 +3,249 @@ package hrt.prefab.fx;
 #if macro
 import haxe.macro.Context;
 import haxe.macro.Expr;
-
-enum ParamKind {
-	KScalar;
-	KVec( n : Int );
-	KEnum( e : Expr );
-	KGradient;
-}
-
-typedef Param = {
-	var name : String;
-	var kind : ParamKind;
-	var def : Expr;
-	var pos : Position;
-	var inst : Bool;
-	var rand : Bool;
-}
 #end
 
+/**
+	Emitter fields:
+	- `@:s` properties, `@:range(min, max)`, `@:animate` when an animation curve can set them, `@:disp("Label", "Description")` (the description is the tooltip of its line),
+	  `@:t(PFile([...]))` for a type other than the one of the field, `@:sameLine` to show it on the line of the previous property
+	  (`@:line("Label")` on the first one names the line, the widgets keep their labels; else the line takes the label of the first one, the others show none);
+	- `@:param(PVec(3, -10, 10), Particle, default)` params with modes (`EmitterParam`), saved under their name like the properties.
+	  The Particle ones, read over the particle life, are named `partX`;
+	- `@:group("Name")`: the inspector group of the field and of the next ones.
+	`FIELDS` has the properties and the params in their declaration order, the one of the inspector.
+	The random slots are allocated in the declaration order of the params (Emission ones have none).
+	The evaluator of the emitter (`buildEvaluator`) has a `Value` of the same name for each param and animated property, built by `makeEvaluator`.
+**/
 class EmitterMacros {
-
-	public static macro function param( e : haxe.macro.Expr ) : haxe.macro.Expr {
-		var name = switch( e.expr ) {
-			case EConst(CIdent(n)): n;
-			default: haxe.macro.Context.error("param() expects an emitter param name", e.pos);
-		}
-		var decl = macro @:pos(e.pos) $i{"P_" + name};
-		var randName = name + "_rand";
-		var hasRand = Lambda.exists(haxe.macro.Context.getLocalClass().get().fields.get(), f -> f.name == randName);
-		var rand = hasRand ? macro @:pos(e.pos) $i{randName} : macro @:pos(e.pos) null;
-		return switch( haxe.macro.Context.followWithAbstracts(haxe.macro.Context.typeof(e)) ) {
-			case TInst(_.get().name => "Array", _): macro @:pos(e.pos) vparam($decl, $e, $rand);
-			default: macro @:pos(e.pos) fparam($decl, $e, $rand);
-		}
-	}
 
 	#if macro
 
-	static function metaObj( f : Field, name : String ) : Null<Array<ObjectField>> {
-		if( f.meta == null )
-			return null;
+	static function meta( f : Field, name : String ) : Array<Expr> {
 		for( m in f.meta )
-			if( m.name == name ) {
-				if( m.params.length != 1 )
-					Context.error(name + " expects one object argument", m.pos);
-				return switch( m.params[0].expr ) {
-					case EObjectDecl(fl): fl;
-					default: Context.error(name + " expects an object argument", m.pos);
-				}
+			if( m.name == name )
+				return m.params;
+		return null;
+	}
+
+	static function propType( f : Field, t : ComplexType, init : Expr ) : Expr {
+		var explicit = meta(f, ":t");
+		if( explicit != null )
+			return explicit[0];
+		var r = meta(f, ":range") ?? [];
+		var min = r[0] ?? macro null, max = r[1] ?? macro null;
+		return switch( t ) {
+		case TPath({ name: "Float" }): macro PFloat($min, $max);
+		case TPath({ name: "Int" }): macro PInt($min, $max);
+		case TPath({ name: "Bool" }): macro PBool;
+		case TPath({ name: "String" }): macro PTexture;
+		case TPath({ name: "Array" }):
+			switch( init?.expr ) {
+			case EArrayDecl(v): macro PVec($v{v.length}, $min, $max);
+			default: Context.error("A vector setting needs its default", f.pos);
 			}
-		return null;
-	}
-
-	static function field( fl : Array<ObjectField>, name : String ) : Null<Expr> {
-		for( f in fl )
-			if( f.field == name )
-				return f.expr;
-		return null;
-	}
-
-	static function kindOf( t : Expr ) : ParamKind {
-		return switch( t.expr ) {
-			case ECall({expr: EConst(CIdent("PVec"))}, args):
-				switch( args[0].expr ) {
-					case EConst(CInt(v)): KVec(Std.parseInt(v));
-					default: Context.error("PVec size must be a constant", t.pos);
-				}
-			case ECall({expr: EConst(CIdent("PEnum"))}, args): KEnum(args[0]);
-			case EConst(CIdent("PGradient")): KGradient;
-			default: KScalar;
+		case TPath({ name: "GradientData" } | { sub: "GradientData" }): macro PGradient; // ??
+		case TPath(p): macro PEnum($i{p.sub ?? p.name});
+		default: Context.error("Unsupported setting type", f.pos);
 		}
 	}
 
-	static function zeroDef( k : ParamKind, pos : Position ) : Expr {
-		return switch( k ) {
-			case KVec(n): { expr: EArrayDecl([for( i in 0...n ) macro @:pos(pos) 0.0]), pos: pos };
-			default: macro @:pos(pos) 0.0;
-		}
+	// a type path from its full name, `pack.Module.Sub`
+	static function typePath( name : String ) : TypePath {
+		var parts = name.split(".");
+		var pack = [while( parts.length > 0 && parts[0].charAt(0) == parts[0].charAt(0).toLowerCase() ) parts.shift()];
+		return { pack: pack, name: parts[0], sub: parts[1] };
 	}
 
-	public static function build() : Array<Field> {
+	public static function build( evaluatorType : String ) : Array<Field> {
 		var fields = Context.getBuildFields();
 		var pos = Context.currentPos();
-		var params : Array<Param> = [];
-		var emitterDecls : Array<Expr> = [];
-		var instDecls : Array<Expr> = [];
-		var extra : Array<Field> = [];
+		var fieldDefs = [], params = [];
+		var load = [], save = [], copy = [], getCases = [], setCases = [];
+		var values = [];
+		var group = "Params";
 
 		for( f in fields ) {
-			var inst = false;
-			var meta = metaObj(f, ":param");
-			if( meta == null ) {
-				meta = metaObj(f, ":instParam");
-				inst = meta != null;
-			}
-			if( meta == null )
+			var g = meta(f, ":group");
+			if( g != null )
+				group = haxe.macro.ExprTools.getValue(g[0]);
+			var p = f.pos, n = f.name;
+			var disp = meta(f, ":disp") ?? [];
+			var label = disp[0] ?? macro null, desc = disp[1] ?? macro null;
+
+			if( meta(f, ":s") != null ) {
+				switch( f.kind ) {
+				case FVar(t, init):
+					var animate = meta(f, ":animate") != null, sameLine = meta(f, ":sameLine") != null;
+					var lineMeta = meta(f, ":line"), lineLabel = lineMeta == null ? macro null : lineMeta[0];
+					fieldDefs.push(macro @:pos(p) hrt.prefab.fx.EmitterParam.EmitterField.Property({ name: $v{n}, t: ${propType(f, t, init)},
+						def: (${init ?? macro null} : Dynamic), groupName: $v{group}, animate: $v{animate}, sameLine: $v{sameLine}, line: $lineLabel, disp: $label, desc: $desc }));
+					if( init != null && init.expr.match(EArrayDecl(_)) )
+						save.push(macro @:pos(p) if( haxe.Json.stringify(this.$n) == haxe.Json.stringify($init) ) Reflect.deleteField(data, $v{n}));
+					if( animate )
+						values.push(macro @:pos(p) v.$n = b.animated($v{n}, hrt.prefab.fx.Evaluator.vVal(this.$n)));
+				default:
+				}
 				continue;
-
-			var ft = null, fdef = null;
-			switch( f.kind ) {
-				case FVar(t, e): ft = t; fdef = e;
-				default: Context.error("Emitter param must be a variable", f.pos);
 			}
 
-			var t = field(meta, "t");
-			if( t == null )
-				Context.error("Missing param type", f.pos);
-			var kind = kindOf(t);
-			var def = inst ? field(meta, "def") : fdef;
-			if( def == null )
-				def = macro @:pos(f.pos) null;
-			if( inst ) {
-				if( fdef != null )
-					Context.error("Instance param default belongs in the metadata", f.pos);
-				f.kind = FVar(macro : Null<$ft>, macro @:pos(f.pos) null);
+			var a = meta(f, ":param");
+			if( a == null )
+				continue;
+			var dim = switch( a[0].expr ) {
+				case ECall({ expr: EConst(CIdent("PVec")) }, args): Std.parseInt(haxe.macro.ExprTools.toString(args[0]));
+				default: 1;
 			}
-
-			var decl : Array<ObjectField> = [
-				{ field: "name", expr: macro @:pos(f.pos) $v{f.name} },
-				{ field: "t", expr: t },
-				{ field: "def", expr: macro @:pos(f.pos) ($def : Dynamic) },
-			];
-			var disp = field(meta, "disp");
-			if( disp != null ) decl.push({ field: "disp", expr: disp });
-			var group = field(meta, "group");
-			if( group != null ) decl.push({ field: "groupName", expr: group });
-			decl.push({ field: "animate", expr: inst ? macro true : (field(meta, "animate") ?? macro false) });
-			if( inst ) decl.push({ field: "instance", expr: field(meta, "instance") ?? macro true });
-
-			var declExpr : Expr = { expr: EObjectDecl(decl), pos: f.pos };
-			var declName = "P_" + f.name;
-			extra.push({
-				name: declName,
-				access: [AStatic, AFinal],
-				kind: FVar(macro : hrt.prefab.fx.EmitterHelper.ParamDef, declExpr),
-				pos: f.pos,
-			});
-			(inst ? instDecls : emitterDecls).push(macro @:pos(f.pos) $i{declName});
-
-			params.push({ name: f.name, kind: kind, def: def, pos: f.pos, inst: inst, rand: false });
-
-			if( inst ) {
-				extra.push({
-					name: f.name + "_rand",
-					access: [APublic],
-					kind: FVar(macro : Null<$ft>, macro null),
-					pos: f.pos,
-				});
-				params.push({ name: f.name + "_rand", kind: kind, def: zeroDef(kind, f.pos), pos: f.pos, inst: true, rand: true });
+			var kind = haxe.macro.ExprTools.toString(a[1]);
+			var defs = switch( a[2]?.expr ) {
+				case null: [for( _ in 0...dim ) macro 0.];
+				case EArrayDecl(values): values;
+				default: [a[2]];
 			}
+			var def = macro @:pos(p) PARAMS[$v{params.length}];
+			fieldDefs.push(macro @:pos(p) hrt.prefab.fx.EmitterParam.EmitterField.Param($def));
+			params.push(macro @:pos(p) { name: $v{n}, t: ${a[0]}, def: ($a{defs} : Array<Float>), kind: hrt.prefab.fx.EmitterParam.ParamKind.$kind,
+				groupName: $v{group}, disp: $label, desc: $desc });
+			if( dim == 1 ) {
+				load.push(macro @:pos(p) this.$n = hrt.prefab.fx.EmitterParam.parseMode(data.$n));
+				save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.saveMode(hrt.prefab.fx.EmitterParam.saved(this, $def, 0, this.$n)); if( v != null ) data.$n = v; });
+				getCases.push({ values: [macro $v{n}], expr: macro this.$n });
+				setCases.push({ values: [macro $v{n}], expr: macro this.$n = m });
+				copy.push(macro @:pos(p) this.$n = from.$n);
+			} else {
+				// the modes of the components
+				f.kind = switch( f.kind ) { case FVar(t, _): FVar(t, macro [null, null, null]); default: f.kind; };
+				load.push(macro @:pos(p) this.$n = hrt.prefab.fx.EmitterParam.parseVec(data.$n));
+				save.push(macro @:pos(p) { var v = hrt.prefab.fx.EmitterParam.saveVec(this, $def, this.$n); if( v != null ) data.$n = v; });
+				getCases.push({ values: [macro $v{n}], expr: macro this.$n[comp] });
+				setCases.push({ values: [macro $v{n}], expr: macro this.$n[comp] = m });
+				copy.push(macro @:pos(p) this.$n = from.$n.copy());
+			}
+			values.push(macro @:pos(p) v.$n = b.param($def));
 		}
 
-		var load : Array<Expr> = [];
-		var save : Array<Expr> = [];
-		var copy : Array<Expr> = [];
-
-		for( p in params ) {
-			var n = p.name;
-			var def = p.def;
-			var nullable = p.inst;
-			var pos = p.pos;
-
-			var src = macro @:pos(pos) props.$n;
-			load.push(switch( p.kind ) {
-				case KEnum(e) if( !nullable ):
-					macro @:pos(pos) this.$n = hrt.prefab.Macros.enumOrNullByName($e, $src, null, $def);
-				case KGradient:
-					macro @:pos(pos) this.$n = $src;
-				case KVec(_):
-					nullable ? macro @:pos(pos) this.$n = hrt.prefab.fx.EmitterHelper.toArray($src)
-					         : macro @:pos(pos) { var v = $src; this.$n = v == null ? $def : hrt.prefab.fx.EmitterHelper.toArray(v); };
-				default:
-					nullable ? macro @:pos(pos) this.$n = $src
-					         : macro @:pos(pos) { var v = $src; this.$n = v == null ? $def : v; };
-			});
-
-			var set = macro @:pos(pos) Reflect.setField(props, $v{n}, this.$n);
-			// a set rand keeps its slot even at its neutral value, the editor shows it as set
-			var changed = if( p.rand ) macro @:pos(pos) true else switch( p.kind ) {
-				case KVec(_): macro @:pos(pos) !hrt.prefab.fx.EmitterHelper.sameArray(this.$n, $def);
-				case KGradient: macro @:pos(pos) true;
-				default: macro @:pos(pos) this.$n != $def;
+		// out of the editor the values are built once, by the source of the clones (the prefab of a loaded resource): they only depend on
+		// its data, a load resets them (a resource reload); in the editor the data is edited in place, they are built at each make
+		var share = !Context.defined("editor") && !Context.defined("editor_hl");
+		var reset = share ? macro { sharedValues = null; valuesFrom = null; } : macro {};
+		// lazy: the errors of the params come at make, as in the editor
+		var copyValues = share ? macro { sharedValues = from.sharedValues; valuesFrom = from.sharedValues == null ? from : null; } : macro {};
+		var getValues = share ? macro {
+			if( sharedValues == null ) {
+				sharedValues = valuesFrom != null ? valuesFrom.getValues() : buildValues();
+				valuesFrom = null;
 			}
-			switch( p.kind ) {
-				case KEnum(_): set = macro @:pos(pos) Reflect.setField(props, $v{n}, Type.enumConstructor(this.$n));
-				default:
-			}
-			save.push(nullable || p.kind.match(KGradient)
-				? macro @:pos(pos) if( this.$n != null && $changed ) $set
-				: macro @:pos(pos) if( $changed ) $set);
-
-			copy.push(switch( p.kind ) {
-				case KVec(_): macro @:pos(pos) this.$n = from.$n == null ? null : from.$n.copy();
-				default: macro @:pos(pos) this.$n = from.$n;
-			});
-		}
-
+			return sharedValues;
+		} : macro return buildValues();
+		// each emitter object gets its own evaluator, a game can override its values
+		var makeEvaluator = share ? macro return getValues().copy() : macro return buildValues();
+		var valuesTP = typePath(evaluatorType), valuesCT = TPath(typePath(evaluatorType));
 		var selfType = Context.toComplexType(Context.getLocalType());
+		// the statics first, the ones of the class can use them
+		var statics = (macro class {
+			static var PARAMS : Array<hrt.prefab.fx.EmitterParam.ParamDef> = $a{params};
+			public static var FIELDS : Array<hrt.prefab.fx.EmitterParam.EmitterField> = $a{fieldDefs};
+		}).fields;
+		var methods = (macro class {
+			function loadParams( data : Dynamic ) {
+				$reset;
+				$b{load};
+			}
+			function saveParams( data : Dynamic ) {
+				$b{save};
+			}
+			function copyParams( from : $selfType ) {
+				$b{copy};
+				$copyValues;
+			}
+			public function getFields() return FIELDS;
+			public function getMode( name : String, comp : Int ) : hrt.prefab.fx.EmitterParam.ParamMode {
+				return ${{ expr: ESwitch(macro name, getCases, macro null), pos: pos }};
+			}
+			public function setMode( name : String, comp : Int, m : hrt.prefab.fx.EmitterParam.ParamMode ) {
+				${{ expr: ESwitch(macro name, setCases, macro throw "No param " + name), pos: pos }};
+			}
+			function buildValues() : $valuesCT {
+				var b = new hrt.prefab.fx.EmitterParam.ParamBuilder(this);
+				var v = new $valuesTP();
+				$b{values};
+				v.randomSlots = b.randomSlots;
+				return v;
+			}
+			function getValues() : $valuesCT {
+				$getValues;
+			}
+			public function makeEvaluator() : $valuesCT {
+				$makeEvaluator;
+			}
+		}).fields;
+		if( share ) {
+			methods.push({ name: "sharedValues", access: [], kind: FVar(valuesCT), pos: pos });
+			methods.push({ name: "valuesFrom", access: [], kind: FVar(selfType), pos: pos });
+		}
+		return statics.concat(fields).concat(methods);
+	}
 
-		extra.push({
-			name: "emitterParams",
-			access: [APublic, AStatic],
-			kind: FVar(macro : Array<hrt.prefab.fx.EmitterHelper.ParamDef>, { expr: EArrayDecl(emitterDecls), pos: pos }),
-			pos: pos,
-		});
-		extra.push({
-			name: "instanceParams",
-			access: [APublic, AStatic],
-			kind: FVar(macro : Array<hrt.prefab.fx.EmitterHelper.ParamDef>, { expr: EArrayDecl(instDecls), pos: pos }),
-			pos: pos,
-		});
-		extra.push({
-			name: "PARAMS",
-			access: [APublic, AStatic],
-			kind: FVar(macro : Map<String, hrt.prefab.fx.EmitterHelper.ParamDef>, macro {
-				var m = new Map();
-				for( p in emitterParams ) m.set(p.name, p);
-				for( p in instanceParams ) m.set(p.name, p);
-				m;
-			}),
-			pos: pos,
-		});
-
-		extra.push({
-			name: "loadParams",
-			access: [],
-			kind: FFun({
-				args: [{ name: "props", type: macro : Dynamic }],
-				expr: macro { if( props == null ) props = {}; $b{load}; },
-			}),
-			pos: pos,
-		});
-		extra.push({
-			name: "saveParams",
-			access: [],
-			kind: FFun({
-				args: [],
-				ret: macro : Dynamic,
-				expr: macro { var props : Dynamic = {}; $b{save}; return props; },
-			}),
-			pos: pos,
-		});
-		extra.push({
-			name: "copyParams",
-			access: [],
-			kind: FFun({
-				args: [{ name: "from", type: selfType }],
-				expr: { expr: EBlock(copy), pos: pos },
-			}),
-			pos: pos,
-		});
-
-		for( f in extra )
-			fields.push(f);
-		return fields;
+	// the evaluator of the emitter `prefabType`, with its values: the Particle params first, read at each update of each particle
+	public static function buildEvaluator( prefabType : String ) : Array<Field> {
+		var fields = Context.getBuildFields();
+		var pos = Context.currentPos();
+		var prefab = switch( Context.getType(prefabType) ) {
+			case TInst(c, _): c.get();
+			default: Context.error(prefabType + " is not a class", pos);
+		}
+		var particle = [], other = [], getters = [];
+		for( f in prefab.fields.get() ) {
+			var n = f.name, get = "get" + n.charAt(0).toUpperCase() + n.substr(1);
+			var param = f.meta.extract(":param")[0];
+			if( param == null ) {
+				if( f.meta.has(":s") && f.meta.has(":animate") ) {
+					other.push(n);
+					getters.push(macro class { public extern inline function $get( t : Float ) : Float return getFloat($i{n}, t); });
+				}
+				continue;
+			}
+			var kind = haxe.macro.ExprTools.toString(param.params[1]);
+			(kind == "Particle" ? particle : other).push(n);
+			// the Emission ones are read with the random of the emitter (`EmitterHelper`)
+			if( kind == "Emission" )
+				continue;
+			// a vector: `out` is always set, false when the value is zero
+			switch( param.params[0].expr ) {
+			case ECall({ expr: EConst(CIdent("PVec")) }, args) if( haxe.macro.ExprTools.toString(args[0]) == "2" ):
+				getters.push(macro class { public extern inline function $get( pidx : Int, t : Float, out : h2d.col.Point ) : Bool {
+					getVector2(pidx, $i{n}, t, out);
+					return $i{n} != hrt.prefab.fx.Value.VZero;
+				}});
+			case ECall({ expr: EConst(CIdent("PVec")) }, _):
+				getters.push(macro class { public extern inline function $get( pidx : Int, t : Float, out : h3d.Vector4 ) : Bool {
+					getFastVec(pidx, $i{n}, t, out);
+					return $i{n} != hrt.prefab.fx.Value.VZero;
+				}});
+			default:
+				getters.push(macro class { public extern inline function $get( pidx : Int, t : Float ) : Float return getFast(pidx, $i{n}, t); });
+			}
+		}
+		var names = particle.concat(other);
+		for( n in names )
+			fields.push({ name: n, access: [APublic], kind: FVar(macro : hrt.prefab.fx.Value), pos: pos });
+		for( g in getters )
+			fields = fields.concat(g.fields);
+		var cl = Context.getLocalClass().get();
+		var tp : TypePath = { pack: cl.pack, name: cl.module.split(".").pop(), sub: cl.name };
+		return fields.concat((macro class {
+			// per particle
+			public var randomSlots = 0;
+			public function new() {
+				super();
+			}
+			public function copy() {
+				var v = new $tp();
+				$b{[for( n in names ) macro v.$n = $i{n}]};
+				v.randomSlots = randomSlots;
+				return v;
+			}
+		}).fields);
 	}
 	#end
 }

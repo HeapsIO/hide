@@ -19,7 +19,7 @@ class HuiKeyPopup extends HuiPopup {
 			</hui-element>
 		</hui-key-popup>
 
-	public function new(k : hrt.prefab.Curve.CurveKey, editor : HuiCurveEditor, ?parent: h2d.Object) {
+	public function new(k : hrt.impl.Curve.CurveKey, editor : HuiCurveEditor, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 
@@ -110,9 +110,13 @@ class HuiCurveBox extends HuiElement {
 
 		graphics.lineStyle(CURVE_WIDTH, CURVE_COLOR, 1);
 
+		var maxValue = value.data.getValueRange().max;
+		if (maxValue <= 0)
+			maxValue = 1;
+
 		graphics.moveTo(0, 0);
 		for (idx => v in value.sample(CURVE_PRECISION))
-			graphics.lineTo((idx / CURVE_PRECISION) * this.calculatedWidth, (v / value.maxValue) * -1 * this.calculatedHeight);
+			graphics.lineTo((idx / CURVE_PRECISION) * this.calculatedWidth, (v / maxValue) * -1 * this.calculatedHeight);
 	}
 
 	public dynamic function onValueChanged(isTemporary: Bool) {}
@@ -558,12 +562,12 @@ class HuiCurveEditor extends HuiPopup {
 
 		inline function addPrevH() {
 			if(key.prevHandle == null)
-				key.prevHandle = new hrt.prefab.Curve.CurveHandle(prev != null ? (prev.time - key.time) / 3 : -0.5, 0);
+				key.prevHandle = new hrt.impl.Curve.CurveHandle(prev != null ? (prev.time - key.time) / 3 : -0.5, 0);
 		}
 
 		inline function addNextH() {
 			if(key.nextHandle == null)
-				key.nextHandle = new hrt.prefab.Curve.CurveHandle(next != null ? (next.time - key.time) / 3 : -0.5, 0);
+				key.nextHandle = new hrt.impl.Curve.CurveHandle(next != null ? (next.time - key.time) / 3 : -0.5, 0);
 		}
 
 		switch(key.mode) {
@@ -585,8 +589,6 @@ class HuiCurveEditor extends HuiPopup {
 			key.time = 0;
 		// if(maxLength > 0 && key.time > maxLength)
 		// 	key.time = maxLength;
-		if(key.time > value.maxTime)
-			key.time = value.maxTime;
 		if(prev != null && key.time < prev.time)
 			key.time = prev.time + 0.01;
 		if(next != null && key.time > next.time)
