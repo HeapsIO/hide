@@ -918,6 +918,7 @@ body.kit-sub-window {
 		padding-left: 8px;
 
 		background-color: var(--theme-crust);
+		border-bottom: var(--theme-border);
 		color: #aaa;
 		font-family: var(--default-font);
 		font-size: 11px;
