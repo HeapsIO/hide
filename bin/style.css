@@ -3909,6 +3909,17 @@ div.gradient-box {
 		width: 256px;
 		height: 256px;
 	}
+
+	> .detach-button {
+		position: absolute;
+		right: 4px;
+		bottom: 4px;
+		z-index: 1;
+	}
+
+	&.detached > .detach-button {
+		display: none;
+	}
 }
 
 .gradient-container {

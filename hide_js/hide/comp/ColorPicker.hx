@@ -534,7 +534,7 @@ class ColorSlider extends Component {
 		var e = new Element("<div>").addClass("slider").addClass("checkerboard-bg").width(displayWidth).height(displayHeight);
 		super(parent, e);
 
-		canvas = Browser.document.createCanvasElement();
+		canvas = element[0].ownerDocument.createCanvasElement();
 
 		canvas.width = Std.int(Math.max(1, width / canvasDownsample));
 		canvas.height = Std.int(Math.max(1, height / canvasDownsample));

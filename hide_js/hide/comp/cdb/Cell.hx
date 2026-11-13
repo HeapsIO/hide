@@ -1518,7 +1518,8 @@ class Cell {
 			#if js
 			var e = new Element(elementHtml);
 			e.addClass("edit");
-			if (editor.gradientEditor == null) {
+			// a detached editor is not reused
+			if (editor.gradientEditor == null || editor.gradientEditor.element[0].classList.contains("detached")) {
 				editor.gradientEditor = new GradientEditor(editor.element, false);
 				editor.gradientEditor.keepPreviewAlive = true;
 			}
@@ -1535,11 +1536,12 @@ class Cell {
 			}
 
 			editor.gradientEditor.value = gradient;
+			var gradientEditor = editor.gradientEditor;
 			editor.gradientEditor.onClose = function() {
 				if (editor.gradientEditor != null) {
 					var grad : cdb.Types.Gradient = {colors: [], positions: []};
 
-					for (i => stop in editor.gradientEditor.value.stops) {
+					for (i => stop in gradientEditor.value.stops) {
 						grad.data.colors[i] = stop.color;
 						grad.data.positions[i] = stop.position;
 					}

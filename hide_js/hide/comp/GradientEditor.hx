@@ -180,7 +180,7 @@ class GradientEditor extends Popup {
 		element.focus();
 
 		element.on("keydown", function (e : KeyboardEvent) {
-			if (stopInput.get(0) == Browser.document.activeElement)
+			if (stopInput.get(0) == element[0].ownerDocument.activeElement)
 				return;
 			if (e.key == "Delete" || e.key =="Backspace") {
 				if (selectedStop != null) {
@@ -360,6 +360,13 @@ class GradientEditor extends Popup {
 			detailsSection.hide();
 		}
 
+		var detachButton = hide.html.comp.Button.create();
+		detachButton.className = "detach-button medium-square";
+		detachButton.title = "Detach";
+		detachButton.icon = Std.string(HideRes.icon.open_new_window);
+		detachButton.onclick = (_) -> detach(false, "Gradient");
+		element[0].append(detachButton);
+
 		reflow();
 		fixInputSelect();
 	}
@@ -372,6 +379,19 @@ class GradientEditor extends Popup {
 			cleanupPreview();
 		}
 		super.close();
+	}
+
+	public override function detach(autoDetached : Bool, ?title : String) {
+		if (subWindow != null)
+			return;
+		super.detach(autoDetached, title);
+
+		// a detached editor is not reused, and its window close button skips close()
+		var onWindowClose = subWindow.onClose;
+		subWindow.onClose = () -> {
+			cleanupPreview();
+			onWindowClose();
+		};
 	}
 
 	public override function canCloseOnClickOutside() : Bool {
