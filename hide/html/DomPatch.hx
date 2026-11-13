@@ -53,6 +53,7 @@ class DomPatch {
 	static function css() {
 		return merge((macro class {
 			static function registerProperty(definition : {name : String, syntax : String, inherits : Bool, ?initialValue : String}) : Void;
+			static var highlights(default, never) : js.lib.Map<String, hide.html.Highlight>;
 		}).fields);
 	}
 }

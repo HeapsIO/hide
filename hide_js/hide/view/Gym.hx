@@ -526,12 +526,8 @@ class Gym extends hide.ui.View<{}> {
 						var r = results[i];
 						var str = allFiles[r.pos];
 						var start = hxd.Math.imax(0, r.lastCharPos - needle.length + 1);
-						var line = addLine(str.substr(0, start));
-
-						var highlight = js.Browser.document.createElement("b");
-						highlight.textContent = str.substr(start, r.lastCharPos + 1 - start);
-						line.append(highlight);
-						line.append(str.substr(r.lastCharPos + 1) + ' (${r.distance})');
+						var line = addLine(str + ' (${r.distance})');
+						hide.Search.cssHighlight(line, [start, r.lastCharPos + 1]);
 					}
 
 					return true;

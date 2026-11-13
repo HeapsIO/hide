@@ -201,6 +201,8 @@ class Prefab extends hide.view.FileView {
 
 	var remoteEditMode = false;
 
+	var timeline : Timeline;
+
 
 	override function new(state) {
 		super(state);
@@ -263,9 +265,29 @@ class Prefab extends hide.view.FileView {
 
 	override function onHide() {
 		super.onHide();
+		getTimeline()?.clear();
+	}
 
-		//ide.closeInspector();
+	public function bindTimeline(t : Timeline) {
+		t.clear();
+		t.owner = this;
+		t.isSeekable = false;
+		t.setUnit(Timeline.Unit.Second);
+		timeline = t;
 
+		t.getTime = () -> @:privateAccess scene.s3d.ctx.time;
+		t.isPaused = () -> scene.isPaused;
+		t.setPaused = (v : Bool) -> scene.isPaused = v;
+		t.getSpeed = () -> scene.speed;
+		t.setSpeed = (v : Float) -> scene.speed = v;
+		t.onSave = () -> save();
+		t.onUndo = () -> undo.undo();
+		t.onRedo = () -> undo.redo();
+	}
+
+	override function destroy() {
+		getTimeline()?.clear();
+		super.destroy();
 	}
 
 	override function onDisplay() {
@@ -416,6 +438,13 @@ class Prefab extends hide.view.FileView {
 		refreshToggles();
 
 		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
+
+		for (t in ide.getViews(Timeline))
+			bindTimeline(t);
+	}
+
+	function getTimeline() {
+		return timeline?.owner == this ? timeline : null;
 	}
 
 	/**
@@ -533,14 +562,9 @@ class Prefab extends hide.view.FileView {
 					<hide-button class="dropdown" onclick={popup((e) -> new FiltersPopup(e, this, sceneFilters, "Scene"))} label="Scene filters"/>
 					<hide-button class="dropdown" onclick={popup((e) -> new hide.comp.SceneEditor.RenderPropsPopup(e, this, sceneEditor, true))} label="Render props"/>
 				</hide-group>
-				<input id="sceneSpeed" type="range" title="Speed" min="0" max="1" value="1"/>
-
 				<hide-button title="Help" onclick={popup((e) -> new hide.comp.SceneEditor.HelpPopup(e, sceneEditor))} icon={HideRes.icon.question_mark}/>
 			</hide-toolbar>
 		);
-
-		var speed = new hide.comp.Range(null, new hide.Element(sceneSpeed));
-		speed.onChange = (_) -> scene.speed = speed.value;
 
 		localTransformToggle = localTransformsToggle;
 
@@ -751,6 +775,8 @@ class Prefab extends hide.view.FileView {
 	}
 
 	function onUpdate(dt:Float) {
+		getTimeline()?.update();
+
 		if(K.isDown(K.ALT)) {
 			posToolTip.visible = true;
 			var proj = sceneEditor.screenToGround(scene.s2d.mouseX, scene.s2d.mouseY);

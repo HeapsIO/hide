@@ -73,12 +73,12 @@ class SplitContainer extends WebComponent {
 		layout = document.createStyleElement();
 		root.innerHTML = "";
 		root.append(layout);
-		for (i => pane in panes) {
-			if (i > 0)
-				root.append(splitter(i - 1));
+		for (i in 1...panes.length)
+			root.append(splitter(i - 1));
+		for (i in 0...children.length) {
 			var slot = document.createSlotElement();
 			root.append(slot);
-			slot.assign(pane);
+			slot.assign(children[i]);
 		}
 		readStyles();
 		applyLayout();

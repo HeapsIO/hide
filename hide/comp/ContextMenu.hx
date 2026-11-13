@@ -450,6 +450,7 @@ class ContextMenu {
                     if (item.click != null) {
                         var newItem = {label: item.label, click: item.click, enabled: item.enabled};
                         var li = createItem(newItem, flatItems.length);
+                        hide.Search.fuzzyHighlight(li.querySelector(".label"), filterLower);
 
                         menu.appendChild(li);
                         li.style.setProperty("--level", '${submenuStack.length-1}');
@@ -467,6 +468,7 @@ class ContextMenu {
                         li.style.setProperty("--level", '${submenuStack.length-1}');
                         li.style.setProperty("--menu-level", '${submenuStack.length}');
                         li.innerText = item.label;
+                        hide.Search.fuzzyHighlight(li, filterLower);
                         li.classList.add("submenu-inline-header");
                         lastSeparator = null;
                         submenuStack.push(item.menu.iterator());
@@ -474,6 +476,7 @@ class ContextMenu {
                 }
                 else {
                     var li = createItem(item, flatItems.length);
+                    hide.Search.fuzzyHighlight(li.querySelector(".label"), filterLower);
                     menu.appendChild(li);
                     li.style.setProperty("--level", '${submenuStack.length-1}');
                     if (item.enabled == null || item.enabled == true) {

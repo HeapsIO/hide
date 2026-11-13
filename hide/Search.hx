@@ -89,6 +89,102 @@ class Search {
 		return finalName;
 	}
 
+	#if js
+	static var cssHighlightRanges = new js.lib.WeakMap<Array<js.html.Range>>();
+
+	/**
+		Highlights `ranges` of the text of `element` with the `::highlight(search-hl)` css pseudo-element, without modifying the DOM.
+		Highlights of elements removed from the DOM are dropped automatically.
+	**/
+	public static function cssHighlight(element: js.html.Element, ranges: SearchRanges) {
+		clearCssHighlight(element);
+
+		var highlight = js.html.CSS.highlights.get("search-hl");
+		if (highlight == null) {
+			highlight = new hide.html.Highlight();
+			js.html.CSS.highlights.set("search-hl", highlight);
+		}
+
+		// clear leftover ranges that belonged to now removed
+		// elements
+		for (range in highlight) {
+			if (range.collapsed)
+				highlight.delete(range);
+		}
+
+		var domRanges = [];
+		var walker = js.Browser.document.createTreeWalker(element, js.html.NodeFilter.SHOW_TEXT);
+		var node = walker.nextNode();
+		var nodeStart = 0;
+		var range : js.html.Range = null;
+		for (i in 0...ranges.length) {
+			var pos = ranges[i];
+			while (node != null && pos > nodeStart + node.textContent.length) {
+				nodeStart += node.textContent.length;
+				node = walker.nextNode();
+			}
+			if (node == null)
+				break;
+
+			if ((i & 1) == 0) {
+				range = new js.html.Range();
+				range.setStart(node, pos - nodeStart);
+			} else {
+				range.setEnd(node, pos - nodeStart);
+				highlight.add(range);
+				domRanges.push(range);
+			}
+		}
+
+		cssHighlightRanges.set(element, domRanges);
+	}
+
+	/**
+		Highlights `needle` in the text of `element` with `cssHighlight`, using the same case insensitive match as `fuzzyScore` :
+		the plain substring if any, else the first subsequence. Returns false if nothing matched.
+	**/
+	public static function fuzzyHighlight(element: js.html.Element, needle: String) : Bool {
+		if (needle == "")
+			return false;
+
+		var text = element.textContent.toLowerCase();
+		needle = needle.toLowerCase();
+		var ranges : SearchRanges = [];
+		var pos = text.indexOf(needle);
+		if (pos >= 0) {
+			ranges = [pos, pos + needle.length];
+		} else {
+			var ti = 0;
+			for (ni in 0...needle.length) {
+				ti = text.indexOf(needle.charAt(ni), ti);
+				if (ti < 0)
+					return false;
+				if (ranges.length > 0 && ranges[ranges.length - 1] == ti)
+					ranges[ranges.length - 1] = ti + 1;
+				else {
+					ranges.push(ti);
+					ranges.push(ti + 1);
+				}
+				ti++;
+			}
+		}
+
+		cssHighlight(element, ranges);
+		return true;
+	}
+
+	public static function clearCssHighlight(element: js.html.Element) {
+		var domRanges = cssHighlightRanges.get(element);
+		if (domRanges == null)
+			return;
+
+		var highlight = js.html.CSS.highlights.get("search-hl");
+		for (range in domRanges)
+			highlight.delete(range);
+		cssHighlightRanges.delete(element);
+	}
+	#end
+
 	static var tmpColumn0: Array<Int> = [];
 	static var tmpColumn1: Array<Int> = [];
 	static var tmpColumn2: Array<Int> = [];

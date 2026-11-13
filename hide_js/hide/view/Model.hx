@@ -1,5 +1,4 @@
 package hide.view;
-import hxd.Key as K;
 
 class CollisionSettings {
 	public var mode : Int;
@@ -331,14 +330,10 @@ class Model extends FileView {
 	var light : h3d.scene.Object;
 	var lightDirection : h3d.Vector;
 
-	var aspeed : hide.comp.Range;
 	var aloop : { function toggle( v : Bool ) : Void; var element : Element; }
-	var apause : { function toggle( v : Bool ) : Void; var element : Element; };
 	var aretarget : { var element : Element; };
-	var timeline : h2d.Graphics;
-	var timecursor : h2d.Bitmap;
-	var frameIndex : h2d.Text;
 	var currentAnimation : { file : String, name : String };
+	var timeline : Timeline;
 	var cameraMove : Void -> Void;
 	var scene(get,never) : hide.comp.Scene;
 	var rootPath : String;
@@ -354,7 +349,6 @@ class Model extends FileView {
 	var shader = new h3d.shader.FixedColor(0xffffff);
 	var shader2 = new h3d.shader.FixedColor(0xff8000);
 
-	var animSelector : hide.comp.Toolbar.ToolSelect<String>;
 	var shapesEditor = new Map<String, hide.comp.ShapeEditor>();
 
 	override function onDisplay() {
@@ -484,12 +478,20 @@ class Model extends FileView {
 			tools.refreshToggles();
 
 		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
+
+		for (t in ide.getViews(Timeline))
+			bindTimeline(t);
+	}
+
+	override function onHide() {
+		getTimeline()?.clear();
 	}
 
 	override function destroy() {
 		for (s in shapesEditor)
 			s.remove();
 		shapesEditor.clear();
+		getTimeline()?.clear();
 		super.destroy();
 	}
 
@@ -2254,35 +2256,7 @@ class Model extends FileView {
 		}
 
 		tools.clear();
-		var anims = scene.listAnims(getPath());
-
 		var a = this.getDisplayState(KEY_ANIM_PLAYING);
-		if( anims.length > 0 ) {
-			var selIdx = 0;
-			for (aIdx => anim in anims) {
-				if (anim == a)
-					selIdx = aIdx + 1;
-			}
-			var sel = tools.addSelect("play-circle", null, this.saveDisplayKey + "/animationSearch");
-			this.animSelector = sel;
-			var content = [for( a in anims ) {
-				var label = scene.animationName(a);
-				{ label : label, value : a }
-			}];
-			content.unshift({ label : "-- no anim --", value : null });
-			sel.setContent(content);
-			sel.element.find(".label").text(content[selIdx].label);
-			sel.onSelect = function(file:String) {
-				if (scene.editor.view.modified && !js.Browser.window.confirm("Current animation has been modified, change animation without saving?"))
-				{
-					var idx = anims.indexOf(currentAnimation.file)+1;
-					sel.element.find(".label").text(content[idx].label);
-					return;
-				}
-
-				setAnimation(file);
-			};
-		}
 
 		tools.saveDisplayKey = "ModelTools";
 
@@ -2340,22 +2314,15 @@ class Model extends FileView {
 			}
 		}, null, null, State);
 
-		apause = tools.addToggle("pause", "pause", "Pause animation", function(v) {
-			if( obj.currentAnimation != null ) obj.currentAnimation.pause = v;
-		}, null, null, State);
-
 		aretarget = tools.addToggle("retarget", "share-square-o", "Retarget Animation", function(b) {
 			setRetargetAnim(b);
 		}, null, null, State);
 
-		aspeed = tools.addRange("Animation speed", function(v) {
-			if( obj.currentAnimation != null ) obj.currentAnimation.speed = v;
-		}, 1, 0, 2);
-
 		initConsole();
 
-		sceneEditor.onResize = buildTimeline;
 		setAnimation(a);
+		if (scene.listAnims(getPath()).length > 0 && ide.getViews(Timeline).length == 0)
+			ide.open("hide.view.Timeline", {});
 
 		// Adapt initial camera position to model
 		var camSettings = @:privateAccess sceneEditor.view.getDisplayState("Camera");
@@ -2392,10 +2359,10 @@ class Model extends FileView {
 		index = (index + anims.length + offset) % anims.length;
 
 		setAnimation(anims[index]);
-		animSelector.element.find(".label").text(currentAnimation.name);
 	}
 
 	function onUpdate(dt:Float) {
+		getTimeline()?.update();
 		var cam = scene.s3d.camera;
 		if( light != null ) {
 			if( !sceneEditor.isSelected(plight) )
@@ -2408,10 +2375,6 @@ class Model extends FileView {
 					lightDirection.z
 				));
 			}
-		}
-		if( timeline != null ) {
-			timecursor.x = Std.int((obj.currentAnimation.frame / obj.currentAnimation.frameCount) * (scene.s2d.width - timecursor.tile.width));
-			frameIndex.text = untyped obj.currentAnimation.frame.toFixed(2);
 		}
 		if( cameraMove != null )
 			cameraMove();
@@ -2841,21 +2804,14 @@ class Model extends FileView {
 	function setAnimation( file : String ) {
 
 		scene.setCurrent();
-		if( timeline != null ) {
-			timeline.remove();
-			timeline = null;
-		}
-		apause.toggle(false);
 		aloop.toggle(true);
-		aspeed.value = 1;
 		aloop.element.toggle(file != null);
-		aspeed.element.toggle(file != null);
-		apause.element.toggle(file != null);
 		aretarget.element.toggle(file != null);
 		if( file == null ) {
 			obj.stopAnimation();
 			currentAnimation = null;
 			this.removeDisplayState(KEY_ANIM_PLAYING);
+			refreshTimelineView();
 			return;
 		}
 
@@ -2869,7 +2825,8 @@ class Model extends FileView {
 		var skin = Std.downcast(obj, h3d.scene.Skin);
 		if (skin != null)
 			@:privateAccess skin.prevAbsPosFrame = -1;
-		buildTimeline();
+		refreshTimelineView();
+		getTimeline()?.frameAll();
 		buildEventPanel();
 		modified = false;
 
@@ -2896,244 +2853,153 @@ class Model extends FileView {
 		eventList.append(fbxEventList);
 	}
 
-	function buildTimeline() {
-		if( timeline != null ) {
-			timeline.remove();
-			timeline = null;
-		}
-		if( obj.currentAnimation == null )
-			return;
-
-		scene.setCurrent();
-
-		var H = 15;
-		var W = scene.s2d.width;
-		timeline = new h2d.Graphics(scene.s2d);
-		timeline.y = scene.s2d.height - H;
-		timeline.beginFill(0x101010, 0.8);
-		timeline.drawRect(0, 0, W, H);
-
-		if( W / obj.currentAnimation.frameCount > 3 ) {
-			timeline.beginFill(0x333333);
-			for( i in 0...obj.currentAnimation.frameCount+1 ) {
-				var p = Std.int(i * W / obj.currentAnimation.frameCount);
-				if( p == W ) p--;
-				timeline.drawRect(p, 0, 1, H>>1);
-			}
-		}
-
-		var int = new h2d.Interactive(W, H, timeline);
-		int.enableRightButton = true;
-		timecursor = new h2d.Bitmap(h2d.Tile.fromColor(0x808080, 8, H), timeline);
-		timecursor.x = -100;
-		int.onPush = function(e) {
-			switch( e.button ) {
-			case 0:
-				var prevPause = obj.currentAnimation.pause;
-				obj.currentAnimation.pause = true;
-				var f = (e.relX / W) * obj.currentAnimation.frameCount;
-				if (K.isDown(K.SHIFT))
-					f = Math.round(f);
-				obj.currentAnimation.setFrame(f);
-				int.startCapture(function(e) {
-					switch(e.kind ) {
-					case ERelease:
-						obj.currentAnimation.pause = prevPause;
-						scene.s2d.stopCapture();
-					case EMove:
-						var f = (e.relX / W) * obj.currentAnimation.frameCount;
-						if (K.isDown(K.SHIFT))
-							f = Math.round(f);
-						obj.currentAnimation.setFrame(f);
-					default:
-					}
-				});
-			}
-		}
-
-		int.onClick = (e:hxd.Event) -> {
-			if (e.button == 1) {
-				var deleteEvent = function(s:String, f:Int){
-					obj.currentAnimation.removeEvent(f, s);
-					buildTimeline();
-					buildEventPanel();
-
-					undo.change(Custom(function(undo) {
-						if(undo) {
-							obj.currentAnimation.addEvent(f, s);
-						}
-						else {
-							obj.currentAnimation.removeEvent(f, s);
-						}
-
-						buildTimeline();
-						buildEventPanel();
-					}));
-				}
-				var addEvent = function(s:String, f:Int){
-					obj.currentAnimation.addEvent(f, s);
-					buildTimeline();
-					buildEventPanel();
-
-					undo.change(Custom(function(undo) {
-						if(undo) {
-							obj.currentAnimation.removeEvent(f, s);
-						}
-						else {
-							obj.currentAnimation.addEvent(f, s);
-						}
-
-						buildTimeline();
-						buildEventPanel();
-					}));
-				}
-				var frame = Math.round((e.relX / W) * obj.currentAnimation.frameCount);
-				var menuItems : Array<hrt.ui.HuiMenu.MenuItem> = [
-					{ label : "New", click: function(){ addEvent("NewEvent", frame); }},
-				];
-				if(obj.currentAnimation.events != null && obj.currentAnimation.events[frame] != null){
-					for (e in obj.currentAnimation.events[frame])
-						if (e.originalEvent == null)
-							menuItems.push({ label : "Delete " + e.name, click: function(){ deleteEvent(e.name, frame); }});
-				}
-				hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menuItems);
-			}
-		}
-
-		frameIndex = new h2d.Text(hxd.res.DefaultFont.get(), timecursor);
-		frameIndex.y = -30.0;
-		frameIndex.textAlign = Center;
-		frameIndex.text = "0";
-		frameIndex.alpha = 0.5;
-
-		var events = @:privateAccess obj.currentAnimation.events;
-		if( events != null ) {
-			var upperLines = 0;
-			for( i in 0...events.length ) {
-				var el = events[i];
-				if( el == null || el.length == 0 ) continue;
-				var px = Std.int((i / obj.currentAnimation.frameCount) * W);
-				var py = -20;
-				var lowest = 0;
-				for(j in 0 ... el.length ) {
-					var event = events[i][j];
-					var tf = new h2d.TextInput(hxd.res.DefaultFont.get(), timeline);
-					tf.backgroundColor = 0xFF0000;
-					tf.onClick = function(e) {
-						if (@:privateAccess sceneEditor.view.keys.disabledStack == 0)
-							sceneEditor.view.keys.pushDisable();
-						e.propagate = false;
-					}
-					tf.onFocusLost = function(e) {
-						var newName = tf.text;
-						var oldName = events[i][j];
-						events[i][j].name = newName;
-						if( newName == "" ) {
-							events[i].splice(j,1);
-							if( events[i].length == 0 ) events[i] = null;
-						}
-						buildTimeline();
-						buildEventPanel();
-
-						undo.change(Custom(function(undo) {
-							if(undo) {
-								if (events[i] == null)
-									events[i] = [oldName];
-								else if (events[i][j].name != newName)
-									events[i].insert(j, oldName);
-								else
-									events[i][j] = oldName;
-							}
-							else {
-								events[i][j].name = newName;
-								if( newName == "" ) {
-									events[i].splice(j,1);
-									if( events[i].length == 0 ) events[i] = null;
-								}
-							}
-
-							buildTimeline();
-							buildEventPanel();
-						}));
-
-						sceneEditor.view.keys.popDisable();
-					}
-					tf.text = event.name;
-					tf.x = px - Std.int(tf.textWidth * 0.5);
-					if( tf.textWidth > 100 && j == 0 ) {
-						upperLines++;
-						py -= upperLines * 40;
-					}
-					if( j > 0 )
-						upperLines++;
-					if( lowest == 0 )
-						lowest = py;
-					tf.y = py;
-					tf.alpha = 0.5;
-					py -= 15;
-					var dragIcon = new h2d.Bitmap(null, timeline);
-					dragIcon.scaleX = 5.0;
-					dragIcon.scaleY = 2.0;
-					dragIcon.color.set(0.34, 0.43, 0, 1);
-					dragIcon.x = px - (dragIcon.scaleX * 0.5 * 5);
-					dragIcon.y = py;
-					py -= Std.int(dragIcon.scaleY * 5 * 2);
-					var dragInter = new h2d.Interactive(5, 5, dragIcon, null );
-					dragInter.x = 0;
-					dragInter.y = 0;
-					var curFrame = i;
-					var curPos = (curFrame / obj.currentAnimation.frameCount) * W;
-					dragInter.onPush = function(e) {
-						if( e.button == 0 ){
-							var startFrame = curFrame;
-							dragInter.startCapture(function(e) {
-								switch( e.kind ) {
-								case ERelease:
-									dragInter.stopCapture();
-									buildTimeline();
-									buildEventPanel();
-									if( curFrame != startFrame ) {
-										undo.change(Custom(function(undo) {
-											if(undo) {
-												events[curFrame].remove(event);
-												events[startFrame].push(event);
-												event.frame = startFrame;
-											}
-											else {
-												events[curFrame].push(event);
-												events[startFrame].remove(event);
-												event.frame = curFrame;
-											}
-
-											buildTimeline();
-											buildEventPanel();
-										}));
-									}
-								case EMove:
-									var newFrame = Math.round(( (curPos + (e.relX - 2.5) * dragIcon.scaleX ) / W ) * obj.currentAnimation.frameCount);
-									if( newFrame >= 0 && newFrame <= obj.currentAnimation.frameCount ) {
-										events[curFrame].remove(event);
-										if(events[newFrame] == null)
-											events[newFrame] = [];
-										events[newFrame].insert(0, event);
-										event.frame = newFrame;
-										curFrame = newFrame;
-										buildTimeline();
-										buildEventPanel();
-										@:privateAccess dragInter.scene = scene.s2d;
-									}
-								default:
-								}
-							});
-						}
-					};
-				}
-				timeline.beginFill(0xC0C0C0,0.8);
-				timeline.drawRect(px, lowest + 20, 1, H - (lowest + 20));
-			}
-		}
+	function getTimeline() {
+		return timeline?.owner == this ? timeline : null;
 	}
 
+	public function bindTimeline(t : Timeline) {
+		t.clear();
+		t.owner = this;
+		timeline = t;
+		t.setUnit(Timeline.Unit.Frame);
+
+		t.getTime = () -> {
+			var anim = obj?.currentAnimation;
+			return anim == null ? 0. : anim.frame / anim.sampling;
+		}
+		t.setTime = (time : Float) -> {
+			var anim = obj?.currentAnimation;
+			if (anim != null)
+				anim.setFrame(hxd.Math.clamp(time * anim.sampling, 0, anim.frameCount - 1));
+		}
+		t.isPaused = () -> {
+			return obj?.currentAnimation?.pause ?? true;
+		}
+		t.setPaused = (v : Bool) -> {
+			if (obj?.currentAnimation != null)
+				obj.currentAnimation.pause = v;
+		}
+		t.getSpeed = () -> {
+			return obj?.currentAnimation?.speed ?? 1.;
+		}
+		t.setSpeed = (v : Float) -> {
+			if (obj?.currentAnimation == null)
+				return;
+			obj.currentAnimation.speed = v;
+		}
+		t.onSave = () -> save();
+		t.onUndo = () -> undo.undo();
+		t.onRedo = () -> undo.redo();
+
+		t.contextMenu = (frame : Int) -> {
+			var anim = obj?.currentAnimation;
+			if (anim == null)
+				return [];
+			if (frame < 0 || frame >= anim.frameCount)
+				return [];
+			return [{ label: "Add Event", click: () -> addTimelineEvent("NewEvent", frame) }];
+		}
+
+		t.onDelete = (markers : Array<Timeline.Marker>) -> {
+			var deleted = [for (m in markers) if (obj.currentAnimation.getEvent(m.frame, m.name)?.originalEvent == null) m];
+			function apply(isUndo : Bool) {
+				var anim = obj.currentAnimation;
+				for (m in deleted) {
+					if (isUndo)
+						anim.addEvent(m.frame, m.name);
+					else
+						anim.removeEvent(m.frame, m.name);
+				}
+				refreshTimelineView();
+				buildEventPanel();
+			}
+			apply(false);
+			undo.change(Custom(apply));
+		}
+
+		t.onChange = (oldMarkers : Array<Timeline.Marker>, newMarkers : Array<Timeline.Marker>) -> {
+			function moveEvents(from : Array<Timeline.Marker>, to : Array<Timeline.Marker>) {
+				var anim = obj.currentAnimation;
+				var moved = [for (m in from) anim.getEvent(m.frame, m.name)];
+				for (i => e in moved) {
+					anim.events[from[i].frame].remove(e);
+					if (anim.events[from[i].frame].length == 0)
+						anim.events[from[i].frame] = null;
+				}
+				for (i => e in moved) {
+					if (anim.events[to[i].frame] == null)
+						anim.events[to[i].frame] = [];
+					anim.events[to[i].frame].push(e);
+					e.frame = to[i].frame;
+					e.name = to[i].name;
+				}
+				refreshTimelineView();
+				buildEventPanel();
+				getTimeline()?.selectMarkers(to);
+			}
+			moveEvents(oldMarkers, newMarkers);
+			undo.change(Custom((isUndo) -> isUndo ? moveEvents(newMarkers, oldMarkers) : moveEvents(oldMarkers, newMarkers)));
+		}
+
+		refreshTimelineView();
+		t.frameAll();
+	}
+
+	function addTimelineEvent(name : String, frame : Int) {
+		function apply(isUndo : Bool) {
+			var anim = obj.currentAnimation;
+			if (isUndo)
+				anim.removeEvent(frame, name);
+			else
+				anim.addEvent(frame, name);
+			refreshTimelineView();
+			buildEventPanel();
+		}
+		apply(false);
+		undo.change(Custom(apply));
+	}
+
+	function refreshTimelineView() {
+		var t = getTimeline();
+		if (t == null || obj == null)
+			return;
+
+		t.clear(Timeline.ClearFlag.Content);
+
+		scene.setCurrent();
+		var anims = scene.listAnims(getPath());
+		if (anims.length == 0)
+			return;
+
+		var anim = obj.currentAnimation;
+		var track = js.Browser.document.createDivElement();
+		hide.html.Html.build(track,
+			<span>Animation :</span>
+		);
+		var choices : Array<hide.comp.Dropdown.Choice> = [for (a in anims) { id: a, text: scene.animationName(a), classes: ["compact"] }];
+		var select = new hide.comp.Select(null, null, choices);
+		select.value = currentAnimation?.file;
+		select.onChange = (file : String) -> {
+			if (modified && !js.Browser.window.confirm("Current animation has been modified, change animation without saving?")) {
+				select.value = currentAnimation?.file;
+				return;
+			}
+			setAnimation(file == "" ? null : file);
+		};
+		track.append(select.element.get(0));
+		t.addTrack("Animation", track);
+
+		if (anim == null)
+			return;
+
+		t.setFramerate(anim.sampling);
+		t.addClip(currentAnimation.name, 0, anim.frameCount - 1, "Animation");
+		var events = anim.events ?? [];
+		for (frame => evts in events) {
+			for (e in evts ?? [])
+				t.addMarker(e.name, frame, "Animation");
+		}
+	}
 
 	public function setRenderPropsEditionVisibility(visible : Bool) {
 		if (element == null)

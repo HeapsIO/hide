@@ -145,21 +145,4 @@ class FancySearch extends hide.comp.Component {
 		}
 		return ranges;
 	}
-
-	public static function splitSearchRanges(string: String, ranges: SearchRanges, openToken: String = "<span class='search-hl'>", closeToken: String = "</span>") : String {
-		var lastPos = 0;
-		var finalName = "";
-		for (i in 0...(ranges.length>>1)) {
-			var index = i * 2;
-			var len = ranges[index+1] - ranges[index];
-			if (len > 0) {
-				var first = string.substr(lastPos, ranges[index] - lastPos);
-				var match = string.substr(ranges[index], len);
-				finalName += first + openToken + match + closeToken;
-			}
-			lastPos = ranges[index+1];
-		}
-		finalName += string.substr(lastPos);
-		return finalName;
-	}
 }

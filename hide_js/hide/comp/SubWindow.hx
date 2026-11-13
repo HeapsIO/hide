@@ -20,6 +20,11 @@ class SubWindow {
 		window = electron.Window.openSub(bounds.x, bounds.y, bounds.w, bounds.h);
 		doc = cast window.document;
 		window.requestAnimationFrame((_) -> sizeOffset = { w: bounds.w - window.innerWidth, h: bounds.h - window.innerHeight });
+
+		doc.open();
+		doc.write("<!DOCTYPE html><html><head></head><body></body></html>");
+		doc.close();
+
 		for (s in js.Browser.document.querySelectorAll('link[rel="stylesheet"]')) {
 			var link : js.html.LinkElement = cast doc.createElement("link");
 			link.rel = "stylesheet";

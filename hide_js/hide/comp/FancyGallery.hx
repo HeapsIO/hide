@@ -15,7 +15,6 @@ typedef GalleryItemData<GalleryItem> = {
 	element: js.html.Element,
 	thumbnailStringCache: String,
 	iconStringCache: String,
-	ranges: hide.comp.FancySearch.SearchRanges,
 	title: String,
 };
 
@@ -541,15 +540,16 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		}
 
 		var name = genElement.querySelector("fancy-name");
-		var ranges = getItemRanges(data.item);
-		if (Reflect.getProperty(name, "x-name") != data.name || data.ranges != ranges) {
-			data.ranges = ranges;
-			if (data.ranges != null) {
-				name.innerHTML = FancySearch.splitSearchRanges(data.name, data.ranges);
-			} else {
-				name.innerHTML = data.name;
-			}
+		if (Reflect.getProperty(name, "x-name") != data.name) {
+			name.innerHTML = data.name;
 			Reflect.setProperty(name, "x-name", data.name);
+		}
+
+		var ranges = getItemRanges(data.item);
+		if (ranges != null) {
+			hide.Search.cssHighlight(name, ranges);
+		} else {
+			hide.Search.clearCssHighlight(name);
 		}
 
 		genElement.title = data.title;
@@ -592,7 +592,6 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 				element: null,
 				thumbnailStringCache: null,
 				iconStringCache: null,
-				ranges: null,
 				title: getTitle(item),
 			});
 

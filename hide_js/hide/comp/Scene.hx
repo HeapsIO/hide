@@ -30,6 +30,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	public var s3d : h3d.scene.Scene;
 	public var sevents : hxd.SceneEvents;
 	public var speed : Float = 1.0;
+	public var isPaused = false;
 	public var visible(default, null) : Bool = true;
 	public var editor : hide.comp.SceneEditor;
 	public var autoDisposeOutOfDocument : Bool = true;
@@ -358,7 +359,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		}
 		if( !visible || pendingCount > 0)
 			return;
-		var dt = hxd.Timer.tmod * speed / 60;
+		var dt = isPaused ? 0 : hxd.Timer.tmod * speed / 60;
 		if( !Ide.inst.isFocused && Ide.inst.currentConfig.get("hide.unfocusCPUSavingMode") ) {
 			// refresh at 1FPS
 			unFocusedTime += dt;

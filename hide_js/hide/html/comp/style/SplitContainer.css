@@ -10,6 +10,10 @@ slot {
 	display: contents;
 }
 
+::slotted([hidden]) {
+	display: none;
+}
+
 /* Centered on the gap before its pane, --splitter-hitbox wide */
 .splitter {
 	--size: var(--gap);
