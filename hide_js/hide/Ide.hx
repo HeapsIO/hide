@@ -48,6 +48,9 @@ class Ide extends hide.tools.IdeData {
 	var maximized : Bool;
 	var fullscreen : Bool;
 	var updates : Array<Void->Void> = [];
+	// any window of the app focused, polled by mainLoop
+	var appFocused = true;
+	var appFocusPending = false;
 	var views : Array<hide.ui.View<Dynamic>> = [];
 	var lastClosedTabStates : Array<Dynamic> = [];
 
@@ -368,7 +371,7 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	function get_isFocused() {
-		return js.Browser.document.hasFocus();
+		return appFocused;
 	}
 	public function focus() {
 		window.focus();
@@ -570,6 +573,16 @@ class Ide extends hide.tools.IdeData {
 	function mainLoop() {
 		hxd.Timer.update();
 		@:privateAccess hxd.Pad.syncPads();
+
+		// async : the loop does not wait for the main process
+		if( !appFocusPending ) {
+			appFocusPending = true;
+			electron.App.isFocused().then(
+				(b) -> { appFocused = b; appFocusPending = false; },
+				(_) -> appFocusPending = false
+			);
+		}
+
 		for( f in updates )
 			f();
 	}

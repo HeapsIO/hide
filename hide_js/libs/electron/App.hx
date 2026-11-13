@@ -62,6 +62,13 @@ class App {
 	}
 
 	/**
+		Resolved with true if any window of the application (main window, sub windows) has the focus
+	**/
+	public static function isFocused() : js.lib.Promise<Bool> {
+		return cast Ipc.callAsync("app.isFocused");
+	}
+
+	/**
 		Called when a debugger attaches to or detaches from this window
 	**/
 	public static function onDebuggerChange( callb : Bool -> Void ) {

@@ -221,6 +221,76 @@ class Gym extends hide.ui.View<{}> {
 			});
 		}
 
+		{
+			var sceneSection = section(element, "Scene");
+			hide.html.Html.build(sceneSection.get(0),
+				<div>
+					<hide-toolbar>
+						<hide-button id="detachButton" label="Detach"/>
+						<hide-button id="newWindowButton" label="New Window"/>
+					</hide-toolbar>
+					<div id="sceneContainer" style="height: 400px"></div>
+				</div>
+			);
+
+			function createScene(parent : js.html.Element) {
+				var scene = new hide.comp.Scene(config, new Element(parent), null);
+				scene.onReady = () -> {
+					var cube = new h3d.prim.Cube(1, 1, 1, true);
+					cube.addNormals();
+					cube.addUVs();
+					var mesh = new h3d.scene.Mesh(cube, h3d.mat.Material.create(h3d.mat.Texture.genNoise(64)), scene.s3d);
+					scene.resetCamera(mesh, 1.5);
+					new h3d.scene.CameraController.OrbitCameraController(scene.s3d).loadFromCamera();
+
+					var tile = h2d.Tile.fromColor(0xFF8000, 24, 24).center();
+					var square = new h2d.Bitmap(tile, scene.s2d);
+					square.setPosition(24, 24);
+
+					var fps = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+					fps.setPosition(48, 16);
+
+					scene.onUpdate = (dt) -> {
+						square.rotation += dt * 2;
+						fps.text = 'FPS: ${scene.engine.fps}';
+					};
+				};
+				return scene;
+			}
+
+			var scene : hide.comp.Scene = null;
+			var detached : hide.comp.SubWindow = null;
+
+			sceneSection.get(0).addEventListener("toggle", () -> {
+				if (scene == null)
+					scene = createScene(sceneContainer);
+			});
+
+			detachButton.onclick = (_) -> {
+				if (scene == null || detached != null)
+					return;
+				var sceneEl = scene.element.get(0);
+				detached = new hide.comp.SubWindow(sceneContainer.clientWidth, sceneContainer.clientHeight);
+				detached.title = "Scene (detached)";
+				detached.anchor = sceneContainer;
+				detached.setContent(sceneEl);
+				detached.onClose = () -> {
+					sceneContainer.append(sceneEl);
+					detached = null;
+				};
+			};
+
+			newWindowButton.onclick = (_) -> {
+				var sub = new hide.comp.SubWindow(640, 480);
+				sub.title = "Scene";
+				sub.anchor = sceneContainer;
+				var content = sub.window.document.createDivElement();
+				content.style.height = "100%";
+				sub.setContent(content);
+				createScene(content);
+			};
+		}
+
 
 		{
 			var toolbar = section(element, "Offscreen Rendering");

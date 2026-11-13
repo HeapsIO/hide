@@ -53,7 +53,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		element.addClass("hide-scene-container");
 		canvas = cast new Element("<canvas class='hide-scene' style='width:100%;height:100%'/>").appendTo(element)[0];
 		canvas.addEventListener("mousemove",function(_) {
-			switch(js.Browser.document.activeElement?.tagName) {
+			switch(canvas.ownerDocument.activeElement?.tagName) {
 				// Don't steal focus if we are curently editing an input
 				case "INPUT", "TEXTAREA":
 					return;
@@ -64,7 +64,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 
 		// Prevent mouse from disapearing when clicking on the canvas when it wasn't focused (when an input node was focused for example)
 		canvas.addEventListener("mousedown",function(e: js.html.MouseEvent) {
-			if(js.Browser.document.activeElement != canvas) {
+			if(canvas.ownerDocument.activeElement != canvas) {
 				canvas.focus();
 				e.preventDefault();
 			}
@@ -72,7 +72,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 
 		// Capture mouse during drags (usefull when dragging the gizmo around so it doesn't loose focus)
 		canvas.addEventListener("pointerdown", function(e: js.html.PointerEvent) {
-			if(js.Browser.document.activeElement == canvas) {
+			if(canvas.ownerDocument.activeElement == canvas) {
 				// Sometimes pointer capture fails
 				try {
 					canvas.setPointerCapture(e.pointerId);
@@ -347,16 +347,21 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	}
 
 	public function hasFocus() {
-		return js.Browser.document.activeElement == canvas;
+		return canvas.ownerDocument.activeElement == canvas;
 	}
 
 	function doSync() {
-		if( new Element(canvas).parents("html").length == 0) {
+		// no defaultView : its window (SubWindow) was closed
+		if( canvas.ownerDocument.defaultView == null || new Element(canvas).parents("html").length == 0) {
 			if (autoDisposeOutOfDocument) {
 				dispose();
 			}
 			return;
 		}
+
+		// the canvas can be moved to another window (SubWindow)
+		@:privateAccess window.checkCanvasWindow();
+
 		if( !visible || pendingCount > 0)
 			return;
 		var dt = isPaused ? 0 : hxd.Timer.tmod * speed / 60;
