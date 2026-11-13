@@ -483,6 +483,10 @@ class Model extends FileView {
 			bindTimeline(t);
 	}
 
+	override function onHide() {
+		getTimeline()?.clear();
+	}
+
 	override function destroy() {
 		for (s in shapesEditor)
 			s.remove();
@@ -2857,7 +2861,6 @@ class Model extends FileView {
 		t.clear();
 		t.owner = this;
 		timeline = t;
-		t.setHasYAxis(false);
 		t.setUnit(Timeline.Unit.Frame);
 
 		t.getTime = () -> {
@@ -2963,6 +2966,7 @@ class Model extends FileView {
 
 		t.clear(Timeline.ClearFlag.Content);
 
+		scene.setCurrent();
 		var anims = scene.listAnims(getPath());
 		if (anims.length == 0)
 			return;

@@ -50,9 +50,10 @@ class Timeline extends hide.ui.View<{}> {
 	static final MAX_FRAME = 1 << 30;
 	static final SPEEDS = [0.125, 0.25, 0.5, 1., 2., 4., 8.];
 
-	public var owner : hide.ui.View<Dynamic>;
+	public var owner(default, set) : hide.ui.View<Dynamic>;
+	public var isSeekable(default, set) : Bool = true;
 	public var unit(default, null) : Unit = Second;
-	public var hasYAxis(default, null) : Bool = true;
+	public var hasYAxis(default, null) : Bool = false;
 	public var framerate(default, null) : Float = 60.;
 
 	var tracks : Array<Track> = [];
@@ -70,6 +71,7 @@ class Timeline extends hide.ui.View<{}> {
 	var vstep = MIN_STEP;
 	var wasPaused : Null<Bool>;
 	var shownSpeed : Null<Float>;
+	var resizeObserver : hide.comp.ResizeObserver;
 
 	var leftPanel : Element;
 	var rightPanel : Element;
@@ -79,6 +81,7 @@ class Timeline extends hide.ui.View<{}> {
 	var time : SpanElement;
 	var playButton : hide.html.comp.Button;
 	var speedButton : hide.html.comp.Button;
+	var seekButtons : Array<hide.html.comp.Button> = [];
 
 	override function onDisplay() {
 		var root = element.get(0);
@@ -91,11 +94,11 @@ class Timeline extends hide.ui.View<{}> {
 			<div class="timeline-root">
 				<hide-toolbar>
 					<hide-group>
-						<hide-button title="Go to start" icon={HideRes.icon.fast_rewind} onclick={() -> setTime(0.)}/>
-						<hide-button title="Previous frame" icon={HideRes.icon.skip_previous} onclick={() -> setTime(Math.max(getTime() - frameToTime(1), 0.))}/>
+						<hide-button id="start-button" title="Go to start" icon={HideRes.icon.fast_rewind} onclick={() -> setTime(0.)}/>
+						<hide-button id="previous-button" title="Previous frame" icon={HideRes.icon.skip_previous} onclick={() -> setTime(Math.max(getTime() - frameToTime(1), 0.))}/>
 						<hide-button id="play-button" title="Play / Pause" icon={HideRes.icon.play} onclick={() -> setPaused(!isPaused())}/>
-						<hide-button title="Next frame" icon={HideRes.icon.skip_next} onclick={() -> setTime(Math.min(getTime() + frameToTime(1), frameToTime(getMaxFrame())))}/>
-						<hide-button title="Go to end" icon={HideRes.icon.fast_forward} onclick={() -> setTime(frameToTime(getMaxFrame()))}/>
+						<hide-button id="next-button" title="Next frame" icon={HideRes.icon.skip_next} onclick={() -> setTime(Math.min(getTime() + frameToTime(1), frameToTime(getMaxFrame())))}/>
+						<hide-button id="end-button" title="Go to end" icon={HideRes.icon.fast_forward} onclick={() -> setTime(frameToTime(getMaxFrame()))}/>
 					</hide-group>
 					<hide-button id="speed-button" title="Playback speed (click: faster, right click: slower)" onclick={() -> changeSpeed(1)} oncontextmenu={(e : MouseEvent) -> { e.preventDefault(); changeSpeed(-1); }}/>
 					<hide-button title="Frame all" icon={HideRes.icon.fullscreen} onclick={frameAll}/>
@@ -123,6 +126,8 @@ class Timeline extends hide.ui.View<{}> {
 		this.time = time;
 		this.playButton = playButton;
 		this.speedButton = speedButton;
+		seekButtons = [startButton, previousButton, nextButton, endButton];
+		updateButtons();
 
 		for (t in tracks)
 			t.element = null;
@@ -148,6 +153,14 @@ class Timeline extends hide.ui.View<{}> {
 			if (m.isActive())
 				m.bindTimeline(this);
 		}
+		for (p in ide.getViews(Prefab)) {
+			if (p.isActive())
+				p.bindTimeline(this);
+		}
+
+		resizeObserver?.disconnect();
+		resizeObserver = new hide.comp.ResizeObserver((_, _) -> refresh());
+		resizeObserver.observe(rightPanel);
 	}
 
 	override function getTitle() {
@@ -155,12 +168,16 @@ class Timeline extends hide.ui.View<{}> {
 	}
 
 	override function destroy() {
+		resizeObserver?.disconnect();
+		resizeObserver = null;
 		owner = null;
 		super.destroy();
 	}
 
 	public function refresh() {
 		needRefresh = true;
+		if (owner == null)
+			update();
 	}
 
 	public function setUnit(u : Unit) {
@@ -192,6 +209,8 @@ class Timeline extends hide.ui.View<{}> {
 
 		if (flag == Full) {
 			owner = null;
+			isSeekable = true;
+			hasYAxis = false;
 			getTime = () -> 0.;
 			setTime = (_) -> {};
 			isPaused = () -> true;
@@ -310,6 +329,28 @@ class Timeline extends hide.ui.View<{}> {
 	public dynamic function onChange(oldMarkers : Array<Marker>, newMarkers : Array<Marker>) {}
 	public dynamic function onUndo() {}
 	public dynamic function onRedo() {}
+
+	function set_owner(v : hide.ui.View<Dynamic>) {
+		owner = v;
+		updateButtons();
+		return v;
+	}
+
+	function set_isSeekable(v : Bool) {
+		isSeekable = v;
+		updateButtons();
+		return v;
+	}
+
+	function updateButtons() {
+		if (playButton == null)
+			return;
+		var hasOwner = owner != null;
+		playButton.toggleAttribute("disabled", !hasOwner);
+		speedButton.toggleAttribute("disabled", !hasOwner);
+		for (b in seekButtons)
+			b.toggleAttribute("disabled", !hasOwner || !isSeekable);
+	}
 
 	inline function frameToTime(f : Int) {
 		return f / framerate;

@@ -99,3 +99,8 @@ hide-icon, ::slotted(hide-icon) {
 :host([checked]) {
 	--button-background: var(--theme-accent-dimmed);
 }
+
+:host([disabled]) {
+	opacity: 0.4;
+	pointer-events: none;
+}
