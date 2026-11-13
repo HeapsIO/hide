@@ -3657,6 +3657,27 @@ div.popup {
 	padding: 6px;
 }
 
+/* Popup.detach : the popup fills its window */
+body.kit-sub-window.popup-sub-window {
+	> kit-root {
+		display: none;
+	}
+
+	> div.popup.detached {
+		position: static;
+		flex: 1 1;
+		min-height: 0;
+		overflow: auto;
+		border: none;
+		border-radius: 0;
+		box-shadow: none;
+	}
+
+	&.auto-detached > .sub-window-title-bar {
+		display: none;
+	}
+}
+
 .settings-popup {
 	padding: 8px;
 

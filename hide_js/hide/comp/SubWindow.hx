@@ -14,7 +14,6 @@ class SubWindow {
 	var root : js.html.Element;
 	var titleText : js.html.Element;
 	var timer : haxe.Timer;
-	var sizeOffset = { w: 0., h: 0. };
 
 	static inline var TITLE_BAR_HEIGHT = 22; // .sub-window-title-bar height
 
@@ -34,7 +33,6 @@ class SubWindow {
 
 		window = electron.Window.openSub(bounds.x, bounds.y, bounds.w, bounds.h);
 		doc = cast window.document;
-		window.requestAnimationFrame((_) -> sizeOffset = { w: bounds.w - window.innerWidth, h: bounds.h - window.innerHeight });
 
 		doc.open();
 		doc.write("<!DOCTYPE html><html><head></head><body></body></html>");
@@ -65,8 +63,9 @@ class SubWindow {
 		window.addEventListener("resize", (_) -> onResize());
 		window.addEventListener("keydown", (e) -> onKeyDown(e));
 		window.addEventListener("beforeunload", (_) -> {
+			// window.open takes the content bounds, screenX includes the invisible resize border on the left
 			if (key != null)
-				hide.Ide.inst.globalState.set(key,{ x: window.screenX, y: window.screenY, w: window.innerWidth + sizeOffset.w, h: window.innerHeight + sizeOffset.h });
+				hide.Ide.inst.globalState.set(key,{ x: window.screenX + (window.outerWidth - window.innerWidth) / 2, y: window.screenY, w: window.innerWidth, h: window.innerHeight });
 			main.removeEventListener("beforeunload", close);
 			timer.stop();
 			onClose();
