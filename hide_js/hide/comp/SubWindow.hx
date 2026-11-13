@@ -14,15 +14,18 @@ class SubWindow {
 	var root : js.html.Element;
 	var titleText : js.html.Element;
 	var timer : haxe.Timer;
+	var parentWindow : js.html.Window;
 
 	static inline var TITLE_BAR_HEIGHT = 22; // .sub-window-title-bar height
 
 	/**
 		`width` and `height` are the content size, without the title bar.
 		Without `key`, the window bounds are not saved.
+		`parent` gets the focus back when the window is closed while focused (main window by default).
 	**/
-	public function new(width: Int, height: Int, ?key: String, ?x: Float, ?y: Float) {
+	public function new(width: Int, height: Int, ?key: String, ?x: Float, ?y: Float, ?parent: js.html.Window) {
 		var main = js.Browser.window;
+		parentWindow = parent ?? main;
 		var bounds : { x: Float, y: Float, w: Float, h: Float } = key != null ? hide.Ide.inst.globalState.get(key) : null;
 		height += TITLE_BAR_HEIGHT;
 		bounds ??= { x: x ?? main.screenX + (main.outerWidth - width) / 2, y: y ?? main.screenY + (main.outerHeight - height) / 2, w: width, h: height };
@@ -82,6 +85,9 @@ class SubWindow {
 	}
 
 	public function close() {
+		// not when closed by a focus loss
+		if (doc.hasFocus() && !parentWindow.closed)
+			parentWindow.focus();
 		window.close();
 	}
 

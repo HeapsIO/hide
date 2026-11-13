@@ -221,12 +221,13 @@ class Popup extends Component {
 			return toScreen(ref.ownerDocument.defaultView, r.left + offsetX, (position == Bellow ? r.bottom : r.top) + offsetY);
 		}
 
+		var parentWindow = detachParent?.get(0)?.ownerDocument.defaultView ?? oldWindow;
 		if (autoDetached) {
 			var pos = getAnchorScreenPos();
-			subWindow = new SubWindow(1, 1, null, pos.x, pos.y);
+			subWindow = new SubWindow(1, 1, null, pos.x, pos.y, parentWindow);
 		} else {
 			var pos = toScreen(oldWindow, rect.left, rect.top);
-			subWindow = new SubWindow(Math.ceil(rect.width), Math.ceil(rect.height), "popupSubwindow/" + componentName, pos.x, pos.y);
+			subWindow = new SubWindow(Math.ceil(rect.width), Math.ceil(rect.height), "popupSubwindow/" + componentName, pos.x, pos.y, parentWindow);
 		}
 
 		var win = subWindow.window;
