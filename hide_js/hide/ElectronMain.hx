@@ -357,6 +357,8 @@ class ElectronMain {
 		options.parent = parent;
 		options.show = !background;
 		options.useContentSize = true;
+		// title bar drawn by SubWindow
+		options.frame = false;
 		options.backgroundColor = "#222222";
 		options.icon = windowIcon();
 		var win = new BrowserWindow(options);

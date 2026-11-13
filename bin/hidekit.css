@@ -906,13 +906,53 @@ body.kit-sub-window {
 	margin: 0;
 	height: 100vh;
 	display: flex;
+	flex-direction: column;
 	overflow: hidden;
 	background-color: var(--inspector-bg);
+
+	> .sub-window-title-bar {
+		flex: none;
+		display: flex;
+		align-items: center;
+		height: 22px;
+		padding-left: 8px;
+
+		background-color: var(--theme-crust);
+		color: #aaa;
+		font-family: var(--default-font);
+		font-size: 11px;
+
+		-webkit-app-region: drag;
+
+		> span {
+			flex: 1;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		> button {
+			align-self: stretch;
+			width: 32px;
+			padding: 0;
+			border: none;
+			background: none;
+			color: inherit;
+
+			-webkit-app-region: no-drag;
+
+			&:hover, &:focus-visible {
+				background-color: #c42b1c;
+				color: white;
+			}
+		}
+	}
 
 	> kit-root {
 		flex: 1 1;
 		display: flex;
 		min-width: 0;
+		min-height: 0;
 	}
 }
 
