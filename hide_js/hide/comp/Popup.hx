@@ -159,7 +159,8 @@ class Popup extends Component {
 		var win = el.ownerDocument.defaultView;
 		win.addEventListener("scroll", onAnchorMoved, true);
 		win.addEventListener("resize", onAnchorMoved);
-		resizeObserver = new ResizeObserver((_, _) -> reflow());
+		// direct call : observers run after layout, before paint, so the new position is painted in the same frame
+		resizeObserver = new ResizeObserver((_, _) -> reflowInternal());
 		observeResize();
 	}
 
