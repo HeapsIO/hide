@@ -263,6 +263,16 @@ class Popup extends Component {
 			subWindow.title = title;
 		win.document.body.appendChild(el);
 
+		var style = win.getComputedStyle(el);
+		function px(v: String) return StringTools.endsWith(v, "px") ? Std.parseFloat(v) : 0.;
+		var contentBox = style.boxSizing != "border-box";
+		var minWidth = px(style.minWidth);
+		if (minWidth > 0)
+			subWindow.minWidth = Math.ceil(contentBox ? minWidth + px(style.paddingLeft) + px(style.paddingRight) + px(style.borderLeftWidth) + px(style.borderRightWidth) : minWidth);
+		var minHeight = px(style.minHeight);
+		if (minHeight > 0)
+			subWindow.minHeight = Math.ceil(contentBox ? minHeight + px(style.paddingTop) + px(style.paddingBottom) + px(style.borderTopWidth) + px(style.borderBottomWidth) : minHeight);
+
 		subWindow.onKeyDown = (e) -> if (e.key == "Escape") {
 			wasCancelled = true;
 			close();

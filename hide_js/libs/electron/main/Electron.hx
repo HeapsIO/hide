@@ -34,6 +34,7 @@ extern class BrowserWindow {
 	function getBounds() : Rectangle;
 	function getSize() : Array<Int>;
 	function setSize( w : Int, h : Int ) : Void;
+	function setMinimumSize( w : Int, h : Int ) : Void;
 	function setPosition( x : Int, y : Int ) : Void;
 	function getTitle() : String;
 	function setTitle( t : String ) : Void;

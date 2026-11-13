@@ -9,12 +9,26 @@ class SubWindow {
 		titleText.textContent = v;
 		return doc.title = v;
 	}
+	/** content size, without the title bar **/
+	public var minWidth(default, set) : Int = 0;
+	public var minHeight(default, set) : Int = 0;
+	function set_minWidth(v: Int) {
+		minWidth = v;
+		win.setMinimumSize(minWidth, minHeight + TITLE_BAR_HEIGHT);
+		return v;
+	}
+	function set_minHeight(v: Int) {
+		minHeight = v;
+		win.setMinimumSize(minWidth, minHeight + TITLE_BAR_HEIGHT);
+		return v;
+	}
 
 	var doc : js.html.HTMLDocument;
 	var root : js.html.Element;
 	var titleText : js.html.Element;
 	var timer : haxe.Timer;
 	var parentWindow : js.html.Window;
+	var win : electron.Window;
 
 	static inline var TITLE_BAR_HEIGHT = 22; // .sub-window-title-bar height
 
@@ -34,7 +48,9 @@ class SubWindow {
 		bounds.x = Math.max(screen.availLeft, Math.min(bounds.x, screen.availLeft + screen.availWidth - bounds.w));
 		bounds.y = Math.max(screen.availTop, Math.min(bounds.y, screen.availTop + screen.availHeight - bounds.h));
 
-		window = electron.Window.openSub(bounds.x, bounds.y, bounds.w, bounds.h);
+		var sub = electron.Window.openSub(bounds.x, bounds.y, bounds.w, bounds.h);
+		window = sub.dom;
+		win = sub.win;
 		doc = cast window.document;
 
 		doc.open();

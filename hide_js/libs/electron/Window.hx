@@ -20,6 +20,7 @@ class Window {
 
 	static var windows : Map<Int, Window>;
 	static var current : Window;
+	static var subCount = 0;
 
 	public var id(default, null) : Int;
 	public var x(get, never) : Int;
@@ -91,6 +92,8 @@ class Window {
 	public function moveTo( x : Int, y : Int ) Ipc.call("win.moveTo", id, x, y);
 	public function resizeTo( w : Int, h : Int ) Ipc.call("win.resizeTo", id, w, h);
 	public function resizeBy( dw : Int, dh : Int ) Ipc.call("win.resizeBy", id, dw, dh);
+	/** grows the window if it is smaller **/
+	public function setMinimumSize( w : Int, h : Int ) Ipc.call("win.setMinimumSize", id, w, h);
 	public function maximize() Ipc.call("win.maximize", id);
 	public function minimize() Ipc.call("win.minimize", id);
 	public function restore() Ipc.call("win.restore", id);
@@ -155,8 +158,11 @@ class Window {
 		return getById(id);
 	}
 
-	public static function openSub( x : Float, y : Float, width : Float, height : Float ) : js.html.Window {
-		return js.Browser.window.open("", "", 'popup=true,left=$x,top=$y,width=$width,height=$height');
+	public static function openSub( x : Float, y : Float, width : Float, height : Float ) : { dom : js.html.Window, win : Window } {
+		// unique name : window.open reuses the window of the same name
+		var name = "subwindow" + subCount++;
+		var dom = js.Browser.window.open("", name, 'popup=true,left=$x,top=$y,width=$width,height=$height');
+		return { dom : dom, win : getById(Ipc.call("win.subId", name)) };
 	}
 
 	/**
