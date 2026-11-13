@@ -60,6 +60,7 @@ class Popup extends Component {
 	var detachParent : Element;
 	var parentPopup : Popup;
 	var childPopups : Array<Popup> = [];
+	var mouseBlocker : js.html.Element;
 
 	public function new(?parent:Element, isSearchable = false) {
 		// a popup opened from a popup window would be clipped by it
@@ -94,7 +95,7 @@ class Popup extends Component {
 				}
 			};
 
-			untyped element[0].showPopover();
+			showPopover();
 			element[0].addEventListener("toggle", onToggle);
 			reflow();
 		}
@@ -105,11 +106,34 @@ class Popup extends Component {
 	}
 
 	public function open() {
-		untyped element.get(0).showPopover();
+		showPopover();
 		element.show();
 		element.get(0).addEventListener("toggle", onToggle);
 		element.parent()?.get(0)?.addEventListener("scroll", onScroll);
 		reflow();
+	}
+
+	/**
+		Show the popup above a manual popover catching the mouse events of the page,
+		including the click that light dismisses the popup.
+	**/
+	function showPopover() {
+		var el = element[0];
+		if (el.matches(":popover-open"))
+			return;
+
+		if (mouseBlocker == null) {
+			mouseBlocker = el.ownerDocument.createDivElement();
+			mouseBlocker.className = "popup-mouse-blocker";
+			untyped mouseBlocker.popover = "manual";
+			for (type in ["pointerdown", "pointerup", "mousedown", "mouseup", "click", "dblclick", "auxclick", "contextmenu", "wheel"])
+				mouseBlocker.addEventListener(type, (e : js.html.Event) -> e.stopPropagation());
+		}
+
+		// a sibling, so that a click on it only dismisses the popups above its parent popup
+		el.before(mouseBlocker);
+		untyped mouseBlocker.showPopover();
+		untyped el.showPopover();
 	}
 
 	public function onScroll(e: js.html.MouseScrollEvent) {
@@ -122,6 +146,7 @@ class Popup extends Component {
 		}
 		if (e.newState == "closed") {
 			timer?.stop();
+			mouseBlocker?.remove();
 			var parent = element[0].parentElement;
 			if (parent != null) {
 				// Focus our parent when closing the popup, it allows
@@ -205,6 +230,7 @@ class Popup extends Component {
 
 		el.removeEventListener("toggle", onToggle);
 		timer?.stop();
+		mouseBlocker?.remove();
 		el.removeAttribute("popover");
 		el.style.removeProperty("top");
 		el.style.removeProperty("left");

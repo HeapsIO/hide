@@ -3657,6 +3657,18 @@ div.popup {
 	padding: 6px;
 }
 
+/* Popup.mouseBlocker : transparent layer below a popup */
+div.popup-mouse-blocker {
+	inset: 0;
+	width: auto;
+	height: auto;
+	margin: 0;
+	padding: 0;
+	border: none;
+	background: transparent;
+	cursor: default;
+}
+
 /* Popup.detach : the popup fills its window */
 body.kit-sub-window.popup-sub-window {
 	> kit-root {
