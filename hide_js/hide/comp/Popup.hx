@@ -122,18 +122,21 @@ class Popup extends Component {
 		if (el.matches(":popover-open"))
 			return;
 
-		if (mouseBlocker == null) {
-			mouseBlocker = el.ownerDocument.createDivElement();
-			mouseBlocker.className = "popup-mouse-blocker";
-			untyped mouseBlocker.popover = "manual";
-			for (type in ["pointerdown", "pointerup", "mousedown", "mouseup", "click", "dblclick", "auxclick", "contextmenu", "wheel"])
-				mouseBlocker.addEventListener(type, (e : js.html.Event) -> e.stopPropagation());
-		}
+		if (mouseBlocker == null)
+			createMouseBlocker(el.ownerDocument);
 
 		// a sibling, so that a click on it only dismisses the popups above its parent popup
 		el.before(mouseBlocker);
 		untyped mouseBlocker.showPopover();
 		untyped el.showPopover();
+	}
+
+	function createMouseBlocker(doc : js.html.HTMLDocument) {
+		mouseBlocker = doc.createDivElement();
+		mouseBlocker.className = "popup-mouse-blocker";
+		untyped mouseBlocker.popover = "manual";
+		for (type in ["pointerdown", "pointerup", "mousedown", "mouseup", "click", "dblclick", "auxclick", "contextmenu", "wheel"])
+			mouseBlocker.addEventListener(type, (e : js.html.Event) -> e.stopPropagation());
 	}
 
 	public function onScroll(e: js.html.MouseScrollEvent) {
@@ -290,6 +293,11 @@ class Popup extends Component {
 			parentPopup = getWindowPopup(detachParent?.get(0)?.ownerDocument.defaultView);
 			parentPopup?.childPopups.push(this);
 			win.addEventListener("blur", (_) -> closeIfUnfocused());
+
+			// the click on the parent window that closes the popup must not reach its content
+			createMouseBlocker(parentWindow.document);
+			parentWindow.document.body.append(mouseBlocker);
+			untyped mouseBlocker.showPopover();
 
 			// fit the content, filled after the constructor
 			win.requestAnimationFrame((_) -> {
