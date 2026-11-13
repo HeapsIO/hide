@@ -1337,9 +1337,7 @@ class CurveEditor extends hide.comp.Component {
 						</select>
 					</div>
 				</div>').appendTo(popupWidget.element);
-			popupWidget.offsetX = left+8;
-			popupWidget.offsetY = top;
-			popupWidget.position = Inside;
+			popupWidget.anchor = { object: Point(left + 8, top), directionX: EndOutside, directionY: EndOutside };
 			popupWidget.onClose = () -> popupWidget.element.remove();
 
 			function setMode(m: hrt.prefab.Curve.CurveKeyMode) {
@@ -1463,8 +1461,7 @@ class CurveEditor extends hide.comp.Component {
 							c.selected = false;
 
 						curve.selected = true;
-						var offset = element.offset();
-						var popup = editPopup(curve, key, e.clientY - offset.top - 50, e.clientX - offset.left);
+						var popup = editPopup(curve, key, e.clientY - 50, e.clientX);
 						e.preventDefault();
 						return false;
 					});

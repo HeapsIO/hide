@@ -1522,8 +1522,9 @@ class Cell {
 			if (editor.gradientEditor == null || editor.gradientEditor.element[0].classList.contains("detached")) {
 				editor.gradientEditor = new GradientEditor(editor.element, false);
 				editor.gradientEditor.keepPreviewAlive = true;
+				editor.gradientEditor.keepAlive = true;
 			}
-			editor.gradientEditor.anchor = e;
+			editor.gradientEditor.anchor = { object: Element(e[0]), directionX: StartInside, directionY: EndOutside };
 			editor.gradientEditor.open();
 			editor.gradientEditor.element.focus();
 

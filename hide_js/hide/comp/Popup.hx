@@ -2,42 +2,69 @@ package hide.comp;
 
 import js.Browser;
 
-enum PopupPosition {
-	Inside;
-	Bellow;
+enum AnchorObject {
+	/** client coordinates of the anchor's window **/
+	Point(x: Float, y: Float);
+	Element(element: js.html.Element);
 }
+
+/**
+				Anchors :
+               +--------------------------------+
+               |                                |
+               +--------------------------------+
+StartOutside<--|-->S   t   r   e    t   c   h<--|-->EndOutside
+               |-->StartInside  |  EndInside <--|
+			                 Middle
+	Start/End variants flip to the other side when the popup clips out of the page.
+	Stretch sets the popup min size to the anchor size.
+**/
+enum AnchorDirection {
+	StartOutside;
+	StartInside;
+	Stretch;
+	Middle;
+	EndInside;
+	EndOutside;
+}
+
+typedef Anchor = {
+	object: AnchorObject,
+	directionX: AnchorDirection,
+	directionY: AnchorDirection,
+};
+
 // Open a "popup" window that can be closed by
 // clicking outside of it. Usefull for medium size editors
 // that appears when clicking on an item
 class Popup extends Component {
 	var timer : haxe.Timer;
 	var isSearchable:Bool;
-	public var anchor : Element;
-	public var offsetX(default, set) : Float = 0;
-	public var offsetY(default, set) : Float = 0;
-	public var position(default, set): PopupPosition = Bellow;
+
+	/** Below the parent element when null **/
+	public var anchor(default, set) : Anchor;
+
+	/** The element is kept in the DOM when closed, to be reopened with `open` **/
+	public var keepAlive = false;
 
 	/**
 		Indicates if the user cancelled the popup operation with ESC
 	**/
 	public var wasCancelled: Bool = false;
 
-	function set_offsetX(v) {
-		offsetX = v;
-		reflow();
-		return offsetX;
-	}
+	static inline var ANCHOR_MARGIN = 4;
+	var flippedX = false;
+	var flippedY = false;
+	var resizeObserver : ResizeObserver;
 
-	function set_offsetY(v) {
-		offsetY = v;
+	function set_anchor(v: Anchor) {
+		anchor = v;
+		flippedX = false;
+		flippedY = false;
+		if (resizeObserver != null)
+			observeResize();
 		reflow();
-		return offsetY;
-	}
-
-	function set_position(v) {
-		position = v;
-		reflow();
-		return position;
+		return v;
 	}
 
 	function onMouseDown(e : js.html.MouseEvent) {
@@ -109,7 +136,6 @@ class Popup extends Component {
 		showPopover();
 		element.show();
 		element.get(0).addEventListener("toggle", onToggle);
-		element.parent()?.get(0)?.addEventListener("scroll", onScroll);
 		reflow();
 	}
 
@@ -129,6 +155,34 @@ class Popup extends Component {
 		el.before(mouseBlocker);
 		untyped mouseBlocker.showPopover();
 		untyped el.showPopover();
+
+		var win = el.ownerDocument.defaultView;
+		win.addEventListener("scroll", onAnchorMoved, true);
+		win.addEventListener("resize", onAnchorMoved);
+		resizeObserver = new ResizeObserver((_, _) -> reflow());
+		observeResize();
+	}
+
+	function stopFollow() {
+		var win = element[0].ownerDocument.defaultView;
+		win.removeEventListener("scroll", onAnchorMoved, true);
+		win.removeEventListener("resize", onAnchorMoved);
+		resizeObserver?.disconnect();
+		resizeObserver = null;
+	}
+
+	function observeResize() {
+		resizeObserver.disconnect();
+		resizeObserver.observe(element[0]);
+		switch (getAnchor().object) {
+			case Element(e) if (e != null):
+				resizeObserver.observe(e);
+			default:
+		}
+	}
+
+	function onAnchorMoved(_: js.html.Event) {
+		reflow();
 	}
 
 	function createMouseBlocker(doc : js.html.HTMLDocument) {
@@ -139,10 +193,6 @@ class Popup extends Component {
 			mouseBlocker.addEventListener(type, (e : js.html.Event) -> e.stopPropagation());
 	}
 
-	public function onScroll(e: js.html.MouseScrollEvent) {
-		reflow();
-	}
-
 	function onToggle(e: Dynamic) {
 		if (e.newState == "open") {
 			wasCancelled = false;
@@ -150,17 +200,16 @@ class Popup extends Component {
 		if (e.newState == "closed") {
 			timer?.stop();
 			mouseBlocker?.remove();
+			stopFollow();
 			var parent = element[0].parentElement;
 			if (parent != null) {
 				// Focus our parent when closing the popup, it allows
 				// the ESC to dismiss the popup to properly work
 				// when we are interracting in a nested popup scenario
 				parent.focus();
-
-				parent.removeEventListener("scroll", onScroll);
 			}
 
-			if (anchor == null) {
+			if (!keepAlive) {
 				element.remove();
 			}
 			element.hide();
@@ -196,25 +245,93 @@ class Popup extends Component {
 		if (subWindow != null)
 			return;
 
-		var refElement = if (anchor != null) anchor else element.parent();
-		var offset = refElement.offset();
-		var box = element[0].getBoundingClientRect();
-		var popupHeight = box.height;
-		var popupWidth = box.width;
+		var el = element[0];
+		var a = getAnchor();
+		var rect = getAnchorRect(a);
+		if (rect == null)
+			return;
 
-		var clientHeight = element[0].ownerDocument.documentElement.clientHeight;
-		var clientWidth = element[0].ownerDocument.documentElement.clientWidth;
+		applyStretch(a, rect);
+		var box = el.getBoundingClientRect();
+		var page = el.ownerDocument.documentElement;
+		var pos = place(a, rect, box.width, box.height, new js.html.DOMRect(0, 0, page.clientWidth, page.clientHeight));
+		el.style.left = pos.x + "px";
+		el.style.top = pos.y + "px";
+	}
 
-		offset.top += offsetY;
-		if (position == Bellow) {
-			offset.top += refElement.get(0).offsetHeight;
+	function getAnchor() : Anchor {
+		return anchor ?? { object: Element((detachParent ?? element.parent())[0]), directionX: StartInside, directionY: EndOutside };
+	}
+
+	function getAnchorRect(a: Anchor) : js.html.DOMRect {
+		return switch (a.object) {
+			case Point(x, y): new js.html.DOMRect(x, y, 0, 0);
+			case Element(e): e?.getBoundingClientRect();
 		}
-		offset.top = Math.min(offset.top,  clientHeight - popupHeight - 16);
+	}
 
-		offset.left += offsetX;
-		offset.left = Math.min(offset.left,  clientWidth - popupWidth - 16) ;
+	function applyStretch(a: Anchor, rect: js.html.DOMRect) {
+		var style = element[0].style;
+		if (a.directionX == Stretch)
+			style.minWidth = rect.width + "px";
+		if (a.directionY == Stretch)
+			style.minHeight = rect.height + "px";
+	}
 
-		element.offset(offset);
+	/**
+		Position of a popup of size `width` x `height` anchored to `rect`, inside `page`.
+		On each axis, flips the direction if it makes the popup fit, otherwise clamps it into the page.
+		The CSS variables `--anchor-gap-x` / `--anchor-gap-y` (px) offset Start/End variants away from the anchor edge.
+	**/
+	function place(a: Anchor, rect: js.html.DOMRect, width: Float, height: Float, page: js.html.DOMRect) {
+		var el = element[0];
+		var style = el.ownerDocument.defaultView.getComputedStyle(el);
+		function getGap(name: String) {
+			var v = Std.parseFloat(style.getPropertyValue(name));
+			return Math.isNaN(v) ? 0. : v;
+		}
+
+		function placeAxis(dir: AnchorDirection, flipped: Bool, start: Float, end: Float, size: Float, min: Float, max: Float, gap: Float) {
+			function getPos(flipped: Bool) {
+				var d = !flipped ? dir : switch (dir) {
+					case StartOutside: EndOutside;
+					case EndOutside: StartOutside;
+					case StartInside: EndInside;
+					case EndInside: StartInside;
+					default: dir;
+				}
+				return switch (d) {
+					case StartOutside: start - size - gap;
+					case StartInside: start + gap;
+					case Stretch: start;
+					case Middle: (start + end - size) / 2;
+					case EndInside: end - size - gap;
+					case EndOutside: end + gap;
+				}
+			}
+
+			function clips(pos: Float) {
+				return pos < min || pos + size > max;
+			}
+
+			var pos = getPos(flipped);
+			if (clips(pos)) {
+				var flippedPos = getPos(!flipped);
+				if (clips(flippedPos))
+					pos = Math.max(min + ANCHOR_MARGIN, Math.min(pos, max - size - ANCHOR_MARGIN));
+				else {
+					flipped = !flipped;
+					pos = flippedPos;
+				}
+			}
+			return { pos: Math.round(pos), flipped: flipped };
+		}
+
+		var x = placeAxis(a.directionX, flippedX, rect.left, rect.right, width, page.left, page.right, getGap("--anchor-gap-x"));
+		var y = placeAxis(a.directionY, flippedY, rect.top, rect.bottom, height, page.top, page.bottom, getGap("--anchor-gap-y"));
+		flippedX = x.flipped;
+		flippedY = y.flipped;
+		return { x: x.pos, y: y.pos };
 	}
 
 	/**
@@ -234,6 +351,7 @@ class Popup extends Component {
 		el.removeEventListener("toggle", onToggle);
 		timer?.stop();
 		mouseBlocker?.remove();
+		stopFollow();
 		el.removeAttribute("popover");
 		el.style.removeProperty("top");
 		el.style.removeProperty("left");
@@ -244,16 +362,21 @@ class Popup extends Component {
 			return { x: win.screenX + (win.outerWidth - win.innerWidth) / 2 + x, y: win.screenY + y };
 		}
 
-		function getAnchorScreenPos() {
-			var ref = (anchor ?? detachParent)[0];
-			var r = ref.getBoundingClientRect();
-			return toScreen(ref.ownerDocument.defaultView, r.left + offsetX, (position == Bellow ? r.bottom : r.top) + offsetY);
+		var parentWindow = detachParent?.get(0)?.ownerDocument.defaultView ?? oldWindow;
+
+		function getAnchorScreenRect(a: Anchor) {
+			var r = getAnchorRect(a) ?? new js.html.DOMRect();
+			var win = switch (a.object) {
+				case Element(e) if (e != null): e.ownerDocument.defaultView;
+				default: parentWindow;
+			}
+			var p = toScreen(win, r.left, r.top);
+			return new js.html.DOMRect(p.x, p.y, r.width, r.height);
 		}
 
-		var parentWindow = detachParent?.get(0)?.ownerDocument.defaultView ?? oldWindow;
 		if (autoDetached) {
-			var pos = getAnchorScreenPos();
-			subWindow = new SubWindow(1, 1, null, pos.x, pos.y, parentWindow);
+			var r = getAnchorScreenRect(getAnchor());
+			subWindow = new SubWindow(1, 1, null, r.left, r.bottom, parentWindow);
 		} else {
 			var pos = toScreen(oldWindow, rect.left, rect.top);
 			subWindow = new SubWindow(Math.ceil(rect.width), Math.ceil(rect.height), "popupSubwindow/" + componentName, pos.x, pos.y, parentWindow);
@@ -301,6 +424,9 @@ class Popup extends Component {
 
 			// fit the content, filled after the constructor
 			win.requestAnimationFrame((_) -> {
+				var a = getAnchor();
+				var rect = getAnchorScreenRect(a);
+				applyStretch(a, rect);
 				el.style.position = "absolute";
 				el.style.width = "max-content";
 				var size = el.getBoundingClientRect();
@@ -309,15 +435,13 @@ class Popup extends Component {
 
 				var w = Math.ceil(size.width);
 				var h = Math.ceil(size.height);
-				var pos = getAnchorScreenPos();
 				var screen = win.screen;
-				var x = Math.max(screen.availLeft, Math.min(pos.x, screen.availLeft + screen.availWidth - w));
-				var y = Math.max(screen.availTop, Math.min(pos.y, screen.availTop + screen.availHeight - h));
+				var pos = place(a, rect, w, h, new js.html.DOMRect(screen.availLeft, screen.availTop, screen.availWidth, screen.availHeight));
 
 				// both take content bounds but keep the other half from the frame bounds :
 				// moveTo sets the outer size as content size, resizeTo sets screenX (left border included) as content x
 				var border = (win.outerWidth - win.innerWidth) / 2;
-				win.moveTo(Std.int(x + border), Std.int(y));
+				win.moveTo(Std.int(pos.x + border), Std.int(pos.y));
 				// at least 100x100 for script resized windows
 				win.resizeTo(w, h);
 			});

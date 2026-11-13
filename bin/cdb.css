@@ -28,6 +28,8 @@
 }
 
 .popup.cdb-icons-scale {
+	--anchor-gap-x: 10px;
+	--anchor-gap-y: 10px;
 	padding: 8px 10px;
 	background-color: #222;
 	border: 1px solid #444;

@@ -3635,6 +3635,19 @@ div.color-box {
 }
 
 
+/* Popup gap to its anchor, read by Popup.place */
+@property --anchor-gap-x {
+	syntax: "<length>";
+	inherits: false;
+	initial-value: 0px;
+}
+
+@property --anchor-gap-y {
+	syntax: "<length>";
+	inherits: false;
+	initial-value: 0px;
+}
+
 div.popup {
 	inset: unset;
 

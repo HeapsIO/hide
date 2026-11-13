@@ -616,9 +616,7 @@ class CdbTable extends hide.ui.View<{}> {
 		var Editor = hide.comp.cdb.Editor;
 		var saved = Math.round(Editor.getIconZoom() * 100);
 		var popup = new hide.comp.Popup(element);
-		popup.position = Inside;
-		popup.offsetX = 10;
-		popup.offsetY = 10;
+		popup.anchor = { object: Element(element[0]), directionX: StartInside, directionY: StartInside };
 		popup.element.addClass("cdb-icons-scale");
 		var content = new Element('<div>
 			<div class="title">Icons Scale</div>
