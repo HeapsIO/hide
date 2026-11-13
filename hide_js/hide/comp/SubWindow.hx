@@ -51,6 +51,7 @@ class SubWindow {
 		var sub = electron.Window.openSub(bounds.x, bounds.y, bounds.w, bounds.h);
 		window = sub.dom;
 		win = sub.win;
+		untyped window.__subWindow = this;
 		doc = cast window.document;
 
 		doc.open();
@@ -102,8 +103,11 @@ class SubWindow {
 
 	public function close() {
 		// not when closed by a focus loss
-		if (doc.hasFocus() && !parentWindow.closed)
-			parentWindow.focus();
+		if (doc.hasFocus() && !parentWindow.closed) {
+			// the DOM focus() does not activate the native window
+			var parent : SubWindow = untyped parentWindow.__subWindow;
+			(parent != null ? parent.win : electron.Window.get()).focus();
+		}
 		window.close();
 	}
 
