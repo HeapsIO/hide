@@ -266,13 +266,13 @@ class CdbTable extends hide.ui.View<{}> {
 		var langs = getLangs();
 		langBar.hidden = langs.length == 0 || sheet == null || !hasLoc(sheet);
 
-		var select : js.html.SelectElement = cast langBar.querySelector("select");
+		var select : hide.html.comp.Select = cast langBar.querySelector("hide-select");
 		var current = hide.comp.cdb.Editor.langFile;
 		var index = -1;
 		for( i => l in langs )
 			if( current != null && l.path == current.path )
 				index = i;
-		select.value = "" + index;
+		select.value = index;
 	}
 
 	function initLangBar() {
@@ -280,18 +280,10 @@ class CdbTable extends hide.ui.View<{}> {
 		langBar.className = "cdb-lang-bar";
 		var label = js.Browser.document.createLabelElement();
 		label.append("loc");
-		var select = js.Browser.document.createSelectElement();
-		function addOption( text : String, value : Int ) {
-			var o = js.Browser.document.createOptionElement();
-			o.text = text;
-			o.value = "" + value;
-			select.add(o);
-		}
-		addOption("Original", -1);
-		for( i => l in getLangs() )
-			addOption(l.lang, i);
-		select.onchange = function() {
-			var l = getLangs()[Std.parseInt(select.value)];
+		var select = hide.html.comp.Select.create();
+		select.items = [{ label : "Original", value : -1 }].concat([for( i => l in getLangs() ) { label : l.lang, value : i }]);
+		select.onValueChanged = function() {
+			var l = getLangs()[select.value];
 			hide.comp.cdb.Editor.setLang(l?.path);
 		};
 		label.append(select);
