@@ -36,8 +36,9 @@ class SubWindow {
 		`width` and `height` are the content size, without the title bar.
 		Without `key`, the window bounds are not saved.
 		`parent` gets the focus back when the window is closed while focused (main window by default).
+		Without `visible`, the window stays hidden until `show` is called.
 	**/
-	public function new(width: Int, height: Int, ?key: String, ?x: Float, ?y: Float, ?parent: js.html.Window) {
+	public function new(width: Int, height: Int, ?key: String, ?x: Float, ?y: Float, ?parent: js.html.Window, visible = true) {
 		var main = js.Browser.window;
 		parentWindow = parent ?? main;
 		var bounds : { x: Float, y: Float, w: Float, h: Float } = key != null ? hide.Ide.inst.globalState.get(key) : null;
@@ -48,7 +49,7 @@ class SubWindow {
 		bounds.x = Math.max(screen.availLeft, Math.min(bounds.x, screen.availLeft + screen.availWidth - bounds.w));
 		bounds.y = Math.max(screen.availTop, Math.min(bounds.y, screen.availTop + screen.availHeight - bounds.h));
 
-		var sub = electron.Window.openSub(bounds.x, bounds.y, bounds.w, bounds.h);
+		var sub = electron.Window.openSub(bounds.x, bounds.y, bounds.w, bounds.h, visible);
 		window = sub.dom;
 		win = sub.win;
 		untyped window.__subWindow = this;
@@ -113,6 +114,10 @@ class SubWindow {
 
 	public function focus() {
 		window.focus();
+	}
+
+	public function show() {
+		win.show();
 	}
 
 	public dynamic function onKeyDown(e: js.html.KeyboardEvent) {}

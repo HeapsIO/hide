@@ -158,10 +158,10 @@ class Window {
 		return getById(id);
 	}
 
-	public static function openSub( x : Float, y : Float, width : Float, height : Float ) : { dom : js.html.Window, win : Window } {
+	public static function openSub( x : Float, y : Float, width : Float, height : Float, visible = true ) : { dom : js.html.Window, win : Window } {
 		// unique name : window.open reuses the window of the same name
 		var name = "subwindow" + subCount++;
-		var dom = js.Browser.window.open("", name, 'popup=true,left=$x,top=$y,width=$width,height=$height');
+		var dom = js.Browser.window.open("", name, 'popup=true,left=$x,top=$y,width=$width,height=$height' + (visible ? "" : ",show=no"));
 		return { dom : dom, win : getById(Ipc.call("win.subId", name)) };
 	}
 

@@ -357,7 +357,8 @@ class ElectronMain {
 
 	static function createSubWindow( parent : BrowserWindow, options : Dynamic, name : String ) : WebContents {
 		options.parent = parent;
-		options.show = !background;
+		var show = options.show != false;
+		options.show = show && !background;
 		options.useContentSize = true;
 		// title bar drawn by SubWindow
 		options.frame = false;
@@ -371,7 +372,7 @@ class ElectronMain {
 		subWindows.set(key, win.id);
 		win.on("closed", () -> subWindows.remove(key));
 
-		if( background )
+		if( background && show )
 			win.showInactive();
 		return win.webContents;
 	}

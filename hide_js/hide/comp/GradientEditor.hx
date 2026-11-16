@@ -203,7 +203,6 @@ class GradientEditor extends Popup {
 
 		gradientView = new GradientView(firstGrid);
 		var elem = gradientView.element.get(0);
-		elem.style.height = "90px";
 		elem.style.minWidth = "256px";
 
 		elem.onclick = function (e : js.html.MouseEvent) {
@@ -384,6 +383,7 @@ class GradientEditor extends Popup {
 		if (subWindow != null)
 			return;
 		element[0].style.minWidth = gradientView.element[0].offsetWidth + "px";
+		element[0].style.minHeight = element[0].ownerDocument.defaultView.getComputedStyle(element[0]).height;
 		super.detach(autoDetached, title);
 
 		// a detached editor is not reused, and its window close button skips close()

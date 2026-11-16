@@ -377,7 +377,8 @@ class Popup extends Component {
 
 		if (autoDetached) {
 			var r = getAnchorScreenRect(getAnchor());
-			subWindow = new SubWindow(1, 1, null, r.left, r.bottom, parentWindow);
+			// hidden until placed
+			subWindow = new SubWindow(1, 1, null, r.left, r.bottom, parentWindow, false);
 		} else {
 			var pos = toScreen(oldWindow, rect.left, rect.top);
 			subWindow = new SubWindow(Math.ceil(rect.width), Math.ceil(rect.height), "popupSubwindow/" + componentName, pos.x, pos.y, parentWindow);
@@ -445,6 +446,12 @@ class Popup extends Component {
 				win.moveTo(Std.int(pos.x + border), Std.int(pos.y));
 				// at least 100x100 for script resized windows
 				win.resizeTo(w, h);
+
+				// resizeTo is applied asynchronously
+				if (win.innerWidth == w && win.innerHeight == h)
+					subWindow.show();
+				else
+					win.addEventListener("resize", (_) -> subWindow.show(), { once: true });
 			});
 		}
 
