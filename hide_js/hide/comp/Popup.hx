@@ -351,6 +351,12 @@ class Popup extends Component {
 
 		el.removeEventListener("toggle", onToggle);
 		timer?.stop();
+		timer = new haxe.Timer(500);
+		timer.run = () -> switch (getAnchor().object) {
+			case Element(e) if (e != null && !e.isConnected): close();
+			default:
+		};
+
 		mouseBlocker?.remove();
 		stopFollow();
 		el.removeAttribute("popover");
