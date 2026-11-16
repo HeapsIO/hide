@@ -634,6 +634,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	}
 
 	public function loadAnimation( path : String ) {
+		setCurrent();
 		var lib = loadHMD(path,true);
 		return lib?.loadAnimation();
 	}
