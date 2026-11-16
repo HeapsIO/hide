@@ -608,11 +608,6 @@ class EmitterHelper {
 		return true;
 	}
 
-	/**
-		A param value of `prefab` changed: its emitter updates its instance in place, which resimulates its particles.
-		A Widget already calls updateInstance on the edited prefab: only needed for a particle shader (its batch is set up by its emitter)
-		or out of a Widget (`fromWidget` false)
-	**/
 	static function updateParamInstance(prefab: Prefab, fromWidget: Bool) {
 		var shader = Std.downcast(prefab, hrt.prefab.Shader);
 		if (shader != null)
