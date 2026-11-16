@@ -154,6 +154,7 @@ class KitTest extends Object3D {
 				<button("Button Single Edit") single-edit/>
 				<input label="Input" placeholder="Placeholder text" field={inputString}/>
 				<color field={color}/>
+				<color field={color} alpha label="Color (Alpha)"/>
 				<gradient field={gradient}/>
 				<texture field={texture}/>
 				<select(["Fire", "Earth", "Water", "Air"]) field={select} />

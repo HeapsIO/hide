@@ -3820,8 +3820,14 @@ div.color-picker {
 	.slider-value {
 		display: flex;
 
+
 		input {
-			font-size: 10px;
+			font-size: 8px;
+			text-align: right;
+			border: none;
+			font-variant-numeric: tabular-nums;
+			background: none;
+			max-width: 16px;
 		}
 
 		label {

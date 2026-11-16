@@ -331,8 +331,6 @@ class ColorPicker extends Popup {
 			}
 		}
 
-		new Element("<hr>").appendTo(element);
-
 		{
 			secondarySliders = new SliderGroup(element, canEditAlpha, ColorSpace.colorModes[0]);
 
