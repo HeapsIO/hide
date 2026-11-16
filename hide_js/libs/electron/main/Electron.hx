@@ -90,6 +90,7 @@ extern class MessagePortMain {
 @:jsRequire("electron", "Menu")
 extern class Menu {
 	function getMenuItemById( id : String ) : Null<Dynamic>;
+	function popup( ?options : Dynamic ) : Void;
 	static function buildFromTemplate( template : Array<Dynamic> ) : Menu;
 	static function setApplicationMenu( menu : Null<Menu> ) : Void;
 }

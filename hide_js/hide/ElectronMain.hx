@@ -350,8 +350,11 @@ class ElectronMain {
 
 	static function initDevToolsKeys( win : BrowserWindow ) {
 		win.webContents.on("before-input-event", function(e : Dynamic, input : Dynamic) {
-			if( input.type == "keyDown" && input.control && input.shift && input.code == "KeyI" )
+			if( input.type == "keyDown" && input.control && input.shift && input.code == "KeyI" ) {
+				// stops the main window menu accelerator from also opening its devtools
+				e.preventDefault();
 				win.webContents.toggleDevTools();
+			}
 		});
 	}
 
@@ -367,6 +370,16 @@ class ElectronMain {
 		var win = new BrowserWindow(options);
 		win.setMenu(null);
 		initDevToolsKeys(win);
+
+		// right click on the title bar (drag region)
+		win.on("system-context-menu", function(e : Dynamic) {
+			e.preventDefault();
+			Menu.buildFromTemplate([
+				{ label : "Close", click : () -> win.close() },
+				{ type : "separator" },
+				{ label : "Open Dev Tools", click : () -> win.webContents.openDevTools({ mode : "detach" }) },
+			]).popup({ window : win });
+		});
 
 		var key = parent.id + ":" + name;
 		subWindows.set(key, win.id);
