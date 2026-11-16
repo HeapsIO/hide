@@ -271,7 +271,7 @@ class EmitterHelper {
 				s.defaultValue = def.def[i];
 				s.showRange = range.min != null && range.max != null;
 				s.onValueChange = (temp) -> {
-					ctx.rebuildPrefab(prefab);
+					updateParamInstance(prefab, true);
 					if (!temp && isSet(prefab, def, i) != wasSet)
 						ctx.rebuildInspector();
 				}
@@ -283,7 +283,7 @@ class EmitterHelper {
 				// over the emitter time, else over the particle life
 				if (def.kind != Particle)
 					g.maxTime = Math.POSITIVE_INFINITY;
-				g.onValueChange = (_) -> ctx.rebuildPrefab(prefab);
+				g.onValueChange = (_) -> updateParamInstance(prefab, false);
 				if (onSpreadChange != null)
 					g.onSpreadChange = onSpreadChange;
 				if (size > 1)
@@ -606,6 +606,19 @@ class EmitterHelper {
 			editParam(ctx, shader, { name: prop.name, t: t, def: base, kind: Particle, groupName: null }, [Constant, Curve], parent);
 		}
 		return true;
+	}
+
+	/**
+		A param value of `prefab` changed: its emitter updates its instance in place, which resimulates its particles.
+		A Widget already calls updateInstance on the edited prefab: only needed for a particle shader (its batch is set up by its emitter)
+		or out of a Widget (`fromWidget` false)
+	**/
+	static function updateParamInstance(prefab: Prefab, fromWidget: Bool) {
+		var shader = Std.downcast(prefab, hrt.prefab.Shader);
+		if (shader != null)
+			@:privateAccess getParticleEmitter(shader)?.updateInstance();
+		else if (!fromWidget)
+			@:privateAccess prefab.updateInstance();
 	}
 
 	// stops at a trail: its shaders are not particle shaders

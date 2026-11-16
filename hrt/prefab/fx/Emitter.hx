@@ -1932,6 +1932,10 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 
 		emitterObj.init(this);
 
+		var fx = emitterObj.getParentFX();
+		if (fx != null)
+			emitterObj.setRandSeed(@:privateAccess fx.randSeed);
+
 		#if editor
 		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2", "emitDomeHeight", "emitDomeFlip"].indexOf(propName) >= 0)
 			updateEmitShape(emitterObj);
@@ -2041,7 +2045,6 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 				warmUpTime = 0;
 				ctx.quickError("Warm up time can no longer be negative. Use the Delay property instead");
 			}
-			ctx.rebuildPrefab(this);
 			if (!isTemp && REFRESH_PARAMS.contains(pname))
 				ctx.rebuildInspector();
 		}
