@@ -99,6 +99,9 @@ class Editor extends Component {
 
 	public var gradientEditor: GradientEditor;
 
+	// the translation shown instead of the localizable texts, by all the editors
+	public static var langFile(default, null) : LangFile;
+
 	public function new(config, api, ?cdbTable) {
 		super(null,null);
 		this.api = api;
@@ -559,14 +562,19 @@ class Editor extends Component {
 		if( cursor.selection == null || cursor.table == null )
 			return;
 
-		function saveValue(out: Dynamic, obj: Dynamic, c: cdb.Data.Column) {
+		function saveValue(out: Dynamic, obj: Dynamic, c: cdb.Data.Column, line: Line) {
 			var form = @:privateAccess formulas.getFormulaNameFromValue(obj, c);
 			if( form != null ) {
 				Reflect.setField(out, c.name+"__f", form);
 				return;
 			}
 
-			var v = Reflect.field(obj, c.name);
+			var lang = getLangText(line, c);
+			var v = lang == null ? Reflect.field(obj, c.name) : switch( lang ) {
+				case Text(s): s;
+				case Missing: "";
+				default: Reflect.field(obj, c.name);
+			}
 			if( v != null )
 				Reflect.setField(out, c.name, v);
 		}
@@ -580,7 +588,7 @@ class Editor extends Component {
 					var out = {};
 					var obj = cursor.table.lines[y].obj;
 					var column = cursor.table.lines[y].columns[0];
-					saveValue(out, obj ,column);
+					saveValue(out, obj ,column, cursor.table.lines[y]);
 					schema.pushUnique(column);
 					data.push(out);
 				}
@@ -613,7 +621,7 @@ class Editor extends Component {
 
 					for( x in start...end ) {
 						var c = cursor.table.columns[x];
-						saveValue(out, obj, c);
+						saveValue(out, obj, c, cursor.table.lines[y]);
 						schema.pushUnique(c);
 					}
 
@@ -788,7 +796,10 @@ class Editor extends Component {
 				if (parsedValue == null)
 					continue;
 
-				Reflect.setField(c.line.obj, col.name, parsedValue);
+				if (isLangEdited(c.line, col))
+					setLangText(c.line, col, parsedValue);
+				else
+					Reflect.setField(c.line.obj, col.name, parsedValue);
 				toRefresh.push(c);
 			}
 
@@ -799,7 +810,7 @@ class Editor extends Component {
 		}
 
 
-		function setValue(cliObj : Dynamic, destObj : Dynamic, clipSchema : cdb.Data.Column, destCol : cdb.Data.Column) {
+		function setValue(cliObj : Dynamic, destObj : Dynamic, clipSchema : cdb.Data.Column, destCol : cdb.Data.Column, destLine : Line) {
 			var sheet = targetSheet;
 			var form = Reflect.field(cliObj, clipSchema.name+"__f");
 
@@ -840,6 +851,10 @@ class Editor extends Component {
 				}
 				return;
 			}
+			if( destLine != null && isLangEdited(destLine, destCol) ) {
+				setLangText(destLine, destCol, v ?? "");
+				return;
+			}
 			if( v == null )
 				Reflect.deleteField(destObj, destCol.name);
 			else
@@ -856,7 +871,7 @@ class Editor extends Component {
 					var col = c.column;
 					if (!c.table.canEditColumn(col.name) || isPasteImmutable(col))
 						continue;
-					setValue(data[0], c.line.obj, schema[0], col);
+					setValue(data[0], c.line.obj, schema[0], col, c.line);
 					toRefresh.push(c);
 				}
 			}
@@ -879,7 +894,7 @@ class Editor extends Component {
 							if (col.name == s.name)
 								sc = s;
 
-						setValue(data[0], c.line.obj, sc, col);
+						setValue(data[0], c.line.obj, sc, col, c.line);
 						toRefresh.push(c);
 					}
 				}
@@ -912,7 +927,8 @@ class Editor extends Component {
 				if( !cursor.table.canEditColumn(c2.name) || p.copyPasteImmutable)
 					continue;
 
-				setValue(d, obj, c1, c2);
+				// the lines added by the paste have no Line yet
+				setValue(d, obj, c1, c2, cursor.table.lines[curPosY]);
 
 				if( c2.type == TList || c2.type == TProperties || c2.type == TPolymorph )
 					shouldFullRefresh = true;
@@ -989,7 +1005,7 @@ class Editor extends Component {
 					var c = line.columns[x];
 					if (!line.cells[x].canEdit())
 						continue;
-					var old = Reflect.field(line.obj, c.name);
+					var old = isLangEdited(line, c) ? line.cells[x].value : Reflect.field(line.obj, c.name);
 					var def = base.getDefault(c,false,sheet);
 					if (old == def)
 						continue;
@@ -1028,6 +1044,10 @@ class Editor extends Component {
 	}
 
 	public function changeObject( line : Line, column : cdb.Data.Column, value : Dynamic ) {
+		if( isLangEdited(line, column) ) {
+			setLangText(line, column, value ?? "");
+			return;
+		}
 		line.beginChanges(getCellMergeKey(line, column));
 		var prev = Reflect.field(line.obj, column.name);
 		if( value == null ) {
@@ -1045,6 +1065,159 @@ class Editor extends Component {
 	// the successive changes of a cell are one undo
 	public function getCellMergeKey( line : Line, column : cdb.Data.Column ) {
 		return line.table.sheet.getPath() + "#" + line.index + "#" + column.name;
+	}
+
+	/**
+		Shows the translation of a file (relative to the resources) instead of the localizable texts, the texts when null.
+	**/
+	public static function setLang( path : Null<String> ) {
+		var editors : Array<Editor> = [for( e in new Element(".is-cdb-editor").elements() ) e.data("cdb")];
+		var restores = [for( e in editors ) e.keepViewAnchor()];
+		langFile = path == null ? null : LangFile.get(path);
+		refreshAll(false, false);
+		for( r in restores )
+			r();
+		for( v in Ide.inst.getViews(hide.view.cdb.CdbTable) )
+			v.syncLangBar();
+	}
+
+	/**
+		Returns a function putting back at the same place on screen the selected cell if visible, else the first fully visible line :
+		the texts change the heights of the rows.
+	**/
+	function keepViewAnchor() : Void -> Void {
+		var scroll = element.get(0);
+		var view = scroll.getBoundingClientRect();
+		var table = tables[0];
+
+		function getSelectedElement() : js.html.Element {
+			var l = cursor.getLine();
+			if( l == null ) return null;
+			var c = l.created && cursor.x >= 0 ? l.cells[cursor.x] : null;
+			return c != null ? c.elementHtml : l.element.get(0);
+		}
+
+		var selected = getSelectedElement();
+		if( selected != null && selected.isConnected ) {
+			var r = selected.getBoundingClientRect();
+			if( r.bottom > view.top && r.top < view.bottom ) {
+				var top = r.top - view.top;
+				return function() {
+					var l = cursor.getLine();
+					l?.table.revealRow(l);
+					var e = getSelectedElement();
+					if( e == null || !e.isConnected ) return;
+					scroll.scrollTop += Math.round(e.getBoundingClientRect().top - scroll.getBoundingClientRect().top - top);
+					tables[0]?.render();
+				};
+			}
+		}
+
+		var first : Line = null;
+		var firstTop = 0.;
+		if( table != null )
+			for( l in table.lines ) {
+				if( !l.row.attached ) continue;
+				var r = l.element.get(0).getBoundingClientRect();
+				if( r.top >= view.top && r.bottom <= view.bottom && (first == null || r.top < firstTop) ) {
+					first = l;
+					firstTop = r.top;
+				}
+			}
+		if( first == null )
+			return function() {};
+
+		var index = first.index;
+		var offset = view.top - firstTop;
+		return function() tables[0]?.scrollToLine(index, offset);
+	}
+
+	public static function onLangFileRemoved( f : LangFile ) {
+		if( langFile != f )
+			return;
+		langFile = null;
+		for( v in Ide.inst.getViews(hide.view.cdb.CdbTable) )
+			v.syncLangBar();
+	}
+
+	/**
+		The translation of a localizable text, null when no translation is shown or the column is not localizable.
+	**/
+	public function getLangText( line : Line, column : cdb.Data.Column ) : LangFile.LangText {
+		if( langFile == null || line == null || column.type != TString || column.kind != Localizable )
+			return null;
+
+		var r = getLangElement(line, false);
+		if( r.text != null )
+			return r.text;
+		var t = langFile.child(r.e, r.prefix + column.name);
+		return t == null ? Missing : Text(LangFile.getText(t));
+	}
+
+	// the text is saved in the translation shown
+	function isLangEdited( line : Line, column : cdb.Data.Column ) {
+		var lang = getLangText(line, column);
+		return lang != null && lang.match(Text(_) | Missing);
+	}
+
+	// the lines from the root line to `line` with the name of their list, and the prefix of the properties of `line`
+	static function getLangLines( line : Line ) : { lines : Array<{ sheet : cdb.Sheet, obj : Dynamic, index : Int, field : String }>, prefix : String } {
+		var sub = Std.downcast(line.table, SubTable);
+		if( sub == null )
+			return { lines : [{ sheet : line.table.sheet, obj : line.obj, index : line.index, field : null }], prefix : "" };
+
+		var p = getLangLines(sub.cell.line);
+		var name = p.prefix + sub.cell.column.name;
+		if( sub.polyVal != null )
+			name += "." + sub.polyVal.col.name;
+		if( sub.displayMode == Properties )
+			return { lines : p.lines, prefix : name + "." };
+		p.lines.push({ sheet : line.table.sheet, obj : line.obj, index : line.index, field : name });
+		return { lines : p.lines, prefix : "" };
+	}
+
+	// the element of the texts of `line` (created when `create`) and the prefix of their names, or why the line has none
+	function getLangElement( line : Line, create : Bool ) : { e : Xml, prefix : String, text : LangFile.LangText } {
+		var f = langFile;
+		var p = getLangLines(line);
+		for( l in p.lines )
+			if( Reflect.hasField(l.obj, cdb.Lang.IGNORE_EXPORT_FIELD) )
+				return { e : null, prefix : p.prefix, text : Ignored };
+
+		var root = p.lines[0];
+		var isPrefab = root.sheet.props.dataFiles != null;
+		var keys = [for( i => l in p.lines ) LangFile.lineKey(l.sheet, l.obj, l.index, i == 0 && isPrefab)];
+		if( keys.contains(null) )
+			return { e : null, prefix : p.prefix, text : NoId };
+
+		var e = f.getSheet(root.sheet.name);
+		if( e == null && create )
+			e = f.createSheet(root.sheet.name);
+		for( i => l in p.lines ) {
+			if( i > 0 )
+				e = f.child(e, l.field) ?? (create ? f.createChild(e, l.field) : null);
+			e = f.findLine(e, l.sheet, l.obj, l.index, i == 0 && isPrefab) ?? (create ? f.createChild(e, keys[i]) : null);
+			if( e == null )
+				break;
+		}
+		return { e : e, prefix : p.prefix, text : null };
+	}
+
+	function setLangText( line : Line, column : cdb.Data.Column, text : String ) {
+		var f = langFile;
+		var root = getLangLines(line).lines[0];
+		var isPrefab = root.sheet.props.dataFiles != null;
+		var rootElt = f.findLine(f.getSheet(root.sheet.name), root.sheet, root.obj, root.index, isPrefab);
+		var key = rootElt?.nodeName ?? LangFile.lineKey(root.sheet, root.obj, root.index, isPrefab);
+
+		beginScope(Lang(f, root.sheet.name, key), getCellMergeKey(line, column));
+		var r = getLangElement(line, true);
+		var name = r.prefix + column.name;
+		f.setText(f.child(r.e, name) ?? f.createChild(r.e, name), text);
+		endChanges();
+
+		if( changesDepth == 0 && filters.length > 0 )
+			updateFilters();
 	}
 
 	/**
@@ -1158,11 +1331,13 @@ class Editor extends Component {
 	}
 
 	// the searched text of a line of a sheet which is not displayed : its values, close to the text of its cells
-	function getDataSearchText( sheet : cdb.Sheet, obj : Dynamic ) : String {
+	function getDataSearchText( sheet : cdb.Sheet, obj : Dynamic, index : Int ) : String {
 		var text = dataSearchTexts.get(obj);
 		if( text != null ) return text;
 		var buf = new StringBuf();
-		function add( sheet : cdb.Sheet, obj : Dynamic ) {
+		// `e` : the element of the translation of the line, `prefix` : the one of its properties
+		var lang = langFile;
+		function add( sheet : cdb.Sheet, obj : Dynamic, e : Xml, prefix : String ) {
 			if( obj == null ) return;
 			for( c in sheet.columns ) {
 				var v : Dynamic = Reflect.field(obj, c.name);
@@ -1170,9 +1345,13 @@ class Editor extends Component {
 				switch( c.type ) {
 				case TList:
 					var sub = sheet.getSub(c);
-					for( o in (v : Array<Dynamic>) ) add(sub, o);
+					var list = lang?.child(e, prefix + c.name);
+					for( i => o in (v : Array<Dynamic>) ) add(sub, o, lang?.findLine(list, sub, o, i, false), "");
 				case TProperties:
-					add(sheet.getSub(c), v);
+					add(sheet.getSub(c), v, e, prefix + c.name + ".");
+				case TString if( e != null && c.kind == Localizable ):
+					var t = lang.child(e, prefix + c.name);
+					buf.add(t == null ? v : LangFile.getText(t));
 				case TRef(name):
 					buf.add(v);
 					var r = base.getSheet(name);
@@ -1189,7 +1368,7 @@ class Editor extends Component {
 				buf.add(" ");
 			}
 		}
-		add(sheet, obj);
+		add(sheet, obj, lang == null ? null : lang.findLine(lang.getSheet(sheet.name), sheet, obj, index, sheet.props.dataFiles != null), "");
 		text = removeAccents(buf.toString());
 		dataSearchTexts.set(obj, text);
 		return text;
@@ -1210,8 +1389,8 @@ class Editor extends Component {
 				continue;
 			}
 			var n = 0;
-			for( obj in s.lines ) {
-				var text = getDataSearchText(s, obj);
+			for( i => obj in s.lines ) {
+				var text = getDataSearchText(s, obj, i);
 				for( f in search )
 					if( text.indexOf(f) >= 0 ) {
 						n++;
@@ -1270,6 +1449,7 @@ class Editor extends Component {
 
 	function save() {
 		api.save();
+		LangFile.saveAll();
 		saveSeparatorState();
 
 		function hookEnd() {

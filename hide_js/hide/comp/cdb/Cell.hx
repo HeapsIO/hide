@@ -362,11 +362,22 @@ class Cell {
 			dropdown = null;
 		}
 		#end
-		currentValue = Reflect.field(editObject, editColumn.name);
+		var lang = editor.getLangText(line, column);
+		var text : String = lang == null ? null : switch( lang ) {
+			case Text(s): s;
+			case Missing: "";
+			default: null;
+		}
+		currentValue = text ?? Reflect.field(editObject, editColumn.name);
 		editor.searchTexts.delete(line.obj);
+		elementHtml.classList.toggle("cdb-loc", text != null);
+		elementHtml.classList.toggle("cdb-loc-missing", lang == Missing);
+		elementHtml.classList.toggle("cdb-loc-ignored", lang == Ignored);
+		elementHtml.classList.toggle("cdb-loc-noid", lang == NoId);
+		var shown = lang != null && lang.match(Text(_)) ? text : Reflect.field(line.obj, column.name);
 
 		blurOff = true;
-		var html = valueHtml(column, Reflect.field(line.obj, column.name), line.table.getRealSheet(), line.obj, []);
+		var html = valueHtml(column, shown, line.table.getRealSheet(), line.obj, []);
 		if( !html.containsHtml )
 			elementHtml.textContent = html.str;
 		else
@@ -387,7 +398,7 @@ class Cell {
 		}
 		blurOff = false;
 
-		var text : String = column.type == TString && column.kind != Script ? Reflect.field(line.obj, column.name) : null;
+		var text : String = column.type == TString && column.kind != Script ? shown : null;
 		elementHtml.classList.toggle("multiline", text != null && isMultiline(text));
 
 		updateClasses();
