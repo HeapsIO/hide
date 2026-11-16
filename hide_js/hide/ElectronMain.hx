@@ -357,6 +357,8 @@ class ElectronMain {
 		options.parent = parent;
 		options.show = !background;
 		options.useContentSize = true;
+		// title bar drawn by SubWindow
+		options.frame = false;
 		options.backgroundColor = "#222222";
 		options.icon = windowIcon();
 		var win = new BrowserWindow(options);
@@ -537,6 +539,7 @@ class ElectronMain {
 		// app
 		h.set("app.quit", (wc) -> App.quit());
 		h.set("app.isDebuggerAttached", (wc) -> isDebuggerAttached(wc));
+		h.set("app.isFocused", (wc) -> BrowserWindow.getFocusedWindow() != null);
 		h.set("app.clearCache", (wc : WebContents) -> wc.session.clearCache());
 		h.set("app.createCrashReport", (wc, info : String) -> createCrashReport(info));
 		h.set("shortcut.register", function(wc : WebContents, accel : String) {

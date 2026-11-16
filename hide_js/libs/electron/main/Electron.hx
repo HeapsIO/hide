@@ -55,6 +55,7 @@ extern class BrowserWindow {
 	static function fromWebContents( wc : WebContents ) : Null<BrowserWindow>;
 	static function fromId( id : Int ) : Null<BrowserWindow>;
 	static function getAllWindows() : Array<BrowserWindow>;
+	static function getFocusedWindow() : Null<BrowserWindow>;
 }
 
 @:jsRequire("electron", "webContents")
