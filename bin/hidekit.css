@@ -65,11 +65,11 @@ kit-root {
 		--category-background-color: var(--inspector-bg);
 
 		--widget-height: 22px;
-		--widget-font-color: #FFFFFF;
-		--widget-bg: #2d2d2d;
+		--widget-font-color: var(--theme-widget-foreground);
+		--widget-bg: var(--theme-widget-background);
 		--widget-bg-hover: hsl(from var(--widget-bg) h s calc(l + 10));
 		--widget-bg-disabled: #222222;
-		--widget-border-color: #484848;
+		--widget-border-color: var(--theme-widget-border-color);
 		--widget-border-color-disabled: #333333;
 		--widget-border-color-hover: hsl(from var(--widget-border-color) h s calc(l + 20));
 
@@ -638,7 +638,7 @@ kit-root {
 				display: contents;
 			}
 
-			input, kit-select {
+			input {
 				min-width: 0;
 				flex: var(--width,1) 1;
 				text-align: left;
@@ -727,37 +727,11 @@ kit-root {
 				}
 			}
 
-			kit-select {
+			hide-select {
 				flex: var(--width,1) 1;
-				cursor: pointer;
-				align-self: stretch;
-
-				display: flex;
-				align-items: center;
-
-				span {
-					flex: 1 1;
-				}
-
-				&::after {
-					flex: 0 0 12px;
-					display: inline-block;
-					justify-self: flex-end;
-					content: "";
-					margin: 8px;
-					width: 12px; height: 12px;
-
-
-					transform: rotate(90deg);
-					background-color: currentColor;
-					mask-image: url("res/icons/svg/right_caret.svg");
-
-					mask-position: center;
-					mask-repeat: no-repeat;
-					mask-size: contain;
-
-					pointer-events: all;
-				}
+				width: 100%;
+				max-width: 100%;
+				--select-height: var(--widget-height);
 			}
 
 			.gradient-box {
@@ -870,7 +844,7 @@ kit-root {
 				}
 			}
 
-			input, kit-select {
+			input {
 				background-color: var(--widget-bg);
 				border-color: var(--widget-border-color);
 

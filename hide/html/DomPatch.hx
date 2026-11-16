@@ -47,6 +47,7 @@ class DomPatch {
 	static function element() {
 		return merge((macro class {
 			function replaceChildren(nodes : haxe.extern.Rest<haxe.extern.EitherType<js.html.Node, String>>) : Void;
+			function attachInternals() : hide.html.ElementInternals;
 		}).fields);
 	}
 

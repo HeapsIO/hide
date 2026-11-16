@@ -1,0 +1,54 @@
+:host {
+	--_select-height: var(--select-height, 22px);
+	--_select-background: var(--select-background, var(--theme-widget-background));
+	--_select-foreground: var(--select-foreground, var(--theme-widget-foreground));
+
+	display: inline-flex;
+	flex-direction: row;
+	align-items: center;
+	box-sizing: border-box;
+
+	height: var(--_select-height);
+	min-width: 0;
+	padding-left: 5px;
+	overflow: clip;
+
+	border: 1px solid var(--theme-widget-border-color);
+	border-radius: var(--theme-border-radius);
+	background-color: var(--_select-background);
+
+	color: var(--_select-foreground);
+	text-shadow: 0 1px 0 black;
+	text-align: left;
+	font-size: 11px;
+	cursor: pointer;
+	user-select: none;
+}
+
+:host(:hover) {
+	background-color: hsl(from var(--_select-background) h s calc(l + 10));
+}
+
+:host(:focus-visible) {
+	outline: 1px solid var(--theme-accent);
+	outline-offset: -1px;
+}
+
+.label {
+	flex: 1 1;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+:host::after {
+	content: "";
+	flex: 0 0 12px;
+	height: 12px;
+	margin: 8px;
+
+	rotate: 90deg;
+	background-color: currentColor;
+	mask: url("res/icons/svg/right_caret.svg") center / contain no-repeat;
+}

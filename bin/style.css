@@ -27,6 +27,10 @@
 	--theme-border: 1px solid var(--theme-color-border);
 	--theme-border-radius: 4px;
 
+	--theme-widget-background: #2d2d2d;
+	--theme-widget-foreground: #FFFFFF;
+	--theme-widget-border-color: #484848;
+
 	@function --hover(--c <color>) returns <color> {
 		result: color-mix(in oklch, var(--c), var(--theme-foreground) 6%);
 	}
