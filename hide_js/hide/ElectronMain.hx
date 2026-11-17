@@ -589,6 +589,99 @@ class ElectronMain {
 			touchSupport : d.touchSupport,
 		}]);
 
+		// shows a screenshot of each display above everything : a click returns the color under the cursor as "rrggbb", Escape / right click returns null
+		// the overlays are not focusable, so that the popups closed on blur stay open
+		h.set("screen.pickColor", (wc) -> new js.lib.Promise<String>(function(resolve, _) {
+			if( testMode ) {
+				js.Browser.console.log("[pickColor]");
+				resolve(null);
+				return;
+			}
+
+			var displays : Array<Dynamic> = Screen.getAllDisplays();
+
+			// one capture per display pixel size : getSources scales all the screens to the same size, which blurs the others
+			var sizes : Array<{ width : Int, height : Int }> = [];
+			var sizeIndex = [for( d in displays ) {
+				var w = Math.round(d.bounds.width * d.scaleFactor);
+				var h = Math.round(d.bounds.height * d.scaleFactor);
+				var i = Lambda.findIndex(sizes, (s) -> s.width == w && s.height == h);
+				if( i < 0 ) {
+					i = sizes.length;
+					sizes.push({ width : w, height : h });
+				}
+				i;
+			}];
+
+			js.lib.Promise.all([for( s in sizes ) DesktopCapturer.getSources({ types : ["screen"], thumbnailSize : s })]).then(function(captures : Array<Array<DesktopCapturerSource>>) {
+				var wins : Array<BrowserWindow> = [];
+				var done = false;
+				var onMessage : (Dynamic, String, String) -> Void = null;
+
+				function finish( color : String ) {
+					if( done ) return;
+					done = true;
+					IpcMain.off("hide-colorpick", onMessage);
+					GlobalShortcut.unregister("Escape");
+					for( w in wins )
+						if( !w.isDestroyed() ) w.close();
+					resolve(color);
+				}
+
+				onMessage = function(e : Dynamic, msg : String, color : String) {
+					var w = Lambda.find(wins, (w) -> !w.isDestroyed() && w.webContents == e.sender);
+					if( w == null ) return;
+					if( msg == "ready" ) w.showInactive() else finish(color);
+				}
+
+				function open( d : Dynamic, src : DesktopCapturerSource ) {
+					var w = new BrowserWindow({
+						x : d.bounds.x,
+						y : d.bounds.y,
+						width : d.bounds.width,
+						height : d.bounds.height,
+						show : false,
+						frame : false,
+						// no open / close animation on Windows
+						thickFrame : false,
+						focusable : false,
+						skipTaskbar : true,
+						resizable : false,
+						movable : false,
+						minimizable : false,
+						maximizable : false,
+						fullscreenable : false,
+						hasShadow : false,
+						enableLargerThanScreen : true,
+						backgroundColor : "#000000",
+						webPreferences : { nodeIntegration : true, contextIsolation : false, sandbox : false },
+					});
+					wins.push(w);
+					w.setAlwaysOnTop(true, "screen-saver");
+					// the size given at creation can be wrong when the display scale differs from the main one
+					w.setBounds(d.bounds);
+					w.on("closed", () -> finish(null));
+					w.webContents.on("did-finish-load", function() {
+						var img = src.thumbnail;
+						var s = img.getSize();
+						w.webContents.send("hide-colorpick-image", img.toBitmap(), s.width, s.height);
+					});
+					w.loadFile(js.node.Path.join(js.Node.__dirname, "colorpick.html"));
+				}
+
+				IpcMain.on("hide-colorpick", onMessage);
+				GlobalShortcut.register("Escape", () -> finish(null));
+				for( i in 0...displays.length ) {
+					var d = displays[i];
+					var sources = captures[sizeIndex[i]];
+					var src = Lambda.find(sources, (s) -> s.display_id == Std.string(d.id));
+					if( src == null ) src = sources[i];
+					if( src != null ) open(d, src);
+				}
+				if( wins.length == 0 ) finish(null);
+			}, (_) -> resolve(null));
+		}));
+
 		// clipboard (async in Electron, exposed as sync to the renderer)
 		h.set("clipboard.get", function(wc, type : String) : js.lib.Promise<String> {
 			if( type == null || type == "text" )

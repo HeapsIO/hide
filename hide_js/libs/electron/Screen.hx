@@ -27,4 +27,11 @@ class Screen {
 		return Ipc.call("screen.all");
 	}
 
+	/**
+		Lets the user click any pixel of the displays. Resolves its color as "rrggbb", or null if cancelled.
+	**/
+	public static function pickColor() : js.lib.Promise<Null<String>> {
+		return cast Ipc.callAsync("screen.pickColor");
+	}
+
 }

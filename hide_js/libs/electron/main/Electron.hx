@@ -36,6 +36,8 @@ extern class BrowserWindow {
 	function setSize( w : Int, h : Int ) : Void;
 	function setMinimumSize( w : Int, h : Int ) : Void;
 	function setPosition( x : Int, y : Int ) : Void;
+	function setBounds( bounds : Rectangle ) : Void;
+	function setAlwaysOnTop( flag : Bool, ?level : String ) : Void;
 	function getTitle() : String;
 	function setTitle( t : String ) : Void;
 	function isMaximized() : Bool;
@@ -111,6 +113,18 @@ extern class Dialog {
 @:jsRequire("electron", "screen")
 extern class Screen {
 	static function getAllDisplays() : Array<Dynamic>;
+}
+
+@:jsRequire("electron", "desktopCapturer")
+extern class DesktopCapturer {
+	static function getSources( options : { types : Array<String>, ?thumbnailSize : { width : Int, height : Int } } ) : js.lib.Promise<Array<DesktopCapturerSource>>;
+}
+
+typedef DesktopCapturerSource = { id : String, name : String, display_id : String, thumbnail : NativeImage };
+
+extern class NativeImage {
+	function getSize() : { width : Int, height : Int };
+	function toBitmap() : js.node.Buffer;
 }
 
 @:jsRequire("electron", "clipboard")

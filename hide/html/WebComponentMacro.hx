@@ -65,9 +65,23 @@ class WebComponentMacro {
 				if (js.Syntax.code("false")) super();
 			}
 
+			var styleSheets : Array<hide.html.WindowStyleSheet>;
+
+			/** Applies `sheets` to the shadow root, again when the component moves to another window. **/
+			function adoptStyleSheets(sheets : Array<hide.html.WindowStyleSheet>) {
+				styleSheets = sheets;
+				shadowRoot.adoptedStyleSheets = [for (s in sheets) s.get(ownerDocument.defaultView)];
+			}
+
 			public function connectedCallback() : Void {}
 			public function disconnectedCallback() : Void {}
-			public function adoptedCallback() : Void {}
+
+			/** Overrides must call super, which re-applies the style sheets of the new window **/
+			public function adoptedCallback() : Void {
+				if (styleSheets != null)
+					adoptStyleSheets(styleSheets);
+			}
+
 			public function attributeChangedCallback(name : String, oldValue : Null<String>, newValue : Null<String>) : Void {}
 		};
 		return Context.getBuildFields().concat(tpl.fields);
@@ -75,7 +89,7 @@ class WebComponentMacro {
 
 	/**
 		Adds `create()`, which creates the component through the DOM, and makes `new` throw.
-		Adds a static `styleSheet` from `style/<module>.css` next to the source file, if it exists.
+		Adds a static `styleSheet` (`WindowStyleSheet`, to pass to `adoptStyleSheets`) from `style/<module>.css` next to the source file, if it exists.
 		If the running hide is a git checkout, the sheet is reloaded from its copy of the file when it changes.
 		Turns `@:attr` vars into properties backed by the attribute of the same name. Supported types :
 		- `Bool` : attribute presence (`hasAttribute` / `toggleAttribute`).
@@ -106,8 +120,7 @@ class WebComponentMacro {
 		if (FileSystem.exists(css)) {
 			Context.registerModuleDependency(cl.module, css);
 			var init = [
-				(macro var s = new js.html.CSSStyleSheet()),
-				macro s.replaceSync($v{sys.io.File.getContent(css)}),
+				(macro var s = new hide.html.WindowStyleSheet($v{sys.io.File.getContent(css)})),
 			];
 			// The folder is watched because editors may save by replacing the file
 			var dir = Path.directory(Path.normalize(FileSystem.fullPath(css)));
@@ -124,13 +137,13 @@ class WebComponentMacro {
 						js.node.Fs.watch(dir, (_, name) -> {
 							var path = js.node.Path.join(dir, $v{file});
 							if (name == $v{file} &&js.node.Fs.existsSync(path))
-								s.replaceSync(js.node.Fs.readFileSync(path, {encoding: "utf8"}));
+								s.update(js.node.Fs.readFileSync(path, {encoding: "utf8"}));
 						});
 				});
 			}
 			init.push(macro s);
 			fields.push((macro class {
-				static var styleSheet : js.html.CSSStyleSheet = $b{init};
+				static var styleSheet : hide.html.WindowStyleSheet = $b{init};
 			}).fields[0]);
 		}
 

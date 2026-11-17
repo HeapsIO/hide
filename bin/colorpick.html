@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<style>
+		html, body { margin: 0; padding: 0; overflow: hidden; background: #000; cursor: crosshair; }
+		#screen { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
+		#zoom { position: fixed; display: none; pointer-events: none; background: #222; border: 1px solid #fff; box-shadow: 0 0 0 1px #000, 0 2px 8px #000a; }
+		#zoom canvas { display: block; width: 121px; height: 121px; image-rendering: pixelated; }
+		#zoom .center { position: absolute; left: 55px; top: 55px; width: 9px; height: 9px; border: 1px solid #fff; outline: 1px solid #000; }
+		#zoom .hex { padding: 2px 4px; color: #ddd; font: 12px monospace; text-align: center; }
+	</style>
+</head>
+<body>
+	<canvas id="screen"></canvas>
+	<div id="zoom">
+		<canvas id="pixels" width="11" height="11"></canvas>
+		<div class="center"></div>
+		<div class="hex"></div>
+	</div>
+	<script>
+		const { ipcRenderer } = require('electron');
+		const screen = document.getElementById('screen');
+		const ctx = screen.getContext('2d', { willReadFrequently: true });
+		const zoom = document.getElementById('zoom');
+		const pixels = document.getElementById('pixels').getContext('2d');
+		const hexLabel = zoom.querySelector('.hex');
+		const RADIUS = 5;
+
+		ipcRenderer.once('hide-colorpick-image', (e, bitmap, width, height) => {
+			// BGRA -> RGBA
+			const data = new Uint8ClampedArray(bitmap.buffer, bitmap.byteOffset, bitmap.byteLength);
+			for( let i = 0; i < data.length; i += 4 ) {
+				const b = data[i];
+				data[i] = data[i + 2];
+				data[i + 2] = b;
+				data[i + 3] = 255;
+			}
+			screen.width = width;
+			screen.height = height;
+			ctx.putImageData(new ImageData(data, width, height), 0, 0);
+			requestAnimationFrame(() => ipcRenderer.send('hide-colorpick', 'ready'));
+		});
+
+		function pixelAt( e ) {
+			return {
+				x: Math.min(screen.width - 1, Math.floor(e.clientX * screen.width / innerWidth)),
+				y: Math.min(screen.height - 1, Math.floor(e.clientY * screen.height / innerHeight)),
+			};
+		}
+
+		function hexAt( p ) {
+			const d = ctx.getImageData(p.x, p.y, 1, 1).data;
+			return [d[0], d[1], d[2]].map((v) => v.toString(16).padStart(2, '0')).join('');
+		}
+
+		window.addEventListener('mousemove', (e) => {
+			const p = pixelAt(e);
+			pixels.fillStyle = '#000';
+			pixels.fillRect(0, 0, 11, 11);
+			pixels.drawImage(screen, p.x - RADIUS, p.y - RADIUS, 11, 11, 0, 0, 11, 11);
+			hexLabel.textContent = '#' + hexAt(p).toUpperCase();
+
+			zoom.style.display = 'block';
+			const offset = 20;
+			const x = e.clientX + offset + zoom.offsetWidth > innerWidth ? e.clientX - offset - zoom.offsetWidth : e.clientX + offset;
+			const y = e.clientY + offset + zoom.offsetHeight > innerHeight ? e.clientY - offset - zoom.offsetHeight : e.clientY + offset;
+			zoom.style.left = x + 'px';
+			zoom.style.top = y + 'px';
+		});
+		document.documentElement.addEventListener('mouseleave', () => zoom.style.display = 'none');
+		window.addEventListener('contextmenu', (e) => e.preventDefault());
+		window.addEventListener('mousedown', (e) => {
+			e.preventDefault();
+			ipcRenderer.send('hide-colorpick', 'pick', e.button == 0 ? hexAt(pixelAt(e)) : null);
+		});
+	</script>
+</body>
+</html>

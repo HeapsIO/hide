@@ -1,6 +1,7 @@
 package hide.comp;
 
-import hrt.impl.ColorSpace;
+import hrt.impl.ColorSpace.Color;
+import hrt.impl.ColorSpaceF;
 import h2d.Slider;
 import js.html.InputElement;
 import js.jquery.Event;
@@ -18,6 +19,9 @@ class ColorBox extends Component {
 	var previewWithAlpha : Element;
 	var canEditAlpha : Bool = false;
 	public var isPickerEnabled : Bool = false;
+
+	/** Below the color box when null **/
+	public var popupAnchor : Popup.Anchor;
 
 	public var value(get, set) : Int;
 	var workValue : Int;
@@ -60,6 +64,8 @@ class ColorBox extends Component {
 		element.click(function(e) {
 			if (picker == null && isPickerEnabled) {
 				picker = new ColorPicker(canEditAlpha, this.element);
+				if (popupAnchor != null)
+					picker.anchor = popupAnchor;
 				picker.value = workValue;
 				startValue = workValue;
 				picker.onChange = function(isDragging) {
@@ -116,17 +122,21 @@ class ColorPicker extends Popup {
 
 	var startValue: Int;
 	public var value(get, set) : Int;
-	var workValue : Int;
+
+	/** Color in `colorMode` space, alpha in w **/
+	var workValue = new Vector4();
+	var colorMode = ColorSpaceF.colorModes[0];
+	var primaryMode = ColorSpaceF.colorModes[1];
+	var tmpColor = new Vector4();
+	var tmpValue = new Vector4();
 	var mask : Int;
 
 	var primarySliders : SliderGroup;
 	var secondarySliders : SliderGroup;
+	var components: Array<ColorSliderComponent>;
 
-	var colorCode : Element;
+	var colorCode : InputElement;
 	var preview : ColorBox;
-
-	var pasteButton : Element;
-	var copyButton : Element;
 
 	var canEditAlpha : Bool;
 
@@ -135,15 +145,19 @@ class ColorPicker extends Popup {
 
 	var valueChangeGuard : Int = 0;
 
-	public var valueToARGB : (value : Vector4,  outColor : Color) -> Color;
-	public var ARGBToValue : (color : Color, outVector: Vector4) -> Vector4;
-
 	public function repaint() {
-
-		primarySliders.value = workValue;
+		convert(workValue, colorMode, primaryMode, tmpValue);
+		primarySliders.value = tmpValue;
 		secondarySliders.value = workValue;
-		colorCode.val(StringTools.hex(workValue, if(canEditAlpha) 8 else 6));
-		preview.value = workValue;
+		colorCode.value = StringTools.hex(value, if(canEditAlpha) 8 else 6);
+		preview.value = value;
+	}
+
+	function convert(v : Vector4, from : ColorModeF, to : ColorModeF, out : Vector4) {
+		if (from == to)
+			out.load(v);
+		else
+			to.fromRGBA(from.toRGBA(v, tmpColor), out);
 	}
 
 	public function change(isDragging:Bool) {
@@ -154,24 +168,16 @@ class ColorPicker extends Popup {
 	}
 
 	public function test() {
-		// Test that HSVtoiRGB -> iRGBToHSV produces the same color in input as output
-		var colorCol = new Color();
-		var colorCol2 = new Color();
+		// Test that RGBAtoHSV -> HSVtoRGBA produces the same color in input as output
+		var colorVec = new Vector4();
 
 		for (i in 0...0xFFFFFF) {
-			colorCol.r = (i >> 16) & 0xFF;
-			colorCol.g = (i >> 8) & 0xFF;
-			colorCol.b = (i >> 0) & 0xFF;
-			var colorVec = ColorSpace.iRGBtoHSV(colorCol);
+			colorVec.setColor(i);
+			ColorSpaceF.RGBAtoHSV(colorVec, colorVec);
+			var i2 = ColorSpaceF.HSVtoRGBA(colorVec, colorVec).toColor() & 0xFFFFFF;
 
-			ColorSpace.HSVtoiRGB(colorVec, colorCol2);
-
-			if (colorCol.r != colorCol2.r ||
-				colorCol.g != colorCol2.g ||
-				colorCol.b != colorCol2.b)
-			{
-				trace("Missmatch found for 0x" + StringTools.hex(i), colorCol, colorCol2);
-			}
+			if (i != i2)
+				trace("Missmatch found for 0x" + StringTools.hex(i), StringTools.hex(i2));
 		}
 
 	}
@@ -184,9 +190,6 @@ class ColorPicker extends Popup {
 
 		element.addClass("color-picker");
 
-		valueToARGB = ColorSpace.HSVtoiRGB;
-		ARGBToValue = ColorSpace.iRGBtoHSV;
-
 		initSliders();
 
 		new Element("<hr>").appendTo(element);
@@ -197,6 +200,21 @@ class ColorPicker extends Popup {
 		repaint();
 	}
 
+	function changeColorMode(mode : ColorModeF) {
+		convert(workValue, colorMode, mode, workValue);
+		colorMode = mode;
+		secondarySliders.setColorMode(colorMode, workValue);
+
+		for (i => comp in components) {
+			if (i < 3) {
+				comp.label.text(colorMode.name.charAt(i));
+			}
+			else {
+				comp.label.text("A");
+			}
+		}
+	}
+
 	function initInfobar() {
 		var infoBar = new Element("<div>").addClass("info-bar");
 		element.append(infoBar);
@@ -205,65 +223,99 @@ class ColorPicker extends Popup {
 		preview.element.width(64);
 		preview.element.height(64);
 
-		var inputRow = new Element("<div>");
-		infoBar.append(inputRow);
+		var hexColumn = Browser.document.createDivElement();
+		hexColumn.className = "hex-column";
+		infoBar.get(0).append(hexColumn);
 
-		inputRow.append(new Element("<span>").html("#"));
+		var inputRow = Browser.document.createDivElement();
+		inputRow.className = "hex-input";
+		hexColumn.append(inputRow);
 
-		colorCode = new Element("<input type='text' maxlength='9'>").css({display: "inline-block", width:"70px"}).change(
-			function(e : Event) {
-				var color = getColorFromString(cast(e.target,InputElement).value);
-				if (color != null) {
-					set_value(color);
-					change(false);
-				}
-				else {
-					repaint(); // we refresh to reset the text of the input to the current color if the input is invalid
-				}
+		inputRow.append("#");
+
+		colorCode = Browser.document.createInputElement();
+		colorCode.type = "text";
+		colorCode.maxLength = 9;
+		colorCode.onchange = function(e : Event) {
+			var color = getColorFromString(colorCode.value);
+			if (color != null) {
+				set_value(color);
+				change(false);
 			}
-		);
+			else {
+				repaint(); // we refresh to reset the text of the input to the current color if the input is invalid
+			}
+		}
 
 		// Selecting the text of the colorCode with the mouse can
 		// close the popup if we release the mouse outside the popup.
 		// These event handlers prevent this
-		var colorCodeElem = colorCode.get(0);
-		colorCodeElem.onpointerdown = function(e : js.html.PointerEvent) {
-			colorCodeElem.setPointerCapture(e.pointerId);
+		colorCode.onpointerdown = function(e : js.html.PointerEvent) {
+			colorCode.setPointerCapture(e.pointerId);
 		}
 
-		colorCodeElem.onpointerup = function(e : js.html.PointerEvent) {
-			colorCodeElem.releasePointerCapture(e.pointerId);
+		colorCode.onpointerup = function(e : js.html.PointerEvent) {
+			colorCode.releasePointerCapture(e.pointerId);
 		}
 		inputRow.append(colorCode);
 
-		inputRow.addClass("hide-toolbar2");
-		inputRow.css({'margin-bottom': 'auto'});
+		var toolbar = Browser.document.createDivElement();
+		toolbar.className = "hide-toolbar2";
+		hexColumn.append(toolbar);
 
-		var group = new Element("<div class='tb-group'>").appendTo(inputRow);
-		copyButton = new Element("<div class='button2' title='Copy'>");
-		copyButton.append(new Element("<div class='icon ico ico-copy'>"));
-		copyButton.on("click", function(e) {
-			Clipboard.set(colorCode.val());
+		var group = Browser.document.createElement("hide-group");
+		toolbar.append(group);
+
+		function addButton(title : String, icon : String, onClick : () -> Void) {
+			var button = hide.html.comp.Button.create();
+			button.title = title;
+			button.setAttribute("aria-label", title);
+			button.icon = icon;
+			button.onclick = (_) -> onClick();
+			group.append(button);
+		}
+
+		addButton("Copy", Std.string(HideRes.icon.copy), () -> Clipboard.set(colorCode.value));
+
+		addButton("Paste", Std.string(HideRes.icon.paste), () -> {
+			colorCode.value = Clipboard.get();
+			colorCode.dispatchEvent(new js.html.Event("change"));
 		});
-		group.append(copyButton);
 
-
-		pasteButton = new Element("<div class='button2' title='Paste'>");
-		pasteButton.append(new Element("<div class='icon ico ico-paste'>"));
-		pasteButton.on("click", function(e) {
-			var value = Clipboard.get();
-			colorCode.val(value).change();
+		addButton("Pick a color on screen", Std.string(HideRes.icon.eye_dropper), () -> {
+			electron.Screen.pickColor().then(function(hex) {
+				if (hex == null)
+					return;
+				var rgb = Std.parseInt("0x" + hex);
+				set_value(canEditAlpha ? (value & 0xFF000000) | rgb : rgb);
+				change(false);
+			});
 		});
-		group.append(pasteButton);
 
+		var initialMode : Int = ide.currentConfig.get("colorPicker.secondaryColorMode", 0);
+		if (initialMode >= ColorSpaceF.colorModes.length)
+			initialMode = 0;
+
+		var modeSelect = hide.html.comp.Select.create();
+		modeSelect.id = "secondary-color-mode";
+		modeSelect.items = [for (i => mode in ColorSpaceF.colorModes) { label : mode.name, value : i }];
+		modeSelect.value = initialMode;
+		modeSelect.onValueChanged = () -> {
+			var modeIndex : Int = modeSelect.value;
+			ide.projectUserConfig.set("colorPicker.secondaryColorMode", modeIndex);
+			changeColorMode(ColorSpaceF.colorModes[modeIndex]);
+		};
+		infoBar.get(0).append(modeSelect);
+
+		changeColorMode(ColorSpaceF.colorModes[initialMode]);
 	}
 
 	function initSliders() {
 		{
-			primarySliders = new SliderGroup(element, canEditAlpha, ColorSpace.colorModes[1]);
+			primarySliders = new SliderGroup(element, canEditAlpha, primaryMode);
 
 			primarySliders.onChange = function(isDragging : Bool) {
-				workValue = primarySliders.value;
+				convert(primarySliders.value, primaryMode, colorMode, workValue);
 				change(isDragging);
 			}
 
@@ -331,13 +383,11 @@ class ColorPicker extends Popup {
 			}
 		}
 
-		new Element("<hr>").appendTo(element);
-
 		{
-			secondarySliders = new SliderGroup(element, canEditAlpha, ColorSpace.colorModes[0]);
+			secondarySliders = new SliderGroup(element, canEditAlpha, colorMode);
 
 			secondarySliders.onChange = function(isDragging : Bool) {
-				workValue = secondarySliders.value;
+				workValue.load(secondarySliders.value);
 				change(isDragging);
 			}
 
@@ -401,46 +451,13 @@ class ColorPicker extends Popup {
 				return {label:name};
 			}
 
-			var components = new Array<ColorSliderComponent>();
+			components = new Array<ColorSliderComponent>();
 			components.push(addRow(new Vector4(1.0,0.0,0.0,0.0), secondarySliders, false));
 			components.push(addRow(new Vector4(0.0,1.0,0.0,0.0), secondarySliders, false));
 			components.push(addRow(new Vector4(0.0,0.0,1.0,0.0), secondarySliders, false));
 			if (canEditAlpha) {
 				components.push(addRow(new Vector4(0.0,0.0,0.0,1.0), secondarySliders, true));
 			}
-
-
-			function changeColorMode(colorMode : ColorMode) {
-				secondarySliders.setColorMode(colorMode, value);
-
-				for (i => comp in components) {
-					if (i < 3) {
-						comp.label.text(colorMode.name.charAt(i));
-					}
-					else {
-						comp.label.text("A");
-					}
-				}
-			}
-
-			var initialMode : Int = ide.currentConfig.get("colorPicker.secondaryColorMode", 0);
-			var modeSelect = new Element("<select id=secondary-color-mode>").css("align-self", "end").appendTo(vbox);
-			for (i => mode in ColorSpace.colorModes) {
-				var option = new Element("<option>").val(i).text(mode.name).appendTo(modeSelect);
-				if (i == initialMode)
-					option.attr("selected", "true");
-			}
-
-			modeSelect.change(
-				function(e : Event) {
-					var val = Std.parseInt(modeSelect.val());
-					var modeIndex : Int = Std.int(hxd.Math.clamp(val, 0, ColorSpace.colorModes.length));
-					ide.projectUserConfig.set("colorPicker.secondaryColorMode", modeIndex);
-					changeColorMode(ColorSpace.colorModes[modeIndex]);
-				}
-			);
-
-			changeColorMode(ColorSpace.colorModes[initialMode]);
 		}
 	}
 
@@ -452,16 +469,20 @@ class ColorPicker extends Popup {
 	}
 
 	function get_value() {
-		return workValue;
-		//var color = new Color();
-		//valueToARGB(currentValue, color);
-		//return if (!canEditAlpha) (color.r << 16) + (color.g << 8) + color.b
-		//else (color.r << 16) + (color.g << 8) + (color.b << 0) + (color.a << 24);
+		var color = colorMode.toRGBA(workValue, tmpColor).toColor();
+		return canEditAlpha ? color : color & 0xFFFFFF;
 	};
 
-	function set_value(v) {
-		if (valueChangeGuard == 0) {
-			workValue = v;
+	function set_value(v : Int) {
+		if (!canEditAlpha)
+			v &= 0xFFFFFF;
+
+		// Skip the value read back from workValue, to keep its float precision
+		if (valueChangeGuard == 0 && v != value) {
+			tmpColor.setColor(v);
+			if (!canEditAlpha)
+				tmpColor.a = 1.0;
+			colorMode.fromRGBA(tmpColor, workValue);
 
 			repaint();
 		}
@@ -498,7 +519,7 @@ class ColorSlider extends Component {
 
 	var valueChangeLock : Int = 0;
 
-	public var colorMode : ColorMode;
+	public var colorMode : ColorModeF;
 
 	var getColorAtPixelDisplay : (x : Int, y : Int, outVector : Vector4) -> Void;
 	var getColorAtPixel : (x : Int, y : Int, outVector : Vector4) -> Void;
@@ -575,17 +596,17 @@ class ColorSlider extends Component {
 
 		var image_data = c2d.getImageData(0,0,canvas.width,canvas.height);
 		var value : Vector4 = new Vector4();
-		var color : Color = new Color();
+		var color : Vector4 = new Vector4();
 
 		for (y in 0...canvas.height) {
 			for (x in 0...canvas.width) {
 				var index = (y*canvas.width + x) * 4;
 				getColorAtPixelDisplay(x*canvasDownsample,y*canvasDownsample, value);
-				colorMode.valueToARGB(value, color);
-				image_data.data[index] = Std.int(color.r);
-				image_data.data[index+1] = Std.int(color.g);
-				image_data.data[index+2] = Std.int(color.b);
-				image_data.data[index+3] = Std.int(color.a);
+				colorMode.toRGBA(value, color);
+				image_data.data[index] = Math.round(color.r * 255);
+				image_data.data[index+1] = Math.round(color.g * 255);
+				image_data.data[index+2] = Math.round(color.b * 255);
+				image_data.data[index+3] = Math.round(color.a * 255);
 			}
 		}
 
@@ -595,8 +616,8 @@ class ColorSlider extends Component {
 		selectionCursor.attr("transform", 'translate(${cursorPos.x}, ${cursorPos.y})');
 
 		getColorAtPixelDisplay(cursorPos.x,cursorPos.y, value);
-		colorMode.valueToARGB(workValue, color);
-		selectionColor.css({"fill": 'rgba(${color.r}, ${color.g}, ${color.b}, ${color.a/255.0})'});
+		colorMode.toRGBA(workValue, color);
+		selectionColor.css({"fill": 'rgba(${color.r * 255}, ${color.g * 255}, ${color.b * 255}, ${color.a})'});
 
 		onRepaint();
 	}
@@ -621,13 +642,13 @@ class SliderGroup extends Component {
 	public var sliders : Array<ColorSlider> = new Array<ColorSlider>();
 
 	public var canEditAlpha : Bool = true;
-	public var value(get,set) : Int;
+	public var value(get,set) : Vector4;
 	public var workValue : Vector4 = new Vector4();
 	var valueChangeLock : Int = 0;
 
-	var colorMode : ColorMode;
+	var colorMode : ColorModeF;
 
-	public function setColorMode(colorMode : ColorMode, value : Int) {
+	public function setColorMode(colorMode : ColorModeF, value : Vector4) {
 		this.colorMode = colorMode;
 		for (slider in sliders) {
 			slider.colorMode = colorMode;
@@ -635,7 +656,7 @@ class SliderGroup extends Component {
 		this.value = value;
 	}
 
-	public function new(parent : Element, canEditAlpha : Bool, colorMode : ColorMode) {
+	public function new(parent : Element, canEditAlpha : Bool, colorMode : ColorModeF) {
 		var root = new Element("<div>").addClass("slider-container");
 		super(parent, root);
 
@@ -648,31 +669,16 @@ class SliderGroup extends Component {
 
 	}
 
-	function set_value(v : Int) : Int {
-		if (valueChangeLock == 0) {
-			var color : Color = if (!canEditAlpha) new Color(
-				(v >> 16) & 0xFF,
-				(v >> 8) & 0xFF,
-				(v >> 0) & 0xFF,
-				255);
-			else new Color(
-				(v >> 16) & 0xFF,
-				(v >> 8) & 0xFF,
-				(v >> 0) & 0xFF,
-				(v >> 24) & 0xFF
-			);
-
-			workValue = colorMode.ARGBToValue(color, null);
-		}
+	function set_value(v : Vector4) : Vector4 {
+		if (valueChangeLock == 0)
+			workValue.load(v);
 
 		repaint();
 		return get_value();
 	}
 
 	function get_value() {
-		var color = new Color();
-		colorMode.valueToARGB(workValue, color);
-		return color.toInt(canEditAlpha);
+		return workValue;
 	};
 
 	public function addSlider(slider : ColorSlider) : ColorSlider {
