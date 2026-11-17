@@ -130,6 +130,14 @@ class Sao extends RendererFX {
 		}
 	}
 
+	override function dispose() {
+		if( sao != null ) {
+			sao.dispose();
+			sao = null;
+		}
+		super.dispose();
+	}
+
 	override function modulate(t : Float) {
 		var s : Sao = cast super.modulate(t);
 		s.intensity = this.intensity * t;
@@ -181,7 +189,7 @@ class Sao extends RendererFX {
 			s.fadeStart = hxd.Math.lerp(s1.fadeStart, s2.fadeStart, f);
 			s.fadeEnd = hxd.Math.lerp(s1.fadeEnd, s2.fadeEnd, f);
 			s.useScalableBias = f < 0.5 ? s1.useScalableBias : s2.useScalableBias;
-		} };
+		}, dispose : () -> s.dispose() };
 	}
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
