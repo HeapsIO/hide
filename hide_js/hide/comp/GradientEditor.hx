@@ -262,6 +262,7 @@ class GradientEditor extends Popup {
 		colorbox = new ColorBox(stopEditor, null, true, true);
 		colorbox.element.width(64);
 		colorbox.element.height(64);
+		colorbox.popupAnchor = { object: Element(colorbox.element[0]), directionX: StartOutside, directionY: StartInside };
 
 		colorbox.onChange =
 		function(isDragging : Bool) {

@@ -19,6 +19,9 @@ class ColorBox extends Component {
 	var canEditAlpha : Bool = false;
 	public var isPickerEnabled : Bool = false;
 
+	/** Below the color box when null **/
+	public var popupAnchor : Popup.Anchor;
+
 	public var value(get, set) : Int;
 	var workValue : Int;
 
@@ -60,6 +63,8 @@ class ColorBox extends Component {
 		element.click(function(e) {
 			if (picker == null && isPickerEnabled) {
 				picker = new ColorPicker(canEditAlpha, this.element);
+				if (popupAnchor != null)
+					picker.anchor = popupAnchor;
 				picker.value = workValue;
 				startValue = workValue;
 				picker.onChange = function(isDragging) {
@@ -121,12 +126,10 @@ class ColorPicker extends Popup {
 
 	var primarySliders : SliderGroup;
 	var secondarySliders : SliderGroup;
+	var components: Array<ColorSliderComponent>;
 
-	var colorCode : Element;
+	var colorCode : InputElement;
 	var preview : ColorBox;
-
-	var pasteButton : Element;
-	var copyButton : Element;
 
 	var canEditAlpha : Bool;
 
@@ -142,7 +145,7 @@ class ColorPicker extends Popup {
 
 		primarySliders.value = workValue;
 		secondarySliders.value = workValue;
-		colorCode.val(StringTools.hex(workValue, if(canEditAlpha) 8 else 6));
+		colorCode.value = StringTools.hex(workValue, if(canEditAlpha) 8 else 6);
 		preview.value = workValue;
 	}
 
@@ -197,6 +200,19 @@ class ColorPicker extends Popup {
 		repaint();
 	}
 
+	function changeColorMode(colorMode : ColorMode) {
+		secondarySliders.setColorMode(colorMode, value);
+
+		for (i => comp in components) {
+			if (i < 3) {
+				comp.label.text(colorMode.name.charAt(i));
+			}
+			else {
+				comp.label.text("A");
+			}
+		}
+	}
+
 	function initInfobar() {
 		var infoBar = new Element("<div>").addClass("info-bar");
 		element.append(infoBar);
@@ -205,57 +221,88 @@ class ColorPicker extends Popup {
 		preview.element.width(64);
 		preview.element.height(64);
 
-		var inputRow = new Element("<div>");
-		infoBar.append(inputRow);
+		var hexColumn = Browser.document.createDivElement();
+		hexColumn.className = "hex-column";
+		infoBar.get(0).append(hexColumn);
 
-		inputRow.append(new Element("<span>").html("#"));
+		var inputRow = Browser.document.createDivElement();
+		inputRow.className = "hex-input";
+		hexColumn.append(inputRow);
 
-		colorCode = new Element("<input type='text' maxlength='9'>").css({display: "inline-block", width:"70px"}).change(
-			function(e : Event) {
-				var color = getColorFromString(cast(e.target,InputElement).value);
-				if (color != null) {
-					set_value(color);
-					change(false);
-				}
-				else {
-					repaint(); // we refresh to reset the text of the input to the current color if the input is invalid
-				}
+		inputRow.append("#");
+
+		colorCode = Browser.document.createInputElement();
+		colorCode.type = "text";
+		colorCode.maxLength = 9;
+		colorCode.onchange = function(e : Event) {
+			var color = getColorFromString(colorCode.value);
+			if (color != null) {
+				set_value(color);
+				change(false);
 			}
-		);
+			else {
+				repaint(); // we refresh to reset the text of the input to the current color if the input is invalid
+			}
+		}
 
 		// Selecting the text of the colorCode with the mouse can
 		// close the popup if we release the mouse outside the popup.
 		// These event handlers prevent this
-		var colorCodeElem = colorCode.get(0);
-		colorCodeElem.onpointerdown = function(e : js.html.PointerEvent) {
-			colorCodeElem.setPointerCapture(e.pointerId);
+		colorCode.onpointerdown = function(e : js.html.PointerEvent) {
+			colorCode.setPointerCapture(e.pointerId);
 		}
 
-		colorCodeElem.onpointerup = function(e : js.html.PointerEvent) {
-			colorCodeElem.releasePointerCapture(e.pointerId);
+		colorCode.onpointerup = function(e : js.html.PointerEvent) {
+			colorCode.releasePointerCapture(e.pointerId);
 		}
 		inputRow.append(colorCode);
 
-		inputRow.addClass("hide-toolbar2");
-		inputRow.css({'margin-bottom': 'auto'});
+		var toolbar = Browser.document.createDivElement();
+		toolbar.className = "hide-toolbar2";
+		hexColumn.append(toolbar);
 
-		var group = new Element("<div class='tb-group'>").appendTo(inputRow);
-		copyButton = new Element("<div class='button2' title='Copy'>");
-		copyButton.append(new Element("<div class='icon ico ico-copy'>"));
-		copyButton.on("click", function(e) {
-			Clipboard.set(colorCode.val());
+		var group = Browser.document.createElement("hide-group");
+		toolbar.append(group);
+
+		function addButton(title : String, icon : String, onClick : () -> Void) {
+			var button = hide.html.comp.Button.create();
+			button.title = title;
+			button.setAttribute("aria-label", title);
+			button.icon = icon;
+			button.onclick = (_) -> onClick();
+			group.append(button);
+		}
+
+		addButton("Copy", Std.string(HideRes.icon.copy), () -> Clipboard.set(colorCode.value));
+
+		addButton("Paste", Std.string(HideRes.icon.paste), () -> {
+			colorCode.value = Clipboard.get();
+			colorCode.dispatchEvent(new js.html.Event("change"));
 		});
-		group.append(copyButton);
 
-
-		pasteButton = new Element("<div class='button2' title='Paste'>");
-		pasteButton.append(new Element("<div class='icon ico ico-paste'>"));
-		pasteButton.on("click", function(e) {
-			var value = Clipboard.get();
-			colorCode.val(value).change();
+		addButton("Pick a color on screen", Std.string(HideRes.icon.eye_dropper), () -> {
+			electron.Screen.pickColor().then(function(hex) {
+				if (hex == null)
+					return;
+				var rgb = Std.parseInt("0x" + hex);
+				set_value(canEditAlpha ? (workValue & 0xFF000000) | rgb : rgb);
+				change(false);
+			});
 		});
-		group.append(pasteButton);
 
+		var initialMode : Int = ide.currentConfig.get("colorPicker.secondaryColorMode", 0);
+		var modeSelect = hide.html.comp.Select.create();
+		modeSelect.id = "secondary-color-mode";
+		modeSelect.items = [for (i => mode in ColorSpace.colorModes) { label : mode.name, value : i }];
+		modeSelect.value = initialMode;
+		modeSelect.onValueChanged = () -> {
+			var modeIndex : Int = modeSelect.value;
+			ide.projectUserConfig.set("colorPicker.secondaryColorMode", modeIndex);
+			changeColorMode(ColorSpace.colorModes[modeIndex]);
+		};
+		infoBar.get(0).append(modeSelect);
+
+		changeColorMode(ColorSpace.colorModes[initialMode]);
 	}
 
 	function initSliders() {
@@ -399,46 +446,13 @@ class ColorPicker extends Popup {
 				return {label:name};
 			}
 
-			var components = new Array<ColorSliderComponent>();
+			components = new Array<ColorSliderComponent>();
 			components.push(addRow(new Vector4(1.0,0.0,0.0,0.0), secondarySliders, false));
 			components.push(addRow(new Vector4(0.0,1.0,0.0,0.0), secondarySliders, false));
 			components.push(addRow(new Vector4(0.0,0.0,1.0,0.0), secondarySliders, false));
 			if (canEditAlpha) {
 				components.push(addRow(new Vector4(0.0,0.0,0.0,1.0), secondarySliders, true));
 			}
-
-
-			function changeColorMode(colorMode : ColorMode) {
-				secondarySliders.setColorMode(colorMode, value);
-
-				for (i => comp in components) {
-					if (i < 3) {
-						comp.label.text(colorMode.name.charAt(i));
-					}
-					else {
-						comp.label.text("A");
-					}
-				}
-			}
-
-			var initialMode : Int = ide.currentConfig.get("colorPicker.secondaryColorMode", 0);
-			var modeSelect = new Element("<select id=secondary-color-mode>").css("align-self", "end").appendTo(vbox);
-			for (i => mode in ColorSpace.colorModes) {
-				var option = new Element("<option>").val(i).text(mode.name).appendTo(modeSelect);
-				if (i == initialMode)
-					option.attr("selected", "true");
-			}
-
-			modeSelect.change(
-				function(e : Event) {
-					var val = Std.parseInt(modeSelect.val());
-					var modeIndex : Int = Std.int(hxd.Math.clamp(val, 0, ColorSpace.colorModes.length));
-					ide.projectUserConfig.set("colorPicker.secondaryColorMode", modeIndex);
-					changeColorMode(ColorSpace.colorModes[modeIndex]);
-				}
-			);
-
-			changeColorMode(ColorSpace.colorModes[initialMode]);
 		}
 	}
 

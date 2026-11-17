@@ -31,6 +31,10 @@
 	--theme-widget-foreground: #FFFFFF;
 	--theme-widget-border-color: #484848;
 
+	--theme-popup-border-color: #242424;
+
+	--theme-popup-border: 1px solid var(--theme-popup-border-color);
+
 	@function --hover(--c <color>) returns <color> {
 		result: color-mix(in oklch, var(--c), var(--theme-foreground) 6%);
 	}
@@ -3656,7 +3660,7 @@ div.popup {
 	inset: unset;
 
 	background-color : #181818;
-	border : 1px solid #242424;
+	border : var(--theme-popup-border);
 	border-radius: 5px;
 
 	color: #d8d8d8;
@@ -3808,9 +3812,13 @@ body.kit-sub-window.popup-sub-window {
 }
 
 div.color-picker {
-	padding:0;
-
+	--window-padding: 8px;
+	padding: var(--window-padding);
 	text-align: left;
+
+	display: flex;
+	flex-direction: column;
+
 
 	.vbox {
 		display: flex;
@@ -3821,25 +3829,33 @@ div.color-picker {
 		display: flex;
 
 
+
 		input {
-			font-size: 8px;
+			margin-left: 4px;
+			font-size: 10px;
 			text-align: right;
 			border: none;
 			font-variant-numeric: tabular-nums;
 			background: none;
-			max-width: 16px;
+			max-width: 20px;
+			padding: 0;
+			border-bottom: var(--theme-popup-border);
 		}
 
 		label {
 			align-self: center;
+			text-align: right;
+			max-width: 10px;
+			width: 10px;
 		}
 	}
 
 	hr {
 		border: none;
-		border-bottom: var(--theme-border);
-		width: 100%;
+		border-bottom: var(--theme-popup-border);
+		width: calc(100% + var(--window-padding) * 2);
 		box-sizing: border-box;
+		margin-inline: calc(var(--window-padding) * -1);
 	}
 
 	.slider-container {
@@ -3853,6 +3869,48 @@ div.color-picker {
 
 	.info-bar {
 		display: flex;
+		gap: 4px;
+
+		.color-box {
+			border: var(--theme-border);
+			border-radius: var(--theme-border-radius);
+		}
+
+		.hex-column {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 4px;
+		}
+
+		.hex-input {
+			display: flex;
+			flex-grow: 1;
+			align-items: center;
+			gap: 2px;
+
+			input {
+				font-family: Consolas, "Cascadia Mono", monospace;
+				width: 70px;
+				text-align: right;
+				font-variant-numeric: tabular-nums;
+				color: var(--theme-text);
+				background-color: var(--theme-mantle);
+				border: var(--theme-border);
+				border-radius: var(--theme-border-radius);
+				padding-inline: 4px;
+
+				&:focus {
+					outline: none;
+					border-color: var(--theme-accent);
+				}
+			}
+		}
+
+		#secondary-color-mode {
+			align-self: end;
+			margin-inline-start: auto;
+		}
 	}
 
 	.toolbar {
@@ -3931,7 +3989,7 @@ div.gradient-box {
 	}
 
 	.editor {
-		padding: 6px;
+		padding-top: 6px;
 		& > div{
 			margin-bottom: 4px;
 		}
