@@ -28,6 +28,8 @@
 }
 
 .popup.cdb-icons-scale {
+	--anchor-gap-x: 10px;
+	--anchor-gap-y: 10px;
 	padding: 8px 10px;
 	background-color: #222;
 	border: 1px solid #444;
@@ -195,6 +197,69 @@
 	}
 
 
+}
+
+/* floats over the sheet, above the tabs : no height in the layout */
+.cdb-view > .hide-tabs > .cdb-lang-bar {
+	order: 9998;
+	position: relative;
+	z-index: 2;
+	height: 0;
+
+	> label {
+		position: absolute;
+		left: 6px;
+		bottom: 6px;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 2px 4px 2px 8px;
+		border: 1px solid #3a3a3a;
+		border-radius: 4px;
+		background-color: #222;
+		color: #999;
+		font-size: 11px;
+	}
+}
+
+.cdb {
+	td.cdb-loc {
+		background-color: #1c2430;
+	}
+
+	td.cdb-loc-missing > .cell-root {
+		color: #6a6a6a;
+	}
+
+	/* inline before the text : in its block when it has one */
+	td:is(.cdb-loc-missing, .cdb-loc-ignored, .cdb-loc-noid) {
+		&:not(:has(> .cell-root))::before, > .cell-root::before {
+			margin-right: 5px;
+			padding: 0 4px;
+			border-radius: 3px;
+			font-size: 9px;
+			vertical-align: 1px;
+			background-color: #444;
+			color: #ccc;
+		}
+	}
+	td.cdb-loc-missing {
+		&:not(:has(> .cell-root))::before, > .cell-root::before {
+			content: "Missing";
+			background-color: #6b3a1e;
+			color: #f0c8a8;
+		}
+	}
+	td.cdb-loc-ignored {
+		&:not(:has(> .cell-root))::before, > .cell-root::before {
+			content: "Ignored";
+		}
+	}
+	td.cdb-loc-noid {
+		&:not(:has(> .cell-root))::before, > .cell-root::before {
+			content: "No id";
+		}
+	}
 }
 
 .cdb-view.cdb-diff {

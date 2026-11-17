@@ -19,36 +19,21 @@ class Object3dRef extends Widget<String> {
 
 
 	#if js
-	var select: NativeElement;
-	var text: NativeElement;
-	var dropdown = null;
+	var select: hide.html.comp.Select;
 	#elseif hui
 	var select: hrt.ui.HuiSelect;
 	#end
 
 	function makeInput():NativeElement {
 		#if js
-		function valueChanged(newValue: String) {
-			value = newValue;
-			broadcastValueChange(false);
-		}
-
-		select = js.Browser.document.createElement("kit-select");
-		text = js.Browser.document.createSpanElement();
-		select.addChild(text);
-
 		var entries = getNamedObjects();
 
-		select.get().onclick = (e: js.html.MouseEvent) -> {
-			var selectEntries: Array<hrt.ui.HuiMenu.MenuItem> = [for (i => entry in entries) {label: entry.label, click: valueChanged.bind(entry.value)}];
-			if (dropdown == null) {
-				dropdown = hide.comp.ContextMenu.createDropdown(select, selectEntries);
-				dropdown.onClose = () -> {
-					dropdown = null;
-				}
-			} else {
-				dropdown.close();
-			}
+		select = hide.html.comp.Select.create();
+		select.items = entries;
+		select.onValueChanged = () -> {
+			value = select.value;
+			syncValueUI();
+			broadcastValueChange(false);
 		}
 
 		hide.tools.DragAndDrop.makeDropTarget(select, (event: hide.tools.DragAndDrop.DropEvent, data: hide.tools.DragAndDrop.DragData) -> {
@@ -56,7 +41,7 @@ class Object3dRef extends Widget<String> {
 				case Enter, Move, Leave:
 					if (data.data.get("drag/scenetree") != null)
 						data.dropTargetValidity = AllowDrop;
-					select.toggleClass("fancy-drag-drop-target", event != Leave);
+					select.classList.toggle("fancy-drag-drop-target", event != Leave);
 				case Drop: {
 					var objects : Array<hrt.prefab.Prefab> = cast data.data.get("drag/scenetree");
 					if (objects == null || objects.length == 0)
@@ -193,12 +178,12 @@ class Object3dRef extends Widget<String> {
 
 	override function syncValueUI() {
 		#if js
-		if (text == null)
+		if (select == null)
 			return;
 		var label = "--- Select ---";
 		if (value != null)
 			label = value.split(".").pop();
-		text.get().innerText = label;
+		select.label = label;
 		#elseif hui
 		select.items = getNamedObjects();
 		select.value = value;

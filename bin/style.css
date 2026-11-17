@@ -27,6 +27,10 @@
 	--theme-border: 1px solid var(--theme-color-border);
 	--theme-border-radius: 4px;
 
+	--theme-widget-background: #2d2d2d;
+	--theme-widget-foreground: #FFFFFF;
+	--theme-widget-border-color: #484848;
+
 	@function --hover(--c <color>) returns <color> {
 		result: color-mix(in oklch, var(--c), var(--theme-foreground) 6%);
 	}
@@ -3636,6 +3640,19 @@ div.color-box {
 }
 
 
+/* Popup gap to its anchor, read by Popup.place */
+@property --anchor-gap-x {
+	syntax: "<length>";
+	inherits: false;
+	initial-value: 0px;
+}
+
+@property --anchor-gap-y {
+	syntax: "<length>";
+	inherits: false;
+	initial-value: 0px;
+}
+
 div.popup {
 	inset: unset;
 
@@ -3656,6 +3673,39 @@ div.popup {
 	}
 
 	padding: 6px;
+}
+
+/* Popup.mouseBlocker : transparent layer below a popup */
+div.popup-mouse-blocker {
+	inset: 0;
+	width: auto;
+	height: auto;
+	margin: 0;
+	padding: 0;
+	border: none;
+	background: transparent;
+	cursor: default;
+}
+
+/* Popup.detach : the popup fills its window */
+body.kit-sub-window.popup-sub-window {
+	> kit-root {
+		display: none;
+	}
+
+	> div.popup.detached {
+		position: static;
+		flex: 1 1;
+		min-height: 0;
+		overflow: auto;
+		border: none;
+		border-radius: 0;
+		box-shadow: none;
+	}
+
+	&.auto-detached > .sub-window-title-bar {
+		display: none;
+	}
 }
 
 .settings-popup {
@@ -3781,8 +3831,10 @@ div.color-picker {
 	}
 
 	hr {
-		border: 1px solid #444444;
+		border: none;
+		border-bottom: var(--theme-border);
 		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.slider-container {
@@ -3848,6 +3900,16 @@ div.gradient-box {
 
 	display: flex;
 
+	> div:first-child {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+
+		/* Takes the vertical space left by the editor */
+		> .gradient-container {
+			flex: 1 0 90px;
+		}
+	}
 
 	.color-box {
 		border : 3px solid rgb(51, 51, 51);
@@ -3885,9 +3947,76 @@ div.gradient-box {
 		outline: none;
 	}
 
+	/* Content unrolls upward over the stop editor, without resizing the popup */
+	details {
+		position: relative;
+
+		&::details-content {
+			position: absolute;
+			inset-inline: 0;
+			bottom: 100%;
+			z-index: 1;
+			background-color: rgb(40, 40, 41);
+			/* Inset shadow as border : no layout size, invisible at 0 height */
+			box-shadow: inset 0 0 0 1px rgb(51, 51, 51);
+			interpolate-size: allow-keywords;
+			overflow: clip;
+			contain: layout;
+		}
+
+		&:not([open])::details-content {
+			block-size: 0;
+		}
+
+		/* Custom marker : points up when open, toward the content */
+		> summary {
+			list-style: none;
+			display: flex;
+			align-items: center;
+			gap: 0.5ch;
+
+			&::before {
+				content: "";
+				inline-size: 0.6em;
+				block-size: 0.6em;
+				flex-shrink: 0;
+				background-color: currentColor;
+				clip-path: polygon(0 0, 100% 50%, 0 100%);
+			}
+		}
+
+		&[open] > summary::before {
+			rotate: -90deg;
+		}
+
+		@media (prefers-reduced-motion: no-preference) {
+			> summary::before {
+				transition: rotate 0.15s;
+			}
+
+			&::details-content {
+				transition: block-size, content-visibility;
+				transition-duration: 0.15s;
+				transition-timing-function: ease-in-out;
+				transition-behavior: allow-discrete;
+			}
+		}
+	}
+
 	#preview {
 		width: 256px;
 		height: 256px;
+	}
+
+	> .detach-button {
+		position: absolute;
+		right: 4px;
+		bottom: 4px;
+		z-index: 1;
+	}
+
+	&.detached > .detach-button {
+		display: none;
 	}
 }
 

@@ -34,6 +34,7 @@ extern class BrowserWindow {
 	function getBounds() : Rectangle;
 	function getSize() : Array<Int>;
 	function setSize( w : Int, h : Int ) : Void;
+	function setMinimumSize( w : Int, h : Int ) : Void;
 	function setPosition( x : Int, y : Int ) : Void;
 	function getTitle() : String;
 	function setTitle( t : String ) : Void;
@@ -89,6 +90,7 @@ extern class MessagePortMain {
 @:jsRequire("electron", "Menu")
 extern class Menu {
 	function getMenuItemById( id : String ) : Null<Dynamic>;
+	function popup( ?options : Dynamic ) : Void;
 	static function buildFromTemplate( template : Array<Dynamic> ) : Menu;
 	static function setApplicationMenu( menu : Null<Menu> ) : Void;
 }

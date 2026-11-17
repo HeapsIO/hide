@@ -12,6 +12,8 @@ enum UndoScope {
 	Lines( s : cdb.Sheet );
 	/** a line of a root sheet (with its sub lists) **/
 	Line( s : cdb.Sheet, obj : Dynamic );
+	/** the element `key` of a sheet of a translation file **/
+	Lang( file : LangFile, sheet : String, key : String );
 }
 
 private enum ChangeKind {
@@ -19,6 +21,7 @@ private enum ChangeKind {
 	KSheet;
 	KLines;
 	KLine;
+	KLang;
 }
 
 private class Change {
@@ -33,6 +36,9 @@ private class Change {
 	public var after : Dynamic;
 	public var sepBefore : String;
 	public var sepAfter : String;
+	// KLang : the file and the name of the element
+	public var lang : LangFile;
+	public var key : String;
 	public var open = true;
 	public function new(kind, sheet) {
 		this.kind = kind;
@@ -92,6 +98,16 @@ class Undo {
 		case Sheet(s): kind = KSheet; sheet = s;
 		case Lines(s): kind = KLines; sheet = s;
 		case Line(s, o): kind = KLine; sheet = s; obj = o;
+		case Lang(file, s, key):
+			for( c in group.changes )
+				if( c.open && c.kind == KLang && c.lang == file && c.sheet == s && c.key == key )
+					return;
+			var c = new Change(KLang, s);
+			c.lang = file;
+			c.key = key;
+			c.before = file.getLineState(s, key);
+			group.changes.push(c);
+			return;
 		}
 		// the editor of an object (not of the database), the lines of prefabs : the whole data
 		if( kind != KAll && (editor.cdbTable == null || sheet == null || sheet.parent != null || sheet.props.dataFiles != null) )
@@ -119,16 +135,22 @@ class Undo {
 		case KLine:
 			c.obj = obj;
 			c.before = haxe.Json.stringify(obj);
+		case KLang:
+			throw "assert";
 		}
 		group.changes.push(c);
 	}
 
 	static function covers( c : Change, kind : ChangeKind, sheet : String, obj : Dynamic ) {
+		// the translations are not in the data
+		if( kind == KLang || c.kind == KLang )
+			return false;
 		return switch( c.kind ) {
 		case KAll: true;
 		case KSheet: kind != KAll && c.sheet == sheet;
 		case KLines: kind == KLines && c.sheet == sheet;
 		case KLine: kind == KLine && c.sheet == sheet && c.obj == obj;
+		case KLang: false;
 		}
 	}
 
@@ -170,6 +192,8 @@ class Undo {
 		case KLine:
 			c.index = getLines(getSheet(c.sheet)).indexOf(c.obj);
 			c.after = haxe.Json.stringify(c.obj);
+		case KLang:
+			c.after = c.lang.getLineState(c.sheet, c.key);
 		}
 		c.obj = null;
 	}
@@ -195,6 +219,7 @@ class Undo {
 		return switch( c.kind ) {
 		case KLines: sameSpec(c.before, c.after) && sameSpec(c.after, c.before) && c.sepBefore == c.sepAfter;
 		case KLine: c.index < 0 || c.before == c.after;
+		case KLang: c.before.sheet == c.after.sheet && c.before.line == c.after.line;
 		default: c.before == c.after;
 		}
 	}
@@ -240,7 +265,9 @@ class Undo {
 		if( g.merge != null && last != null && last.merge == g.merge && @:privateAccess undo.redoElts.length == 0
 			&& g.changes.length == 1 && last.changes.length == 1 ) {
 			var c = g.changes[0], prev = last.changes[0];
-			if( c.kind == KLine && prev.kind == KLine && c.sheet == prev.sheet && c.index == prev.index ) {
+			var sameLine = c.kind == KLine && prev.kind == KLine && c.sheet == prev.sheet && c.index == prev.index;
+			var sameLang = c.kind == KLang && prev.kind == KLang && c.lang == prev.lang && c.sheet == prev.sheet && c.key == prev.key;
+			if( sameLine || sameLang ) {
 				prev.after = c.after;
 				last.size = size(prev);
 				last.sheetAfter = g.sheetAfter;
@@ -297,6 +324,7 @@ class Undo {
 				for( e in spec )
 					n += Std.isOfType(e, Int) ? 8 : str(e.json);
 			n;
+		case KLang: str(c.before.line) + str(c.after.line);
 		default: str(c.before) + str(c.after);
 		}
 	}
@@ -328,6 +356,8 @@ class Undo {
 				@:privateAccess s.sheet.separators = haxe.Json.parse(isUndo ? c.sepBefore : c.sepAfter);
 			case KLine:
 				getLines(getSheet(c.sheet))[c.index] = haxe.Json.parse(v);
+			case KLang:
+				c.lang.setLineState(c.sheet, c.key, v);
 			}
 		}
 		@:privateAccess editor.onUndoApplied(isUndo ? g.state.sheet : g.sheetAfter, isUndo ? g.state.separatorsState : g.separatorsAfter, g.state, reload);

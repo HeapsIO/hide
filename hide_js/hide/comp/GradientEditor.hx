@@ -180,7 +180,7 @@ class GradientEditor extends Popup {
 		element.focus();
 
 		element.on("keydown", function (e : KeyboardEvent) {
-			if (stopInput.get(0) == Browser.document.activeElement)
+			if (stopInput.get(0) == element[0].ownerDocument.activeElement)
 				return;
 			if (e.key == "Delete" || e.key =="Backspace") {
 				if (selectedStop != null) {
@@ -202,9 +202,8 @@ class GradientEditor extends Popup {
 		});
 
 		gradientView = new GradientView(firstGrid);
-		gradientView.element.height(90).width(256);
-
 		var elem = gradientView.element.get(0);
+		elem.style.minWidth = "256px";
 
 		elem.onclick = function (e : js.html.MouseEvent) {
 			var pos = e.offsetX / gradientView.element.width();
@@ -220,9 +219,8 @@ class GradientEditor extends Popup {
 
 		linesSvg.line(linesSvg.element, 0.0,0.5,1.0,0.5).attr("vector-effect","non-scaling-stroke");
 
+		// no viewBox : the stops keep their size when the gradient is resized
 		stopsSvg = new SVG(gradientView.element);
-		stopsSvg.element.attr({viewBox: '0.0 0.0 1.0 1.0'});
-		stopsSvg.element.attr({preserveAspectRatio:"xMidYMid slice"});
 
 		checkboardId = 'gradientEditor-checkBoard-$uid';
 		shadowId = 'gradientEditor-shadow-$uid';
@@ -360,6 +358,13 @@ class GradientEditor extends Popup {
 			detailsSection.hide();
 		}
 
+		var detachButton = hide.html.comp.Button.create();
+		detachButton.className = "detach-button medium-square";
+		detachButton.title = "Detach";
+		detachButton.icon = Std.string(HideRes.icon.open_new_window);
+		detachButton.onclick = (_) -> detach(false, "Gradient");
+		element[0].append(detachButton);
+
 		reflow();
 		fixInputSelect();
 	}
@@ -372,6 +377,21 @@ class GradientEditor extends Popup {
 			cleanupPreview();
 		}
 		super.close();
+	}
+
+	public override function detach(autoDetached : Bool, ?title : String) {
+		if (subWindow != null)
+			return;
+		element[0].style.minWidth = gradientView.element[0].offsetWidth + "px";
+		element[0].style.minHeight = element[0].ownerDocument.defaultView.getComputedStyle(element[0]).height;
+		super.detach(autoDetached, title);
+
+		// a detached editor is not reused, and its window close button skips close()
+		var onWindowClose = subWindow.onClose;
+		subWindow.onClose = () -> {
+			cleanupPreview();
+			onWindowClose();
+		};
 	}
 
 	public override function canCloseOnClickOutside() : Bool {
@@ -458,9 +478,8 @@ class GradientEditor extends Popup {
 			var marquer = stopMarquers[i];
 			var stop = innerValue.stops[i];
 
-			var x : Float = stop.position;
-			var y : Float = 0.5;
-			marquer.attr("transform", 'translate(${x}, ${y})');
+			// percentages are relative to the svg size, scale of the former 256px wide viewBox
+			marquer.get(0).style.transform = 'translate(${stop.position * 100}%, 50%) scale(256)';
 			vector.setColor(stop.color);
 			marquer.children(".fill").attr({fill: 'rgba(${vector.r*255.0}, ${vector.g*255.0}, ${vector.b*255.0}, ${vector.a})'});
 		}

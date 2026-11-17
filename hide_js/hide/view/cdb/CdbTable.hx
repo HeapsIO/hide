@@ -11,6 +11,7 @@ class CdbTable extends hide.ui.View<{}> {
 	var view : cdb.DiffFile.ConfigView;
 
 	var topBar : Element;
+	var langBar : js.html.Element;
 
 	public function new( ?state ) {
 		super(state);
@@ -234,8 +235,60 @@ class CdbTable extends hide.ui.View<{}> {
 		} else {
 			topBar.get(0).style.display = null;
 		}
+		syncLangBar();
 
 		haxe.Timer.delay(editor.focus,1);
+	}
+
+	function getLangs() : Array<{ lang : String, path : String }> {
+		var langs : Array<{ lang : String, path : String }> = config.get("cdb.langs");
+		return langs ?? [];
+	}
+
+	// shown on the sheets with localizable texts, when the project has translations
+	public function syncLangBar() {
+		if( langBar == null )
+			return;
+
+		var sheet = ide.database.getSheet(editor.getCurrentSheet());
+		function hasLoc( s : cdb.Sheet ) {
+			for( c in s.columns )
+				switch( c.type ) {
+				case TString if( c.kind == Localizable ):
+					return true;
+				case TList, TProperties, TPolymorph:
+					if( hasLoc(s.getSub(c)) )
+						return true;
+				default:
+				}
+			return false;
+		}
+		var langs = getLangs();
+		langBar.hidden = langs.length == 0 || sheet == null || !hasLoc(sheet);
+
+		var select : hide.html.comp.Select = cast langBar.querySelector("hide-select");
+		var current = hide.comp.cdb.Editor.langFile;
+		var index = -1;
+		for( i => l in langs )
+			if( current != null && l.path == current.path )
+				index = i;
+		select.value = index;
+	}
+
+	function initLangBar() {
+		langBar = js.Browser.document.createDivElement();
+		langBar.className = "cdb-lang-bar";
+		var label = js.Browser.document.createLabelElement();
+		label.append("loc");
+		var select = hide.html.comp.Select.create();
+		select.items = [{ label : "Original", value : -1 }].concat([for( i => l in getLangs() ) { label : l.lang, value : i }]);
+		select.onValueChanged = function() {
+			var l = getLangs()[select.value];
+			hide.comp.cdb.Editor.setLang(l?.path);
+		};
+		label.append(select);
+		langBar.append(label);
+		tabs.element.get(0).append(langBar);
 	}
 
 	override function onDisplay() {
@@ -330,6 +383,7 @@ class CdbTable extends hide.ui.View<{}> {
 			<span class="pin-status" title="Pin the errors / warnings count in the sheet tab"><div class="icon ico ico-thumb-tack"></div></span>
 		</div>');
 		tabs.element.prepend(topBar);
+		initLangBar();
 
 		// shift+click adds or removes a status to the ones shown
 		function filterStatus( flag : hide.comp.cdb.Editor.FilterFlag, add : Bool ) {
@@ -616,9 +670,7 @@ class CdbTable extends hide.ui.View<{}> {
 		var Editor = hide.comp.cdb.Editor;
 		var saved = Math.round(Editor.getIconZoom() * 100);
 		var popup = new hide.comp.Popup(element);
-		popup.position = Inside;
-		popup.offsetX = 10;
-		popup.offsetY = 10;
+		popup.anchor = { object: Element(element[0]), directionX: StartInside, directionY: StartInside };
 		popup.element.addClass("cdb-icons-scale");
 		var content = new Element('<div>
 			<div class="title">Icons Scale</div>

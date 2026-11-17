@@ -26,7 +26,7 @@ class FrustumJitter {
 		0.0, 0.0,
 	];
 
-   	public var points_Uniform2 : Array<Float> = [
+	public var points_Uniform2 : Array<Float> = [
 		-0.2, -0.2,//ll
 		0.2,  0.2,//ur
 	];
@@ -119,10 +119,8 @@ class FrustumJitter {
 		0.20,  0.0,
 	];
 
-
-
-    private inline function getSeq( pattern : Pattern ) : Array<Float> {
-       return switch (pattern) {
+	inline function getSeq( pattern : Pattern ) : Array<Float> {
+		return switch (pattern) {
 			case Still: points_Still;
 			case Uniform2 : points_Uniform2;
 			case Uniform4 : points_Uniform4;
@@ -142,7 +140,7 @@ class FrustumJitter {
 			case MotionVPerp2 : points_MotionVPerp2;
 			default : null;
 		}
-    }
+	}
 
 	public var patternScale = 1.0;
 	public var activeIndex = 0;
@@ -151,60 +149,45 @@ class FrustumJitter {
 	public var curPattern : Pattern = Still;
 
 	public function new() {
-		points_Halton_2_3_x8.resize(8);
+		var hx = points_Pentagram[0] - points_Pentagram[2];
+		var hy = points_Pentagram[1] - points_Pentagram[3];
+		transformPattern(points_Pentagram, 0.5 * Math.acos(hy / Math.sqrt(hx * hx + hy * hy)), 1.0);
+
+		points_Halton_2_3_x8.resize(8 * 2);
 		initializeHalton_2_3(points_Halton_2_3_x8);
-		points_Halton_2_3_x16.resize(16);
+		points_Halton_2_3_x16.resize(16 * 2);
 		initializeHalton_2_3(points_Halton_2_3_x16);
-		points_Halton_2_3_x32.resize(32);
+		points_Halton_2_3_x32.resize(32 * 2);
 		initializeHalton_2_3(points_Halton_2_3_x32);
-		points_Halton_2_3_x256.resize(256);
+		points_Halton_2_3_x256.resize(256 * 2);
 		initializeHalton_2_3(points_Halton_2_3_x256);
 	}
 
 	public function update() {
+		prevSample.load(curSample);
 
 		var seq = getSeq(curPattern);
-		if( seq == null )
+		if( seq == null ) {
+			curSample.set(0, 0);
 			return;
+		}
 
-		activeIndex += 1;
-		activeIndex %= seq.length;
-
-		var newSample = sample(seq, activeIndex);
-		prevSample.load(curSample);
-		curSample.load(newSample);
+		activeIndex = (activeIndex + 1) % (seq.length >> 1);
+		curSample.set(patternScale * seq[2 * activeIndex], patternScale * seq[2 * activeIndex + 1]);
 	}
 
-	private function sample( pattern : Array<Float>, index : Int ) : h2d.col.Point
-    {
-        var n = Std.int(pattern.length / 2.0);
-        var i = index % n;
-
-        var x = patternScale * pattern[2 * i + 0];
-		var y = patternScale * pattern[2 * i + 1];
-
-		return new h2d.col.Point(x, y);
-
-        /*if (pattern != Pattern.MotionPerp2)
-            return new Vector2(x, y);
-        else
-            return new Vector2(x, y).Rotate(Vector2.right.SignedAngle(focalMotionDir));*/
-    }
-
-	private function transformPattern( seq : Array<Float>, theta : Float, scale : Float) {
-        var cs = hxd.Math.cos(theta);
-		var sn = hxd.Math.sin(theta);
+	function transformPattern( seq : Array<Float>, theta : Float, scale : Float ) {
+		var cs = Math.cos(theta);
+		var sn = Math.sin(theta);
 		var i = 0;
-		var j = 1;
-		while( i != seq.length ) {
+		while( i < seq.length ) {
 			var x = scale * seq[i];
-            var y = scale * seq[j];
-            seq[i] = x * cs - y * sn;
-            seq[j] = x * sn + y * cs;
+			var y = scale * seq[i + 1];
+			seq[i] = x * cs - y * sn;
+			seq[i + 1] = x * sn + y * cs;
 			i += 2;
-			j += 2;
 		}
-    }
+	}
 
 	// http://en.wikipedia.org/wiki/Halton_sequence
 	private function haltonSeq(prime : Int, index : Int = 1/* NOT! zero-based */) : Float {

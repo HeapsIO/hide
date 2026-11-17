@@ -611,10 +611,7 @@ class CurveEditor extends SVG {
 			<div class="line"><label>Time</label><input class="t" type="number" step="0.05"/></div>
 			<div class="line"><label>Value</label><input class="v" type="number" step="0.1"/></div>
 		</div>').appendTo(popup.element);
-		var rect = parent.getBoundingClientRect();
-		popup.position = Inside;
-		popup.offsetX = x + 8 - rect.left;
-		popup.offsetY = y - 20 - rect.top;
+		popup.anchor = { object: Point(x + 8, y - 20), directionX: EndOutside, directionY: EndOutside };
 		popup.onClose = () -> popup.element.remove();
 		var t = content.find(".t"), v = content.find(".v");
 		t.val(hxd.Math.fmt(k.time));

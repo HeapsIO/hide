@@ -45,6 +45,8 @@ class ElectronMain {
 	static var windowStates : Map<Int, WindowState> = new Map();
 	// window id => subscriber webContents id => events
 	static var subscriptions : Map<Int, Map<Int, Array<String>>> = new Map();
+	// "parent window id:window.open name" => sub window id
+	static var subWindows : Map<String, Int> = new Map();
 	// webContents id => accelerators
 	static var shortcuts : Map<Int, Array<String>> = new Map();
 	static var handlers : Map<String, haxe.Constraints.Function> = new Map();
@@ -348,14 +350,18 @@ class ElectronMain {
 
 	static function initDevToolsKeys( win : BrowserWindow ) {
 		win.webContents.on("before-input-event", function(e : Dynamic, input : Dynamic) {
-			if( input.type == "keyDown" && input.control && input.shift && input.code == "KeyI" )
+			if( input.type == "keyDown" && input.control && input.shift && input.code == "KeyI" ) {
+				// stops the main window menu accelerator from also opening its devtools
+				e.preventDefault();
 				win.webContents.toggleDevTools();
+			}
 		});
 	}
 
-	static function createSubWindow( parent : BrowserWindow, options : Dynamic ) : WebContents {
+	static function createSubWindow( parent : BrowserWindow, options : Dynamic, name : String ) : WebContents {
 		options.parent = parent;
-		options.show = !background;
+		var show = options.show != false;
+		options.show = show && !background;
 		options.useContentSize = true;
 		// title bar drawn by SubWindow
 		options.frame = false;
@@ -364,7 +370,22 @@ class ElectronMain {
 		var win = new BrowserWindow(options);
 		win.setMenu(null);
 		initDevToolsKeys(win);
-		if( background )
+
+		// right click on the title bar (drag region)
+		win.on("system-context-menu", function(e : Dynamic) {
+			e.preventDefault();
+			Menu.buildFromTemplate([
+				{ label : "Close", click : () -> win.close() },
+				{ type : "separator" },
+				{ label : "Open Dev Tools", click : () -> win.webContents.openDevTools({ mode : "detach" }) },
+			]).popup({ window : win });
+		});
+
+		var key = parent.id + ":" + name;
+		subWindows.set(key, win.id);
+		win.on("closed", () -> subWindows.remove(key));
+
+		if( background && show )
 			win.showInactive();
 		return win.webContents;
 	}
@@ -429,7 +450,7 @@ class ElectronMain {
 		win.webContents.on("destroyed", () -> cleanupWebContents(wcId));
 		win.webContents.setWindowOpenHandler((details : Dynamic) -> {
 			action : "allow",
-			createWindow : (options : Dynamic) -> createSubWindow(win, options),
+			createWindow : (options : Dynamic) -> createSubWindow(win, options, details.frameName),
 		});
 		// page reload : forget what the previous page had registered
 		win.webContents.on("did-start-navigation", function(e : Dynamic) {
@@ -619,6 +640,14 @@ class ElectronMain {
 			var size = win.getSize();
 			win.setSize(Math.round(size[0] + dw), Math.round(size[1] + dh));
 		});
+		h.set("win.setMinimumSize", function(wc, id, w : Int, h : Int) {
+			var win = getWin(wc, id);
+			win.setMinimumSize(w, h);
+			var size = win.getSize();
+			if( size[0] < w || size[1] < h )
+				win.setSize(Std.int(Math.max(size[0], w)), Std.int(Math.max(size[1], h)));
+		});
+		h.set("win.subId", (wc, name : String) -> subWindows.get(getWin(wc, null).id + ":" + name));
 		h.set("win.maximize", (wc, id) -> if( !background ) getWin(wc, id).maximize());
 		h.set("win.minimize", (wc, id) -> getWin(wc, id).minimize());
 		h.set("win.restore", function(wc, id) {

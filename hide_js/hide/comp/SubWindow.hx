@@ -9,21 +9,38 @@ class SubWindow {
 		titleText.textContent = v;
 		return doc.title = v;
 	}
+	/** content size, without the title bar **/
+	public var minWidth(default, set) : Int = 0;
+	public var minHeight(default, set) : Int = 0;
+	function set_minWidth(v: Int) {
+		minWidth = v;
+		win.setMinimumSize(minWidth, minHeight + TITLE_BAR_HEIGHT);
+		return v;
+	}
+	function set_minHeight(v: Int) {
+		minHeight = v;
+		win.setMinimumSize(minWidth, minHeight + TITLE_BAR_HEIGHT);
+		return v;
+	}
 
 	var doc : js.html.HTMLDocument;
 	var root : js.html.Element;
 	var titleText : js.html.Element;
 	var timer : haxe.Timer;
-	var sizeOffset = { w: 0., h: 0. };
+	var parentWindow : js.html.Window;
+	var win : electron.Window;
 
 	static inline var TITLE_BAR_HEIGHT = 22; // .sub-window-title-bar height
 
 	/**
 		`width` and `height` are the content size, without the title bar.
 		Without `key`, the window bounds are not saved.
+		`parent` gets the focus back when the window is closed while focused (main window by default).
+		Without `visible`, the window stays hidden until `show` is called.
 	**/
-	public function new(width: Int, height: Int, ?key: String, ?x: Float, ?y: Float) {
+	public function new(width: Int, height: Int, ?key: String, ?x: Float, ?y: Float, ?parent: js.html.Window, visible = true) {
 		var main = js.Browser.window;
+		parentWindow = parent ?? main;
 		var bounds : { x: Float, y: Float, w: Float, h: Float } = key != null ? hide.Ide.inst.globalState.get(key) : null;
 		height += TITLE_BAR_HEIGHT;
 		bounds ??= { x: x ?? main.screenX + (main.outerWidth - width) / 2, y: y ?? main.screenY + (main.outerHeight - height) / 2, w: width, h: height };
@@ -32,9 +49,11 @@ class SubWindow {
 		bounds.x = Math.max(screen.availLeft, Math.min(bounds.x, screen.availLeft + screen.availWidth - bounds.w));
 		bounds.y = Math.max(screen.availTop, Math.min(bounds.y, screen.availTop + screen.availHeight - bounds.h));
 
-		window = electron.Window.openSub(bounds.x, bounds.y, bounds.w, bounds.h);
+		var sub = electron.Window.openSub(bounds.x, bounds.y, bounds.w, bounds.h, visible);
+		window = sub.dom;
+		win = sub.win;
+		untyped window.__subWindow = this;
 		doc = cast window.document;
-		window.requestAnimationFrame((_) -> sizeOffset = { w: bounds.w - window.innerWidth, h: bounds.h - window.innerHeight });
 
 		doc.open();
 		doc.write("<!DOCTYPE html><html><head></head><body></body></html>");
@@ -65,8 +84,9 @@ class SubWindow {
 		window.addEventListener("resize", (_) -> onResize());
 		window.addEventListener("keydown", (e) -> onKeyDown(e));
 		window.addEventListener("beforeunload", (_) -> {
+			// window.open takes the content bounds, screenX includes the invisible resize border on the left
 			if (key != null)
-				hide.Ide.inst.globalState.set(key,{ x: window.screenX, y: window.screenY, w: window.innerWidth + sizeOffset.w, h: window.innerHeight + sizeOffset.h });
+				hide.Ide.inst.globalState.set(key,{ x: window.screenX + (window.outerWidth - window.innerWidth) / 2, y: window.screenY, w: window.innerWidth, h: window.innerHeight });
 			main.removeEventListener("beforeunload", close);
 			timer.stop();
 			onClose();
@@ -83,11 +103,21 @@ class SubWindow {
 	}
 
 	public function close() {
+		// not when closed by a focus loss
+		if (doc.hasFocus() && !parentWindow.closed) {
+			// the DOM focus() does not activate the native window
+			var parent : SubWindow = untyped parentWindow.__subWindow;
+			(parent != null ? parent.win : electron.Window.get()).focus();
+		}
 		window.close();
 	}
 
 	public function focus() {
 		window.focus();
+	}
+
+	public function show() {
+		win.show();
 	}
 
 	public dynamic function onKeyDown(e: js.html.KeyboardEvent) {}
