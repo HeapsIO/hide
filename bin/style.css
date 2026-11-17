@@ -3819,6 +3819,8 @@ div.color-picker {
 	display: flex;
 	flex-direction: column;
 
+	cursor: default;
+
 
 	.vbox {
 		display: flex;
@@ -3827,8 +3829,6 @@ div.color-picker {
 
 	.slider-value {
 		display: flex;
-
-
 
 		input {
 			margin-left: 4px;
@@ -3884,26 +3884,35 @@ div.color-picker {
 		}
 
 		.hex-input {
+			margin-block: auto;
 			display: flex;
-			flex-grow: 1;
 			align-items: center;
-			gap: 2px;
+
+			color: var(--theme-text);
+			background-color: var(--theme-mantle);
+			border: var(--theme-border);
+			border-radius: var(--theme-border-radius);
+			padding-inline: 4px;
 
 			input {
+				width: 8ch;
 				font-family: Consolas, "Cascadia Mono", monospace;
-				width: 70px;
+				background: none;
+				border: none;
 				text-align: right;
 				font-variant-numeric: tabular-nums;
-				color: var(--theme-text);
-				background-color: var(--theme-mantle);
-				border: var(--theme-border);
-				border-radius: var(--theme-border-radius);
-				padding-inline: 4px;
+
 
 				&:focus {
 					outline: none;
 					border-color: var(--theme-accent);
 				}
+			}
+
+			&::before {
+				font-family: Consolas, "Cascadia Mono", monospace;
+				color: var(--theme-border);
+				content: "#";
 			}
 		}
 
@@ -3921,6 +3930,7 @@ div.color-picker {
 		position: absolute;
 		width: 100%;
 		height: 100%;
+		cursor: pointer;
 	}
 
 	svg {
