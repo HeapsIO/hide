@@ -26,7 +26,7 @@ class TabContainer extends WebComponent {
 	public function new() {
 		super();
 		var root = attachShadow(cast {mode: "open", slotAssignment: "manual"});
-		root.adoptedStyleSheets = [styleSheet];
+		adoptStyleSheets([styleSheet]);
 
 		tabs = document.createDivElement();
 		tabs.className = "tabs";

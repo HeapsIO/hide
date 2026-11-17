@@ -32,7 +32,7 @@ class SplitContainer extends WebComponent {
 	public function new() {
 		super();
 		root = attachShadow(cast {mode: "open", slotAssignment: "manual"});
-		root.adoptedStyleSheets = [styleSheet];
+		adoptStyleSheets([styleSheet]);
 		observer = new MutationObserver((records : Array<MutationRecord>, _) -> {
 			for (r in records)
 				if (r.attributeName == "size")

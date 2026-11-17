@@ -10,7 +10,7 @@ class Group extends WebComponent {
 	public function new() {
 		super();
 		var root = attachShadow({mode: OPEN});
-		root.adoptedStyleSheets = [styleSheet];
+		adoptStyleSheets([styleSheet]);
 		root.append(js.Browser.document.createSlotElement());
 	}
 

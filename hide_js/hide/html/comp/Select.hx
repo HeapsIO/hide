@@ -34,7 +34,7 @@ class Select extends WebComponent {
 		@:bypassAccessor items = [];
 
 		var root = attachShadow({mode: OPEN});
-		root.adoptedStyleSheets = [styleSheet];
+		adoptStyleSheets([styleSheet]);
 
 		labelElement = js.Browser.document.createSpanElement();
 		labelElement.className = "label";
