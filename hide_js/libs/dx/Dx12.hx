@@ -21,6 +21,7 @@ enum DriverInitFlag {
 	DEBUG;
 	GPU_BASED_VALIDATION;
 	BREAK_ON_ERROR;
+	DRED;
 }
 
 enum abstract Constant(Int) to Int {
@@ -1833,7 +1834,8 @@ class Dx12 {
 	public static function copyDescriptorsSimple( numDescriptors : Int, dstCpuAddress : Address, srcCpuAddress : Address, heapType : DescriptorHeapType ) {
 	}
 
-	public static function checkFeatureSupport( feature : Dx12Feature, data : hl.Bytes, dataSize : Int ) {
+	public static function checkFeatureSupport( feature : Dx12Feature, data : hl.Bytes, dataSize : Int ) : Bool {
+		return false;
 	}
 
 	public static function getDeviceName() {
