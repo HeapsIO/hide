@@ -112,6 +112,7 @@ class Sampler extends ShaderNodeHxsl {
 			input.on("change", function(e) {
 				var value = input.val();
 				this.wrap = wraps[value];
+				requestRecompile();
 			});
 
 			elements.push(element);
