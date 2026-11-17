@@ -710,6 +710,6 @@ class CdbTable extends hide.ui.View<{}> {
 		return "CDB"+ @:privateAccess (ide.databaseDiff != null ? " - "+ide.databaseDiff : "");
 	}
 
-	static var _ = hide.ui.View.register(CdbTable);
+	static var _ = hide.ui.View.register(CdbTable, { maximized : true });
 
 }

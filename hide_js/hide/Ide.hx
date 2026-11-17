@@ -542,15 +542,19 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	/**
-		Hides the zones of the other views in fullscreen. Empty side zones hide themselves.
+		Hides the zones of the other views in fullscreen, and the bottom zone when the selected center view has `hideBottom`.
+		Empty side zones hide themselves.
 	**/
 	function refreshZones() {
 		if( zones == null )
 			return;
+		var centerPane = @:privateAccess zones.get(Center).selected;
+		var centerView : hide.ui.View<Dynamic> = centerPane == null ? null : Reflect.field(centerPane, "__view");
+		var hideBottom = centerView?.defaultOptions.maximized == true;
 		for( zone in zones ) {
 			if( zone.hasAttribute("auto-hide-empty") && zone.children.length == 0 )
 				continue;
-			var hidden = currentFullScreen != null && currentFullScreen.container != zone;
+			var hidden = (currentFullScreen != null && currentFullScreen.container != zone) || (hideBottom && zone == zones.get(Bottom));
 			if( zone.hidden != hidden )
 				zone.hidden = hidden;
 		}
