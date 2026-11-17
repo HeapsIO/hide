@@ -18,6 +18,7 @@ extern class App {
 	static function getGPUInfo( infoType : String ) : js.lib.Promise<Dynamic>;
 	static function whenReady() : js.lib.Promise<Dynamic>;
 	static function quit() : Void;
+	static function relaunch() : Void;
 	static function on( event : String, callb : haxe.Constraints.Function ) : Void;
 }
 
