@@ -65,6 +65,7 @@ class FileEntry {
 
 		watch();
 		FileManager.inst.fileIndex.set(this.getRelPath(), this);
+		FileManager.inst.addToExtIndex(this);
 	}
 
 	public final function toString() : String{
@@ -84,6 +85,7 @@ class FileEntry {
 			registeredWatcher = null;
 		}
 		FileManager.inst.fileIndex.remove(this.getRelPath());
+		FileManager.inst.removeFromExtIndex(this);
 	}
 
 	public function getIcon(onReady: MiniatureReadyCallback) {
@@ -189,6 +191,8 @@ class FileManager {
 
 	public var fileRoot: FileEntry;
 	var fileIndex : Map<String, FileEntry> = [];
+	// lowercase extension without the dot => files
+	var extIndex : Map<String, {version: Int, files: Map<FileEntry, Bool>}> = [];
 
 	public static var inst(get, default) : FileManager;
 	public var onFileChangeHandlers: Array<(entry: FileEntry) -> Void> = [];
@@ -250,6 +254,44 @@ class FileManager {
 	public function getFileEntry(path: String) {
 		var relPath = hide.Ide.inst.makeRelative(path);
 		return fileIndex.get(relPath);
+	}
+
+	public function getFilesWithExt(ext: String) : Iterator<FileEntry> {
+		var entry = extIndex.get(ext.toLowerCase());
+		return entry != null ? entry.files.keys() : [].iterator();
+	}
+
+	/**
+		Incremented each time the set of files with `ext` changes, 0 if no file ever had `ext`
+	**/
+	public function getFilesWithExtCacheVersion(ext: String) : Int {
+		return extIndex.get(ext.toLowerCase())?.version ?? 0;
+	}
+
+	function addToExtIndex(entry: FileEntry) {
+		if (entry.kind != File)
+			return;
+
+		var ext = haxe.io.Path.extension(entry.name).toLowerCase();
+		var extEntry = extIndex.get(ext);
+		if (extEntry == null) {
+			extEntry = {version: 0, files: []};
+			extIndex.set(ext, extEntry);
+		}
+		if (!extEntry.files.exists(entry)) {
+			extEntry.files.set(entry, true);
+			extEntry.version++;
+		}
+	}
+
+	// empty entries are kept so their version never goes back to 0
+	function removeFromExtIndex(entry: FileEntry) {
+		if (entry.kind != File)
+			return;
+
+		var extEntry = extIndex.get(haxe.io.Path.extension(entry.name).toLowerCase());
+		if (extEntry != null && extEntry.files.remove(entry))
+			extEntry.version++;
 	}
 
 	// Deduplicate paths if they are contained in a directory
