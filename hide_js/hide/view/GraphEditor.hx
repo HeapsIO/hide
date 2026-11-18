@@ -622,7 +622,11 @@ class GraphEditor extends hide.comp.Component {
 			//var key = Std.parseInt(this.selectedNode.attr("node"));
 			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
 
-			var instance = onConstructNode();
+			var instance = try onConstructNode() catch (e) {
+				cleanupCreateEdge();
+				ide.quickError('Failed to create node : $e');
+				return;
+			}
 			instance.editor = this;
 
 			var createLinkInput = edgeCreationInput;

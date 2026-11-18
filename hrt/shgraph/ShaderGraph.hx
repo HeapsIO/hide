@@ -411,6 +411,58 @@ class ShaderGraphCacheEntry {
 	public var def: hrt.prefab.Cache.ShaderDef;
 }
 
+#if editor
+// node is only set for subgraphs that load
+typedef ShaderGraphFile = {name: String, path: String, ?node: hrt.shgraph.nodes.SubGraph};
+
+class ShaderGraphEditorCache {
+	public static var inst(get, null) : ShaderGraphEditorCache;
+
+	var entries : Map<String, {version: Int, files: Array<ShaderGraphFile>}> = [];
+
+	function new() {}
+
+	static function get_inst() {
+		inst ??= new ShaderGraphEditorCache();
+		return inst;
+	}
+
+	public function getShaderGraphs() : Array<ShaderGraphFile> {
+		return getFiles("shgraph");
+	}
+
+	public function getSubShaderGraphs() : Array<ShaderGraphFile> {
+		return getFiles("subgraph");
+	}
+
+	function getFiles(ext: String) : Array<ShaderGraphFile> {
+		var fm = hide.tools.FileManager.inst;
+		var version = fm.getFilesWithExtCacheVersion(ext);
+		var entry = entries.get(ext);
+		if (entry != null && entry.version == version)
+			return entry.files;
+
+		var files : Array<ShaderGraphFile> = [for (f in fm.getFilesWithExt(ext)) {
+			name: hide.tools.StringUtils.camelToSpaceCase(haxe.io.Path.withoutExtension(f.name)),
+			path: f.getRelPath(),
+		}];
+
+		if (ext == "subgraph") {
+			for (f in files) {
+				var node = @:privateAccess new hrt.shgraph.nodes.SubGraph(f.path);
+				f.node = try {
+					@:privateAccess node.loadSubGraph();
+					node;
+				} catch (e) null;
+			}
+		}
+
+		entries.set(ext, {version: version, files: files});
+		return files;
+	}
+}
+#end
+
 @:privateAccess(hrt.shgraph.Graph)
 @:prefabHideInAddMenu
 class ShaderGraph extends hrt.prefab.Prefab {

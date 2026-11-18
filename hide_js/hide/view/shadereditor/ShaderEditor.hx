@@ -2351,6 +2351,28 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				}
 			}
 		}
+
+		for (file in hrt.shgraph.ShaderGraph.ShaderGraphEditorCache.inst.getSubShaderGraphs()) {
+			if (file.node == null || shaderGraph.isIncludedBy(file.path))
+				continue;
+
+			var compatible = checkCompatibilityWithEdge(file.node);
+			file.node.graph = null; // don't keep this graph alive in the cache
+			if (!compatible)
+				continue;
+
+			entries.push({
+				name: file.name,
+				group: "Sub Graph",
+				description: file.path,
+				onConstructNode: () -> {
+					var inst = @:privateAccess new SubGraph(file.path);
+					@:privateAccess inst.setId(currentGraph.current_node_id++);
+					return inst;
+				},
+			});
+		}
+
 		return entries;
 	}
 
