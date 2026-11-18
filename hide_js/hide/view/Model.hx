@@ -2321,7 +2321,7 @@ class Model extends FileView {
 		initConsole();
 
 		setAnimation(a);
-		if (scene.listAnims(getPath()).length > 0 && ide.getViews(Timeline).length == 0)
+		if (scene.listAnims(getPath()).length > 0)
 			ide.open("hide.view.Timeline", {});
 
 		// Adapt initial camera position to model

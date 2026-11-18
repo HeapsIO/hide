@@ -231,8 +231,6 @@ class ColorPicker extends Popup {
 		inputRow.className = "hex-input";
 		hexColumn.append(inputRow);
 
-		inputRow.append("#");
-
 		colorCode = Browser.document.createInputElement();
 		colorCode.type = "text";
 		colorCode.maxLength = 9;

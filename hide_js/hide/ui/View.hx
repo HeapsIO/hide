@@ -7,7 +7,11 @@ enum abstract DisplayPosition(String) from String to String {
 	var Bottom = "content_bottom";
 }
 
-typedef ViewOptions = { ?position : DisplayPosition, ?width : Int }
+typedef ViewOptions = {
+	?position : DisplayPosition,
+	?width : Int,
+	?maximized : Bool,
+}
 
 @:keepSub @:allow(hide.Ide) @:allow(hide.html.comp.TabViewContainer)
 class View<T> extends hide.comp.Component {

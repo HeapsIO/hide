@@ -251,7 +251,12 @@ class CdbTable extends hide.ui.View<{}> {
 			return;
 
 		var sheet = ide.database.getSheet(editor.getCurrentSheet());
+		var visited = new Map<String, Bool>();
 		function hasLoc( s : cdb.Sheet ) {
+			if( s == null || visited.exists(s.name) )
+				return false;
+			visited.set(s.name, true);
+
 			for( c in s.columns )
 				switch( c.type ) {
 				case TString if( c.kind == Localizable ):
@@ -710,6 +715,6 @@ class CdbTable extends hide.ui.View<{}> {
 		return "CDB"+ @:privateAccess (ide.databaseDiff != null ? " - "+ide.databaseDiff : "");
 	}
 
-	static var _ = hide.ui.View.register(CdbTable);
+	static var _ = hide.ui.View.register(CdbTable, { maximized : true });
 
 }

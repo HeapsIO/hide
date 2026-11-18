@@ -18,8 +18,44 @@
 	var nodeModule = window.module;
 	// DirectX 12 addon used by hide.js when built with -D dx12 (hide_dx12.hxml, see hide_js/libs/jsdx/native/build.bat)
 	(function() {
-		var dx12Path = require("path").join(__dirname, "jsdx", "dx12.node");
-		if( require("fs").existsSync(dx12Path) ) globalThis.__dx12 = require(dx12Path);
+		var fs = require("fs"), nodePath = require("path");
+		var srcDir = nodePath.join(__dirname, "jsdx");
+		var src = nodePath.join(srcDir, "dx12.node");
+		if( !fs.existsSync(src) ) return;
+
+		// load a copy : the loaded addon is locked on disk and could not be rebuilt while HIDE runs.
+		// One per renderer process (its pages share the D3D12 device), next to the shader compiler DLLs it loads from its own directory
+		var hash = require("crypto").createHash("md5").update(__dirname).digest("hex").slice(0, 8);
+		var dir = nodePath.join(require("os").tmpdir(), "hide-jsdx", hash);
+		var name = "dx12-" + process.pid + ".node";
+		var copy = nodePath.join(dir, name);
+		function same( a, b ) {
+			try {
+				var sa = fs.statSync(a), sb = fs.statSync(b);
+				return sa.size == sb.size && sa.mtimeMs == sb.mtimeMs;
+			} catch( e ) {
+				return false;
+			}
+		}
+		function update( from, to ) {
+			if( same(from, to) ) return;
+			try { fs.copyFileSync(from, to); } catch( e ) {} // locked : in use
+		}
+
+		try {
+			fs.mkdirSync(dir, { recursive : true });
+			for( var f of fs.readdirSync(dir) )
+				if( f.endsWith(".node") && f != name )
+					try { fs.unlinkSync(nodePath.join(dir, f)); } catch( e ) {} // loaded by another instance
+			update(src, copy);
+			update(nodePath.join(srcDir, "dxcompiler.dll"), nodePath.join(dir, "dxcompiler.dll"));
+			update(nodePath.join(srcDir, "dxil.dll"), nodePath.join(dir, "dxil.dll"));
+		} catch( e ) {
+		}
+		if( !fs.existsSync(copy) ) copy = src;
+
+		globalThis.__dx12 = require(copy);
+		globalThis.__dx12Changed = () => copy != src && !same(src, copy);
 	})();
 	window.module = undefined;
 	// hide.js overrides the global Reflect with the Haxe one
@@ -198,14 +234,43 @@
 		complete = tail.toString().indexOf('//# sourceMappingURL=') >= 0;
 	} catch( e ) {
 	}
-	if( !complete || size != lastSize ) {
+	if( !complete || size != lastSize || gitBusy() ) {
 		lastSize = size;
 		timer = setTimeout(reloadWhenComplete, 500);
 		return;
 	}
 	timer = 0;
 	reloadWatcher.close();
-	hide.Ide.inst.reload();
+
+	// the new addon can't be loaded in this process
+	if( globalThis.__dx12Changed && __dx12Changed() )
+		electron.App.relaunch();
+	else
+		hide.Ide.inst.reload();
+  }
+
+  var gitDir = (function() {
+	var nodePath = require('path');
+	var dir = __dirname;
+	while( true ) {
+		var git = nodePath.join(dir, '.git');
+		try {
+			if( fs.statSync(git).isDirectory() ) return git;
+			var m = /^gitdir:\s*(.*)$/m.exec(fs.readFileSync(git, 'utf8')); // worktree
+			return m == null ? null : nodePath.resolve(dir, m[1].trim());
+		} catch( e ) {
+		}
+		var parent = nodePath.dirname(dir);
+		if( parent == dir ) return null;
+		dir = parent;
+	}
+  })();
+
+  function gitBusy() {
+	if( gitDir == null ) return false;
+	for( var f of ['index.lock', 'rebase-merge', 'rebase-apply', 'MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD'] )
+		if( fs.existsSync(gitDir + '/' + f) ) return true;
+	return false;
   }
   var reloadWatcher=fs.watch(path, function(_,file) {
 	if (file == null)

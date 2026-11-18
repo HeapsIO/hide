@@ -559,6 +559,10 @@ class ElectronMain {
 
 		// app
 		h.set("app.quit", (wc) -> App.quit());
+		h.set("app.relaunch", function(wc) {
+			App.relaunch();
+			App.quit();
+		});
 		h.set("app.isDebuggerAttached", (wc) -> isDebuggerAttached(wc));
 		h.set("app.isFocused", (wc) -> BrowserWindow.getFocusedWindow() != null);
 		h.set("app.clearCache", (wc : WebContents) -> wc.session.clearCache());

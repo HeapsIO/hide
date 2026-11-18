@@ -46,6 +46,7 @@ class TabViewContainer extends TabContainer {
 			haxe.Timer.delay(view.onActivate, 0);
 		} else
 			view.onHide();
+		@:privateAccess hide.Ide.inst.refreshZones();
 		@:privateAccess hide.Ide.inst.onLayoutChanged();
 	}
 

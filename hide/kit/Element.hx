@@ -749,7 +749,7 @@ class Element {
 					color;
 				} else {
 					var line = new Line(this, def.name);
-					line.label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
+					line.label = def.disp ?? hide.tools.StringUtils.camelToSpaceCase(def.name);
 					line.tooltip = def.desc;
 					var vec : Array<Dynamic> = Reflect.field(props, def.name);
 					if (vec == null) {
@@ -776,7 +776,7 @@ class Element {
 				var select = new hide.kit.Select(this, def.name);
 				var entries = [];
 				for (constructor in haxe.EnumTools.getConstructors(en)) {
-					entries.push({value: haxe.EnumTools.createByName(en, constructor), label: hide.kit.Macros.camelToSpaceCase(constructor)});
+					entries.push({value: haxe.EnumTools.createByName(en, constructor), label: hide.tools.StringUtils.camelToSpaceCase(constructor)});
 				}
 
 				select.setEntries(entries);
@@ -789,7 +789,7 @@ class Element {
 				new Input(this, def.name);
 		}
 		if (widget != null) {
-			widget.label =  def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
+			widget.label =  def.disp ?? hide.tools.StringUtils.camelToSpaceCase(def.name);
 			widget.tooltip = def.desc;
 			widget.anim = def.name;
 			if (def.def != null)

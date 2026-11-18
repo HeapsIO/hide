@@ -34,6 +34,13 @@ class App {
 		Ipc.call("app.quit");
 	}
 
+	/**
+		Restarts the app with the same arguments
+	**/
+	public static function relaunch() {
+		Ipc.call("app.relaunch");
+	}
+
 	public static function clearCache() {
 		Ipc.call("app.clearCache");
 	}

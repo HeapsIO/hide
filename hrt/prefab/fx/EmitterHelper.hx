@@ -184,7 +184,7 @@ class EmitterHelper {
 	// Build inspector for an emitter parameter
 	static function editParam(ctx: EditContext2, prefab: Prefab, def: ParamDef, allowed: Array<ModeKind>, parent: hide.kit.Element) {
 		var size = def.def.length;
-		var label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
+		var label = def.disp ?? hide.tools.StringUtils.camelToSpaceCase(def.name);
 		var range = switch (def.t) {
 			case PFloat(min, max), PVec(_, min, max): { min: min, max: max };
 			default: { min: null, max: null };
@@ -213,7 +213,7 @@ class EmitterHelper {
 				items.push({ isSeparator: true, label: label + " " + compName(i) });
 			if (allowed.length > 1) {
 				for (mode in allowed)
-					items.push({ label: hide.kit.Macros.camelToSpaceCase(mode), radio: () -> kind == mode, click: () -> applyMode([i], mode) });
+					items.push({ label: hide.tools.StringUtils.camelToSpaceCase(mode), radio: () -> kind == mode, click: () -> applyMode([i], mode) });
 				items.push({ isSeparator: true });
 			}
 			items.push({ label: size == 1 ? "Remove" : "Remove " + compName(i), click: () -> applyMode([i], null), enabled: isSet(prefab, def, i) });
@@ -410,7 +410,7 @@ class EmitterHelper {
 		switch (p.t) {
 			case PVec(n, min, max) if (p.name.toLowerCase().indexOf("color") < 0):
 				var line = new hide.kit.Line(parent, p.name);
-				line.label = p.disp ?? hide.kit.Macros.camelToSpaceCase(p.name);
+				line.label = p.disp ?? hide.tools.StringUtils.camelToSpaceCase(p.name);
 				line.tooltip = p.desc;
 				var vec : Array<Float> = Reflect.field(emitter, p.name);
 				for (i in 0...n) {

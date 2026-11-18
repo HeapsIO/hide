@@ -282,7 +282,7 @@ class Macros {
 					}
 
 					if (label == null && field != null) {
-						label = makeStringExpr(camelToSpaceCase(fieldName), pos);
+						label = makeStringExpr(hide.tools.StringUtils.camelToSpaceCase(fieldName), pos);
 						fieldsAttributes.push(fieldLabelAttribute);
 						fieldLabelAttribute.value = domkit.MarkupParser.AttributeValue.Code(label);
 					}
@@ -515,36 +515,6 @@ class Macros {
 	}
 	#end
 
-	public static function camelToSpaceCase(str:String):String {
-		var wasCap = false;
-		var finalString = "";
-		for (charIndex in 0...str.length) {
-			var char = str.charAt(charIndex);
-
-			if (charIndex == 0) {
-				finalString += char.toUpperCase();
-				wasCap = true;
-				continue;
-			}
-
-			var isCap = (char.toUpperCase() == char);
-
-			if (isCap && !wasCap) {
-				finalString += " ";
-			}
-
-			if (isCap && wasCap) {
-				finalString += char.toUpperCase();
-				continue;
-			}
-
-			finalString += char;
-
-			wasCap = isCap;
-		}
-		return finalString;
-	}
-
 	static function toInternalIdentifier(str: String) : String {
 		var finalString = "";
 		for (charIndex in 0...str.length) {
@@ -604,7 +574,7 @@ class Macros {
 					var statics = abstractType.get().impl.get().statics.get();
 					for (s in statics) {
 						if (s.meta.has(":value"))
-							decls.push(macro {value: $e{Context.getTypedExpr(s.expr())}, label: $v{camelToSpaceCase(s.name)}});
+							decls.push(macro {value: $e{Context.getTypedExpr(s.expr())}, label: $v{hide.tools.StringUtils.camelToSpaceCase(s.name)}});
 					}
 
 				case TEnum(t, _):
@@ -622,7 +592,7 @@ class Macros {
 						}
 						pack.push(trueEnum.name);
 						pack.push(constructor.name);
-						decls.push(macro {value: $p{pack}, label: $v{camelToSpaceCase(constructor.name)}});
+						decls.push(macro {value: $p{pack}, label: $v{hide.tools.StringUtils.camelToSpaceCase(constructor.name)}});
 					}
 				default:
 					return macro {};
