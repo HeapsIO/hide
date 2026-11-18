@@ -6079,6 +6079,13 @@ class SceneEditor {
 
 
 		menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
+
+		var graphs : Array<hrt.ui.HuiMenu.MenuItem> = [for (file in hrt.shgraph.ShaderGraph.ShaderGraphEditorCache.inst.getShaderGraphs())
+			getNewTypeMenuItem("shgraph", parentElt, onMake, file.name, new haxe.io.Path(file.path).file, file.path)];
+		graphs.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
+		if (graphs.length > 0)
+			menu.unshift({label: "Shader Graph", menu: graphs});
+
 		menu.unshift(custom);
 
 		return {
