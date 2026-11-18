@@ -695,7 +695,7 @@ class Element {
 					color;
 				} else {
 					var line = new Line(this, def.name);
-					line.label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
+					line.label = def.disp ?? hide.tools.StringUtils.camelToSpaceCase(def.name);
 					var vec : Array<Dynamic> = Reflect.field(props, def.name);
 					if (vec == null) {
 						vec = [];
@@ -721,7 +721,7 @@ class Element {
 				var select = new hide.kit.Select(this, def.name);
 				var entries = [];
 				for (constructor in haxe.EnumTools.getConstructors(en)) {
-					entries.push({value: haxe.EnumTools.createByName(en, constructor), label: hide.kit.Macros.camelToSpaceCase(constructor)});
+					entries.push({value: haxe.EnumTools.createByName(en, constructor), label: hide.tools.StringUtils.camelToSpaceCase(constructor)});
 				}
 
 				select.setEntries(entries);
@@ -734,7 +734,7 @@ class Element {
 				new Input(this, def.name);
 		}
 		if (widget != null) {
-			widget.label =  def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
+			widget.label =  def.disp ?? hide.tools.StringUtils.camelToSpaceCase(def.name);
 			widget.value = Reflect.field(props, def.name) ?? defValue;
 			@:privateAccess widget.onFieldChange = (_) -> {
 				Reflect.setField(props, def.name, widget.value);

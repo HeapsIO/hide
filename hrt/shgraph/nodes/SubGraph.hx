@@ -87,7 +87,7 @@ class SubGraph extends ShaderNode {
 		var info = super.getInfo();
 		var nodeName = pathShaderGraph.split("/").pop().split(".")[0];
 		nodeName = StringTools.replace(nodeName, "_", " ");
-		nodeName = hide.kit.Macros.camelToSpaceCase(nodeName);
+		nodeName = hide.tools.StringUtils.camelToSpaceCase(nodeName);
 		info.name = nodeName;
 
 		info.contextMenu = () -> [

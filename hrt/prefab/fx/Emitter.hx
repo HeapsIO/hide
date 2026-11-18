@@ -2258,7 +2258,7 @@ class Emitter extends Object3D {
 			switch (p.t) {
 				case PVec(n, min, max) if (p.name.toLowerCase().indexOf("color") < 0):
 					var line = new hide.kit.Line(cat, p.name);
-					line.label = p.disp ?? hide.kit.Macros.camelToSpaceCase(p.name);
+					line.label = p.disp ?? hide.tools.StringUtils.camelToSpaceCase(p.name);
 					addVecSliders(line, p.name, n, min, max);
 				default:
 					var widget = cat.buildProp(p, this);
@@ -2296,7 +2296,7 @@ class Emitter extends Object3D {
 
 		for (p in instanceParams) {
 			var cat = getCategory(p.groupName ?? "Particles");
-			addOptional(cat, p.name, p.disp ?? hide.kit.Macros.camelToSpaceCase(p.name), p.t, function() : Dynamic return switch (p.t) {
+			addOptional(cat, p.name, p.disp ?? hide.tools.StringUtils.camelToSpaceCase(p.name), p.t, function() : Dynamic return switch (p.t) {
 				case PVec(_): ((p.def : Array<Float>).copy() : Dynamic);
 				default: p.def;
 			});
