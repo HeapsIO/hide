@@ -23,6 +23,7 @@ typedef GradientData = {
 #if editor
 typedef EditorCacheData = {
 	var tex : Texture;
+	var hash : Int32;
 };
 #end
 
@@ -225,9 +226,9 @@ class Gradient {
 		}
 
 
-		#if !editor
 		var hash = getDataHash(data, forceOrientation);
 
+		#if !editor
 		var cache = getCache();
 		var entry = cache.get(hash);
 		if (entry != null)
@@ -241,6 +242,10 @@ class Gradient {
 		if (entry != null)
 		{
 			var texture = entry.tex;
+			if (entry.hash == hash)
+				return texture;
+
+			entry.hash = hash;
 			var pixels = genPixels();
 			if (pixels.width != texture.width || pixels.height != texture.height) {
 				texture.resize(pixels.width, pixels.height);
@@ -259,7 +264,7 @@ class Gradient {
 		#if !editor
 		cache.set(hash, texture);
 		#else
-		cache.set(data, {tex: texture});
+		cache.set(data, {tex: texture, hash: hash});
 		#end
 
 		return texture;
