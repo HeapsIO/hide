@@ -285,9 +285,12 @@ class SSR extends RendererFX {
 
 		ssr = r.allocTarget("ssr", false, textureSize / resRescale, hdrMap.format);
 		ssr.clear(0, 0);
+		var prevFilter = depth.filter;
+		if( !LOW_RES_DEPTH ) depth.filter = Linear;
 		r.ctx.engine.pushTarget(ssr);
 		ssrPass.render();
 		r.ctx.engine.popTarget();
+		depth.filter = prevFilter;
 
 		blurPass.radius = blurRadius;
 		blurPass.apply(r.ctx, ssr);
