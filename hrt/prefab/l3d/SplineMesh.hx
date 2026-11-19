@@ -1,5 +1,11 @@
 package hrt.prefab.l3d;
 
+enum abstract SplineCapShape(String) {
+	var None;
+	var Sphere;
+	var Cone;
+}
+
 class SplineUV extends hxsl.Shader {
 	static var SRC = {
 		@input var input : {
@@ -43,6 +49,11 @@ class SplineMesh extends hrt.prefab.Object3D {
 	@:s var count: Int = 2;
 	@:s var spacing: Float = 2;
 
+	@:s var capShape : SplineCapShape = None;
+	@:s var capRadius : Float = 1.0;
+	@:s var capLength : Float = 1.0;
+	@:s var capSegments : Int = 3;
+
 	@:s var previewPointCount = 16;
 	@:s var previewRadius = 2;
 
@@ -62,10 +73,16 @@ class SplineMesh extends hrt.prefab.Object3D {
 		super.updateInstance(propName);
 		disposeSplineMesh();
 
-		if ( spline == null || spline.localSamples.length < 2 )
+		if ( spline != null && spline.localSamples.length >= 2 ) {
+			var samples = spline.localSamples;
+			computeSplineMesh([for ( s in samples ) s.pos], [for ( s in samples ) s.tangentOut.normalized()], !spline.loop);
+		} else if ( capShape != None ) {
+			var n = hxd.Math.imax(2, previewPointCount);
+			var points = [for ( i in 0...n ) new h3d.col.Point(previewRadius * (2 * i / (n - 1) - 1), 0, 0)];
+			var tangents = [for ( i in 0...n ) new h3d.Vector(1, 0, 0)];
+			computeSplineMesh(points, tangents, true);
+		} else
 			computeDefaultSplineMesh();
-		else
-			computeSplineMesh();
 	}
 
 	function getLocalPoints() : Array<Float> {
@@ -118,6 +135,86 @@ class SplineMesh extends hrt.prefab.Object3D {
 		}
 	}
 
+	function getCapProfile() : Array<Float> {
+		var radius = thickness * capRadius;
+		var length = radius * capLength;
+		var halfPi = hxd.Math.PI * 0.5;
+		var profile = [];
+		inline function add( offset : Float, rad : Float, normalAngle : Float ) {
+			profile.push(offset);
+			profile.push(rad);
+			profile.push(normalAngle);
+		}
+		if ( radius < thickness ) {
+			add(0, thickness, halfPi);
+			add(0, radius, halfPi);
+		}
+		switch ( capShape ) {
+		case None:
+		case Sphere:
+			var start = radius > thickness ? -hxd.Math.acos(thickness / radius) : 0.0;
+			var segments = hxd.Math.imax(1, capSegments);
+			for ( i in 0...segments + 1 ) {
+				var phi = start + (halfPi - start) * i / segments;
+				var s = hxd.Math.sin(phi);
+				var c = hxd.Math.cos(phi);
+				add(length * s, radius * c, hxd.Math.atan2(s * radius, c * length));
+			}
+		case Cone:
+			if ( radius > thickness ) {
+				add(0, thickness, -halfPi);
+				add(0, radius, -halfPi);
+			}
+			var normalAngle = hxd.Math.atan2(radius, length);
+			add(0, radius, normalAngle);
+			add(length, 0, normalAngle);
+		}
+		return profile;
+	}
+
+	function fillCap( vertexData : hxd.FloatBuffer, dataPos : Int, profile : Array<Float>, trs : h3d.Matrix, uvX : Float, dir : Float, bounds : h3d.col.Bounds ) {
+		var vertexPerPoint = vertexPerPoint;
+		var stepAngle = hxd.Math.degToRad(360.0 / ( vertexPerPoint - 1 ));
+		var tangent = new h3d.Vector(1.0, 0.0, 0.0);
+		tangent.transform3x3(trs);
+		tangent.normalize();
+		for ( r in 0...Std.int(profile.length / 3) ) {
+			var offset = profile[r * 3] * dir;
+			var rad = profile[r * 3 + 1];
+			var normalAngle = profile[r * 3 + 2];
+			var nr = hxd.Math.cos(normalAngle);
+			var nx = hxd.Math.sin(normalAngle) * dir;
+			for ( i in 0...vertexPerPoint ) {
+				var angle = i * stepAngle;
+				var s = hxd.Math.sin(angle);
+				var c = hxd.Math.cos(angle);
+
+				var pos = new h3d.Vector(offset, s * rad, c * rad);
+				pos.transform(trs);
+				bounds.addPos(pos.x, pos.y, pos.z);
+
+				var normal = new h3d.Vector(nx, s * nr, c * nr);
+				normal.transform3x3(trs);
+				normal.normalize();
+
+				vertexData[dataPos++] = pos.x;
+				vertexData[dataPos++] = pos.y;
+				vertexData[dataPos++] = pos.z;
+
+				vertexData[dataPos++] = normal.x;
+				vertexData[dataPos++] = normal.y;
+				vertexData[dataPos++] = normal.z;
+
+				vertexData[dataPos++] = tangent.x;
+				vertexData[dataPos++] = tangent.y;
+				vertexData[dataPos++] = tangent.z;
+
+				vertexData[dataPos++] = (uvX + offset) * scaleUVx;
+				vertexData[dataPos++] = angle / (hxd.Math.PI * 2) * scaleUVy;
+			}
+		}
+	}
+
 	function computeDefaultSplineMesh() {
 		var bounds = new h3d.col.Bounds();
 		var localPoints = getLocalPoints();
@@ -166,27 +263,30 @@ class SplineMesh extends hrt.prefab.Object3D {
 		mesh.primitive = meshPrimitive;
 	}
 
-	function computeSplineMesh() {
-		var samples = spline.localSamples;
+	function computeSplineMesh( points : Array<h3d.col.Point>, tangents : Array<h3d.Vector>, hasEnds : Bool ) {
 		var bounds = new h3d.col.Bounds();
 
 		var vertexPerPoint = vertexPerPoint;
-		var vertexCount = vertexPerPoint * samples.length;
+		var vertexCount = vertexPerPoint * points.length;
 		var vertexDataStride = SPLINE_FMT.stride;
 		var splineDataSize = vertexDataStride * vertexCount;
-		var vertexData = new hxd.FloatBuffer(splineDataSize * count);
+		var capProfile = hasEnds && capShape != None ? getCapProfile() : [];
+		var capRings = Std.int(capProfile.length / 3);
+		var capVertexCount = capRings * vertexPerPoint;
+		var vertexData = new hxd.FloatBuffer((splineDataSize + vertexDataStride * capVertexCount * 2) * count);
 
 		var localPoints = getLocalPoints();
 
 		var dataPos = 0;
+		var capDataPos = splineDataSize * count;
 		for ( s in 0...count ) {
 			var spacing = s * spacing - spacing * (count - 1) * 0.5;
 			var uv = 0.0;
-			var prevPos = samples[0].pos;
-			for ( i in 0...samples.length ) {
-				var curPos = samples[i].pos;
+			var prevPos = points[0];
+			for ( i in 0...points.length ) {
+				var curPos = points[i];
 				uv += curPos.distance(prevPos);
-				var tangent = samples[i].tangentOut.normalized();
+				var tangent = tangents[i];
 				var q = new h3d.Quat();
 				q.initDirection(tangent);
 				var euler = q.toEuler();
@@ -197,12 +297,16 @@ class SplineMesh extends hrt.prefab.Object3D {
 				fillPoint(vertexData, dataPos, localPoints, trs, uv, bounds);
 				dataPos += vertexDataStride * vertexPerPoint;
 				prevPos = curPos;
+				if ( capRings > 0 && (i == 0 || i == points.length - 1) ) {
+					fillCap(vertexData, capDataPos, capProfile, trs, uv, i == 0 ? -1 : 1, bounds);
+					capDataPos += vertexDataStride * capVertexCount;
+				}
 			}
 		}
 
 		var indexBuffer = new hxd.IndexBuffer();
 		for ( s in 0...count ) {
-			for ( i in 1...samples.length ) {
+			for ( i in 1...points.length ) {
 				for ( j in 1...vertexPerPoint ) {
 					indexBuffer.push( s * vertexCount + vertexPerPoint * (i - 1) + j - 1 );
 					indexBuffer.push( s * vertexCount + vertexPerPoint * i + j - 1 );
@@ -211,6 +315,25 @@ class SplineMesh extends hrt.prefab.Object3D {
 					indexBuffer.push( s * vertexCount + vertexPerPoint * (i - 1) + j);
 					indexBuffer.push( s * vertexCount + vertexPerPoint * i + j - 1 );
 					indexBuffer.push( s * vertexCount + vertexPerPoint * i + j);
+				}
+			}
+			for ( side in 0...(capRings > 0 ? 2 : 0) ) {
+				var base = count * vertexCount + (s * 2 + side) * capVertexCount;
+				var flip = side == 0;
+				for ( r in 1...capRings ) {
+					for ( j in 1...vertexPerPoint ) {
+						var a = base + vertexPerPoint * (r - 1) + j - 1;
+						var b = base + vertexPerPoint * r + j - 1;
+						var c = base + vertexPerPoint * (r - 1) + j;
+						var d = base + vertexPerPoint * r + j;
+						indexBuffer.push(a);
+						indexBuffer.push(flip ? c : b);
+						indexBuffer.push(flip ? b : c);
+
+						indexBuffer.push(c);
+						indexBuffer.push(flip ? d : b);
+						indexBuffer.push(flip ? b : d);
+					}
 				}
 			}
 		}
@@ -248,6 +371,14 @@ class SplineMesh extends hrt.prefab.Object3D {
 					<dt>Spacing</dt><dd><input type="range" min="0" max="10" field="spacing"/></dd>
 				</dl>
 			</div>
+			<div class="group" name="Caps">
+				<dl>
+					<dt>Shape</dt><dd><select field="capShape"><option value="None">None</option><option value="Sphere">Sphere</option><option value="Cone">Cone</option></select></dd>
+					<dt>Radius</dt><dd><input type="range" min="0" max="5" field="capRadius"/></dd>
+					<dt>Length</dt><dd><input type="range" min="0" max="5" field="capLength"/></dd>
+					<dt>Segments</dt><dd><input type="range" min="1" max="10" step="1" field="capSegments"/></dd>
+				</dl>
+			</div>
 			<div class="group" name="Preview">
 				<dl>
 					<dt>Points</dt><dd><input type="range" min="4" max="64" step="1" field="previewPointCount"/></dd>
@@ -274,6 +405,12 @@ class SplineMesh extends hrt.prefab.Object3D {
 					<slider min={0.} field={thickness}/>
 					<range(1, 10) field={count}/>
 					<slider min={0.} field={spacing}/>
+				</category>
+				<category("Caps")>
+					<select field={capShape}/>
+					<slider min={0.} field={capRadius}/>
+					<slider min={0.} field={capLength}/>
+					<range(1, 10) field={capSegments}/>
 				</category>
 				<category("Preview")>
 					<range(4, 64) field={previewPointCount}/>
