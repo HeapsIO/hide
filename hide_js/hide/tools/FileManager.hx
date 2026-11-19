@@ -53,7 +53,9 @@ class FileEntry {
 	public var vcsStatus: VCSStatus = None;
 	public var ignored: Bool = false;
 
-	var registeredWatcher : hide.tools.FileWatcher.FileWatchEvent = null;
+	// last known modification time, file system events older than it are ignored
+	var stamp : Float = Date.now().getTime();
+	var changeTimer : haxe.Timer = null;
 
 	public function new(name: String, parent: FileEntry, kind: FileKind) {
 		this.name = name;
@@ -63,7 +65,6 @@ class FileEntry {
 		this.path = computePath();
 		this.ignored = computeIgnore();
 
-		watch();
 		FileManager.inst.fileIndex.set(this.getRelPath(), this);
 		FileManager.inst.addToExtIndex(this);
 	}
@@ -80,10 +81,6 @@ class FileEntry {
 		}
 		disposed = true;
 		children = null;
-		if (registeredWatcher != null) {
-			hide.Ide.inst.fileWatcher.unregister(this.getPath(), registeredWatcher.fun);
-			registeredWatcher = null;
-		}
 		FileManager.inst.fileIndex.remove(this.getRelPath());
 		FileManager.inst.removeFromExtIndex(this);
 	}
@@ -133,14 +130,6 @@ class FileEntry {
 		}
 
 		children.sort(compareFile);
-	}
-
-	function watch() {
-		if (registeredWatcher != null)
-			throw "already watching";
-
-		var rel = this.getRelPath();
-		registeredWatcher = hide.Ide.inst.fileWatcher.register(rel, FileManager.inst.fileChangeInternal.bind(this), true);
 	}
 
 	public inline function getRelPath() {
@@ -447,10 +436,60 @@ class FileManager {
 			entry.refreshChildren();
 		});
 
+		hide.Ide.inst.fileWatcher.listenRoot(onFileSystemEvent);
 		fileRoot = new FileEntry("res", null, Dir);
 		fileRoot.refreshChildren();
 
 		queueRefreshSVN();
+	}
+
+	function onFileSystemEvent(relPath: String, kind: String) {
+		function queueChange(entry: FileEntry) {
+			if (entry.changeTimer != null)
+				entry.changeTimer.stop();
+			entry.changeTimer = haxe.Timer.delay(() -> {
+				entry.changeTimer = null;
+				if (!entry.disposed)
+					fileChangeInternal(entry);
+			}, 100);
+		}
+
+		function updateStamp(entry: FileEntry, st: js.node.fs.Stats) {
+			var time = Math.max(st.mtime.getTime(), st.ctime.getTime());
+			if (time <= entry.stamp)
+				return false;
+			entry.stamp = time;
+			return true;
+		}
+
+		// events were lost
+		if (relPath == null) {
+			for (entry in fileIndex)
+				js.node.Fs.stat(entry.getPath(), (err, st) -> {
+					if (err != null || updateStamp(entry, st))
+						queueChange(entry);
+				});
+			return;
+		}
+
+		var entry = fileIndex.get(relPath);
+		if (entry != null) {
+			if (entry.kind == File) {
+				var st = try js.node.Fs.statSync(entry.getPath()) catch (e: Dynamic) null;
+				if (st == null || updateStamp(entry, st) || kind == "rename")
+					queueChange(entry);
+			} else if (kind == "rename") {
+				queueChange(entry);
+			}
+		}
+
+		// added, removed or replaced: refresh the parent directory
+		if (kind == "rename") {
+			var sep = relPath.lastIndexOf("/");
+			var dir = fileIndex.get(sep < 0 ? "" : relPath.substr(0, sep));
+			if (dir != null && dir.kind == Dir)
+				queueChange(dir);
+		}
 	}
 
 	function fileChangeInternal(entry: FileEntry) {

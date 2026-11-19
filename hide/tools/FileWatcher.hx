@@ -27,6 +27,7 @@ class FileWatcher {
 	public var rootDir : String;
 	var rootWatcher : js.node.fs.FSWatcher;
 	var rootWatches : Map<String, Watch> = new Map();
+	var rootListeners : Array<(relPath : String, kind : String) -> Void> = [];
 	var rescanPending = false;
 	#end
 
@@ -126,6 +127,7 @@ class FileWatcher {
 			rootWatcher = null;
 		}
 
+		rootListeners = [];
 		rootDir = null;
 		#end
 	}
@@ -264,6 +266,18 @@ class FileWatcher {
 	}
 
 	#if js
+	/**
+		Calls `fun` for every raw event under `rootDir`, with the path relative to it ("/" separated, not debounced),
+		and the kind of event ("change" or "rename"). Called with a null path when events were lost.
+	**/
+	public function listenRoot( fun : (relPath : String, kind : String) -> Void ) {
+		if( rootDir == null )
+			return;
+		rootListeners.push(fun);
+		if( rootWatcher == null )
+			rootWatcher = js.node.Fs.watch(rootDir, { persistent : true, recursive : true }, onRootEvent);
+	}
+
 	function getRootKey( path : String ) {
 		if( rootDir == null )
 			return null;
@@ -282,7 +296,10 @@ class FileWatcher {
 			}
 			return;
 		}
-		var key = (rootDir + "/" + file.split("\\").join("/")).toLowerCase();
+		var relPath = file.split("\\").join("/");
+		for( l in rootListeners )
+			l(relPath, k);
+		var key = (rootDir + "/" + relPath).toLowerCase();
 		var w = rootWatches.get(key);
 		if( w != null )
 			onWatchEvent(w, k);
@@ -295,6 +312,8 @@ class FileWatcher {
 		rescanPending = false;
 		if( rootWatcher == null )
 			return;
+		for( l in rootListeners )
+			l(null, "rename");
 		for( w in rootWatches )
 			js.node.Fs.stat(w.path, (err, st) -> {
 				if( !w.rooted )
