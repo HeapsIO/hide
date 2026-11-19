@@ -1810,6 +1810,14 @@ class Ide extends hide.tools.IdeData {
 			quickMessage('Gpu mem dumped at ${path}.');
 		});
 
+		var reports = menu.find(".reports");
+		reports.find(".shaderreport").click(function(_) {
+			open("hide.view.ReportView", { kind : "shaders" });
+		});
+		reports.find(".modelreport").click(function(_) {
+			open("hide.view.ReportView", { kind : "models" });
+		});
+
 		var settings = menu.find(".settings");
 		settings.find('.user-settings').click(function(_) {
 			open("hide.view.settings.UserSettings", {});
