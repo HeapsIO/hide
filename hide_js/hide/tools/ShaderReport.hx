@@ -183,8 +183,7 @@ class ShaderReport {
 		linkCache = new hxsl.CacheFile2("", false);
 		linkLoader = new hxsl.CacheFile2.CacheFile2Loader(linkCache);
 		var version = hxsl.CacheFile2.VERSION;
-		var magic = sys.io.File.getContent(path).split("
-")[0];
+		var magic = sys.io.File.getContent(path).split("\n")[0];
 		hxsl.CacheFile2.VERSION = Std.parseInt(magic.substr(4)) ?? version;
 		var loaded = try hxsl.CacheFile2.loadFile(linkLoader, path) catch( e : Dynamic ) false;
 		hxsl.CacheFile2.VERSION = version;
@@ -232,8 +231,7 @@ class ShaderReport {
 
 	function programCode( e : ReportEntry ) {
 		var rt = runtimes.get(e.mode + " " + e.tokens.join(" "));
-		return rt == null ? "" : [for( s in rt.getShaders() ) hxsl.Printer.shaderToString(s.data)].join("
-");
+		return rt == null ? "" : [for( s in rt.getShaders() ) hxsl.Printer.shaderToString(s.data)].join("\n");
 	}
 
 	public function program( e : ReportEntry ) {

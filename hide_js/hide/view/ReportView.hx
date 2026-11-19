@@ -216,7 +216,7 @@ class ReportView extends hide.ui.View<ReportViewState> {
 			}
 			p = p.parentElement;
 		}
-		target.scrollIntoView({ block : target.tagName == "TR" ? CENTER : START });
+		target.scrollIntoView(cast { block : target.tagName == "TR" ? "center" : "start" });
 		target.classList.remove("flash");
 		untyped target.offsetWidth;
 		target.classList.add("flash");
