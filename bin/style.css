@@ -7591,3 +7591,151 @@ fancy-gallery-item {
 		}
 	}
 }
+
+.report-view {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	>.toolbar {
+		display: flex;
+		gap: 6px;
+		align-items: center;
+		padding: 6px 10px;
+		border-bottom: 1px solid var(--color-border);
+		input.cache {
+			flex-grow: 1;
+		}
+		input.filter {
+			margin-left: auto;
+			width: 250px;
+		}
+	}
+	>.content {
+		flex-grow: 1;
+		overflow: auto;
+		padding: 0 16px 20px 16px;
+		user-select: text;
+	}
+	h1 {
+		font-size: 1.6em;
+		margin: 12px 0 4px 0;
+	}
+	.nav {
+		position: sticky;
+		top: 0;
+		z-index: 1;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		padding: 6px 0;
+		background: var(--color-menu-bg);
+		a {
+			padding: 2px 10px;
+			border-radius: 10px;
+			background-color: #404248;
+			&:hover {
+				background-color: #585a63;
+			}
+		}
+	}
+	.box {
+		background: #2e2e2e;
+		border: 1px solid var(--color-border);
+		padding: 2px 14px;
+		margin: 8px 0;
+	}
+	.desc {
+		max-width: 1100px;
+		li {
+			margin: 2px 0;
+		}
+	}
+	details.section {
+		>summary {
+			font-size: 1.3em;
+			font-weight: bold;
+			cursor: pointer;
+			margin: 14px 0 6px;
+		}
+		&.nomatch {
+			opacity: 0.4;
+		}
+	}
+	table {
+		border-collapse: collapse;
+		margin: 6px 0 20px;
+		&.fixed {
+			table-layout: fixed;
+			width: 100%;
+		}
+	}
+	td, th {
+		border: 1px solid var(--color-border);
+		padding: 3px 8px;
+		vertical-align: top;
+		text-align: left;
+		overflow-wrap: anywhere;
+	}
+	th {
+		background: #383838;
+		cursor: pointer;
+		position: sticky;
+		top: 30px;
+		&.asc::after { content: " \25B2"; }
+		&.desc::after { content: " \25BC"; }
+	}
+	.n {
+		text-align: right;
+	}
+	tr.flash, details.flash {
+		animation: report-flash 1.5s;
+	}
+	td details div {
+		font: 11px monospace;
+		margin: 2px 0 6px 12px;
+	}
+	pre {
+		font-size: 11px;
+		white-space: pre-wrap;
+	}
+	small {
+		color: #999;
+	}
+	code {
+		font-family: monospace;
+	}
+	a, .r-shader {
+		cursor: pointer;
+		color: #8ab4f8;
+		&:hover {
+			text-decoration: underline;
+		}
+	}
+	.r-shader {
+		color: inherit;
+	}
+	.diff, .r-shader.diff {
+		color: #ff6b6b;
+	}
+	.warn {
+		color: #ff6b6b;
+		font-weight: bold;
+	}
+	.ok {
+		color: #6c6;
+	}
+	.note {
+		color: #999;
+	}
+	.x {
+		color: #ff6b6b;
+	}
+	.part {
+		color: #e9a13b;
+	}
+}
+
+@keyframes report-flash {
+	from { background-color: var(--color-highlight); }
+	to { background-color: transparent; }
+}

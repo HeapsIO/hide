@@ -489,15 +489,20 @@ class IdeData {
 	public function loadPrefab<T:hrt.prefab.Prefab>( file : String, ?cl : Class<T>, ?checkExists ) : T {
 		if( file == null )
 			return null;
+		var path = getPath(file);
+		if( checkExists && !sys.FileSystem.exists(path) )
+			return null;
+		var p = parsePrefab(file, sys.io.File.getContent(path));
+		if( cl == null )
+			return cast p;
+		return p.get(cl);
+	}
+
+	public function parsePrefab( file : String, content : String ) : hrt.prefab.Prefab {
 		try {
-			var path = getPath(file);
-			if( checkExists && !sys.FileSystem.exists(path) )
-				return null;
-			var p = hrt.prefab.Prefab.createFromDynamic(parseJSON(sys.io.File.getContent(path)));
+			var p = hrt.prefab.Prefab.createFromDynamic(parseJSON(content));
 			p.shared.currentPath = file;
-			if( cl == null )
-				return cast p;
-			return p.get(cl);
+			return p;
 		} catch( e : Dynamic ) {
 			error("Invalid prefab "+file+" ("+e+")");
 			throw e;

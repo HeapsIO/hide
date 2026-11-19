@@ -1237,11 +1237,21 @@ class Ide extends hide.tools.IdeData {
 		return refs;
 	}
 
+	public function refreshFont() {
+		var font = currentConfig.get("hide.useAlternateFont") ? "Verdana" : "Inter";
+		var size = currentConfig.get("hide.useAlternateFont") ? "9pt" : "9.5pt";
+		js.Browser.document.documentElement.style.setProperty("--default-font", font);
+		js.Browser.document.documentElement.style.setProperty("--default-font-size", size);
+
+	}
+
 	/**
 		Iterate throught all the strings in the project that could contain a path, replacing
 		the value by what `callb` returns. The callb must call `changed()` if it changed the path.
+		When `mustContain` is set, the prefab and props files whose text contains none of these strings are skipped.
 	**/
-	public function filterPaths(callb: (ctx : FilterPathContext) -> Void) {
+	public var customFilepathRefFilters : Array<(ctx : FilterPathContext) -> Void> = [];
+	public function filterPaths(callb: (ctx : FilterPathContext) -> Void, ?mustContain : Array<String>) {
 		var context = new FilterPathContext(callb);
 
 		var adaptedFilter = function(name: String) {
@@ -1318,7 +1328,7 @@ class Ide extends hide.tools.IdeData {
 					filterContent(p);
 				}
 				return context.changed;
-			});
+			}, mustContain);
 		}
 
 		{
@@ -1333,7 +1343,7 @@ class Ide extends hide.tools.IdeData {
 				currentPath = path;
 				filterContent(content);
 				return context.changed;
-			});
+			}, mustContain);
 		}
 
 
@@ -1361,7 +1371,6 @@ class Ide extends hide.tools.IdeData {
 			for( c in sheet.columns ) {
 				switch( c.type ) {
 				case TFile:
-					var sheets = cdb.Sheet.getSheetPath(sheet, c.name);
 					for( obj in sheet.getObjects() ) {
 						currentSheet = sheet;
 						currentColumn = c.name;
@@ -1371,7 +1380,6 @@ class Ide extends hide.tools.IdeData {
 						if( v != null ) Reflect.setField(obj.path[obj.path.length - 1], c.name, v);
 					}
 				case TTilePos:
-					var sheets = cdb.Sheet.getSheetPath(sheet, c.name);
 					for( obj in sheet.getObjects() ) {
 						currentSheet = sheet;
 						currentColumn = c.name;
@@ -1399,24 +1407,16 @@ class Ide extends hide.tools.IdeData {
 		}
 	}
 
-	public var customFilepathRefFilters : Array<(ctx : FilterPathContext) -> Void> = [];
-
-	public function refreshFont() {
-		var font = currentConfig.get("hide.useAlternateFont") ? "Verdana" : "Inter";
-		var size = currentConfig.get("hide.useAlternateFont") ? "9pt" : "9.5pt";
-		js.Browser.document.documentElement.style.setProperty("--default-font", font);
-		js.Browser.document.documentElement.style.setProperty("--default-font-size", size);
-
-	}
-
-	public function filterPrefabs( callb : (hrt.prefab.Prefab, path: String) -> Bool) {
+	public function filterPrefabs( callb : (hrt.prefab.Prefab, path: String) -> Bool, ?mustContain : Array<String> ) {
 		var exts = Lambda.array({iterator : @:privateAccess hrt.prefab.Prefab.extensionRegistry.keys });
 		exts.push("prefab");
 		var todo = [];
 		browseFiles(function(path) {
 			var ext = path.split(".").pop();
 			if( exts.indexOf(ext) < 0 ) return;
-			var prefab = loadPrefab(path);
+			var content = sys.io.File.getContent(getPath(path));
+			if( !containsAny(content, mustContain) ) return;
+			var prefab = parsePrefab(path, content);
 			var changed = false;
 			function filterRec(p) {
 				if( callb(p, path) ) changed = true;
@@ -1431,14 +1431,16 @@ class Ide extends hide.tools.IdeData {
 			t();
 	}
 
-	public function filterProps( callb : (data: Dynamic, path: String) -> Bool ) {
+	public function filterProps( callb : (data: Dynamic, path: String) -> Bool, ?mustContain : Array<String> ) {
 		var exts = ["props", "json", "prefab"];
 		var todo = [];
 		browseFiles(function(path) {
 			var ext = path.split(".").pop();
 			if( exts.indexOf(ext) < 0 ) return;
+			var text = sys.io.File.getContent(getPath(path));
+			if( !containsAny(text, mustContain) ) return;
 			try {
-				var content = parseJSON(sys.io.File.getContent(getPath(path)));
+				var content = parseJSON(text);
 				var changed = callb(content, path);
 				if( !changed ) return;
 				todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(content)));
@@ -1448,14 +1450,26 @@ class Ide extends hide.tools.IdeData {
 			t();
 	}
 
+	function containsAny( text : String, strings : Array<String> ) {
+		if( strings == null )
+			return true;
+		for( s in strings ) {
+			if( text.indexOf(s) >= 0 )
+				return true;
+		}
+		return false;
+	}
+
 	function browseFiles( callb : String -> Void ) {
 		function browseRec(path) {
 			if( path == ".tmp" ) return;
 			if( path == ".backed" ) return;
 
-			for( p in sys.FileSystem.readDirectory(resourceDir + "/" + path) ) {
-				var p = path == "" ? p : path + "/" + p;
-				if( sys.FileSystem.isDirectory(resourceDir+"/"+p) ) {
+			var entries : Array<Dynamic> = (js.node.Fs : Dynamic).readdirSync(resourceDir + "/" + path, { withFileTypes : true });
+			for( entry in entries ) {
+				var p = path == "" ? entry.name : path + "/" + entry.name;
+				var isDir : Bool = entry.isSymbolicLink() ? js.node.Fs.statSync(resourceDir + "/" + p).isDirectory() : entry.isDirectory();
+				if( isDir ) {
 					browseRec(p);
 					continue;
 				}
@@ -1808,6 +1822,14 @@ class Ide extends hide.tools.IdeData {
 		analysis.find(".gpudump").click(function(_) {
 			var path = hide.tools.MemDump.gpudump();
 			quickMessage('Gpu mem dumped at ${path}.');
+		});
+
+		var reports = menu.find(".reports");
+		reports.find(".shaderreport").click(function(_) {
+			open("hide.view.ReportView", { kind : "shaders" });
+		});
+		reports.find(".modelreport").click(function(_) {
+			open("hide.view.ReportView", { kind : "models" });
 		});
 
 		var settings = menu.find(".settings");
