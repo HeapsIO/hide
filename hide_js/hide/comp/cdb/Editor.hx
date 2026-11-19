@@ -1728,7 +1728,8 @@ class Editor extends Component {
 							var path = ide.makeRelative(fpath);
 							var fn = function () {
 								ide.openFile(path, function (v) {
-									var scr : hide.view.Script = cast v;
+									var scr = Std.downcast(v, hide.view.Script);
+									if( scr == null ) return;
 									haxe.Timer.delay(function() {
 										@:privateAccess scr.script.editor.setPosition({column:0, lineNumber: line+1});
 										haxe.Timer.delay(() ->@:privateAccess scr.script.editor.revealLineInCenter(line+1), 1);
