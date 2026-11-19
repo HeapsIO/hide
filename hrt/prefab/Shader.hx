@@ -28,6 +28,17 @@ class Shader extends Prefab {
 		return null;
 	}
 
+	// Return a shader instance ready to use
+	// overriden by DynamicShader for clone optimizations
+	function makeShaderInstance() : hxsl.Shader {
+		var s = makeShader();
+		if( s == null )
+			return null;
+		shader = s;
+		updateInstance();
+		return s;
+	}
+
 	public function getShaderDefinition() : hxsl.SharedShader {
 		var s = shader != null ? shader : makeShader();
 		this.shader = s;
@@ -216,7 +227,7 @@ class Shader extends Prefab {
 	}
 
 	override function makeInstance() {
-		var shader = makeShader();
+		var shader = makeShaderInstance();
 		if( shader == null )
 			return;
 
@@ -232,8 +243,6 @@ class Shader extends Prefab {
 		// can't use apply3d(), macros?
 		if( shared.current3d != null )
 			iterMaterials(function(obj,mat) applyShader(obj, mat, shader), null, true);
-		this.shader = shader;
-		updateInstance();
 	}
 
 	override function edit2(ctx:hrt.prefab.EditContext2) {

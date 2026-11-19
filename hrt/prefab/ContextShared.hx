@@ -33,6 +33,12 @@ class #if editor ContextSharedBase #else ContextShared #end {
 	public var findCache : Map<{}, Prefab> = null;
 
 	/**
+		Set by FX so that shaders are cloned from their template,
+		sharing its vectors, which are overridden by animations anyway.
+	**/
+	public var cloneShaders = false;
+
+	/**
 		Disable some checks at the prefab instanciation time. Used to initialize prefabs that
 		don't need locals2d/3d like shaders
 	**/
