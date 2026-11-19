@@ -248,8 +248,7 @@ class Spline extends hrt.prefab.Object3D {
 		super.updateInstance(propName);
 
 		#if editor
-		localSamples = null;
-		worldSamples = null;
+		invalidateSamples();
 		drawSpline();
 
 		if (propName == "factorTanLengthEdition")
@@ -443,6 +442,7 @@ class Spline extends hrt.prefab.Object3D {
 			points[idx].tangentIn = tan * -1;
 			points[idx].tangentOut = tan;
 		}
+		invalidateSamples();
 	}
 
 	public function recenterSpline() {
@@ -461,6 +461,7 @@ class Spline extends hrt.prefab.Object3D {
 			p.pos.y -= centroid.y;
 			p.pos.z -= centroid.z;
 		}
+		invalidateSamples();
 	}
 
 
@@ -473,6 +474,7 @@ class Spline extends hrt.prefab.Object3D {
 			idx = points.length;
 
 		points.insert(idx, newPoint);
+		invalidateSamples();
 		this.updateInstance();
 	}
 
@@ -482,7 +484,13 @@ class Spline extends hrt.prefab.Object3D {
 
 		var idxToDelete = idx == null ? points.length - 1 : idx;
 		points.remove(points[idxToDelete]);
+		invalidateSamples();
 		this.updateInstance();
+	}
+
+	function invalidateSamples() {
+		localSamples = null;
+		worldSamples = null;
 	}
 
 	static function transformSplinePoint( sp : SplinePoint, m : h3d.Matrix ) {
