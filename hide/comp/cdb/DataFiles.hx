@@ -528,7 +528,7 @@ class DataFiles {
 
 	static var delayedReload: haxe.Timer;
 
-	static function loadPrefab(file:String) : hrt.prefab.Prefab {
+	static function loadPrefab(file) : hrt.prefab.Prefab {
 		var p = Ide.inst.loadPrefab(file);
 		if( !watching.exists(file) ) {
 			var fun = () -> onFileChanged(file);
