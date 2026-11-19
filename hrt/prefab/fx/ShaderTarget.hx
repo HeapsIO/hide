@@ -43,10 +43,8 @@ class ShaderTargetObj extends h3d.scene.Object {
 		for ( s in shadersRoot.findAll(Shader) ) {
 			if (!s.enabled || s.editorOnly)
 				continue;
-			if (s.shader == null) {
-				s.makeShader();
-				@:privateAccess s.updateInstance();
-			}
+			if (s.shader == null)
+				@:privateAccess s.makeShaderInstance();
 			applyShader(s);
 		}
 	}

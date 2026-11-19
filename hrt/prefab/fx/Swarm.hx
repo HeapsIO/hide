@@ -153,7 +153,7 @@ class SwarmObject extends h3d.scene.Object {
 				}
 				if (this.prefab == p) {
 					if( !shader.enabled ) continue;
-					makeShaderInstance(shader);
+					@:privateAccess shader.makeShaderInstance();
 					hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch);
 				}
 			}
@@ -170,13 +170,6 @@ class SwarmObject extends h3d.scene.Object {
 			}
 			relativeTo = cur;
 		}
-	}
-
-	function makeShaderInstance(prefab: hrt.prefab.Shader) {
-		var shader = prefab.makeShader();
-		if( shader == null )
-			return;
-		prefab.updateInstance();
 	}
 
 	static var tmpVector = new h3d.Vector();

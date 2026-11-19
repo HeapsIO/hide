@@ -54,6 +54,10 @@
 	"key.model.animPrev" : "PageUp",
 	"key.model.animNext" : "PageDown",
 
+	// timeline
+
+	"key.timeline.switchUnit" : "U",
+
 	// view keys
 
 	"key.view.fullScreen" : "F11",

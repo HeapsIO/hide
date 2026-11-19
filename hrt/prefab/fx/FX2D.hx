@@ -275,17 +275,21 @@ class FX2D extends Object2D implements BaseFX {
 		#if editor
 		return super.__makeInternal(sh);
 		#else
+		var prevClone = shared.cloneShaders;
+		shared.cloneShaders = true;
 		var fromRef = shared.parentPrefab != null;
 		var useFXRoot = #if editor fromRef #else true #end;
 		var root = BaseFXTools.getFXRoot(this);
+		var r = null;
 		if( useFXRoot && root != null ) {
 			var childrenBackup = _children;
 			_children = [root];
-			var r = super.__makeInternal(sh);
+			r = super.__makeInternal(sh);
 			_children = childrenBackup;
-			return r;
 		} else
-			return super.__makeInternal(sh);
+			r = super.__makeInternal(sh);
+		shared.cloneShaders = prevClone;
+		return r;
 		#end
 	}
 

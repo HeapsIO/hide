@@ -25,25 +25,15 @@ class DynamicShader extends Shader {
 
 	override function copy(data: Prefab) : Void {
 		super.copy(data);
-		template = cast data;
+		// copies of a copy (sub-emitters...) clone the shader of the loaded prefab
+		var from : DynamicShader = cast data;
+		template = from.template ?? from;
 	}
 
 	override function makeShader() {
 		if( getShaderDefinition() == null )
 			return null;
 		var concrete = shaderDef.sclass != null;
-
-		#if !editor
-		// Optim: all copies of the same DynamicShader template
-		// directly clone the shader instance, which uses fast macro copies
-		if( template != null && concrete ) {
-			if( template.shader == null )
-				template.makeShader();
-			shader = template.shader.clone();
-			return shader;
-		}
-		#end
-
 		if( concrete )
 			shader = Type.createInstance(shaderDef.sclass,[]);
 		else {
@@ -55,6 +45,20 @@ class DynamicShader extends Shader {
 		}
 		syncShaderVars(shader, shaderDef.shader);
 		return shader;
+	}
+
+	override function makeShaderInstance() {
+		#if !editor
+		// Optim: when the context allows it (eg, FX), the copies of a template clone its
+		// shader (fast macro copies), which already has the params of their props: no update of the params
+		// Saves lots of allocations in syncShaderVars
+		if( shared.cloneShaders && template != null && getShaderDefinition() != null && shaderDef.sclass != null ) {
+			if( template.shader == null )
+				template.makeShader();
+			return shader = template.shader.clone();
+		}
+		#end
+		return super.makeShaderInstance();
 	}
 
 	override function save() : Dynamic {

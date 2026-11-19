@@ -597,11 +597,15 @@ class EmitterObject extends h3d.scene.Object {
 		#end
 	}
 
-	function makeShaderInstance(prefab: hrt.prefab.Shader) {
-		var shader = prefab.makeShader();
-		if( shader == null )
-			return;
-		prefab.updateInstance();
+	function makeSubEmitter( template : Emitter, parent : h3d.scene.Object ) : EmitterObject {
+		var sh = new hrt.prefab.ContextShared(parent, true);
+		sh.cloneShaders = true;
+		var inst : Emitter = @:privateAccess template.make(sh);
+		var emitter : EmitterObject = cast inst.local3d;
+		emitter.isSubEmitter = true;
+		emitter.parentEmitter = this;
+		emitter.setRandSeed(randomSeed + (subEmitterSeed++));
+		return emitter;
 	}
 
 	function getParentFX() : hrt.prefab.fx.FX.FXAnimation {
@@ -720,7 +724,7 @@ class EmitterObject extends h3d.scene.Object {
 			customAnims = [];
 			var shaders = findRec(prefab, hrt.prefab.Shader);
 			for( shader in shaders ) {
-				makeShaderInstance(shader);
+				@:privateAccess shader.makeShaderInstance();
 				hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch, true);
 			}
 
@@ -1164,12 +1168,8 @@ class EmitterObject extends h3d.scene.Object {
 							continue;
 						}
 
-						var subEmitterInstance : Emitter = @:privateAccess template.make(this);
-						var emitter : EmitterObject = cast subEmitterInstance.local3d;
+						var emitter = makeSubEmitter(template, this);
 						emitter.ignoreParentTransform = true;
-						emitter.isSubEmitter = true;
-						emitter.parentEmitter = this;
-						emitter.setRandSeed(randomSeed + (subEmitterSeed++));
 						emitter.updateParentNonEmitter();
 						part.subEmitters = part.subEmitters ?? [];
 						part.subEmitters.push(emitter);
@@ -1512,14 +1512,10 @@ class EmitterObject extends h3d.scene.Object {
 							if (template.subEmitterKind != SubEmitterKind.SpawnOnDeath) {
 								continue;
 							}
-							var subEmitterInstance : Emitter = @:privateAccess template.make(scene);
-							var emitter : EmitterObject = cast subEmitterInstance.local3d;
+							var emitter = makeSubEmitter(template, scene);
 							p.updateAbsPos(this);
 							var pos = p.absPos.getPosition();
 							emitter.setPosition(pos.x - scene.x, pos.y - scene.y, pos.z - scene.z);
-							emitter.isSubEmitter = true;
-							emitter.parentEmitter = this;
-							emitter.setRandSeed(randomSeed + (subEmitterSeed++));
 							if(subEmitters == null)
 								subEmitters = [];
 							subEmitters.push(emitter);
