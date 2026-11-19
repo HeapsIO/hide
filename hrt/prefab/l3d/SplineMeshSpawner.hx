@@ -115,7 +115,7 @@ class SplineMeshSpawner extends hrt.prefab.Object3D {
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(propName);
 
-		if ( spline != null && spline.samples != null )
+		if ( spline != null && spline.worldSamples != null )
 			init();
 	}
 

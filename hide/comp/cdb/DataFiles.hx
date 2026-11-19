@@ -7,6 +7,11 @@ typedef DataProps = {
 	var origin : String;
 }
 
+private typedef FileLines = {
+	var lines : Array<Dynamic>;
+	var linesData : Array<DataProps>;
+}
+
 private typedef DataDef = {
 	var name : String;
 	var path : String;
@@ -29,10 +34,19 @@ class DataFiles {
 
 	public static function load() {
 		var cache = new Map<String, Array<String>>();
-		for( sheet in base.sheets ) {
-			if( sheet.props.dataFiles != null && sheet.lines == null )
-				loadSheet(sheet, cache);
-		}
+		var sheets = [for( sheet in base.sheets ) if( sheet.props.dataFiles != null && sheet.lines == null ) sheet];
+		var sheetsFiles = [for( sheet in sheets ) gatherFiles(sheet, cache)];
+
+		// load each file once for all the sheets
+		var types = [for( sheet in sheets ) getTypeName(sheet) => sheet];
+		var filesLines = new Map();
+		for( files in sheetsFiles )
+			for( f in files )
+				if( !filesLines.exists(f) )
+					filesLines.set(f, loadFileLines(f, types));
+
+		for( i in 0...sheets.length )
+			loadSheet(sheets[i], sheetsFiles[i], filesLines);
 	}
 
 	public static function loadFile( file : String, sheet : cdb.Sheet) @:privateAccess {
@@ -40,94 +54,75 @@ class DataFiles {
 		var levelID = file.split("/").pop().split(".").shift();
 		levelID = levelID.charAt(0).toUpperCase()+levelID.substr(1);
 
-		var allMap : Map<String, Array<hrt.prefab.Prefab>> = [];
+		// Initiliaze to remove list with the full list of lines data.
+		var toRemove = new Array<DataProps>();
+		for (ld in sheet.sheet.linesData)
+			if (ld.file == file)
+				toRemove.push(ld);
 
-		function loadRec( p : hrt.prefab.Prefab, parent : hrt.prefab.Prefab, toRemove : Array<DataProps> ) {
-			// Initiliaze to remove list with the full list of lines data.
-			if (parent == null) {
-				toRemove = new Array<DataProps>();
-				for (ld in sheet.sheet.linesData)
-					if (ld.file == file)
-						toRemove.push(ld);
-			}
+		iterCdbPrefabs(loadPrefabData(file), function( p, type, path, index ) {
+			if( type != sheetName )
+				return;
 
-			if( p.getCdbType() == sheetName ) {
-				var dprops : DataProps = {
-					file : file,
-					path : p.getAbsPath(),
-					index : 0,
-					origin : haxe.Json.stringify(p.props)
-				};
+			var dprops : DataProps = {
+				file : file,
+				path : path,
+				index : index,
+				origin : haxe.Json.stringify(p.props)
+			};
 
-				// deduplicate prefabs that have the same absPath
-				var all = allMap.get(dprops.path);
-				if (all == null) {
-					all = getPrefabsByPath(p.getRoot(), dprops.path);
-					allMap.set(dprops.path, all);
-				}
+			if( sheet.idCol != null && Reflect.field(p.props,sheet.idCol.name) == "" )
+				Reflect.setField(p.props,sheet.idCol.name,levelID+"_"+(p.name ?? "")+(dprops.index == 0 ? "" : ""+dprops.index));
 
-				dprops.index = all.indexOf(p);
-
-				if( sheet.idCol != null && Reflect.field(p.props,sheet.idCol.name) == "" )
-					Reflect.setField(p.props,sheet.idCol.name,levelID+"_"+p.name+(dprops.index == 0 ? "" : ""+dprops.index));
-
-				var changed = false;
-				for (idx => ld in sheet.sheet.linesData) {
-					if (ld.file == file && ld.path == p.getAbsPath()) {
-						if (ld.index == dprops.index) {
-							toRemove.remove(sheet.sheet.linesData[idx]);
-							sheet.sheet.linesData[idx] = dprops;
-							sheet.sheet.lines[idx] = p.props;
-							changed = true;
-						}
+			var changed = false;
+			for (idx => ld in sheet.sheet.linesData) {
+				if (ld.file == file && ld.path == path) {
+					if (ld.index == dprops.index) {
+						toRemove.remove(sheet.sheet.linesData[idx]);
+						sheet.sheet.linesData[idx] = dprops;
+						sheet.sheet.lines[idx] = p.props;
+						changed = true;
 					}
 				}
-
-				// Meaning that this is new data to add so insert it at the right index
-				if (!changed) {
-					var sepIdx = getSeparatorForPath(file, sheet);
-					var idxInsert = sheet.sheet.separators[sepIdx].index;
-
-					// Insert new line
-					sheet.sheet.linesData.insert(idxInsert, dprops);
-					sheet.sheet.lines.insert(idxInsert, p.props);
-
-					// Shift separators
-					for (idx in (sepIdx + 1)...sheet.sheet.separators.length)
-						sheet.sheet.separators[idx].index++;
-				}
 			}
 
-			for( c in p )loadRec(c,p,toRemove);
+			// Meaning that this is new data to add so insert it at the right index
+			if (!changed) {
+				var sepIdx = getSeparatorForPath(file, sheet);
+				var idxInsert = sheet.sheet.separators[sepIdx].index;
 
-			if (parent == null) {
-				for (rem in toRemove) {
-					var idxRemove = sheet.sheet.linesData.indexOf(rem);
+				// Insert new line
+				sheet.sheet.linesData.insert(idxInsert, dprops);
+				sheet.sheet.lines.insert(idxInsert, p.props);
 
-					// Shift sperators
-					var sepIdx = sheet.sheet.separators.length;
-					for (idx => s in sheet.sheet.separators) {
-						if (s.index > idxRemove) {
-							sepIdx = idx;
-							break;
-						}
-
-					}
-
-					for (idx in (sepIdx)...sheet.sheet.separators.length)
-						sheet.sheet.separators[idx].index--;
-
-					sheet.sheet.linesData.remove(rem);
-					sheet.sheet.lines.remove(sheet.sheet.lines[idxRemove]);
-
-					// Remove potentials un-used separators
-					removeSeparatorForPath(file, sheet);
-				}
+				// Shift separators
+				for (idx in (sepIdx + 1)...sheet.sheet.separators.length)
+					sheet.sheet.separators[idx].index++;
 			}
+		});
+
+		for (rem in toRemove) {
+			var idxRemove = sheet.sheet.linesData.indexOf(rem);
+
+			// Shift sperators
+			var sepIdx = sheet.sheet.separators.length;
+			for (idx => s in sheet.sheet.separators) {
+				if (s.index > idxRemove) {
+					sepIdx = idx;
+					break;
+				}
+
+			}
+
+			for (idx in (sepIdx)...sheet.sheet.separators.length)
+				sheet.sheet.separators[idx].index--;
+
+			sheet.sheet.linesData.remove(rem);
+			sheet.sheet.lines.remove(sheet.sheet.lines[idxRemove]);
+
+			// Remove potentials un-used separators
+			removeSeparatorForPath(file, sheet);
 		}
-
-		var p = loadPrefab(file);
-		loadRec(p,null,[]);
 	}
 
 	/*
@@ -528,21 +523,24 @@ class DataFiles {
 
 	static var delayedReload: haxe.Timer;
 
-	static function loadPrefab(file) {
-		var p = Ide.inst.loadPrefab(file);
+	static function loadPrefabData( file : String ) : Dynamic {
+		var data = try Ide.inst.parseJSON(sys.io.File.getContent(Ide.inst.getPath(file))) catch( e : Dynamic ) {
+			Ide.inst.error("Invalid prefab "+file+" ("+e+")");
+			throw e;
+		}
+
 		if( !watching.exists(file) ) {
 			var fun = () -> onFileChanged(file);
 			watching.set(file, fun);
 			Ide.inst.fileWatcher.register(file, fun);
 		}
-		return p;
+		return data;
 	}
 	#else
-	static function loadPrefab(file:String) {
+	static function loadPrefabData( file : String ) : Dynamic {
 		var path = getPath(file);
 		var content = sys.io.File.getContent(path);
-		var parsed = haxe.Json.parse(content);
-		return hrt.prefab.Prefab.createFromDynamic(parsed);
+		return haxe.Json.parse(content);
 	}
 	#end
 
@@ -563,74 +561,74 @@ class DataFiles {
 		load();
 	}
 
-	static function loadSheet( sheet : cdb.Sheet, cache : Map<String, Array<String>> ) {
-		var sheetName = getTypeName(sheet);
-		var root : DataDef = {
-			name : null,
-			path : null,
-			lines : null,
-			linesData : null,
-			subs : [],
-			msubs : new Map(),
-		};
-		function loadFile( file : String ) {
-			var content = null;
-			var levelID = file.split("/").pop().split(".").shift();
-			levelID = levelID.charAt(0).toUpperCase()+levelID.substr(1);
+	/** Parses the prefab `file` json and returns its lines for each type of `sheets` **/
+	static function loadFileLines( file : String, sheets : Map<String, cdb.Sheet> ) : Map<String, FileLines> {
+		var result = new Map<String, FileLines>();
+		var levelID = file.split("/").pop().split(".").shift();
+		levelID = levelID.charAt(0).toUpperCase()+levelID.substr(1);
 
-			var allMap : Map<String, Array<hrt.prefab.Prefab>> = [];
+		iterCdbPrefabs(loadPrefabData(file), function( p, type, path, index ) {
+			var sheet = sheets.get(type);
+			if( sheet == null )
+				return;
 
-			function loadRec( p : hrt.prefab.Prefab, parent : hrt.prefab.Prefab ) {
-				if( p.getCdbType() == sheetName ) {
-					var dprops : DataProps = {
-						file : file,
-						path : p.getAbsPath(),
-						index : 0,
-						origin : haxe.Json.stringify(p.props),
-					};
+			var dprops : DataProps = {
+				file : file,
+				path : path,
+				index : index,
+				origin : haxe.Json.stringify(p.props),
+			};
 
-					// deduplicate prefabs that have the same absPath
-					var all = allMap.get(dprops.path);
-					if (all == null) {
-						all = getPrefabsByPath(p.getRoot(), dprops.path);
-						allMap.set(dprops.path, all);
-					}
+			if( sheet.idCol != null && Reflect.field(p.props,sheet.idCol.name) == "" )
+				Reflect.setField(p.props,sheet.idCol.name,levelID+"_"+(p.name ?? "")+(dprops.index == 0 ? "" : ""+dprops.index));
 
-					dprops.index = all.indexOf(p);
-
-					if( sheet.idCol != null && Reflect.field(p.props,sheet.idCol.name) == "" )
-						Reflect.setField(p.props,sheet.idCol.name,levelID+"_"+p.name+(dprops.index == 0 ? "" : ""+dprops.index));
-					if( content == null ) {
-						content = root;
-						var path = [];
-						for( p in file.split("/") ) {
-							var n = content.msubs.get(p);
-							path.push(p);
-							if( n == null ) {
-								n = { name : p.split(".").shift(), path : path.join("/"), lines : [], linesData: [], subs : [], msubs : new Map() };
-								content.subs.push(n);
-								content.msubs.set(p, n);
-							}
-							content = n;
-						}
-					}
-					content.linesData.push(dprops);
-					content.lines.push(p.props);
-				}
-				for( c in p ) loadRec(c,p);
+			var fl = result.get(type);
+			if( fl == null ) {
+				fl = { lines : [], linesData : [] };
+				result.set(type, fl);
 			}
-			var p = loadPrefab(file);
-			loadRec(p,null);
-		}
+			fl.linesData.push(dprops);
+			fl.lines.push(p.props);
+		});
+		return result;
+	}
 
+	/**
+		Calls `f` for each prefab of the prefab json `data` that has cdb props, with its cdb type, its absolute path
+		and its index among the prefabs with the same path (see getPrefabsByPath)
+	**/
+	static function iterCdbPrefabs( data : Dynamic, f : (prefab : Dynamic, type : String, path : String, index : Int) -> Void ) {
+		var allMap : Map<String, Int> = [];
+		function rec( p : Dynamic, absPath : String ) {
+			// count every prefab, cdb or not : index must match getPrefabsByPath
+			var index = allMap.get(absPath) ?? 0;
+			allMap.set(absPath, index + 1);
+
+			var type : String = p.props == null ? null : Reflect.field(p.props, "$cdbtype");
+			if( type != null )
+				f(p, type, absPath, index);
+
+			var children : Array<Dynamic> = p.children;
+			if( children == null )
+				return;
+			for( c in children ) {
+				// same as Prefab.getAbsPath
+				var cname : String = c.name ?? "";
+				if( cname == "" )
+					cname = hrt.prefab.Prefab.emptyNameReplacement;
+				rec(c, p == data ? cname : absPath + "." + cname);
+			}
+		}
+		rec(data, "");
+	}
+
+	static function gatherFiles( sheet : cdb.Sheet, cache : Map<String, Array<String>> ) : Array<String> {
 		function gatherRec( basePath : Array<String>, curPath : Array<String>, i : Int, cacheEntry : Array<String> ) {
 			var part = basePath[i++];
 			if( part == null ) {
 				var file = curPath.join("/");
-				if( sys.FileSystem.exists(getPath(file)) ) {
+				if( sys.FileSystem.exists(getPath(file)) )
 					cacheEntry.push(file);
-					loadFile(file);
-				}
 				return;
 			}
 			if( part.indexOf("*") < 0 ) {
@@ -668,16 +666,53 @@ class DataFiles {
 			}
 		}
 
+		var files = [];
 		for( dir in sheet.props.dataFiles.split(";") ) {
-			if (cache.exists(dir)) {
-				for (f in cache.get(dir))
-					loadFile(f);
+			var cacheEntry = cache.get(dir);
+			if( cacheEntry == null ) {
+				cacheEntry = [];
+				gatherRec(dir.split("/"),[],0,cacheEntry);
+				cache.set(dir, cacheEntry);
+			}
+			for( f in cacheEntry )
+				files.push(f);
+		}
+		return files;
+	}
+
+	static function loadSheet( sheet : cdb.Sheet, files : Array<String>, filesLines : Map<String, Map<String, FileLines>> ) {
+		var sheetName = getTypeName(sheet);
+		var root : DataDef = {
+			name : null,
+			path : null,
+			lines : null,
+			linesData : null,
+			subs : [],
+			msubs : new Map(),
+		};
+
+		for( file in files ) {
+			var fl = filesLines.get(file).get(sheetName);
+			if( fl == null )
 				continue;
+
+			var content = root;
+			var path = [];
+			for( p in file.split("/") ) {
+				var n = content.msubs.get(p);
+				path.push(p);
+				if( n == null ) {
+					n = { name : p.split(".").shift(), path : path.join("/"), lines : [], linesData: [], subs : [], msubs : new Map() };
+					content.subs.push(n);
+					content.msubs.set(p, n);
+				}
+				content = n;
 			}
 
-			var cacheEntry = [];
-			gatherRec(dir.split("/"),[],0,cacheEntry);
-			cache.set(dir, cacheEntry);
+			for( i in 0...fl.lines.length ) {
+				content.linesData.push(fl.linesData[i]);
+				content.lines.push(fl.lines[i]);
+			}
 		}
 
 		var lines : Array<Dynamic> = [];
@@ -708,8 +743,9 @@ class DataFiles {
 			browseRec(r, 0);
 	}
 
-	public static function getPrefabsByPath(prefab: hrt.prefab.Prefab, path : String ) : Array<hrt.prefab.Prefab> {
-		function rec(prefab: hrt.prefab.Prefab, parts : Array<String>, index : Int, out : Array<hrt.prefab.Prefab> ) {
+	/** Returns the prefabs of the prefab json `prefab` matching `path` **/
+	public static function getPrefabsByPath(prefab: Dynamic, path : String ) : Array<Dynamic> {
+		function rec(prefab: Dynamic, parts : Array<String>, index : Int, out : Array<Dynamic> ) {
 			var name = parts[index++];
 			if (name == hrt.prefab.Prefab.emptyNameReplacement)
 				name = "";
@@ -717,11 +753,12 @@ class DataFiles {
 				out.push(prefab);
 				return;
 			}
-			var r = name.indexOf('*') < 0 ? null : new EReg("^"+name.split("*").join(".*")+"$","");
-			for( c in prefab.children ) {
-				var cname = c.name;
-				if( cname == null ) cname = c.getDefaultEditorName();
-				if( r == null ? c.name == name : r.match(cname) )
+			var children : Array<Dynamic> = prefab.children;
+			if( children == null )
+				return;
+			for( c in children ) {
+				var cname : String = c.name ?? "";
+				if( cname == name )
 					rec(c, parts, index, out);
 			}
 		}
@@ -789,7 +826,7 @@ class DataFiles {
 		return obj;
 	}
 
-	public static function save( ?onSaveBase, ?force, ?prevSheetNames : Map<String,String> ) {
+	public static function save( ?onSaveBase : Void -> Void, ?force : Bool, ?prevSheetNames : Map<String,String> ) {
 		var ide = Ide.inst;
 		var temp = [];
 		var titles = [];
@@ -824,14 +861,14 @@ class DataFiles {
 					var str = haxe.Json.stringify(o);
 					if( str != p.origin || force ) {
 						p.origin = str;
-						var pf : hrt.prefab.Prefab = prefabs.get(p.file);
+						var pf : Dynamic = prefabs.get(p.file);
 						if( pf == null ) {
-							pf = ide.loadPrefab(p.file);
+							pf = loadPrefabData(p.file);
 							prefabs.set(p.file, pf);
 						}
 						var all = getPrefabsByPath(pf, p.path);
-						var inst : hrt.prefab.Prefab = all[p.index];
-						if( inst == null || inst.getCdbType() != prevName )
+						var inst : Dynamic = all[p.index];
+						if( inst == null || inst.props == null || Reflect.field(inst.props, "$cdbtype") != prevName )
 							ide.error("Can't save prefab data "+p.path);
 						else {
 							if( prevName != sheetName ) Reflect.setField(o,"$cdbtype", sheetName);
@@ -855,8 +892,8 @@ class DataFiles {
 
 			#if editor
 			var backup = [];
-			hide.view.Prefab.cleanupPrefabCdb(pf, backup);
-			@:privateAccess var out = ide.toJSON(pf.serialize());
+			iterCdbPrefabs(pf, (p, type, _, _) -> hide.comp.cdb.Editor.cleanupOptionalLines([p.props], base.getSheet(type), backup));
+			var out = ide.toJSON(pf);
 			hide.comp.cdb.Editor.restoreOptionals(backup);
 
 			if( force ) {

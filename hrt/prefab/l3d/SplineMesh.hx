@@ -20,21 +20,6 @@ class SplineMeshObject extends h3d.scene.Mesh {
 		this.spline = spline;
 		material.mainPass.addShader(new SplineUV());
 	}
-
-	override function addBoundsRec( b : h3d.col.Bounds, relativeTo : h3d.Matrix ) {
-		super.addBoundsRec(b, relativeTo);
-		if( spline == null || primitive == null || flags.has(FIgnoreBounds) )
-			return;
-
-		if (spline.samples == null || spline.samples.length == 0)
-			@:privateAccess spline.sample( (spline.shape == hrt.prefab.l3d.Spline.SplineShape.Linear) ? 1 : spline.sampleResolution);
-
-		for (s in @:privateAccess spline.samples) {
-			var p = s.pos.transformed(spline.getAbsPos(true));
-			p = relativeTo != null ? p.transformed(relativeTo) : p;
-			b.addPoint(p);
-		}
-	}
 }
 
 @:prefabIcon(HuiRes.ui.icons.prefab.spline_mesh)
@@ -77,7 +62,7 @@ class SplineMesh extends hrt.prefab.Object3D {
 		super.updateInstance(propName);
 		disposeSplineMesh();
 
-		if ( spline == null || spline.samples.length < 2 )
+		if ( spline == null || spline.localSamples.length < 2 )
 			computeDefaultSplineMesh();
 		else
 			computeSplineMesh();
@@ -182,7 +167,7 @@ class SplineMesh extends hrt.prefab.Object3D {
 	}
 
 	function computeSplineMesh() {
-		var samples = spline.samples;
+		var samples = spline.localSamples;
 		var bounds = new h3d.col.Bounds();
 
 		var vertexPerPoint = vertexPerPoint;
@@ -192,25 +177,23 @@ class SplineMesh extends hrt.prefab.Object3D {
 		var vertexData = new hxd.FloatBuffer(splineDataSize * count);
 
 		var localPoints = getLocalPoints();
-		var splineInvAbsPos = spline.getAbsPos(true).getInverse();
 
 		var dataPos = 0;
 		for ( s in 0...count ) {
 			var spacing = s * spacing - spacing * (count - 1) * 0.5;
 			var uv = 0.0;
-			var prevPos = spline.globalToLocal(samples[0].pos);
+			var prevPos = samples[0].pos;
 			for ( i in 0...samples.length ) {
-				var absPos = spline.globalToLocal(samples[i].pos);
-				var curPos = absPos.clone();
+				var curPos = samples[i].pos;
 				uv += curPos.distance(prevPos);
-				var tangent = samples[i].tangentOut.transformed3x3(splineInvAbsPos).normalized();
+				var tangent = samples[i].tangentOut.normalized();
 				var q = new h3d.Quat();
 				q.initDirection(tangent);
 				var euler = q.toEuler();
 				var trs = new h3d.Matrix();
 				trs.initTranslation(0.0, spacing, 0.0);
 				trs.rotate(euler.x, euler.y, euler.z);
-				trs.translate(absPos.x, absPos.y, absPos.z);
+				trs.translate(curPos.x, curPos.y, curPos.z);
 				fillPoint(vertexData, dataPos, localPoints, trs, uv, bounds);
 				dataPos += vertexDataStride * vertexPerPoint;
 				prevPos = curPos;

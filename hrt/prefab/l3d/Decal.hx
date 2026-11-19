@@ -15,6 +15,7 @@ class Decal extends Object3D {
 	@:s var pbrMap : String;
 	@:s var albedoStrength : Float = 1.0;
 	@:s var normalStrength: Float = 1.0;
+	@:s var surfaceNormal : Bool = true;
 	@:s var pbrStrength: Float = 1.0;
 	@:s var emissiveStrength: Float = 0.0;
 	@:s var fadePower : Float = 1.0;
@@ -177,6 +178,7 @@ class Decal extends Object3D {
 					shader.emissiveStrength = emissiveStrength;
 					shader.USE_ALBEDO = albedoStrength != 0&& shader.albedoTexture != null;
 					shader.USE_NORMAL = normalStrength != 0 && shader.normalTexture != null;
+					shader.SURFACE_NORMAL = surfaceNormal;
 					shader.CENTERED = centered;
 					commonSetup(shader);
 				}
@@ -240,6 +242,7 @@ class Decal extends Object3D {
 					<range(0, 1) field={albedoStrength}/>
 					<file type="texture" field={normalMap}/>
 					<range(0, 1) field={normalStrength}/>
+					<checkbox field={surfaceNormal}/>
 					<file type="texture" field={pbrMap}/>
 					<range(0, 1) field={pbrStrength}/>
 					<range(0, 10) field={emissive}/>
@@ -327,7 +330,8 @@ class Decal extends Object3D {
 					<br/><input type="range" min="0" max="1" field="albedoStrength"/></dd>
 
 					<dt>Normal</dt><dd><input type="texturepath" field="normalMap"/>
-					<br/><input type="range" min="0" max="1" field="normalStrength"/></dd>
+					<br/><input type="range" min="0" max="1" field="normalStrength"/>
+					<br/><label><input type="checkbox" field="surfaceNormal"/> Surface normal</label></dd>
 
 					<dt>PBR</dt><dd><input type="texturepath" field="pbrMap"/>
 					<br/><input type="range" min="0" max="1" field="pbrStrength"/></dd>
