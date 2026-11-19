@@ -2505,7 +2505,7 @@ class SceneEditor {
 					}
 				}
 			}
-		});
+		}, [path]);
 
 		view.rebuild();
 	}

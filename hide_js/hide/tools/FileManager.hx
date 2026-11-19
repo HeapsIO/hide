@@ -683,9 +683,8 @@ class FileManager {
 	}
 
 	public static function doRename(operations: Array<{from: String, to: String}>) {
-		for (op in operations) {
+		for (op in operations)
 			onRenameRec(op.from, "/" + op.to);
-		}
 
 		replacePathInFiles(operations);
 	}
@@ -764,103 +763,9 @@ class FileManager {
 		if( !wasRenamed )
 			sys.FileSystem.rename(ide.getPath(path), ide.getPath(newPath));
 
-		var dataDir = new haxe.io.Path(path);
-		if( dataDir.ext != "dat" ) {
-			dataDir.ext = "dat";
-			var dataPath = dataDir.toString();
-			if( sys.FileSystem.isDirectory(ide.getPath(dataPath)) ) {
-				var destPath = new haxe.io.Path(name);
-				destPath.ext = "dat";
-				onRenameRec(dataPath, destPath.toString());
-			}
-		}
-
-		// update Materials.props if an FBX is moved/renamed
-		var newSysPath = new haxe.io.Path(name);
-		var oldSysPath = new haxe.io.Path(path);
-		if (newSysPath.dir == null) {
-			newSysPath.dir = oldSysPath.dir;
-		}
-		if (newSysPath.ext?.toLowerCase() == "fbx" && oldSysPath.ext?.toLowerCase() == "fbx") {
-			function remLeadingSlash(s:String) {
-				if(StringTools.startsWith(s,"/")) {
-					return s.length > 1 ? s.substr(1) : "";
-				}
-				return s;
-			}
-
-			var oldMatPropsPath = ide.getPath(remLeadingSlash((oldSysPath.dir ?? "") + "/materials.props"));
-
-			if (sys.FileSystem.exists(oldMatPropsPath)) {
-				var newMatPropsPath = ide.getPath(remLeadingSlash((newSysPath.dir ?? "") + "/materials.props"));
-
-				var oldMatProps = haxe.Json.parse(sys.io.File.getContent(oldMatPropsPath));
-
-				var newMatProps : Dynamic =
-					if (sys.FileSystem.exists(newMatPropsPath))
-						haxe.Json.parse(sys.io.File.getContent(newMatPropsPath))
-					else {};
-
-				var oldNameExt = oldSysPath.file + "." + oldSysPath.ext;
-				var newNameExt = newSysPath.file + "." + newSysPath.ext;
-				function moveRec(originalData: Dynamic, oldData:Dynamic, newData: Dynamic) {
-
-					for (field in Reflect.fields(originalData)) {
-						if (StringTools.endsWith(field, oldNameExt)) {
-							var innerData = Reflect.getProperty(originalData, field);
-							var newField = StringTools.replace(field, oldNameExt, newNameExt);
-							Reflect.setProperty(newData, newField, innerData);
-							Reflect.deleteField(oldData, field);
-						}
-						else {
-							var originalInner = Reflect.getProperty(originalData, field);
-							if (Type.typeof(originalInner) != TObject)
-								continue;
-
-							var oldInner = Reflect.getProperty(oldData, field);
-							var newInner = Reflect.getProperty(newData, field) ?? {};
-							moveRec(originalInner, oldInner, newInner);
-
-							// Avoid creating empty fields
-							if (Reflect.fields(newInner).length > 0) {
-								Reflect.setProperty(newData, field, newInner);
-							}
-
-							// Cleanup removed fields in old props
-							if (Reflect.fields(oldInner).length == 0) {
-								Reflect.deleteField(oldData, field);
-							}
-						}
-					}
-				}
-
-				var sourceData = oldMatProps;
-				var oldDataToSave = oldMatPropsPath == newMatPropsPath ? newMatProps : haxe.Json.parse(haxe.Json.stringify(oldMatProps));
-
-				moveRec(oldMatProps, oldDataToSave, newMatProps);
-				sys.io.File.saveContent(newMatPropsPath, hide.Ide.inst.toJSON(newMatProps));
-
-				if (oldMatPropsPath != newMatPropsPath) {
-					if (Reflect.fields(oldMatProps).length > 0) {
-						sys.io.File.saveContent(oldMatPropsPath, hide.Ide.inst.toJSON(oldDataToSave));
-					} else {
-						sys.FileSystem.deleteFile(oldMatPropsPath);
-					}
-				}
-
-				// Clear caches
-				@:privateAccess
-				{
-					if (h3d.mat.MaterialSetup.current != null) {
-						h3d.mat.MaterialSetup.current.database.db.remove(ide.makeRelative(oldMatPropsPath));
-						h3d.mat.MaterialSetup.current.database.db.remove(ide.makeRelative(newMatPropsPath));
-					}
-					hxd.res.Loader.currentInstance.cache.remove(ide.makeRelative(oldMatPropsPath));
-					hxd.res.Loader.currentInstance.cache.remove(ide.makeRelative(newMatPropsPath));
-				}
-			}
-
-		}
+		moveDatDir(path, newPath);
+		renameAnimationProps(path, newPath);
+		moveMaterialProps(path, newPath);
 
 		return true;
 	}
@@ -893,7 +798,118 @@ class FileManager {
 			}
 		}
 
-		hide.Ide.inst.filterPaths(filter);
+		hide.Ide.inst.filterPaths(filter, [for (op in operations) op.from]);
+	}
+
+	static function renameAnimationProps(path: String, newPath: String) {
+		var oldFile = new haxe.io.Path(path);
+		var newFile = new haxe.io.Path(newPath);
+		var modelExts = ["fbx", "hmd"];
+		if (!modelExts.contains(oldFile.ext?.toLowerCase()) || !modelExts.contains(newFile.ext?.toLowerCase()))
+			return;
+
+		var oldProps = new haxe.io.Path(path);
+		oldProps.ext = "props";
+		var newProps = new haxe.io.Path(newPath);
+		newProps.ext = "props";
+		var ide = hide.Ide.inst;
+		if (!sys.FileSystem.exists(ide.getPath(oldProps.toString())))
+			return;
+		onRenameRec(oldProps.toString(), "/" + newProps.toString());
+
+		var oldKey = oldFile.file + "." + oldFile.ext;
+		var newKey = newFile.file + "." + newFile.ext;
+		if (oldKey == newKey)
+			return;
+		var propsPath = ide.getPath(newProps.toString());
+		var props : h3d.prim.ModelCache.HideProps = haxe.Json.parse(sys.io.File.getContent(propsPath));
+		if (props.animations == null || !props.animations.exists(oldKey))
+			return;
+		props.animations.set(newKey, props.animations.get(oldKey));
+		props.animations.remove(oldKey);
+		sys.io.File.saveContent(propsPath, ide.toJSON(props));
+	}
+
+	static function moveDatDir(path: String, newPath: String) {
+		var dataDir = new haxe.io.Path(path);
+		if (dataDir.ext == "dat") {
+			return;
+		}
+		dataDir.ext = "dat";
+		if (!sys.FileSystem.isDirectory(hide.Ide.inst.getPath(dataDir.toString()))) {
+			return;
+		}
+		var destDir = new haxe.io.Path(newPath);
+		destDir.ext = "dat";
+		onRenameRec(dataDir.toString(), "/" + destDir.toString());
+	}
+
+	static function moveMaterialProps(path: String, newPath: String) {
+		var oldFile = new haxe.io.Path(path);
+		var newFile = new haxe.io.Path(newPath);
+		if (oldFile.ext?.toLowerCase() != "fbx" || newFile.ext?.toLowerCase() != "fbx") {
+			return;
+		}
+
+		var ide = hide.Ide.inst;
+		var oldMatPropsPath = ide.getPath(haxe.io.Path.join([oldFile.dir, "materials.props"]));
+		if (!sys.FileSystem.exists(oldMatPropsPath)) {
+			return;
+		}
+		var newMatPropsPath = ide.getPath(haxe.io.Path.join([newFile.dir, "materials.props"]));
+
+		var oldMatProps = haxe.Json.parse(sys.io.File.getContent(oldMatPropsPath));
+		var newMatProps : Dynamic = sys.FileSystem.exists(newMatPropsPath) ? haxe.Json.parse(sys.io.File.getContent(newMatPropsPath)) : {};
+
+		var oldNameExt = oldFile.file + "." + oldFile.ext;
+		var newNameExt = newFile.file + "." + newFile.ext;
+		function moveRec(originalData: Dynamic, oldData: Dynamic, newData: Dynamic) {
+			for (field in Reflect.fields(originalData)) {
+				if (StringTools.endsWith(field, oldNameExt)) {
+					var innerData = Reflect.getProperty(originalData, field);
+					var newField = StringTools.replace(field, oldNameExt, newNameExt);
+					Reflect.setProperty(newData, newField, innerData);
+					Reflect.deleteField(oldData, field);
+					continue;
+				}
+
+				var originalInner = Reflect.getProperty(originalData, field);
+				if (Type.typeof(originalInner) != TObject)
+					continue;
+
+				var oldInner = Reflect.getProperty(oldData, field);
+				var newInner = Reflect.getProperty(newData, field) ?? {};
+				moveRec(originalInner, oldInner, newInner);
+
+				if (Reflect.fields(newInner).length > 0) {
+					Reflect.setProperty(newData, field, newInner);
+				}
+				if (Reflect.fields(oldInner).length == 0) {
+					Reflect.deleteField(oldData, field);
+				}
+			}
+		}
+
+		var oldDataToSave = oldMatPropsPath == newMatPropsPath ? newMatProps : haxe.Json.parse(haxe.Json.stringify(oldMatProps));
+		moveRec(oldMatProps, oldDataToSave, newMatProps);
+		sys.io.File.saveContent(newMatPropsPath, ide.toJSON(newMatProps));
+
+		if (oldMatPropsPath != newMatPropsPath) {
+			if (Reflect.fields(oldMatProps).length > 0) {
+				sys.io.File.saveContent(oldMatPropsPath, ide.toJSON(oldDataToSave));
+			} else {
+				sys.FileSystem.deleteFile(oldMatPropsPath);
+			}
+		}
+
+		@:privateAccess {
+			if (h3d.mat.MaterialSetup.current != null) {
+				h3d.mat.MaterialSetup.current.database.db.remove(ide.makeRelative(oldMatPropsPath));
+				h3d.mat.MaterialSetup.current.database.db.remove(ide.makeRelative(newMatPropsPath));
+			}
+			hxd.res.Loader.currentInstance.cache.remove(ide.makeRelative(oldMatPropsPath));
+			hxd.res.Loader.currentInstance.cache.remove(ide.makeRelative(newMatPropsPath));
+		}
 	}
 }
 
