@@ -146,6 +146,7 @@ class Timeline extends hide.ui.View<{}> {
 		keys.register("delete", deleteSelection);
 		keys.register("selectAll", () -> setSelection(markers.copy()));
 		keys.register("playPause", () -> setPaused(!isPaused()));
+		keys.register("timeline.switchUnit", switchUnit);
 
 		refresh();
 
@@ -446,6 +447,10 @@ class Timeline extends hide.ui.View<{}> {
 				{ label: "Seconds", radio: () -> unit == Second, click: () -> setUnit(Second) },
 			]}
 		]);
+	}
+
+	function switchUnit() {
+		setUnit(unit == Second ? Frame : Second);
 	}
 
 	function onWheel(e : WheelEvent) {
