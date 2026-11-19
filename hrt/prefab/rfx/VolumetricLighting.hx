@@ -1,5 +1,57 @@
 package hrt.prefab.rfx;
 
+class VolumetricLightingFroxelMedium extends hxsl.Shader {
+
+	static var SRC = {
+
+		@global var camera : {
+			var position : Vec3;
+		};
+
+		@param var color : Vec3;
+		@param var fogDensity : Float;
+		@param var fogBottom : Float;
+		@param var fogTop : Float;
+		@param var fogHeightFalloff : Float;
+
+		@param var secondFogColor : Vec3;
+		@param var secondFogDensity : Float;
+		@param var secondFogBottom : Float;
+		@param var secondFogTop : Float;
+		@param var secondFogHeightFalloff : Float;
+
+		@param var emissive : Vec3;
+		@param var offsetCamHeight : Float;
+		@param var startDistance : Float;
+		@param var envPower : Float;
+		@param var envColorMult : Float;
+
+		var froxelWorldPos : Vec3;
+		var fogExtinction : Float;
+		var fogAlbedo : Vec3;
+		var fogEmissive : Vec3;
+		var fogAmbient : Float;
+		var fogEnvTint : Float;
+
+		function heightLayer( z : Float, bottom : Float, top : Float, falloff : Float, density : Float ) : Float {
+			var h = smoothstep(0.0, 1.0, (z - bottom) / (top - bottom));
+			return exp(-h * falloff) * (1.0 - h) * density;
+		}
+
+		function main() {
+			var camOffset = offsetCamHeight * camera.position.z;
+			var first = heightLayer(froxelWorldPos.z, fogBottom, fogTop + camOffset, fogHeightFalloff, fogDensity);
+			var second = heightLayer(froxelWorldPos.z, secondFogBottom, secondFogTop + camOffset, secondFogHeightFalloff, secondFogDensity);
+			var extinction = max(first, second);
+			fogExtinction = length(froxelWorldPos - camera.position) < startDistance ? 0.0 : extinction;
+			fogAlbedo = mix(color, secondFogColor, saturate(second / max(extinction, 1e-10)));
+			fogEmissive = emissive;
+			fogAmbient = envPower;
+			fogEnvTint = envColorMult;
+		}
+	}
+}
+
 class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 	static var SRC = {
@@ -417,10 +469,22 @@ class VolumetricLighting extends RendererFX {
 
 	@:s public var offsetCamHeight : Bool = false;
 
+	@:s public var useFroxels : Bool = false;
+	@:s public var froxelNear : Float = 1.0;
+	@:s public var froxelFar : Float = 200.0;
+
 	function execute(r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step) {
 		if( step == BeforeTonemapping ) {
 			if ( distanceOpacity <= 0.0 )
 				return;
+			var froxels = getFroxels(r);
+			if( froxels != null ) {
+				var pbr = cast(r, h3d.scene.pbr.Renderer);
+				pbr.ctx.engine.pushTarget(pbr.textures.hdr, 0, 0, NotBound);
+				froxels.apply(pbr);
+				pbr.ctx.engine.popTarget();
+				return;
+			}
 
 			var r = cast(r, h3d.scene.pbr.Renderer);
 			r.mark("VolumetricLighting");
@@ -500,12 +564,62 @@ class VolumetricLighting extends RendererFX {
 		}
 	}
 
+	function froxelsEnabled() {
+		return useFroxels;
+	}
+
+	function getFroxels( r : h3d.scene.Renderer ) : h3d.scene.pbr.Froxels {
+		if( !froxelsEnabled() || !r.ctx.engine.driver.hasFeature(ComputeShaders) )
+			return null;
+		var pbr = Std.downcast(r, h3d.scene.pbr.Renderer);
+		if( pbr == null || pbr.renderMode != Default )
+			return null;
+		return pbr.getFroxels();
+	}
+
+	var froxelMedium : VolumetricLightingFroxelMedium;
+	function getFroxelMedium() : hxsl.Shader {
+		if( froxelMedium == null )
+			froxelMedium = new VolumetricLightingFroxelMedium();
+		var m = froxelMedium;
+		m.color.load(h3d.Vector.fromColor(color));
+		m.fogDensity = fogDensity * 0.002;
+		m.fogBottom = fogBottom;
+		m.fogTop = fogTop;
+		m.fogHeightFalloff = fogHeightFalloff;
+		m.secondFogColor.load(h3d.Vector.fromColor(secondFogColor));
+		m.secondFogDensity = secondFogDensity * 0.002;
+		m.secondFogBottom = secondFogBottom;
+		m.secondFogTop = secondFogTop;
+		m.secondFogHeightFalloff = secondFogHeightFalloff;
+		var e = h3d.Vector.fromColor(emissiveColor);
+		m.emissive.set(e.x * emissiveIntensity, e.y * emissiveIntensity, e.z * emissiveIntensity);
+		m.offsetCamHeight = offsetCamHeight ? 1.0 : 0.0;
+		m.startDistance = startDistance;
+		m.envPower = fogEnvPower;
+		m.envColorMult = fogEnvColorMult;
+		return m;
+	}
+
 	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+		if( step == Lighting ) {
+			var froxels = getFroxels(r);
+			if( froxels != null ) {
+				froxels.pointLights = mode == All;
+				froxels.spotLights = mode != DirectionalOnly;
+				froxels.update(cast r, froxelNear, froxelFar, getFroxelMedium());
+			}
+		}
 		if ( !AFTER_FX )
 			execute(r, step);
 	}
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+		if( step == AfterTonemapping ) {
+			var froxels = getFroxels(r);
+			if( froxels != null && froxels.debugMode != 0 )
+				froxels.drawDebug(cast r);
+		}
 		if ( AFTER_FX )
 			execute(r, step);
 	}
@@ -627,6 +741,9 @@ class VolumetricLighting extends RendererFX {
 		v.AFTER_FX = v1.AFTER_FX;
 		v.offsetCamHeight = v1.offsetCamHeight;
 		v.blend = v1.blend;
+		v.useFroxels = v1.useFroxels;
+		v.froxelNear = v1.froxelNear;
+		v.froxelFar = v1.froxelFar;
 
 		return { effect : cast v, setFactor : (f : Float) -> {
 			v.intensity = hxd.Math.lerp(v1.intensity, v2.intensity, f);
@@ -677,6 +794,9 @@ class VolumetricLighting extends RendererFX {
 			v.AFTER_FX = f < 0.5 ? v1.AFTER_FX : v2.AFTER_FX;
 			v.offsetCamHeight = f < 0.5 ? v1.offsetCamHeight : v2.offsetCamHeight;
 			v.blend = f < 0.5 ? v1.blend : v2.blend;
+			v.useFroxels = f < 0.5 ? v1.useFroxels : v2.useFroxels;
+			v.froxelNear = f < 0.5 ? v1.froxelNear : v2.froxelNear;
+			v.froxelFar = f < 0.5 ? v1.froxelFar : v2.froxelFar;
 		} };
 	}
 
@@ -737,6 +857,11 @@ class VolumetricLighting extends RendererFX {
 					<range(0,1) field={ditheringIntensity} />
 					<range(0,200) label="Fog Quality Distance" field={maxCamDist} />
 					<select label="Lighting Mode" field={mode} label-color={Red} tooltip="Impact performances"/>
+				</category>
+				<category("Froxels")>
+					<checkbox label="Use Froxels" field={useFroxels} />
+					<range(0.1,10) label="Near [m]" field={froxelNear} />
+					<range(10,5000) label="Far [m]" field={froxelFar} />
 				</category>
 			</root>
 			);
