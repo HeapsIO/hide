@@ -45,6 +45,10 @@ class Gradient {
 		return data;
 	}
 
+	static var tmpColor = new ColorSpace.Color();
+	static var tmpStart = new Vector4();
+	static var tmpEnd = new Vector4();
+
 	public static function evalData(data : GradientData, position : Float, ?outVector : Vector4) : Vector4 {
 		if (outVector == null) outVector = new Vector4();
 		var i : Int = 0;
@@ -69,8 +73,10 @@ class Gradient {
 
 		var func = ColorSpace.colorModes[data.colorMode];
 
-		var start = func.ARGBToValue(ColorSpace.Color.fromInt(c1), null);
-		var end = func.ARGBToValue(ColorSpace.Color.fromInt(c2), null);
+		tmpColor.load(c1);
+		var start = func.ARGBToValue(tmpColor, tmpStart);
+		tmpColor.load(c2);
+		var end = func.ARGBToValue(tmpColor, tmpEnd);
 
 		inline function lerp_angle(a:Float,b:Float,t:Float) : Float {
 			var diff = (b - a) % 1.0;
@@ -118,7 +124,7 @@ class Gradient {
 
 		}
 
-		var tmp = func.valueToARGB(outVector, null);
+		var tmp = func.valueToARGB(outVector, tmpColor);
 		ColorSpace.iRGBtofRGB(tmp, outVector);
 
 		return outVector;
