@@ -5,6 +5,8 @@ import h2d.col.Point;
 class Text3DPrimitive extends h2d.TileGroup.TileLayerContent {
 
 	public var thickness = 0.;
+	public var thicknessX = 0.;
+	public var thicknessY = 0.;
 	public var cutoff = 0.5;
 	public var image : hxd.res.Image;
 
@@ -114,16 +116,17 @@ class Text3DPrimitive extends h2d.TileGroup.TileLayerContent {
 			loops.push({ pts : loop, area : area, holes : [] });
 		}
 
-		inline function vert( px : Float, py : Float, pz : Float, nrmX : Float, nrmY : Float, nrmZ : Float ) {
+		inline function vert( px : Float, py : Float, pz : Float, nrmX : Float, nrmY : Float, nrmZ : Float, side : Float ) {
 			out.push(px);
 			out.push(py);
 			out.push(pz);
 			out.push(nrmX);
 			out.push(nrmY);
 			out.push(nrmZ);
-			out.push(0);
+			out.push(side);
 			out.push(0);
 		}
+		var dx = thicknessX, dy = thicknessY, dz = -thickness;
 
 		var outers = [for( l in loops ) if( l.area > 0 ) l];
 		for( h in loops ) {
@@ -158,12 +161,12 @@ class Text3DPrimitive extends h2d.TileGroup.TileLayerContent {
 					b = c;
 					c = swap;
 				}
-				vert(a.x, a.y, 0, 0, 0, 1);
-				vert(b.x, b.y, 0, 0, 0, 1);
-				vert(c.x, c.y, 0, 0, 0, 1);
-				vert(a.x, a.y, -thickness, 0, 0, -1);
-				vert(c.x, c.y, -thickness, 0, 0, -1);
-				vert(b.x, b.y, -thickness, 0, 0, -1);
+				vert(a.x, a.y, 0, 0, 0, 1, 0);
+				vert(b.x, b.y, 0, 0, 0, 1, 0);
+				vert(c.x, c.y, 0, 0, 0, 1, 0);
+				vert(a.x + dx, a.y + dy, dz, 0, 0, -1, 0);
+				vert(c.x + dx, c.y + dy, dz, 0, 0, -1, 0);
+				vert(b.x + dx, b.y + dy, dz, 0, 0, -1, 0);
 			}
 		}
 
@@ -172,19 +175,20 @@ class Text3DPrimitive extends h2d.TileGroup.TileLayerContent {
 			var n = pts.length;
 			var normals = [for( k in 0...n ) {
 				var p = pts[k], q = pts[(k + 1) % n];
-				new Point(q.y - p.y, p.x - q.x).normalized();
+				var ex = q.x - p.x, ey = q.y - p.y;
+				new h3d.Vector(thickness * ey, -thickness * ex, ey * dx - ex * dy).normalized();
 			}];
 			for( k in 0...n ) {
 				var p = pts[k], q = pts[(k + 1) % n];
 				var nc = normals[k], np = normals[(k + n - 1) % n], nn = normals[(k + 1) % n];
 				var na = nc.dot(np) > 0.8 ? nc.add(np).normalized() : nc;
 				var nb = nc.dot(nn) > 0.8 ? nc.add(nn).normalized() : nc;
-				vert(p.x, p.y, 0, na.x, na.y, 0);
-				vert(p.x, p.y, -thickness, na.x, na.y, 0);
-				vert(q.x, q.y, 0, nb.x, nb.y, 0);
-				vert(q.x, q.y, 0, nb.x, nb.y, 0);
-				vert(p.x, p.y, -thickness, na.x, na.y, 0);
-				vert(q.x, q.y, -thickness, nb.x, nb.y, 0);
+				vert(p.x, p.y, 0, na.x, na.y, na.z, 1);
+				vert(p.x + dx, p.y + dy, dz, na.x, na.y, na.z, 1);
+				vert(q.x, q.y, 0, nb.x, nb.y, nb.z, 1);
+				vert(q.x, q.y, 0, nb.x, nb.y, nb.z, 1);
+				vert(p.x + dx, p.y + dy, dz, na.x, na.y, na.z, 1);
+				vert(q.x + dx, q.y + dy, dz, nb.x, nb.y, nb.z, 1);
 			}
 		}
 	}
@@ -276,8 +280,8 @@ class Text3DPrimitive extends h2d.TileGroup.TileLayerContent {
 	override function getBounds() {
 		var bounds = new h3d.col.Bounds();
 		if (xMax > xMin && yMax > yMin) {
-			bounds.setMin(new h3d.col.Point(xMin, yMin, -thickness));
-			bounds.setMax(new h3d.col.Point(xMax, yMax, 0.1));
+			bounds.setMin(new h3d.col.Point(xMin + Math.min(thicknessX, 0), yMin + Math.min(thicknessY, 0), -thickness));
+			bounds.setMax(new h3d.col.Point(xMax + Math.max(thicknessX, 0), yMax + Math.max(thicknessY, 0), 0.1));
 		}
 		return bounds;
 	}
@@ -338,6 +342,26 @@ class SignedDistanceField3D extends hxsl.Shader {
 
 }
 
+class Text3DSideColor extends hxsl.Shader {
+
+	static var SRC = {
+
+		@input var input : { var uv : Vec2; };
+		@param var sideColor : Vec4;
+		var pixelColor : Vec4;
+		var side : Float;
+
+		function vertex() {
+			side = input.uv.x;
+		}
+
+		function fragment() {
+			pixelColor.rgb = mix(pixelColor.rgb, sideColor.rgb, side);
+		}
+	}
+
+}
+
 class Text3DMesh extends h3d.scene.Mesh {
 
 	public var font(get, set) : h2d.Font;
@@ -388,6 +412,9 @@ class Text3D extends Object3D {
 	@:s var letterSpacing : Float = 0;
 	@:s var align : Int = 0;
 	@:s var thickness : Float = 0;
+	@:s var thicknessX : Float = 0;
+	@:s var thicknessY : Float = 0;
+	@:s var sideColor : Int = 0xFFFFFF;
 	@:s var pathFont : String;
 
 	@:s public var contentText : String = "Empty string";
@@ -448,6 +475,9 @@ class Text3D extends Object3D {
 		new hide.Element('<dt>Smoothing</dt><dd><input type="range" min="0" max="1" field="smoothing" /></dd>').appendTo(gr);
 		new hide.Element('<dt>Letter Spacing</dt><dd><input type="range" min="-5" max="5" field="letterSpacing" /></dd>').appendTo(gr);
 		new hide.Element('<dt>Thickness</dt><dd><input type="range" min="0" max="10" field="thickness" /></dd>').appendTo(gr);
+		new hide.Element('<dt>Thickness X</dt><dd><input type="range" min="-10" max="10" field="thicknessX" /></dd>').appendTo(gr);
+		new hide.Element('<dt>Thickness Y</dt><dd><input type="range" min="-10" max="10" field="thicknessY" /></dd>').appendTo(gr);
+		new hide.Element('<dt>Side Color</dt><dd><input type="color" field="sideColor" /></dd>').appendTo(gr);
 
 		ctx.properties.add(parameters, this, function(pname) {
 			ctx.onChange(this, pname);
@@ -475,6 +505,9 @@ class Text3D extends Object3D {
 				<range(0, 1) field={smoothing}/>
 				<slider field={letterSpacing}/>
 				<range(0, 10) field={thickness}/>
+				<range(-10, 10) field={thicknessX}/>
+				<range(-10, 10) field={thicknessY}/>
+				<color field={sideColor}/>
 			</category>
 		);
 	}
@@ -505,6 +538,8 @@ class Text3D extends Object3D {
 		}
 		var prim : Text3DPrimitive = cast mesh.primitive;
 		prim.thickness = thickness;
+		prim.thicknessX = thicknessX;
+		prim.thicknessY = thicknessY;
 		prim.cutoff = cutoff;
 		prim.image = thickness > 0 ? hxd.res.Loader.currentInstance.load(h2dFont.tile.getTexture().name).toImage() : null;
 		mesh.text = text;
@@ -515,11 +550,18 @@ class Text3D extends Object3D {
 		if (shader != null) {
 			mesh.material.mainPass.removeShader(shader);
 		}
+		var sides = mesh.material.mainPass.getShader(Text3DSideColor);
+		if (sides != null) {
+			mesh.material.mainPass.removeShader(sides);
+		}
 		if (thickness > 0) {
 			mesh.material.texture = null;
 			mesh.material.blendMode = None;
 			mesh.material.shadows = true;
 			mesh.material.color.setColor(0xFF000000 | color);
+			sides = new Text3DSideColor();
+			sides.sideColor = h3d.Vector4.fromColor(sideColor);
+			mesh.material.mainPass.addShader(sides);
 		} else {
 			mesh.material.texture = h2dFont.tile.getTexture();
 			mesh.material.blendMode = Alpha;
