@@ -79,6 +79,8 @@ private typedef ParamDef = { name : String, old : String, group : Group, def : A
 	- The curves are FX curves (`hrt.prefab.fx.Curve`, type `fxcurve`).
 	- A reference to a curve has no scale or offset: a scaled reference, of the data or made by the
 	  upgrade, becomes a copy of its curve with the scale and offset applied to its keys.
+	- The polygons (`polygonPass`): a disabled one is removed, a subdivided quad becomes a grid, the quad
+	  the particles of an emitter are drawn with goes (the emitter draws a quad without one).
 	- The overrides of the references are rewritten for the upgraded files they override (see
 	  `upgradeReference`), reading the other files of the project through the context.
 
@@ -156,6 +158,7 @@ class Upgrade0 {
 		randomBlendPass(root);
 		scaledReferencePass(root);
 		curvePass(data);
+		polygonPass();
 		roundNew(data, pristine);
 	}
 
@@ -2341,6 +2344,171 @@ class Upgrade0 {
 			o;
 		case MCurveRange(_): obj(["mode", "CurveRange"]);
 		}
+	}
+
+	// ----------------------------------------------------------------------------------------
+	// Polygons
+
+	/**
+		The polygon prefabs, after the other steps (on the curves of format 1):
+		- a disabled one is removed;
+		- a subdivided quad (`Quad(n)`, gone from the format) becomes the grid of the same vertices, `Grid(n + 1)`;
+		- the quad the particles of an emitter are drawn with goes, the emitter draws a quad without one: its content
+		  (materials, shaders) moves to the emitter in its place. It becomes an object instead when it is more than a quad
+		  there: a transform (the base transform of the particles), other content, a color, or another object that would
+		  be the template of the particles without it (`Emitter.updateInstance`).
+		The curve references of the file are rewritten for the content moved. A polygon an object path of the file may
+		name is kept as it is, and so is a disabled one a curve reference reads.
+	**/
+	function polygonPass() {
+		var polygons = [];
+		var oldPaths = new Map<String, RawNode>();
+		var pathOf = new Map<RawNode, String>();
+		function index( n : RawNode ) {
+			if( n != root ) {
+				oldPaths.set(n.path(), n);
+				pathOf.set(n, n.path());
+			}
+			if( n.type == "polygon" ) polygons.push(n);
+			for( c in n.children ) index(c);
+		}
+		index(root);
+		if( polygons.length == 0 )
+			return;
+		var refTargets = new Map<RawNode, Bool>();
+		var objectNames = new Map<String, Bool>();
+		function collect( n : RawNode ) {
+			var ref : Dynamic = get(n.data, "refPath");
+			if( n.isCurve && Std.isOfType(ref, String) ) {
+				var t = oldPaths.get(ref);
+				if( t != null ) refTargets.set(t, true);
+			}
+			if( !n.isCurve )
+				for( f in ["target", "object"] ) {
+					var v : Dynamic = get(n.data, f);
+					if( Std.isOfType(v, String) )
+						for( part in (v : String).split(".") ) objectNames.set(part, true);
+				}
+			for( c in n.children ) collect(c);
+		}
+		collect(root);
+		function isRead( n : RawNode ) : Bool {
+			return refTargets.exists(n) || objectNames.exists(n.name) || Lambda.exists(n.children, isRead);
+		}
+		function isTemplateCandidate( c : RawNode ) {
+			return c.enabled() && get(c.data, "visible") != false && c.isA(hrt.prefab.Object3D) && !c.isA(hrt.prefab.fx.Emitter)
+				&& !c.isA(hrt.prefab.l3d.Trails) && (c.name == null || c.name.indexOf("collision") < 0);
+		}
+		function detach( n : RawNode, content : Array<RawNode> ) {
+			var p = n.parent;
+			var arr : Array<Dynamic> = get(p.data, "children");
+			var i = arr.indexOf(n.data);
+			arr.splice(i, 1);
+			for( k => c in content ) arr.insert(i + k, c.data);
+			var ni = p.children.indexOf(n);
+			p.children.splice(ni, 1);
+			for( k => c in content ) {
+				p.children.insert(ni + k, c);
+				c.parent = p;
+			}
+			if( arr.length == 0 ) Reflect.deleteField(p.data, "children");
+		}
+		// the paths of the report are the ones before this pass: a removal renames the next siblings of the same name (`name-N`)
+		function remove( n : RawNode, content : Array<RawNode>, kind : String ) {
+			report.changes.push({ path: pathOf.get(n), kind: kind });
+			report.removed.push({ path: pathOf.get(n), contentUp: content.length > 0 });
+			detach(n, content);
+		}
+		var changed = false;
+		var removed = new Map<RawNode, Bool>();
+		function isRemoved( n : RawNode ) {
+			while( n != null ) {
+				if( removed.exists(n) ) return true;
+				n = n.parent;
+			}
+			return false;
+		}
+		for( n in polygons ) {
+			var d = n.data;
+			if( isRemoved(n) )
+				continue;
+			if( !n.enabled() ) {
+				if( isRead(n) ) {
+					warn(n, "disabled polygon read by a path of the file, kept");
+					continue;
+				}
+				// an emitter applies the materials and shaders under it to its particles, a disabled parent or not (`EmitterObject.init`)
+				var active = [];
+				if( particleEmitter(n) != null && particleEmitter(n).enabled() ) {
+					function rec( p : RawNode ) {
+						for( c in p.children ) {
+							if( c.isA(hrt.prefab.fx.Emitter) || c.isA(hrt.prefab.l3d.Trails) ) continue;
+							if( c.enabled() && (c.isA(hrt.prefab.Material) || c.isA(hrt.prefab.Shader)) ) active.push(c);
+							rec(c);
+						}
+					}
+					rec(n);
+				}
+				if( Lambda.exists(active, c -> c.parent != n) ) {
+					warn(n, "disabled polygon with materials or shaders deeper in it that its emitter applies, kept");
+					continue;
+				}
+				remove(n, active, active.length > 0 ? "disabled polygon removed, the materials and shaders its emitter applies moved in its place" : "disabled polygon removed");
+				removed.set(n, true);
+				changed = true;
+				continue;
+			}
+			var kind = Std.int(num(get(d, "kind"), 0));
+			if( kind != 0 )
+				continue;
+			var args : Array<Dynamic> = get(d, "args");
+			var sub = args == null || args.length == 0 ? 0 : Std.int(num(args[0], 0));
+			if( sub > 0 ) {
+				d.kind = hrt.prefab.l3d.Polygon.Shape.Grid(0).getIndex();
+				d.args = [sub + 1];
+				report.changes.push({ path: pathOf.get(n), kind: 'subdivided quad, grid of ${sub + 1}' });
+				continue;
+			}
+			var em = n.parent;
+			if( em == null || !em.isA(hrt.prefab.fx.Emitter) || Lambda.find(em.children, isTemplateCandidate) != n )
+				continue;
+			if( objectNames.exists(n.name) ) {
+				warn(n, "quad of the particles named by an object path of the file, kept");
+				continue;
+			}
+			var transform = Lambda.exists(["x", "y", "z", "rotationX", "rotationY", "rotationZ"], f -> num(get(d, f), 0) != 0)
+				|| Lambda.exists(["scaleX", "scaleY", "scaleZ"], f -> num(get(d, f), 1) != 1);
+			var content = Lambda.exists(n.children, c -> !c.isA(hrt.prefab.Material) && !c.isA(hrt.prefab.Shader));
+			var color = num(get(d, "color"), -1);
+			var colored = color != -1 && color != 4294967295.;
+			var next = em.children.slice(em.children.indexOf(n) + 1);
+			if( transform || content || colored || Lambda.exists(next, isTemplateCandidate) ) {
+				d.type = "object";
+				for( f in ["kind", "args", "points", "color", "gridSize", "hasDebugColor"] )
+					Reflect.deleteField(d, f);
+				n.type = "object";
+				n.cls = RawNode.classOf("object");
+				report.changes.push({ path: pathOf.get(n), kind: "quad of the particles, an object" });
+				continue;
+			}
+			remove(n, n.children, "quad of the particles removed, its content moved to the emitter");
+			changed = true;
+		}
+		if( !changed )
+			return;
+		// the curve references through the polygons removed or after them (`name-N`)
+		function fix( n : RawNode ) {
+			var ref : Dynamic = get(n.data, "refPath");
+			if( n.isCurve && Std.isOfType(ref, String) ) {
+				var t = oldPaths.get(ref);
+				if( t != null && t.path() != ref ) {
+					n.data.refPath = t.path();
+					change(n, "reference path through or after a polygon removed");
+				}
+			}
+			for( c in n.children ) fix(c);
+		}
+		fix(root);
 	}
 
 	// ----------------------------------------------------------------------------------------

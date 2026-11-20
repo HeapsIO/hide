@@ -16,6 +16,8 @@ typedef FileReport = {
 	var errors : Array<String>;
 	/** `path`: the parent, at the original path of the object; `child`: the new name of the object **/
 	var parents : Array<{ path : String, child : String, reason : String }>;
+	/** The nodes removed, at their path once the parents are inserted (in the order of `parents`); `contentUp`: their content moved to their parent, in their place **/
+	var removed : Array<{ path : String, contentUp : Bool }>;
 }
 
 /** The files of a project, for the overrides of the references of a file **/
@@ -66,7 +68,7 @@ class Migrate {
 	public static var EXTENSIONS = ["prefab", "fx", "fx2d", "l3d"];
 
 	public static function newReport( file : String ) : FileReport {
-		return { file: file, changes: [], warnings: [], errors: [], parents: [] };
+		return { file: file, changes: [], warnings: [], errors: [], parents: [], removed: [] };
 	}
 
 	public static function versionOf( data : Dynamic ) : Int {
@@ -105,20 +107,36 @@ class Migrate {
 	public static function migrateData( data : Dynamic, path : String, ctx : Context ) : FileResult {
 		var report = newReport(path);
 		var changed = false;
-		function walk( d : Dynamic ) {
+		// `at`: the unique path of `d` in the file, the paths of the report of FX data inside a file are made from its root
+		function walk( d : Dynamic, at : String ) {
 			if( d == null || !Reflect.isObject(d) ) return;
 			if( isFX(d) || isEmitter(d) ) {
 				var v = versionOf(d);
 				if( v != FX.VERSION ) {
+					var np = report.parents.length, nr = report.removed.length;
 					upgradeTree(d, v, d == data, report);
+					if( at != "" ) {
+						for( i in np...report.parents.length ) report.parents[i].path = at + "." + report.parents[i].path;
+						for( i in nr...report.removed.length ) report.removed[i].path = at + "." + report.removed[i].path;
+					}
 					changed = true;
 				}
 				return;
 			}
 			var children : Array<Dynamic> = Reflect.field(d, "children");
-			if( children != null ) for( c in children ) walk(c);
+			if( children != null ) {
+				var seen = new Map<String, Int>();
+				for( c in children ) {
+					if( c == null ) continue;
+					var name : String = Reflect.field(c, "name") ?? "";
+					var k = seen.get(name) ?? 0;
+					seen.set(name, k + 1);
+					var unique = k > 0 ? name + "-" + k : name;
+					walk(c, at == "" ? unique : at + "." + unique);
+				}
+			}
 		}
-		walk(data);
+		walk(data, "");
 		if( Upgrade0.upgradeReferences(data, ctx, report) )
 			changed = true;
 		return { path: path, data: data, changed: changed, report: report };
