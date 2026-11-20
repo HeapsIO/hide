@@ -947,6 +947,8 @@ class Macros {
 					default:
 						PrefabFieldType.PUnknown;
 				}
+			case TLazy(f):
+				return getPrefabFieldType(f());
 				default:
 					return null;
 			}
