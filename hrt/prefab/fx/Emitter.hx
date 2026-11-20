@@ -669,8 +669,9 @@ class EmitterObject extends h3d.scene.Object {
 				meshPrimitive = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
 				meshMaterial = mesh.material;
 				var absPos = mesh.getAbsPos();
-				tmpMat.initInverse(baseEmitMat);
-				meshTransform.multiply(absPos, tmpMat);
+				static var invEmitMat = new h3d.Matrix();
+				invEmitMat.initInverse(baseEmitMat);
+				meshTransform.multiply(absPos, invEmitMat);
 				if (prefab.applyMeshTransform)
 					baseEmitMat.load(absPos);
 				mesh.remove();
@@ -981,16 +982,6 @@ class EmitterObject extends h3d.scene.Object {
 		return idx;
 	}
 
-	static var tmpQuat = new h3d.Quat();
-	static var tmpEmitterQuat = new h3d.Quat();
-	static var tmpOffset = new h3d.Vector();
-	static var tmpVec = new h3d.Vector();
-	static var tmpVec2 = new h3d.Vector();
-	static var tmpDir = new h3d.Vector();
-	static var tmpScale = new h3d.Vector();
-	static var tmpMat = new h3d.Matrix();
-	static var tmpMat2 = new h3d.Matrix();
-	static var tmpPt = new h3d.col.Point();
 	function doEmit( count : Int ) {
 		if( count == 0 )
 			return;
@@ -1001,7 +992,6 @@ class EmitterObject extends h3d.scene.Object {
 
 		@:privateAccess var globalTime = scene?.renderer.ctx.globalTime ?? curTime;
 
-		var emitterQuat : h3d.Quat = null;
 		if (count > 0) {
 
 			if (trailsTemplate != null && trails == null) {
@@ -1014,22 +1004,34 @@ class EmitterObject extends h3d.scene.Object {
 					@:privateAccess shader.makeInstance();
 			}
 
+			// computed once, at the first emitted particle
+			var emitterQuat = new h3d.Quat();
+			var mat = new h3d.Matrix();
+			var emitterTransformDone = false;
 			for( i in 0...count ) {
+				// passed to onEmit : can't be inlined
+				static var offset = new h3d.Vector();
+				static var orient = new h3d.Quat();
+
 				var part = allocInstance();
 				part.startTime = globalTime;
 				part.lifeTime = hxd.Math.max(0.01, evaluator.getLifeTime(part.idx, curTime) * lifeTimeScale);
 
-				tmpQuat.identity();
+				orient.identity();
+				var dir = new h3d.Vector();
+				var hasDir = false;
 
 				switch( prefab.emitShape ) {
 					case Box:
-						tmpOffset.set(random.srand(0.5), random.srand(0.5), random.srand(0.5));
+						offset.set(random.srand(0.5), random.srand(0.5), random.srand(0.5));
 						if( prefab.emitSurface ) {
-							var max = Math.max(Math.max(Math.abs(tmpOffset.x), Math.abs(tmpOffset.y)), Math.abs(tmpOffset.z));
-							tmpOffset.scale(0.5 / max);
+							var max = Math.max(Math.max(Math.abs(offset.x), Math.abs(offset.y)), Math.abs(offset.z));
+							offset.scale(0.5 / max);
 						}
-						if( prefab.emitOrientation == Normal )
-							tmpQuat.initDirection(tmpOffset);
+						if( prefab.emitOrientation == Normal ) {
+							dir.load(offset);
+							hasDir = true;
+						}
 					case Cylinder:
 						var z = random.rand();
 						var dx = 0.0, dy = 0.0;
@@ -1043,118 +1045,127 @@ class EmitterObject extends h3d.scene.Object {
 							dx = Math.cos(a)*(prefab.emitRad2*z + prefab.emitRad1*(1.0-z))*random.rand();
 							dy = Math.sin(a)*(prefab.emitRad2*z + prefab.emitRad1*(1.0-z))*random.rand();
 						}
-						tmpOffset.set(dx * 0.5, dy * 0.5, z - 0.5);
+						offset.set(dx * 0.5, dy * 0.5, z - 0.5);
 						if( prefab.emitOrientation == Normal )
-							tmpQuat.initRotation(0, 0, hxd.Math.atan2(dy, dx));
+							orient.initRotation(0, 0, hxd.Math.atan2(dy, dx));
 					case Sphere:
 						do {
-							tmpOffset.x = random.srand(1.0);
-							tmpOffset.y = random.srand(1.0);
-							tmpOffset.z = random.srand(1.0);
+							offset.x = random.srand(1.0);
+							offset.y = random.srand(1.0);
+							offset.z = random.srand(1.0);
 						}
-						while( tmpOffset.lengthSq() > 1.0 );
+						while( offset.lengthSq() > 1.0 );
 						if( prefab.emitSurface )
-							tmpOffset.normalize();
-						tmpOffset.scale(0.5);
-						if( prefab.emitOrientation == Normal )
-							tmpQuat.initDirection(tmpOffset);
+							offset.normalize();
+						offset.scale(0.5);
+						if( prefab.emitOrientation == Normal ) {
+							dir.load(offset);
+							hasDir = true;
+						}
 					case Dome:
 						var zMin = 1.0 - 2.0 * hxd.Math.clamp(prefab.emitDomeHeight, 0, 1);
 						if( prefab.emitSurface ) {
 							var z = zMin + (1.0 - zMin) * random.rand();
 							var r = Math.sqrt(1.0 - z * z);
 							var a = random.rand() * Math.PI * 2;
-							tmpOffset.set(Math.cos(a) * r, Math.sin(a) * r, z);
+							offset.set(Math.cos(a) * r, Math.sin(a) * r, z);
 						}
 						else {
 							var r = zMin > 0 ? Math.sqrt(1.0 - zMin * zMin) : 1.0;
 							do {
-								tmpOffset.x = random.srand(r);
-								tmpOffset.y = random.srand(r);
-								tmpOffset.z = zMin + (1.0 - zMin) * random.rand();
+								offset.x = random.srand(r);
+								offset.y = random.srand(r);
+								offset.z = zMin + (1.0 - zMin) * random.rand();
 							}
-							while( tmpOffset.lengthSq() > 1.0 );
+							while( offset.lengthSq() > 1.0 );
 						}
 						if( prefab.emitDomeFlip )
-							tmpOffset.z = -tmpOffset.z;
-						tmpOffset.scale(0.5);
-						if( prefab.emitOrientation == Normal )
-							tmpQuat.initDirection(tmpOffset);
+							offset.z = -offset.z;
+						offset.scale(0.5);
+						if( prefab.emitOrientation == Normal ) {
+							dir.load(offset);
+							hasDir = true;
+						}
 					case Point:
-						tmpOffset.set(0, 0, 0);
+						offset.set(0, 0, 0);
 						if( prefab.emitOrientation == Normal ) {
 							do {
-								tmpDir.x = random.srand(1.0);
-								tmpDir.y = random.srand(1.0);
-								tmpDir.z = random.srand(1.0);
+								dir.x = random.srand(1.0);
+								dir.y = random.srand(1.0);
+								dir.z = random.srand(1.0);
 							}
-							while( tmpDir.lengthSq() > 1.0 || tmpDir.lengthSq() < 1e-6 );
-							tmpQuat.initDirection(tmpDir);
+							while( dir.lengthSq() > 1.0 || dir.lengthSq() < 1e-6 );
+							hasDir = true;
 						}
 					case Line:
-						tmpOffset.set(random.srand(0.5), 0, 0);
+						offset.set(random.srand(0.5), 0, 0);
 						if( prefab.emitOrientation == Normal ) {
 							var a = random.rand() * Math.PI * 2;
-							tmpDir.set(0, Math.cos(a), Math.sin(a));
-							tmpQuat.initDirection(tmpDir);
+							dir.set(0, Math.cos(a), Math.sin(a));
+							hasDir = true;
 						}
 					case Cone:
-						tmpOffset.set(0, 0, 0);
+						offset.set(0, 0, 0);
 						var theta = random.rand() * Math.PI * 2;
 						var shapeAngle = hxd.Math.degToRad(evaluator.getEmitAngle(curTime)) / 2.0;
 						var phi = shapeAngle * random.rand();
-						tmpDir.x = Math.cos(phi) * scaleX;
-						tmpDir.y = Math.sin(phi) * Math.sin(theta) * scaleY;
-						tmpDir.z = Math.sin(phi) * Math.cos(theta) * scaleZ;
-						tmpDir.normalize();
-						tmpQuat.initDirection(tmpDir);
+						dir.x = Math.cos(phi) * scaleX;
+						dir.y = Math.sin(phi) * Math.sin(theta) * scaleY;
+						dir.z = Math.sin(phi) * Math.cos(theta) * scaleZ;
+						dir.normalize();
+						hasDir = true;
 				}
+				if( hasDir )
+					inline orient.initDirection(dir);
 
-				onEmit(tmpOffset, tmpQuat);
+				onEmit(offset, orient);
 
 				if( prefab.emitOrientation == Random )
-					tmpQuat.initRotation(random.srand(Math.PI), random.srand(Math.PI), random.srand(Math.PI));
+					orient.initRotation(random.srand(Math.PI), random.srand(Math.PI), random.srand(Math.PI));
 
 				switch( prefab.simulationSpace ) {
 					case Local:
-						if(emitterQuat == null) {
-							emitterQuat = tmpEmitterQuat;
+						if( !emitterTransformDone ) {
+							emitterTransformDone = true;
 							emitterQuat.load(getRotationQuat());
-							tmpMat.load(getAbsPos());
-							tmpMat2.load(parentNonEmitter.getAbsPos());
-							tmpMat2.invert();
-							tmpMat.multiply(tmpMat, tmpMat2);
+							inline mat.load(getAbsPos());
+							// initInverse calls zero() : can't be inlined
+							static var invParent = new h3d.Matrix();
+							invParent.initInverse(parentNonEmitter.getAbsPos());
+							inline mat.multiply(mat, invParent);
 							if (prefab.particleScaling == None) {
 								// // Re-introduce parent scaling in the spawn position calculations
 								var parentScale = inline parentNonEmitter.getAbsPos().getScale();
-								tmpMat2.initScale(parentScale.x, parentScale.y, parentScale.z);
-								tmpMat.multiply(tmpMat, tmpMat2);
+								var scale = new h3d.Matrix();
+								inline scale.initScale(parentScale.x, parentScale.y, parentScale.z);
+								inline mat.multiply(mat, scale);
 							}
 						}
 
-						tmpOffset.transform(tmpMat);
-						part.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
-						tmpQuat.multiply(emitterQuat, tmpQuat);
-						part.qRot.loadQuat(tmpQuat);
-						tmpQuat.toMatrix(tmpMat2);
-						part.emitOrientation.load(tmpMat2);
+						offset.transform(mat);
+						part.setPosition(offset.x, offset.y, offset.z);
+						inline orient.multiply(emitterQuat, orient);
+						part.qRot.loadQuat(orient);
+						part.emitOrientation.loadQuat(orient);
 					case World:
-						tmpPt.set(tmpOffset.x, tmpOffset.y, tmpOffset.z);
-						localToGlobal(tmpPt);
+						localToGlobal(offset);
 						if( relativeScenePosition )
-							part.setPosition(tmpPt.x - scene.x, tmpPt.y - scene.y, tmpPt.z - scene.z);
+							part.setPosition(offset.x - scene.x, offset.y - scene.y, offset.z - scene.z);
 						else
-							part.setPosition(tmpPt.x, tmpPt.y, tmpPt.z);
-						emitterQuat = tmpEmitterQuat;
-						tmpMat.load(getAbsPos());
-						var s = tmpMat.getScale();
-						tmpMat.prependScale(1.0/s.x, 1.0/s.y, 1.0/s.z);
-						emitterQuat.initRotateMatrix(tmpMat);
-						emitterQuat.normalize();
-						tmpQuat.multiply(emitterQuat, tmpQuat);
-						part.qRot.loadQuat(tmpQuat);
-						tmpQuat.toMatrix(tmpMat2);
-						part.emitOrientation.load(tmpMat2);
+							part.setPosition(offset.x, offset.y, offset.z);
+						if( !emitterTransformDone ) {
+							emitterTransformDone = true;
+							inline mat.load(getAbsPos());
+							var s = mat.getScale();
+							var scale = new h3d.Matrix();
+							inline scale.initScale(1.0/s.x, 1.0/s.y, 1.0/s.z);
+							inline mat.multiply(scale, mat);
+							inline emitterQuat.initRotateMatrix(mat);
+							inline emitterQuat.normalize();
+						}
+						inline orient.multiply(emitterQuat, orient);
+						part.qRot.loadQuat(orient);
+						part.emitOrientation.loadQuat(orient);
 
 						part.setScale(worldScale.x, worldScale.y, worldScale.z);
 				}
@@ -1191,33 +1202,6 @@ class EmitterObject extends h3d.scene.Object {
 		while (parentEmitterTmp != null) {
 			parentNonEmitter = parentEmitterTmp.parent;
 			parentEmitterTmp = parentEmitter.parentEmitter;
-		}
-	}
-
-	// No-alloc version of h3d.Matrix.getEulerAngles()
-	static function getEulerAngles(m: h3d.Matrix) {
-		var s = m.getScale();
-		m.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
-		var cy = hxd.Math.sqrt(m._11 * m._11 + m._12 * m._12);
-		if(cy > 0.01) {
-			tmpVec.set(
-				hxd.Math.atan2(m._23, m._33),
-				hxd.Math.atan2(-m._13, cy),
-				hxd.Math.atan2(m._12, m._11));
-
-			tmpVec2.set(
-				hxd.Math.atan2(-m._23, -m._33),
-				hxd.Math.atan2(-m._13, -cy),
-				hxd.Math.atan2(-m._12, -m._11));
-
-			return tmpVec.lengthSq() < tmpVec2.lengthSq() ? tmpVec : tmpVec2;
-		}
-		else {
-			tmpVec.set(
-				hxd.Math.atan2(-m._32, m._22),
-				hxd.Math.atan2(-m._13, cy),
-				0.0);
-			return tmpVec;
 		}
 	}
 
@@ -1335,19 +1319,21 @@ class EmitterObject extends h3d.scene.Object {
 			var cam = scene?.camera;
 			if (cam == null)
 				return;
-			tmpMat.load(cam.mcam);
-			tmpMat.invert();
+			// initInverse calls zero() : can't be inlined
+			static var invCam = new h3d.Matrix();
+			invCam.initInverse(cam.mcam);
 
 			if(prefab.simulationSpace == Local) {  // Compensate parent rotation
-				tmpMat2.load(parentNonEmitter.getAbsPos());
-				var s = tmpMat2.getScale();
-				tmpMat2.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
-				tmpMat2.invert();
-				tmpMat.multiply(tmpMat, tmpMat2);
+				static var invParent = new h3d.Matrix();
+				invParent.load(parentNonEmitter.getAbsPos());
+				var s = invParent.getScale();
+				invParent.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
+				invParent.invert();
+				invCam.multiply(invCam, invParent);
 			}
 
-			screenRot.initRotationAxis( new h3d.Vector(1,0,0),Math.PI);  // Flip Y axis so Y is pointing down
-			screenRot.multiply(screenRot, tmpMat);
+			screenRot.initRotationAxis(new h3d.Vector(1,0,0),Math.PI);  // Flip Y axis so Y is pointing down
+			screenRot.multiply(screenRot, invCam);
 		}
 		else if(prefab.alignMode == Axis) {
 			var cam = scene?.camera;
@@ -1374,7 +1360,7 @@ class EmitterObject extends h3d.scene.Object {
 					rightAxis.set(0, 1, 0);
 					upAxis.set(-1, 0, 0);
 			}
-			var lookAtPos = tmpVec;
+			var lookAtPos = new h3d.Vector();
 			lookAtPos.load(cam.pos);
 
 			if ( prefab.followRotation ) {
@@ -1399,8 +1385,9 @@ class EmitterObject extends h3d.scene.Object {
 
 			screenRot.initRotationAxis(lockAxis, angle);
 			if(prefab.alignLockAxis == ScreenZ) {
-				tmpMat.initRotationAxis(new h3d.Vector(1.0, 0.0, 0.0),-Math.PI/2);
-				screenRot.multiply(tmpMat, screenRot);
+				var mat = new h3d.Matrix();
+				mat.initRotationAxis(new h3d.Vector(1.0, 0.0, 0.0),-Math.PI/2);
+				inline screenRot.multiply(mat, screenRot);
 			}
 		}
 	}
@@ -1420,11 +1407,13 @@ class EmitterObject extends h3d.scene.Object {
 		if(batch == null) return;
 		batch.begin(hxd.Math.nextPOT(prefab.maxCount));
 
+		// assigned to batch.worldPosition : can't be inlined
+		static var worldMat = new h3d.Matrix();
 		inline function emit(p: ParticleInstance) {
 			if (p.life > p.lifeTime)
 				return;
-			inline tmpMat.load(p.absPos.toMatrix());
-			batch.worldPosition = tmpMat;
+			inline worldMat.load(p.absPos.toMatrix());
+			batch.worldPosition = worldMat;
 						for( anim in customAnims ) {
 				var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
 				anim.setTime(t);
@@ -2296,6 +2285,28 @@ class SMatrix3 {
 		_11 = m._11; _12 = m._12; _13 = m._13;
 		_21 = m._21; _22 = m._22; _23 = m._23;
 		_31 = m._31; _32 = m._32; _33 = m._33;
+	}
+
+	// same as h3d.Quat.toMatrix
+	inline function loadQuat(q : h3d.Quat) {
+		var xx = q.x * q.x;
+		var xy = q.x * q.y;
+		var xz = q.x * q.z;
+		var xw = q.x * q.w;
+		var yy = q.y * q.y;
+		var yz = q.y * q.z;
+		var yw = q.y * q.w;
+		var zz = q.z * q.z;
+		var zw = q.z * q.w;
+		_11 = 1 - 2 * ( yy + zz );
+		_12 = 2 * ( xy + zw );
+		_13 = 2 * ( xz - yw );
+		_21 = 2 * ( xy - zw );
+		_22 = 1 - 2 * ( xx + zz );
+		_23 = 2 * ( yz + xw );
+		_31 = 2 * ( xz + yw );
+		_32 = 2 * ( yz - xw );
+		_33 = 1 - 2 * ( xx + yy );
 	}
 }
 
