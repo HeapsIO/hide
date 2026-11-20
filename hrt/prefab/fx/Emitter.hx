@@ -103,13 +103,13 @@ class ParticleInstance {
 	@:packed var speedAccumulation(default, never) : SVector3;
 	@:packed var rotationAccumulation(default, never) : SVector3;  // Rotation Speed integrated over the life, in degrees
 	@:packed var qRot(default, never) : SVector4;
-	@:packed var absPos(default, never) : SMatrix4;  // Needed for sortZ
+	@:packed var absPos(default, never) : SMatrix3x4;  // Needed for sortZ
 	@:packed var emitOrientation(default, never) : SMatrix3;
 	#else
 	var speedAccumulation(default, never) = new SVector3();
 	var rotationAccumulation(default, never) = new SVector3();
 	var qRot(default, never) = new SVector4();
-	var absPos(default, never) = new SMatrix4();
+	var absPos(default, never) = new SMatrix3x4();
 	var emitOrientation(default, never) = new SMatrix3();
 	#end
 
@@ -2331,12 +2331,13 @@ class SMatrix3 {
 }
 
 
+// affine transform, the last column is (0, 0, 0, 1)
 @:publicFields @:struct
-class SMatrix4 {
-	var _11 : Single; var _12 : Single; var _13 : Single; var _14 : Single;
-	var _21 : Single; var _22 : Single; var _23 : Single; var _24 : Single;
-	var _31 : Single; var _32 : Single; var _33 : Single; var _34 : Single;
-	var _41 : Single; var _42 : Single; var _43 : Single; var _44 : Single;
+class SMatrix3x4 {
+	var _11 : Single; var _12 : Single; var _13 : Single;
+	var _21 : Single; var _22 : Single; var _23 : Single;
+	var _31 : Single; var _32 : Single; var _33 : Single;
+	var _41 : Single; var _42 : Single; var _43 : Single;
 
 	public function new() { }
 
@@ -2348,17 +2349,17 @@ class SMatrix4 {
 
 	inline function toMatrix() {
 		var m = new h3d.Matrix();
-		m._11 = _11; m._12 = _12; m._13 = _13; m._14 = _14;
-		m._21 = _21; m._22 = _22; m._23 = _23; m._24 = _24;
-		m._31 = _31; m._32 = _32; m._33 = _33; m._34 = _34;
-		m._41 = _41; m._42 = _42; m._43 = _43; m._44 = _44;
+		m._11 = _11; m._12 = _12; m._13 = _13; m._14 = 0;
+		m._21 = _21; m._22 = _22; m._23 = _23; m._24 = 0;
+		m._31 = _31; m._32 = _32; m._33 = _33; m._34 = 0;
+		m._41 = _41; m._42 = _42; m._43 = _43; m._44 = 1;
 		return m;
 	}
 
 	inline function load(m : h3d.Matrix) {
-		_11 = m._11; _12 = m._12; _13 = m._13; _14 = m._14;
-		_21 = m._21; _22 = m._22; _23 = m._23; _24 = m._24;
-		_31 = m._31; _32 = m._32; _33 = m._33; _34 = m._34;
-		_41 = m._41; _42 = m._42; _43 = m._43; _44 = m._44;
+		_11 = m._11; _12 = m._12; _13 = m._13;
+		_21 = m._21; _22 = m._22; _23 = m._23;
+		_31 = m._31; _32 = m._32; _33 = m._33;
+		_41 = m._41; _42 = m._42; _43 = m._43;
 	}
 }
