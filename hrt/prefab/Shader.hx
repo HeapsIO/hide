@@ -107,7 +107,16 @@ class Shader extends Prefab {
 					val = new h3d.Vector();
 			case TSampler(_):
 				if( val != null ) {
+					#if editor
+					if( Std.isOfType(val, String) && !hxd.res.Loader.currentInstance.exists(val) ) {
+						hide.Ide.inst.quickError('Shader $name : texture not found for ${v.name} : $val');
+						val = h3d.mat.Texture.fromColor(0xFF00FF);
+					}
+					else
+						val = Utils.getTextureFromValue(val);
+					#else
 					val = Utils.getTextureFromValue(val);
+					#end
 				}
 				else {
 					var childNoise = getOpt(hrt.prefab.l2d.NoiseGenerator, v.name);
