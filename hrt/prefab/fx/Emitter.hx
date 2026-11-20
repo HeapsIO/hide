@@ -104,13 +104,13 @@ class ParticleInstance {
 	@:packed var rotationAccumulation(default, never) : SVector3;  // Rotation Speed integrated over the life, in degrees
 	@:packed var qRot(default, never) : SVector4;
 	@:packed var absPos(default, never) : SMatrix3x4;  // Needed for sortZ
-	@:packed var emitOrientation(default, never) : SMatrix3;
+	@:packed var emitOrientation(default, never) : SVector4;  // rotation at emission
 	#else
 	var speedAccumulation(default, never) = new SVector3();
 	var rotationAccumulation(default, never) = new SVector3();
 	var qRot(default, never) = new SVector4();
 	var absPos(default, never) = new SMatrix3x4();
-	var emitOrientation(default, never) = new SMatrix3();
+	var emitOrientation(default, never) = new SVector4();
 	#end
 
 	var idx : Int;
@@ -137,7 +137,7 @@ class ParticleInstance {
 		rotationAccumulation.load(p.rotationAccumulation.toVector());
 		qRot.load(p.qRot.toVector());
 		absPos.load(p.absPos.toMatrix());
-		emitOrientation.load(p.emitOrientation.toMatrix());
+		emitOrientation.load(p.emitOrientation.toVector());
 
 		idx = p.idx;
 		startFrame = p.startFrame;
@@ -346,13 +346,12 @@ class ParticleInstance {
 
 		var prefab = emitter.prefab;
 		var evaluator = emitter.evaluator;
-		var emitOrientation = emitOrientation.toMatrix();
 		var speedAccumulation = this.speedAccumulation.toVector();
 
 		if( life == 0 ) {
 			// local speed
 			evaluator.getStartSpeed(idx, emitter.curTime, v);
-			v.transform3x3(emitOrientation);
+			emitOrientation.rotate(v);
 			add(speedAccumulation, v);
 			// world speed
 			evaluator.getStartWorldSpeed(idx, emitter.curTime, v);
@@ -362,7 +361,7 @@ class ParticleInstance {
 
 		if(evaluator.getPartAcceleration(idx, t, v)) {
 			v.scale3(dt);
-			v.transform3x3(emitOrientation);
+			emitOrientation.rotate(v);
 			add(speedAccumulation, v);
 		}
 
@@ -378,7 +377,7 @@ class ParticleInstance {
 		speed.z += speedAccumulation.z;
 
 		if(evaluator.getPartSpeed(idx, t, v)) {
-			v.transform3x3(emitOrientation);
+			emitOrientation.rotate(v);
 			add(speed, v);
 		}
 
@@ -2282,51 +2281,19 @@ class SVector4 {
 	inline function toVector() {
 		return new h3d.Vector4(x, y, z, w);
 	}
-}
 
-
-@:publicFields @:struct
-class SMatrix3 {
-	var _11 : Single; var _12 : Single; var _13 : Single;
-	var _21 : Single; var _22 : Single; var _23 : Single;
-	var _31 : Single; var _32 : Single; var _33 : Single;
-
-	public function new() { }
-
-	inline function toMatrix() {
-		var m = new h3d.Matrix();
-		m._11 = _11; m._12 = _12; m._13 = _13;
-		m._21 = _21; m._22 = _22; m._23 = _23;
-		m._31 = _31; m._32 = _32; m._33 = _33;
-		return m;
-	}
-
-	inline function load(m : h3d.Matrix) {
-		_11 = m._11; _12 = m._12; _13 = m._13;
-		_21 = m._21; _22 = m._22; _23 = m._23;
-		_31 = m._31; _32 = m._32; _33 = m._33;
-	}
-
-	// same as h3d.Quat.toMatrix
-	inline function loadQuat(q : h3d.Quat) {
-		var xx = q.x * q.x;
-		var xy = q.x * q.y;
-		var xz = q.x * q.z;
-		var xw = q.x * q.w;
-		var yy = q.y * q.y;
-		var yz = q.y * q.z;
-		var yw = q.y * q.w;
-		var zz = q.z * q.z;
-		var zw = q.z * q.w;
-		_11 = 1 - 2 * ( yy + zz );
-		_12 = 2 * ( xy + zw );
-		_13 = 2 * ( xz - yw );
-		_21 = 2 * ( xy - zw );
-		_22 = 1 - 2 * ( xx + zz );
-		_23 = 2 * ( yz + xw );
-		_31 = 2 * ( xz + yw );
-		_32 = 2 * ( yz - xw );
-		_33 = 1 - 2 * ( xx + yy );
+	// same as `v.transform3x3(m)` with `m` the matrix of this quaternion (h3d.Quat.toMatrix)
+	inline function rotate(v: h3d.Vector4) {
+		// v + 2w (q x v) + 2 q x (q x v)
+		var tx = 2 * (y * v.z - z * v.y);
+		var ty = 2 * (z * v.x - x * v.z);
+		var tz = 2 * (x * v.y - y * v.x);
+		var vx = v.x + w * tx + (y * tz - z * ty);
+		var vy = v.y + w * ty + (z * tx - x * tz);
+		var vz = v.z + w * tz + (x * ty - y * tx);
+		v.x = vx;
+		v.y = vy;
+		v.z = vz;
 	}
 }
 
