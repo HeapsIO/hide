@@ -101,11 +101,13 @@ class ParticleInstance {
 
 	#if (hl_ver >= version("1.13.0"))
 	@:packed var speedAccumulation(default, never) : SVector3;
+	@:packed var rotationAccumulation(default, never) : SVector3;  // Rotation Speed integrated over the life, in degrees
 	@:packed var qRot(default, never) : SVector4;
 	@:packed var absPos(default, never) : SMatrix4;  // Needed for sortZ
 	@:packed var emitOrientation(default, never) : SMatrix3;
 	#else
 	var speedAccumulation(default, never) = new SVector3();
+	var rotationAccumulation(default, never) = new SVector3();
 	var qRot(default, never) = new SVector4();
 	var absPos(default, never) = new SMatrix4();
 	var emitOrientation(default, never) = new SMatrix3();
@@ -132,6 +134,7 @@ class ParticleInstance {
 		scaleZ = p.scaleZ;
 
 		speedAccumulation.load(p.speedAccumulation.toVector());
+		rotationAccumulation.load(p.rotationAccumulation.toVector());
 		qRot.load(p.qRot.toVector());
 		absPos.load(p.absPos.toMatrix());
 		emitOrientation.load(p.emitOrientation.toMatrix());
@@ -181,6 +184,7 @@ class ParticleInstance {
 		if(this.idx != REMOVED_IDX) emitter.error();
 		this.idx = idx;
 		speedAccumulation.load(new h3d.Vector());
+		rotationAccumulation.load(new h3d.Vector());
 		life = 0;
 		lifeTime = 0;
 		startFrame = 0;
@@ -304,7 +308,14 @@ class ParticleInstance {
 		}
 
 		// Rotation
-		if(evaluator.getPartRotation(idx, t, v)) {
+		var hasRotation = evaluator.getPartRotation(idx, t, v);
+		if(evaluator.partRotationSpeed != VZero) {
+			v.x += rotationAccumulation.x;
+			v.y += rotationAccumulation.y;
+			v.z += rotationAccumulation.z;
+			hasRotation = true;
+		}
+		if(hasRotation) {
 			v.scale3(Math.PI / 180.0);
 			if(v.x == 0 && v.y == 0)  // optim: most rotations are around Z only, >2x faster
 				EmitterHelper.rotateZ(localMat, v.z);
@@ -443,6 +454,13 @@ class ParticleInstance {
 			speed.x += delta.x;
 			speed.y += delta.y;
 			speed.z += delta.z;
+		}
+
+		if(evaluator.partRotationSpeed != VZero) {
+			evaluator.getPartRotationSpeed(idx, t, v);
+			rotationAccumulation.x += v.x * dt;
+			rotationAccumulation.y += v.y * dt;
+			rotationAccumulation.z += v.z * dt;
 		}
 
 		if(prefab.useCollision) {
@@ -1414,7 +1432,7 @@ class EmitterObject extends h3d.scene.Object {
 				return;
 			inline worldMat.load(p.absPos.toMatrix());
 			batch.worldPosition = worldMat;
-						for( anim in customAnims ) {
+			for( anim in customAnims ) {
 				var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
 				anim.setTime(t);
 			}
@@ -1771,6 +1789,8 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 	public var partPivot : ParamVec3;
 	@:param(PVec(3, 0, 360), Particle) @:disp("Rotation", "Rotation of the particle, in degrees")
 	public var partRotation : ParamVec3;
+	@:param(PVec(3, -360, 360), Particle) @:disp("Rotation Speed", "Rotation speed of the particle, in degrees per second, accumulated over its life and added to its Rotation")
+	public var partRotationSpeed : ParamVec3;
 	@:param(PFloat(), Particle, 1.) @:disp("Scale", "Uniform scale of the particle")
 	public var partScale : ParamMode;
 	@:s @:range(0, null) @:animate @:disp("Scale Multiplier", "Multiplier of the scale of all the particles, animated over the emitter time")
