@@ -1016,9 +1016,9 @@ class EmitterObject extends h3d.scene.Object {
 			var emitterQuat = new h3d.Quat();
 			var mat = new h3d.Matrix();
 			var emitterTransformDone = false;
+			var frameCount = prefab.frameCount == 0 ? prefab.frameDivisionX * prefab.frameDivisionY : prefab.frameCount;
 			for( i in 0...count ) {
-				// passed to onEmit : can't be inlined
-				static var offset = new h3d.Vector();
+				var offset = new h3d.Vector();
 				static var orient = new h3d.Quat();
 
 				var slot = allocInstance();
@@ -1127,8 +1127,6 @@ class EmitterObject extends h3d.scene.Object {
 				if( hasDir )
 					inline orient.initDirection(dir);
 
-				onEmit(offset, orient);
-
 				if( prefab.emitOrientation == Random )
 					orient.initRotation(random.srand(Math.PI), random.srand(Math.PI), random.srand(Math.PI));
 
@@ -1157,7 +1155,7 @@ class EmitterObject extends h3d.scene.Object {
 						part.qRot.loadQuat(orient);
 						part.emitOrientation.loadQuat(orient);
 					case World:
-						localToGlobal(offset);
+						offset.transform(getAbsPos());
 						if( relativeScenePosition )
 							part.setPosition(offset.x - scene.x, offset.y - scene.y, offset.z - scene.z);
 						else
@@ -1178,7 +1176,6 @@ class EmitterObject extends h3d.scene.Object {
 
 						part.setScale(worldScale.x, worldScale.y, worldScale.z);
 				}
-				var frameCount = prefab.frameCount == 0 ? prefab.frameDivisionX * prefab.frameDivisionY : prefab.frameCount;
 				if(prefab.animationLoop)
 					part.startFrame = random.random(frameCount);
 
@@ -1203,10 +1200,6 @@ class EmitterObject extends h3d.scene.Object {
 
 		emitCount += count;
 	}
-
-	/** Called every time a particle is emitted. `offset` and `orient`
-		 can be modified (local space) **/
-	public dynamic function onEmit(offset: h3d.Vector, orient : h3d.Quat) { }
 
 	function updateParentNonEmitter() {
 		parentNonEmitter = parent;
