@@ -1,35 +1,43 @@
 package hrt.prefab.fx.gpuemitter;
 
 class OrbitSpeedSimulationShader extends ComputeUtils {
+	public var localAxis = new h3d.Vector(0, 0, 1);
+
 	override function onDispatch(emitter : GPUEmitterObject) {
 		super.onDispatch(emitter);
 
-		center.load(emitter.getAbsPos().getPosition());
+		switch ( emitter.data.mode ) {
+			case Local:
+				center.set(0, 0, 0);
+				axis.load(localAxis);
+			case World, Camera:
+				var absPos = emitter.getAbsPos();
+				center.load(absPos.getPosition());
+				axis.load(localAxis);
+				axis.transform3x3(absPos);
+		}
+		axis.normalize();
 	}
 
 	static var SRC = {
 		@param var axis : Vec3;
 		@param var center : Vec3;
+		@param var angularSpeed : Float;
 
 		var speed : Vec3;
-		var prevModelView : Mat4;
-		var modelView : Mat4;
+		var prevPos : Vec3;
 		var dt : Float;
 
-		function main() {
-			var idx = computeVar.globalInvocation.x;
-			var prevPos = vec3(0.0) * prevModelView.mat3x4();
-			var radialDir = prevPos - center;
-			var radius = length(radialDir);
-			radialDir = radialDir - radialDir.dot(axis) * axis;
-			radialDir = normalize(radialDir);
-			var spherical = cartesianToSpherical(radialDir);
-			var theta = spherical.y;
-			var phi = spherical.z + PI * 0.5;
-			speed = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)) / radius;
+		function rotateAroundAxis(v : Vec3, angle : Float) : Vec3 {
+			var c = cos(angle);
+			var s = sin(angle);
+			return v * c + cross(axis, v) * s + axis * dot(axis, v) * (1.0 - c);
+		}
 
-			var newPos = normalize(prevPos + dt * speed) * radius;
-			speed = (newPos - prevPos) / dt;
+		function main() {
+			var angle = angularSpeed * dt;
+			prevPos = center + rotateAroundAxis(prevPos - center, angle);
+			speed = rotateAroundAxis(speed, angle);
 		}
 	}
 }
@@ -38,6 +46,7 @@ class OrbitSpeedSimulation extends SimulationShader {
 	@:s var axisX : Float = 0.0;
 	@:s var axisY : Float = 0.0;
 	@:s var axisZ : Float = 1.0;
+	@:s var speed : Float = 1.0;
 
 	override function makeShader() {
 		return new OrbitSpeedSimulationShader();
@@ -47,18 +56,19 @@ class OrbitSpeedSimulation extends SimulationShader {
 		super.updateInstance(propName);
 
 		var sh = cast(shader, OrbitSpeedSimulationShader);
-		sh.axis.set(axisX, axisY, axisZ);
-		sh.axis.normalize();
+		sh.localAxis.set(axisX, axisY, axisZ);
+		sh.angularSpeed = speed;
 	}
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
 		ctx.build(
 			<category("Simulation")>
-				<line label="Speed">
+				<line label="Axis">
 					<range(-1, 1) label="X" field={axisX}/>
 					<range(-1, 1) label="Y" field={axisY}/>
 					<range(-1, 1) label="Z" field={axisZ}/>
 				</line>
+				<slider label="Speed" field={speed}/>
 			</category>
 		);
 	}
@@ -68,9 +78,10 @@ class OrbitSpeedSimulation extends SimulationShader {
 		ctx.properties.add(new hide.Element('
 			<div class="group" name="Simulation">
 				<dl>
-					<dt>X</dt><dd><input type="range" min="-1" max="1" value="0" field="axisX"/></dd>
-					<dt>Y</dt><dd><input type="range" min="-1" max="1" value="0" field="axisY"/></dd>
-					<dt>Z</dt><dd><input type="range" min="-1" max="1" value="0" field="axisZ"/></dd>
+					<dt>Axis X</dt><dd><input type="range" min="-1" max="1" field="axisX"/></dd>
+					<dt>Axis Y</dt><dd><input type="range" min="-1" max="1" field="axisY"/></dd>
+					<dt>Axis Z</dt><dd><input type="range" min="-1" max="1" field="axisZ"/></dd>
+					<dt>Speed</dt><dd><input type="range" min="-10" max="10" field="speed"/></dd>
 				</dl>
 			</div>
 			'), this, function(pname) {

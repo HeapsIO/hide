@@ -5,6 +5,8 @@ package hide.ui;
 **/
 class TitleBar {
 
+	public var launcher(default, null) : js.html.Element;
+
 	var menuBar : js.html.Element;
 	var title : js.html.Element;
 	var current : hide.comp.ContextMenu;
@@ -28,9 +30,17 @@ class TitleBar {
 		menuBar.classList.add("menu-bar");
 		left.appendChild(menuBar);
 
+		var center = doc.createDivElement();
+		center.classList.add("center");
+		element.appendChild(center);
+
+		launcher = doc.createDivElement();
+		launcher.classList.add("launcher");
+		center.appendChild(launcher);
+
 		title = doc.createDivElement();
 		title.classList.add("title");
-		element.appendChild(title);
+		center.appendChild(title);
 
 		doc.body.prepend(element);
 

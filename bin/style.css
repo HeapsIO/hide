@@ -5341,7 +5341,7 @@ hide-popover {
 		min-width: 0;
 	}
 
-	.icon {
+	> .left > .icon {
 		width: 16px;
 		height: 16px;
 		margin-left: 8px;
@@ -5367,12 +5367,51 @@ hide-popover {
 		}
 	}
 
-	> .title {
+	> .center {
+		--pill-border: color-mix(in oklch, var(--theme-crust), var(--theme-foreground) 12%);
+
+		display: flex;
+		align-items: center;
+		height: 22px;
+		min-width: min(420px, 40vw);
+		box-sizing: border-box;
+		border: 1px solid var(--pill-border);
+		border-radius: 6px;
+		background-color: color-mix(in oklch, var(--theme-crust), var(--theme-foreground) 4%);
 		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		text-align: center;
-		opacity: 0.6;
+
+		> .launcher {
+			display: flex;
+			height: 100%;
+		}
+
+		.game-launcher {
+			height: 100%;
+			gap: 0px;
+
+			.play-btn, .target-btn {
+				height: 100%;
+				padding: 0px 8px;
+				border-radius: 0px;
+				border-right: 1px solid var(--pill-border);
+				-webkit-app-region: no-drag;
+			}
+
+			.target-btn {
+				gap: 8px;
+				color: #ccc;
+			}
+		}
+
+		> .title {
+			flex-grow: 1;
+			padding: 0px 10px;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			text-align: center;
+			opacity: 0.6;
+		}
 	}
 
 	/* space of the native window buttons */
@@ -5384,6 +5423,56 @@ hide-popover {
 
 	~ .hide-root {
 		height: calc(100vh - 30px);
+	}
+}
+
+/* hide.comp.GameLauncherWidget */
+.game-launcher {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+
+	.play-btn, .target-btn {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		height: 14px;
+		padding: 0px 4px;
+		border-radius: 2px;
+		cursor: pointer;
+
+		&:hover {
+			background-color: #3a3a3a;
+		}
+	}
+
+	.play-btn .icon {
+		color: #6fbf73;
+	}
+
+	.target-btn.disabled {
+		opacity: 0.5;
+		cursor: default;
+
+		&:hover {
+			background-color: transparent;
+		}
+	}
+
+	&.compiling .play-btn {
+		background-color: #444;
+
+		.icon {
+			color: #e6c84a;
+		}
+	}
+
+	&.running .play-btn {
+		background-color: #3c78c8;
+
+		.icon {
+			color: #fff;
+		}
 	}
 }
 
@@ -5438,57 +5527,11 @@ hide-popover {
 		}
 
 		.game-launcher {
-			display: flex;
-			align-items: center;
-			gap: 2px;
 			position: absolute;
 			left: 50%;
 			top: 0px;
 			height: 100%;
 			transform: translateX(-50%);
-
-			.play-btn, .target-btn {
-				display: flex;
-				align-items: center;
-				gap: 4px;
-				height: 14px;
-				padding: 0px 4px;
-				border-radius: 2px;
-				cursor: pointer;
-
-				&:hover {
-					background-color: #3a3a3a;
-				}
-			}
-
-			.play-btn .icon {
-				color: #6fbf73;
-			}
-
-			.target-btn.disabled {
-				opacity: 0.5;
-				cursor: default;
-
-				&:hover {
-					background-color: transparent;
-				}
-			}
-
-			&.compiling .play-btn {
-				background-color: #444;
-
-				.icon {
-					color: #e6c84a;
-				}
-			}
-
-			&.running .play-btn {
-				background-color: #3c78c8;
-
-				.icon {
-					color: #fff;
-				}
-			}
 		}
 
 		.error-suppressed {
