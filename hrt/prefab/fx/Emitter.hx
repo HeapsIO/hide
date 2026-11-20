@@ -102,7 +102,7 @@ class ParticleInstance {
 	@:packed var rotationAccumulation(default, never) : SVector3;  // Rotation Speed integrated over the life, in degrees
 	@:packed var qRot(default, never) : SVector4;
 	@:packed var emitOrientation(default, never) : SVector4;  // rotation at emission
-	@:packed var absPos(default, never) : SMatrix3x4;  // Needed for sortZ
+	@:packed var absPos(default, never) : SMatrix3x4;  // world transform, made in the update for the rendering (updateMeshBatch) and the depth sort, trails, sub-emitters
 	#else
 	var speedAccumulation(default, never) = new SVector3();
 	var rotationAccumulation(default, never) = new SVector3();
