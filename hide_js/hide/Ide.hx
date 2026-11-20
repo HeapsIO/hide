@@ -452,8 +452,13 @@ class Ide extends hide.tools.IdeData {
 
 		statusBar = new Element('<div class="status-bar"></div>').appendTo(hideRoot);
 		statusIcons = new Element('<div id="status-icons"></div>').appendTo(statusBar);
+		var launcherParent = statusBar;
+		if( titleBar != null ) {
+			titleBar.launcher.innerHTML = "";
+			launcherParent = new Element(titleBar.launcher);
+		}
 		if( isProjectValid() )
-			new hide.comp.GameLauncherWidget(statusBar);
+			new hide.comp.GameLauncherWidget(launcherParent);
 
 		var commitHash = getGitCommitHashAndDate();
 		if (commitHash.length > 0) {
