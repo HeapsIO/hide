@@ -1878,7 +1878,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		previewSettings.meshPath = "Plane";
 		savePreviewSettings();
 
-		var plane = hrt.prefab.l3d.Polygon.createPrimitive(Quad(4));
+		var plane = hrt.prefab.l3d.Polygon.createPrimitive(Grid(16));
 		var m = new h3d.scene.Mesh(plane);
 		m.setScale(2.0);
 		m.material.mainPass.culling = None;

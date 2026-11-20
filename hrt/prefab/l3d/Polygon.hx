@@ -11,12 +11,13 @@ import hide.prefab.HideProps;
 
 
 enum Shape {
-	Quad(subdivision : Int);
+	Quad;
 	Disc(segments: Int, angle: Float, inner: Float, rings:Int);
 	Custom;
 	Sphere( segsW : Int, segsH : Int );
 	Capsule( segsW : Int, segsH : Int, axis: h3d.prim.Capsule.Axis);
 	Box;
+	Grid( subdivisions : Int );
 }
 
 typedef PrimCache = Map<Shape, h3d.prim.Polygon>;
@@ -25,7 +26,7 @@ typedef PrimCache = Map<Shape, h3d.prim.Polygon>;
 @:prefabIcon(HuiRes.ui.icons.prefab.polygon)
 class Polygon extends Object3D {
 
-	@:c public var shape(default, null) : Shape = Quad(0);
+	@:c public var shape(default, null) : Shape = Quad;
 	@:c public var points : h2d.col.Polygon;
 	@:s public var color : Int = 0xFFFFFFFF;
 
@@ -42,7 +43,8 @@ class Polygon extends Object3D {
 		var data = super.save();
 		data.kind = shape.getIndex();
 		switch(shape){
-		case Quad(_), Disc(_), Sphere(_), Capsule(_), Box:
+		case Quad:
+		case Disc(_), Sphere(_), Capsule(_), Box, Grid(_):
 			data.args = shape.getParameters();
 		case Custom:
 			data.points = [for( p in points ) { x : p.x, y : p.y }];
@@ -53,7 +55,8 @@ class Polygon extends Object3D {
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		switch(obj.kind){
-			case 0, 1, 3, 5: shape = Type.createEnumIndex(Shape, obj.kind, obj.args == null ? [0] : obj.args);
+			case 0: shape = Quad;
+			case 1, 3, 5, 6: shape = Type.createEnumIndex(Shape, obj.kind, obj.args == null ? [0] : obj.args);
 			case 4: {
 				var params : Array<Dynamic> = cast obj.args;
 				if (params == null)
@@ -137,7 +140,7 @@ class Polygon extends Object3D {
 
 	public function getPolygonBounds() : h2d.col.Polygon {
 		return switch( shape ) {
-		case Quad(subdivision):
+		case Quad, Grid(_):
 			[
 				new Point(-0.5, -0.5),
 				new Point(0.5, -0.5),
@@ -173,42 +176,33 @@ class Polygon extends Object3D {
 		var indices : Array<Int> = null;
 
 		switch(shape) {
-			case Quad(subdivision):
+			case Quad:
+				points = [
+					new Point(-0.5, -0.5),
+					new Point(0.5, -0.5),
+					new Point(0.5,  0.5),
+					new Point(-0.5,  0.5)];
+				indices = [0, 1, 2, 0, 2, 3];
+				uvs = [for(v in points) new Point(v.x + 0.5, v.y + 0.5)];
 
-				var size = subdivision + 1;
-				var cellCount = size;
-				cellCount *= cellCount;
-
+			case Grid(subdivisions):
+				var n = subdivisions < 1 ? 1 : subdivisions;
 				points = [];
-				for( y in 0 ... size + 1 ) {
-					for( x in 0 ... size + 1 ) {
-						points.push(new Point(Math.lerp(-0.5, 0.5, x / size), Math.lerp(-0.5, 0.5, y / size)));
-					}
-				}
-
+				for(y in 0...n + 1)
+					for(x in 0...n + 1)
+						points.push(new Point(x / n - 0.5, y / n - 0.5));
 				indices = [];
-				for( y in 0 ... size ) {
-					for( x in 0 ... size ) {
-						var i = x + y * (size + 1);
-						if( i % 2 == 0 ) {
-							indices.push(i);
-							indices.push(i + 1);
-							indices.push(i + size + 2);
-							indices.push(i);
-							indices.push(i + size + 2);
-							indices.push(i + size + 1);
-						}
-						else {
-							indices.push(i + size + 1);
-							indices.push(i);
-							indices.push(i + 1);
-							indices.push(i + 1);
-							indices.push(i + size + 2);
-							indices.push(i + size + 1);
-						}
+				for(y in 0...n)
+					for(x in 0...n) {
+						var i = x + y * (n + 1);
+						var j = i + n + 1;
+						indices.push(i);
+						indices.push(i + 1);
+						indices.push(j + 1);
+						indices.push(i);
+						indices.push(j + 1);
+						indices.push(j);
 					}
-				}
-
 				uvs = [for(v in points) new Point(v.x + 0.5, v.y + 0.5)];
 
 			case Disc(segments, angle, inner, rings):
@@ -325,7 +319,7 @@ class Polygon extends Object3D {
 
 		var viewModel = {
 			kind: shape.getName(),
-			subdivision: 0,
+			subdivisions: 4,
 			segments: 16,
 			segmentsH : 16,
 			rings: 4,
@@ -335,13 +329,15 @@ class Polygon extends Object3D {
 		};
 
 		switch(shape) {
-			case Quad(subdivision):
-				viewModel.subdivision = subdivision;
+			case Quad:
 			case Disc(seg, angle, inner, rings):
 				viewModel.segments = seg;
 				viewModel.angle = angle;
 				viewModel.innerRadius = inner;
+				viewModel.rings = rings;
 			case Custom:
+			case Grid(subdivisions):
+				viewModel.subdivisions = subdivisions;
 			case Sphere(segw, segh):
 				viewModel.segments = segw;
 				viewModel.segmentsH = segh;
@@ -355,7 +351,7 @@ class Polygon extends Object3D {
 		function onChange(isTemp) {
 			switch( viewModel.kind ) {
 				case "Quad":
-					shape = Quad(viewModel.subdivision);
+					shape = Quad;
 				case "Disc":
 					shape = Disc(viewModel.segments, viewModel.angle, viewModel.innerRadius, viewModel.rings);
 				case "Sphere":
@@ -364,6 +360,8 @@ class Polygon extends Object3D {
 					shape = Capsule(viewModel.segments, viewModel.segmentsH, cast viewModel.axis);
 				case "Box":
 					shape = Box;
+				case "Grid":
+					shape = Grid(viewModel.subdivisions);
 				case "Custom":
 					shape = Custom;
 				default:
@@ -377,7 +375,7 @@ class Polygon extends Object3D {
 			if (prevShape.getIndex() == shape.getIndex())
 				return;
 			if (shape == Custom) {
-				if (prevShape.match(Quad(_))) {
+				if (prevShape == Quad || prevShape.match(Grid(_))) {
 					points = [
 						new Point(-scaleX/2, -scaleY/2),
 						new Point(-scaleX/2, scaleY/2),
@@ -413,13 +411,14 @@ class Polygon extends Object3D {
 
 		ctx.build(
 			<category("Shape")>
-				<select(["Quad", "Disc", "Sphere", "Capsule", "Box", "Custom"]) field={kind} onValueChange={changeShape}/>
+				<select(["Quad", "Grid", "Disc", "Sphere", "Capsule", "Box", "Custom"]) field={kind} onValueChange={changeShape}/>
 
-				<range(0, 100) int field={segments}/>
-				<range(0, 100) int field={segmentsH} if (viewModel.kind != "Quad" && viewModel.kind != "Disc")/>
+				<range(1, 100) int field={subdivisions} if (viewModel.kind == "Grid")/>
+				<range(0, 100) int field={segments} if (viewModel.kind == "Disc" || viewModel.kind == "Sphere" || viewModel.kind == "Capsule")/>
+				<range(0, 100) int field={segmentsH} if (viewModel.kind == "Sphere" || viewModel.kind == "Capsule")/>
 
 				<block if(viewModel.kind == "Disc")>
-					<range(0, 100) field={rings}/>
+					<range(0, 100) int field={rings}/>
 					<range(0.0, 1.0) field={innerRadius}/>
 					<range(0.0, 360.0) field={angle}/>
 				</block>
@@ -471,7 +470,7 @@ class Polygon extends Object3D {
 		var prevKind : Shape = this.shape;
 		var viewModel = {
 			kind: shape.getName(),
-			subdivision: 0,
+			subdivisions: 4,
 			segments: 16,
 			segmentsH : 16,
 			rings: 4,
@@ -481,13 +480,15 @@ class Polygon extends Object3D {
 		};
 
 		switch(shape) {
-			case Quad(subdivision):
-				viewModel.subdivision = subdivision;
+			case Quad:
 			case Disc(seg, angle, inner, rings):
 				viewModel.segments = seg;
 				viewModel.angle = angle;
 				viewModel.innerRadius = inner;
+				viewModel.rings = rings;
 			case Custom:
+			case Grid(subdivisions):
+				viewModel.subdivisions = subdivisions;
 			case Sphere(segw, segh):
 				viewModel.segments = segw;
 				viewModel.segmentsH = segh;
@@ -504,6 +505,7 @@ class Polygon extends Object3D {
 				<dt>Kind</dt><dd>
 					<select field="kind">
 						<option value="Quad">Quad</option>
+						<option value="Grid">Grid</option>
 						<option value="Disc">Disc</option>
 						<option value="Sphere">Sphere</option>
 						<option value="Capsule">Capsule</option>
@@ -514,9 +516,6 @@ class Polygon extends Object3D {
 			</dl>
 		</div>
 		');
-
-		var quadProps = new hide.Element('
-			<dt>Subdivision</dt><dd><input field="subdivision" type="range" min="0" max="100" step="1" /></dd>');
 
 		var discProps = new hide.Element('
 			<dt>Segments</dt><dd><input field="segments" type="range" min="0" max="100" step="1" /></dd>
@@ -539,7 +538,10 @@ class Polygon extends Object3D {
 			</dd>
 		');
 
-		group.append(quadProps);
+		var gridProps = js.Browser.document.createDListElement();
+		gridProps.innerHTML = '<dt>Subdivisions</dt><dd><input field="subdivisions" type="range" min="1" max="100" step="1" /></dd>';
+
+		group.append(gridProps);
 		group.append(discProps);
 		group.append(sphereProps);
 		group.append(capsuleProps);
@@ -570,7 +572,7 @@ class Polygon extends Object3D {
 
 			switch( viewModel.kind ) {
 				case "Quad":
-					shape = Quad(viewModel.subdivision);
+					shape = Quad;
 				case "Disc":
 					shape = Disc(viewModel.segments, viewModel.angle, viewModel.innerRadius, viewModel.rings);
 				case "Sphere":
@@ -579,10 +581,12 @@ class Polygon extends Object3D {
 					shape = Capsule(viewModel.segments, viewModel.segmentsH, cast Std.parseInt(viewModel.axis));
 				case "Box":
 					shape = Box;
+				case "Grid":
+					shape = Grid(viewModel.subdivisions);
 				case "Custom":
 					shape = Custom;
 					if(pIsKind) {
-						if(prevKind.match(Quad(_))) {
+						if(prevKind == Quad || prevKind.match(Grid(_))) {
 							prevScale = [scaleX, scaleY];
 							function apply() {
 								points = [
@@ -609,7 +613,7 @@ class Polygon extends Object3D {
 						else
 							points = [];
 					}
-				default: shape = Quad(0);
+				default: shape = Quad;
 			}
 
 			if(pIsKind && prevKind == Custom && shape != Custom) {
@@ -625,13 +629,12 @@ class Polygon extends Object3D {
 		var editorProps = editor.addProps(ctx);
 
 		updateProps = function() {
-			quadProps.hide();
+			gridProps.style.display = viewModel.kind == "Grid" ? "" : "none";
 			discProps.hide();
 			sphereProps.hide();
 			editorProps.hide();
 			capsuleProps.hide();
 			switch(viewModel.kind){
-				case "Quad": quadProps.show();
 				case "Disc": discProps.show();
 				case "Sphere": sphereProps.show();
 				case "Capsule": capsuleProps.show();

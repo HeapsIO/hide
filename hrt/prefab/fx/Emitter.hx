@@ -660,7 +660,7 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		if (meshPrimitive == null ) {
-			var shape : Shape = Quad(0);
+			var shape : Shape = Quad;
 			var cache = Polygon.getPrimCache();
 			meshPrimitive = cache.get(shape);
 			if(meshPrimitive == null) {

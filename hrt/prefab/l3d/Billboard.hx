@@ -59,7 +59,7 @@ class BillboardObj extends h3d.scene.Mesh {
 	}
 
 	public function new(?tile:h3d.mat.Texture, ?parent:h3d.scene.Object) {
-		var shape:hrt.prefab.l3d.Polygon.Shape = Quad(0);
+		var shape:hrt.prefab.l3d.Polygon.Shape = Quad;
 		var cache = hrt.prefab.l3d.Polygon.getPrimCache();
 		prim = cache.get(shape);
 		if (prim == null)
