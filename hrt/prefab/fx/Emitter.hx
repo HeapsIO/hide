@@ -82,10 +82,13 @@ enum RandomColorMode {
 typedef PartArray = #if (hl_ver >= version("1.14.0")) hl.CArray<ParticleInstance> #else Array<ParticleInstance> #end;
 typedef Single = #if (hl_ver >= version("1.13.0")) hl.F32 #else Float #end;
 
+// No pointers: the particles array is not scanned by the GC. What a particle rarely has (trail, sub-emitters)
+// is kept by the emitter, per slot of the particles array (`EmitterObject.partTrails`...)
 @:publicFields @:struct
 class ParticleInstance {
-	var prev : ParticleInstance;
-	var next : ParticleInstance;
+	// slots of the previous and next particles of the emitter list, NONE at the ends
+	var prev : Int;
+	var next : Int;
 
 	var x : Single;
 	var y : Single;
@@ -94,34 +97,30 @@ class ParticleInstance {
 	var scaleY : Single;
 	var scaleZ : Single;
 
-	var trail : hrt.prefab.l3d.Trails.TrailHead;
-	var trailGeneration : Int = 0;
-
-	var subEmitters : Array<EmitterObject> = null;
-
 	#if (hl_ver >= version("1.13.0"))
 	@:packed var speedAccumulation(default, never) : SVector3;
 	@:packed var rotationAccumulation(default, never) : SVector3;  // Rotation Speed integrated over the life, in degrees
 	@:packed var qRot(default, never) : SVector4;
-	@:packed var absPos(default, never) : SMatrix3x4;  // Needed for sortZ
 	@:packed var emitOrientation(default, never) : SVector4;  // rotation at emission
+	@:packed var absPos(default, never) : SMatrix3x4;  // Needed for sortZ
 	#else
 	var speedAccumulation(default, never) = new SVector3();
 	var rotationAccumulation(default, never) = new SVector3();
 	var qRot(default, never) = new SVector4();
-	var absPos(default, never) = new SMatrix3x4();
 	var emitOrientation(default, never) = new SVector4();
+	var absPos(default, never) = new SMatrix3x4();
 	#end
 
 	var idx : Int;
-	var startFrame : hxd.impl.UInt16;
 	var life : Single;
 	var lifeTime : Single;
 	var random : Single;
 	var distToCam : Single;
 	var startTime : Single;
+	var startFrame : hxd.impl.UInt16;
 
 	inline static var REMOVED_IDX : Int = -1;
+	inline static var NONE : Int = -1;
 
 	function new() { }
 
@@ -136,8 +135,8 @@ class ParticleInstance {
 		speedAccumulation.load(p.speedAccumulation.toVector());
 		rotationAccumulation.load(p.rotationAccumulation.toVector());
 		qRot.load(p.qRot.toVector());
-		absPos.load(p.absPos.toMatrix());
 		emitOrientation.load(p.emitOrientation.toVector());
+		absPos.load(p.absPos.toMatrix());
 
 		idx = p.idx;
 		startFrame = p.startFrame;
@@ -148,29 +147,6 @@ class ParticleInstance {
 		startTime = p.startTime;
 		prev = p.prev;
 		next = p.next;
-		trail = p.trail;
-		trailGeneration = p.trailGeneration;
-		subEmitters = p.subEmitters;
-	}
-
-	function clear(emitter: EmitterObject = null) {
-		if (subEmitters != null) {
-			for (sub in subEmitters) {
-				if( emitter != null ) {
-					emitter.subEmitters = emitter.subEmitters ?? [];
-					emitter.subEmitters.push(sub);
-					sub.enable = false;
-				} else {
-					sub.remove();
-				}
-			}
-			subEmitters = null;
-		}
-		if( trail != null && emitter != null && emitter.trails != null ) {
-			@:privateAccess emitter.trails.disposeTrail(trail);
-			trail = null;
-		}
-		idx = REMOVED_IDX;
 	}
 
 	function init(idx: Int, emitter: EmitterObject) {
@@ -189,11 +165,6 @@ class ParticleInstance {
 		lifeTime = 0;
 		startFrame = 0;
 		random = emitter.random.rand();
-
-		if (emitter.trails != null) {
-			trail = emitter.trails.allocTrail();
-			trailGeneration = trail.generation;
-		}
 	}
 
 	inline function add( v1 : h3d.Vector, v2 : h3d.Vector4 ) {
@@ -337,7 +308,7 @@ class ParticleInstance {
 		this.absPos.load(absPos);
 	}
 
-	function update(emitter : EmitterObject, scene: h3d.scene.Scene, dt : Float) {
+	function update(emitter : EmitterObject, dt : Float) {
 		var v = new h3d.Vector4();
 
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
@@ -491,22 +462,6 @@ class ParticleInstance {
 			inline q.initDirection(speed);
 			this.qRot.loadQuat(q);
 		}
-
-		if (subEmitters != null) {
-			this.updateAbsPos(emitter);
-			for (sub in subEmitters) {
-				var abs = this.absPos.getPosition();
-				sub.setPosition(abs.x - scene.x, abs.y - scene.y, abs.z - scene.z);
-				sub.tick(dt, true);
-
-				#if editor
-				if (emitter.debugGraphics.visible) {
-					emitter.debugGraphics.lineStyle(0,0xFF00FF);
-					emitter.debugGraphics.drawPointCross(sub.x, sub.y, sub.z, 0.05);
-				}
-				#end
-			}
-		}
 	}
 }
 
@@ -526,8 +481,12 @@ class EmitterObject extends h3d.scene.Object {
 
 	public var particles : PartArray;
 	public var particlesCount : Int;
-	public var listHead : ParticleInstance;
+	public var listHead : Int = ParticleInstance.NONE;  // slot of the first particle of the list
 	var newInstances = 0;  // particles added at the head of the list since the last depth sort
+
+	// per slot of `particles`, out of ParticleInstance to keep it small and without pointers
+	var partTrails : Array<hrt.prefab.l3d.Trails.TrailHead>;
+	var partSubEmitters : Array<Array<EmitterObject>>;  // Follow sub-emitters
 	
 	public var batch : h3d.scene.MeshBatch;
 	public var customAnims : Array<BaseFX.CustomAnimation>;
@@ -801,7 +760,7 @@ class EmitterObject extends h3d.scene.Object {
 		// Dispose previous particles
 		if(particles != null) {
 			for(i in 0...particlesCount) {
-				particles[i].clear(this);
+				clearInstance(i);
 			}
 		}
 
@@ -832,10 +791,10 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		for (i in 0...numInstances) {
-			particles[i].clear(this);
+			clearInstance(i);
 		}
 		numInstances = 0;
-		listHead = null;
+		listHead = ParticleInstance.NONE;
 
 		#if editor
 		debugGraphics.remove();
@@ -859,13 +818,13 @@ class EmitterObject extends h3d.scene.Object {
 		curTime = -prefab.delay;
 		emitCount = 0;
 		emitTarget = 0;
-		listHead = null;
+		listHead = ParticleInstance.NONE;
 
 		evaluator?.resetRandom(random);
 
 		if(particles != null) {
 			for(i in 0...particlesCount) {
-				particles[i].clear(this);
+				clearInstance(i);
 			}
 		}
 
@@ -903,29 +862,29 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function doCheckList() {
-		var p = listHead;
-		var tail = null;
+		var i = listHead;
+		var tail = ParticleInstance.NONE;
 		var count = 0;
-		while(p != null) {
+		while(i != ParticleInstance.NONE) {
 			++count;
+			var p = particles[i];
 			if(p.idx == ParticleInstance.REMOVED_IDX)
 				error();
-			var n = p.next;
-			if(n != null)
-				if(n.prev != p) error();
-			if(p.next != null)
-				p = p.next;
+			if(p.next != ParticleInstance.NONE) {
+				if(particles[p.next].prev != i) error();
+				i = p.next;
+			}
 			else {
-				tail = p;
+				tail = i;
 				break;
 			}
 		}
 		if(count != numInstances) error();
-		p = tail;
+		i = tail;
 		count = 0;
-		while(p != null) {
+		while(i != ParticleInstance.NONE) {
 			++count;
-			p = p.prev;
+			i = particles[i].prev;
 		}
 		if(count != numInstances) error();
 	}
@@ -933,19 +892,45 @@ class EmitterObject extends h3d.scene.Object {
 	inline function checkList() { }
 	#end
 
+	// returns the slot of the new particle
 	function allocInstance() {
 		if(numInstances >= prefab.maxCount) error("allocInstance");
-		var p = particles[numInstances++];
+		var slot = numInstances++;
+		var p = particles[slot];
 		p.init(instanceCounter, this);
-		p.prev = null;
+		p.prev = ParticleInstance.NONE;
 		p.next = listHead;
-		if(listHead != null)
-			listHead.prev = p;
-		listHead = p;
+		if(listHead != ParticleInstance.NONE)
+			particles[listHead].prev = slot;
+		listHead = slot;
+		if (trails != null) {
+			partTrails = partTrails ?? [];
+			partTrails[slot] = trails.allocTrail();
+		}
 		newInstances++;
 		instanceCounter = (instanceCounter + 1) % prefab.maxCount;
 		checkList();
-		return p;
+		return slot;
+	}
+
+	// releases what the particle of `slot` holds: its Follow sub-emitters go to this emitter until they end
+	function clearInstance(slot: Int) {
+		var subs = partSubEmitters != null ? partSubEmitters[slot] : null;
+		if (subs != null) {
+			for (sub in subs) {
+				subEmitters = subEmitters ?? [];
+				subEmitters.push(sub);
+				sub.enable = false;
+			}
+			partSubEmitters[slot] = null;
+		}
+		var trail = partTrails != null ? partTrails[slot] : null;
+		if (trail != null) {
+			if (trails != null)
+				@:privateAccess trails.disposeTrail(trail);
+			partTrails[slot] = null;
+		}
+		particles[slot].idx = ParticleInstance.REMOVED_IDX;
 	}
 
 	function disposeInstance(idx: Int) {
@@ -960,40 +945,46 @@ class EmitterObject extends h3d.scene.Object {
 		if(o.idx == ParticleInstance.REMOVED_IDX) error("double dispose");
 
 		// Transfer remaining subemitter to this emitter array
-		o.clear(this);
+		clearInstance(idx);
 
 		var prev = o.prev;
 		var next = o.next;
-		if(prev != null) {
-			if(prev.next == next) error();
-			prev.next = next;
+		if(prev != ParticleInstance.NONE) {
+			if(particles[prev].next == next) error();
+			particles[prev].next = next;
 		}
 		else {
-			if(listHead != o) error();
+			if(listHead != idx) error();
 			if(listHead == next) error();
 			listHead = next;
 		}
-		if(next != null) {
-			if(next.prev == prev) error();
-			next.prev = prev;
+		if(next != ParticleInstance.NONE) {
+			if(particles[next].prev == prev) error();
+			particles[next].prev = prev;
 		}
 
 		// remove swap
-		if(idx < numInstances) {
-			var swap = particles[numInstances];
+		var last = numInstances;
+		if(idx < last) {
+			var swap = particles[last];
 			if(swap.idx == ParticleInstance.REMOVED_IDX) error();
 			o.load(swap);
 			swap.idx = ParticleInstance.REMOVED_IDX;
-			swap.subEmitters = null;
-			if(swap.prev != null)
-				swap.prev.next = o;
-			if(swap.next != null)
-				swap.next.prev = o;
-			if(listHead == swap)
-				listHead = o;
+			if(o.prev != ParticleInstance.NONE)
+				particles[o.prev].next = idx;
+			if(o.next != ParticleInstance.NONE)
+				particles[o.next].prev = idx;
+			if(listHead == last)
+				listHead = idx;
+			if(partTrails != null) {
+				partTrails[idx] = partTrails[last];
+				partTrails[last] = null;
+			}
+			if(partSubEmitters != null) {
+				partSubEmitters[idx] = partSubEmitters[last];
+				partSubEmitters[last] = null;
+			}
 		}
-		else
-			o.idx = ParticleInstance.REMOVED_IDX;
 
 		checkList();
 		return idx;
@@ -1030,7 +1021,8 @@ class EmitterObject extends h3d.scene.Object {
 				static var offset = new h3d.Vector();
 				static var orient = new h3d.Quat();
 
-				var part = allocInstance();
+				var slot = allocInstance();
+				var part = particles[slot];
 				part.startTime = globalTime;
 				part.lifeTime = hxd.Math.max(0.01, evaluator.getLifeTime(part.idx, curTime) * lifeTimeScale);
 
@@ -1199,8 +1191,11 @@ class EmitterObject extends h3d.scene.Object {
 						var emitter = makeSubEmitter(template, this);
 						emitter.ignoreParentTransform = true;
 						emitter.updateParentNonEmitter();
-						part.subEmitters = part.subEmitters ?? [];
-						part.subEmitters.push(emitter);
+						partSubEmitters = partSubEmitters ?? [];
+						var subs = partSubEmitters[slot];
+						if (subs == null)
+							partSubEmitters[slot] = subs = [];
+						subs.push(emitter);
 					}
 				}
 			}
@@ -1409,13 +1404,9 @@ class EmitterObject extends h3d.scene.Object {
 		}
 	}
 
-	static function sortZ( p1 : ParticleInstance, p2 : ParticleInstance ) : Int {
-		return p1.distToCam < p2.distToCam ? 1 : -1;
-	}
-
 	function depthSort() {
 		checkList();
-		listHead = EmitterHelper.depthSort(listHead, newInstances, numInstances * 2, sortZ);
+		listHead = EmitterHelper.depthSort(particles, listHead, newInstances, numInstances * 2);
 		newInstances = 0;
 		checkList();
 	}
@@ -1426,7 +1417,8 @@ class EmitterObject extends h3d.scene.Object {
 
 		// assigned to batch.worldPosition : can't be inlined
 		static var worldMat = new h3d.Matrix();
-		inline function emit(p: ParticleInstance) {
+		inline function emit(i: Int) {
+			var p = particles[i];
 			if (p.life > p.lifeTime)
 				return;
 			inline worldMat.load(p.absPos.toMatrix());
@@ -1448,22 +1440,17 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		switch(prefab.sortMode) {
-			case Depth:
+			case Depth, Instance:
+				if(prefab.sortMode == Depth)
 					depthSort();
-					var p = listHead;
-					while(p != null) {
-						emit(p);
-						p = p.next;
-					}
-			case Instance:
-				var p = listHead;
-				while(p != null) {
-					emit(p);
-					p = p.next;
+				var i = listHead;
+				while(i != ParticleInstance.NONE) {
+					emit(i);
+					i = particles[i].next;
 				}
 			case None:
 				for(i in 0...numInstances)
-					emit(particles[i]);
+					emit(i);
 		}
 	}
 
@@ -1505,11 +1492,12 @@ class EmitterObject extends h3d.scene.Object {
 		var i = 0;
 		while(i < numInstances) {
 			var p = particles[i];
+			var trail = partTrails != null ? partTrails[i] : null;
 			if(p.life > p.lifeTime) {
-				if (trails != null && p.trail != null && p.trail.numPoints > 0) {
+				if (trails != null && trail != null && trail.numPoints > 0) {
 					// trail still fading out, keep particle slot alive until all points expire
 					var pos = p.absPos.getPosition();
-					trails.updateTrail(p.trail, dt, pos.x, pos.y, pos.z);
+					trails.updateTrail(trail, dt, pos.x, pos.y, pos.z);
 					++i;
 				} else {
 					// SUB EMITTER
@@ -1531,7 +1519,10 @@ class EmitterObject extends h3d.scene.Object {
 				}
 			}
 			else {
-				p.update(this, scene, dt);
+				p.update(this, dt);
+				var subs = partSubEmitters != null ? partSubEmitters[i] : null;
+				if (subs != null)
+					updateFollowSubEmitters(p, subs, dt);
 				postParticleUpdate(p, dt);
 
 				if(full) {
@@ -1544,11 +1535,27 @@ class EmitterObject extends h3d.scene.Object {
 
 				if (trails != null) {
 					var pos = p.absPos.getPosition();
-					trails.updateTrail(p.trail, dt, pos.x, pos.y, pos.z);
+					trails.updateTrail(trail, dt, pos.x, pos.y, pos.z);
 				}
 			}
 		}
 		checkList();
+	}
+
+	function updateFollowSubEmitters(p: ParticleInstance, subs: Array<EmitterObject>, dt: Float) {
+		p.updateAbsPos(this);
+		var abs = p.absPos.getPosition();
+		for (sub in subs) {
+			sub.setPosition(abs.x - scene.x, abs.y - scene.y, abs.z - scene.z);
+			sub.tick(dt, true);
+
+			#if editor
+			if (debugGraphics.visible) {
+				debugGraphics.lineStyle(0,0xFF00FF);
+				debugGraphics.drawPointCross(sub.x, sub.y, sub.z, 0.05);
+			}
+			#end
+		}
 	}
 
 	public function hasActiveParts() : Bool {
@@ -2297,7 +2304,6 @@ class SVector4 {
 	}
 }
 
-
 // affine transform, the last column is (0, 0, 0, 1)
 @:publicFields @:struct
 class SMatrix3x4 {
@@ -2329,4 +2335,5 @@ class SMatrix3x4 {
 		_31 = m._31; _32 = m._32; _33 = m._33;
 		_41 = m._41; _42 = m._42; _43 = m._43;
 	}
+
 }

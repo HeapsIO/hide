@@ -1,6 +1,8 @@
 package hrt.prefab.fx;
 
 import hrt.prefab.fx.EmitterParam;
+import hrt.prefab.fx.Emitter.PartArray;
+import hrt.prefab.fx.Emitter.ParticleInstance;
 
 typedef PropertyDef = {
 	> hrt.prefab.Props.PropDef,
@@ -99,75 +101,138 @@ class EmitterHelper {
 		m._41 = a * c - b * s; m._42 = a * s + b * c;
 	}
 
+	// Depth sort of the particle list (linked by slots of `parts`), back to front by their `distToCam`
 	// Optim: up to 4x faster than a full sort when < 5% of the particles are new each frame
-	public static inline function depthSort<T:{prev:T, next:T}>( head : T, k : Int, budget : Int, cmp : T -> T -> Int ) : T {
+	public static function depthSort( parts : PartArray, head : Int, k : Int, budget : Int ) : Int {
 		var rest = head;
 		for( i in 0...k ) {
-			if( rest == null ) break;
-			rest = rest.next;
+			if( rest == NONE ) break;
+			rest = parts[rest].next;
 		}
-		var fresh : T = null;
+		var fresh = NONE;
 		if( rest != head ) {
 			fresh = head;
-			if( rest != null ) {
-				rest.prev.next = null;
-				rest.prev = null;
+			if( rest != NONE ) {
+				parts[parts[rest].prev].next = NONE;
+				parts[rest].prev = NONE;
 			}
-			fresh = haxe.ds.ListSort.sort(fresh, cmp);
+			fresh = listSort(parts, fresh);
 		}
-		return merge(fresh, insertionSort(rest, budget, cmp), cmp);
+		return merge(parts, fresh, insertionSort(parts, rest, budget));
 	}
 
-	static inline function insertionSort<T:{prev:T, next:T}>( head : T, budget : Int, cmp : T -> T -> Int ) : T {
-		var cur = head == null ? null : head.next;
-		while( cur != null ) {
-			var next = cur.next;
-			var p = cur.prev;
-			if( cmp(p, cur) > 0 ) {
-				p.next = next;
-				if( next != null )
-					next.prev = p;
-				while( p.prev != null && cmp(p.prev, cur) > 0 && --budget >= 0 )
-					p = p.prev;
-				cur.prev = p.prev;
-				cur.next = p;
-				if( p.prev != null )
-					p.prev.next = cur;
+	static inline var NONE = ParticleInstance.NONE;
+
+	static inline function cmp( parts : PartArray, a : Int, b : Int ) {
+		return parts[a].distToCam < parts[b].distToCam ? 1 : -1;
+	}
+
+	static function insertionSort( parts : PartArray, head : Int, budget : Int ) : Int {
+		var cur = head == NONE ? NONE : parts[head].next;
+		while( cur != NONE ) {
+			var c = parts[cur];
+			var next = c.next;
+			var p = c.prev;
+			if( cmp(parts, p, cur) > 0 ) {
+				parts[p].next = next;
+				if( next != NONE )
+					parts[next].prev = p;
+				while( parts[p].prev != NONE && cmp(parts, parts[p].prev, cur) > 0 && --budget >= 0 )
+					p = parts[p].prev;
+				var pp = parts[p].prev;
+				c.prev = pp;
+				c.next = p;
+				if( pp != NONE )
+					parts[pp].next = cur;
 				else
 					head = cur;
-				p.prev = cur;
+				parts[p].prev = cur;
 				if( budget < 0 ) {
-					head = haxe.ds.ListSort.sort(head, cmp);
+					head = listSort(parts, head);
 					break;
 				}
 			}
 			cur = next;
 		}
-		// `ListSort.sort` sets the `prev` of the head to the tail
-		if( head != null )
-			head.prev = null;
+		// `listSort` sets the `prev` of the head to the tail
+		if( head != NONE )
+			parts[head].prev = NONE;
 		return head;
 	}
 
-	static inline function merge<T:{prev:T, next:T}>( a : T, b : T, cmp : T -> T -> Int ) : T {
-		var head : T = null, tail : T = null;
-		while( a != null || b != null ) {
+	static function merge( parts : PartArray, a : Int, b : Int ) : Int {
+		var head = NONE, tail = NONE;
+		while( a != NONE || b != NONE ) {
 			var e;
-			if( b == null || (a != null && cmp(a, b) <= 0) ) {
+			if( b == NONE || (a != NONE && cmp(parts, a, b) <= 0) ) {
 				e = a;
-				a = a.next;
+				a = parts[a].next;
 			} else {
 				e = b;
-				b = b.next;
+				b = parts[b].next;
 			}
-			if( tail == null )
+			if( tail == NONE )
 				head = e;
 			else
-				tail.next = e;
-			e.prev = tail;
+				parts[tail].next = e;
+			parts[e].prev = tail;
 			tail = e;
 		}
 		return head;
+	}
+
+	// haxe.ds.ListSort.sort on slots
+	static function listSort( parts : PartArray, list : Int ) : Int {
+		if( list == NONE )
+			return NONE;
+		var insize = 1, nmerges, psize = 0, qsize = 0;
+		var p, q, e, tail = NONE;
+		while( true ) {
+			p = list;
+			list = NONE;
+			tail = NONE;
+			nmerges = 0;
+			while( p != NONE ) {
+				nmerges++;
+				q = p;
+				psize = 0;
+				for( i in 0...insize ) {
+					psize++;
+					q = parts[q].next;
+					if( q == NONE )
+						break;
+				}
+				qsize = insize;
+				while( psize > 0 || (qsize > 0 && q != NONE) ) {
+					if( psize == 0 ) {
+						e = q;
+						q = parts[q].next;
+						qsize--;
+					} else if( qsize == 0 || q == NONE || cmp(parts, p, q) <= 0 ) {
+						e = p;
+						p = parts[p].next;
+						psize--;
+					} else {
+						e = q;
+						q = parts[q].next;
+						qsize--;
+					}
+					if( tail != NONE )
+						parts[tail].next = e;
+					else
+						list = e;
+					parts[e].prev = tail;
+					tail = e;
+				}
+				p = q;
+			}
+			parts[tail].next = NONE;
+			if( nmerges <= 1 )
+				break;
+			insize *= 2;
+		}
+		parts[list].prev = tail;
+		return list;
 	}
 
 	#if domkit
