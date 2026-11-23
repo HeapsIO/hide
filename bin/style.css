@@ -4432,6 +4432,62 @@ div.gradient-box {
 	}
 }
 
+.about {
+	height: 100%;
+	box-sizing: border-box;
+	padding: 12px 16px;
+	font-family: var(--default-font);
+
+	> .header {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		font-size: 1.6em;
+
+		img {
+			width: 32px;
+			height: 32px;
+		}
+	}
+
+	h2 {
+		margin: 16px 0 4px 0;
+		font-size: 1.1em;
+		color: var(--theme-foreground);
+	}
+
+	.entries {
+		display: grid;
+		grid-template-columns: max-content 1fr;
+		gap: 4px 16px;
+		user-select: text;
+		overflow-wrap: anywhere;
+
+		.name {
+			color: #999;
+		}
+	}
+
+	.status-icons {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+
+		.status-icon > * {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+
+			&::after {
+				content: attr(title);
+				font-family: var(--default-font);
+				color: var(--theme-foreground);
+				user-select: text;
+			}
+		}
+	}
+}
+
 .remoteconsole {
 
 	.ico {
@@ -5494,106 +5550,39 @@ hide-popover {
 		overflow: clip;
 	}
 
-	> .status-bar {
-		overflow-x: hidden;
-
-		padding-left: 4px;
-		padding-right: 4px;
-
-		height: 16px;
-		background-color: var(--theme-mantle);
-		border-top: 1px solid var(--theme-crust);
-		flex-shrink: 0;
-
+	> .launcher-bar {
 		display: flex;
-		position: relative;
+		justify-content: center;
+		flex-shrink: 0;
+		padding: 2px 0;
+		background-color: var(--theme-crust);
+	}
 
+	> .error-suppressed {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		gap: 10px;
+		padding: 2px 4px;
+		background-color: #ee6666;
+		color: black;
 		font-family: var(--default-font);
 
-
-		&.error {
+		button {
+			border: none;
 			background-color: #ee6666;
-			color: black;
 
-			.game-launcher {
-				display: none;
-			}
-		}
-
-		.build {
-			margin-left: auto;
-			flex-grow: 0;
-		}
-
-		.game-launcher {
-			position: absolute;
-			left: 50%;
-			top: 0px;
-			height: 100%;
-			transform: translateX(-50%);
-		}
-
-		.error-suppressed {
-			button {
-				.ico {
-					margin-right: 5px;
-				}
-				margin-right: 10px;
-				border: none;
-				background-color: #ee6666;
-
-				&:hover {
-					cursor: pointer;
-					background-color: #ff8a8a;
-					color: white
-				}
+			.ico {
+				margin-right: 5px;
 			}
 
-			flex-grow: 1;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			margin-left: auto;
-			margin-right: auto;
-			padding-left: 4px;
-			padding-right: 4px;
-			color: black;
-			border-radius: 3px;
-		}
-
-		#status-icons {
-			flex-grow: 0;
-			display: flex;
-			align-items: center;
-
-			gap: 4px;
-
-			> .icon {
-				height: 14px;
-				width: 14px;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				font-size: 1em;
-			}
-
-			button {
-				height: 14px;
-				font-size: 0.8em;
-				padding: 2px;
-				margin: 0px;
-				border: none;
-				outline: none;
-				border-radius: 2px;
-
-				background-color: #efefef;
-				&:hover {
-					background-color: #ddd;
-				}
+			&:hover {
+				cursor: pointer;
+				background-color: #ff8a8a;
+				color: white;
 			}
 		}
-
-
 	}
 }
 

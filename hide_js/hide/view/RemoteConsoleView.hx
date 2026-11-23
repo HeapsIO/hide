@@ -16,7 +16,6 @@ package hide.view;
  */
 class RemoteConsoleView extends hide.ui.View<{}> {
 	static var rcmd : hrt.impl.RemoteConsole;
-	static var statusBarIcon : Element;
 	static var inst : RemoteConsoleView;
 	var panels : Array<RemoteConsolePanel>;
 	var panelsView : Element;
@@ -119,38 +118,26 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 		p.close(true);
 	}
 
-	public static function refreshStatusIcon() {
-		if( statusBarIcon == null ) {
-			statusBarIcon = new Element('<div class="ico ico-dot-circle-o" style="cursor:default;"></div>');
-			hide.Ide.inst.addStatusIcon(statusBarIcon);
-		}
-		if( rcmd == null ) {
-			statusBarIcon.css("color", "darkgray");
-			statusBarIcon.prop("title", "[Remote Console] Server not started");
-		} else if( rcmd.isConnected() ) {
-			statusBarIcon.css("color", "#009500");
-			statusBarIcon.prop("title", "[Remote Console] Server active");
-		} else {
-			statusBarIcon.css("color", "#c10000");
-			statusBarIcon.prop("title", "[Remote Console] Server stopped");
-		}
-		statusBarIcon.empty();
-		statusBarIcon.append(new Element('<span> ${rcmd.connections.length}</span>'));
+	public static function getStatusText() {
+		if( rcmd == null )
+			return "Not started";
+		var count = rcmd.connections.length;
+		return (rcmd.isConnected() ? "Active" : "Stopped") + ' ($count connection${count > 1 ? "s" : ""})';
 	}
 
 	static function startServer( port, host ) {
 		if( rcmd != null && rcmd.isConnected() )
 			return;
 		rcmd = new hrt.impl.RemoteConsole(port, host);
-		rcmd.onClose = () -> refreshStatusIcon();
+		rcmd.onClose = () -> About.refreshAll();
 		rcmd.startServer(function(c) {
 			if( inst != null )
 				inst.addPanel(c);
 			else
-				c.onClose = () -> refreshStatusIcon();
-			refreshStatusIcon();
+				c.onClose = () -> About.refreshAll();
+			About.refreshAll();
 		});
-		refreshStatusIcon();
+		About.refreshAll();
 	}
 
 	static function stopServer() {
@@ -270,7 +257,7 @@ class RemoteConsolePanel extends hide.comp.Component {
 		peerPath = null;
 		peerCwd = null;
 		if( c != null ) {
-			c.onClose = () -> refreshStatusIcon();
+			c.onClose = () -> About.refreshAll();
 			c.log = (msg) -> log(msg);
 			c.logError = (msg) -> log(msg, true);
 			c.sendCommand("info", null, function(d) {
@@ -291,7 +278,7 @@ class RemoteConsolePanel extends hide.comp.Component {
 			connection.logError = (msg) -> {};
 		}
 		connection = c;
-		refreshStatusIcon();
+		About.refreshAll();
 		return connection;
 	}
 	function addCommandElement( name : String ) {
@@ -303,8 +290,8 @@ class RemoteConsolePanel extends hide.comp.Component {
 		var comp = Type.createInstance(c, [this]);
 		comp.element.appendTo(element.find(".commands"));
 	}
-	function refreshStatusIcon() {
-		RemoteConsoleView.refreshStatusIcon();
+	function refreshStatus() {
+		About.refreshAll();
 		if( statusIcon == null )
 			return;
 		if( connection == null ) {

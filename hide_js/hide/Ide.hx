@@ -63,8 +63,8 @@ class Ide extends hide.tools.IdeData {
 	var sourceMaps = new Map<String, { sources : Array<String>, lines : Array<Array<Int>> }>();
 
 	var hideRoot : hide.Element;
-	var statusBar : hide.Element;
-	var statusIcons : hide.Element;
+	var errorBanner : js.html.Element;
+	var statusIcons : js.html.Element;
 
 	public var show3DIcons = true;
 	public var show3DIconsCategory : Map<hrt.impl.EditorTools.IconCategory, Bool> = new Map();
@@ -450,22 +450,19 @@ class Ide extends hide.tools.IdeData {
 		layoutRoot.addEventListener("split-resize", onResize);
 		middleZones.addEventListener("split-resize", onResize);
 
-		statusBar = new Element('<div class="status-bar"></div>').appendTo(hideRoot);
-		statusIcons = new Element('<div id="status-icons"></div>').appendTo(statusBar);
-		var launcherParent = statusBar;
-		if( titleBar != null ) {
-			titleBar.launcher.innerHTML = "";
-			launcherParent = new Element(titleBar.launcher);
-		}
-		if( isProjectValid() )
-			new hide.comp.GameLauncherWidget(launcherParent);
-
-		var commitHash = getGitCommitHashAndDate();
-		if (commitHash.length > 0) {
-			if (commitHash == "dev")
-				commitHash = 'dev(${js.node.Path.basename(js.node.Path.dirname(js.Node.__dirname))})';
-			var driver = #if dx12 "dx12" #else "webgl" #end;
-			new Element('<span class="build">hide $driver $commitHash</span>').appendTo(statusBar);
+		if( errorBanner != null )
+			hideRoot.get(0).prepend(errorBanner);
+		if( isProjectValid() ) {
+			var launcherParent;
+			if( titleBar != null ) {
+				titleBar.launcher.innerHTML = "";
+				launcherParent = titleBar.launcher;
+			} else {
+				hide.html.Html.build(hideRoot.get(0), <div id="launcherBar" class="launcher-bar"/>);
+				hideRoot.get(0).prepend(launcherBar);
+				launcherParent = launcherBar;
+			}
+			new hide.comp.GameLauncherWidget(new Element(launcherParent));
 		}
 
 		var initViews = [];
@@ -737,7 +734,6 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	var showErrors = true;
-	var errorWindow :Element = null;
 	override function error( e : Dynamic ) {
 		if( showErrors ) {
 			onIdeError(e);
@@ -745,23 +741,15 @@ class Ide extends hide.tools.IdeData {
 				showErrors = false;
 		}
 
-		if (!showErrors) {
-			if (errorWindow == null) {
-				statusBar.toggleClass("error");
-
-				errorWindow = new Element('<div class="error-suppressed">
-					<button class="reload"><i class="icon ico ico-refresh"></i>Reload</button>
+		if( !showErrors && errorBanner == null ) {
+			hide.html.Html.build(hideRoot.get(0),
+				<div id="banner" class="error-suppressed">
+					<button onclick={(_) -> reload()}><i class="icon ico ico-refresh"></i>Reload</button>
 					<span>Errors are currently suppressed in the editor. Please save your work and reload.</span>
-					</div>
-				');
-
-				errorWindow.insertAfter(statusIcons);
-
-				var btnSaveReload = errorWindow.find(".reload");
-				btnSaveReload.click(function(_) {
-					this.reload();
-				});
-			}
+				</div>
+			);
+			errorBanner = banner;
+			hideRoot.get(0).prepend(banner);
 		}
 
 		js.Browser.console.error(e);
@@ -1079,20 +1067,16 @@ class Ide extends hide.tools.IdeData {
 			electron.Dialog.openFiles(dialogOptions, onResult);
 	}
 
-	/**
-		Adds an element to the ide status bar
-	**/
 	public function addStatusIcon(e: hide.Element) {
-		function wait() {
-			if( statusIcons == null ) {
-				haxe.Timer.delay(wait, 10);
-				return;
-			}
-
-			var wrapper = new hide.Element('<div class="statusbar-icon"></div>').appendTo(statusIcons);
-			wrapper.append(e);
+		if( statusIcons == null ) {
+			statusIcons = js.Browser.document.createDivElement();
+			statusIcons.classList.add("status-icons");
 		}
-		wait();
+		var wrapper = js.Browser.document.createDivElement();
+		wrapper.classList.add("status-icon");
+		for( el in e.get() )
+			wrapper.appendChild(el);
+		statusIcons.appendChild(wrapper);
 	}
 
 	public function chooseFiles( exts : Array<String>, onSelect : Array<String> -> Void, allowNull=false ) {
