@@ -2,8 +2,6 @@ package hide.html.comp;
 
 import hide.html.WebComponent;
 
-typedef AnimTarget = { path : String, match : Float };
-
 @:keep
 class ModelAnimPicker extends WebComponent {
 	public var onPick : (modelPath : String) -> Void;
@@ -21,7 +19,7 @@ class ModelAnimPicker extends WebComponent {
 	public function load( animPath : String, previewModelPath : Null<String> ) {
 		var ide = hide.Ide.inst;
 		var targets = findTargets(animPath);
-		selected = previewModelPath ?? targets[0]?.path;
+		selected = previewModelPath ?? targets[0];
 
 		var panel = js.Browser.document.createDivElement();
 		panel.className = "panel";
@@ -30,7 +28,7 @@ class ModelAnimPicker extends WebComponent {
 			<div class="content">
 				<h2>This file does not contain any model</h2>
 				<p>${targets.length > 0
-					? "Pick a model to preview its animation on. Models are ranked by the ratio of animated objects found in their skeleton."
+					? "Pick a model to preview its animation on."
 					: "No model plays the animations of this folder (same folder or hmd.animPaths)."}</p>
 				<input id="filter" type="search" placeholder="Filter models..." hidden={targets.length == 0}/>
 				<div id="list" class="targets" hidden={targets.length == 0}></div>
@@ -43,31 +41,30 @@ class ModelAnimPicker extends WebComponent {
 		);
 
 		var rows : Array<js.html.Element> = [];
-		for (t in targets) {
-			var name = t.path.split("/").pop();
+		for (path in targets) {
+			var name = path.split("/").pop();
 			hide.html.Html.build(list,
-				<div id="row" class="target" title={t.path}>
+				<div id="row" class="target" title={path}>
 					<div class="name">
 						<span>${name}</span>
-						<span class="dir">${t.path.substr(0, t.path.length - name.length)}</span>
+						<span class="dir">${path.substr(0, path.length - name.length)}</span>
 					</div>
-					<span class="match">${Math.round(t.match * 100) + "%"}</span>
 				</div>
 			);
-			row.classList.toggle("selected", t.path == selected);
+			row.classList.toggle("selected", path == selected);
 			row.onclick = () -> {
 				for (r in rows)
 					r.classList.toggle("selected", r == row);
-				selected = t.path;
+				selected = path;
 			};
-			row.ondblclick = () -> pick(t.path);
+			row.ondblclick = () -> pick(path);
 			rows.push(row);
 		}
 
 		filter.oninput = () -> {
 			var text = filter.value.toLowerCase();
 			for (i => r in rows)
-				r.hidden = targets[i].path.toLowerCase().indexOf(text) < 0;
+				r.hidden = targets[i].toLowerCase().indexOf(text) < 0;
 		};
 	}
 
@@ -76,27 +73,26 @@ class ModelAnimPicker extends WebComponent {
 			onPick(hide.Ide.inst.makeRelative(path));
 	}
 
-	public static function findTargets( animPath : String ) : Array<AnimTarget> {
+	public static function findTargets( animPath : String ) : Array<String> {
 		var ide = hide.Ide.inst;
 		var animDir = normalizeDir(haxe.io.Path.directory(ide.getPath(animPath)));
 		var animated = [for (a in loadHeader(animPath).animations) for (o in a.objects) o.name => true];
-		var count = Lambda.count(animated);
-		if (count == 0)
+		if (Lambda.empty(animated))
 			return [];
 
-		var targets : Array<AnimTarget> = [];
-		var dirCanPlayAnims : Map<String, Bool> = [];
+		var targets : Array<String> = [];
+		var allowedDirCache : Map<String, Bool> = [];
 		for (ext in ["fbx", "hmd"]) {
 			for (f in hide.tools.FileManager.inst.getFilesWithExt(ext)) {
 				if (f.ignored || h3d.anim.Animation.isAnimation(f.name))
 					continue;
 				var dir = f.parent.getPath();
-				var canPlay = dirCanPlayAnims.get(dir);
-				if (canPlay == null) {
-					canPlay = canPlayAnimsFrom(f.getPath(), animDir);
-					dirCanPlayAnims.set(dir, canPlay);
+				var isAllowed = allowedDirCache.get(dir);
+				if (isAllowed == null) {
+					isAllowed = isAnimDirAllowed(f.getPath(), animDir);
+					allowedDirCache.set(dir, isAllowed);
 				}
-				if (!canPlay)
+				if (!isAllowed)
 					continue;
 
 				// a broken asset of the folder must not prevent picking the others
@@ -108,15 +104,18 @@ class ModelAnimPicker extends WebComponent {
 						for (j in m.skin.joints)
 							names.set(j.name, true);
 				}
-				var found = 0;
-				for (n in animated.keys())
-					if (names.exists(n))
-						found++;
-				if (found > 0)
-					targets.push({ path : f.getRelPath(), match : found / count });
+				var hasAnimatedObject = false;
+				for (n in animated.keys()) {
+					if (names.exists(n)) {
+						hasAnimatedObject = true;
+						break;
+					}
+				}
+				if (hasAnimatedObject)
+					targets.push(f.getRelPath());
 			}
 		}
-		targets.sort((a, b) -> a.match != b.match ? (a.match < b.match ? 1 : -1) : Reflect.compare(a.path, b.path));
+		targets.sort(Reflect.compare);
 		return targets;
 	}
 
@@ -124,7 +123,7 @@ class ModelAnimPicker extends WebComponent {
 		return hxd.res.Loader.currentInstance.load(hide.Ide.inst.makeRelative(path)).toModel().toHmd().header;
 	}
 
-	static function canPlayAnimsFrom( modelPath : String, animDir : String ) {
+	static function isAnimDirAllowed( modelPath : String, animDir : String ) {
 		var ide = hide.Ide.inst;
 		if (normalizeDir(haxe.io.Path.directory(modelPath)) == animDir)
 			return true;
