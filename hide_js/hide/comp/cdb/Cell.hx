@@ -1378,13 +1378,6 @@ class Cell {
 			}, false, (currentValue == '') ? null : currentValue);
 			#end
 		case TFlags(values):
-			elementHtml.innerHTML = null;
-
-			var modal = new hide.comp.Popup(new Element(elementHtml));
-
-			var div = modal.element;
-			div.addClass("flagValues");
-			div.click(function(e) e.stopPropagation()).dblclick(function(e) e.stopPropagation());
 			var view = table.view;
 			var mask = -1;
 			if( view != null && view.options != null ) {
@@ -1392,26 +1385,24 @@ class Cell {
 				if( m != null ) mask = m;
 			}
 			var val = currentValue;
+			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
 			for( i in 0...values.length ) {
 				if( mask & (1<<i) == 0 ) continue;
-				var f = new Element("<input>").attr("type", "checkbox").prop("checked", val & (1 << i) != 0).change(function(e) {
-					val &= ~(1 << i);
-					if( e.getThis().is(":checked") ) val |= 1 << i;
-					e.stopPropagation();
+				items.push({
+					label : values[i],
+					checked : val & (1 << i) != 0,
+					stayOpen : true,
+					tooltip : getEnumValueDoc(values[i]),
+					click : () -> {
+						val ^= 1 << i;
+					},
 				});
-				var line = new Element("<label>");
-				line.text(values[i]).appendTo(div).prepend(f);
-				var doc = getEnumValueDoc(values[i]);
-				if( doc != null ) {
-					line.attr("title", doc);
-					new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(line);
-				}
 			}
-			modal.onClose = () -> {
+			var menu = ContextMenu.createDropdown(elementHtml, items, { search : Visible });
+			menu.onClose = () -> {
 				setValue(val);
 				closeEdit(false);
 			};
-			@:privateAccess modal.reflow();
 		case TTilePos:
 			var modal = new hide.comp.Modal.Modal2(new Element(elementHtml), "Tile Picker", "tile-picker");
 			var modalHtml = modal.element.get(0);

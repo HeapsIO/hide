@@ -13,7 +13,6 @@
 	--contextmenu-layer: 900;
 
 	--cdb-error-layer: 300;
-	--cdb-flageditor-layer: var(--popup-layer);
 	--cdb-preview-layer: calc(var(--popup-layer) + 10);
 
 	--color-highlight-gray: #969696;
