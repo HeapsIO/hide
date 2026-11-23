@@ -1012,10 +1012,27 @@ class EmitterObject extends h3d.scene.Object {
 					@:privateAccess shader.makeInstance();
 			}
 
-			// computed once, at the first emitted particle
-			var emitterQuat = new h3d.Quat();
-			var mat = new h3d.Matrix();
-			var emitterTransformDone = false;
+			static var emitterQuat = new h3d.Quat();
+			static var mat = new h3d.Matrix();
+			static var invParent = new h3d.Matrix();
+			switch( prefab.simulationSpace ) {
+				case Local:
+					var parentPos = parentNonEmitter.getAbsPos();
+					invParent.initInverse(parentPos);
+					mat.multiply(getAbsPos(), invParent);
+					if( prefab.particleScaling == None ) {
+						// the particles are not scaled by the parent, their positions still are
+						var s = parentPos.getScale();
+						mat.scale(s.x, s.y, s.z);
+					}
+					emitterQuat.load(getRotationQuat());
+				case World:
+					mat.load(getAbsPos());
+					var s = mat.getScale();
+					mat.prependScale(1.0/s.x, 1.0/s.y, 1.0/s.z);
+					emitterQuat.initRotateMatrix(mat);
+					emitterQuat.normalize();
+			}
 			var frameCount = prefab.frameCount == 0 ? prefab.frameDivisionX * prefab.frameDivisionY : prefab.frameCount;
 			for( i in 0...count ) {
 				var offset = new h3d.Vector();
@@ -1132,26 +1149,9 @@ class EmitterObject extends h3d.scene.Object {
 
 				switch( prefab.simulationSpace ) {
 					case Local:
-						if( !emitterTransformDone ) {
-							emitterTransformDone = true;
-							emitterQuat.load(getRotationQuat());
-							inline mat.load(getAbsPos());
-							// initInverse calls zero() : can't be inlined
-							static var invParent = new h3d.Matrix();
-							invParent.initInverse(parentNonEmitter.getAbsPos());
-							inline mat.multiply(mat, invParent);
-							if (prefab.particleScaling == None) {
-								// // Re-introduce parent scaling in the spawn position calculations
-								var parentScale = inline parentNonEmitter.getAbsPos().getScale();
-								var scale = new h3d.Matrix();
-								inline scale.initScale(parentScale.x, parentScale.y, parentScale.z);
-								inline mat.multiply(mat, scale);
-							}
-						}
-
 						offset.transform(mat);
 						part.setPosition(offset.x, offset.y, offset.z);
-						inline orient.multiply(emitterQuat, orient);
+						orient.multiply(emitterQuat, orient);
 						part.qRot.loadQuat(orient);
 						part.emitOrientation.loadQuat(orient);
 					case World:
@@ -1160,17 +1160,7 @@ class EmitterObject extends h3d.scene.Object {
 							part.setPosition(offset.x - scene.x, offset.y - scene.y, offset.z - scene.z);
 						else
 							part.setPosition(offset.x, offset.y, offset.z);
-						if( !emitterTransformDone ) {
-							emitterTransformDone = true;
-							inline mat.load(getAbsPos());
-							var s = mat.getScale();
-							var scale = new h3d.Matrix();
-							inline scale.initScale(1.0/s.x, 1.0/s.y, 1.0/s.z);
-							inline mat.multiply(scale, mat);
-							inline emitterQuat.initRotateMatrix(mat);
-							inline emitterQuat.normalize();
-						}
-						inline orient.multiply(emitterQuat, orient);
+						orient.multiply(emitterQuat, orient);
 						part.qRot.loadQuat(orient);
 						part.emitOrientation.loadQuat(orient);
 
