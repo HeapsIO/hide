@@ -22,11 +22,13 @@ class OrbitSpeedSimulationShader extends ComputeUtils {
 	static var SRC = {
 		@param var axis : Vec3;
 		@param var center : Vec3;
-		@param var angularSpeed : Float;
+		@param var minAngularSpeed : Float;
+		@param var maxAngularSpeed : Float;
 
 		var speed : Vec3;
 		var prevPos : Vec3;
 		var dt : Float;
+		var particleRandom : Float;
 
 		function rotateAroundAxis(v : Vec3, angle : Float) : Vec3 {
 			var c = cos(angle);
@@ -35,6 +37,7 @@ class OrbitSpeedSimulationShader extends ComputeUtils {
 		}
 
 		function main() {
+			var angularSpeed = mix(minAngularSpeed, maxAngularSpeed, random(vec2(particleRandom, 0.7351)));
 			var angle = angularSpeed * dt;
 			prevPos = center + rotateAroundAxis(prevPos - center, angle);
 			speed = rotateAroundAxis(speed, angle);
@@ -46,7 +49,8 @@ class OrbitSpeedSimulation extends SimulationShader {
 	@:s var axisX : Float = 0.0;
 	@:s var axisY : Float = 0.0;
 	@:s var axisZ : Float = 1.0;
-	@:s var speed : Float = 1.0;
+	@:s var minSpeed : Float = 1.0;
+	@:s var maxSpeed : Float = 1.0;
 
 	override function makeShader() {
 		return new OrbitSpeedSimulationShader();
@@ -57,7 +61,8 @@ class OrbitSpeedSimulation extends SimulationShader {
 
 		var sh = cast(shader, OrbitSpeedSimulationShader);
 		sh.localAxis.set(axisX, axisY, axisZ);
-		sh.angularSpeed = speed;
+		sh.minAngularSpeed = minSpeed;
+		sh.maxAngularSpeed = maxSpeed;
 	}
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
@@ -68,7 +73,8 @@ class OrbitSpeedSimulation extends SimulationShader {
 					<range(-1, 1) label="Y" field={axisY}/>
 					<range(-1, 1) label="Z" field={axisZ}/>
 				</line>
-				<slider label="Speed" field={speed}/>
+				<slider label="Min speed" field={minSpeed}/>
+				<slider label="Max speed" field={maxSpeed}/>
 			</category>
 		);
 	}
@@ -81,7 +87,8 @@ class OrbitSpeedSimulation extends SimulationShader {
 					<dt>Axis X</dt><dd><input type="range" min="-1" max="1" field="axisX"/></dd>
 					<dt>Axis Y</dt><dd><input type="range" min="-1" max="1" field="axisY"/></dd>
 					<dt>Axis Z</dt><dd><input type="range" min="-1" max="1" field="axisZ"/></dd>
-					<dt>Speed</dt><dd><input type="range" min="-10" max="10" field="speed"/></dd>
+					<dt>Min speed</dt><dd><input type="range" min="-10" max="10" field="minSpeed"/></dd>
+					<dt>Max speed</dt><dd><input type="range" min="-10" max="10" field="maxSpeed"/></dd>
 				</dl>
 			</div>
 			'), this, function(pname) {

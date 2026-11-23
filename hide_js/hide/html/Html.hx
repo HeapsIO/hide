@@ -22,6 +22,7 @@ class Html {
 		Creates a tree of elements from markup and appends it to `parent`. Nodes with an `id` are declared as typed locals.
 		`hide-*` tags create the web component `hide.html.comp.*`, other tags use `document.createElement`.
 		Attributes with a code value are set as properties when they start with `on` (event handlers), others with `setAttribute`, the value being converted to a string as in JS, or `toggleAttribute` for a `Bool`.
+		`$ident` / `${expr}` in a text appends the value, a `String` or a `js.html.Node`.
 	**/
 	public static macro function build(parent : ExprOf<js.html.Element>, dml : Expr) : Expr {
 		var str = switch (dml.expr) {
@@ -115,6 +116,7 @@ class Html {
 				var e = switch (c.kind) {
 					case Node(_): macro @:pos(cp) __el.append(${node(c)});
 					case Text(text): macro @:pos(cp) __el.append($v{text});
+					case CodeBlock(code): macro @:pos(cp) __el.append(${Context.parseInlineString(code, cp)});
 					case For(it):
 						var it = switch (it.expr) {
 							case EParenthesis(e): e;
