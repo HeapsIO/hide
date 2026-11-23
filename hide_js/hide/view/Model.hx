@@ -315,6 +315,7 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 
 class Model extends FileView {
 	static var KEY_ANIM_PLAYING = "AnimationPlaying";
+	static var KEY_PREVIEW_MODEL = "AnimPreviewModel";
 
 	var tools : hide.comp.Toolbar;
 	var obj : h3d.scene.Object;
@@ -325,6 +326,10 @@ class Model extends FileView {
 	var eventList : Element;
 	var collisionList : hide.comp.FancyArray<CollisionSettings>;
 	var collisionSettings : Map<String, Array<CollisionSettings>>;
+
+	var animPicker : hide.html.comp.ModelAnimPicker;
+	var previewModel : String;
+	var animOnly = false;
 
 	var plight : hrt.prefab.Prefab;
 	var light : h3d.scene.Object;
@@ -353,6 +358,7 @@ class Model extends FileView {
 
 	override function onDisplay() {
 		this.saveDisplayKey = "Model:" + state.path;
+		animPicker = null;
 
 		element.html('
 			<div class="flex vertical">
@@ -470,6 +476,8 @@ class Model extends FileView {
 				tree.selectItem(root[0].item);
 				tree.onSelectionChanged(false);
 			}
+			if (animOnly && previewModel == null)
+				showAnimPicker();
 		});
 	}
 
@@ -505,7 +513,8 @@ class Model extends FileView {
 
 		// Save model props
 		var dynamicJointScope = this.sceneEditor.properties.element.find("#scope").val();
-		for (o in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh))) {
+		// the preview model of an animation file is not edited
+		for (o in (animOnly ? [] : obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh)))) {
 			var hmd = Std.downcast(o.primitive, h3d.prim.HMDModel);
 			if (hmd == null)
 				continue;
@@ -1951,7 +1960,9 @@ class Model extends FileView {
 	function onSceneReady() {
 		root = new hrt.prefab.Prefab(null, null);
 		sceneEditor.setPrefab(root);
+	}
 
+	function refreshCollisionSettings() {
 		collisionSettings = [];
 		var meshes = obj.getMeshes();
 		for (o in scene.s3d.getMeshes()) {
@@ -2069,8 +2080,14 @@ class Model extends FileView {
 		}
 
 		scene.setCurrent();
-		obj = scene.loadModel(state.path, true, true);
+		animOnly = @:privateAccess scene.loadHMD(state.path, false, true).header.models.length == 0;
+		if (animOnly) {
+			previewModel ??= loadPreviewModel();
+			obj = previewModel != null ? scene.loadModel(previewModel, true, true) : new h3d.scene.Object();
+		} else
+			obj = scene.loadModel(state.path, true);
 		this.sceneEditor.root3d.addChild(obj);
+		refreshCollisionSettings();
 
 		var autoHide : Array<String> = config.get("scene.autoHide");
 
@@ -2305,6 +2322,11 @@ class Model extends FileView {
 
 		tools.addSeparator();
 
+		if (animOnly) {
+			tools.addButton(null, "Preview on : " + (previewModel?.split("/").pop() ?? "none"), showAnimPicker);
+			tools.addSeparator();
+		}
+
 		aloop = tools.addToggle("loop", "refresh", "Loop animation", function(v) {
 			if( obj.currentAnimation != null ) {
 				obj.currentAnimation.loop = v;
@@ -2320,6 +2342,8 @@ class Model extends FileView {
 
 		initConsole();
 
+		if (a == null && animOnly)
+			a = getPath();
 		setAnimation(a);
 		if (scene.listAnims(getPath()).length > 0)
 			ide.open("hide.view.Timeline", {});
@@ -2330,23 +2354,46 @@ class Model extends FileView {
 		if (isGlobalSettings)
 			camSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
 
-		if (camSettings == null) {
-			var bnds = new h3d.col.Bounds();
-			var centroid = new h3d.Vector();
-
-			centroid = centroid.add(this.obj.getAbsPos().getPosition());
-			bnds.add(this.obj.getBounds());
-
-			var s = bnds.toSphere();
-			var r = s.r * 4.0;
-			sceneEditor.cameraController.set(r, null, null, s.getCenter());
-			sceneEditor.cameraController.toTarget();
-		}
+		if (camSettings == null)
+			frameModel();
 
 		// Shape editors reference the previous model, selection creates new ones
 		for (s in shapesEditor)
 			s.remove();
 		shapesEditor.clear();
+	}
+
+	function frameModel() {
+		var bnds = obj.getBounds();
+		if (bnds.isEmpty())
+			return;
+		var s = bnds.toSphere();
+		sceneEditor.cameraController.set(s.r * 4.0, null, null, s.getCenter());
+		sceneEditor.cameraController.toTarget();
+	}
+
+	function loadPreviewModel() : Null<String> {
+		var path : String = getDisplayState(KEY_PREVIEW_MODEL);
+		return path != null && sys.FileSystem.exists(ide.getPath(path)) ? path : null;
+	}
+
+	function showAnimPicker() {
+		animPicker?.remove();
+		function close() {
+			animPicker.remove();
+			animPicker = null;
+		}
+		animPicker = hide.html.comp.ModelAnimPicker.create();
+		element.get(0).querySelector(".heaps-scene").append(animPicker);
+		animPicker.onCancel = close;
+		animPicker.onPick = (path) -> {
+			close();
+			previewModel = path;
+			saveDisplayState(KEY_PREVIEW_MODEL, path);
+			onRefresh();
+			frameModel();
+		};
+		animPicker.load(state.path, previewModel);
 	}
 
 	function changeAnim(offset: Int) : Void {
