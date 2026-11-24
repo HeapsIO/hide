@@ -3040,11 +3040,11 @@ class Model extends FileView {
 			return;
 
 		t.setFramerate(anim.sampling);
-		t.addClip(currentAnimation.name, 0, anim.frameCount - 1, "Animation");
+		t.setDuration((anim.frameCount - 1) / anim.sampling);
 		var events = anim.events ?? [];
 		for (frame => evts in events) {
 			for (e in evts ?? [])
-				t.addMarker(e.name, frame, "Animation");
+				t.addMarker(e.name, frame);
 		}
 	}
 

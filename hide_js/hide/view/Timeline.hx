@@ -19,24 +19,16 @@ enum ClearFlag {
 	Content;
 }
 
-typedef Track = {
+typedef Row = {
 	name : String,
 	content : Element,
-	?element : Element
-}
-
-typedef Clip = {
-	name : String,
-	start : Int,
-	end : Int,
-	?track : Track,
 	?element : Element
 }
 
 typedef Marker = {
 	name : String,
 	frame : Int,
-	?track : Track,
+	?duration : Int,
 	?element : Element
 }
 
@@ -90,8 +82,7 @@ class Timeline extends hide.ui.View<{}> {
 	var needRedraw = true;
 	var needFrameAll = false;
 
-	var tracks : Array<Track> = [];
-	var clips : Array<Clip> = [];
+	var rows : Array<Row> = [];
 	var markers : Array<Marker> = [];
 	var curves : Array<TimelineCurve> = [];
 	var selectedMarkers : Array<Marker> = [];
@@ -139,8 +130,8 @@ class Timeline extends hide.ui.View<{}> {
 						<hide-button id="start-button" title="Go to start" icon={HideRes.icon.fast_rewind} onclick={() -> setTime(0.)}/>
 						<hide-button id="previous-button" title="Previous frame" icon={HideRes.icon.skip_previous} onclick={() -> setTime(Math.max(getTime() - frameToTime(1), 0.))}/>
 						<hide-button id="play-button" title="Play / Pause" icon={HideRes.icon.play} onclick={() -> setPaused(!isPaused())}/>
-						<hide-button id="next-button" title="Next frame" icon={HideRes.icon.skip_next} onclick={() -> setTime(Math.min(getTime() + frameToTime(1), getMaxTime()))}/>
-						<hide-button id="end-button" title="Go to end" icon={HideRes.icon.fast_forward} onclick={() -> setTime(getMaxTime())}/>
+						<hide-button id="next-button" title="Next frame" icon={HideRes.icon.skip_next} onclick={() -> setTime(Math.min(getTime() + frameToTime(1), duration))}/>
+						<hide-button id="end-button" title="Go to end" icon={HideRes.icon.fast_forward} onclick={() -> setTime(duration)}/>
 					</hide-group>
 					<hide-button id="speed-button" title="Playback speed (click: faster, right click: slower)" onclick={() -> changeSpeed(1)} oncontextmenu={(e : MouseEvent) -> { e.preventDefault(); changeSpeed(-1); }}/>
 					<hide-button title="Frame all (F)" icon={HideRes.icon.fullscreen} onclick={frameAll}/>
@@ -186,10 +177,8 @@ class Timeline extends hide.ui.View<{}> {
 		curvesSvg.classList.add("curves");
 		rightPanel.insertBefore(curvesSvg, content);
 
-		for (t in tracks)
-			t.element = null;
-		for (c in clips)
-			c.element = null;
+		for (r in rows)
+			r.element = null;
 		for (m in markers)
 			m.element = null;
 
@@ -303,17 +292,14 @@ class Timeline extends hide.ui.View<{}> {
 	}
 
 	public function clear(flag : ClearFlag = Full) {
-		for (t in tracks)
-			t.element?.remove();
-		for (c in clips)
-			c.element?.remove();
+		for (r in rows)
+			r.element?.remove();
 		for (m in markers)
 			m.element?.remove();
 		for (w in additionalWidgets)
 			w.remove();
-		tracks = [];
+		rows = [];
 		additionalWidgets = [];
-		clips = [];
 		markers = [];
 		curves = [];
 		selectedMarkers = [];
@@ -353,32 +339,14 @@ class Timeline extends hide.ui.View<{}> {
 		toolbar?.append(e);
 	}
 
-	public function getTrack(name : String) {
-		for (t in tracks) {
-			if (t.name == name)
-				return t;
-		}
-		return null;
-	}
-
-	public function addTrack(name : String, content : Element) {
-		var t : Track = { name: name, content: content };
-		tracks.push(t);
+	public function addRow(name : String, content : Element) {
+		var r : Row = { name: name, content: content };
+		rows.push(r);
 		refresh();
 	}
 
-	public function addClip(name : String, start : Int, end : Int, ?track : String) {
-		var c : Clip = { name: name, start: start, end: end };
-		if (track != null)
-			c.track = getTrack(track);
-		clips.push(c);
-		refresh();
-	}
-
-	public function addMarker(name : String, frame : Int, ?track : String) {
+	public function addMarker(name : String, frame : Int) {
 		var m : Marker = { name: name, frame: frame };
-		if (track != null)
-			m.track = getTrack(track);
 		markers.push(m);
 		refresh();
 	}
@@ -780,12 +748,12 @@ class Timeline extends hide.ui.View<{}> {
 		}
 		drawGrid();
 
-		for (t in tracks) {
-			if (t.element == null) {
-				t.element = document.createDivElement();
-				t.element.className = "track";
-				t.element.append(t.content);
-				leftPanel.append(t.element);
+		for (r in rows) {
+			if (r.element == null) {
+				r.element = document.createDivElement();
+				r.element.className = "row";
+				r.element.append(r.content);
+				leftPanel.append(r.element);
 			}
 		}
 		for (m in markers) {
@@ -826,10 +794,8 @@ class Timeline extends hide.ui.View<{}> {
 					var minDelta = -MAX_FRAME;
 					var maxDelta = MAX_FRAME;
 					for (s in moved) {
-						var clip = getTrackClip(s.track);
-						minDelta = hxd.Math.imax(minDelta, (clip?.start ?? 0) - s.frame);
-						if (clip != null)
-							maxDelta = hxd.Math.imin(maxDelta, clip.end - s.frame);
+						minDelta = hxd.Math.imax(minDelta, -s.frame);
+						maxDelta = hxd.Math.imin(maxDelta, timeToFrame(duration) - s.frame);
 					}
 
 					var grabOffset = px(sxFromEvent(e)) - frameToTime(m.frame);
@@ -861,39 +827,18 @@ class Timeline extends hide.ui.View<{}> {
 
 		var sorted = markers.copy();
 		sorted.sort((a, b) -> b.frame - a.frame);
-		var placed : Array<{ track : Track, x : Float, row : Int }> = [];
+		var placed : Array<{ x : Float, row : Int }> = [];
 		for (m in sorted) {
 			var x = sx(frameToTime(m.frame));
 			var right = x + m.element.lastElementChild.getBoundingClientRect().width + LABEL_SPACING;
 			var row = 0;
 			for (p in placed) {
-				if (p.track == m.track && p.x >= x && p.x <= right)
+				if (p.x >= x && p.x <= right)
 					row = hxd.Math.imax(row, p.row + 1);
 			}
-			placed.push({ track: m.track, x: x, row: row });
+			placed.push({ x: x, row: row });
 			m.element.style.setProperty("--label-row", '$row');
 		}
-
-		var contentTop = content.getBoundingClientRect().top;
-		function trackY(t : Track) {
-			return t == null ? 0. : t.element.getBoundingClientRect().top - contentTop;
-		}
-
-		for (c in clips) {
-			if (c.element == null) {
-				c.element = document.createDivElement();
-				c.element.className = "clip";
-				c.element.textContent = c.name;
-				content.append(c.element);
-			}
-			var start = sx(frameToTime(c.start));
-			c.element.style.left = '${start}px';
-			c.element.style.width = '${sx(frameToTime(c.end)) - start}px';
-			c.element.style.top = '${trackY(c.track)}px';
-		}
-
-		for (m in markers)
-			m.element.style.top = '${trackY(m.track)}px';
 
 		drawCurves();
 	}
@@ -1050,15 +995,6 @@ class Timeline extends hide.ui.View<{}> {
 		if (selectionBox != null) {
 			svgElement(curvesSvg, "rect", { x: selectionBox.x0, y: selectionBox.y0, width: selectionBox.x1 - selectionBox.x0, height: selectionBox.y1 - selectionBox.y0 }, "selection-box");
 		}
-	}
-
-	function getMaxTime() {
-		var max = duration;
-		for (c in clips) {
-			if (c.track != null)
-				max = Math.max(max, frameToTime(c.end));
-		}
-		return max;
 	}
 
 	function getStep(range : Float, minStep : Float, maxLabels : Float) : Float {
@@ -1273,7 +1209,7 @@ class Timeline extends hide.ui.View<{}> {
 	}
 
 	function frameAllInternal() {
-		var end = getMaxTime();
+		var end = duration;
 		for (c in curves) {
 			if (c.data != null && c.data.keys.length > 0)
 				end = Math.max(end, c.data.keys[c.data.keys.length - 1].time);
@@ -1350,16 +1286,6 @@ class Timeline extends hide.ui.View<{}> {
 			label.textContent = m.name;
 			onChange([oldMarker], [{ name: m.name, frame: m.frame }]);
 		};
-	}
-
-	function getTrackClip(t : Track) {
-		if (t == null)
-			return null;
-		for (c in clips) {
-			if (c.track == t)
-				return c;
-		}
-		return null;
 	}
 
 

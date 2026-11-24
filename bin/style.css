@@ -7433,7 +7433,7 @@ fancy-gallery-item {
 }
 
 .hide-view.timeline {
-	--track-height: 30px;
+	--row-height: 30px;
 	--ruler-height: 24px;
 	--marker-top: 16px;
 	--label-gap: 6px;
@@ -7515,11 +7515,11 @@ fancy-gallery-item {
 			}
 		}
 
-		.track {
+		.row {
 			display: flex;
 			flex-shrink: 0;
 			align-items: center;
-			height: var(--track-height);
+			height: var(--row-height);
 			margin: 5px 0 0 20px;
 			padding: 5px;
 			box-sizing: border-box;
@@ -7791,24 +7791,9 @@ fancy-gallery-item {
 			inset: var(--ruler-height) 0 0 0;
 		}
 
-		.clip {
-			position: absolute;
-			height: var(--track-height);
-			box-sizing: border-box;
-			padding: 0 10px;
-			line-height: var(--marker-top);
-			overflow: hidden;
-			white-space: nowrap;
-			text-overflow: ellipsis;
-			color: oklch(0.65 0 0);
-			background: color-mix(in oklch, var(--theme-surface-2), transparent 50%);
-			border-radius: var(--theme-border-radius);
-			pointer-events: none;
-		}
-
 		.marker {
 			--icon-size: 12px;
-			--label-top: calc(var(--track-height) + var(--label-gap) + var(--label-row, 0) * var(--label-row-height));
+			--label-top: calc(var(--row-height) + var(--label-gap) + var(--label-row, 0) * var(--label-row-height));
 
 			position: absolute;
 			width: 0;

@@ -866,7 +866,7 @@ class FXEditor extends hide.view.FileView {
 				</span>
 			</div>
 		);
-		t.addTrack(sectionName, header);
+		t.addRow(sectionName, header);
 		timelineRows.push({ name: sectionName, element: header });
 		if (isFolded)
 			return;
@@ -887,7 +887,7 @@ class FXEditor extends hide.view.FileView {
 					<span class="name">${c.name.split(":").join(".")}</span>
 				</div>
 			);
-			t.addTrack(trackName, row);
+			t.addRow(trackName, row);
 			timelineRows.push({ name: trackName, element: row });
 		}
 
