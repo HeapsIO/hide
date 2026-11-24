@@ -484,7 +484,7 @@ class EmitterObject extends h3d.scene.Object {
 	// rare per-particle refs, outside of ParticleInstance to avoid GC scans
 	var partTrails : Array<hrt.prefab.l3d.Trails.TrailHead>;
 	var partSubEmitters : Array<Array<EmitterObject>>;  // Follow sub-emitters
-	
+
 	public var batch : h3d.scene.MeshBatch;
 	public var paramAnims : Array<BaseFX.ParamAnimation>;
 
@@ -544,7 +544,7 @@ class EmitterObject extends h3d.scene.Object {
 	var curTime = 0.0;
 	var curScaleMultiplier = 1.0;
 	var curOrbitSpeedMultiplier = 1.0;
-	
+
 	public var evaluator : EmitterEvaluator;
 
 	var numInstances = 0;
@@ -767,6 +767,16 @@ class EmitterObject extends h3d.scene.Object {
 		if(trails != null && trails.numTrails != prefab.maxCount) {
 			trails.remove();
 			trails = null;
+		}
+
+		if (trailsTemplate != null && trails == null) {
+			trails = trailsTemplate.create(this, prefab.maxCount);
+			trailsTemplate.local3d = trails;
+			trails.autoTrackPosition = false;
+			for( mat in trailsTemplate.findAll(hrt.prefab.Material, checkEnabled) )
+				@:privateAccess mat.makeInstance();
+			for( shader in trailsTemplate.findAll(hrt.prefab.Shader, checkEnabled) )
+				@:privateAccess shader.makeInstance();
 		}
 
 		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, prefab.maxCount) #else [for(i in 0...prefab.maxCount) new ParticleInstance()] #end;
@@ -999,16 +1009,6 @@ class EmitterObject extends h3d.scene.Object {
 		@:privateAccess var globalTime = scene?.renderer.ctx.globalTime ?? curTime;
 
 		if (count > 0) {
-
-			if (trailsTemplate != null && trails == null) {
-				trails = trailsTemplate.create(this, prefab.maxCount);
-				trailsTemplate.local3d = trails;
-				trails.autoTrackPosition = false;
-				for( mat in trailsTemplate.findAll(hrt.prefab.Material, checkEnabled) )
-					@:privateAccess mat.makeInstance();
-				for( shader in trailsTemplate.findAll(hrt.prefab.Shader, checkEnabled) )
-					@:privateAccess shader.makeInstance();
-			}
 
 			static var emitterQuat = new h3d.Quat();
 			static var mat = new h3d.Matrix();
