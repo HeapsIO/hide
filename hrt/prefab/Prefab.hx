@@ -1024,6 +1024,25 @@ class Prefab {
 		}
 	}
 
+	/** True while `createFromCopy` runs **/
+	public static var loadingCopy(default, null) = false;
+
+	/**
+		Create a new prefab from `data` serialized from loaded prefabs (copy / paste, duplicate), not read from a file:
+		it is current data, nothing is upgraded on load.
+	**/
+	public static function createFromCopy(data:Dynamic, parent:Prefab = null, contextShared:ContextShared = null) : Prefab {
+		loadingCopy = true;
+		try {
+			var p = createFromDynamic(data, parent, contextShared);
+			loadingCopy = false;
+			return p;
+		} catch( e : Dynamic ) {
+			loadingCopy = false;
+			throw e;
+		}
+	}
+
 	/**
 		Create a new prefab from the given `data`.
 	**/

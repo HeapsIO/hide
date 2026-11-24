@@ -4947,7 +4947,7 @@ class SceneEditor {
 			if (!Reflect.hasField(obj, "type"))
 				continue;
 
-			var p = hrt.prefab.Prefab.createFromDynamic(obj, parent);
+			var p = hrt.prefab.Prefab.createFromCopy(obj, parent);
 			p.shared.current2d = parent.findFirstLocal2d();
 			p.shared.current3d = parent.findFirstLocal3d();
 			var prevName = p.name;
@@ -5217,7 +5217,7 @@ class SceneEditor {
 		var lastIndex = lastElem.parent.children.indexOf(lastElem);
 		beginRebuild();
 		for(i => elt in elements) {
-			@:pirvateAccess var clone = hrt.prefab.Prefab.createFromDynamic(haxe.Json.parse(Ide.inst.toJSON(elt.serialize())), null, elt.parent.shared);
+			var clone = hrt.prefab.Prefab.createFromCopy(haxe.Json.parse(Ide.inst.toJSON(elt.serialize())), null, elt.parent.shared);
 			var index = lastIndex+1+i;
 			elt.parent.addChildAt(clone, index);
 			autoName(clone);

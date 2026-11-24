@@ -2006,7 +2006,7 @@ class Prefab extends HuiView<{path: String}> {
 					continue;
 
 				try {
-					var prefab = hrt.prefab.Prefab.createFromDynamic(data, null);
+					var prefab = hrt.prefab.Prefab.createFromCopy(data, null);
 
 					var obj3d = prefab.to(hrt.prefab.Object3D);
 					if (obj3d != null && parentTransform != null) {

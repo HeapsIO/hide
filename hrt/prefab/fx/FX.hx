@@ -914,7 +914,8 @@ class FX extends Object3D implements BaseFX {
 	/** Called before `p`, the root of FX data, loads `data` **/
 	public static function checkVersion( p : Prefab, data : Dynamic ) {
 		var v : Dynamic = data.version;
-		if( v == VERSION )
+		// a copy of loaded prefabs is current: an emitter saved inside an FX has no version of its own
+		if( v == VERSION || Prefab.loadingCopy )
 			return;
 		var version : Int = v == null ? 0 : v;
 		#if fx_migration
