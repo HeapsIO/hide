@@ -116,11 +116,30 @@ class Curve extends hrt.prefab.Curve {
 		var rootCurve : Prefab = this;
 		while (rootCurve.parent is Curve)
 			rootCurve = rootCurve.parent;
-		var parent = rootCurve.parent;
-		var emitter : EmitterParam.IEmitter = parent is EmitterParam.IEmitter ? cast parent : null;
+		var emitter = rootCurve.findParent(Prefab, p -> p is EmitterParam.IEmitter);
 		if (emitter == null)
-			return rootCurve.findParent(Prefab, p -> p is EmitterParam.IEmitter) != null;
-		return !isChannel(rootCurve.name) && !isParamName(emitter, rootCurve.name);
+			return false;
+		if (emitter != rootCurve.parent)
+			return true;
+		return !isChannel(rootCurve.name) && !isParamName(cast emitter, rootCurve.name);
+	}
+
+	public function isEmitterParamCurve() {
+		var rootCurve : Prefab = this;
+		while (rootCurve.parent is Curve)
+			rootCurve = rootCurve.parent;
+		var emitter = rootCurve.findParent(Prefab, p -> p is EmitterParam.IEmitter);
+		if (emitter == null)
+			return false;
+		if (emitter != rootCurve.parent)
+			return true;
+		if (isChannel(rootCurve.name))
+			return false;
+		var base = rootCurve.name?.split(":")[0];
+		return !Lambda.exists((cast emitter : EmitterParam.IEmitter).getFields(), f -> switch (f) {
+			case Property(p): p.animate && p.name == base;
+			default: false;
+		});
 	}
 
 	override function makeVal() : Value {

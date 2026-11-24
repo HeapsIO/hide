@@ -25,6 +25,18 @@ class Html {
 		`$ident` / `${expr}` in a text appends the value, a `String` or a `js.html.Node`.
 	**/
 	public static macro function build(parent : ExprOf<js.html.Element>, dml : Expr) : Expr {
+		return makeTree(parent, dml);
+	}
+
+	/**
+		Same as `build`, without appending the tree: its root must have an `id`, the local holding the root element.
+	**/
+	public static macro function create(dml : Expr) : Expr {
+		return makeTree(null, dml);
+	}
+
+	#if macro
+	static function makeTree(parent : Null<Expr>, dml : Expr) : Expr {
 		var str = switch (dml.expr) {
 			case EMeta({name: ":markup"}, {expr: EConst(CString(s))}): s;
 			default: Context.error("Markup expected", dml.pos);
@@ -138,11 +150,15 @@ class Html {
 			parser.allowRawText = true;
 			var root = parser.parse(str, pinf.file, pinf.min).children[0];
 			var init = node(root);
+			if (parent == null && !Lambda.exists(root.attributes, a -> a.name == "id"))
+				error("The root must have an id", root.pmin, root.pmax);
 			// Declares the id variables in the caller scope, `_` builds the tree
-			vars.push({name: "_", expr: macro {$parent.append($init); true;}});
+			var build = parent == null ? init : macro $parent.append($init);
+			vars.push({name: "_", expr: macro {$build; true;}});
 		} catch (e : domkit.Error) {
 			Context.error(e.message, makePos(e.pmin, e.pmax));
 		}
 		return {expr: EVars(vars), pos: dml.pos};
 	}
+	#end
 }

@@ -25,6 +25,12 @@ class CurveKey {
 	@:s public var prevHandle: CurveHandle;
 	@:s public var nextHandle: CurveHandle;
 	public function new() {}
+
+	public function handles() : Array<CurveHandle> {
+		if (mode == Linear || mode == Constant)
+			return [];
+		return [for (h in [prevHandle, nextHandle]) if (h != null) h];
+	}
 }
 
 @:build(hrt.prefab.Macros.buildSerializable())

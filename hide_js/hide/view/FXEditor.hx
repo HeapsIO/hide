@@ -18,8 +18,7 @@ typedef PropTrackDef = {
 typedef Section = {
 	root: PrefabElement,
 	curves: Array<Curve>,
-	children: Array<Section>,
-	events: Array<IEvent>
+	children: Array<Section>
 };
 
 @:access(hide.view.FXEditor)
@@ -91,21 +90,9 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 			var trails = scene.s3d.findAll(o -> Std.downcast(o, hrt.prefab.l3d.Trails.TrailObj));
 			var trailTime = 0.0;
-
-
-			var poolSize = 0;
 			@:privateAccess
-			for (trail in trails) {
-				for (head in trail.trails) {
-					var p = head.firstPoint;
-					var len = 0;
-					while(p != null) {
-						len ++;
-						p = p.next;
-					}
-				}
+			for (trail in trails)
 				trailTime += trail.lastUpdateDuration;
-			}
 
 			var text : Array<String> = [
 				'Particles: $totalParts',
@@ -126,12 +113,6 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			return ref;
 		}
 		return super.createDroppedElement(path, parent, inlinePrefab);
-	}
-
-	override function updateGrid() {
-		super.updateGrid();
-
-		var showGrid = getOrInitConfig("sceneeditor.gridToggle", false);
 	}
 
 	override function setElementSelected( p : PrefabElement, b : Bool ) {
@@ -211,8 +192,6 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 		var menu = [];
 		var shaderItems : Array<hrt.ui.HuiMenu.MenuItem> = [];
-		var spawnItems : Array<hrt.ui.HuiMenu.MenuItem> = [];
-		var simulationItems : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 		if (parent.is2D) {
 			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Emitter 2D", "Text", "Shader", "Shader Graph", "Placeholder"]) {
@@ -310,52 +289,38 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 class FXEditor extends hide.view.FileView {
 
-	var sceneEditor : FXSceneEditor;
-	public var selectOnLoad : Array<hrt.prefab.Prefab> = null;
-	var data : hrt.prefab.fx.BaseFX;
-	var is2D : Bool = false;
-
-	var tools : hide.comp.Toolbar;
-	var treePanel : hide.comp.ResizablePanel;
-	var animPanel : hide.comp.ResizablePanel;
-	var leftAnimPanel : hide.comp.ResizablePanel;
-
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
 	var properties(get, null):  hide.comp.PropsEditor;
 	function get_properties() return sceneEditor.properties;
 
-	// autoSync
-	var autoSync : Bool;
-	var currentVersion : Int = 0;
-	var lastSyncChange : Float = 0.;
 
-	var lastPan : h2d.col.Point;
-
-	var timelineLeftMargin = 10;
-	var xScale = 200.;
-	var xOffset = 0.;
-	var tlKeys: Array<{name:String, shortcut:String}> = [];
+	var sceneEditor : FXSceneEditor;
+	var data : hrt.prefab.fx.BaseFX;
+	var is2D : Bool = false;
+	var tools : hide.comp.Toolbar;
+	var treePanel : hide.comp.ResizablePanel;
 
 	var fxprops : hide.comp.PropsEditor;
 
-	var pauseButton : hide.comp.Toolbar.ToolToggle;
 	var loopButton : hide.comp.Toolbar.ToolToggle;
-	@:isVar var currentTime(get, set) : Float;
+	var paused = false;
+	var currentTime : Float = 0.;
 	var lastTime : Float;
 	var lastSeek : Float = 0;
-	var selectMin : Float;
-	var selectMax : Float;
-	var previewMin : Float;
-	var previewMax : Float;
-	var curveEditor : hide.comp.Timeline;
-	var afterPanRefreshes : Array<Bool->Void> = [];
 	var statusText : h2d.Text;
 	var forceTick : Bool = false;
+	var skipRebuildPannel = 0;
 
+	var sceneReadyDelayed : Array<() -> Void> = [];
 	var cullingPreview : h3d.scene.Sphere;
 
-    var viewModes : Array<String>;
+	// Timeline
+	var timeline : Timeline;
+	var timelineCurveColors : Map<Curve, Int> = new Map();
+	var timelineRows : Array<{ name : String, element : js.html.Element }> = [];
+	var selectedTimelineRow : String;
+	var timelineFilter = "";
 
 	override function getDefaultContent() {
 		@:privateAccess return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX(null, null).serialize()));
@@ -391,7 +356,6 @@ class FXEditor extends hide.view.FileView {
 	override function onDisplay() {
 		if( sceneEditor != null ) sceneEditor.dispose();
 		currentTime = 0.;
-		xOffset = -timelineLeftMargin / xScale;
 		var content = sys.io.File.getContent(getPath());
 		var json = haxe.Json.parse(content);
 
@@ -405,14 +369,6 @@ class FXEditor extends hide.view.FileView {
 				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
 					<div style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
 						<div class="flex heaps-scene"></div>
-						<div class="fx-animpanel">
-							<div class="help-button icon ico ico-question" title="help"></div>
-							<div class="left-fx-animpanel"></div>
-							<div class="right-fx-animpanel"></div>
-							<div class="overlay-container">
-								<div class="overlay"></div>
-							</div>
-						</div>
 					</div>
 					<div class="tree-column">
 						<div class="flex vertical">
@@ -478,48 +434,8 @@ class FXEditor extends hide.view.FileView {
 		treePanel.saveDisplayKey = "treeColumn";
 		treePanel.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
 
-		var fxPanel = element.find(".fx-animpanel").first();
-		animPanel = new hide.comp.ResizablePanel(Vertical, fxPanel);
-		animPanel.saveDisplayKey = "animPanel";
-		animPanel.onResize = () -> @:privateAccess { if( scene.window != null) scene.window.checkResize(); if( this.curveEditor != null) this.curveEditor.refresh();}
-
-		var leftFxPanel = element.find(".left-fx-animpanel").first();
-		leftAnimPanel = new hide.comp.ResizablePanel(Horizontal, leftFxPanel, After);
-		leftAnimPanel.saveDisplayKey = "leftAnimPanel";
-		leftAnimPanel.onResize = () -> { @:privateAccess if( scene.window != null) scene.window.checkResize(); rebuildAnimPanel(); };
-
-		tlKeys.empty();
-		tlKeys.push({name:"Insert key", shortcut:"Ctrl + Click"});
-		tlKeys.push({name:"Undo", shortcut:"Ctrl Z"});
-		tlKeys.push({name:"Drag / zoom on Y axis", shortcut:"Hold shift during action"});
-		tlKeys.push({name:"Drag / zoom on X axis", shortcut:"Hold alt during action"});
-		tlKeys.push({name:"Edit keyframe", shortcut:"Right-click"});
-		tlKeys.push({name:"Snap keyframe", shortcut:"Ctrl while dragging"});
-		tlKeys.push({name:"Zoom on curves", shortcut:"F"});
-		tlKeys.push({name:"Move in curve graph", shortcut:"Mouse wheel"});
-
-		var helpButton = element.find(".help-button").first();
-		var p : hide.comp.Popup = null;
-		helpButton.click(function(e) {
-			if (p == null) {
-				p = new hide.comp.SceneEditor.HelpPopup(helpButton, sceneEditor, tlKeys);
-				@:privateAccess p.element.css({'position':'absolute', 'left':'${helpButton.offset().left + helpButton.width() * 2}px','top':'${helpButton.offset().top - p.element.height()}px'});
-				//p = open(el);
-				p.onClose = function() {
-					p = null;
-				}
-			}
-			else {
-				p.close();
-			}
-		});
-
 		refreshLayout();
 
-		var resizeObserver = new hide.comp.ResizeObserver((_, _) -> {
-			rebuildAnimPanel();
-		});
-		resizeObserver.observe(fxPanel.get(0));
 		element.find(".collapse-btn").click(function(e) {
 			sceneEditor.collapseTree();
 		});
@@ -530,12 +446,11 @@ class FXEditor extends hide.view.FileView {
 			sceneEditor.camera2D = true;
 		}
 
-		keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
+		keys.register("playPause", function() { paused = !paused; });
 		keys.register("loopAnim", function() { loopButton.toggle(!loopButton.isDown()); });
-		keys.register("playFromLastSeek", function() { pauseButton.toggle(false); currentTime = lastSeek; });
-		keys.register("playFromStart", function() { pauseButton.toggle(false); currentTime = 0; lastSeek = 0; });
+		keys.register("playFromLastSeek", function() { paused = false; currentTime = lastSeek; });
+		keys.register("playFromStart", function() { paused = false; currentTime = 0; lastSeek = 0; });
 
-		currentVersion = undo.currentID;
 		sceneEditor.sceneTree.element.addClass("small");
 		sceneEditor.renderPropsTree.element.addClass("small");
 
@@ -543,7 +458,27 @@ class FXEditor extends hide.view.FileView {
 		setRenderPropsEditionVisibility(rpEditionvisible);
 	}
 
-	var sceneReadyDelayed : Array<() -> Void> = [];
+	override function onActivate() {
+		if( sceneEditor != null )
+			refreshLayout();
+		if (tools != null)
+			tools.refreshToggles();
+
+		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
+
+		for (t in ide.getViews(Timeline))
+			bindTimeline(t);
+	}
+
+	override function onHide() {
+		super.onHide();
+		getTimeline()?.clear();
+	}
+
+	override function destroy() {
+		getTimeline()?.clear();
+		super.destroy();
+	}
 
 	/**
 		Call a function when the sceneEditor is properly initialized
@@ -558,18 +493,9 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	function refreshLayout() {
-		if (animPanel != null) animPanel.setSize();
 		if (treePanel != null) treePanel.setSize();
 	}
 
-	override function onActivate() {
-		if( sceneEditor != null )
-			refreshLayout();
-		if (tools != null)
-			tools.refreshToggles();
-
-		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
-	}
 	public function onSceneReady() {
 		data = cast(hxd.res.Loader.currentInstance.load(state.path).toPrefab().load().clone(), hrt.prefab.fx.BaseFX);
 		if (data == null) {
@@ -578,11 +504,6 @@ class FXEditor extends hide.view.FileView {
 		}
 
 		sceneEditor.setPrefab(cast data);
-
-		selectMin = 0.0;
-		selectMax = 0.0;
-		previewMin = 0.0;
-		previewMax = data.duration == 0 ? 5000 : data.duration;
 
 		{
 			var edit = new FXEditContext(undo, this);
@@ -639,10 +560,6 @@ class FXEditor extends hide.view.FileView {
 
 		tools.makeToolbar(toolsDefs, config, keys);
 
-		tools.addToggle("refresh", "refresh", "Auto synchronize", function(b) {
-			autoSync = b;
-		});
-
 		tools.addSeparator();
 
 		tools.addPopup(null, "View Modes", (e) -> new hide.comp.SceneEditor.ViewModePopup(e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer), sceneEditor), null);
@@ -655,7 +572,6 @@ class FXEditor extends hide.view.FileView {
 		tools.addSeparator();
 
 
-		pauseButton = tools.addToggle("pause", "pause", "Pause animation (Space)", function(v) {}, false, "play", State);
 		loopButton = tools.addToggle("loop", "retweet", "Loop animation (O)", function(v) {
 			var fxAnim = sceneEditor.root3d.find((f) -> Std.downcast(f, hrt.prefab.fx.FX.FXAnimation));
 
@@ -671,9 +587,6 @@ class FXEditor extends hide.view.FileView {
 				}
 			}
 		}, false, null, State);
-		tools.addRange("Speed", function(v) {
-			scene.speed = v;
-		}, scene.speed);
 
 
 
@@ -692,7 +605,13 @@ class FXEditor extends hide.view.FileView {
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
 
-		rebuildAnimPanel();
+		var timelines = ide.getViews(Timeline);
+		if (timelines.length == 0)
+			ide.open("hide.view.Timeline", {});
+		else if (isActive()) {
+			for (t in timelines)
+				bindTimeline(t);
+		}
 	}
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {
@@ -700,13 +619,7 @@ class FXEditor extends hide.view.FileView {
 		forceTick = true;
 
 		if(p == cast(data, hrt.prefab.Prefab)) {
-			if (this.curveEditor != null) {
-				previewMax = data.duration == 0 ? 5000 : data.duration;
-				this.curveEditor.refreshTimeline(currentTime);
-				this.curveEditor.refreshOverlay(data.duration);
-			}
-
-			previewMax = hxd.Math.min(data.duration == 0 ? 5000 : data.duration, previewMax);
+			getTimeline()?.setDuration(data.duration);
 
 			cullingPreview.radius = data.cullingRadius;
 
@@ -718,29 +631,28 @@ class FXEditor extends hide.view.FileView {
 		}
 
 		if (pname == "speed" && p is hrt.prefab.fx.SubFX)
-			rebuildAnimPanel();
+			refreshTimelineView();
 
 		if (pname == "blendMode" || pname == "param") {
 			Std.downcast(p, Curve)?.syncDatas();
 
 			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
-			rebuildAnimPanel();
+			refreshTimelineView();
 		}
 
 		if (pname == "refPath") {
 			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
-			rebuildAnimPanel();
+			refreshTimelineView();
 		}
 
 		if (pname == "scale" || pname == "offset") {
-			rebuildAnimPanel();
+			refreshTimelineView();
 			data.refreshObjectAnims();
 		}
 
 		if(p is Event || p is Curve) {
-			afterPan(false);
 			data.refreshObjectAnims();
-			rebuildAnimPanel();
+			refreshTimelineView();
 			sceneEditor.sceneTree.refreshItem(p);
 			var fx3d = Std.downcast((cast data : hrt.prefab.Prefab).findFirstLocal3d(), hrt.prefab.fx.FX.FXAnimation);
 			if (fx3d != null) {
@@ -748,519 +660,280 @@ class FXEditor extends hide.view.FileView {
 			}
 		}
 
-		if (pname == "parameters") {
-			if (this.curveEditor != null) {
-				var fx3d = Std.downcast(data, hrt.prefab.fx.FX);
-				if (fx3d != null) {
-					var params = fx3d.parameters;
-					this.curveEditor.evaluator.setAllParameters(params);
-				}
-				this.curveEditor.refreshGraph();
-			}
-		}
+		if (pname == "parameters")
+			refreshTimelineView();
 	}
 
 	function onSelect(elts : Array<PrefabElement>) {
 		if (skipRebuildPannel > 0)
 			return;
-		rebuildAnimPanel();
+		refreshTimelineView();
+		getTimeline()?.frameAll();
 	}
 
-	inline function xt(x: Float) return Math.round((x - xOffset) * xScale);
-	inline function ixt(px: Float) return px / xScale + xOffset;
-
-	function afterPan(anim: Bool) {
-		if(!anim) {
-			this.curveEditor.setPan(xOffset, this.curveEditor.yOffset);
-		}
-		for(clb in afterPanRefreshes) {
-			clb(anim);
-		}
+	function getTimeline() {
+		return timeline?.owner == this ? timeline : null;
 	}
 
-	var skipRebuildPannel = 0;
-	function addCurvesToCurveEditor(curves: Array<Curve>, events: Array<Dynamic>){
-		var rightPanel = element.find(".right-fx-animpanel").first();
-		rightPanel.empty();
+	public function bindTimeline(t : Timeline) {
+		t.clear();
+		t.owner = this;
+		timeline = t;
+		t.setUnit(Timeline.Unit.Second);
+		t.setFramerate(60);
+		t.setHasYAxis(true);
+		t.setHasFilter(true);
+		t.onFilterChange = (_) -> refreshTimelineView();
 
-		// Build new curve editor with all the required comps
-		var previousTime = 0.0;
-		if (this.curveEditor != null)
-			previousTime = @:privateAccess this.curveEditor.currentTime;
+		t.getTime = () -> currentTime;
+		t.setTime = (v : Float) -> currentTime = Math.max(v, 0.);
+		t.isPaused = () -> paused;
+		t.setPaused = (v : Bool) -> paused = v;
+		t.getSpeed = () -> scene.speed;
+		t.setSpeed = (v : Float) -> scene.speed = v;
+		t.onSave = () -> save();
+		t.onUndo = () -> undo.undo();
+		t.onRedo = () -> undo.redo();
 
-		this.curveEditor = new hide.comp.Timeline(this.undo, rightPanel);
-		this.curveEditor.onRefreshProps = () -> {
-			skipRebuildPannel++;
-			@:privateAccess sceneEditor.selectElements(sceneEditor.selectedPrefabs, NoHistory);
-			skipRebuildPannel--;
-		}
-
-		var overviewEditor = new hide.comp.Timeline.OverviewEditor(rightPanel, this.curveEditor);
-		var eventEditor = new hide.comp.Timeline.EventsEditor(rightPanel, this, this.curveEditor);
-		for (e in events)
-			eventEditor.events.push(e);
-
-		var minHeight = 40;
-		var curveEditorHeight = 100;
-
-		for (curve in curves){
-			var dispKey = getPath() + "/" + curve.getAbsPath(true);
-			this.curveEditor.saveDisplayKey = dispKey;
-
-			this.curveEditor.requestXZoom = function(xMin, xMax) {
-				var margin = 10.0;
-				var scroll = element.find(".timeline-scroll");
-				var width = scroll.parent().width();
-				xScale = (width - margin * 2.0) / (xMax);
-				xOffset = 0.0;
-
-				this.curveEditor.xOffset = xOffset;
-				this.curveEditor.xScale = xScale;
+		t.onCurvesEdit = () -> forceTick = true;
+		t.onCurvesChange = (curves : Array<hrt.impl.Curve>, before : Array<Dynamic>, after : Array<Dynamic>) -> {
+			function apply(isUndo : Bool) {
+				for (i => c in curves)
+					@:privateAccess c.copyFromDynamic(hrt.prefab.Diff.deepCopy(isUndo ? before[i] : after[i]));
+				onTimelineEdit();
+				getTimeline()?.refresh();
 			}
+			undo.change(Custom(apply));
+			onTimelineEdit();
+		};
 
-			this.curveEditor.xOffset = xOffset;
-			this.curveEditor.xScale = xScale;
-
-			// a curve of two datas: each one edited apart, the blend drawn as it is
-			if (curve.blendMode != CurveBlendMode.Range)
-				this.curveEditor.curves.push(curve);
-			if (curve.datas.length > 1)
-				for (i in 0...curve.datas.length)
-					this.curveEditor.curves.push(new hide.comp.Timeline.CurveData(curve, i));
-
-			rightPanel.on("mousewheel", function(e) {
-				var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
-				if(e.ctrlKey) {
-					var prevH = rightPanel.height();
-					var newH = hxd.Math.max(minHeight, prevH + Std.int(step * 20.0));
-					rightPanel.height(newH);
-					saveDisplayState(dispKey + "/height", newH);
-					this.curveEditor.yScale *= newH / prevH;
-					this.curveEditor.refresh();
-					e.preventDefault();
-					e.stopPropagation();
-				}
-			});
-		}
-
-		var fx3d = Std.downcast(data, hrt.prefab.fx.FX);
-		if (fx3d != null) {
-			var params = fx3d.parameters;
-			this.curveEditor.evaluator.setAllParameters(params);
-		}
-		this.curveEditor.refreshTimeline(previousTime);
-		this.curveEditor.refresh();
+		refreshTimelineView();
+		t.frameAll();
 	}
 
-	function addHeadersToCurveEditor(sections: Array<Section>) {
-		var savedFoldList : Array<String> = getDisplayState("foldList") != null ? getDisplayState("foldList") : [];
-		var toFoldList : Array<{ el: Element, parentEl: Element }> = [];
-
-		var savedLockList : Array<String> = getDisplayState("lockList") != null ? getDisplayState("lockList") : [];
-		var toLockList : Array<{ parentEl: Element, elements: Array<Dynamic> }> = [];
-
-		var savedHiddenList : Array<String> = getDisplayState("hiddenList") != null ? getDisplayState("hiddenList") : [];
-		var toHiddenList : Array<{ parentEl: Element, elements: Array<Dynamic> }> = [];
-
-		var leftPanel = element.find(".left-fx-animpanel").first();
-
-		var toolbar = new Element('<fancy-toolbar><fancy-button>View<div class="ico ico-chevron-down"></div></fancy-button></fancy-toolbar>');
-		new hide.comp.Button(toolbar, null, "View", {});
-
-		function drawSection(parent : Element, section: Section, depth: Int) {
-
-			function getTagRec(elt : PrefabElement) {
-				var p = elt;
-				while(p != null) {
-					var tag = sceneEditor.getTag(p);
-					if(tag != null)
-						return tag;
-					p = p.parent;
-				}
-				return null;
-			}
-
-			function addVisibilityButtonListener(parentEl: Element, affectedElements : Array<Dynamic>) {
-				var visibilityEl = parentEl.find(".visibility");
-				var saveKey = affectedElements.length == 1 ? affectedElements[0].getAbsPath(true) : parentEl.hasClass("section") ? section.root.getAbsPath(true) : affectedElements[0]?._parent.getAbsPath(true) ?? "null";
-
-				if (savedHiddenList.contains(saveKey))
-					toHiddenList.push( {parentEl:parentEl, elements:affectedElements} );
-
-				visibilityEl.click(function(e) {
-					// Update the value of visibilityEl since at this time
-					// the html tree might not be fully constructed
-					visibilityEl = parentEl.find(".visibility");
-					var visible = visibilityEl.first().hasClass("ico-eye");
-					if (visible) {
-						visibilityEl.removeClass("ico-eye").addClass("ico-eye-slash");
-
-						savedHiddenList = savedHiddenList.filter(hidden -> !StringTools.contains(hidden, saveKey));
-						savedHiddenList.push(saveKey);
-					}
-					else {
-						visibilityEl.removeClass("ico-eye-slash").addClass("ico-eye");
-						savedHiddenList = savedHiddenList.filter(hidden -> !StringTools.contains(saveKey, hidden));
-					}
-
-					saveDisplayState("hiddenList", savedHiddenList);
-
-					for (c in affectedElements)
-						c.hidden = visibilityEl.hasClass("ico-eye-slash");
-
-					rebuildAnimPanel();
-				});
-			}
-
-			function addLockButtonListener(parentEl: Element, affectedElements : Array<Dynamic>) {
-				var lockEl = parentEl.find(".lock");
-				var saveKey = affectedElements.length == 1 ? affectedElements[0].getAbsPath(true) : parentEl.hasClass("section") ? section.root.getAbsPath(true) : affectedElements[0]?._parent.getAbsPath(true) ?? "null";
-
-				if (savedLockList.contains(saveKey))
-					toLockList.push( {parentEl:parentEl, elements:affectedElements} );
-
-				lockEl.click(function(e) {
-					// Update the value of lockEl since at this time
-					// the html tree might not be fully constructed
-					lockEl = parentEl.find(".lock");
-					var locked = lockEl.first().hasClass("ico-lock");
-
-					if (locked) {
-						lockEl.removeClass("ico-lock").addClass("ico-unlock");
-
-						savedLockList = savedLockList.filter(lock -> !StringTools.contains(saveKey, lock));
-					}
-					else {
-						lockEl.removeClass("ico-unlock").addClass("ico-lock");
-
-						savedLockList = savedLockList.filter(lock -> !StringTools.contains(lock, saveKey));
-						savedLockList.push(saveKey);
-					}
-
-					saveDisplayState("lockList", savedLockList);
-
-					for (c in affectedElements)
-						c.lock = lockEl.first().hasClass("ico-lock");
-
-					rebuildAnimPanel();
-				});
-			}
-
-			function addOnSelectListener(parentEl: Element, affectedElements : Array<Dynamic>) {
-				var trackEl = parentEl.find(".track-header");
-				trackEl.click(function(e) {
-					for (c in affectedElements)
-						c.selected = true;
-
-					rebuildAnimPanel();
-				});
-			}
-
-			function addFoldButtonListener(parentEl: Element) {
-				var foldEl = parentEl.find(".fold");
-
-				if (savedFoldList.contains(section.root.getAbsPath(true)))
-					toFoldList.push( {el:foldEl, parentEl: parentEl} );
-
-				foldEl.click(function(e) {
-					var expanded = foldEl.hasClass("ico-angle-down");
-					if (expanded) {
-						foldEl.removeClass("ico-angle-down").addClass("ico-angle-right");
-						parentEl.children().find(".tracks-header").addClass("hidden");
-						parentEl.children().find(".track-header").addClass("hidden");
-
-						if (!savedFoldList.contains(section.root.getAbsPath(true)))
-							savedFoldList.push(section.root.getAbsPath(true));
-					}
-					else {
-						foldEl.removeClass("ico-angle-right").addClass("ico-angle-down");
-						parentEl.children().find(".ico-angle-right").removeClass("ico-angle-right").addClass("ico-angle-down");
-						parentEl.children().find(".tracks-header").removeClass("hidden");
-						parentEl.children().find(".track-header").removeClass("hidden");
-
-						savedFoldList.remove(section.root.getAbsPath(true));
-					}
-
-					saveDisplayState("foldList", savedFoldList);
-					rebuildAnimPanel();
-				});
-			}
-
-			function addAddTrackButtonListener(parentEl: Element, secRoot : PrefabElement) {
-				var addTrackEl = parentEl.find(".addtrack");
-				var parentTag = getTagRec(secRoot);
-				if(parentTag != null) {
-					parentEl.find(".name").css("background", parentTag.color);
-				}
-
-				if (addTrackEl.get(0) != null) {
-					addTrackEl.get(0).onclick = function(e:js.html.MouseEvent) {
-						var menuItems = getNewTrackMenu(secRoot);
-						if (menuItems.length == 0) {
-							menuItems = [{label: "No animation available", enabled: false}];
-						}
-						hide.comp.ContextMenu.createDropdown(addTrackEl.get(0), menuItems);
-					};
-				}
-			}
-
-			var allElements: Array<Dynamic> = [];
-			var curves = section.root.flatten(Curve);
-
-			if (section.root is Curve) {
-				curves.push(cast section.root);
-			}
-
-			var events: Array<IEvent> = [];
-			for (e in section.root.findAll(o -> Std.isOfType(o, IEvent))) {
-				events.push(cast (e, IEvent));
-				allElements.push(cast (e, IEvent));
-			}
-
-			if (section.root is IEvent) {
-				events.push(cast section.root);
-				allElements.push(cast section.root);
-			}
-
-			var areEventsLocked = events.length > 0 && Lambda.foreach(events, e -> e.lock);
-			var areEventsHidden = events.length > 0 && Lambda.foreach(events, e -> e.hidden);
-
-			var sectionEl = new Element('<div class="section" name="${section.root.name}">
-			<div class="tracks-header" style="margin-left: ${depth * 10}px">
-			<div class="track-button fold ico ico-angle-down"></div>
-			<div class="track-button visibility ico ${areEventsHidden ? "ico-eye-slash" : "ico-eye"}"></div>
-			<label class="name">${upperCase(section.root.name)}</label>
-			<label class="abspath">${section.root.getAbsPath(true)}</label>
-			${section.root is Curve ?'': '<div class="track-button align-right-first addtrack ico ico-plus-square"></div>'}
-			<div class="track-button lock align-right-second ico ${areEventsLocked ? "ico-lock" : "ico-unlock"}"></div>
-			</div>
-			<div class="tracks"></div>
-			</div>');
-
-			addVisibilityButtonListener(sectionEl, allElements);
-			addLockButtonListener(sectionEl, allElements);
-			addOnSelectListener(sectionEl, allElements);
-			addFoldButtonListener(sectionEl);
-			addAddTrackButtonListener(sectionEl, section.root);
-
-			if (section.curves.length > 0) {
-				for (i in 0...section.curves.length) {
-					var c = section.curves[i];
-
-					var hexColor = '#${StringTools.hex(hide.comp.Timeline.getCurveColor(c.name, i))}';
-					var trackEl = new Element('<div>
-						<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
-							<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
-							<label class="name">${upperCase(c.name)}</label>
-						</div>
-						<div class="tracks"></div>
-					</div>');
-
-					sectionEl.append(trackEl);
-
-					addFoldButtonListener(trackEl);
-				}
-
-			}
-
-			if (section.events.length > 0) {
-				for (i in 0...section.events.length) {
-					var e = section.events[i];
-
-					var colorStyle = e.selected ? "style = color:#d59320" : "";
-					var hexColor = '#FFFFFF';
-					var trackEl = new Element('<div>
-						<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
-							<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
-							<div class="track-button visibility ico ${e.hidden ? "ico-eye-slash" : "ico-eye"}"></div>
-							<label class="name" ${colorStyle}>${upperCase(e.getEventPrefab().name)}</label>
-							<div class="track-button lock align-right-second ico ${e.lock ? "ico-lock" : "ico-unlock"}"></div>
-						</div>
-						<div class="tracks"></div>
-					</div>');
-
-					sectionEl.append(trackEl);
-
-					addVisibilityButtonListener(trackEl, [ e ]);
-					addLockButtonListener(trackEl, [ e ]);
-					addOnSelectListener(trackEl, [ e ]);
-					addFoldButtonListener(trackEl);
-				}
-
-			}
-
-			if (section.root is Curve) {
-				var c: Curve = cast section.root;
-				{
-					var hexColor = '#${StringTools.hex(hide.comp.Timeline.getCurveColor(c.name, 0))}';
-					var trackEl = new Element('<div>
-						<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
-							<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
-							<label class="name">${upperCase(c.name)}</label>
-						</div>
-						<div class="tracks"></div>
-					</div>');
-
-					sectionEl.append(trackEl);
-
-					addFoldButtonListener(trackEl);
-				}
-			}
-
-			if (section.root is IEvent) {
-				var e: IEvent = cast section.root;
-				var colorStyle = e.selected ? "style = color:#d59320" : "";
-				var hexColor = '#FFFFFF';
-				var trackEl = new Element('<div>
-					<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
-						<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
-						<div class="track-button visibility ico ${e.hidden ? "ico-eye-slash" : "ico-eye"}"></div>
-						<label class="name" ${colorStyle}>${upperCase(e.getEventPrefab().name)}</label>
-						<div class="track-button lock align-right-second ico ${e.lock ? "ico-lock" : "ico-unlock"}"></div>
-					</div>
-					<div class="tracks"></div>
-				</div>');
-
-				sectionEl.append(trackEl);
-
-				addVisibilityButtonListener(trackEl, [ e ]);
-				addLockButtonListener(trackEl, [ e ]);
-				addOnSelectListener(trackEl, [ e ]);
-				addFoldButtonListener(trackEl);
-			}
-
-			for (child in section.children)
-				drawSection(sectionEl, child, depth + 1);
-
-			parent.append(sectionEl);
-		}
-
-		for (sec in sections)
-			drawSection(leftPanel, sec, 0);
-
-		// Apply preferences of fold / lock / visibility
-		for (fold in toFoldList) {
-			fold.el.removeClass("ico-angle-down").addClass("ico-angle-right");
-			fold.parentEl.children().find(".tracks-header").addClass("hidden");
-			fold.parentEl.children().find(".track-header").addClass("hidden");
-		}
-
-		for (lock in toLockList) {
-			var lockEl = lock.parentEl.find(".lock");
-			lockEl.removeClass("ico-unlock").addClass("ico-lock");
-
-			for (c in lock.elements)
-				c.lock = lockEl.first().hasClass("ico-lock");
-		}
-
-		for (hidden in toHiddenList) {
-			var visibilityEl = hidden.parentEl.find(".visibility");
-			visibilityEl.removeClass("ico-eye").addClass("ico-eye-slash");
-
-			for (c in hidden.elements)
-				c.hidden = visibilityEl.hasClass("ico-eye-slash");
-		}
-
-		var prefWidth = leftAnimPanel.getDisplayState("size");
-		if (prefWidth != null)
-			leftPanel.width(prefWidth);
+	function onTimelineEdit() {
+		forceTick = true;
+		skipRebuildPannel++;
+		@:privateAccess sceneEditor.selectElements(sceneEditor.selectedPrefabs, NoHistory);
+		skipRebuildPannel--;
 	}
 
-	function rebuildAnimPanel() {
-		if (@:privateAccess !sceneEditor.ready)
+	function refreshTimelineView() {
+		var t = getTimeline();
+		if (t == null || data == null || element == null || @:privateAccess !sceneEditor.ready)
 			return;
 
-		if(element == null)
-			return;
+		t.clear(Timeline.ClearFlag.Content);
+		t.setDuration(data.duration);
 
-		var leftPanel = element.find(".left-fx-animpanel").first();
-		leftPanel.empty();
-
-		var selection = sceneEditor.getSelection();
-		afterPanRefreshes = [];
 		var curvesToDraw : Array<Curve> = [];
-		var eventsToDraw : Array<IEvent> = [];
 
-		// the particle curves are edited in the inspector of their emitter, shown here only when they are selected
-		function getSection(?root : PrefabElement, depth = 0, particles = false): Section {
-			var section: Section = { root:root, curves: [], children: [], events: []};
-			var eventAdded = false;
+		// the curves of the emitter params are edited in the inspector of their emitter, shown here only when they are selected
+		function getSection(root : PrefabElement, depth = 0, particles = false): Section {
+			var section: Section = { root:root, curves: [], children: []};
 			particles = particles || (depth == 0 && root is Curve);
-			function shown(c: Curve) return particles || !c.isParticleCurve();
+			function shown(c: Curve) return particles || !c.isEmitterParamCurve();
 
 			if (root is Curve && shown(cast root))
 				curvesToDraw.push(cast root);
-
-			if (root is IEvent && depth == 0)
-				eventsToDraw.push(cast root);
 
 			for(child in root.children) {
 				if (child.flatten(Curve).exists(shown)) {
 					if (child is Curve) {
 						var c = Std.downcast(child, Curve);
 						curvesToDraw.push(c);
-
 						section.curves.push(c);
 					}
 					else {
 						section.children.push(getSection(child,depth+1,particles));
 					}
 				}
-
-				if (child.find(o -> Std.isOfType(o, IEvent)) != null) {
-					if (child is IEvent) {
-						var e = cast(child, IEvent);
-						section.events.push(e);
-						eventsToDraw.push(e);
-					}
-				}
-
 			}
 
 			return section;
 		}
 
-		var sections : Array<Section> = [];
-		for (sel in selection) {
-			sections.push(getSection(sel));
+		var hiddenList : Array<String> = getDisplayState("hiddenList") ?? new Array<String>();
+		var foldList : Array<String> = getDisplayState("foldList") ?? new Array<String>();
+
+		var sections = [for (sel in sceneEditor.getSelection()) getSection(sel)];
+
+		// one color per curve, the same in the tracks and in the graph
+		timelineCurveColors = new Map();
+		var index = 0;
+		for (c in curvesToDraw) {
+			if (timelineCurveColors.exists(c))
+				continue;
+			var color = hide.comp.Timeline.getCurveColor(c.name, index++);
+			if (c.blendMode == CurveBlendMode.Blend) {
+				var param = Std.downcast(c.getRoot(false), hrt.prefab.fx.FX)?.parameters.find(p -> p.name == c.param);
+				if (param != null)
+					color = param.color;
+			}
+			timelineCurveColors.set(c, color);
 		}
 
-		addHeadersToCurveEditor(sections);
-		addCurvesToCurveEditor(curvesToDraw, eventsToDraw);
+		timelineRows = [];
+		timelineFilter = t.filter.toLowerCase().split(":").join(".");
+		for (s in sections)
+			addSectionTracks(t, s, 0, foldList, hiddenList);
 
-		this.curveEditor.refreshTimeline(currentTime);
-		this.curveEditor.refreshOverlay(data.duration);
+		var shownCurves = [];
+		for (c in curvesToDraw) {
+			if (!isPathInList(c.getAbsPath(true), hiddenList) && curveMatchesFilter(c) && !shownCurves.contains(c))
+				shownCurves.push(c);
+		}
+		addTimelineCurves(t, shownCurves);
+		refreshTimelineRows();
 	}
 
-	function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void, ?onKeyDown: js.jquery.Event->Void, ?onKeyUp: js.jquery.Event->Void) {
-		var el = new Element(element[0].ownerDocument.body);
-		var startX = null, startY = null;
-		var dragging = false;
-		var threshold = 3;
-		el.keydown(onKeyDown);
-		el.keyup(onKeyUp);
-		el.on("mousemove.fxedit", function(e: js.jquery.Event) {
-			if(startX == null) {
-				startX = e.clientX;
-				startY = e.clientY;
+	static function isPathInList(path : String, list : Array<String>) {
+		for (p in list) {
+			if (path == p || StringTools.startsWith(path, p + "."))
+				return true;
+		}
+		return false;
+	}
+
+	function togglePath(key : String, path : String) {
+		var list : Array<String> = getDisplayState(key) ?? new Array<String>();
+		var isIn = isPathInList(path, list);
+		// the path, its parents and its children are removed, then the path is added if it was not in the list
+		list = list.filter(p -> !(path == p || StringTools.startsWith(path, p + ".") || StringTools.startsWith(p, path + ".")));
+		if (!isIn)
+			list.push(path);
+		saveDisplayState(key, list);
+		refreshTimelineView();
+	}
+
+	function selectTimelineRow(name : String) {
+		selectedTimelineRow = name;
+		refreshTimelineRows();
+	}
+
+	function refreshTimelineRows() {
+		for (r in timelineRows)
+			r.element.classList.toggle("selected", r.name == selectedTimelineRow);
+	}
+
+	function getCurvePlayedValue(c : Curve) : Float -> Float {
+		var evaluator = new hrt.prefab.fx.Evaluator();
+		evaluator.setAllParameters(Std.downcast(c.getRoot(false), hrt.prefab.fx.FX)?.parameters);
+		var value : hrt.prefab.fx.Value = try c.makeVal() catch (e : Dynamic) null;
+		return (time : Float) -> value == null ? 0. : evaluator.getFloat(value, time);
+	}
+
+	function matchesFilter(name : String) {
+		return timelineFilter == "" || (name ?? "").toLowerCase().split(":").join(".").indexOf(timelineFilter) >= 0;
+	}
+
+	function curveMatchesFilter(c : Curve) {
+		var p : PrefabElement = c;
+		while (p != null) {
+			if (matchesFilter(p.name))
+				return true;
+			p = p.parent;
+		}
+		return false;
+	}
+
+	function sectionMatchesFilter(section : Section) : Bool {
+		if (matchesFilter(section.root.name))
+			return true;
+		if (section.curves.exists(c -> matchesFilter(c.name)))
+			return true;
+		return section.children.exists(sectionMatchesFilter);
+	}
+
+	function addSectionTracks(t : Timeline, section : Section, depth : Int, foldList : Array<String>, hiddenList : Array<String>, showAll = false) {
+		if (!showAll && !sectionMatchesFilter(section))
+			return;
+		var root = section.root;
+		var path = root.getAbsPath(true);
+		var showContent = showAll || matchesFilter(root.name);
+		// the matching tracks are shown unfolded
+		var isFolded = foldList.contains(path) && timelineFilter == "";
+		var sectionName = "section:" + path;
+		var tag = getTagRec(root);
+		var isCurve = root is Curve;
+		hide.html.Html.create(
+			<div id="header" class="fx-track section" style={'--depth: $depth'} title={path} onclick={() -> selectTimelineRow(sectionName)} ondblclick={() -> togglePath("foldList", path)}>
+				<hide-icon icon={HideRes.icon.chevron_right} title={isFolded ? "Unfold" : "Fold"} class={isFolded ? "fold" : "fold open"} onclick={(e : js.html.MouseEvent) -> { e.stopPropagation(); togglePath("foldList", path); }}/>
+				<span class={tag != null ? "name tagged" : "name"} style={tag != null ? 'background-color: ${tag.color}' : ""}>${upperCase(root.name)}</span>
+				<span class="type">${root.getHideProps()?.name ?? ""}</span>
+				<span class="buttons">
+					<hide-icon id="add-button" icon={HideRes.icon.add} title="Add track" class="add" onclick={(e : js.html.MouseEvent) -> { e.stopPropagation(); openNewTrackMenu(root, addButton); }} if(!isCurve)/>
+				</span>
+			</div>
+		);
+		t.addTrack(sectionName, header);
+		timelineRows.push({ name: sectionName, element: header });
+		if (isFolded)
+			return;
+
+		var curves = section.curves.copy();
+		if (isCurve)
+			curves.push(cast root);
+		for (c in curves) {
+			if (!showContent && !matchesFilter(c.name))
+				continue;
+			var curvePath = c.getAbsPath(true);
+			var trackName = "curve:" + curvePath;
+			var color = timelineCurveColors.get(c);
+			var shown = !isPathInList(curvePath, hiddenList);
+			hide.html.Html.create(
+				<div id="row" class="fx-track curve" style={'--depth: ${depth + 1}'} onclick={() -> { selectTimelineRow(trackName); t.selectKeys(shown ? [for (d in c.datas) for (k in d.keys) k] : []); }}>
+					<div class={shown ? "check checked" : "check"} title={shown ? "Hide in the graph" : "Show in the graph"} style={'--check-color: #${StringTools.hex(color & 0xFFFFFF, 6)}'} onclick={(e : js.html.MouseEvent) -> { e.stopPropagation(); togglePath("hiddenList", curvePath); }}/>
+					<span class="name">${c.name.split(":").join(".")}</span>
+				</div>
+			);
+			t.addTrack(trackName, row);
+			timelineRows.push({ name: trackName, element: row });
+		}
+
+		for (child in section.children)
+			addSectionTracks(t, child, depth + 1, foldList, hiddenList, showContent);
+	}
+
+	function openNewTrackMenu(elt : PrefabElement, button : js.html.Element) {
+		var menuItems = getNewTrackMenu(elt);
+		if (menuItems.length == 0)
+			menuItems = [{label: "No animation available", enabled: false}];
+		hide.comp.ContextMenu.createDropdown(button, menuItems);
+	}
+
+	function getTagRec(elt : PrefabElement) {
+		var p = elt;
+		while(p != null) {
+			var tag = sceneEditor.getTag(p);
+			if(tag != null)
+				return tag;
+			p = p.parent;
+		}
+		return null;
+	}
+
+	function addTimelineCurves(t : Timeline, curves : Array<Curve>) {
+		for (c in curves) {
+			var getValue = getCurvePlayedValue(c);
+			var color = timelineCurveColors.get(c);
+
+			// a curve of two datas: each one edited apart, the blend drawn as it is
+			if (c.blendMode != CurveBlendMode.Range) {
+				if (c.blendMode == CurveBlendMode.None)
+					t.addCurve({ name: c.name, color: color, getValue: c.data.getVal, data: c.data });
+				else
+					t.addCurve({ name: c.name, color: color, getValue: getValue, dashed: c.blendMode == CurveBlendMode.Blend });
+
+				// the curve remapped by its parameter
+				if (c.blendMode == CurveBlendMode.None && c.param != null)
+					t.addCurve({ name: c.name, color: color, getValue: getValue, dashed: true, faded: true });
 			}
-			else {
-				if(!dragging) {
-					if(hxd.Math.abs(e.clientX - startX) + hxd.Math.abs(e.clientY - startY) > threshold) {
-						dragging = true;
-					}
-				}
-				if(dragging)
-					onMove(e);
+			if (c.datas.length > 1) {
+				for (i => d in c.datas)
+					t.addCurve({ name: c.name + " " + i, color: hide.comp.Timeline.getCurveColor(c.name + " " + i, i), getValue: d.getVal, data: d });
 			}
-		});
-		el.on("mouseup.fxedit", function(e: js.jquery.Event) {
-			el.off("mousemove.fxedit");
-			el.off("mouseup.fxedit");
-			e.preventDefault();
-			e.stopPropagation();
-			onStop(e);
-		});
+		}
 	}
 
 	function addTracks(element : PrefabElement, props : Array<PropTrackDef>, ?prefix: String) {
@@ -1523,23 +1196,13 @@ class FXEditor extends hide.view.FileView {
 		return menuItems;
 	}
 
-	function isPerInstance( v : hxsl.Ast.TVar ) {
-		if( v.kind != Param )
-			return false;
-		if( v.qualifiers == null )
-			return false;
-		for( q in v.qualifiers )
-			if( q.match(PerInstance(_)) )
-				return true;
-		return false;
-	}
-
 	function onUpdate(dt : Float) {
 		if (is2D)
 			onUpdate2D(dt);
 		else
 			onUpdate3D(dt);
 		sceneEditor.curEdit2?.root?.refreshAnimatedFields();
+		getTimeline()?.update();
 	}
 
 	function onUpdate2D(dt:Float) {
@@ -1550,21 +1213,17 @@ class FXEditor extends hide.view.FileView {
 			lastSeek = currentTime;
 		}
 
-		if(!pauseButton.isDown()) {
+		if(!paused) {
 			currentTime += scene.speed * dt;
 
-			if(this.curveEditor != null) {
-				this.curveEditor.refreshTimeline(currentTime);
-				this.curveEditor.refreshOverlay(data.duration);
-			}
-			if(currentTime >= previewMax) {
-				currentTime = previewMin;
+			if(currentTime >= (data.duration == 0 ? 5000 : data.duration)) {
+				currentTime = 0;
 				lastTime = currentTime;
 				anim.setRandSeed(Std.random(0xFFFFFF));
 			}
 		}
 
-		if (pauseButton.isDown() || lastTime > currentTime) {
+		if (paused || lastTime > currentTime) {
 			@:privateAccess scene.s2d.renderer.time = currentTime;
 			@:privateAccess scene.s3d.renderer.ctx.time = currentTime;
 		}
@@ -1574,28 +1233,7 @@ class FXEditor extends hide.view.FileView {
 		}
 
 		lastTime = currentTime;
-
-		// if(statusText != null) {
-		// 	var lines : Array<String> = [
-		// 		'Time: ${Math.round(currentTime*1000)} ms',
-		// 		'Scene objects: ${scene.s2d.getObjectsCount()}',
-		// 		'Drawcalls: ${h3d.Engine.getCurrent().drawCalls}',
-		// 	];
-		// 	statusText.text = lines.join("\n");
-		// }
-
-		// if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
-		// 	save();
-		// 	lastSyncChange = properties.lastChange;
-		// 	currentVersion = undo.currentID;
-		// }
-
-		lastTime = currentTime;
 	}
-
-	var avg_smooth = 0.0;
-	var trailTime_smooth = 0.0;
-	var num_trail_tri_smooth = 0.0;
 
 	public static function floatToStringPrecision(n : Float, ?prec : Int = 2, ?showZeros : Bool = true) {
 		if(n == 0) { // quick return
@@ -1662,8 +1300,6 @@ class FXEditor extends hide.view.FileView {
 		if (fx != null) {
 			var hasJumped = currentTime != lastTime;
 
-			var paused = pauseButton.isDown();
-
 			if (hasJumped) {
 				lastSeek = currentTime;
 			}
@@ -1688,19 +1324,6 @@ class FXEditor extends hide.view.FileView {
 				@:privateAccess scene.s3d.renderer.ctx.time = currentTime;
 			}
 		}
-
-
-		if(this.curveEditor != null) {
-			this.curveEditor.refreshTimeline(currentTime);
-			this.curveEditor.refreshOverlay(data.duration);
-		}
-
-		var cam = scene.s3d.camera;
-		// if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
-		// 	save();
-		// 	lastSyncChange = properties.lastChange;
-		// 	currentVersion = undo.currentID;
-		// }
 	}
 
 	static function getTrack(element : PrefabElement, propName : String) {
@@ -1708,7 +1331,6 @@ class FXEditor extends hide.view.FileView {
 		return Curve.getCurve(element, keys != null ? keys[0] : propName, false);
 	}
 
-	/** The current value of the property animated by the curve `key` **/
 	static function getAnimValue(element : PrefabElement, key : String) : Null<Float> {
 		inline function num(v: Dynamic) : Null<Float> return Std.isOfType(v, Float) || Std.isOfType(v, Int) ? (v : Float) : null;
 		var parts = key.split(":");
@@ -1739,19 +1361,6 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	static var _ = Extension.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX", name: "FX" });
-
-	function set_currentTime(value:Float):Float {
-		if (this.curveEditor != null)
-			@:privateAccess this.curveEditor.currentTime = value;
-
-		return this.currentTime = value;
-	}
-
-	function get_currentTime():Float {
-		if (this.curveEditor != null)
-			return @:privateAccess this.curveEditor.currentTime;
-		return this.currentTime;
-	}
 
 	public function setRenderPropsEditionVisibility(visible : Bool) {
 		var renderPropsEditionEl = this.element?.find('.render-props-edition');
