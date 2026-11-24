@@ -7312,6 +7312,10 @@ fancy-gallery-item {
 	color: #ee6666 !important;
 }
 
+.heaps-scene:has(> hide-model-anim-picker) {
+	position: relative;
+}
+
 #shape-editor {
 	margin-top: 5px;
 	margin-bottom: 5px;
