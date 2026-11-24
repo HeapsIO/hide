@@ -1,36 +1,24 @@
 package hrt.prefab.fx;
 
+@:access(hrt.prefab.Shader)
+@:access(hrt.prefab.fx.ShaderTarget)
 class ShaderTargetObj extends h3d.scene.Object {
 	public var tag : String;
 	public var priority : Int = 1;
 	public var shadersRoot : ShaderTarget;
-	var guard = 0;
+	var applied = false;
 
-	public function apply(fx : hrt.prefab.fx.FX) {
-		function reparentChildren(obj : hrt.prefab.Object3D) {
-			var i = 0;
-			while ( i < obj.children.length ) {
-				var c = obj.children[i];
-				if ( (c.enabled && !c.editorOnly) && (Std.isOfType(c, Shader) || Std.isOfType(c, Material) || Std.isOfType(c, MaterialSelector)) ) {
-					shadersRoot.addChild(c);
-					i--;
-				}
-				i++;
-			}
-		}
+	// The shader prefabs of shadersRoot.getSelection() and their instances, same indices
+	var selection : Array<Shader>;
+	var shaders : Array<hxsl.Shader>;
 
-		var children = shadersRoot.children.copy();
-		if (children.length > 0) {
-			@:privateAccess shadersRoot._children = [];
-			for (c in children) {
-				if (Std.isOfType(c, Object3D))
-					reparentChildren(cast c);
-			}
-		}
+	public function init(fx : hrt.prefab.fx.FX) {
+		// Made during the make of the fx, so that its animations use these instances
+		var sel = shadersRoot.getSelection();
+		shaders = [for (s in sel) s.shader ?? s.makeShaderInstance()];
+		selection = sel;
 
 		var fxAnim : hrt.prefab.fx.FX.FXAnimation = cast fx.local3d;
-		shadersRoot.local3d = parent;
-
 		if (fxAnim == null)
 			return;
 
@@ -40,35 +28,37 @@ class ShaderTargetObj extends h3d.scene.Object {
 	}
 
 	public function applyShaders() {
-		for ( s in shadersRoot.findAll(Shader) ) {
-			if (!s.enabled || s.editorOnly)
-				continue;
-			if (s.shader == null)
-				@:privateAccess s.makeShaderInstance();
-			applyShader(s);
-		}
+		if (selection == null)
+			return;
+		for (i => s in selection)
+			applyShader(s, shaders[i]);
+		applied = true;
 	}
 
 	public function removeShaders() {
-		for (s in shadersRoot.findAll(Shader))
-			s.dispose();
-		guard = Std.int(hxd.Math.max(0, guard - 1));
+		if (selection != null) {
+			for (i => s in selection) {
+				if (shaders[i] != null)
+					s.removeFrom(parent, shaders[i]);
+			}
+		}
+		applied = false;
 	}
 
 	public function isApplied() {
-		return guard > 0;
+		return applied;
 	}
 
-	function applyShader(s: Shader) {
-		s.apply3d((o) -> return !Std.isOfType(o, hrt.prefab.fx.FX.FXAnimation) );
-		guard++;
+	function applyShader(s: Shader, shader: hxsl.Shader) {
+		if (shader != null)
+			s.applyTo(parent, shader, (o) -> return !Std.isOfType(o, hrt.prefab.fx.FX.FXAnimation) );
 	}
 
 	override function onRemove() {
 		super.onRemove();
 		removeShaders();
 		if (parent?.allocated)
-			ShaderTarget.updateShaderTargets(shadersRoot.target);
+			ShaderTarget.updateShaderTargets(parent);
 	}
 }
 
@@ -80,8 +70,41 @@ class ShaderTarget extends Object3D {
 
 	public var target : h3d.scene.Object;
 
+	// Cache of getSelection(), only depends on the prefab data
+	var selection : Array<Shader>;
+
 	public function new(parent:Prefab, contextShared: ContextShared) {
 		super(parent, contextShared);
+	}
+
+	/**
+		The enabled shaders applied to the target : the ones of the Shader, Material and MaterialSelector children of the Object3D children
+	**/
+	function getSelection() : Array<Shader> {
+		#if !(editor || editor_hl)
+		if (selection != null)
+			return selection;
+		#end
+
+		var shaders : Array<Shader> = [];
+		for (c in children) {
+			if (!Std.isOfType(c, Object3D))
+				continue;
+			for (gc in c.children) {
+				if (gc.enabled && !gc.editorOnly && (Std.isOfType(gc, Shader) || Std.isOfType(gc, Material) || Std.isOfType(gc, MaterialSelector)))
+					gc.findAll(Shader, (s) -> s.enabled && !s.editorOnly, false, shaders);
+			}
+		}
+
+		#if !(editor || editor_hl)
+		selection = shaders;
+		#end
+		return shaders;
+	}
+
+	override public function reload(p : Dynamic) {
+		super.reload(p);
+		selection = null;
 	}
 
 	public static function updateShaderTargets(o : h3d.scene.Object) {
@@ -142,7 +165,7 @@ class ShaderTarget extends Object3D {
 		o.priority = this.priority;
 		o.tag = this.tag;
 		o.shadersRoot = this;
-		o.apply(fx);
+		o.init(fx);
 		updateShaderTargets(target);
 	}
 

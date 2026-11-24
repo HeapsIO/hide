@@ -180,14 +180,14 @@ class Shader extends Prefab {
 		return targetMaterial == null || targetMaterial == mat.name;
 	}
 
-	function iterMaterials(callb, filterObj : (obj : h3d.scene.Object) -> Bool = null, onlyTarget = false) {
+	function iterMaterials(callb, filterObj : (obj : h3d.scene.Object) -> Bool = null, onlyTarget = false, ?targetRoot : h3d.scene.Object) {
 		if (parent == null)
 			return;
 		var parent = parent;
 
 		// If we are at the root of a prefab, check if we are in a ref, and in that case
 		// get the ref parent as a parent
-		if (parent?.parent == null) {
+		if (targetRoot == null && parent?.parent == null) {
 			var current = shared.parentPrefab?.parent;
 			while(current != null && current.parent == null) {
 				current = current.shared.parentPrefab?.parent;
@@ -199,13 +199,13 @@ class Shader extends Prefab {
 
 		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
-			for( m in material.getMaterials(true, filterObj) )
+			for( m in material.getMaterials(targetRoot, true, filterObj) )
 				if( !onlyTarget || checkMaterial(m) )
 					callb(null, m);
 		} else if ( Std.isOfType(parent, MaterialSelector) ) {
 			var materialSelector = cast(parent, MaterialSelector);
 			var passSelect = h3d.mat.MaterialSetup.current.createMaterial();
-			for ( p in materialSelector.getPasses(null, filterObj) ) {
+			for ( p in materialSelector.getPasses(targetRoot, filterObj) ) {
 				passSelect.name = p.all ? "" : PASS_SELECT;
 				@:privateAccess passSelect.passes = p.pass;
 				if( !onlyTarget || checkMaterial(passSelect) )
@@ -227,7 +227,9 @@ class Shader extends Prefab {
 				if( root != null )
 					rec(root);
 			}
-			if( recursiveApply ) {
+			if( targetRoot != null ) {
+				rec(targetRoot);
+			} else if( recursiveApply ) {
 				for( c in parent.flatten() )
 					collect(c);
 			} else if( parent.type == "object" ) {
@@ -248,13 +250,24 @@ class Shader extends Prefab {
 
 	override function dispose() {
 		if( shared.current3d != null )
-			iterMaterials(function(obj,mat) removeShader(obj, mat, shader), null, true);
+			removeFrom(null, shader);
 		super.dispose();
 	}
 
 	public function apply3d(filterObj : (obj : h3d.scene.Object) -> Bool = null) {
 		if( shared.current3d != null )
-			iterMaterials(function(obj,mat) applyShader(obj, mat, shader), filterObj, true);
+			applyTo(null, shader, filterObj);
+	}
+
+	/**
+		Apply `shader` to the materials of `root`, or of the objects of this prefab parent if `root` is null
+	**/
+	function applyTo(root : h3d.scene.Object, shader : hxsl.Shader, filterObj : (obj : h3d.scene.Object) -> Bool = null) {
+		iterMaterials(function(obj,mat) applyShader(obj, mat, shader), filterObj, true, root);
+	}
+
+	function removeFrom(root : h3d.scene.Object, shader : hxsl.Shader) {
+		iterMaterials(function(obj,mat) removeShader(obj, mat, shader), null, true, root);
 	}
 
 	override function makeInstance() {
