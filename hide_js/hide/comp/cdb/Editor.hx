@@ -102,6 +102,12 @@ class Editor extends Component {
 	// the translation shown instead of the localizable texts, by all the editors
 	public static var langFile(default, null) : LangFile;
 
+	/**
+		Called when a translated text is set, before the files are saved. `langKey` : the names of the elements from the sheet to the text.
+		Call `beforeChange` before modifying another translation file, so the undo restores it.
+	**/
+	public static dynamic function onLocTextChange( langFilePath : String, langKey : Array<String>, beforeChange : LangFile -> Void ) {}
+
 	public function new(config, api, ?cdbTable) {
 		super(null,null);
 		this.api = api;
@@ -1214,6 +1220,15 @@ class Editor extends Component {
 		var r = getLangElement(line, true);
 		var name = r.prefix + column.name;
 		f.setText(f.child(r.e, name) ?? f.createChild(r.e, name), text);
+
+		var langKey = [name];
+		var e = r.e;
+		while( e.nodeName != "sheet" ) {
+			langKey.unshift(e.nodeName);
+			e = e.parent;
+		}
+		langKey.unshift(e.get("name"));
+		onLocTextChange(f.path, langKey, file -> history.add(Lang(file, langKey[0], langKey[1])));
 		endChanges();
 
 		if( changesDepth == 0 && filters.length > 0 )
