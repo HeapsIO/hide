@@ -857,7 +857,7 @@ class FXEditor extends hide.view.FileView {
 		var tag = getTagRec(root);
 		var isCurve = root is Curve;
 		hide.html.Html.create(
-			<div id="header" class="fx-track section" style={'--depth: $depth'} title={path} onclick={() -> selectTimelineRow(sectionName)} ondblclick={() -> togglePath("foldList", path)}>
+			<div id="header" class="fx-track section" style={'--depth: $depth'} title={path}>
 				<hide-icon icon={HideRes.icon.chevron_right} title={isFolded ? "Unfold" : "Fold"} class={isFolded ? "fold" : "fold open"} onclick={(e : js.html.MouseEvent) -> { e.stopPropagation(); togglePath("foldList", path); }}/>
 				<span class={tag != null ? "name tagged" : "name"} style={tag != null ? 'background-color: ${tag.color}' : ""}>${upperCase(root.name)}</span>
 				<span class="type">${root.getHideProps()?.name ?? ""}</span>
