@@ -341,6 +341,7 @@ class LocalVolumetricLightingObject extends h3d.scene.Object {
 		meshInside.material.mainPass.culling = Front;
 		meshInside.material.mainPass.depthTest = Always;
 		meshInside.material.mainPass.depthWrite = false;
+		meshInside.material.mainPass.depthClamp = true;
 		materialInside.mainPass.addShader(shader);
 
 		meshOutside = new h3d.scene.Mesh(prim, this);
