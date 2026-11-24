@@ -3019,22 +3019,22 @@ class Model extends FileView {
 			return;
 
 		var anim = obj.currentAnimation;
-		var track = js.Browser.document.createDivElement();
-		hide.html.Html.build(track,
-			<span>Animation :</span>
+		hide.html.Html.create(
+			<label id="anim-label">
+				<span>Animation</span>
+				<hide-select id="anim-select"/>
+			</label>
 		);
-		var choices : Array<hide.comp.Dropdown.Choice> = [for (a in anims) { id: a, text: scene.animationName(a), classes: ["compact"] }];
-		var select = new hide.comp.Select(null, null, choices);
-		select.value = currentAnimation?.file;
-		select.onChange = (file : String) -> {
+		animSelect.items = [{ label: "-- None --", value: null }].concat([for (a in anims) { label: scene.animationName(a), value: a }]);
+		animSelect.value = currentAnimation?.file;
+		animSelect.onValueChanged = () -> {
 			if (modified && !js.Browser.window.confirm("Current animation has been modified, change animation without saving?")) {
-				select.value = currentAnimation?.file;
+				animSelect.value = currentAnimation?.file;
 				return;
 			}
-			setAnimation(file == "" ? null : file);
+			setAnimation(animSelect.value);
 		};
-		track.append(select.element.get(0));
-		t.addTrack("Animation", track);
+		t.addToolbarWidgets(animLabel);
 
 		if (anim == null)
 			return;

@@ -106,6 +106,7 @@ class Timeline extends hide.ui.View<{}> {
 	var resizeObserver : hide.comp.ResizeObserver;
 	var selectionBox : { x0 : Float, y0 : Float, x1 : Float, y1 : Float };
 
+	var toolbar : Element;
 	var leftPanel : Element;
 	var rightPanel : Element;
 	var grid : CanvasElement;
@@ -117,6 +118,7 @@ class Timeline extends hide.ui.View<{}> {
 	var speedButton : hide.html.comp.Button;
 	var seekButtons : Array<hide.html.comp.Button> = [];
 	var filterInput : InputElement;
+	var additionalWidgets : Array<Element> = [];
 
 	// CSS Rules
 	var rulerHeight = 0.;
@@ -132,7 +134,7 @@ class Timeline extends hide.ui.View<{}> {
 
 		hide.html.Html.build(root,
 			<div class="timeline-root">
-				<hide-toolbar>
+				<hide-toolbar id="toolbar">
 					<hide-group>
 						<hide-button id="start-button" title="Go to start" icon={HideRes.icon.fast_rewind} onclick={() -> setTime(0.)}/>
 						<hide-button id="previous-button" title="Previous frame" icon={HideRes.icon.skip_previous} onclick={() -> setTime(Math.max(getTime() - frameToTime(1), 0.))}/>
@@ -173,6 +175,9 @@ class Timeline extends hide.ui.View<{}> {
 		this.playButton = playButton;
 		this.speedButton = speedButton;
 		this.filterInput = filterInput;
+		this.toolbar = toolbar;
+		for (w in additionalWidgets)
+			toolbar.append(w);
 		seekButtons = [startButton, previousButton, nextButton, endButton];
 		readStyle();
 		updateButtons();
@@ -304,7 +309,10 @@ class Timeline extends hide.ui.View<{}> {
 			c.element?.remove();
 		for (m in markers)
 			m.element?.remove();
+		for (w in additionalWidgets)
+			w.remove();
 		tracks = [];
+		additionalWidgets = [];
 		clips = [];
 		markers = [];
 		curves = [];
@@ -338,6 +346,11 @@ class Timeline extends hide.ui.View<{}> {
 		}
 
 		refresh();
+	}
+
+	public function addToolbarWidgets(e : Element) {
+		additionalWidgets.push(e);
+		toolbar?.append(e);
 	}
 
 	public function getTrack(name : String) {

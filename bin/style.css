@@ -7450,6 +7450,20 @@ fancy-gallery-item {
 		min-height: 0;
 	}
 
+	.timeline-root > hide-toolbar {
+		label {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		hide-select {
+			--select-height: 28px;
+			width: 200px;
+			font-size: 12px;
+		}
+	}
+
 	.left-panel {
 		display: flex;
 		flex-direction: column;
