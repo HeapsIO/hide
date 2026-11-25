@@ -29,6 +29,7 @@ typedef Marker = {
 	name : String,
 	frame : Int,
 	?duration : Int,
+	?row : Row,
 	?element : Element
 }
 
@@ -53,7 +54,6 @@ class Timeline extends hide.ui.View<{}> {
 	static final ZOOM_SPEED = 1.1;
 	static final DRAG_THRESHOLD = 3;
 	static final FRAME_ALL_PADDING = 20;
-	static final LABEL_SPACING = 6;
 	static final MAX_FRAME = 1 << 30;
 	static final SPEEDS = [0.125, 0.25, 0.5, 1., 2., 4., 8.];
 	static final HIT_DISTANCE = 6;
@@ -345,8 +345,13 @@ class Timeline extends hide.ui.View<{}> {
 		refresh();
 	}
 
-	public function addMarker(name : String, frame : Int) {
-		var m : Marker = { name: name, frame: frame };
+	public function addMarker(name : String, frame : Int, duration : Int = 0) {
+		var m : Marker = { name: name, frame: frame, duration: duration };
+		hide.html.Html.create(
+			<span id="label" ondblclick={() -> renameMarker(m, label)}>${name}</span>
+		);
+		m.row = { name: name, content: label };
+		rows.push(m.row);
 		markers.push(m);
 		refresh();
 	}
@@ -362,7 +367,9 @@ class Timeline extends hide.ui.View<{}> {
 			var m = markers[idx];
 			if (m.name == name && m.frame == frame) {
 				markers.remove(m);
+				rows.remove(m.row);
 				m.element?.remove();
+				m.row.element?.remove();
 				selectedMarkers.remove(m);
 				return;
 			}
@@ -574,7 +581,7 @@ class Timeline extends hide.ui.View<{}> {
 			deleteKeys(selectedKeys.copy());
 		if (selectedMarkers.length == 0)
 			return;
-		var deleted = [for (m in selectedMarkers) ({ name: m.name, frame: m.frame } : Marker)];
+		var deleted = [for (m in selectedMarkers) { name: m.name, frame: m.frame, duration: m.duration }];
 		setSelection([], selectedKeys);
 		onDelete(deleted);
 	}
@@ -763,14 +770,22 @@ class Timeline extends hide.ui.View<{}> {
 				m.element = el;
 				content.append(el);
 
-				hide.html.Html.build(el,
-					<hide-icon icon={HideRes.icon.diamond}/>
-				);
-
-				var label = document.createSpanElement();
-				label.className = "label";
-				label.textContent = m.name;
-				el.append(label);
+				if (m.duration > 0) {
+					hide.html.Html.build(el,
+						<div class="bar"></div>
+					);
+					hide.html.Html.build(el,
+						<div class="diamond"></div>
+					);
+					hide.html.Html.build(el,
+						<div class="diamond end"></div>
+					);
+				}
+				else {
+					hide.html.Html.build(el,
+						<div class="diamond"></div>
+					);
+				}
 
 				el.onpointerdown = (e : PointerEvent) -> {
 					if (e.button != 0)
@@ -790,18 +805,19 @@ class Timeline extends hide.ui.View<{}> {
 						setSelection([m], []);
 
 					var moved = selectedMarkers.contains(m) ? selectedMarkers.copy() : [];
-					var oldMarkers = [for (s in moved) ({ name: s.name, frame: s.frame } : Marker)];
+					var oldMarkers = [for (s in moved) { name: s.name, frame: s.frame, duration: s.duration }];
+					var lastFrame = timeToFrame(duration);
 					var minDelta = -MAX_FRAME;
 					var maxDelta = MAX_FRAME;
 					for (s in moved) {
 						minDelta = hxd.Math.imax(minDelta, -s.frame);
-						maxDelta = hxd.Math.imin(maxDelta, timeToFrame(duration) - s.frame);
+						maxDelta = hxd.Math.imin(maxDelta, lastFrame - s.frame - s.duration);
 					}
 
-					var grabOffset = px(sxFromEvent(e)) - frameToTime(m.frame);
+					var grabFrame = timeToFrame(px(sxFromEvent(e)));
 					var startFrame = m.frame;
 					el.onpointermove = (e : PointerEvent) -> {
-						var delta = hxd.Math.iclamp(timeToFrame(px(sxFromEvent(e)) - grabOffset) - startFrame, minDelta, maxDelta);
+						var delta = hxd.Math.iclamp(timeToFrame(px(sxFromEvent(e))) - grabFrame, minDelta, maxDelta);
 						for (i => s in moved)
 							s.frame = oldMarkers[i].frame + delta;
 						refresh();
@@ -810,35 +826,21 @@ class Timeline extends hide.ui.View<{}> {
 						el.onpointermove = null;
 						el.onlostpointercapture = null;
 						if (m.frame != startFrame)
-							onChange(oldMarkers, [for (s in moved) ({ name: s.name, frame: s.frame } : Marker)]);
+							onChange(oldMarkers, [for (s in moved) ({ name: s.name, frame: s.frame, duration: s.duration } : Marker)]);
 						else if (!isMultiSelect && wasSelected)
 							setSelection([m], []);
 					};
 				};
-
-				el.ondblclick = (e : MouseEvent) -> {
-					e.stopPropagation();
-					renameMarker(m, label);
-				};
 			}
+			var start = sx(frameToTime(m.frame));
 			m.element.classList.toggle("selected", selectedMarkers.contains(m));
-			m.element.style.left = '${sx(frameToTime(m.frame))}px';
+			m.element.style.left = '${start}px';
+			m.element.style.width = '${sx(frameToTime(m.frame + m.duration)) - start}px';
 		}
 
-		var sorted = markers.copy();
-		sorted.sort((a, b) -> b.frame - a.frame);
-		var placed : Array<{ x : Float, row : Int }> = [];
-		for (m in sorted) {
-			var x = sx(frameToTime(m.frame));
-			var right = x + m.element.lastElementChild.getBoundingClientRect().width + LABEL_SPACING;
-			var row = 0;
-			for (p in placed) {
-				if (p.x >= x && p.x <= right)
-					row = hxd.Math.imax(row, p.row + 1);
-			}
-			placed.push({ x: x, row: row });
-			m.element.style.setProperty("--label-row", '$row');
-		}
+		var contentTop = content.getBoundingClientRect().top;
+		for (m in markers)
+			m.element.style.top = '${m.row.element.getBoundingClientRect().top - contentTop}px';
 
 		drawCurves();
 	}
@@ -1281,10 +1283,10 @@ class Timeline extends hide.ui.View<{}> {
 			input.replaceWith(label);
 			if (isCanceled || input.value == "" || input.value == m.name)
 				return;
-			var oldMarker : Marker = { name: m.name, frame: m.frame };
+			var oldMarker : Marker = { name: m.name, frame: m.frame, duration: m.duration };
 			m.name = input.value;
 			label.textContent = m.name;
-			onChange([oldMarker], [{ name: m.name, frame: m.frame }]);
+			onChange([oldMarker], [{ name: m.name, frame: m.frame, duration: m.duration }]);
 		};
 	}
 

@@ -7435,9 +7435,6 @@ fancy-gallery-item {
 .hide-view.timeline {
 	--row-height: 30px;
 	--ruler-height: 24px;
-	--marker-top: 16px;
-	--label-gap: 6px;
-	--label-row-height: 20px;
 
 	.timeline-root {
 		display: flex;
@@ -7792,66 +7789,45 @@ fancy-gallery-item {
 		}
 
 		.marker {
-			--icon-size: 12px;
-			--label-top: calc(var(--row-height) + var(--label-gap) + var(--label-row, 0) * var(--label-row-height));
+			--marker-size: 12px;
+			--marker-color: oklch(0.66 0 0);
+			--marker-border: oklch(0.42 0 0);
 
 			position: absolute;
-			width: 0;
-			color: oklch(0.75 0 0);
+			height: var(--row-height);
 			cursor: ew-resize;
 
-			hide-icon {
+			.bar {
 				position: absolute;
-				top: var(--marker-top);
-				translate: -50% 0;
-			}
-
-			&::before {
-				content: "";
-				position: absolute;
-				top: calc(var(--marker-top) + var(--icon-size));
-				height: calc(var(--label-top) - var(--marker-top) - var(--icon-size));
-				width: 1px;
-				translate: -50% 0;
-				background: currentColor;
-			}
-
-			.label, input {
-				position: absolute;
-				top: var(--label-top);
-				left: -1px;
-				height: calc(var(--label-row-height) - 2px);
+				top: 50%;
+				left: 0;
+				right: 0;
+				height: 12px;
+				translate: 0 -50%;
 				box-sizing: border-box;
-				padding: 0 7px 0 6px;
-				border-left: 2px solid currentColor;
-				border-radius: 0 var(--theme-border-radius) var(--theme-border-radius) 0;
-				line-height: calc(var(--label-row-height) - 2px);
-				background: var(--theme-surface-2);
-				box-shadow: 0 1px 3px oklch(0 0 0 / 0.4);
-				color: var(--theme-foreground);
-				font-size: 0.95em;
-				white-space: nowrap;
+				border: 1px solid var(--marker-border);
+				background: color-mix(in srgb, var(--marker-color) 22%, transparent);
 			}
 
-			input {
-				width: 100px;
-			}
+			.diamond {
+				position: absolute;
+				top: 50%;
+				left: 0;
+				width: var(--marker-size);
+				height: var(--marker-size);
+				box-sizing: border-box;
+				border: 1px solid var(--marker-border);
+				background: var(--marker-color);
+				transform: translate(-50%, -50%) rotate(45deg);
 
-			&:hover {
-				color: oklch(0.9 0 0);
-
-				.label {
-					background: oklch(0.47 0 0);
+				&.end {
+					left: 100%;
 				}
 			}
 
 			&.selected {
-				color: var(--theme-accent);
-
-				.label {
-					background: var(--theme-accent);
-					color: var(--theme-foreground);
-				}
+				--marker-color: oklch(0.86 0 0);
+				--marker-border: oklch(0.97 0 0);
 			}
 		}
 
