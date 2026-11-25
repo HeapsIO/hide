@@ -19,15 +19,9 @@ enum AdditionalProperies {
 
 typedef ShaderParams = Array<ShaderParam>;
 
-/*
-	Basic class used to animate the params of an instance (a shader, a renderer FX) with curves
-	in FX: one per make, bound to what the make made.
-*/
 class ParamAnimation {
-	/** This animation will need to keep being updated if setTime was called once **/
-	public var finishSync : Bool = false;
+	public var syncCulled : Bool = false;
 	public var startedPlaying : Bool = false;
-	/** Evaluates the values: the one of the FX (its parameters), or one of its own **/
 	public var evaluator : Evaluator;
 
 	public function new(?evaluator: Evaluator) {
@@ -38,20 +32,26 @@ class ParamAnimation {
 	inline function getVector(v: Value, time: Float, vec: h3d.Vector4) return evaluator.getVector(v, time, vec);
 
 	public function setTime(time: Float) {
-		throw "This method should overrided!";
+		throw "not implemented";
 	}
 }
 
 class RendererFXAnimation extends ParamAnimation {
-	public var params : Array<RendererFXParam>;
+	public var data : RendererFXAnimData;
 	public var rfx : hrt.prefab.rfx.RendererFX;
-	/** The params are in the props of `rfx` (a ScreenShaderGraph), else its fields **/
-	public var inProps : Bool;
+
+	public function new(data, rfx, ?evaluator) {
+		super(evaluator);
+		this.data = data;
+		this.rfx = rfx;
+		// a renderer FX shows on the whole screen, the FX culled or not
+		syncCulled = true;
+	}
 
 	static var vector4 = new h3d.Vector4();
 	override public function setTime(time: Float) {
-		var target : Dynamic = inProps ? rfx.props : rfx;
-		for(param in params) {
+		var target : Dynamic = Std.isOfType(rfx, hrt.prefab.rfx.ScreenShaderGraph) ? rfx.props : rfx;
+		for(param in data.params) {
 			switch(param.type) {
 				case TFloat:
 					Reflect.setField(target, param.name, getFloat(param.value, time));
@@ -83,13 +83,19 @@ class RendererFXAnimation extends ParamAnimation {
 }
 
 class ShaderAnimation extends ParamAnimation {
-	public var params : ShaderParams;
+	public var data : ShaderAnimData;
 	public var shader : hxsl.Shader;
 	var vector4 = new h3d.Vector4();
 	var vector = new h3d.Vector();
 
+	public function new(data, shader, ?evaluator) {
+		super(evaluator);
+		this.data = data;
+		this.shader = shader;
+	}
+
 	override public function setTime(time: Float) {
-		for(param in params) {
+		for(param in data.params) {
 			var v = param.def;
 			var val : Dynamic;
 			switch(v.type) {
@@ -118,7 +124,7 @@ class ShaderDynAnimation extends ShaderAnimation {
 	var tmpVector4 = new h3d.Vector4();
 	override function setTime(time: Float) {
 		var shader : hxsl.DynamicShader = cast shader;
-		for(param in params) {
+		for(param in data.params) {
 			var v = param.def;
 			switch(v.type) {
 				case TFloat:
@@ -156,7 +162,6 @@ class ShaderDynAnimation extends ShaderAnimation {
 // Supports overriding xyz components separately
 typedef VectorAnimation = { ?x: Value, ?y: Value, ?z: Value };
 
-/** The animation of an Object3D prefab, with the values of its curves **/
 typedef ObjectAnimData = {
 	elt: hrt.prefab.Object3D,
 	?position: VectorAnimation,
@@ -167,7 +172,6 @@ typedef ObjectAnimData = {
 	?additionalProperies : AdditionalProperies
 };
 
-/** The animation of an Object2D, with the values of its curves **/
 typedef ObjectAnimation2D = {
 	elt2d: hrt.prefab.Object2D,
 	obj2d: h2d.Object,
@@ -178,41 +182,32 @@ typedef ObjectAnimation2D = {
 	?visibility: Value,
 };
 
-/** The animation of a shader prefab: its params, with the values of their curves **/
 typedef ShaderAnimData = {
 	prefab: hrt.prefab.Shader,
 	params: ShaderParams,
-	/** of the params, forced per instance on a batch: only for the shaders bound with one (`ofShaders`) **/
-	names: Array<String>,
+	perInstance: Array<String>,
 };
 
 typedef RendererFXParam = { name : String, type : hxsl.Ast.Type, value : Value };
 
-/** The animation of a renderer FX prefab: its params, with the values of their curves **/
 typedef RendererFXAnimData = {
 	prefab: hrt.prefab.rfx.RendererFX,
 	params: Array<RendererFXParam>,
-	/** in its props (a ScreenShaderGraph), else its fields **/
-	inProps: Bool,
 };
 
-/**
-	What prefabs animate, with the values of their curves: built once, read only. Each make binds it to what it made
-	(`bindObjects`, `bindParams`).
-**/
+
 class AnimData {
 	public var objects : Array<ObjectAnimData> = [];
 	public var shaders : Array<ShaderAnimData> = [];
 	public var effects : Array<RendererFXAnimData> = [];
 
-	/** What the made prefabs under `root` animate (not the content of the emitters, which animate their particles) **/
 	public function new(?root: PrefabElement) {
 		if(root == null)
 			return;
 		function rec(elt: PrefabElement) {
+			// Emitter resolve their own animations
 			if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
 				for(c in BaseFXTools.getAnimatedChildren(elt)) {
-					// what is not made has no animation
 					if(@:privateAccess c.shouldBeInstanciated())
 						rec(c);
 				}
@@ -220,7 +215,6 @@ class AnimData {
 
 			var obj3d = elt.to(hrt.prefab.Object3D);
 			if(obj3d != null) {
-				// built during a make: the type of a light gives what it animates
 				var anim = objectAnim(obj3d, obj3d.local3d);
 				if(anim != null)
 					objects.push(anim);
@@ -240,26 +234,17 @@ class AnimData {
 		rec(root);
 	}
 
-	/** The animations of `shaders` (of particles if `particle`): kept without curves too, a batch gets the shader **/
 	public static function ofShaders(shaders: Array<hrt.prefab.Shader>, particle = false) : AnimData {
 		var d = new AnimData();
-		for(s in shaders) {
-			var s = shaderData(s, particle);
-			s.names = s.params == null ? emptyParams : [for(p in s.params) p.def.name];
-			d.shaders.push(s);
-		}
+		// the shaders without curves too: bindParams applies them to the batch
+		d.shaders = [for(s in shaders) shaderData(s, particle)];
 		return d;
 	}
 
-	/** The objects of the current make, in the order of `objects` **/
 	public function bindObjects() : Array<h3d.scene.Object> {
 		return [for(a in objects) a.elt.local3d];
 	}
 
-	/**
-		The animations of the shader instances and renderer FX of the current make, evaluated by `evaluator` (else one each),
-		the shaders applied to `batch` if any
-	**/
 	public function bindParams(?evaluator: Evaluator, ?batch: h3d.scene.MeshBatch) : Array<ParamAnimation> {
 		var anims = [];
 		for(s in shaders)
@@ -402,7 +387,8 @@ class AnimData {
 	}
 
 	static function shaderData(shader: hrt.prefab.Shader, particle = false) : ShaderAnimData {
-		return { prefab: shader, params: shaderParams(shader, shader.getShaderDefinition(), particle), names: null };
+		var params = shaderParams(shader, shader.getShaderDefinition(), particle);
+		return { prefab: shader, params: params, perInstance: params == null ? emptyParams : [for(p in params) p.def.name] };
 	}
 
 	static function effectData(elt: PrefabElement) : RendererFXAnimData {
@@ -414,10 +400,10 @@ class AnimData {
 			var params = shaderParams(screenShaderGraph, screenShaderGraph.getShaderDefinition());
 			if (params == null)
 				return null;
-			return { prefab: rendererFX, inProps: true, params: [for (param in params) { name: param.def.name, type: param.def.type, value: param.value }] };
+			return { prefab: rendererFX, params: [for (param in params) { name: param.def.name, type: param.def.type, value: param.value }] };
 		}
 		var params = effectParams(rendererFX);
-		return params == null ? null : { prefab: rendererFX, inProps: false, params: params };
+		return params == null ? null : { prefab: rendererFX, params: params };
 	}
 
 	static var emptyParams : Array<String> = [];
@@ -435,28 +421,19 @@ class AnimData {
 			}
 			perInstance.forcedPerInstance.push({
 				shader: shader.shader.data.name,
-				params: data.names
+				params: data.perInstance
 			});
 		}
 
-		if(params != null) {
-			var anim = Std.isOfType(shader,hxsl.DynamicShader) ? new ShaderDynAnimation(evaluator) : new ShaderAnimation(evaluator);
-			anim.shader = shader;
-			anim.params = params;
-			anims.push(anim);
-		}
+		if(params != null)
+			anims.push(Std.isOfType(shader,hxsl.DynamicShader) ? new ShaderDynAnimation(data, shader, evaluator) : new ShaderAnimation(data, shader, evaluator));
 
 		if(batch != null)
 			@:privateAccess data.prefab.applyShader(batch, batch.material, shader);
 	}
 
 	static function bindEffect(data: RendererFXAnimData, anims: Array<ParamAnimation>, evaluator: Evaluator) {
-		var anim = new RendererFXAnimation(evaluator);
-		anim.params = data.params;
-		anim.inProps = data.inProps;
-		anim.rfx = @:privateAccess data.prefab.instance;
-		anim.finishSync = true;
-		anims.push(anim);
+		anims.push(new RendererFXAnimation(data, @:privateAccess data.prefab.instance, evaluator));
 	}
 }
 

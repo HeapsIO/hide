@@ -143,21 +143,29 @@ class SwarmObject extends h3d.scene.Object {
 			}
 
 			// Setup shaders
-			var shaders = prefab.findAll(hrt.prefab.Shader);
-			var animated = [];
-			for( shader in shaders ) {
-				// Remove shaders that are not directly parented to this Swarm
-				var p = shader.parent;
-				while (p != null && Std.downcast(p, Swarm) == null) {
-					p = p.parent;
+			var anims = @:privateAccess prefab.animData;
+			#if (editor || editor_hl)
+			anims = null;
+			#end
+			if( anims == null ) {
+				var shaders = [];
+				for( shader in prefab.findAll(hrt.prefab.Shader) ) {
+					// Remove shaders that are not directly parented to this Swarm
+					var p = shader.parent;
+					while (p != null && Std.downcast(p, Swarm) == null) {
+						p = p.parent;
+					}
+					if (this.prefab == p && shader.enabled)
+						shaders.push(shader);
 				}
-				if (this.prefab == p) {
-					if( !shader.enabled ) continue;
-					@:privateAccess shader.makeShaderInstance();
-					animated.push(shader);
-				}
+				anims = @:privateAccess prefab.animData = hrt.prefab.fx.BaseFX.AnimData.ofShaders(shaders);
 			}
-			paramAnims = hrt.prefab.fx.BaseFX.AnimData.ofShaders(animated).bindParams(batch);
+			for( s in anims.shaders )
+				@:privateAccess s.prefab.makeShaderInstance();
+			var fx = parent;
+			while( fx != null && !(fx is hrt.prefab.fx.FX.FXAnimation) )
+				fx = fx.parent;
+			paramAnims = anims.bindParams(fx == null ? null : @:privateAccess (cast fx : hrt.prefab.fx.FX.FXAnimation).evaluator, batch);
 
 			// Pre-heat the swarm system
 			stepTime = 2.0 * stepSize + hxd.Math.EPSILON;
@@ -492,6 +500,8 @@ class Swarm extends Object3D {
 	// Override child creation
 	override function makeChild(p:Prefab) {
 	}
+
+	var animData : hrt.prefab.fx.BaseFX.AnimData;
 
 	override function makeObject(parent:h3d.scene.Object) {
 		return new SwarmObject(parent, this);

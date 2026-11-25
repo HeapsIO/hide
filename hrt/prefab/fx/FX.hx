@@ -76,11 +76,6 @@ class FXAnimation extends h3d.scene.Object {
 	public var cullingRadius : Float;
 	public var cullingDistance : Float;
 
-	/**
-		The animations of the FX prefab, with the values of their curves: built by its first make, the same for every FXAnimation
-		made from it. What they animate in this FXAnimation: `objs` (the object of `animData.objects[i]` is `objs[i]`), and the
-		animations of its shaders and renderer FX in `paramAnims`.
-	**/
 	var animData : AnimData;
 	var objs : Array<h3d.scene.Object>;
 	public var objAnims(get, never) : Array<ObjectAnimData>;
@@ -226,13 +221,11 @@ class FXAnimation extends h3d.scene.Object {
 		playState = Start;
 	}
 
-	/** The animations built again from the prefabs under `root`: the editor, after a change of their data **/
 	public function rebuildAnims(root : Prefab) {
 		animData = new AnimData(root);
 		bindAnims();
 	}
 
-	// what the animations of the prefab animate in this make
 	function bindAnims() {
 		objs = animData.bindObjects();
 		paramAnims = animData.bindParams(evaluator);
@@ -500,7 +493,7 @@ class FXAnimation extends h3d.scene.Object {
 
 		if(paramAnims != null) {
 			for(anim in paramAnims) {
-				if (fullSync || (anim.startedPlaying && anim.finishSync)) {
+				if (fullSync || (anim.startedPlaying && anim.syncCulled)) {
 					anim.setTime(localTime);
 					anim.startedPlaying = true;
 				}
@@ -592,7 +585,6 @@ class FXAnimation extends h3d.scene.Object {
 			for(i in 0...objAnims.length) {
 				var anim = objAnims[i];
 				var obj = objs[i];
-				// the prefab made no object
 				if(obj == null)
 					continue;
 				if(anim.scale != null || anim.rotation != null || anim.position != null) {
@@ -834,8 +826,6 @@ class FX extends Object3D implements BaseFX {
 
 	@:s public var parameters : Array<Parameter> = [];
 
-	// the animations of the makes of this prefab, built by the first one: they only depend on the data of the prefabs (out of the
-	// editor, where it is edited in place), a game makes a prefab again for each play of its FX (one prefab per set of game changes)
 	var animData : AnimData;
 
 	function getAnimData(root: PrefabElement) : AnimData {

@@ -372,7 +372,7 @@ class Prefab {
 		Find the first h3d.scene.Object in this hierarchy, in either this or its parents
 	**/
 	public function findFirstLocal3d(followRefs: Bool = false) : h3d.scene.Object {
-		// findParent(Object3D, (p) -> p.local3d != null, true, followRefs) without allocating a closure: called a lot by the FX init
+		// like findParent but alloc free (called often)
 		var current = this;
 		while(current != null) {
 			var o3d = Std.downcast(current, Object3D);

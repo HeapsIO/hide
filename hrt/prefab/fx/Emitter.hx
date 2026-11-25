@@ -698,10 +698,15 @@ class EmitterObject extends h3d.scene.Object {
 				@:privateAccess mat.makeInstance();
 
 			// Setup shaders
-			var shaders = findRec(prefab, hrt.prefab.Shader);
-			for( shader in shaders )
-				@:privateAccess shader.makeShaderInstance();
-			paramAnims = hrt.prefab.fx.BaseFX.AnimData.ofShaders(shaders, true).bindParams(batch);
+			var anims = @:privateAccess prefab.animData;
+			#if (editor || editor_hl)
+			anims = null;
+			#end
+			if( anims == null )
+				anims = @:privateAccess prefab.animData = hrt.prefab.fx.BaseFX.AnimData.ofShaders(findRec(prefab, hrt.prefab.Shader), true);
+			for( s in anims.shaders )
+				@:privateAccess s.prefab.makeShaderInstance();
+			paramAnims = anims.bindParams(evaluator, batch);
 
 			// Animated textures animations
 			var frameCount = prefab.frameCount == 0 ? prefab.frameDivisionX * prefab.frameDivisionY : prefab.frameCount;
@@ -1936,6 +1941,8 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 
 	override function makeChild(p:Prefab) {
 	};
+
+	var animData : hrt.prefab.fx.BaseFX.AnimData;
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		return new EmitterObject(parent3d);

@@ -131,7 +131,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			var shaderAnimation = Std.downcast(anim, hrt.prefab.fx.BaseFX.ShaderAnimation);
 			if ( shaderAnimation == null )
 				continue;
-			for ( p in shaderAnimation.params ) {
+			for ( p in shaderAnimation.data.params ) {
 				var values = [];
 				for ( i in 0...prec ) {
 					shaderAnimation.setTime(i / prec);
