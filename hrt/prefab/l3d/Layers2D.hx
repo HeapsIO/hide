@@ -222,7 +222,7 @@ class Layers2DTool extends hrt.prefab.editor.Tool {
 		}
 	}
 
-	function layerCreate() {
+	function layerCreate() : Layer2D {
 		return {
 			name: "newLayer",
 			values: [],

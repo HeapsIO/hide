@@ -223,10 +223,6 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		particleShader.particleStride = stride;
 	}
 
-	function createUpdateParamShader() {
-		return { shader : null, params : null, size : null };
-	}
-
 	function dispatch(ctx : h3d.scene.RenderContext) {
 		if ( particleFormat == null )
 			particleFormat = getParticleFormat();

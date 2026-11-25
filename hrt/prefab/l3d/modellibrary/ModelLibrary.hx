@@ -58,7 +58,7 @@ class ModelLibrary extends Prefab {
 	var meshEmitterCache : Map<h3d.prim.HMDModel, MeshEmitter>;
 	var cache : ModelLibraryCache;
 	var shaderKeyCache : Map<String, String>;
-	var errors = [];
+	var errors : Array<String> = [];
 
 	var killAlpha = new h3d.shader.KillAlpha(0.5);
 

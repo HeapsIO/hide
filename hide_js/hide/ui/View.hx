@@ -323,7 +323,7 @@ class View<T> extends hide.comp.Component {
 		if( options.position == null )
 			options.position = Center;
 		viewClasses.set(name, { name : name, cl : cl, options : options });
-		return null;
+		return true;
 	}
 
 	static function createView( name : String, state : Dynamic ) : View<Dynamic> {

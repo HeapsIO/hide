@@ -58,7 +58,7 @@ class Slider<T:Float> extends Widget<T> {
 	#elseif hui
 	var slider: hrt.ui.HuiSlider;
 	#else
-	var slider = null;
+	var slider : Dynamic = null;
 	#end
 
 	var showRange: Bool = false;

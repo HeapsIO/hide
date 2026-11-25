@@ -124,7 +124,7 @@ class Macros {
 			name: "__inputs",
 			access: [AStatic, AFinal],
 			kind: FieldType.FVar(
-				null,
+				macro : Array<hrt.animgraph.Node.NodeInputInfo>,
 				hrt.animgraph.Macros.getInputsInternal()
 			),
 			pos: Context.currentPos(),
@@ -152,7 +152,7 @@ class Macros {
 			name: "__outputs",
 			access: [AStatic, AFinal],
 			kind: FieldType.FVar(
-				null,
+				macro : Array<hrt.animgraph.Node.NodeOutputInfo>,
 				hrt.animgraph.Macros.getOutputsInternal(),
 			),
 			pos: Context.currentPos(),
