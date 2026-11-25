@@ -15,6 +15,8 @@ typedef MakeCleanResult = {
 	types : Array<String>,
 	/** Types without a registered class, not tested **/
 	unknownTypes : Array<String>,
+	/** Heaps tree values differing between two clones made once each, not compared between make 1 and make 2 **/
+	unstableTreePaths : Array<String>,
 	failures : Array<MakeCleanFailure>,
 }
 
@@ -234,9 +236,12 @@ private class TreeDump extends Dump {
 			addObject(o, path, owner);
 
 			var q = o.getRotationQuat();
-			add(path, Type.getClassName(Type.getClass(o)) + " name=" + o.name + " visible=" + o.visible
-				+ " pos=" + [o.x, o.y, o.z].map(round) + " scale=" + [o.scaleX, o.scaleY, o.scaleZ].map(round)
-				+ " rot=" + [q.x, q.y, q.z, q.w].map(round), null, owner);
+			add(path, Type.getClassName(Type.getClass(o)), null, owner);
+			add(path + ".name", o.name, null, owner);
+			add(path + ".visible", Std.string(o.visible), null, owner);
+			add(path + ".pos", [o.x, o.y, o.z].map(round).toString(), null, owner);
+			add(path + ".scale", [o.scaleX, o.scaleY, o.scaleZ].map(round).toString(), null, owner);
+			add(path + ".rot", [q.x, q.y, q.z, q.w].map(round).toString(), null, owner);
 
 			var mesh = Std.downcast(o, h3d.scene.Mesh);
 			if (mesh != null) {
@@ -260,9 +265,12 @@ private class TreeDump extends Dump {
 			owner = owners.get(o) ?? owner;
 			addObject(o, path, owner);
 
-			add(path, Type.getClassName(Type.getClass(o)) + " name=" + o.name + " visible=" + o.visible
-				+ " pos=" + [o.x, o.y].map(round) + " scale=" + [o.scaleX, o.scaleY].map(round)
-				+ " rot=" + round(o.rotation), null, owner);
+			add(path, Type.getClassName(Type.getClass(o)), null, owner);
+			add(path + ".name", o.name, null, owner);
+			add(path + ".visible", Std.string(o.visible), null, owner);
+			add(path + ".pos", [o.x, o.y].map(round).toString(), null, owner);
+			add(path + ".scale", [o.scaleX, o.scaleY].map(round).toString(), null, owner);
+			add(path + ".rot", round(o.rotation), null, owner);
 
 			var keyCounts = new Map<String, Int>();
 			for (i in 0...o.numChildren) {
@@ -291,7 +299,7 @@ class MakeCleanTest {
 	var phase = "load";
 
 	function new(file : String) {
-		result = { file : file, types : [], unknownTypes : [], failures : [] };
+		result = { file : file, types : [], unknownTypes : [], unstableTreePaths : [], failures : [] };
 	}
 
 	/**
@@ -332,10 +340,20 @@ class MakeCleanTest {
 		var template = hxd.res.Loader.currentInstance.load(result.file).to(hrt.prefab.Resource).load();
 		var templateState = new StateDump(template);
 
+		function makeClone() {
+			var p = template.clone();
+			if (initShared != null)
+				initShared(p.shared);
+			return p;
+		}
+
+		// Values differing between the trees of two clones don't depend on clean() : they are not compared between make 1 and make 2
+		phase = "baseline";
+		var unstableTreePaths = [for (d in diff(makeTree(makeClone()).dump, makeTree(makeClone()).dump, false, false)) d.path];
+		result.unstableTreePaths = unstableTreePaths;
+
 		phase = "clone";
-		var p = template.clone();
-		if (initShared != null)
-			initShared(p.shared);
+		var p = makeClone();
 
 		var state1 = new StateDump(p);
 		phase = "make 1";
@@ -366,7 +384,7 @@ class MakeCleanTest {
 		compare(state2, state3, "make 2 + clean", false, false);
 		compare(templateState, templateStateAfter, "template", true, true);
 
-		compare(tree1.dump, tree2.dump, "make 2 tree", false, false);
+		compare(tree1.dump, tree2.dump, "make 2 tree", false, false, unstableTreePaths);
 		compare(tree1.dump, tree1After, "make 1 tree after make 2", false, false);
 
 		var tree1Objects = new haxe.ds.ObjectMap<Dynamic, Bool>();
@@ -405,13 +423,37 @@ class MakeCleanTest {
 	/**
 		`skipCache` ignores the @:cache values, `strict` also compares the pointers of the values reset by clean()
 	**/
-	function compare(a : Dump, b : Dump, step : String, skipCache : Bool, strict : Bool) {
+	function compare(a : Dump, b : Dump, step : String, skipCache : Bool, strict : Bool, ?ignoredPaths : Array<String>) {
+		for (d in diff(a, b, skipCache, strict, ignoredPaths))
+			fail(d.prefabType, d.path, step + " : " + d.message);
+	}
+
+	/**
+		The differences between two dumps, ignoring the values in `ignoredPaths` and under them.
+		`skipCache` ignores the @:cache values, `strict` also compares the pointers of the values reset by clean()
+	**/
+	static function diff(a : Dump, b : Dump, skipCache : Bool, strict : Bool, ?ignoredPaths : Array<String>) : Array<MakeCleanFailure> {
+		var diffs : Array<MakeCleanFailure> = [];
+
+		function isUnder(path : String, parent : String) {
+			if (!StringTools.startsWith(path, parent))
+				return false;
+			return path.length == parent.length || ".[(/".indexOf(path.charAt(parent.length)) >= 0;
+		}
+
+		function isIgnored(path : String) {
+			if (ignoredPaths != null)
+				for (p in ignoredPaths)
+					if (isUnder(path, p))
+						return true;
+			return false;
+		}
+
 		// Paths are listed depth first : the values under a failing path are not reported
 		var failedPath : String = null;
-		function isUnderFailedPath(path : String) {
-			if (failedPath == null || !StringTools.startsWith(path, failedPath) || path.length == failedPath.length)
-				return false;
-			return ".[(/".indexOf(path.charAt(failedPath.length)) >= 0;
+		function add(owner : String, path : String, message : String) {
+			diffs.push({ prefabType : owner, path : path, message : message });
+			failedPath = path;
 		}
 
 		for (path in a.order) {
@@ -419,31 +461,26 @@ class MakeCleanTest {
 			var eb = b.entries.get(path);
 			if (skipCache && (ea.cache || (eb?.cache ?? false)))
 				continue;
-			if (isUnderFailedPath(path))
+			if ((failedPath != null && isUnder(path, failedPath)) || isIgnored(path))
 				continue;
 
-			var message = null;
 			if (eb == null)
-				message = "removed (" + ea.repr + ")";
+				add(ea.owner, path, "removed (" + ea.repr + ")");
 			else if (ea.repr != eb.repr)
-				message = ea.repr + " -> " + eb.repr;
+				add(ea.owner, path, ea.repr + " -> " + eb.repr);
 			else if ((strict || !ea.reset) && ea.ref != eb.ref)
-				message = "pointer changed (" + ea.repr + ")";
-
-			if (message != null) {
-				fail(ea.owner, path, step + " : " + message);
-				failedPath = path;
-			}
+				add(ea.owner, path, "pointer changed (" + ea.repr + ")");
 		}
 
 		failedPath = null;
 		for (path in b.order) {
 			var eb = b.entries.get(path);
-			if (a.entries.exists(path) || (skipCache && eb.cache) || isUnderFailedPath(path))
+			if (a.entries.exists(path) || (skipCache && eb.cache) || (failedPath != null && isUnder(path, failedPath)) || isIgnored(path))
 				continue;
-			fail(eb.owner, path, step + " : added (" + eb.repr + ")");
-			failedPath = path;
+			add(eb.owner, path, "added (" + eb.repr + ")");
 		}
+
+		return diffs;
 	}
 
 	// Math.random is replaced by a seeded generator during make() so that both makes get the same random values
