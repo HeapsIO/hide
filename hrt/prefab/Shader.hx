@@ -21,7 +21,7 @@ class Shader extends Prefab {
 	public var shader : hxsl.Shader;
 
 	// When under an emitter, shader params can use modes
-	public var particleParams : Map<String, ParamMode>;
+	@:manual public var particleParams : Map<String, ParamMode>;
 
 	function new(parent, sh: ContextShared) {
 		super(parent, sh);
