@@ -479,6 +479,10 @@ class EmitterObject extends h3d.scene.Object {
 
 	public var particles : PartArray;
 	public var particlesCount : Int;
+	var partSize : Int;
+	
+	// particle buffers recycled between emitters, by power of 2 size
+	static var partPool : Map<Int, Array<PartArray>> = [];
 	public var listHead : Int = ParticleInstance.NONE;
 
 	// rare per-particle refs, outside of ParticleInstance to avoid GC scans
@@ -762,6 +766,7 @@ class EmitterObject extends h3d.scene.Object {
 			for(i in 0...particlesCount) {
 				clearInstance(i);
 			}
+			disposeParticles();
 		}
 
 		if(trails != null && trails.numTrails != prefab.maxCount) {
@@ -769,7 +774,6 @@ class EmitterObject extends h3d.scene.Object {
 			trails = null;
 		}
 
-		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, prefab.maxCount) #else [for(i in 0...prefab.maxCount) new ParticleInstance()] #end;
 		particlesCount = prefab.maxCount;
 		reset();
 	}
@@ -795,6 +799,8 @@ class EmitterObject extends h3d.scene.Object {
 		}
 		numInstances = 0;
 		listHead = ParticleInstance.NONE;
+		if(particles != null)
+			disposeParticles();
 
 		#if editor
 		debugGraphics.remove();
@@ -892,8 +898,27 @@ class EmitterObject extends h3d.scene.Object {
 	inline function checkList() { }
 	#end
 
+	function allocParticles() {
+		var size = hxd.Math.nextPOT(particlesCount);
+		var free = partPool.get(size);
+		particles = free != null && free.length > 0 ? free.pop() : #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, size) #else [for(i in 0...size) new ParticleInstance()] #end;
+		partSize = size;
+		for(i in 0...particlesCount)
+			particles[i].idx = ParticleInstance.REMOVED_IDX;
+	}
+
+	function disposeParticles() {
+		var free = partPool.get(partSize);
+		if(free == null)
+			partPool.set(partSize, free = []);
+		free.push(particles);
+		particles = null;
+	}
+
 	function allocInstance() {
 		if(numInstances >= prefab.maxCount) error("allocInstance");
+		if(particles == null)
+			allocParticles();
 		var slot = numInstances++;
 		var p = particles[slot];
 		p.init(instanceCounter, this);
