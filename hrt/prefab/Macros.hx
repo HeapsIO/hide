@@ -617,6 +617,8 @@ class Macros {
 		var copyableFields = [];
 		var cloneInitFields : Array<Field> = [];
 		var sceneObjectChecks : Array<Expr> = [];
+		var cacheFieldNames : Array<String> = [];
+		var resetFieldNames : Array<String> = [];
 		var pos = Context.currentPos();
 
 
@@ -651,6 +653,9 @@ class Macros {
 			if (isCopyable || isSerializable || isCache) {
 				copyableFields.push({field: f, deepCopy: isDeepCopy});
 			}
+
+			if (isCache)
+				cacheFieldNames.push(f.name);
 
 			if (isCopyable || isCache) {
 				var name = f.name;
@@ -740,6 +745,7 @@ class Macros {
 
 				switch (f.kind) {
 					case FVar(_, defaultValue): {
+						resetFieldNames.push(name);
 						defaultValue ??= macro hrt.prefab.Macros.defaultValueOf(this.$name);
 						if (isFinal) {
 							// Force final initialisation
@@ -754,7 +760,8 @@ class Macros {
 						if (!hasStorage)
 							continue;
 
-						defaultValue ??= macro hrt.prefab.Macros.defaultValueOf(this.$name);
+						resetFieldNames.push(name);
+						defaultValue ??=macro hrt.prefab.Macros.defaultValueOf(this.$name);
 						switch(set) {
 							case "default", "null":
 								cloneInitExprs.push(macro this.$name = ${defaultValue});
@@ -803,6 +810,23 @@ class Macros {
 		fields.push(makeFun("copyToDynamic", EBlock([expr]), macro : Dynamic, macro : Dynamic));
 
 		fields.push(makeFun("resetInstanceVars", EBlock(cloneInitExprs), null, null));
+
+		// Read by hrt.prefab.MakeCleanTest
+		if (!Context.defined("release")) {
+			function makeNameList(name : String, names : Array<String>) : Field {
+				return {
+					name : name,
+					kind : FVar(macro : Array<String>, macro $v{names}),
+					meta : [{ name : ":keep", pos : pos }, { name : ":noCompletion", pos : pos }],
+					access : [AStatic],
+					pos : pos,
+				};
+			}
+			if (resetFieldNames.length > 0)
+				fields.push(makeNameList("__resetFields", resetFieldNames));
+			if (cacheFieldNames.length > 0)
+				fields.push(makeNameList("__cacheFields", cacheFieldNames));
+		}
 
 
 
