@@ -707,8 +707,42 @@ class FXEditor extends hide.view.FileView {
 			onTimelineEdit();
 		};
 
+		t.onMarkersChange = (oldMarkers : Array<Timeline.Marker>, newMarkers : Array<Timeline.Marker>) -> {
+			var events = [for (m in oldMarkers) findTimelineEvent(m)];
+			function apply(isUndo : Bool) {
+				var states = isUndo ? oldMarkers : newMarkers;
+				for (i => ev in events) {
+					ev.time = states[i].frame / t.framerate;
+					var prefab = ev.getEventPrefab();
+					if (prefab.name != states[i].name) {
+						prefab.name = states[i].name;
+						sceneEditor.sceneTree.refreshItem(prefab);
+					}
+				}
+				onTimelineEdit();
+				refreshTimelineView();
+			}
+			apply(false);
+			undo.change(Custom(apply));
+		};
+		t.onMarkersDelete = (markers : Array<Timeline.Marker>) -> {
+			sceneEditor.deleteElements([for (m in markers) findTimelineEvent(m).getEventPrefab()]);
+		};
+
 		refreshTimelineView();
 		t.frameAll();
+	}
+
+	function findTimelineEvent(m : Timeline.Marker) : hrt.prefab.fx.Event.IEvent {
+		var framerate = getTimeline().framerate;
+		for (p in (cast data : PrefabElement).flatten()) {
+			if (!(p is hrt.prefab.fx.Event.IEvent))
+				continue;
+			var ev : hrt.prefab.fx.Event.IEvent = cast p;
+			if (ev.name == m.name && Math.round(ev.time * framerate) == m.frame)
+				return ev;
+		}
+		return null;
 	}
 
 	function onTimelineEdit() {
@@ -775,6 +809,21 @@ class FXEditor extends hide.view.FileView {
 
 		timelineRows = [];
 		timelineFilter = t.filter.toLowerCase().split(":").join(".");
+		for (p in (cast data : PrefabElement).flatten()) {
+			if (!(p is hrt.prefab.fx.Event.IEvent) || !matchesFilter(p.name))
+				continue;
+			var ev : hrt.prefab.fx.Event.IEvent = cast p;
+			var frame = Math.round(ev.time * t.framerate);
+			var subFX = Std.downcast(p, hrt.prefab.fx.SubFX);
+			if (subFX != null) {
+				var ref = Std.downcast(subFX.resolve(), hrt.prefab.fx.FX);
+				var duration = ref != null ? Math.round(ref.duration / subFX.speed * t.framerate) : 0;
+				t.addMarker(ev.name, frame, duration, 0x9B7CF2, Std.string(HideRes.icon.play), "SubFX");
+			}
+			else {
+				t.addMarker(ev.name, frame, Math.round(ev.getDuration() * t.framerate), 0xE2AD52, Std.string(HideRes.icon.circle), "Event");
+			}
+		}
 		for (s in sections)
 			addSectionTracks(t, s, 0, foldList, hiddenList);
 

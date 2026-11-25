@@ -2909,6 +2909,8 @@ class Model extends FileView {
 		t.owner = this;
 		timeline = t;
 		t.setUnit(Timeline.Unit.Frame);
+		t.setHasFilter(true);
+		t.onFilterChange = (_) -> refreshTimelineView();
 
 		t.getTime = () -> {
 			var anim = obj?.currentAnimation;
@@ -2947,7 +2949,7 @@ class Model extends FileView {
 			return [{ label: "Add Event", click: () -> addTimelineEvent("NewEvent", frame) }];
 		}
 
-		t.onDelete = (markers : Array<Timeline.Marker>) -> {
+		t.onMarkersDelete = (markers : Array<Timeline.Marker>) -> {
 			var deleted = [for (m in markers) if (obj.currentAnimation.getEvent(m.frame, m.name)?.originalEvent == null) m];
 			function apply(isUndo : Bool) {
 				var anim = obj.currentAnimation;
@@ -2964,7 +2966,7 @@ class Model extends FileView {
 			undo.change(Custom(apply));
 		}
 
-		t.onChange = (oldMarkers : Array<Timeline.Marker>, newMarkers : Array<Timeline.Marker>) -> {
+		t.onMarkersChange = (oldMarkers : Array<Timeline.Marker>, newMarkers : Array<Timeline.Marker>) -> {
 			function moveEvents(from : Array<Timeline.Marker>, to : Array<Timeline.Marker>) {
 				var anim = obj.currentAnimation;
 				var moved = [for (m in from) anim.getEvent(m.frame, m.name)];
@@ -3042,9 +3044,12 @@ class Model extends FileView {
 		t.setFramerate(anim.sampling);
 		t.setDuration((anim.frameCount - 1) / anim.sampling);
 		var events = anim.events ?? [];
+		var filter = t.filter.toLowerCase();
 		for (frame => evts in events) {
-			for (e in evts ?? [])
-				t.addMarker(e.name, frame);
+			for (e in evts ?? []) {
+				if (e.name.toLowerCase().indexOf(filter) >= 0)
+					t.addMarker(e.name, frame);
+			}
 		}
 	}
 

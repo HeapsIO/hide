@@ -29,6 +29,8 @@ typedef Marker = {
 	name : String,
 	frame : Int,
 	?duration : Int,
+	?color : Int,
+	?icon : String,
 	?row : Row,
 	?element : Element
 }
@@ -102,7 +104,8 @@ class Timeline extends hide.ui.View<{}> {
 	var rightPanel : Element;
 	var grid : CanvasElement;
 	var curvesSvg : Element;
-	var content : Element;
+	var markerRows : Element;
+	var markersBand : Element;
 	var playhead : Element;
 	var time : SpanElement;
 	var playButton : hide.html.comp.Button;
@@ -113,6 +116,7 @@ class Timeline extends hide.ui.View<{}> {
 
 	// CSS Rules
 	var rulerHeight = 0.;
+	var markersHeight = 0.;
 	var keySize = 0.;
 	var handleSize = 0.;
 	var minHorizontalLabelSpacing = 0.;
@@ -144,10 +148,11 @@ class Timeline extends hide.ui.View<{}> {
 							<span>Filter</span>
 							<input id="filter-input" placeholder="property name" value={filter} oninput={() -> setFilter(filterInput.value)} onkeydown={onFilterKeyDown}/>
 						</div>
+						<div id="marker-rows" class="marker-rows"></div>
 					</div>
 					<div id="right-panel" class="right-panel">
 						<canvas id="grid"></canvas>
-						<div id="content" class="content"></div>
+						<div id="markers-band" class="markers-band"></div>
 						<div id="playhead" class="playhead">
 							<span id="time" class="time"></span>
 							<div class="line"></div>
@@ -160,7 +165,8 @@ class Timeline extends hide.ui.View<{}> {
 		this.leftPanel = leftPanel;
 		this.rightPanel = rightPanel;
 		this.grid = grid;
-		this.content = content;
+		this.markerRows = markerRows;
+		this.markersBand = markersBand;
 		this.playhead = playhead;
 		this.time = time;
 		this.playButton = playButton;
@@ -175,12 +181,14 @@ class Timeline extends hide.ui.View<{}> {
 
 		curvesSvg = cast document.createElementNS(SVG_NS, "svg");
 		curvesSvg.classList.add("curves");
-		rightPanel.insertBefore(curvesSvg, content);
+		rightPanel.insertBefore(curvesSvg, markersBand);
 
 		for (r in rows)
 			r.element = null;
-		for (m in markers)
+		for (m in markers) {
 			m.element = null;
+			m.row.element = null;
+		}
 
 		leftPanel.classList.toggle("has-filter", hasFilter);
 		rightPanel.onwheel = onWheel;
@@ -294,8 +302,10 @@ class Timeline extends hide.ui.View<{}> {
 	public function clear(flag : ClearFlag = Full) {
 		for (r in rows)
 			r.element?.remove();
-		for (m in markers)
+		for (m in markers) {
 			m.element?.remove();
+			m.row.element?.remove();
+		}
 		for (w in additionalWidgets)
 			w.remove();
 		rows = [];
@@ -323,8 +333,8 @@ class Timeline extends hide.ui.View<{}> {
 			setSpeed = (_) -> {};
 			contextMenu = (_) -> [];
 			onSave = () -> {};
-			onDelete = (_) -> {};
-			onChange = (_, _) -> {};
+			onMarkersDelete = (_) -> {};
+			onMarkersChange = (_, _) -> {};
 			onUndo = () -> {};
 			onRedo = () -> {};
 			onCurvesEdit = () -> {};
@@ -345,13 +355,16 @@ class Timeline extends hide.ui.View<{}> {
 		refresh();
 	}
 
-	public function addMarker(name : String, frame : Int, duration : Int = 0) {
-		var m : Marker = { name: name, frame: frame, duration: duration };
+	public function addMarker(name : String, frame : Int, duration : Int = 0, color : Int = 0xE2AD52, ?icon : String, ?type : String) {
+		var m : Marker = { name: name, frame: frame, duration: duration, color: color, icon: icon ?? Std.string(HideRes.icon.diamond) };
 		hide.html.Html.create(
-			<span id="label" ondblclick={() -> renameMarker(m, label)}>${name}</span>
+			<div id="line" class="fx-track marker-line">
+				<hide-icon icon={m.icon}/>
+				<span id="label" class="name" ondblclick={() -> renameMarker(m, label)}>${name}</span>
+				<span class="type" if(type != null)>${type}</span>
+			</div>
 		);
-		m.row = { name: name, content: label };
-		rows.push(m.row);
+		m.row = { name: name, content: line };
 		markers.push(m);
 		refresh();
 	}
@@ -367,7 +380,6 @@ class Timeline extends hide.ui.View<{}> {
 			var m = markers[idx];
 			if (m.name == name && m.frame == frame) {
 				markers.remove(m);
-				rows.remove(m.row);
 				m.element?.remove();
 				m.row.element?.remove();
 				selectedMarkers.remove(m);
@@ -405,12 +417,12 @@ class Timeline extends hide.ui.View<{}> {
 	public dynamic function getSpeed() : Float { return 1.; }
 	public dynamic function setSpeed(v : Float) {}
 	public dynamic function onSave() {}
-	public dynamic function onDelete(markers : Array<Marker>) {}
-	public dynamic function onChange(oldMarkers : Array<Marker>, newMarkers : Array<Marker>) {}
 	public dynamic function onUndo() {}
 	public dynamic function onRedo() {}
 	public dynamic function onCurvesEdit() {}
 	public dynamic function onCurvesChange(curves : Array<hrt.impl.Curve>, before : Array<Dynamic>, after : Array<Dynamic>) {}
+	public dynamic function onMarkersDelete(markers : Array<Marker>) {}
+	public dynamic function onMarkersChange(oldMarkers : Array<Marker>, newMarkers : Array<Marker>) {}
 	public dynamic function onFilterChange(filter : String) {}
 
 	inline function frameToTime(f : Int) {
@@ -429,8 +441,12 @@ class Timeline extends hide.ui.View<{}> {
 		return rightPanel.clientWidth;
 	}
 
+	inline function graphTop() {
+		return rulerHeight + markersHeight;
+	}
+
 	inline function gridHeight() {
-		return rightPanel.clientHeight - rulerHeight;
+		return rightPanel.clientHeight - graphTop();
 	}
 
 	inline function colorString(color : Int) {
@@ -451,7 +467,7 @@ class Timeline extends hide.ui.View<{}> {
 	}
 
 	inline function syFromEvent(e : MouseEvent) {
-		return e.clientY - rightPanel.getBoundingClientRect().top - rulerHeight;
+		return e.clientY - rightPanel.getBoundingClientRect().top - graphTop();
 	}
 
 	inline function px(sx : Float) {
@@ -544,8 +560,8 @@ class Timeline extends hide.ui.View<{}> {
 			var rect = rightPanel.getBoundingClientRect();
 			var left = rect.left + selectionBox.x0;
 			var right = rect.left + selectionBox.x1;
-			var top = rect.top + rulerHeight + selectionBox.y0;
-			var bottom = rect.top + rulerHeight + selectionBox.y1;
+			var top = rect.top + graphTop() + selectionBox.y0;
+			var bottom = rect.top + graphTop() + selectionBox.y1;
 			function overlaps(el : Element) {
 				var r = el.getBoundingClientRect();
 				return r.right >= left && r.left <= right && r.bottom >= top && r.top <= bottom;
@@ -583,7 +599,7 @@ class Timeline extends hide.ui.View<{}> {
 			return;
 		var deleted = [for (m in selectedMarkers) { name: m.name, frame: m.frame, duration: m.duration }];
 		setSelection([], selectedKeys);
-		onDelete(deleted);
+		onMarkersDelete(deleted);
 	}
 
 
@@ -618,7 +634,12 @@ class Timeline extends hide.ui.View<{}> {
 		e.preventDefault();
 		rightPanel.setPointerCapture(e.pointerId);
 
-		if (syFromEvent(e) < 0) {
+		var y = syFromEvent(e);
+		if (y < 0 && y >= -markersHeight && e.button == 0) {
+			setSelection([], selectedKeys);
+			return;
+		}
+		if (y < -markersHeight) {
 			setTime(px(sxFromEvent(e)));
 			rightPanel.onpointermove = (e : PointerEvent) -> setTime(px(sxFromEvent(e)));
 			rightPanel.onlostpointercapture = (_) -> {
@@ -749,11 +770,6 @@ class Timeline extends hide.ui.View<{}> {
 	function redraw() {
 		needRedraw = false;
 		readStyle();
-		if (needFrameAll) {
-			needFrameAll = false;
-			frameAllInternal();
-		}
-		drawGrid();
 
 		for (r in rows) {
 			if (r.element == null) {
@@ -764,26 +780,44 @@ class Timeline extends hide.ui.View<{}> {
 			}
 		}
 		for (m in markers) {
+			if (m.row.element == null) {
+				m.row.element = document.createDivElement();
+				m.row.element.className = "row";
+				m.row.element.append(m.row.content);
+				markerRows.append(m.row.element);
+			}
+		}
+		markersHeight = markerRows.getBoundingClientRect().height;
+		rightPanel.style.setProperty("--markers-height", '${markersHeight}px');
+
+		if (needFrameAll) {
+			needFrameAll = false;
+			frameAllInternal();
+		}
+		drawGrid();
+
+		for (m in markers) {
 			if (m.element == null) {
 				var el = document.createDivElement();
 				el.className = "marker";
 				m.element = el;
-				content.append(el);
+				markersBand.append(el);
 
+				el.style.setProperty("--marker-color", colorString(m.color));
 				if (m.duration > 0) {
 					hide.html.Html.build(el,
-						<div class="bar"></div>
-					);
-					hide.html.Html.build(el,
-						<div class="diamond"></div>
-					);
-					hide.html.Html.build(el,
-						<div class="diamond end"></div>
+						<div class="marker-bar">
+							<hide-icon icon={m.icon}/>
+							<span class="label">${m.name}</span>
+						</div>
 					);
 				}
 				else {
 					hide.html.Html.build(el,
-						<div class="diamond"></div>
+						<div class="marker-instant">
+							<hide-icon icon={HideRes.icon.diamond}/>
+							<span class="label">${m.name}</span>
+						</div>
 					);
 				}
 
@@ -826,7 +860,7 @@ class Timeline extends hide.ui.View<{}> {
 						el.onpointermove = null;
 						el.onlostpointercapture = null;
 						if (m.frame != startFrame)
-							onChange(oldMarkers, [for (s in moved) ({ name: s.name, frame: s.frame, duration: s.duration } : Marker)]);
+							onMarkersChange(oldMarkers, [for (s in moved) ({ name: s.name, frame: s.frame, duration: s.duration } : Marker)]);
 						else if (!isMultiSelect && wasSelected)
 							setSelection([m], []);
 					};
@@ -838,9 +872,12 @@ class Timeline extends hide.ui.View<{}> {
 			m.element.style.width = '${sx(frameToTime(m.frame + m.duration)) - start}px';
 		}
 
-		var contentTop = content.getBoundingClientRect().top;
-		for (m in markers)
-			m.element.style.top = '${m.row.element.getBoundingClientRect().top - contentTop}px';
+		var markerRowsTop = markerRows.getBoundingClientRect().top;
+		for (m in markers) {
+			var rowRect = m.row.element.getBoundingClientRect();
+			m.element.style.top = '${rowRect.top - markerRowsTop}px';
+			m.element.style.height = '${rowRect.height}px';
+		}
 
 		drawCurves();
 	}
@@ -879,6 +916,11 @@ class Timeline extends hide.ui.View<{}> {
 		drawLines(ctx, false, minX, maxX, hstep, lineColor, originColor);
 
 		if (hasYAxis) {
+			ctx.save();
+			ctx.beginPath();
+			ctx.rect(0, graphTop(), width, gridHeight());
+			ctx.clip();
+
 			var minY = py(gridHeight());
 			var maxY = py(0);
 			vstep = getStep(maxY - minY, MIN_STEP, Math.max(2, gridHeight() / minVerticalLabelSpacing));
@@ -888,8 +930,9 @@ class Timeline extends hide.ui.View<{}> {
 			ctx.textAlign = "left";
 			for (i in Math.floor(minY / vstep)...Math.ceil(maxY / vstep) + 1) {
 				var v = i * vstep;
-				ctx.fillText(Std.string(hxd.Math.fmt(v)), 5, rulerHeight + sy(v));
+				ctx.fillText(Std.string(hxd.Math.fmt(v)), 5, graphTop() + sy(v));
 			}
+			ctx.restore();
 		}
 
 		if (duration > 0) {
@@ -909,9 +952,9 @@ class Timeline extends hide.ui.View<{}> {
 
 	function drawLines(ctx : CanvasRenderingContext2D, isHorizontal : Bool, min : Float, max : Float, step : Float, color : String, originColor : String) {
 		var width = rightPanel.clientWidth;
-		var height = gridHeight();
+		var height = rightPanel.clientHeight - rulerHeight;
 		function line(v : Float, size : Float) {
-			var p = isHorizontal ? rulerHeight + sy(v) : sx(v);
+			var p = isHorizontal ? graphTop() + sy(v) : sx(v);
 			if (isHorizontal)
 				ctx.fillRect(0, p - size / 2, width, size);
 			else
@@ -1286,7 +1329,7 @@ class Timeline extends hide.ui.View<{}> {
 			var oldMarker : Marker = { name: m.name, frame: m.frame, duration: m.duration };
 			m.name = input.value;
 			label.textContent = m.name;
-			onChange([oldMarker], [{ name: m.name, frame: m.frame, duration: m.duration }]);
+			onMarkersChange([oldMarker], [{ name: m.name, frame: m.frame, duration: m.duration }]);
 		};
 	}
 

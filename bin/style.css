@@ -7466,50 +7466,55 @@ fancy-gallery-item {
 		flex-direction: column;
 		overflow-x: hidden;
 		overflow-y: auto;
-		padding-top: var(--ruler-height);
 		box-sizing: border-box;
 
 		.filter {
-			display: none;
-		}
+			position: sticky;
+			top: 0;
+			z-index: 1;
+			display: flex;
+			flex-shrink: 0;
+			align-items: center;
+			gap: 8px;
+			height: var(--ruler-height);
+			padding: 0 8px;
+			box-sizing: border-box;
+			background: var(--theme-mantle);
+			color: oklch(0.7 0 0);
 
-		&.has-filter {
-			padding-top: 0;
+			input {
+				flex: 1;
+				min-width: 0;
+				height: 18px;
+				padding: 0 6px;
+				background: var(--theme-crust);
+				border: 1px solid oklch(0.35 0 0);
+				border-radius: var(--theme-border-radius);
+				color: var(--theme-foreground);
+				outline: none;
 
-			.filter {
-				position: sticky;
-				top: 0;
-				z-index: 1;
-				display: flex;
-				flex-shrink: 0;
-				align-items: center;
-				gap: 8px;
-				height: var(--ruler-height);
-				padding: 0 8px;
-				box-sizing: border-box;
-				background: var(--theme-mantle);
-				color: oklch(0.7 0 0);
+				&:focus {
+					border-color: var(--theme-accent);
+				}
 
-				input {
-					flex: 1;
-					min-width: 0;
-					height: 18px;
-					padding: 0 6px;
-					background: var(--theme-crust);
-					border: 1px solid oklch(0.35 0 0);
-					border-radius: var(--theme-border-radius);
-					color: var(--theme-foreground);
-					outline: none;
-
-					&:focus {
-						border-color: var(--theme-accent);
-					}
-
-					&::placeholder {
-						color: oklch(0.5 0 0);
-					}
+				&::placeholder {
+					color: oklch(0.5 0 0);
 				}
 			}
+		}
+
+		&:not(.has-filter) .filter > * {
+			visibility: hidden;
+		}
+
+		.marker-rows {
+			position: sticky;
+			top: var(--ruler-height);
+			z-index: 1;
+			display: flex;
+			flex-direction: column;
+			flex-shrink: 0;
+			background: var(--theme-mantle);
 		}
 
 		.row {
@@ -7734,10 +7739,10 @@ fancy-gallery-item {
 
 		svg.curves {
 			position: absolute;
-			top: var(--ruler-height);
+			top: calc(var(--ruler-height) + var(--markers-height, 0px));
 			left: 0;
 			width: 100%;
-			height: calc(100% - var(--ruler-height));
+			height: calc(100% - var(--ruler-height) - var(--markers-height, 0px));
 			overflow: hidden;
 			pointer-events: none;
 
@@ -7783,51 +7788,68 @@ fancy-gallery-item {
 			}
 		}
 
-		.content {
+		.markers-band {
 			position: absolute;
-			inset: var(--ruler-height) 0 0 0;
+			top: var(--ruler-height);
+			left: 0;
+			right: 0;
+			height: var(--markers-height, 0px);
+			overflow: hidden;
+			background: oklch(0 0 0 / 0.18);
+			border-bottom: 1px solid var(--theme-surface-2);
+			box-sizing: border-box;
 		}
 
 		.marker {
-			--marker-size: 12px;
-			--marker-color: oklch(0.66 0 0);
-			--marker-border: oklch(0.42 0 0);
-
 			position: absolute;
-			height: var(--row-height);
 			cursor: ew-resize;
 
-			.bar {
+			.marker-bar {
 				position: absolute;
-				top: 50%;
-				left: 0;
-				right: 0;
-				height: 12px;
-				translate: 0 -50%;
+				inset: 3px 0;
+				display: flex;
+				align-items: center;
+				gap: 6px;
+				padding: 0 8px;
 				box-sizing: border-box;
-				border: 1px solid var(--marker-border);
-				background: color-mix(in srgb, var(--marker-color) 22%, transparent);
+				overflow: hidden;
+				white-space: nowrap;
+				border: 1px solid var(--marker-color);
+				border-radius: var(--theme-border-radius);
+				background: color-mix(in srgb, var(--marker-color) 30%, transparent);
+				color: var(--theme-foreground);
+
+				hide-icon {
+					--icon-size: 10px;
+				}
 			}
 
-			.diamond {
-				position: absolute;
-				top: 50%;
-				left: 0;
-				width: var(--marker-size);
-				height: var(--marker-size);
-				box-sizing: border-box;
-				border: 1px solid var(--marker-border);
-				background: var(--marker-color);
-				transform: translate(-50%, -50%) rotate(45deg);
+			.marker-instant {
+				--icon-size: 10px;
 
-				&.end {
-					left: 100%;
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				left: calc(var(--icon-size) / -2);
+				display: flex;
+				align-items: center;
+				gap: 4px;
+				white-space: nowrap;
+				color: var(--marker-color);
+
+				.label {
+					color: var(--theme-foreground);
 				}
 			}
 
 			&.selected {
-				--marker-color: oklch(0.86 0 0);
-				--marker-border: oklch(0.97 0 0);
+				.marker-bar {
+					border: 2px solid var(--theme-accent);
+				}
+
+				.marker-instant hide-icon {
+					color: var(--theme-accent);
+				}
 			}
 		}
 
