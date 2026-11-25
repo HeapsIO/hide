@@ -482,7 +482,6 @@ class EmitterObject extends h3d.scene.Object {
 	public var particles : PartArray;
 	public var particlesCount : Int;
 	public var listHead : Int = ParticleInstance.NONE;  // slot of the first particle of the list
-	var newInstances = 0;  // particles added at the head of the list since the last depth sort
 
 	// per slot of `particles`, out of ParticleInstance to keep it small and without pointers
 	var partTrails : Array<hrt.prefab.l3d.Trails.TrailHead>;
@@ -910,7 +909,6 @@ class EmitterObject extends h3d.scene.Object {
 			partTrails = partTrails ?? [];
 			partTrails[slot] = trails.allocTrail();
 		}
-		newInstances++;
 		instanceCounter = (instanceCounter + 1) % prefab.maxCount;
 		checkList();
 		return slot;
@@ -1392,8 +1390,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	function depthSort() {
 		checkList();
-		listHead = EmitterHelper.depthSort(particles, listHead, newInstances, numInstances * 2);
-		newInstances = 0;
+		listHead = EmitterHelper.depthSort(particles, listHead);
 		checkList();
 	}
 

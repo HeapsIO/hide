@@ -101,70 +101,60 @@ class EmitterHelper {
 		m._41 = a * c - b * s; m._42 = a * s + b * c;
 	}
 
-	// Depth sort of the particle list (linked by slots of `parts`), back to front by their `distToCam`
-	// Optim: up to 4x faster than a full sort when < 5% of the particles are new each frame
-	public static function depthSort( parts : PartArray, head : Int, k : Int, budget : Int ) : Int {
-		var rest = head;
-		for( i in 0...k ) {
-			if( rest == NONE ) break;
-			rest = parts[rest].next;
-		}
-		var fresh = NONE;
-		if( rest != head ) {
-			fresh = head;
-			if( rest != NONE ) {
-				parts[parts[rest].prev].next = NONE;
-				parts[rest].prev = NONE;
+	// Depth sort of the particle list (linked by slots of `parts`), back to front by their `distToCam`, stable.
+	// A natural merge sort: the list is cut into the runs already in order, which are then merged.
+	// The particles are about in order from the last frame, the new ones being at the head at any depth:
+	// one pass when nothing moved, a few merges for new particles or small moves.
+	// Versions tried before:
+	// - a plain merge sort (haxe.ds.ListSort) costs the same n log n every frame, about 20% of the emitter update;
+	// - an insertion sort is as fast when little moved, but n^2 when a lot did (fast camera turn): it needed
+	//   a budget of moves and a merge sort past it, an arbitrary threshold, and both sorts paid in the worst case.
+	// Here the worst case is a merge sort of single particles plus the pass, with nothing to tune.
+	public static function depthSort( parts : PartArray, list : Int ) : Int {
+		// bins[i] : NONE or the merge of 2^i runs, the earlier runs in the higher bins
+		static var bins = [for( i in 0...32 ) NONE];
+		var top = 0;
+		while( list != NONE ) {
+			// cut the run starting at `list`
+			var run = list, last = list;
+			list = parts[last].next;
+			while( list != NONE && inOrder(parts, last, list) ) {
+				last = list;
+				list = parts[list].next;
 			}
-			fresh = listSort(parts, fresh);
-		}
-		return merge(parts, fresh, insertionSort(parts, rest, budget));
-	}
-
-	static inline var NONE = ParticleInstance.NONE;
-
-	static inline function cmp( parts : PartArray, a : Int, b : Int ) {
-		return parts[a].distToCam < parts[b].distToCam ? 1 : -1;
-	}
-
-	static function insertionSort( parts : PartArray, head : Int, budget : Int ) : Int {
-		var cur = head == NONE ? NONE : parts[head].next;
-		while( cur != NONE ) {
-			var c = parts[cur];
-			var next = c.next;
-			var p = c.prev;
-			if( cmp(parts, p, cur) > 0 ) {
-				parts[p].next = next;
-				if( next != NONE )
-					parts[next].prev = p;
-				while( parts[p].prev != NONE && cmp(parts, parts[p].prev, cur) > 0 && --budget >= 0 )
-					p = parts[p].prev;
-				var pp = parts[p].prev;
-				c.prev = pp;
-				c.next = p;
-				if( pp != NONE )
-					parts[pp].next = cur;
-				else
-					head = cur;
-				parts[p].prev = cur;
-				if( budget < 0 ) {
-					head = listSort(parts, head);
-					break;
-				}
+			parts[last].next = NONE;
+			var i = 0;
+			while( i < top && bins[i] != NONE ) {
+				run = merge(parts, bins[i], run);
+				bins[i] = NONE;
+				i++;
 			}
-			cur = next;
+			if( i == top ) top++;
+			bins[i] = run;
 		}
-		// `listSort` sets the `prev` of the head to the tail
+		var head = NONE;
+		for( i in 0...top ) {
+			if( bins[i] != NONE )
+				head = head == NONE ? bins[i] : merge(parts, bins[i], head);
+			bins[i] = NONE;
+		}
 		if( head != NONE )
 			parts[head].prev = NONE;
 		return head;
 	}
 
+	static inline var NONE = ParticleInstance.NONE;
+
+	static inline function inOrder( parts : PartArray, a : Int, b : Int ) {
+		return parts[a].distToCam >= parts[b].distToCam;
+	}
+
+	// Merge of two sorted, non empty lists, `a` first when equal. Stops when one is done: the `prev` of the rest are kept.
 	static function merge( parts : PartArray, a : Int, b : Int ) : Int {
 		var head = NONE, tail = NONE;
-		while( a != NONE || b != NONE ) {
+		while( true ) {
 			var e;
-			if( b == NONE || (a != NONE && cmp(parts, a, b) <= 0) ) {
+			if( inOrder(parts, a, b) ) {
 				e = a;
 				a = parts[a].next;
 			} else {
@@ -177,62 +167,14 @@ class EmitterHelper {
 				parts[tail].next = e;
 			parts[e].prev = tail;
 			tail = e;
+			if( a == NONE || b == NONE ) {
+				var rest = a == NONE ? b : a;
+				parts[tail].next = rest;
+				parts[rest].prev = tail;
+				break;
+			}
 		}
 		return head;
-	}
-
-	// haxe.ds.ListSort.sort on slots
-	static function listSort( parts : PartArray, list : Int ) : Int {
-		if( list == NONE )
-			return NONE;
-		var insize = 1, nmerges, psize = 0, qsize = 0;
-		var p, q, e, tail = NONE;
-		while( true ) {
-			p = list;
-			list = NONE;
-			tail = NONE;
-			nmerges = 0;
-			while( p != NONE ) {
-				nmerges++;
-				q = p;
-				psize = 0;
-				for( i in 0...insize ) {
-					psize++;
-					q = parts[q].next;
-					if( q == NONE )
-						break;
-				}
-				qsize = insize;
-				while( psize > 0 || (qsize > 0 && q != NONE) ) {
-					if( psize == 0 ) {
-						e = q;
-						q = parts[q].next;
-						qsize--;
-					} else if( qsize == 0 || q == NONE || cmp(parts, p, q) <= 0 ) {
-						e = p;
-						p = parts[p].next;
-						psize--;
-					} else {
-						e = q;
-						q = parts[q].next;
-						qsize--;
-					}
-					if( tail != NONE )
-						parts[tail].next = e;
-					else
-						list = e;
-					parts[e].prev = tail;
-					tail = e;
-				}
-				p = q;
-			}
-			parts[tail].next = NONE;
-			if( nmerges <= 1 )
-				break;
-			insize *= 2;
-		}
-		parts[list].prev = tail;
-		return list;
 	}
 
 	#if domkit
