@@ -278,6 +278,7 @@ class Macros {
 		var t = Context.follow(Context.typeof(e));
 		switch(t) {
 			case TDynamic(_), TMono(_):
+			case TAbstract(_.get() => a, _) if (a.name == "Any" && a.pack.length == 0):
 			default:
 				for (path in ["h3d.scene.Object", "h2d.Object"])
 					if (Context.unify(t, Context.getType(path)))
@@ -646,8 +647,8 @@ class Macros {
 				}
 			}
 
-			if (isCache && (isSerializable || isCopyable))
-				Context.error("@:cache can't be combined with @:s or @:c", f.pos);
+			if (isCache && isCopyable)
+				Context.error("@:cache can't be combined with @:c", f.pos);
 
 			if (isManual && (isSerializable || isCopyable || isCache))
 				Context.error("@:manual can't be combined with @:s, @:c or @:cache", f.pos);

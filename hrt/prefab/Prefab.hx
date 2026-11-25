@@ -113,7 +113,7 @@ class Prefab {
 	/**
 		A storage for some extra properties
 	**/
-	@:s public var props : Any = null;
+	@:s @:cache public var props : Any = null;
 
 	/**
 		The parent of the prefab in the tree view
