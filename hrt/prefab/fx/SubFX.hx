@@ -8,8 +8,15 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 	@:s public var loop(default, set) : Bool;
 	@:s public var speed(default, set) : Float = 1.0;
 	@:s public var duration : Float;
+	/** Values of parameters of the referenced FX, by name. A curve `paramCurveName(name)` animates one instead, in the time of the parent FX **/
+	@:s public var params : Dynamic;
 
 	var instance : hrt.prefab.fx.FX.FXAnimation;
+
+	public static inline function paramCurveName(name: String) {
+		// not a channel of the object (position, color...), which are read by prefix before the ':'
+		return "param:" + name;
+	}
 
 	public var hidden:Bool = false;
 	public var lock:Bool = false;
@@ -24,8 +31,17 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 				fxanim.loop = loop;
 				fxanim.playSpeed = speed;
 				instance = fxanim;
+				applyParams();
 			}
 		}
+	}
+
+	// after the init of the sub FX, which sets its parameters to their defaults
+	function applyParams() {
+		if (params == null)
+			return;
+		for (name in Reflect.fields(params))
+			instance.setParameter(name, Reflect.field(params, name));
 	}
 
 	function set_time(v) {
@@ -80,6 +96,14 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 		if (propName == "loop") {
 			postMakeInstance();
 		}
+
+		#if editor
+		// an override removed (undo) goes back to the default
+		if (instance != null) {
+			instance.setParameters(Std.downcast(refInstance, FX)?.parameters);
+			applyParams();
+		}
+		#end
 	}
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
@@ -90,6 +114,25 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 				<slider field={speed} min={0.01} defaultValue={1.0}/>
 			</category>
 		);
+
+		var fx = Std.downcast(refInstance, FX);
+		if (fx != null && fx.parameters.length > 0) {
+			ctx.build(
+				<category("FX Parameters") id="paramsCat"/>
+			);
+			for (p in fx.parameters) {
+				var widget = paramsCat.buildProp({ name: p.name, t: hrt.prefab.Props.PropType.PFloat(0, 1), def: p.def }, params ?? {});
+				if (widget.value == null)
+					widget.value = p.def;
+				widget.anim = paramCurveName(p.name);
+				// only the parameters set here are saved
+				@:privateAccess widget.onFieldChange = (_) -> {
+					params ??= {};
+					Reflect.setField(params, p.name, widget.value);
+				};
+			}
+		}
+
 		super.edit2(ctx);
 	}
 

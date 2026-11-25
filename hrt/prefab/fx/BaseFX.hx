@@ -195,11 +195,24 @@ typedef RendererFXAnimData = {
 	params: Array<RendererFXParam>,
 };
 
+/** The parameters of a sub FX animated by curves of the SubFX, in the time of the FX that has it **/
+typedef SubFXAnimData = {
+	prefab: SubFX,
+	params: Array<{ name: String, value: Value }>,
+};
+
+typedef SubFXAnimation = {
+	anim: hrt.prefab.fx.FX.FXAnimation,
+	data: SubFXAnimData,
+};
+
 
 class AnimData {
 	public var objects : Array<ObjectAnimData> = [];
 	public var shaders : Array<ShaderAnimData> = [];
 	public var effects : Array<RendererFXAnimData> = [];
+	/** null when no sub FX has an animated parameter **/
+	public var subFXs : Array<SubFXAnimData>;
 
 	public function new(?root: PrefabElement) {
 		if(root == null)
@@ -230,6 +243,15 @@ class AnimData {
 			var e = effectData(elt);
 			if(e != null)
 				effects.push(e);
+
+			var sub = Std.downcast(elt, SubFX);
+			if(sub != null) {
+				var s = subFXData(sub);
+				if(s != null) {
+					if(subFXs == null) subFXs = [];
+					subFXs.push(s);
+				}
+			}
 		}
 		rec(root);
 	}
@@ -254,8 +276,39 @@ class AnimData {
 		return anims;
 	}
 
+	public function bindSubFXs() : Array<SubFXAnimation> {
+		if(subFXs == null)
+			return null;
+		var ret = null;
+		for(s in subFXs) {
+			var anim = Std.downcast(s.prefab.refInstance?.findFirstLocal3d(), hrt.prefab.fx.FX.FXAnimation);
+			if(anim == null)
+				continue;
+			if(ret == null) ret = [];
+			ret.push({ anim: anim, data: s });
+		}
+		return ret;
+	}
+
 	public static var useAutoPerInstance = true;
 
+	static function subFXData(sub: SubFX) : SubFXAnimData {
+		// most sub FX have no curve
+		if(!Lambda.exists(sub.children, c -> c.enabled && Std.isOfType(c, Curve)))
+			return null;
+		var fx = Std.downcast(sub.refInstance, FX);
+		if(fx == null)
+			return null;
+		var params = null;
+		for(p in fx.parameters) {
+			var c = Curve.getCurve(sub, SubFX.paramCurveName(p.name));
+			if(c == null)
+				continue;
+			if(params == null) params = [];
+			params.push({ name: p.name, value: c.makeVal() });
+		}
+		return params == null ? null : { prefab: sub, params: params };
+	}
 
 	static function objectAnim(obj3d: hrt.prefab.Object3D, local3d: h3d.scene.Object) : ObjectAnimData {
 		var elt : PrefabElement = obj3d;

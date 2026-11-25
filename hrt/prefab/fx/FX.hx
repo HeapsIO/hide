@@ -89,6 +89,8 @@ class FXAnimation extends h3d.scene.Object {
 	public var shaderTargets : Array<hrt.prefab.fx.ShaderTarget.ShaderTargetObj>;
 
 	public var subFXs : Array<FXAnimation> = [];
+	/** The animated parameters of the sub FX, null when none **/
+	var subFXParams : Array<BaseFX.SubFXAnimation>;
 
 	public dynamic function onPlayStateChange(newPlayState: FXPlayState) : Void {
 
@@ -229,6 +231,7 @@ class FXAnimation extends h3d.scene.Object {
 	function bindAnims() {
 		objs = animData.bindObjects();
 		paramAnims = animData.bindParams(evaluator);
+		subFXParams = animData.bindSubFXs();
 	}
 
 	public function setParameter(name: String, value: Dynamic) {
@@ -480,6 +483,13 @@ class FXAnimation extends h3d.scene.Object {
 					}
 				}
 			}
+		}
+
+		// before the sub FX update: their emitters read their parameters, culled or not
+		if (subFXParams != null) {
+			for (s in subFXParams)
+				for (p in s.data.params)
+					s.anim.evaluator.parameters.set(p.name, evaluator.getFloat(p.value, localTime));
 		}
 
 		for (subFX in subFXs) {
