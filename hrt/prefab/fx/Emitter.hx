@@ -80,6 +80,7 @@ enum RandomColorMode {
 }
 
 typedef PartArray = #if (hl_ver >= version("1.14.0")) hl.CArray<ParticleInstance> #else Array<ParticleInstance> #end;
+typedef MatArray = #if (hl_ver >= version("1.14.0")) hl.CArray<SMatrix3x4> #else Array<SMatrix3x4> #end;
 typedef Single = #if (hl_ver >= version("1.13.0")) hl.F32 #else Float #end;
 
 @:publicFields @:struct
@@ -100,13 +101,11 @@ class ParticleInstance {
 	@:packed var rotationAccumulation(default, never) : SVector3;
 	@:packed var qRot(default, never) : SVector4;
 	@:packed var emitOrientation(default, never) : SVector4;  // rotation at emission
-	@:packed var absPos(default, never) : SMatrix3x4;
 	#else
 	var speedAccumulation(default, never) = new SVector3();
 	var rotationAccumulation(default, never) = new SVector3();
 	var qRot(default, never) = new SVector4();
 	var emitOrientation(default, never) = new SVector4();
-	var absPos(default, never) = new SMatrix3x4();
 	#end
 
 	var idx : Int;
@@ -134,7 +133,6 @@ class ParticleInstance {
 		rotationAccumulation.load(p.rotationAccumulation.toVector());
 		qRot.load(p.qRot.toVector());
 		emitOrientation.load(p.emitOrientation.toVector());
-		absPos.load(p.absPos.toMatrix());
 
 		idx = p.idx;
 		startFrame = p.startFrame;
@@ -196,7 +194,7 @@ class ParticleInstance {
 		scaleZ = z;
 	}
 
-	function updateAbsPos(emitter: EmitterObject) {
+	function updateAbsPos(emitter: EmitterObject, out: SMatrix3x4) {
 		var prefab = emitter.prefab;
 		var v = new h3d.Vector4();
 		static var absPos = new h3d.Matrix();
@@ -303,10 +301,10 @@ class ParticleInstance {
 			localMat.multiply(emitter.baseEmitMat, localMat);
 
 		absPos.multiply(localMat, absPos);
-		this.absPos.load(absPos);
+		out.load(absPos);
 	}
 
-	function update(emitter : EmitterObject, dt : Float) {
+	function update(emitter : EmitterObject, dt : Float, absPos : SMatrix3x4) {
 		var v = new h3d.Vector4();
 
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
@@ -379,7 +377,6 @@ class ParticleInstance {
 
 		if (evaluator.partStretchVelocity != VZero) {
 			var s = evaluator.getPartStretchVelocity(idx, t);
-			var absPos = this.absPos;
 			var sx = hxd.Math.abs(speed.x * absPos._11 + speed.y * absPos._12 + speed.z * absPos._13);
 			sx = hxd.Math.min(sx, 0.25);
 
@@ -483,6 +480,9 @@ class EmitterObject extends h3d.scene.Object {
 	
 	// particle buffers recycled between emitters, by power of 2 size
 	static var partPool : Map<Int, Array<PartArray>> = [];
+	// the transforms of the particles of the emitter being updated, from updateParticles to updateMeshBatch
+	static var partAbsPos : MatArray;
+	static var partAbsPosSize = 0;
 	public var listHead : Int = ParticleInstance.NONE;
 
 	// rare per-particle refs, outside of ParticleInstance to avoid GC scans
@@ -907,6 +907,14 @@ class EmitterObject extends h3d.scene.Object {
 			particles[i].idx = ParticleInstance.REMOVED_IDX;
 	}
 
+	function allocAbsPos() {
+		if(particlesCount <= partAbsPosSize)
+			return;
+		var size = hxd.Math.nextPOT(particlesCount);
+		partAbsPos = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(SMatrix3x4, size) #else [for(i in 0...size) new SMatrix3x4()] #end;
+		partAbsPosSize = size;
+	}
+
 	function disposeParticles() {
 		var free = partPool.get(partSize);
 		if(free == null)
@@ -1329,6 +1337,15 @@ class EmitterObject extends h3d.scene.Object {
 		if( full )
 			updateMeshBatch();
 
+		// after the mesh batch: their ticks reuse partAbsPos
+		if( partSubEmitters != null )
+			for( i in 0...numInstances ) {
+				var subs = partSubEmitters[i];
+				if( subs != null )
+					for( sub in subs )
+						sub.tick(dt, true);
+			}
+
 		curTime += dt;
 	}
 
@@ -1424,7 +1441,7 @@ class EmitterObject extends h3d.scene.Object {
 			var p = particles[i];
 			if (p.life > p.lifeTime)
 				return;
-			inline worldMat.load(p.absPos.toMatrix());
+			inline worldMat.load(partAbsPos[i].toMatrix());
 			batch.worldPosition = worldMat;
 			for( anim in paramAnims ) {
 				var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
@@ -1491,6 +1508,7 @@ class EmitterObject extends h3d.scene.Object {
 
 		var camPos = scene.camera.pos;
 
+		allocAbsPos();
 		checkList();
 		var i = 0;
 		while(i < numInstances) {
@@ -1499,8 +1517,7 @@ class EmitterObject extends h3d.scene.Object {
 			if(p.life > p.lifeTime) {
 				if (trails != null && trail != null && trail.numPoints > 0) {
 					// trail still fading out, keep particle slot alive until all points expire
-					var pos = p.absPos.getPosition();
-					trails.updateTrail(trail, dt, pos.x, pos.y, pos.z);
+					trails.updateTrail(trail, dt, trail.x, trail.y, trail.z);
 					++i;
 				} else {
 					// SUB EMITTER
@@ -1510,8 +1527,8 @@ class EmitterObject extends h3d.scene.Object {
 								continue;
 							}
 							var emitter = makeSubEmitter(template, scene);
-							p.updateAbsPos(this);
-							var pos = p.absPos.getPosition();
+							p.updateAbsPos(this, partAbsPos[i]);
+							var pos = partAbsPos[i].getPosition();
 							emitter.setPosition(pos.x - scene.x, pos.y - scene.y, pos.z - scene.z);
 							if(subEmitters == null)
 								subEmitters = [];
@@ -1522,35 +1539,37 @@ class EmitterObject extends h3d.scene.Object {
 				}
 			}
 			else {
-				p.update(this, dt);
+				p.update(this, dt, partAbsPos[i]);
 				var subs = partSubEmitters != null ? partSubEmitters[i] : null;
 				if (subs != null)
-					updateFollowSubEmitters(p, subs, dt);
+					placeFollowSubEmitters(p, partAbsPos[i], subs);
 				postParticleUpdate(p, dt);
 
 				if(full) {
-					p.updateAbsPos(this);
+					p.updateAbsPos(this, partAbsPos[i]);
 					if(p.distToCam < 0 || prefab.sortMode == Depth)
-						p.distToCam = camPos.distanceSq(p.absPos.getPosition());
+						p.distToCam = camPos.distanceSq(partAbsPos[i].getPosition());
 				}
 				p.life += dt;  // After updateAbsPos(), which uses current life
-				++i;
 
 				if (trails != null) {
-					var pos = p.absPos.getPosition();
-					trails.updateTrail(trail, dt, pos.x, pos.y, pos.z);
+					if (full || subs != null) {
+						var pos = partAbsPos[i].getPosition();
+						trails.updateTrail(trail, dt, pos.x, pos.y, pos.z);
+					} else
+						trails.updateTrail(trail, dt, trail.x, trail.y, trail.z);
 				}
+				++i;
 			}
 		}
 		checkList();
 	}
 
-	function updateFollowSubEmitters(p: ParticleInstance, subs: Array<EmitterObject>, dt: Float) {
-		p.updateAbsPos(this);
-		var abs = p.absPos.getPosition();
+	function placeFollowSubEmitters(p: ParticleInstance, absPos: SMatrix3x4, subs: Array<EmitterObject>) {
+		p.updateAbsPos(this, absPos);
+		var abs = absPos.getPosition();
 		for (sub in subs) {
 			sub.setPosition(abs.x - scene.x, abs.y - scene.y, abs.z - scene.z);
-			sub.tick(dt, true);
 
 			#if editor
 			if (debugGraphics.visible) {
@@ -1635,8 +1654,9 @@ class EmitterObject extends h3d.scene.Object {
 
 		inline function partialUpdate() {
 			updateAlignment();
+			allocAbsPos();
 			for(i in 0...numInstances)
-				particles[i].updateAbsPos(this);
+				particles[i].updateAbsPos(this, partAbsPos[i]);
 			updateMeshBatch();
 		}
 
