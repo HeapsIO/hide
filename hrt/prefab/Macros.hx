@@ -261,6 +261,31 @@ class Macros {
 		return macro @:pos(pos) if ($e{shouldSerializeValule(Context.typeof(sourceExpr), sourceExpr, defaultValue)}) $e{target} = ${e};
 	}
 
+	/** The value of an uninitialized variable of the type of `e` **/
+	static macro public function defaultValueOf(e : Expr) : Expr {
+		return switch(Context.followWithAbstracts(Context.typeof(e))) {
+			case TAbstract(_.get() => a, _) if (a.name == "Bool"):
+				macro false;
+			case TAbstract(_.get() => a, _) if (a.name != "Null" && a.meta.has(":coreType")):
+				macro cast 0;
+			default:
+				macro null;
+		}
+	}
+
+	/** Fails the compilation if `e` can hold a scene object : objects created by make() must not outlive clean() **/
+	static macro public function checkNotSceneObject(e : Expr) : Expr {
+		var t = Context.follow(Context.typeof(e));
+		switch(t) {
+			case TDynamic(_), TMono(_):
+			default:
+				for (path in ["h3d.scene.Object", "h2d.Object"])
+					if (Context.unify(t, Context.getType(path)))
+						Context.error("@:c and @:cache fields can't hold a " + path, e.pos);
+		}
+		return macro {};
+	}
+
 	#if macro
 
 	static function shouldSerializeValule(type: Type, a: Expr, b: Expr) : Expr {
@@ -591,6 +616,7 @@ class Macros {
 		var serializableFields = [];
 		var copyableFields = [];
 		var cloneInitFields : Array<Field> = [];
+		var sceneObjectChecks : Array<Expr> = [];
 		var pos = Context.currentPos();
 
 
@@ -601,26 +627,37 @@ class Macros {
 			var isSerializable = false;
 			var isDeepCopy = false;
 			var isCopyable = false;
+			var isCache = false;
 			for (m in f.meta) {
 				switch(m.name) {
 					case ":s":
 						isSerializable = true;
 					case ":c":
 						isCopyable = true;
+					case ":cache":
+						isCache = true;
 					case ":deepCopy":
 						isDeepCopy = true;
 				}
 			}
 
+			if (isCache && (isSerializable || isCopyable))
+				Context.error("@:cache can't be combined with @:s or @:c", f.pos);
+
 			if (isSerializable) {
 				serializableFields.push({field: f, deepCopy: isDeepCopy});
 			}
 
-			if (isCopyable || isSerializable) {
+			if (isCopyable || isSerializable || isCache) {
 				copyableFields.push({field: f, deepCopy: isDeepCopy});
 			}
 
-			if (!isSerializable && !isDeepCopy && !isCopyable) {
+			if (isCopyable || isCache) {
+				var name = f.name;
+				sceneObjectChecks.push(macro @:pos(f.pos) hrt.prefab.Macros.checkNotSceneObject(this.$name));
+			}
+
+			if (!isSerializable && !isDeepCopy && !isCopyable && !isCache) {
 				cloneInitFields.push(f);
 			}
 		}
@@ -687,7 +724,7 @@ class Macros {
 
 		var cloneInitExprs = [];
 		if (!isRoot) {
-			cloneInitExprs.push(macro super.postCloneInit());
+			cloneInitExprs.push(macro super.resetInstanceVars());
 			for (f in cloneInitFields) {
 				var name = f.name;
 				var isFinal = false;
@@ -703,24 +740,29 @@ class Macros {
 
 				switch (f.kind) {
 					case FVar(_, defaultValue): {
-						if (defaultValue != null) {
-							if (isFinal) {
-								// Force final initialisation
-								cloneInitExprs.push(macro (this:Dynamic).$name = ${defaultValue});
-							}
-							else {
-								cloneInitExprs.push(macro this.$name = ${defaultValue});
-							}
+						defaultValue ??= macro hrt.prefab.Macros.defaultValueOf(this.$name);
+						if (isFinal) {
+							// Force final initialisation
+							cloneInitExprs.push(macro (this:Dynamic).$name = ${defaultValue});
+						}
+						else {
+							cloneInitExprs.push(macro this.$name = ${defaultValue});
 						}
 					}
-					case FProp(_,set, _, defaultValue): {
-						if (defaultValue != null) {
-							switch(set) {
-								case "default", "set", "null":
-									cloneInitExprs.push(macro this.$name = ${defaultValue});
-								case "never":
-								default: Context.error("Unexpected setter kind " + set, f.pos);
-							}
+					case FProp(get, set, _, defaultValue): {
+						var hasStorage = get == "default" || get == "null" || set == "default" || set == "null" || f.meta.exists((m) -> m.name == ":isVar");
+						if (!hasStorage)
+							continue;
+
+						defaultValue ??= macro hrt.prefab.Macros.defaultValueOf(this.$name);
+						switch(set) {
+							case "default", "null":
+								cloneInitExprs.push(macro this.$name = ${defaultValue});
+							case "set":
+								cloneInitExprs.push(macro @:bypassAccessor this.$name = ${defaultValue});
+							case "never":
+								cloneInitExprs.push(macro (this:Dynamic).$name = ${defaultValue});
+							default: Context.error("Unexpected setter kind " + set, f.pos);
 						}
 					}
 					default:
@@ -728,6 +770,9 @@ class Macros {
 				}
 			}
 		}
+
+		for (e in sceneObjectChecks)
+			cloneInitExprs.push(e);
 
 
 		function makeFun(name,expr, paramType, returnType) : Field {
@@ -757,7 +802,7 @@ class Macros {
 		};
 		fields.push(makeFun("copyToDynamic", EBlock([expr]), macro : Dynamic, macro : Dynamic));
 
-		fields.push(makeFun("postCloneInit", EBlock(cloneInitExprs), null, null));
+		fields.push(makeFun("resetInstanceVars", EBlock(cloneInitExprs), null, null));
 
 
 

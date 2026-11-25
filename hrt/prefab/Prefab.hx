@@ -214,7 +214,7 @@ class Prefab {
 		// We bypass the normal new function to avoid initializing the
 		// serializable fields, because they will be initialized by the copy function
 		var inst = Type.createEmptyInstance(thisClass);
-		inst.postCloneInit();		// Macro function that init all the non serializable fields of a prefab
+		inst.resetInstanceVars();		// Macro function that init all the non serializable fields of a prefab
 		inst.__newInit(parent, sh);// Macro function that contains the code of the new function
 
 		inst.copy(this);
@@ -261,6 +261,24 @@ class Prefab {
 		You can also call updateInstance() in order to force whole instance synchronization against current prefab data.
 	**/
 	function updateInstance(?propName : String) {
+	}
+
+	/**
+		Resets this prefab and its children to their state before make(), so that make() can be called again.
+		Fields not marked @:s, @:c or @:cache are reset to their default value. Objects created by make() are left untouched.
+	**/
+	public final function clean() : Void {
+		resetInstanceVars();
+		for (c in children)
+			c.clean();
+
+		if (parent == null) {
+			shared.root2d = null;
+			shared.root3d = null;
+			shared.current2d = null;
+			shared.current3d = null;
+			shared.findCache = null;
+		}
 	}
 
 	// End of make related functions
