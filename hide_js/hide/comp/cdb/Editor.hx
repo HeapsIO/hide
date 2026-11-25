@@ -104,9 +104,10 @@ class Editor extends Component {
 
 	/**
 		Called when a translated text is set, before the files are saved. `langKey` : the names of the elements from the sheet to the text.
+		`line` : the line holding the reference text, its field is the last name of `langKey`, after the last `.` (properties).
 		Call `beforeChange` before modifying another translation file, so the undo restores it.
 	**/
-	public static dynamic function onLocTextChange( langFilePath : String, langKey : Array<String>, beforeChange : LangFile -> Void ) {}
+	public static dynamic function onLocTextChange( langFilePath : String, langKey : Array<String>, line : Line, beforeChange : LangFile -> Void ) {}
 
 	public function new(config, api, ?cdbTable) {
 		super(null,null);
@@ -1228,7 +1229,11 @@ class Editor extends Component {
 			e = e.parent;
 		}
 		langKey.unshift(e.get("name"));
-		onLocTextChange(f.path, langKey, file -> history.add(Lang(file, langKey[0], langKey[1])));
+		try {
+			onLocTextChange(f.path, langKey, line, file -> history.add(Lang(file, langKey[0], langKey[1])));
+		} catch( e : Dynamic ) {
+			ide.quickError('onLocTextChange error:\n$e');
+		}
 		endChanges();
 
 		if( changesDepth == 0 && filters.length > 0 )
