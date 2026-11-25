@@ -212,38 +212,64 @@ class Shader extends Prefab {
 					callb(null, passSelect);
 			}
 		} else {
-			var objs = [];
-			var seen = new Map<h3d.scene.Object, Bool>();
-			function rec(o : h3d.scene.Object) {
-				if( seen.exists(o) || (filterObj != null && !filterObj(o)) )
-					return;
-				seen.set(o, true);
-				objs.push(o);
-				for( c in o )
-					rec(c);
-			}
-			function collect(p : Prefab) {
-				var root = p.to(Object3D)?.local3d;
-				if( root != null )
-					rec(root);
-			}
-			if( recursiveApply ) {
-				for( c in parent.flatten() )
-					collect(c);
-			} else if( parent.type == "object" ) {
-				// apply to all immediate children
-				for( c in parent.children )
-					collect(c);
-			} else {
-				var obj3d = Std.downcast(parent,hrt.prefab.Object3D);
-				if (obj3d != null)
-					objs = obj3d.getObjects(h3d.scene.Object, filterObj);
-			}
-			for( obj in objs )
-				for( m in obj.getMaterials(false) )
-					if( !onlyTarget || checkMaterial(m) )
-						callb(obj, m);
+			walk(parent, callb, filterObj, onlyTarget);
 		}
+	}
+
+	function walk(parent: Prefab, callb, filterObj, onlyTarget) {
+		if( recursiveApply )
+			walkRec(parent, null, callb, filterObj, onlyTarget);
+		else if( parent.type == "object" ) {
+			// apply to all immediate children
+			for( c in parent.children ) {
+				var o = c.to(Object3D)?.local3d;
+				if( o != null )
+					walkObject(o, callb, filterObj, onlyTarget);
+			}
+		} else {
+			var obj3d = Std.downcast(parent,hrt.prefab.Object3D);
+			if (obj3d != null)
+				for( obj in obj3d.getObjects(h3d.scene.Object, filterObj) )
+					for( m in obj.getMaterials(false) )
+						if( !onlyTarget || checkMaterial(m) )
+							callb(obj, m);
+		}
+	}
+
+	// the object of p is walked unless it is under `walked`, the object walked for one of its parents
+	function walkRec(p: Prefab, walked: h3d.scene.Object, callb, filterObj: h3d.scene.Object -> Bool, onlyTarget) {
+		var o = p.to(Object3D)?.local3d;
+		if( o != null && !isUnder(o, walked) && (filterObj == null || filterObj(o)) ) {
+			walkObject(o, callb, filterObj, onlyTarget);
+			walked = o;
+		}
+		for( c in p.children )
+			walkRec(c, walked, callb, filterObj, onlyTarget);
+	}
+
+	static var mats : Array<h3d.mat.Material> = [];
+
+	function walkObject(o: h3d.scene.Object, callb: (h3d.scene.Object, h3d.mat.Material) -> Void, filterObj: h3d.scene.Object -> Bool, onlyTarget: Bool) {
+		if( filterObj != null && !filterObj(o) )
+			return;
+		o.getMaterials(mats, false);
+		for( m in mats )
+			if( !onlyTarget || checkMaterial(m) )
+				callb(o, m);
+		mats.resize(0);
+		for( c in o )
+			walkObject(c, callb, filterObj, onlyTarget);
+	}
+
+	static function isUnder(o: h3d.scene.Object, root: h3d.scene.Object) {
+		if( root == null )
+			return false;
+		while( o != null ) {
+			if( o == root )
+				return true;
+			o = o.parent;
+		}
+		return false;
 	}
 
 	override function dispose() {
