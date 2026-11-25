@@ -634,7 +634,7 @@ class Macros {
 				switch(m.name) {
 					case ":s":
 						isSerializable = true;
-					case ":c":
+					case ":c", ":param": // @:param : emitter params, see hrt.prefab.fx.EmitterMacros
 						isCopyable = true;
 					case ":cache":
 						isCache = true;
