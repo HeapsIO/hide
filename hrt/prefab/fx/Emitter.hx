@@ -82,11 +82,9 @@ enum RandomColorMode {
 typedef PartArray = #if (hl_ver >= version("1.14.0")) hl.CArray<ParticleInstance> #else Array<ParticleInstance> #end;
 typedef Single = #if (hl_ver >= version("1.13.0")) hl.F32 #else Float #end;
 
-// No pointers: the particles array is not scanned by the GC. What a particle rarely has (trail, sub-emitters)
-// is kept by the emitter, per slot of the particles array (`EmitterObject.partTrails`...)
 @:publicFields @:struct
 class ParticleInstance {
-	// slots of the previous and next particles of the emitter list, NONE at the ends
+	// use indices to avoid pointers and GC scans
 	var prev : Int;
 	var next : Int;
 
@@ -99,10 +97,10 @@ class ParticleInstance {
 
 	#if (hl_ver >= version("1.13.0"))
 	@:packed var speedAccumulation(default, never) : SVector3;
-	@:packed var rotationAccumulation(default, never) : SVector3;  // Rotation Speed integrated over the life, in degrees
+	@:packed var rotationAccumulation(default, never) : SVector3;
 	@:packed var qRot(default, never) : SVector4;
 	@:packed var emitOrientation(default, never) : SVector4;  // rotation at emission
-	@:packed var absPos(default, never) : SMatrix3x4;  // world transform, made in the update for the rendering (updateMeshBatch) and the depth sort, trails, sub-emitters
+	@:packed var absPos(default, never) : SMatrix3x4;
 	#else
 	var speedAccumulation(default, never) = new SVector3();
 	var rotationAccumulation(default, never) = new SVector3();
@@ -481,9 +479,9 @@ class EmitterObject extends h3d.scene.Object {
 
 	public var particles : PartArray;
 	public var particlesCount : Int;
-	public var listHead : Int = ParticleInstance.NONE;  // slot of the first particle of the list
+	public var listHead : Int = ParticleInstance.NONE;
 
-	// per slot of `particles`, out of ParticleInstance to keep it small and without pointers
+	// rare per-particle refs, outside of ParticleInstance to avoid GC scans
 	var partTrails : Array<hrt.prefab.l3d.Trails.TrailHead>;
 	var partSubEmitters : Array<Array<EmitterObject>>;  // Follow sub-emitters
 	
@@ -894,7 +892,6 @@ class EmitterObject extends h3d.scene.Object {
 	inline function checkList() { }
 	#end
 
-	// returns the slot of the new particle
 	function allocInstance() {
 		if(numInstances >= prefab.maxCount) error("allocInstance");
 		var slot = numInstances++;
@@ -1315,7 +1312,6 @@ class EmitterObject extends h3d.scene.Object {
 			var cam = scene?.camera;
 			if (cam == null)
 				return;
-			// initInverse calls zero() : can't be inlined
 			static var invCam = new h3d.Matrix();
 			invCam.initInverse(cam.mcam);
 
@@ -1398,7 +1394,6 @@ class EmitterObject extends h3d.scene.Object {
 		if(batch == null) return;
 		batch.begin(hxd.Math.nextPOT(prefab.maxCount));
 
-		// assigned to batch.worldPosition : can't be inlined
 		static var worldMat = new h3d.Matrix();
 		inline function emit(i: Int) {
 			var p = particles[i];
@@ -1590,7 +1585,6 @@ class EmitterObject extends h3d.scene.Object {
 		else if (!seek) {
 			if (parentTime < lastParentTime) {
 				softReset();
-				// the bursts before this tick are done, the ones since the start of the loop are emitted by it
 				if (prefab.burstInterval > 0)
 					totalBurstCount = hxd.Math.ceil(hxd.Math.max(0.0, (localTime - dt * prefab.timeScale) / prefab.burstInterval));
 				if (prefab.emitType == Burst) {
