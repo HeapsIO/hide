@@ -21,8 +21,9 @@ class Particles3D extends Object3D {
 			if(src != null)
 				parts.load(haxe.Json.parse(src));
 		}
+		// copy : the groups keep references to the data, and complete their material props
 		if( data != null )
-			parts.load(data);
+			parts.load(hrt.prefab.Diff.deepCopy(data));
 		else if( !parts.getGroups().hasNext() )
 			parts.addGroup().isRelative = true;
 		return parts;

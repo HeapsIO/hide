@@ -27,8 +27,8 @@ class Reference extends Object3D {
 	/**
 		The referenced prefab loaded by this reference
 	**/
-	public var refInstance(default, null) : Prefab;
-	var refInstanceVersion : Int = -1;
+	@:cache public var refInstance(default, null) : Prefab;
+	@:manual var refInstanceVersion : Int = -1;
 
 	/**
 		How the reference can be edited in the editor
@@ -38,26 +38,26 @@ class Reference extends Object3D {
 	/**
 		Holds the original override to apply when loading a reference from disk
 	**/
-	public var overrides : Dynamic = null;
+	@:manual public var overrides : Dynamic = null;
 
 	#if (editor || editor_hl)
 	/**
 		Copy of the original data to use as a reference on save for overrides
 	**/
-	var originalSource : Dynamic;
+	@:manual var originalSource : Dynamic;
 
 	/**
 		True if this reference, or a reference inside its refInstance, creates a reference cycle.
 		The reference closing the cycle has a null refInstance.
 	**/
-	public var hasCycle(default, null) : Bool = false;
+	@:manual public var hasCycle(default, null) : Bool = false;
 
 	var wasMade : Bool = false;
 
 	/**
 		True once the refInstance load was attempted, either by load(), copy(), editorInit() or makeInstance()
 	**/
-	var refLoadAttempted : Bool = false;
+	@:manual var refLoadAttempted : Bool = false;
 	#end
 
 	#if !(editor || editor_hl)
@@ -152,6 +152,11 @@ class Reference extends Object3D {
 		resolveInternal();
 	}
 	#end
+
+	override function cleanChildren() {
+		super.cleanChildren();
+		refInstance?.clean();
+	}
 
 	override function copy(obj: Prefab) {
 		super.copy(obj);

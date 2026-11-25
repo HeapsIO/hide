@@ -265,12 +265,11 @@ class Prefab {
 
 	/**
 		Resets this prefab and its children to their state before make(), so that make() can be called again.
-		Fields not marked @:s, @:c or @:cache are reset to their default value. Objects created by make() are left untouched.
+		Fields not marked @:s, @:c, @:cache or @:manual are reset to their default value. Objects created by make() are left untouched.
 	**/
 	public final function clean() : Void {
 		resetInstanceVars();
-		for (c in children)
-			c.clean();
+		cleanChildren();
 
 		if (parent == null) {
 			shared.root2d = null;
@@ -279,6 +278,14 @@ class Prefab {
 			shared.current3d = null;
 			shared.findCache = null;
 		}
+	}
+
+	/**
+		Cleans the prefabs made by this one : its children, and the prefabs it holds outside of them.
+	**/
+	function cleanChildren() : Void {
+		for (c in children)
+			c.clean();
 	}
 
 	// End of make related functions

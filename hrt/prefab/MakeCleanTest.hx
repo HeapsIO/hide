@@ -51,7 +51,7 @@ private class StateDump extends Dump {
 	static var fieldListCache : Map<String, Array<String>> = [];
 
 	var visited = new haxe.ds.ObjectMap<Dynamic, String>();
-	var queue : Array<{ node : Dynamic, name : String, owner : String }> = [];
+	var queue : Array<{ node : Dynamic, name : String, owner : String, cache : Bool }> = [];
 	// cache fields are dumped last : the objects they share are named by their path in the regular fields
 	var deferredCaches : Array<{ value : Dynamic, path : String, reset : Bool, owner : String }> = [];
 	var owner : String;
@@ -71,7 +71,7 @@ private class StateDump extends Dump {
 			if (Std.isOfType(n.node, Unknown))
 				continue;
 			owner = n.owner;
-			dumpFields(n.node, n.name, false, false);
+			dumpFields(n.node, n.name, false, n.cache);
 		}
 	}
 
@@ -82,8 +82,8 @@ private class StateDump extends Dump {
 		return prefix + "/" + p.type + ":" + p.name + "#" + index;
 	}
 
-	/** Returns the name of the node `v`, queuing it for dump on its first discovery **/
-	function discover(v : Dynamic, path : String) : String {
+	/** Returns the name of the node `v`, queuing it for dump on its first discovery. Nodes discovered in a cache are cache values. **/
+	function discover(v : Dynamic, path : String, cache = false) : String {
 		var name = visited.get(v);
 		if (name != null)
 			return name;
@@ -91,7 +91,7 @@ private class StateDump extends Dump {
 		var isPrefab = Std.isOfType(v, Prefab);
 		name = isPrefab ? prefabName(v, path) : "shared{" + path + "}";
 		visited.set(v, name);
-		queue.push({ node : v, name : name, owner : isPrefab ? (v : Prefab).type : owner });
+		queue.push({ node : v, name : name, owner : isPrefab ? (v : Prefab).type : owner, cache : cache });
 		return name;
 	}
 
@@ -178,7 +178,7 @@ private class StateDump extends Dump {
 					if (reset)
 						addValue(Std.isOfType(v, Prefab) ? "prefab " + (v : Prefab).type + ":" + (v : Prefab).name : className, v);
 					else
-						addValue("node " + discover(v, path), v);
+						addValue("node " + discover(v, path, cache), v);
 				}
 				else if (Std.isOfType(v, h3d.scene.Object) || Std.isOfType(v, h2d.Object)) {
 					addValue(className, v, true);
