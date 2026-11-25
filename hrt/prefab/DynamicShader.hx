@@ -29,6 +29,9 @@ class DynamicShader extends Shader {
 		// copies of a copy (sub-emitters...) clone the shader of the loaded prefab
 		var from : DynamicShader = cast data;
 		template = from.template ?? from;
+
+		// shared : the definition is loaded once for the source and its copies
+		shaderDef = from.shaderDef;
 	}
 
 	override function makeShader() {

@@ -92,6 +92,8 @@ class EmitterMacros {
 			var a = meta(f, ":param");
 			if( a == null )
 				continue;
+			// loaded / saved / copied by the generated loadParams / saveParams / copyParams
+			f.meta.push({ name: ":manual", pos: p });
 			var dim = switch( a[0].expr ) {
 				case ECall({ expr: EConst(CIdent("PVec")) }, args): Std.parseInt(haxe.macro.ExprTools.toString(args[0]));
 				default: 1;
@@ -180,8 +182,8 @@ class EmitterMacros {
 			}
 		}).fields;
 		if( share ) {
-			methods.push({ name: "sharedValues", access: [], kind: FVar(valuesCT), pos: pos });
-			methods.push({ name: "valuesFrom", access: [], kind: FVar(selfType), pos: pos });
+			methods.push({ name: "sharedValues", access: [], kind: FVar(valuesCT), meta: [{ name: ":cache", pos: pos }], pos: pos });
+			methods.push({ name: "valuesFrom", access: [], kind: FVar(selfType), meta: [{ name: ":cache", pos: pos }], pos: pos });
 		}
 		return statics.concat(fields).concat(methods);
 	}

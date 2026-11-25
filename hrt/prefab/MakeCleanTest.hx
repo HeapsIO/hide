@@ -52,12 +52,21 @@ private class StateDump extends Dump {
 
 	var visited = new haxe.ds.ObjectMap<Dynamic, String>();
 	var queue : Array<{ node : Dynamic, name : String, owner : String }> = [];
+	// cache fields are dumped last : the objects they share are named by their path in the regular fields
+	var deferredCaches : Array<{ value : Dynamic, path : String, reset : Bool, owner : String }> = [];
 	var owner : String;
 
 	public function new(root : Prefab) {
 		super();
 		discover(root, "");
-		while (queue.length > 0) {
+		while (queue.length > 0 || deferredCaches.length > 0) {
+			if (queue.length == 0) {
+				var c = deferredCaches.shift();
+				owner = c.owner;
+				dumpValue(c.value, c.path, c.reset, true);
+				continue;
+			}
+
 			var n = queue.shift();
 			if (Std.isOfType(n.node, Unknown))
 				continue;
@@ -114,7 +123,11 @@ private class StateDump extends Dump {
 				continue;
 			if (isShared && (f == "editor" || f == "scene"))
 				continue;
-			dumpValue(Reflect.field(obj, f), path + "." + f, reset || resetFields.contains(f), cache || cacheFields.contains(f));
+			if (!cache && cacheFields.contains(f)) {
+				deferredCaches.push({ value : Reflect.field(obj, f), path : path + "." + f, reset : reset || resetFields.contains(f), owner : owner });
+				continue;
+			}
+			dumpValue(Reflect.field(obj, f), path + "." + f, reset || resetFields.contains(f), cache);
 		}
 	}
 

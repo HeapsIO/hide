@@ -49,7 +49,7 @@ class Curve extends hrt.prefab.Curve {
 	@:s public var blendMode : CurveBlendMode = None;
 	@:s public var param : String;
 	@:s public var refPath : String;
-	var refCurve : Curve = null;
+	@:cache var refCurve : Curve = null;
 
 	override function loadData(o:Dynamic) {
 		if (o.datas == null) {
@@ -166,7 +166,10 @@ class Curve extends hrt.prefab.Curve {
 	}
 
 	override function makeInstance() {
+		// the referenced curve can be edited between makes
+		#if (editor || editor_hl)
 		refCurve = null;
+		#end
 	}
 
 	function getRef() : Curve {
