@@ -713,6 +713,8 @@ class FXEditor extends hide.view.FileView {
 				var states = isUndo ? oldMarkers : newMarkers;
 				for (i => ev in events) {
 					ev.time = states[i].frame / t.framerate;
+					if (oldMarkers[i].duration != newMarkers[i].duration)
+						ev.setDuration(states[i].duration / t.framerate);
 					var prefab = ev.getEventPrefab();
 					if (prefab.name != states[i].name) {
 						prefab.name = states[i].name;
@@ -820,15 +822,11 @@ class FXEditor extends hide.view.FileView {
 				continue;
 			var ev : hrt.prefab.fx.Event.IEvent = cast p;
 			var frame = Math.round(ev.time * t.framerate);
-			var subFX = Std.downcast(p, hrt.prefab.fx.SubFX);
-			if (subFX != null) {
-				var ref = Std.downcast(subFX.resolve(), hrt.prefab.fx.FX);
-				var duration = ref != null ? Math.round(ref.duration / subFX.speed * t.framerate) : 0;
+			var duration = Math.round(ev.getDuration() * t.framerate);
+			if (p is hrt.prefab.fx.SubFX)
 				t.addMarker(ev.name, frame, duration, 0x9B7CF2, Std.string(HideRes.icon.play), "SubFX");
-			}
-			else {
-				t.addMarker(ev.name, frame, Math.round(ev.getDuration() * t.framerate), 0xE2AD52, Std.string(HideRes.icon.circle), "Event");
-			}
+			else
+				t.addMarker(ev.name, frame, duration, 0xE2AD52, Std.string(HideRes.icon.circle), "Event");
 		}
 		for (s in sections)
 			addSectionTracks(t, s, 0, foldList, hiddenList);

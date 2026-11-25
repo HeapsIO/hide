@@ -7822,6 +7822,26 @@ fancy-gallery-item {
 				hide-icon {
 					--icon-size: 10px;
 				}
+
+				.grip {
+					position: absolute;
+					top: 0;
+					bottom: 0;
+					width: 6px;
+					cursor: col-resize;
+
+					&.start {
+						left: 0;
+					}
+
+					&.end {
+						right: 0;
+					}
+				}
+
+				&:hover .grip {
+					background: color-mix(in srgb, var(--marker-color) 70%, transparent);
+				}
 			}
 
 			.marker-instant {

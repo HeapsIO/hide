@@ -21,7 +21,7 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 			var fxanim : hrt.prefab.fx.FX.FXAnimation = refInstance.findFirstLocal3d().find(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
 			if(fxanim != null) {
 				fxanim.startDelay = time;
-			   fxanim.loop = loop;
+				fxanim.loop = loop;
 				fxanim.playSpeed = speed;
 				instance = fxanim;
 			}

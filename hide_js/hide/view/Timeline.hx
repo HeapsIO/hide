@@ -812,8 +812,10 @@ class Timeline extends hide.ui.View<{}> {
 				if (m.duration > 0) {
 					hide.html.Html.build(el,
 						<div class="marker-bar">
+							<div class="grip start"></div>
 							<hide-icon icon={m.icon}/>
 							<span class="label">${m.name}</span>
+							<div class="grip end"></div>
 						</div>
 					);
 				}
@@ -831,6 +833,9 @@ class Timeline extends hide.ui.View<{}> {
 						return;
 					e.stopPropagation();
 					el.setPointerCapture(e.pointerId);
+					var target : Element = cast e.target;
+					var isResizingStart = target.classList.contains("start");
+					var isResizingEnd = target.classList.contains("end");
 
 					var isMultiSelect = e.ctrlKey || e.shiftKey;
 					var wasSelected = selectedMarkers.contains(m);
@@ -844,6 +849,8 @@ class Timeline extends hide.ui.View<{}> {
 						setSelection([m], []);
 
 					var moved = selectedMarkers.contains(m) ? selectedMarkers.copy() : [];
+					if (isResizingStart || isResizingEnd)
+						moved = [m];
 					var oldMarkers = [for (s in moved) { name: s.name, frame: s.frame, duration: s.duration }];
 					var lastFrame = timeToFrame(duration);
 					var minDelta = -MAX_FRAME;
@@ -855,16 +862,29 @@ class Timeline extends hide.ui.View<{}> {
 
 					var grabFrame = timeToFrame(px(sxFromEvent(e)));
 					var startFrame = m.frame;
+					var startDuration = m.duration;
+					var endFrame = startFrame + startDuration;
 					el.onpointermove = (e : PointerEvent) -> {
-						var delta = hxd.Math.iclamp(timeToFrame(px(sxFromEvent(e))) - grabFrame, minDelta, maxDelta);
-						for (i => s in moved)
-							s.frame = oldMarkers[i].frame + delta;
+						var delta = timeToFrame(px(sxFromEvent(e))) - grabFrame;
+						if (isResizingStart) {
+							m.frame = hxd.Math.iclamp(startFrame + delta, 0, endFrame - 1);
+							m.duration = endFrame - m.frame;
+						}
+						else if (isResizingEnd) {
+							var maxDuration = lastFrame > 0 ? lastFrame - startFrame : MAX_FRAME;
+							m.duration = hxd.Math.iclamp(startDuration + delta, 1, maxDuration);
+						}
+						else {
+							delta = hxd.Math.iclamp(delta, minDelta, maxDelta);
+							for (i => s in moved)
+								s.frame = oldMarkers[i].frame + delta;
+						}
 						refresh();
 					};
 					el.onlostpointercapture = (_) -> {
 						el.onpointermove = null;
 						el.onlostpointercapture = null;
-						if (m.frame != startFrame)
+						if (m.frame != startFrame || m.duration != startDuration)
 							onMarkersChange(oldMarkers, [for (s in moved) ({ name: s.name, frame: s.frame, duration: s.duration } : Marker)]);
 						else if (!isMultiSelect && wasSelected)
 							setSelection([m], []);
