@@ -489,7 +489,7 @@ class EmitterObject extends h3d.scene.Object {
 	var partSubEmitters : Array<Array<EmitterObject>>;  // Follow sub-emitters
 	
 	public var batch : h3d.scene.MeshBatch;
-	public var customAnims : Array<BaseFX.CustomAnimation>;
+	public var paramAnims : Array<BaseFX.ParamAnimation>;
 
 	public var isSubEmitter : Bool = false;
 	public var relativeScenePosition : Bool = false;
@@ -698,12 +698,10 @@ class EmitterObject extends h3d.scene.Object {
 				@:privateAccess mat.makeInstance();
 
 			// Setup shaders
-			customAnims = [];
 			var shaders = findRec(prefab, hrt.prefab.Shader);
-			for( shader in shaders ) {
+			for( shader in shaders )
 				@:privateAccess shader.makeShaderInstance();
-				hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch, true);
-			}
+			paramAnims = hrt.prefab.fx.BaseFX.AnimData.ofShaders(shaders, true).bindParams(batch);
 
 			// Animated textures animations
 			var frameCount = prefab.frameCount == 0 ? prefab.frameDivisionX * prefab.frameDivisionY : prefab.frameCount;
@@ -1406,7 +1404,7 @@ class EmitterObject extends h3d.scene.Object {
 				return;
 			inline worldMat.load(p.absPos.toMatrix());
 			batch.worldPosition = worldMat;
-			for( anim in customAnims ) {
+			for( anim in paramAnims ) {
 				var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
 				anim.setTime(t);
 			}

@@ -1,6 +1,6 @@
 package hrt.prefab.fx;
 import hrt.prefab.Prefab as PrefabElement;
-import hrt.prefab.fx.BaseFX.ObjectAnimation;
+import hrt.prefab.fx.BaseFX.ObjectAnimation2D;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
 import hrt.prefab.fx.BaseFX.BaseFXTools;
 import hrt.prefab.fx.Event;
@@ -18,8 +18,8 @@ class FX2DAnimation extends h2d.Object {
 	public var duration : Float;
 
 	public var loop : Bool;
-	public var objects: Array<ObjectAnimation> = [];
-	public var customAnims : Array<BaseFX.CustomAnimation> = [];
+	public var objects: Array<ObjectAnimation2D> = [];
+	public var paramAnims : Array<BaseFX.ParamAnimation> = [];
 	public var emitters : Array<hrt.prefab.fx.Emitter2D.Emitter2DObject>;
 	public var events: Array<hrt.prefab.fx.Event.EventInstance>;
 
@@ -153,8 +153,8 @@ class FX2DAnimation extends h2d.Object {
 			}
 		}
 
-		if(customAnims != null)
-			for(anim in customAnims)
+		if(paramAnims != null)
+			for(anim in paramAnims)
 				anim.setTime(time);
 
 		if (emitters != null) {
@@ -221,7 +221,7 @@ class FX2D extends Object2D implements BaseFX {
 	}
 
 
-	function getObjAnimations(elt: PrefabElement, anims: Array<ObjectAnimation>) {
+	function getObjAnimations(elt: PrefabElement, anims: Array<ObjectAnimation2D>) {
 		for(c in elt.children) {
 			getObjAnimations(c, anims);
 		}
@@ -234,7 +234,7 @@ class FX2D extends Object2D implements BaseFX {
 			anims.push(anim);
 	}
 
-	static function makeObjectAnimation(obj2d: hrt.prefab.Object2D, local2d: h2d.Object) : ObjectAnimation {
+	static function makeObjectAnimation(obj2d: hrt.prefab.Object2D, local2d: h2d.Object) : ObjectAnimation2D {
 		var elt : PrefabElement = obj2d;
 		// TODO: Support references?
 		var anyFound = false;
@@ -255,7 +255,7 @@ class FX2D extends Object2D implements BaseFX {
 			return BaseFXTools.getColorValue(curves);
 		}
 
-		var anim : ObjectAnimation = {
+		var anim : ObjectAnimation2D = {
 			elt2d: obj2d,
 			obj2d: local2d,
 			position: BaseFXTools.vectorAnimation(elt, "position"),
@@ -298,7 +298,7 @@ class FX2D extends Object2D implements BaseFX {
 		var fxanim : FX2DAnimation = cast local2d;
 		fxanim.init(this);
 		getObjAnimations(this, fxanim.objects);
-		BaseFXTools.getCustomAnimations(this, fxanim.customAnims);
+		fxanim.paramAnims = new BaseFX.AnimData(this).bindParams();
 	}
 
 	override function makeObject(parent2d: h2d.Object) : h2d.Object {

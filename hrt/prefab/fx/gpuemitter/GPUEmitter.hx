@@ -115,12 +115,8 @@ class GPUEmitter extends Object3D {
 				mesh.visible = false;
 				mesh.ignoreCollide = true;
 
-				emitter.customAnimations = [];
-				var shaders = t.prefab.findAll(hrt.prefab.Shader);
-				for (shader in shaders) {
-					if (!shader.enabled) continue;
-					hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, emitter.customAnimations, emitter.find(o -> Std.downcast(o, h3d.scene.MeshBatch)));
-				}
+				var shaders = [for (shader in t.prefab.findAll(hrt.prefab.Shader)) if (shader.enabled) shader];
+				emitter.paramAnims = hrt.prefab.fx.BaseFX.AnimData.ofShaders(shaders).bindParams(emitter.find(o -> Std.downcast(o, h3d.scene.MeshBatch)));
 				emitter.init();
 				emitter.bakeAnimations();
 			}

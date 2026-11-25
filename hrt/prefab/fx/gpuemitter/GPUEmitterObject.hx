@@ -60,7 +60,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	public var data : Data;
 	public var fxAnim : hrt.prefab.fx.FX.FXAnimation;
 
-	var customAnimations : Array<hrt.prefab.fx.BaseFX.CustomAnimation> = [];
+	var paramAnims : Array<hrt.prefab.fx.BaseFX.ParamAnimation> = [];
 	var shaderParams : Array<{ param : hrt.prefab.fx.BaseFX.ShaderParam, shader : UpdateParamShader }> = [];
 	var paramTexture : h3d.mat.Texture;
 
@@ -127,7 +127,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 		var prec = 255;
 		var data : Array<{param : hrt.prefab.fx.BaseFX.ShaderParam, values : Array<Dynamic>}> = [];
-		for ( anim in customAnimations ) {
+		for ( anim in paramAnims ) {
 			var shaderAnimation = Std.downcast(anim, hrt.prefab.fx.BaseFX.ShaderAnimation);
 			if ( shaderAnimation == null )
 				continue;

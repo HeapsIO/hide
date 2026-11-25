@@ -45,7 +45,7 @@ class SwarmObject extends h3d.scene.Object {
 
 	public var swarmElementTemplate: Object3D = null;
 
-	public var customAnims : Array<hrt.prefab.fx.BaseFX.CustomAnimation>;
+	public var paramAnims : Array<hrt.prefab.fx.BaseFX.ParamAnimation>;
 
 	public var shader : PerObjectRandom;
 
@@ -143,8 +143,8 @@ class SwarmObject extends h3d.scene.Object {
 			}
 
 			// Setup shaders
-			customAnims = [];
 			var shaders = prefab.findAll(hrt.prefab.Shader);
+			var animated = [];
 			for( shader in shaders ) {
 				// Remove shaders that are not directly parented to this Swarm
 				var p = shader.parent;
@@ -154,9 +154,10 @@ class SwarmObject extends h3d.scene.Object {
 				if (this.prefab == p) {
 					if( !shader.enabled ) continue;
 					@:privateAccess shader.makeShaderInstance();
-					hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch);
+					animated.push(shader);
 				}
 			}
+			paramAnims = hrt.prefab.fx.BaseFX.AnimData.ofShaders(animated).bindParams(batch);
 
 			// Pre-heat the swarm system
 			stepTime = 2.0 * stepSize + hxd.Math.EPSILON;

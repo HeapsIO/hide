@@ -20,49 +20,50 @@ enum AdditionalProperies {
 typedef ShaderParams = Array<ShaderParam>;
 
 /*
-	Basic class used to animate custom properties with curves
-	in FX.
+	Basic class used to animate the params of an instance (a shader, a renderer FX) with curves
+	in FX: one per make, bound to what the make made.
 */
-class CustomAnimation extends Evaluator {
+class ParamAnimation {
 	/** This animation will need to keep being updated if setTime was called once **/
 	public var finishSync : Bool = false;
 	public var startedPlaying : Bool = false;
+	/** Evaluates the values: the one of the FX (its parameters), or one of its own **/
+	public var evaluator : Evaluator;
+
+	public function new(?evaluator: Evaluator) {
+		this.evaluator = evaluator ?? new Evaluator();
+	}
+
+	inline function getFloat(v: Value, time: Float) return evaluator.getFloat(v, time);
+	inline function getVector(v: Value, time: Float, vec: h3d.Vector4) return evaluator.getVector(v, time, vec);
 
 	public function setTime(time: Float) {
 		throw "This method should overrided!";
 	}
 }
 
-class RendererFXAnimation extends CustomAnimation {
-	public var params : Array<{field : hrt.prefab.Prefab.PrefabField, value : Value}>;
+class RendererFXAnimation extends ParamAnimation {
+	public var params : Array<RendererFXParam>;
 	public var rfx : hrt.prefab.rfx.RendererFX;
-
-	override public function setTime(time: Float) {
-		for(param in params) {
-			Reflect.setField(rfx, param.field.name, getFloat(param.value, time));
-		}
-	}
-}
-
-class ScreenShaderGraphFXAnimation extends CustomAnimation {
-	public var params : Array<{name : String, type: hxsl.Ast.Type, value : Value}>;
-	public var rfx : hrt.prefab.rfx.ScreenShaderGraph;
+	/** The params are in the props of `rfx` (a ScreenShaderGraph), else its fields **/
+	public var inProps : Bool;
 
 	static var vector4 = new h3d.Vector4();
 	override public function setTime(time: Float) {
+		var target : Dynamic = inProps ? rfx.props : rfx;
 		for(param in params) {
 			switch(param.type) {
 				case TFloat:
-					Reflect.setField(rfx.props, param.name, getFloat(param.value, time));
+					Reflect.setField(target, param.name, getFloat(param.value, time));
 				case TVec(4, VFloat):
 					getVector(param.value, time, vector4);
-					Reflect.setProperty(rfx.props, param.name, vector4.toColor());
+					Reflect.setProperty(target, param.name, vector4.toColor());
 				case TVec(n, VFloat):
 					getVector(param.value, time, vector4);
-					var arr = Reflect.getProperty(rfx.props, param.name);
+					var arr = Reflect.getProperty(target, param.name);
 					if (arr == null) {
 						arr = [];
-						Reflect.setField(rfx.props, param.name, arr);
+						Reflect.setField(target, param.name, arr);
 					}
 					if (!(arr is Array))
 						throw "unsupported";
@@ -81,7 +82,7 @@ class ScreenShaderGraphFXAnimation extends CustomAnimation {
 	}
 }
 
-class ShaderAnimation extends CustomAnimation {
+class ShaderAnimation extends ParamAnimation {
 	public var params : ShaderParams;
 	public var shader : hxsl.Shader;
 	var vector4 = new h3d.Vector4();
@@ -155,11 +156,9 @@ class ShaderDynAnimation extends ShaderAnimation {
 // Supports overriding xyz components separately
 typedef VectorAnimation = { ?x: Value, ?y: Value, ?z: Value };
 
-typedef ObjectAnimation = {
-	?elt: hrt.prefab.Object3D,
-	?obj: h3d.scene.Object,
-	?elt2d: hrt.prefab.Object2D,
-	?obj2d: h2d.Object,
+/** The animation of an Object3D prefab, with the values of its curves **/
+typedef ObjectAnimData = {
+	elt: hrt.prefab.Object3D,
 	?position: VectorAnimation,
 	?scale: VectorAnimation,
 	?rotation: VectorAnimation,
@@ -167,6 +166,299 @@ typedef ObjectAnimation = {
 	?visibility: Value,
 	?additionalProperies : AdditionalProperies
 };
+
+/** The animation of an Object2D, with the values of its curves **/
+typedef ObjectAnimation2D = {
+	elt2d: hrt.prefab.Object2D,
+	obj2d: h2d.Object,
+	?position: VectorAnimation,
+	?scale: VectorAnimation,
+	?rotation: VectorAnimation,
+	?color: Value,
+	?visibility: Value,
+};
+
+/** The animation of a shader prefab: its params, with the values of their curves **/
+typedef ShaderAnimData = {
+	prefab: hrt.prefab.Shader,
+	params: ShaderParams,
+	/** of the params, forced per instance on a batch: only for the shaders bound with one (`ofShaders`) **/
+	names: Array<String>,
+};
+
+typedef RendererFXParam = { name : String, type : hxsl.Ast.Type, value : Value };
+
+/** The animation of a renderer FX prefab: its params, with the values of their curves **/
+typedef RendererFXAnimData = {
+	prefab: hrt.prefab.rfx.RendererFX,
+	params: Array<RendererFXParam>,
+	/** in its props (a ScreenShaderGraph), else its fields **/
+	inProps: Bool,
+};
+
+/**
+	What prefabs animate, with the values of their curves: built once, read only. Each make binds it to what it made
+	(`bindObjects`, `bindParams`).
+**/
+class AnimData {
+	public var objects : Array<ObjectAnimData> = [];
+	public var shaders : Array<ShaderAnimData> = [];
+	public var effects : Array<RendererFXAnimData> = [];
+
+	/** What the made prefabs under `root` animate (not the content of the emitters, which animate their particles) **/
+	public function new(?root: PrefabElement) {
+		if(root == null)
+			return;
+		function rec(elt: PrefabElement) {
+			if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
+				for(c in BaseFXTools.getAnimatedChildren(elt)) {
+					// what is not made has no animation
+					if(@:privateAccess c.shouldBeInstanciated())
+						rec(c);
+				}
+			}
+
+			var obj3d = elt.to(hrt.prefab.Object3D);
+			if(obj3d != null) {
+				// built during a make: the type of a light gives what it animates
+				var anim = objectAnim(obj3d, obj3d.local3d);
+				if(anim != null)
+					objects.push(anim);
+			}
+
+			var shader = elt.to(hrt.prefab.Shader);
+			if(shader != null) {
+				var s = shaderData(shader);
+				if(s.params != null)
+					shaders.push(s);
+			}
+
+			var e = effectData(elt);
+			if(e != null)
+				effects.push(e);
+		}
+		rec(root);
+	}
+
+	/** The animations of `shaders` (of particles if `particle`): kept without curves too, a batch gets the shader **/
+	public static function ofShaders(shaders: Array<hrt.prefab.Shader>, particle = false) : AnimData {
+		var d = new AnimData();
+		for(s in shaders) {
+			var s = shaderData(s, particle);
+			s.names = s.params == null ? emptyParams : [for(p in s.params) p.def.name];
+			d.shaders.push(s);
+		}
+		return d;
+	}
+
+	/** The objects of the current make, in the order of `objects` **/
+	public function bindObjects() : Array<h3d.scene.Object> {
+		return [for(a in objects) a.elt.local3d];
+	}
+
+	/**
+		The animations of the shader instances and renderer FX of the current make, evaluated by `evaluator` (else one each),
+		the shaders applied to `batch` if any
+	**/
+	public function bindParams(?evaluator: Evaluator, ?batch: h3d.scene.MeshBatch) : Array<ParamAnimation> {
+		var anims = [];
+		for(s in shaders)
+			bindShader(s, anims, evaluator, batch);
+		for(e in effects)
+			bindEffect(e, anims, evaluator);
+		return anims;
+	}
+
+	public static var useAutoPerInstance = true;
+
+
+	static function objectAnim(obj3d: hrt.prefab.Object3D, local3d: h3d.scene.Object) : ObjectAnimData {
+		var elt : PrefabElement = obj3d;
+		// most objects have no curve: none of the lookups below would find one
+		if(!Lambda.exists(elt.children, c -> c.enabled && Std.isOfType(c, Curve)))
+			return null;
+		var anyFound = false;
+
+		function makeVal(name, def) : Value {
+			var c = Curve.getCurve(elt, name);
+			if(c != null)
+				anyFound = true;
+
+			if (c == null)
+				return def;
+			return c.makeVal();
+		}
+
+		function makeColor(name: String) {
+			var curves = Curve.getCurves(elt, name);
+			if(curves == null || curves.length == 0)
+				return null;
+
+			anyFound = true;
+			return BaseFXTools.getColorValue(curves);
+		}
+
+		var ap : AdditionalProperies = null;
+
+		if( Std.isOfType(local3d, h3d.scene.pbr.PointLight)) {
+			ap = PointLight(makeColor("color"), makeVal("power", null), makeVal("size", null), makeVal("range", null) );
+		}
+		else if( Std.isOfType(local3d, h3d.scene.pbr.SpotLight)) {
+			ap = SpotLight(makeColor("color"), makeVal("power", null), makeVal("range", null), makeVal("angle", null), makeVal("fallOff", null) );
+		}
+		else if( Std.isOfType(local3d, h3d.scene.pbr.DirLight)) {
+			ap = DirLight(makeColor("color"), makeVal("power", null));
+		}
+
+		var anim : ObjectAnimData = {
+			elt: obj3d,
+			position: BaseFXTools.vectorAnimation(elt, "position"),
+			scale: BaseFXTools.vectorAnimation(elt, "scale"),
+			rotation: BaseFXTools.vectorAnimation(elt, "rotation"),
+			color: makeColor("color"),
+			visibility: makeVal("visibility", null),
+			additionalProperies: ap,
+		};
+		return anyFound || anim.position != null || anim.scale != null || anim.rotation != null ? anim : null;
+	}
+
+	static function shaderParams(basePrefab: hrt.prefab.Prefab, shaderDef: hxsl.SharedShader, particle = false) {
+		if(shaderDef == null)
+			return null;
+
+		var ret : ShaderParams = null;
+
+		var paramCount = 0;
+		for(v in shaderDef.data.vars) {
+			if(v.kind != Param)
+				continue;
+
+			paramCount++;
+
+			var size = particle ? EmitterParam.getParamSize(v) : 0;
+			var val = size > 0 ? particleValue(cast basePrefab, v.name, size) : shaderValue(basePrefab, v.name, v.type);
+			if(val == null)
+				continue;
+			if(ret == null) ret = [];
+			ret.push({
+				idx: paramCount - 1,
+				def: v,
+				value: val,
+			});
+		}
+
+		return ret;
+	}
+
+	static function shaderValue(basePrefab: hrt.prefab.Prefab, name: String, type: hxsl.Ast.Type) : Value {
+		var curves = Curve.getCurves(basePrefab, name);
+		if(curves == null || curves.length == 0)
+			return null;
+		switch(type) {
+			case TVec(_, VFloat):
+				return name.toLowerCase().indexOf("color") >= 0 ? BaseFXTools.getColorValue(curves) : BaseFXTools.getVectorValue(curves);
+			default:
+				return Curve.getCurve(basePrefab, name)?.makeVal();
+		}
+	}
+
+	static function particleValue(shader: hrt.prefab.Shader, name: String, size: Int) : Value {
+		if(shader.particleParams == null)
+			return null;
+		var keys = [for(i in 0...size) EmitterParam.curveName(name, size, i)];
+		inline function isCurve(i: Int) return switch(shader.particleParams.get(keys[i])) { case Curve: true; default: false; };
+		if(![for(i in 0...size) isCurve(i)].contains(true))
+			return null;
+		var prop : Dynamic = Reflect.field(shader.props, name);
+		function comp(i: Int) {
+			var base = EmitterParam.baseComponent(prop, size, i);
+			return isCurve(i) ? EmitterParam.ParamBuilder.curve(shader, keys[i], base) : Evaluator.vVal(base);
+		}
+		// 4 components: a color
+		return size == 1 ? comp(0) : size > 3 ? VColor(comp(0), comp(1), comp(2), comp(3)) : VVector(comp(0), comp(1), size > 2 ? comp(2) : VZero);
+	}
+
+	static function effectParams(rfxElt: hrt.prefab.rfx.RendererFX) {
+		var classRfx = Type.getClass(cast rfxElt);
+		var originalProps : Array<Dynamic> = @:privateAccess Prefab.getSerializablePropsForClass(classRfx);
+		var serializedProps : Array<Dynamic> = originalProps.copy();
+		var ret : Array<RendererFXParam> = null;
+		for (f in serializedProps) {
+			if (!(Reflect.field(rfxElt, f.name) is Float))
+				continue;
+
+			var curve = Curve.getCurve(rfxElt, f.name);
+			if(curve == null)
+				continue;
+			if(ret == null) ret = [];
+			ret.push({
+				name : f.name,
+				type : TFloat,
+				value : curve.makeVal()
+			});
+		}
+
+		return ret;
+	}
+
+	static function shaderData(shader: hrt.prefab.Shader, particle = false) : ShaderAnimData {
+		return { prefab: shader, params: shaderParams(shader, shader.getShaderDefinition(), particle), names: null };
+	}
+
+	static function effectData(elt: PrefabElement) : RendererFXAnimData {
+		var rendererFX = elt.to(hrt.prefab.rfx.RendererFX);
+		if (rendererFX == null || !rendererFX.enabled)
+			return null;
+		var screenShaderGraph = elt.to(hrt.prefab.rfx.ScreenShaderGraph);
+		if (screenShaderGraph != null) {
+			var params = shaderParams(screenShaderGraph, screenShaderGraph.getShaderDefinition());
+			if (params == null)
+				return null;
+			return { prefab: rendererFX, inProps: true, params: [for (param in params) { name: param.def.name, type: param.def.type, value: param.value }] };
+		}
+		var params = effectParams(rendererFX);
+		return params == null ? null : { prefab: rendererFX, inProps: false, params: params };
+	}
+
+	static var emptyParams : Array<String> = [];
+	static function bindShader(data: ShaderAnimData, anims: Array<ParamAnimation>, evaluator: Evaluator, batch: h3d.scene.MeshBatch) {
+		var shader = data.prefab.shader;
+		if (shader == null || Std.isOfType(shader, hrt.prefab.fx.gpuemitter.ComputeUtils))
+			return;
+		var params = data.params;
+
+		if(useAutoPerInstance && batch != null) @:privateAccess {
+			var perInstance = batch.instancedParams;
+			if ( perInstance == null ) {
+				perInstance = new hxsl.Cache.BatchInstanceParams([]);
+				batch.instancedParams = perInstance;
+			}
+			perInstance.forcedPerInstance.push({
+				shader: shader.shader.data.name,
+				params: data.names
+			});
+		}
+
+		if(params != null) {
+			var anim = Std.isOfType(shader,hxsl.DynamicShader) ? new ShaderDynAnimation(evaluator) : new ShaderAnimation(evaluator);
+			anim.shader = shader;
+			anim.params = params;
+			anims.push(anim);
+		}
+
+		if(batch != null)
+			@:privateAccess data.prefab.applyShader(batch, batch.material, shader);
+	}
+
+	static function bindEffect(data: RendererFXAnimData, anims: Array<ParamAnimation>, evaluator: Evaluator) {
+		var anim = new RendererFXAnimation(evaluator);
+		anim.params = data.params;
+		anim.inProps = data.inProps;
+		anim.rfx = @:privateAccess data.prefab.instance;
+		anim.finishSync = true;
+		anims.push(anim);
+	}
+}
 
 interface BaseFX {
 
@@ -182,36 +474,6 @@ interface BaseFX {
 }
 
 class BaseFXTools {
-	public static var useAutoPerInstance = true;
-
-	public static function makeShaderParams(basePrefab: hrt.prefab.Prefab, shaderDef: hxsl.SharedShader, particle = false) {
-		if(shaderDef == null)
-			return null;
-
-		var ret : ShaderParams = null;
-
-		var paramCount = 0;
-		for(v in shaderDef.data.vars) {
-			if(v.kind != Param)
-				continue;
-
-			paramCount++;
-
-			var size = particle ? EmitterParam.getParamSize(v) : 0;
-			var val = size > 0 ? makeParticleShaderValue(cast basePrefab, v.name, size) : makeShaderParamValue(basePrefab, v.name, v.type);
-			if(val == null)
-				continue;
-			if(ret == null) ret = [];
-			ret.push({
-				idx: paramCount - 1,
-				def: v,
-				value: val,
-			});
-		}
-
-		return ret;
-	}
-
 	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0) : Value {
 		inline function find(s) {
 			return findSuffix(curves, s);
@@ -268,56 +530,6 @@ class BaseFXTools {
 		return Lambda.find(curves, c -> StringTools.endsWith(c.name.toLowerCase(), suffix));
 	}
 
-	public static function makeShaderParamValue(basePrefab: hrt.prefab.Prefab, name: String, type: hxsl.Ast.Type) : Value {
-		var curves = Curve.getCurves(basePrefab, name);
-		if(curves == null || curves.length == 0)
-			return null;
-		switch(type) {
-			case TVec(_, VFloat):
-				return name.toLowerCase().indexOf("color") >= 0 ? getColorValue(curves) : getVectorValue(curves);
-			default:
-				return Curve.getCurve(basePrefab, name)?.makeVal();
-		}
-	}
-
-	public static function makeParticleShaderValue(shader: hrt.prefab.Shader, name: String, size: Int) : Value {
-		if(shader.particleParams == null)
-			return null;
-		var keys = [for(i in 0...size) EmitterParam.curveName(name, size, i)];
-		inline function isCurve(i: Int) return switch(shader.particleParams.get(keys[i])) { case Curve: true; default: false; };
-		if(![for(i in 0...size) isCurve(i)].contains(true))
-			return null;
-		var prop : Dynamic = Reflect.field(shader.props, name);
-		function comp(i: Int) {
-			var base = EmitterParam.baseComponent(prop, size, i);
-			return isCurve(i) ? EmitterParam.ParamBuilder.curve(shader, keys[i], base) : Evaluator.vVal(base);
-		}
-		// 4 components: a color
-		return size == 1 ? comp(0) : size > 3 ? VColor(comp(0), comp(1), comp(2), comp(3)) : VVector(comp(0), comp(1), size > 2 ? comp(2) : VZero);
-	}
-
-	public static function makeRendererFXParams(rfxElt: hrt.prefab.rfx.RendererFX) {
-		var classRfx = Type.getClass(cast rfxElt);
-		var originalProps : Array<Dynamic> = @:privateAccess Prefab.getSerializablePropsForClass(classRfx);
-		var serializedProps : Array<Dynamic> = originalProps.copy();
-		var ret : Array<{field : hrt.prefab.Prefab.PrefabField, value : Value}> = null;
-		for (f in serializedProps) {
-			if (!(Reflect.field(rfxElt, f.name) is Float))
-				continue;
-
-			var curve = Curve.getCurve(rfxElt, f.name);
-			if(curve == null)
-				continue;
-			if(ret == null) ret = [];
-			ret.push({
-				field : f,
-				value : curve.makeVal()
-			});
-		}
-
-		return ret;
-	}
-
 	public static function vectorAnimation(elt: PrefabElement, name: String) : VectorAnimation {
 		var curves = Curve.getCurves(elt, name);
 		if(curves == null || curves.length == 0)
@@ -341,73 +553,6 @@ class BaseFXTools {
 		return elt.children.concat([ref.refInstance]);
 	}
 
-	static var emptyParams : Array<String> = [];
-	public static function getCustomAnimations(elt: PrefabElement, anims: Array<CustomAnimation>, ?batch: h3d.scene.MeshBatch, particle = false) {
-		// Init all animations recursively except Emitter ones (called in Emitter)
-		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
-			for(c in getAnimatedChildren(elt)) {
-				getCustomAnimations(c, anims, batch, particle);
-			}
-		}
-
-		var shader = elt.to(hrt.prefab.Shader);
-		if (shader != null && shader.shader != null && !Std.isOfType(shader.shader, hrt.prefab.fx.gpuemitter.ComputeUtils) ) {
-			var params = makeShaderParams(shader, shader.getShaderDefinition(), particle);
-			var shader = shader.shader;
-
-			if(useAutoPerInstance && batch != null) @:privateAccess {
-				var perInstance = batch.instancedParams;
-				if ( perInstance == null ) {
-					perInstance = new hxsl.Cache.BatchInstanceParams([]);
-					batch.instancedParams = perInstance;
-				}
-				perInstance.forcedPerInstance.push({
-					shader: shader.shader.data.name,
-					params: params == null ? emptyParams : params.map(p -> p.def.name)
-				});
-			}
-
-			if(params != null) {
-				var anim = Std.isOfType(shader,hxsl.DynamicShader) ? new ShaderDynAnimation() : new ShaderAnimation();
-				anim.shader = shader;
-				anim.params = params;
-				anims.push(anim);
-			}
-
-			if(batch != null) {
-				var shaderPrefab = Std.downcast(elt, hrt.prefab.Shader);
-				@:privateAccess shaderPrefab.applyShader(batch, batch.material, shader);
-			}
-		}
-
-		var rendererFX = elt.to(hrt.prefab.rfx.RendererFX);
-		if (rendererFX != null && rendererFX.enabled) {
-			var screenShaderGraph = elt.to(hrt.prefab.rfx.ScreenShaderGraph);
-			if (screenShaderGraph != null) {
-				var params = makeShaderParams(screenShaderGraph, screenShaderGraph.getShaderDefinition());
-				if (params != null) {
-					var anim = new ScreenShaderGraphFXAnimation();
-					anim.params = [for (param in params)
-						{ name: param.def.name, type:param.def.type, value: param.value}
-					];
-					anim.rfx = cast @:privateAccess screenShaderGraph.instance;
-					anims.push(anim);
-					anim.finishSync = true;
-				}
-			}
-			else {
-				var params = makeRendererFXParams(rendererFX);
-				if (params != null) {
-					var anim = new RendererFXAnimation();
-					anim.params = params;
-					anim.rfx = @:privateAccess rendererFX.instance;
-					anims.push(anim);
-					anim.finishSync = true;
-				}
-			}
-		}
-	}
-
 	public static function getFXRoot(elt : PrefabElement ) : PrefabElement {
 		if( elt.name == "FXRoot" )
 			return elt;
@@ -420,7 +565,4 @@ class BaseFXTools {
 		return null;
 	}
 
-	#if editor
-	public function refreshObjectAnims() { }
-	#end
 }

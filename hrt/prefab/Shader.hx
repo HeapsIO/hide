@@ -78,7 +78,7 @@ class Shader extends Prefab {
 			return;
 		var rootFx = Std.downcast(getRoot(), hrt.prefab.fx.FX);
 		var fxAnim = Std.downcast(rootFx?.local3d, hrt.prefab.fx.FX.FXAnimation);
-		fxAnim?.updateCustomAnims(rootFx);
+		fxAnim?.rebuildAnims(rootFx);
 		#end
 	}
 
@@ -444,7 +444,7 @@ class Shader extends Prefab {
 			// Notify change to FX in case param is used by curves
 			var fx = findParent(hrt.prefab.fx.FX);
 			if(fx != null) {
-				@:privateAccess Std.downcast(fx.local3d, hrt.prefab.fx.FX.FXAnimation)?.updateCustomAnims(fx);
+				@:privateAccess Std.downcast(fx.local3d, hrt.prefab.fx.FX.FXAnimation)?.rebuildAnims(fx);
 				//shared.editor.queueRebuild(fx);
 			}
 		});
