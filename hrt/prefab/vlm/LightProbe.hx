@@ -91,9 +91,147 @@ class BoundsClipping extends hxsl.Shader {
 
 }
 
+typedef SharedProbeParams = {
+	var texturePath : String;
+	var diffSize : Int;
+	var specSize : Int;
+	var sampleBits : Int;
+	var hdrMax : Float;
+}
+
+@:access(h3d.scene.pbr.Environment)
+class SharedProbeEnv {
+
+	public var diffuse(default, null) : h3d.mat.Texture;
+	public var specular(default, null) : h3d.mat.Texture;
+	public var params(default, null) : SharedProbeParams;
+
+	var cache : Map<String, SharedProbeEnv>;
+	var key : String;
+	var refs = 0;
+	var owned = false;
+	var pending : Array<Void -> Void>;
+
+	function new( cache, key, params ) {
+		this.cache = cache;
+		this.key = key;
+		this.params = params;
+	}
+
+	public static function acquire( p : SharedProbeParams ) {
+		var engine = h3d.Engine.getCurrent();
+		var cache : Map<String, SharedProbeEnv> = @:privateAccess engine.resCache.get(SharedProbeEnv);
+		if( cache == null ) {
+			cache = new Map();
+			@:privateAccess engine.resCache.set(SharedProbeEnv, cache);
+		}
+		var key = '${p.texturePath}|${p.diffSize}|${p.specSize}|${p.sampleBits}|${p.hdrMax}';
+		var e = cache.get(key);
+		if( e == null ) {
+			e = new SharedProbeEnv(cache, key, p);
+			cache.set(key, e);
+		}
+		if( e.refs++ == 0 && !e.loadBaked() )
+			e.bake(false);
+		return e;
+	}
+
+	public function release() {
+		if( --refs > 0 )
+			return;
+		cache.remove(key);
+		if( owned ) {
+			diffuse.dispose();
+			specular.dispose();
+		}
+		diffuse = null;
+		specular = null;
+	}
+
+	public function waitReady( f : Void -> Void ) {
+		if( pending == null )
+			f();
+		else
+			pending.push(f);
+	}
+
+	public static function getBakedPaths( p : SharedProbeParams ) {
+		var path = new haxe.io.Path(p.texturePath);
+		path.file += '-probe-d${p.diffSize}-s${p.specSize}-b${p.sampleBits}-h${p.hdrMax}';
+		path.ext = "envd";
+		var d = path.toString();
+		path.ext = "envs";
+		return [d, path.toString()];
+	}
+
+	function getBakedPath( diffuse : Bool ) {
+		return getBakedPaths(params)[diffuse ? 0 : 1];
+	}
+
+	function loadBaked() {
+		var loader = hxd.res.Loader.currentInstance;
+		var d = getBakedPath(true);
+		var s = getBakedPath(false);
+		if( !loader.exists(d) || !loader.exists(s) ) {
+			#if !editor
+			trace('Light probe bake $s not found, baking at runtime');
+			#end
+			return false;
+		}
+		diffuse = loader.load(d).toImage().toTexture();
+		specular = loader.load(s).toImage().toTexture();
+		specular.mipMap = Linear;
+		owned = false;
+		return true;
+	}
+
+	public function bake( save : Bool ) {
+		var src = hrt.prefab.Cache.get().modelCache.loadTexture(null, params.texturePath);
+		if( src == null )
+			return;
+		if( pending == null )
+			pending = [];
+		src.waitLoad(function() {
+			if( refs == 0 )
+				return;
+			var env = new Environment(src, params.diffSize, params.specSize, params.sampleBits);
+			env.hdrMax = params.hdrMax;
+			if( owned ) {
+				env.diffuse = diffuse;
+				env.specular = specular;
+			}
+			env.compute();
+			var cube = @:bypassAccessor env.env;
+			if( cube != src )
+				cube.dispose();
+			diffuse = env.diffuse;
+			specular = env.specular;
+			owned = true;
+			#if editor
+			if( save ) saveBaked();
+			#end
+			var p = pending;
+			pending = null;
+			for( f in p ) f();
+		});
+	}
+
+	#if editor
+	function saveBaked() {
+		var d = hxd.Pixels.toDDSLayers([for( i in 0...6 ) diffuse.capturePixels(i)], true);
+		var s = hxd.Pixels.toDDSLayers([for( i in 0...6 ) for( mip in 0...specular.mipLevels ) specular.capturePixels(i, mip)], true);
+		sys.io.File.saveBytes(hide.Ide.inst.getPath(getBakedPath(true)), d);
+		sys.io.File.saveBytes(hide.Ide.inst.getPath(getBakedPath(false)), s);
+	}
+	#end
+}
+
+@:access(h3d.scene.pbr.Environment)
 class LightProbeObject extends h3d.scene.Mesh {
 
 	public var env : Environment;
+	public var shared(default, null) : SharedProbeEnv;
+	var removedShared : SharedProbeParams;
 	public var indirectShader : h3d.shader.pbr.Lighting.Indirect;
 	public var boundClippingShader : BoundsClipping;
 	public var boundFadeShader : BoundsFade;
@@ -138,13 +276,57 @@ class LightProbeObject extends h3d.scene.Mesh {
 		}
 	}
 
+	public function setShared( s : SharedProbeEnv ) {
+		shared?.release();
+		shared = s;
+		removedShared = null;
+	}
+
+	public function isShared() {
+		return shared != null || removedShared != null;
+	}
+
+	public function resetEnv() {
+		if( !isShared() )
+			env?.dispose();
+		setShared(null);
+		env = null;
+	}
+
+	public function syncShared() {
+		if( shared == null || env == null )
+			return;
+		env.diffuse = shared.diffuse;
+		env.specular = shared.specular;
+		if( env.specular != null )
+			env.specLevels = env.getMipLevels() - env.ignoredSpecLevels;
+	}
+
+	override function onAdd() {
+		super.onAdd();
+		if( removedShared != null ) {
+			shared = SharedProbeEnv.acquire(removedShared);
+			removedShared = null;
+		}
+	}
+
 	override function onRemove() {
 		super.onRemove();
-		env?.dispose();
+		if( shared != null ) {
+			removedShared = shared.params;
+			shared.release();
+			shared = null;
+			if( env != null ) {
+				env.diffuse = null;
+				env.specular = null;
+			}
+		} else if( removedShared == null )
+			env?.dispose();
 	}
 
 	override function emit( ctx : h3d.scene.RenderContext ) {
 
+		syncShared();
 		if( env == null || env.diffuse == null || env.specular == null )
 			return;
 
@@ -224,19 +406,18 @@ class LightProbe extends Object3D {
 			root = root.parent;
 		}
 		var probeList : Array<LightProbe> = cast root.findAll(LightProbe);
-		var curIndex = 0;
-		var needCheck = true;
-		while( needCheck ) {
-			needCheck = false;
-			for( p in probeList ) {
-				if( p != this && p.name != null && p.name.indexOf("_" + curIndex) != -1 ) {
-					curIndex++;
-					needCheck = true;
-					continue;
-				}
-			}
+		function isUsed( n : String ) {
+			for( p in probeList )
+				if( p != this && p.name == n )
+					return true;
+			return false;
 		}
-		name = "lightProbe_" + curIndex;
+		if( name == null || isUsed(name) ) {
+			var curIndex = 0;
+			while( isUsed("lightProbe_" + curIndex) )
+				curIndex++;
+			name = "lightProbe_" + curIndex;
+		}
 
 		var lpo = new LightProbeObject(shared.current3d);
 		lpo.material.castShadows = false;
@@ -273,7 +454,11 @@ class LightProbe extends Object3D {
 	}
 
 	override function getPreloadFiles() {
-		return mode == Texture && texturePath != null ? [texturePath] : [];
+		if( mode != Texture || texturePath == null )
+			return [];
+		var baked = SharedProbeEnv.getBakedPaths(getSharedParams());
+		var loader = hxd.res.Loader.currentInstance;
+		return loader.exists(baked[0]) && loader.exists(baked[1]) ? baked : [texturePath];
 	}
 
 	override function updateInstance(?propName : String ) {
@@ -289,60 +474,39 @@ class LightProbe extends Object3D {
 		}
 
 		// Full Reset
-		if( propName == "mode" ) {
-			if( lpo.env != null ) {
-				lpo.env.dispose();
-				lpo.env = null;
-			}
-		}
+		if( propName == "mode" )
+			lpo.resetEnv();
 
 		switch mode {
 			case Texture:
-				var needCompute = false;
-				if( propName == "texturePath" || propName == "mode" ) {
-					var t = texturePath == null ? null : shared.loadTexture(texturePath);
-					if( t != null ) {
-						lpo.env = new Environment(t);
-						needCompute = true;
-					}
-				}
-				if( lpo.env != null ) {
+				var s = texturePath == null ? null : SharedProbeEnv.acquire(getSharedParams());
+				lpo.setShared(s);
+				if( s == null )
+					lpo.env = null;
+				else {
+					if( lpo.env == null )
+						lpo.env = new Environment(null);
 					lpo.env.power = power;
 					lpo.env.hdrMax = hdrMax;
 					lpo.env.rotation = hxd.Math.degToRad(rotation);
 					lpo.env.sampleBits = sampleBits;
 					lpo.env.ignoredSpecLevels = ignoredSpecLevels;
-					if( lpo.env.specSize != specSize ) {
-						if( lpo.env.specular != null ) lpo.env.specular.dispose();
-						lpo.env.specular = null;
-						needCompute = true;
-					}
 					lpo.env.specSize = specSize;
-					if( lpo.env.diffSize != diffSize ) {
-						if( lpo.env.diffuse != null ) lpo.env.diffuse.dispose();
-						lpo.env.diffuse = null;
-						needCompute = true;
-					}
 					lpo.env.diffSize = diffSize;
-
-					if( propName == "hdrMax" || propName == "sampleBits" )
-						needCompute = true;
-
-					if( needCompute ) {
-						if( lpo.env.source.flags.has(Loading) )
-							lpo.env.source.waitLoad(lpo.env.compute);
-						else
-							lpo.env.compute();
-					}
+					lpo.syncShared();
 				}
 
 			case Capture:
+				if( lpo.isShared() )
+					lpo.resetEnv();
 				if( lpo.env == null )
 					lpo.env = new Environment(null);
 
 				lpo.env.power = power;
 				lpo.env.sampleBits = sampleBits;
 				lpo.env.ignoredSpecLevels = ignoredSpecLevels;
+				lpo.env.diffSize = diffSize;
+				lpo.env.specSize = specSize;
 
 				loadBinary(lpo.env);
 		}
@@ -369,8 +533,8 @@ class LightProbe extends Object3D {
 			previewSphereDiffuse.x = (sphereRadius + (sphereRadius * 0.5)) / parentScale.x;
 			var s = previewSphereDiffuse.material.mainPass.getShader(DebugView);
 			if( lpo.env != null ) {
-				if( lpo.env.source != null && lpo.env.source.flags.has(Loading) )
-					lpo.env.source.waitLoad( () ->  s.source = lpo.env.diffuse );
+				if( lpo.shared != null )
+					lpo.shared.waitReady(() -> s.source = lpo.shared?.diffuse);
 				else
 					s.source = lpo.env.diffuse;
 				s.irrRotation.set(Math.cos(lpo.env.rotation), Math.sin(lpo.env.rotation));
@@ -384,8 +548,8 @@ class LightProbe extends Object3D {
 			previewSphereSpecular.x = -(sphereRadius + (sphereRadius * 0.5)) / parentScale.x;
 			var s = previewSphereSpecular.material.mainPass.getShader(DebugView);
 			if( lpo.env != null ) {
-				if( lpo.env.source != null && lpo.env.source.flags.has(Loading) )
-					lpo.env.source.waitLoad( () -> s.source = lpo.env.specular );
+				if( lpo.shared != null )
+					lpo.shared.waitReady(() -> s.source = lpo.shared?.specular);
 				else
 					s.source = lpo.env.specular;
 				s.irrRotation.set(Math.cos(lpo.env.rotation), Math.sin(lpo.env.rotation));
@@ -455,6 +619,11 @@ class LightProbe extends Object3D {
 					<range(0, 10) field={power}/>
 					<range(1, 3) field={bounce} if(mode == Capture)/>
 					<range(0, 1) field={emissive} if(mode == Capture)/>
+					<button("Bake") id="bakeTextureBtn" if(mode == Texture)/>
+					<line label="View">
+						<button("Diffuse") id="showDiff" single-edit/>
+						<button("Specular") id="showSpecular" single-edit/>
+					</line>
 					<line full if(mode == Capture)>
 						<button("Bake") id="bakeBtn"/>
 						<button("Clear") id="clearBtn"/>
@@ -484,13 +653,29 @@ class LightProbe extends Object3D {
 			</root>
 		);
 
+		if( mode == Texture ) {
+			bakeTextureBtn.onClick = function() {
+				bakeTexture();
+			}
+		}
+
+		function view( diffuse : Bool ) {
+			var path = getBakedViewPath(diffuse);
+			if( path == null )
+				ctx.quickError("Not baked yet");
+			else
+				ctx.openFile(path);
+		}
+		showDiff.onClick = () -> view(true);
+		showSpecular.onClick = () -> view(false);
+
 		if( mode == Capture ) {
 			bakeBtn.onClick = function() {
 				var lpo : LightProbeObject = cast local3d;
 				var captureSize = specSize;
 
 				// Start with a black texture, need to override the default env
-				lpo.env.createTextures();
+				resetCaptureTextures(lpo.env);
 				lpo.clear();
 
 				if( lpo.env.env == null || lpo.env.env.width != captureSize ) {
@@ -537,6 +722,37 @@ class LightProbe extends Object3D {
 				ctx.quickError("Not implemented. Use old editor");
 			}
 		}
+	}
+
+	function resetCaptureTextures( env : Environment ) {
+		for( t in [env.diffuse, env.specular] )
+			if( t != null && t.flags.has(Target) )
+				t.dispose();
+		env.diffuse = null;
+		env.specular = null;
+		env.diffSize = diffSize;
+		env.specSize = specSize;
+		env.createTextures();
+	}
+
+	function getSharedParams() : SharedProbeParams {
+		return { texturePath : texturePath, diffSize : diffSize, specSize : specSize, sampleBits : sampleBits, hdrMax : hdrMax };
+	}
+
+	function getBakedViewPath( diffuse : Bool ) : String {
+		var path = if( mode == Texture )
+			texturePath == null ? null : SharedProbeEnv.getBakedPaths(getSharedParams())[diffuse ? 0 : 1];
+		else
+			shared.getPrefabDatPath(diffuse ? "envd" : "envs", "dds", name);
+		return path != null && hxd.res.Loader.currentInstance.exists(path) ? path : null;
+	}
+
+	function bakeTexture() {
+		var lpo : LightProbeObject = cast local3d;
+		if( lpo.shared == null )
+			return;
+		lpo.shared.bake(true);
+		updateInstance();
 	}
 
 	#if editor
@@ -647,6 +863,10 @@ class LightProbe extends Object3D {
 			<div align="center">
 				<input type="button" value="Import" class="import" />
 			</div>
+			<div align="center">
+				<input type="button" value="View Diffuse" class="viewDiffuse" />
+				<input type="button" value="View Specular" class="viewSpecular" />
+			</div>
 			<br>
 		</div>
 		<div class="group" name="Resolution">
@@ -665,6 +885,13 @@ class LightProbe extends Object3D {
 				<dt>Rotation</dt><dd><input type="range" min="0" max="360" field="rotation"/></dd>
 				<dt>Power</dt><dd><input type="range" min="0" max="10" field="power"/></dd>
 			</dl>
+			<div align="center">
+				<input type="button" value="Bake" class="bakeTexture" />
+			</div>
+			<div align="center">
+				<input type="button" value="View Diffuse" class="viewDiffuse" />
+				<input type="button" value="View Specular" class="viewSpecular" />
+			</div>
 		</div>
 		<div class="group" name="Resolution">
 			<dl>
@@ -730,6 +957,17 @@ class LightProbe extends Object3D {
 			if( pname == "mode" )
 				ctx.rebuildProperties();
 		});
+
+		props.find(".bakeTexture").click((_) -> bakeTexture());
+		function view( diffuse : Bool ) {
+			var path = getBakedViewPath(diffuse);
+			if( path == null )
+				hide.Ide.inst.message("Not baked yet");
+			else
+				ctx.ide.openFile(path);
+		}
+		props.find(".viewDiffuse").click((_) -> view(true));
+		props.find(".viewSpecular").click((_) -> view(false));
 
 		var clearButton = props.find(".clear");
 		if( clearButton != null ) {
@@ -815,7 +1053,7 @@ class LightProbe extends Object3D {
 				var captureSize = specSize;
 
 				// Start with a black texture, need to override the default env
-				lpo.env.createTextures();
+				resetCaptureTextures(lpo.env);
 				lpo.clear();
 
 				if( lpo.env.env == null || lpo.env.env.width != captureSize ) {
