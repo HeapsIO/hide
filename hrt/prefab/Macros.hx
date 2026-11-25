@@ -281,7 +281,7 @@ class Macros {
 			default:
 				for (path in ["h3d.scene.Object", "h2d.Object"])
 					if (Context.unify(t, Context.getType(path)))
-						Context.error("@:c and @:cache fields can't hold a " + path, e.pos);
+						Context.error("@:c, @:cache and @:manual fields can't hold a " + path, e.pos);
 		}
 		return macro {};
 	}
@@ -630,6 +630,7 @@ class Macros {
 			var isDeepCopy = false;
 			var isCopyable = false;
 			var isCache = false;
+			var isManual = false;
 			for (m in f.meta) {
 				switch(m.name) {
 					case ":s":
@@ -638,6 +639,8 @@ class Macros {
 						isCopyable = true;
 					case ":cache":
 						isCache = true;
+					case ":manual": // loaded / copied by hand, kept by clean
+						isManual = true;
 					case ":deepCopy":
 						isDeepCopy = true;
 				}
@@ -645,6 +648,9 @@ class Macros {
 
 			if (isCache && (isSerializable || isCopyable))
 				Context.error("@:cache can't be combined with @:s or @:c", f.pos);
+
+			if (isManual && (isSerializable || isCopyable || isCache))
+				Context.error("@:manual can't be combined with @:s, @:c or @:cache", f.pos);
 
 			if (isSerializable) {
 				serializableFields.push({field: f, deepCopy: isDeepCopy});
@@ -657,12 +663,12 @@ class Macros {
 			if (isCache)
 				cacheFieldNames.push(f.name);
 
-			if (isCopyable || isCache) {
+			if (isCopyable || isCache || isManual) {
 				var name = f.name;
 				sceneObjectChecks.push(macro @:pos(f.pos) hrt.prefab.Macros.checkNotSceneObject(this.$name));
 			}
 
-			if (!isSerializable && !isDeepCopy && !isCopyable && !isCache) {
+			if (!isSerializable && !isDeepCopy && !isCopyable && !isCache && !isManual) {
 				cloneInitFields.push(f);
 			}
 		}
