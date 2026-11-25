@@ -47,6 +47,7 @@ class ShaderTargetObj extends h3d.scene.Object {
 				@:privateAccess s.makeShaderInstance();
 			applyShader(s);
 		}
+		guard++;
 	}
 
 	public function removeShaders() {
@@ -61,7 +62,6 @@ class ShaderTargetObj extends h3d.scene.Object {
 
 	function applyShader(s: Shader) {
 		s.apply3d((o) -> return !Std.isOfType(o, hrt.prefab.fx.FX.FXAnimation) );
-		guard++;
 	}
 
 	override function onRemove() {
@@ -116,18 +116,16 @@ class ShaderTarget extends Object3D {
 			arr.insert(idx, st);
 		}
 
-		for (k in actives.keys()) {
-			var arr = actives.get(k);
-			for (idx in 0...arr.length) {
-				if (idx == 0) {
-					if (!arr[idx].isApplied())
-						arr[idx].applyShaders();
-					continue;
-				}
-
+		for (arr in actives) {
+			for (idx in 1...arr.length) {
 				if (arr[idx].isApplied())
 					arr[idx].removeShaders();
 			}
+		}
+
+		for (arr in actives) {
+			if (!arr[0].isApplied())
+				arr[0].applyShaders();
 		}
 	}
 
