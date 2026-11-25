@@ -23,7 +23,7 @@ enum CurveBlendMode {
 class Curve extends hrt.prefab.Curve {
 	static var CHANNELS = ["position", "rotation", "scale", "color", "visibility", "localposition", "localrotation"];
 
-	@:isVar public var datas(get, set) : Array<hrt.impl.Curve>;
+	@:manual @:isVar public var datas(get, set) : Array<hrt.impl.Curve>;
 	function get_datas() {
 		if (datas == null)
 			datas = [new hrt.impl.Curve()];
