@@ -319,7 +319,6 @@ class Timeline extends hide.ui.View<{}> {
 			isSeekable = true;
 			hasYAxis = false;
 			duration = 0.;
-			setHasFilter(false);
 			filter = "";
 			if (filterInput != null)
 				filterInput.value = "";
@@ -339,6 +338,7 @@ class Timeline extends hide.ui.View<{}> {
 			onRedo = () -> {};
 			onCurvesEdit = () -> {};
 			onCurvesChange = (_, _, _) -> {};
+			setHasFilter(false);
 		}
 
 		refresh();
@@ -396,10 +396,15 @@ class Timeline extends hide.ui.View<{}> {
 
 	public function selectMarkers(toSelect : Array<Marker>) {
 		var sel = [];
-		for (m in markers) {
-			for (s in toSelect) {
-				if (m.name == s.name && m.frame == s.frame && !sel.contains(m))
+		for (s in toSelect) {
+			var i = markers.length - 1;
+			while (i >= 0) {
+				var m = markers[i];
+				if (m.name == s.name && m.frame == s.frame && !sel.contains(m)) {
 					sel.push(m);
+					break;
+				}
+				i--;
 			}
 		}
 		setSelection(sel, []);

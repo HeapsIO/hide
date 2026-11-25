@@ -2969,7 +2969,15 @@ class Model extends FileView {
 		t.onMarkersChange = (oldMarkers : Array<Timeline.Marker>, newMarkers : Array<Timeline.Marker>) -> {
 			function moveEvents(from : Array<Timeline.Marker>, to : Array<Timeline.Marker>) {
 				var anim = obj.currentAnimation;
-				var moved = [for (m in from) anim.getEvent(m.frame, m.name)];
+				var moved = [];
+				for (m in from) {
+					for (e in anim.events[m.frame]) {
+						if (e.name == m.name && !moved.contains(e)) {
+							moved.push(e);
+							break;
+						}
+					}
+				}
 				for (i => e in moved) {
 					anim.events[from[i].frame].remove(e);
 					if (anim.events[from[i].frame].length == 0)

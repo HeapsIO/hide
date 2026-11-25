@@ -708,7 +708,7 @@ class FXEditor extends hide.view.FileView {
 		};
 
 		t.onMarkersChange = (oldMarkers : Array<Timeline.Marker>, newMarkers : Array<Timeline.Marker>) -> {
-			var events = [for (m in oldMarkers) findTimelineEvent(m)];
+			var events = getTimelineEvents(oldMarkers);
 			function apply(isUndo : Bool) {
 				var states = isUndo ? oldMarkers : newMarkers;
 				for (i => ev in events) {
@@ -726,23 +726,29 @@ class FXEditor extends hide.view.FileView {
 			undo.change(Custom(apply));
 		};
 		t.onMarkersDelete = (markers : Array<Timeline.Marker>) -> {
-			sceneEditor.deleteElements([for (m in markers) findTimelineEvent(m).getEventPrefab()]);
+			sceneEditor.deleteElements([for (ev in getTimelineEvents(markers)) ev.getEventPrefab()]);
 		};
 
 		refreshTimelineView();
 		t.frameAll();
 	}
 
-	function findTimelineEvent(m : Timeline.Marker) : hrt.prefab.fx.Event.IEvent {
+	function getTimelineEvents(markers : Array<Timeline.Marker>) : Array<hrt.prefab.fx.Event.IEvent> {
 		var framerate = getTimeline().framerate;
-		for (p in (cast data : PrefabElement).flatten()) {
-			if (!(p is hrt.prefab.fx.Event.IEvent))
-				continue;
-			var ev : hrt.prefab.fx.Event.IEvent = cast p;
-			if (ev.name == m.name && Math.round(ev.time * framerate) == m.frame)
-				return ev;
+		var all = (cast data : PrefabElement).flatten();
+		var found : Array<hrt.prefab.fx.Event.IEvent> = [];
+		for (m in markers) {
+			for (p in all) {
+				if (!(p is hrt.prefab.fx.Event.IEvent))
+					continue;
+				var ev : hrt.prefab.fx.Event.IEvent = cast p;
+				if (ev.name == m.name && Math.round(ev.time * framerate) == m.frame && !found.contains(ev)) {
+					found.push(ev);
+					break;
+				}
+			}
 		}
-		return null;
+		return found;
 	}
 
 	function onTimelineEdit() {
