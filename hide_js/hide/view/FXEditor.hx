@@ -708,12 +708,20 @@ class FXEditor extends hide.view.FileView {
 		};
 
 		t.onMarkersChange = (oldMarkers : Array<Timeline.Marker>, newMarkers : Array<Timeline.Marker>) -> {
-			var events = getTimelineEvents(oldMarkers);
+			var deleted = [for (i => m in oldMarkers) if (m != null && newMarkers[i] == null) m];
+			if (deleted.length > 0)
+				sceneEditor.deleteElements([for (ev in getTimelineEvents(deleted)) ev.getEventPrefab()]);
+
+			var before = [for (i => m in oldMarkers) if (m != null && newMarkers[i] != null) m];
+			var after = [for (i => m in newMarkers) if (m != null && oldMarkers[i] != null) m];
+			if (before.length == 0)
+				return;
+			var events = getTimelineEvents(before);
 			function apply(isUndo : Bool) {
-				var states = isUndo ? oldMarkers : newMarkers;
+				var states = isUndo ? before : after;
 				for (i => ev in events) {
 					ev.time = states[i].frame / t.framerate;
-					if (oldMarkers[i].duration != newMarkers[i].duration)
+					if (before[i].duration != after[i].duration)
 						ev.setDuration(states[i].duration / t.framerate);
 					var prefab = ev.getEventPrefab();
 					if (prefab.name != states[i].name) {
@@ -726,9 +734,6 @@ class FXEditor extends hide.view.FileView {
 			}
 			apply(false);
 			undo.change(Custom(apply));
-		};
-		t.onMarkersDelete = (markers : Array<Timeline.Marker>) -> {
-			sceneEditor.deleteElements([for (ev in getTimelineEvents(markers)) ev.getEventPrefab()]);
 		};
 
 		refreshTimelineView();

@@ -332,7 +332,6 @@ class Timeline extends hide.ui.View<{}> {
 			setSpeed = (_) -> {};
 			contextMenu = (_) -> [];
 			onSave = () -> {};
-			onMarkersDelete = (_) -> {};
 			onMarkersChange = (_, _) -> {};
 			onUndo = () -> {};
 			onRedo = () -> {};
@@ -426,7 +425,6 @@ class Timeline extends hide.ui.View<{}> {
 	public dynamic function onRedo() {}
 	public dynamic function onCurvesEdit() {}
 	public dynamic function onCurvesChange(curves : Array<hrt.impl.Curve>, before : Array<Dynamic>, after : Array<Dynamic>) {}
-	public dynamic function onMarkersDelete(markers : Array<Marker>) {}
 	public dynamic function onMarkersChange(oldMarkers : Array<Marker>, newMarkers : Array<Marker>) {}
 	public dynamic function onFilterChange(filter : String) {}
 
@@ -604,9 +602,8 @@ class Timeline extends hide.ui.View<{}> {
 			return;
 		var deleted = [for (m in selectedMarkers) { name: m.name, frame: m.frame, duration: m.duration }];
 		setSelection([], selectedKeys);
-		onMarkersDelete(deleted);
+		onMarkersChange(deleted, [for (_ in deleted) null]);
 	}
-
 
 	function onWheel(e : WheelEvent) {
 		e.preventDefault();

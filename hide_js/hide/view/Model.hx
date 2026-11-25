@@ -2949,53 +2949,17 @@ class Model extends FileView {
 			return [{ label: "Add Event", click: () -> addTimelineEvent("NewEvent", frame) }];
 		}
 
-		t.onMarkersDelete = (markers : Array<Timeline.Marker>) -> {
-			var deleted = [for (m in markers) if (obj.currentAnimation.getEvent(m.frame, m.name)?.originalEvent == null) m];
-			function apply(isUndo : Bool) {
-				var anim = obj.currentAnimation;
-				for (m in deleted) {
-					if (isUndo)
-						anim.addEvent(m.frame, m.name);
-					else
-						anim.removeEvent(m.frame, m.name);
-				}
-				refreshTimelineView();
-				buildEventPanel();
-			}
-			apply(false);
-			undo.change(Custom(apply));
-		}
-
 		t.onMarkersChange = (oldMarkers : Array<Timeline.Marker>, newMarkers : Array<Timeline.Marker>) -> {
-			function moveEvents(from : Array<Timeline.Marker>, to : Array<Timeline.Marker>) {
-				var anim = obj.currentAnimation;
-				var moved = [];
-				for (m in from) {
-					for (e in anim.events[m.frame]) {
-						if (e.name == m.name && !moved.contains(e)) {
-							moved.push(e);
-							break;
-						}
-					}
-				}
-				for (i => e in moved) {
-					anim.events[from[i].frame].remove(e);
-					if (anim.events[from[i].frame].length == 0)
-						anim.events[from[i].frame] = null;
-				}
-				for (i => e in moved) {
-					if (anim.events[to[i].frame] == null)
-						anim.events[to[i].frame] = [];
-					anim.events[to[i].frame].push(e);
-					e.frame = to[i].frame;
-					e.name = to[i].name;
-				}
-				refreshTimelineView();
-				buildEventPanel();
-				getTimeline()?.selectMarkers(to);
+			var anim = obj.currentAnimation;
+			var from = [];
+			var to = [];
+			for (i => m in oldMarkers) {
+				if (m != null && newMarkers[i] == null && anim.getEvent(m.frame, m.name)?.originalEvent != null)
+					continue;
+				from.push(m);
+				to.push(newMarkers[i]);
 			}
-			moveEvents(oldMarkers, newMarkers);
-			undo.change(Custom((isUndo) -> isUndo ? moveEvents(newMarkers, oldMarkers) : moveEvents(oldMarkers, newMarkers)));
+			changeTimelineEvents(from, to);
 		}
 
 		refreshTimelineView();
@@ -3003,17 +2967,52 @@ class Model extends FileView {
 	}
 
 	function addTimelineEvent(name : String, frame : Int) {
-		function apply(isUndo : Bool) {
+		changeTimelineEvents([null], [{ name: name, frame: frame }]);
+	}
+
+	function changeTimelineEvents(from : Array<Timeline.Marker>, to : Array<Timeline.Marker>) {
+		function apply(src : Array<Timeline.Marker>, dst : Array<Timeline.Marker>) {
 			var anim = obj.currentAnimation;
-			if (isUndo)
-				anim.removeEvent(frame, name);
-			else
-				anim.addEvent(frame, name);
+			var events : Array<h3d.anim.Animation.Event> = [];
+			for (m in src) {
+				var found = null;
+				if (m != null) {
+					for (e in anim.events[m.frame]) {
+						if (e.name == m.name && !events.contains(e)) {
+							found = e;
+							break;
+						}
+					}
+				}
+				events.push(found);
+			}
+			for (i => e in events) {
+				if (e == null)
+					continue;
+				anim.events[src[i].frame].remove(e);
+				if (anim.events[src[i].frame].length == 0)
+					anim.events[src[i].frame] = null;
+			}
+			for (i => m in dst) {
+				if (m == null)
+					continue;
+				var e = events[i];
+				if (e == null) {
+					anim.addEvent(m.frame, m.name);
+					continue;
+				}
+				if (anim.events[m.frame] == null)
+					anim.events[m.frame] = [];
+				anim.events[m.frame].push(e);
+				e.frame = m.frame;
+				e.name = m.name;
+			}
 			refreshTimelineView();
 			buildEventPanel();
+			getTimeline()?.selectMarkers([for (m in dst) if (m != null) m]);
 		}
-		apply(false);
-		undo.change(Custom(apply));
+		apply(from, to);
+		undo.change(Custom((isUndo) -> isUndo ? apply(to, from) : apply(from, to)));
 	}
 
 	function refreshTimelineView() {
