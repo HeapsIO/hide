@@ -753,6 +753,16 @@ class FXAnimation extends h3d.scene.Object {
 		if(obj3d == null)
 			return;
 
+		var hasCurve = false;
+		for(c in elt.children) {
+			if(c.enabled && Std.isOfType(c, Curve)) {
+				hasCurve = true;
+				break;
+			}
+		}
+		if(!hasCurve)
+			return;
+
 		var anyFound = false;
 
 		function makeVal(name, def) : Value {
