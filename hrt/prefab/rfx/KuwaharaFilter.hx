@@ -12,17 +12,6 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 
 		@param var texture : Sampler2D;
 
-		@const var FETCH_OPTIM_2x2 : Bool;
-
-		//interlaced 5x5 masks for the 4 regions
-		final mask : Array<Vec4, 25> = [
-			vec4(1.0,0.0,0.0,0.0), vec4(1.0,0.0,0.0,0.0), vec4(1.0,1.0,0.0,0.0), vec4(0.0,1.0,0.0,0.0), vec4(0.0,1.0,0.0,0.0),
-			vec4(1.0,0.0,0.0,0.0), vec4(1.0,0.0,0.0,0.0), vec4(1.0,1.0,0.0,0.0), vec4(0.0,1.0,0.0,0.0), vec4(0.0,1.0,0.0,0.0),
-			vec4(1.0,0.0,0.0,1.0), vec4(1.0,0.0,0.0,1.0), vec4(1.0,1.0,1.0,1.0), vec4(0.0,1.0,1.0,0.0), vec4(0.0,1.0,1.0,0.0),
-			vec4(0.0,0.0,0.0,1.0), vec4(0.0,0.0,0.0,1.0), vec4(0.0,0.0,1.0,1.0), vec4(0.0,0.0,1.0,0.0), vec4(0.0,0.0,1.0,0.0),
-			vec4(0.0,0.0,0.0,1.0), vec4(0.0,0.0,0.0,1.0), vec4(0.0,0.0,1.0,1.0), vec4(0.0,0.0,1.0,0.0), vec4(0.0,0.0,1.0,0.0)
-		];
-
 		function getFilteredColor() : Vec3 {
 			var size = texture.size();
 			var invSize = 1.0 / size;
@@ -37,53 +26,25 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 			var s2 = vec3(0.0);
 			var s3 = vec3(0.0);
 
-			if(FETCH_OPTIM_2x2){
-				var cursor = 0;
-				@unroll for ( j in -scaledRadius...scaledRadius+1) {
-					@unroll for ( i in -scaledRadius...scaledRadius+1)  {
-						var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
-						var cc = c * c;
-						m0 += c * mask[cursor].x;
-						s0 += cc * mask[cursor].x;
-						m1 += c * mask[cursor].y;
-						s1 += cc * mask[cursor].y;
-						m2 += c * mask[cursor].z;
-						s2 += cc * mask[cursor].z;
-						m3 += c * mask[cursor].w;
-						s3 += cc * mask[cursor].w;
-						cursor++;
-					}
-				}
-			} else {
-				for ( j in -scaledRadius...1 )  {
-					for ( i in -scaledRadius...1 )  {
-						var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
+			for ( j in -scaledRadius...scaledRadius + 1 )  {
+				for ( i in -scaledRadius...scaledRadius + 1 )  {
+					var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
+					var cc = c * c;
+					if ( i <= 0 && j <= 0 ) {
 						m0 += c;
-						s0 += c * c;
+						s0 += cc;
 					}
-				}
-
-				for ( j in -scaledRadius...1 )  {
-					for ( i in 0...scaledRadius + 1)  {
-						var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
+					if ( i >= 0 && j <= 0 ) {
 						m1 += c;
-						s1 += c * c;
+						s1 += cc;
 					}
-				}
-
-				for ( j in 0...scaledRadius + 1 )  {
-					for ( i in 0...scaledRadius + 1)  {
-						var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
+					if ( i >= 0 && j >= 0 ) {
 						m2 += c;
-						s2 += c * c;
+						s2 += cc;
 					}
-				}
-
-				for ( j in 0... scaledRadius + 1 )  {
-					for ( i in -scaledRadius...1 )  {
-						var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
+					if ( i <= 0 && j >= 0 ) {
 						m3 += c;
-						s3 += c * c;
+						s3 += cc;
 					}
 				}
 			}
@@ -165,7 +126,6 @@ class KuwaharaFilter extends RendererFX {
 		pass.shader.texture = input;
 
 		pass.shader.scaledRadius = Std.int(radius * hxd.Math.max(input.width / 1920, input.height / 1080));
-		pass.shader.FETCH_OPTIM_2x2 = pass.shader.scaledRadius == 2 ? true : false;
 		pass.shader.startOpacity = startOpacity;
 		pass.shader.endOpacity = endOpacity;
 		pass.shader.startDist = startDist;
