@@ -346,7 +346,6 @@ class Shader extends Prefab {
 		);
 
 		var materialList = getMaterialList();
-		trace(targetMaterial);
 		if( materialList.length >= 2 || targetMaterial != null ) {
 			properties.build(
 				<select(materialList) label="Material" field={targetMaterial} onValueChange={refresh}/>
