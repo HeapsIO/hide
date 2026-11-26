@@ -225,7 +225,7 @@ class Curve extends Prefab {
 			#if editor
 			if (parent.shared.editor?.isHidden(c)) continue;
 			#end
-			if(!checkName(c.name, name)) continue;
+			if(!checkName(c.name, name, c.name.length)) continue;
 			var curve = get(c);
 			if(curve == null) continue;
 			return curve;
@@ -350,11 +350,7 @@ class Curve extends Prefab {
 	#end
 
 	// alloc-free, alphanum only, case insensitive comparison
-	static function checkName(a: String, b: String, len = -1) {
-		if(len < 0) {
-			if(a == b) return true;
-			len = a.length;
-		}
+	static function checkName(a: String, b: String, len: Int) {
 		if(len != b.length) return false;
 		inline function lower(c: Int) return c >= "A".code && c <= "Z".code ? c + 32 : c;
 		for(i in 0...len) {
