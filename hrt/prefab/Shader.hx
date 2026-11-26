@@ -298,8 +298,9 @@ class Shader extends Prefab {
 		}
 
 		// can't use apply3d(), macros?
+		// the field (makeShaderInstance sets it), not the local: a closure on `this` only
 		if( shared.current3d != null )
-			iterMaterials(function(obj,mat) applyShader(obj, mat, shader), null, true);
+			iterMaterials((obj, mat) -> applyShader(obj, mat, this.shader), null, true);
 	}
 
 	override function edit2(ctx:hrt.prefab.EditContext2) {
