@@ -136,6 +136,21 @@ class Evaluator {
 		return vec;
 	}
 
+	public function getVector3(pidx: Int=0, v: Value, time: Float, vec: h3d.Vector) {
+		switch(v) {
+			case VVector(x, y, z), VColor(x, y, z, _):
+				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time));
+			case VHsl(h, s, l, _):
+				vec.makeColor(getFast(pidx, h, time), getFast(pidx, s, time), getFast(pidx, l, time));
+			case VZero:
+				vec.set(0,0,0);
+			default:
+				var f = getFast(pidx, v, time);
+				vec.set(f, f, f);
+		}
+		return vec;
+	}
+
 	public function getVector2(pidx: Int=0, v: Value, time: Float, vec: h2d.col.Point) {
 		switch(v) {
 			case VVector(x, y, _):

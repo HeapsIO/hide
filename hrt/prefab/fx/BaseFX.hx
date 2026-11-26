@@ -30,6 +30,7 @@ class ParamAnimation {
 
 	inline function getFloat(v: Value, time: Float) return evaluator.getFloat(v, time);
 	inline function getVector(v: Value, time: Float, vec: h3d.Vector4) return evaluator.getVector(v, time, vec);
+	inline function getVector3(v: Value, time: Float, vec: h3d.Vector) return evaluator.getVector3(v, time, vec);
 
 	public function setTime(time: Float) {
 		throw "not implemented";
@@ -85,43 +86,43 @@ class RendererFXAnimation extends ParamAnimation {
 class ShaderAnimation extends ParamAnimation {
 	public var data : ShaderAnimData;
 	public var shader : hxsl.Shader;
-	var vector4 = new h3d.Vector4();
-	var vector = new h3d.Vector();
-
 	public function new(data, shader, ?evaluator) {
 		super(evaluator);
 		this.data = data;
 		this.shader = shader;
+		initVectors();
+	}
+
+	// the animated vector params get objects of their own (a cloned shader shares those of its template), set in place
+	function initVectors() {
+		for(p in data.params) {
+			switch(p.def.type) {
+				case TVec(4, VFloat): shader.setParamIndexValue(p.idx, new h3d.Vector4());
+				case TVec(_, VFloat): shader.setParamIndexValue(p.idx, new h3d.Vector());
+				default:
+			}
+		}
 	}
 
 	override public function setTime(time: Float) {
 		for(param in data.params) {
-			var v = param.def;
-			var val : Dynamic;
-			switch(v.type) {
-			case TFloat:
-				var v = getFloat(param.value, time);
-				shader.setParamIndexFloatValue(param.idx, v);
-				continue;
-			case TInt: val = hxd.Math.round(getFloat(param.value, time));
-			case TBool: val = getFloat(param.value, time) >= 0.5;
-			case TVec(4, VFloat):
-				getVector(param.value, time, vector4);
-				val = vector4;
-			case TVec(_, VFloat):
-				getVector(param.value, time, vector4);
-				vector.set(vector4.x, vector4.y, vector4.z);
-				val = vector;
+			switch(param.def.type) {
+			case TFloat: shader.setParamIndexFloatValue(param.idx, getFloat(param.value, time));
+			case TInt: shader.setParamIndexValue(param.idx, hxd.Math.round(getFloat(param.value, time)));
+			case TBool: shader.setParamIndexValue(param.idx, getFloat(param.value, time) >= 0.5);
+			case TVec(4, VFloat): getVector(param.value, time, shader.getParamValue(param.idx));
+			case TVec(_, VFloat): getVector3(param.value, time, shader.getParamValue(param.idx));
 			default:
-				continue;
 			}
-			shader.setParamIndexValue(param.idx, val);
 		}
 	}
 }
 
 class ShaderDynAnimation extends ShaderAnimation {
-	var tmpVector4 = new h3d.Vector4();
+	// a dynamic shader is never cloned (and has no setParamIndexValue): setTime animates its own vectors
+	override function initVectors() {
+	}
+
 	override function setTime(time: Float) {
 		var shader : hxsl.DynamicShader = cast shader;
 		for(param in data.params) {
@@ -151,8 +152,7 @@ class ShaderDynAnimation extends ShaderAnimation {
 						vector = new h3d.Vector();
 						shader.setParamValue(v, vector);
 					}
-					getVector(param.value, time, tmpVector4);
-					vector.set(tmpVector4.x, tmpVector4.y, tmpVector4.z);
+					getVector3(param.value, time, vector);
 				default:
 			}
 		}
