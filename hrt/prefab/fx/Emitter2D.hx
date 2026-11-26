@@ -252,7 +252,6 @@ class Emitter2DObject extends h2d.Object {
 	var curOrbitSpeedMultiplier = 1.;
 	var countToEmit = 0.;
 	var totalBurstCount = 0;
-	var instanceCounter = 0;
 	var animatedTexShader : h3d.shader.AnimatedTexture = null;
 
 	public var prefab : Emitter2D;
@@ -274,8 +273,6 @@ class Emitter2DObject extends h2d.Object {
 
 	public function init(prefab: Emitter2D) {
 		this.prefab = prefab;
-		evaluator.allocRandom(prefab.maxCount, evaluator.randomSlots);
-		evaluator.resetRandom(rand);
 
 		if (animatedTexShader != null)
 			batch.removeShader(animatedTexShader);
@@ -383,10 +380,9 @@ class Emitter2DObject extends h2d.Object {
 	function doEmit(count : Int) {
 		for (_ in 0...count) {
 			var part = new Particle2DInstance(getTile(), this);
-			part.idx = instanceCounter;
+			part.idx = Evaluator.particleSeed(rand);
 			part.lifeTime = evaluator.getLifeTime(part.idx, curTime) * lifeTimeScale;
 			this.particles.push(part);
-			instanceCounter = (instanceCounter + 1) % prefab.maxCount;
 		}
 	}
 
@@ -395,10 +391,8 @@ class Emitter2DObject extends h2d.Object {
 		batch.clear();
 		countToEmit = 0;
 		totalBurstCount = 0;
-		instanceCounter = 0;
 
 		rand.init(prefab.seed);
-		evaluator.resetRandom(rand);
 	}
 
 	static function colorTile( c : Int ) {

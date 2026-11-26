@@ -3,9 +3,29 @@ package hrt.prefab.fx;
 import hrt.prefab.fx.Value;
 
 class Evaluator {
-	var randValues : Array<Float>;
 	public var parameters: Map<String, Float> = [];
-	var slots = 0;
+
+	/*
+		The randoms of the particles: a particle has a seed (its index), its random `rid` is in one table shared by all
+		emitters, at seed + rid * RAND_STEP. A fast lookup and nothing per emitter; the quality doesn't matter, it's visual.
+	*/
+	public static inline var RAND_SIZE = 4096;
+	// odd: the randoms of a particle are far apart in the table
+	public static inline var RAND_STEP = 0x9E3779B1;
+	public static var RAND : haxe.ds.Vector<Float> = makeRand();
+
+	static function makeRand() {
+		var r = new hxd.Rand(0x5EED);
+		var v = new haxe.ds.Vector<Float>(RAND_SIZE);
+		for(i in 0...RAND_SIZE)
+			v[i] = (r.srand() + 1) * 0.5;
+		return v;
+	}
+
+	/** The seed of a new particle, from the random stream of its emitter **/
+	public static inline function particleSeed(rand: hxd.Rand) {
+		return rand.random(RAND_SIZE);
+	}
 
 	public function new() {
 	}
@@ -17,18 +37,8 @@ class Evaluator {
 		}
 	}
 
-	public function allocRandom(count: Int, slots: Int) {
-		this.slots = slots;
-		randValues = [for(_ in 0...count * slots) 0.];
-	}
-
-	public function resetRandom(rand: hxd.Rand) {
-		for(i in 0...randValues.length)
-			randValues[i] = (rand.srand() + 1) * 0.5;
-	}
-
 	inline function getRandom(pidx: Int, rid: Int) {
-		return randValues[pidx * slots + rid];
+		return RAND[(pidx + rid * RAND_STEP) & (RAND_SIZE - 1)];
 	}
 
 	public function setAllParameters(params: Array<hrt.prefab.fx.FX.Parameter>) {

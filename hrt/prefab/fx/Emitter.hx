@@ -552,7 +552,6 @@ class EmitterObject extends h3d.scene.Object {
 	public var evaluator : EmitterEvaluator;
 
 	var numInstances = 0;
-	var instanceCounter = 0;
 	var baseEmitterShader : hrt.shader.BaseEmitter = null;
 	var animatedTextureShader : h3d.shader.AnimatedTexture = null;
 	var particleShader : hrt.shader.ParticleShader = null;
@@ -607,7 +606,6 @@ class EmitterObject extends h3d.scene.Object {
 
 	function init(prefab: Emitter) {
 		this.prefab = prefab;
-		evaluator.allocRandom(prefab.maxCount, evaluator.randomSlots);
 		var anim = getParentFX();
 		if(anim != null)
 			evaluator.parameters = @:privateAccess anim.evaluator.parameters;
@@ -820,13 +818,10 @@ class EmitterObject extends h3d.scene.Object {
 		softReset();
 		random.init(randomSeed);
 		numInstances = 0;
-		instanceCounter = 0;
 		curTime = -prefab.delay;
 		emitCount = 0;
 		emitTarget = 0;
 		listHead = ParticleInstance.NONE;
-
-		evaluator?.resetRandom(random);
 
 		if(particles != null) {
 			for(i in 0...particlesCount) {
@@ -929,7 +924,7 @@ class EmitterObject extends h3d.scene.Object {
 			allocParticles();
 		var slot = numInstances++;
 		var p = particles[slot];
-		p.init(instanceCounter, this);
+		p.init(Evaluator.particleSeed(random), this);
 		p.prev = ParticleInstance.NONE;
 		p.next = listHead;
 		if(listHead != ParticleInstance.NONE)
@@ -939,7 +934,6 @@ class EmitterObject extends h3d.scene.Object {
 			partTrails = partTrails ?? [];
 			partTrails[slot] = trails.allocTrail();
 		}
-		instanceCounter = (instanceCounter + 1) % prefab.maxCount;
 		checkList();
 		return slot;
 	}
