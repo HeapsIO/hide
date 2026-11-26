@@ -554,7 +554,6 @@ class EmitterObject extends h3d.scene.Object {
 	var numInstances = 0;
 	var baseEmitterShader : hrt.shader.BaseEmitter = null;
 	var animatedTextureShader : h3d.shader.AnimatedTexture = null;
-	var particleShader : hrt.shader.ParticleShader = null;
 
 	var parentTransform = new h3d.Matrix();
 	var orbitToEmitter = new h3d.Matrix();
@@ -726,16 +725,8 @@ class EmitterObject extends h3d.scene.Object {
 			baseEmitterShader.meshTransformInverse.initInverse(meshTransform);
 			batch.material.mainPass.addShader(baseEmitterShader);
 
-			particleShader = null;
-			inline function getShader() {
-				if( particleShader == null ) {
-					particleShader = new hrt.shader.ParticleShader();
-					batch.material.mainPass.addShader(particleShader);
-				}
-				return particleShader;
-			}
+			var s = baseEmitterShader;
 			if( prefab.randomColorMode != RandomColorMode.None ) {
-				var s = getShader();
 				s.randomMode = prefab.randomColorMode;
 				s.randomColor1.setColor(prefab.randomColor1);
 				s.randomColor2.setColor(prefab.randomColor2);
@@ -743,7 +734,6 @@ class EmitterObject extends h3d.scene.Object {
 					s.randomGradient = hrt.impl.Gradient.textureFromData(prefab.randomGradient, false);
 			}
 			if( prefab.fadeColorMode != RandomColorMode.None ) {
-				var s = getShader();
 				s.fadeMode = prefab.fadeColorMode;
 				s.fadeColor1.setColor(prefab.fadeColor1);
 				s.fadeColor2.setColor(prefab.fadeColor2);
@@ -751,7 +741,6 @@ class EmitterObject extends h3d.scene.Object {
 					s.fadeGradient = hrt.impl.Gradient.textureFromData(prefab.fadeGradient, false);
 			}
 			if( prefab.fadeIn > 0 || prefab.fadeOut > 0 ) {
-				var s = getShader();
 				s.alphaFade = true;
 				s.fadeIn = prefab.fadeIn;
 				s.fadeOut = prefab.fadeOut;
