@@ -100,6 +100,9 @@ class EmitterMacros {
 			if( meta == null )
 				continue;
 
+			// loaded / saved / copied by the generated loadParams / saveParams / copyParams
+			f.meta.push({ name: ":manual", pos: f.pos });
+
 			var ft = null, fdef = null;
 			switch( f.kind ) {
 				case FVar(t, e): ft = t; fdef = e;
@@ -148,6 +151,7 @@ class EmitterMacros {
 					name: f.name + "_rand",
 					access: [APublic],
 					kind: FVar(macro : Null<$ft>, macro null),
+					meta: [{ name: ":manual", pos: f.pos }],
 					pos: f.pos,
 				});
 				params.push({ name: f.name + "_rand", kind: kind, def: zeroDef(kind, f.pos), pos: f.pos, inst: true, rand: true });

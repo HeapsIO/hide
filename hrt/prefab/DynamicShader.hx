@@ -2,8 +2,9 @@ package hrt.prefab;
 
 class DynamicShader extends Shader {
 
-	@:c var shaderDef : {> hrt.prefab.Cache.ShaderDef, ?sclass : Class<hxsl.Shader>, ?isShaderGraph : Bool } = { shader : null, inits : null };
-	var template : DynamicShader;
+	@:cache var shaderDef : {> hrt.prefab.Cache.ShaderDef, ?sclass : Class<hxsl.Shader>, ?isShaderGraph : Bool } = { shader : null, inits : null };
+	@:manual var template : DynamicShader;
+	@:cache var templateShader : hxsl.Shader; // model cloned by the copies of this template, never rendered
 
 	public function new(parent,  shared: ContextShared) {
 		super(parent, shared);
@@ -28,6 +29,9 @@ class DynamicShader extends Shader {
 		// copies of a copy (sub-emitters...) clone the shader of the loaded prefab
 		var from : DynamicShader = cast data;
 		template = from.template ?? from;
+
+		// shared : the definition is loaded once for the source and its copies
+		shaderDef = from.shaderDef;
 	}
 
 	override function makeShader() {
@@ -53,9 +57,13 @@ class DynamicShader extends Shader {
 		// shader (fast macro copies), which already has the params of their props: no update of the params
 		// Saves lots of allocations in syncShaderVars
 		if( shared.cloneShaders && template != null && getShaderDefinition() != null && shaderDef.sclass != null ) {
-			if( template.shader == null )
-				template.makeShader();
-			return shader = template.shader.clone();
+			if( template.templateShader == null ) {
+				// makeShader() also sets the live shader of the template : keep it unchanged
+				var live = template.shader;
+				template.templateShader = template.makeShader();
+				template.shader = live;
+			}
+			return shader = template.templateShader.clone();
 		}
 		#end
 		return super.makeShaderInstance();

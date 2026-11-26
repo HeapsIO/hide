@@ -261,7 +261,94 @@ class Macros {
 		return macro @:pos(pos) if ($e{shouldSerializeValule(Context.typeof(sourceExpr), sourceExpr, defaultValue)}) $e{target} = ${e};
 	}
 
+	/** The value of an uninitialized variable of the type of `e` **/
+	static macro public function defaultValueOf(e : Expr) : Expr {
+		return switch(Context.followWithAbstracts(Context.typeof(e))) {
+			case TAbstract(_.get() => a, _) if (a.name == "Bool"):
+				macro false;
+			case TAbstract(_.get() => a, _) if (a.name != "Null" && a.meta.has(":coreType")):
+				macro cast 0;
+			default:
+				macro null;
+		}
+	}
+
+	/** Fails the compilation if `e` can hold a scene object : objects created by make() must not outlive clean() **/
+	static macro public function checkNotSceneObject(e : Expr) : Expr {
+		var t = Context.follow(Context.typeof(e));
+		switch(t) {
+			case TDynamic(_), TMono(_):
+			case TAbstract(_.get() => a, _) if (a.name == "Any" && a.pack.length == 0):
+			default:
+				for (path in ["h3d.scene.Object", "h2d.Object"])
+					if (Context.unify(t, Context.getType(path)))
+						Context.error("@:c, @:cache and @:manual fields can't hold a " + path, e.pos);
+		}
+		return macro {};
+	}
+
+	/**
+		Body of resetInstanceVars(). Expanded when the class is typed, after all its build macros :
+		it sees the fields (and their metadata) added by the build macros that run after buildPrefab.
+	**/
+	static macro public function resetInstanceVarsBody() : Expr {
+		var cl = Context.getLocalClass().get();
+		var isRoot = cl.superClass == null;
+		var exprs = isRoot ? [] : [macro super.resetInstanceVars()];
+
+		for (f in cl.fields.get()) {
+			var name = f.name;
+			switch (getCleanKind(f)) {
+				case "cache", "kept":
+					exprs.push(macro @:pos(f.pos) hrt.prefab.Macros.checkNotSceneObject(this.$name));
+				case "reset" if (!isRoot):
+					var value = f.meta.extract(":value")[0]?.params[0] ?? macro hrt.prefab.Macros.defaultValueOf(this.$name);
+					switch (f.kind) {
+						case FVar(_, AccNormal | AccNo):
+							exprs.push(macro @:pos(f.pos) this.$name = $value);
+						case FVar(_, AccCall):
+							exprs.push(macro @:pos(f.pos) @:bypassAccessor this.$name = $value);
+						default: // final, never
+							exprs.push(macro @:pos(f.pos) (this:Dynamic).$name = $value);
+					}
+				default:
+			}
+		}
+
+		return macro $b{exprs};
+	}
+
+	/** Names of the fields of the class reset by clean(), or kept as cache when `cache` is true **/
+	static macro public function cleanFieldNames(cache : Bool) : Expr {
+		var cl = Context.getLocalClass().get();
+		if (!cache && cl.superClass == null)
+			return macro [];
+		var kind = cache ? "cache" : "reset";
+		var names = [for (f in cl.fields.get()) if (getCleanKind(f) == kind) macro $v{f.name}];
+		return macro $a{names};
+	}
+
 	#if macro
+
+	// How clean() handles a field : "reset", "cache", "kept" (@:c, @:manual), "serialized", or null without storage
+	static function getCleanKind(f : ClassField) : Null<String> {
+		switch (f.kind) {
+			case FVar(read, write):
+				if (!read.match(AccNormal | AccNo) && !write.match(AccNormal | AccNo | AccCtor) && !f.meta.has(":isVar"))
+					return null;
+			default:
+				return null;
+		}
+
+		var m = f.meta;
+		if (m.has(":cache"))
+			return "cache";
+		if (m.has(":c") || m.has(":manual"))
+			return "kept";
+		if (m.has(":s") || m.has(":deepCopy"))
+			return "serialized";
+		return "reset";
+	}
 
 	static function shouldSerializeValule(type: Type, a: Expr, b: Expr) : Expr {
 		switch (type) {
@@ -590,7 +677,6 @@ class Macros {
 
 		var serializableFields = [];
 		var copyableFields = [];
-		var cloneInitFields : Array<Field> = [];
 		var pos = Context.currentPos();
 
 
@@ -601,16 +687,28 @@ class Macros {
 			var isSerializable = false;
 			var isDeepCopy = false;
 			var isCopyable = false;
+			var isCache = false;
+			var isManual = false;
 			for (m in f.meta) {
 				switch(m.name) {
 					case ":s":
 						isSerializable = true;
 					case ":c":
 						isCopyable = true;
+					case ":cache":
+						isCache = true;
+					case ":manual": // loaded / copied by hand, kept by clean
+						isManual = true;
 					case ":deepCopy":
 						isDeepCopy = true;
 				}
 			}
+
+			if (isCache && isCopyable)
+				Context.error("@:cache can't be combined with @:c", f.pos);
+
+			if (isManual && (isSerializable || isCopyable || isCache))
+				Context.error("@:manual can't be combined with @:s, @:c or @:cache", f.pos);
 
 			if (isSerializable) {
 				serializableFields.push({field: f, deepCopy: isDeepCopy});
@@ -618,10 +716,6 @@ class Macros {
 
 			if (isCopyable || isSerializable) {
 				copyableFields.push({field: f, deepCopy: isDeepCopy});
-			}
-
-			if (!isSerializable && !isDeepCopy && !isCopyable) {
-				cloneInitFields.push(f);
 			}
 		}
 
@@ -685,51 +779,6 @@ class Macros {
 			}
 		}
 
-		var cloneInitExprs = [];
-		if (!isRoot) {
-			cloneInitExprs.push(macro super.postCloneInit());
-			for (f in cloneInitFields) {
-				var name = f.name;
-				var isFinal = false;
-				if (f.access != null) {
-					if (f.access.contains(AStatic)) {
-						continue;
-					}
-
-					if (f.access.contains(AFinal)) {
-						isFinal = true;
-					}
-				}
-
-				switch (f.kind) {
-					case FVar(_, defaultValue): {
-						if (defaultValue != null) {
-							if (isFinal) {
-								// Force final initialisation
-								cloneInitExprs.push(macro (this:Dynamic).$name = ${defaultValue});
-							}
-							else {
-								cloneInitExprs.push(macro this.$name = ${defaultValue});
-							}
-						}
-					}
-					case FProp(_,set, _, defaultValue): {
-						if (defaultValue != null) {
-							switch(set) {
-								case "default", "set", "null":
-									cloneInitExprs.push(macro this.$name = ${defaultValue});
-								case "never":
-								default: Context.error("Unexpected setter kind " + set, f.pos);
-							}
-						}
-					}
-					default:
-
-				}
-			}
-		}
-
-
 		function makeFun(name,expr, paramType, returnType) : Field {
 			return {
 				name : name,
@@ -757,7 +806,22 @@ class Macros {
 		};
 		fields.push(makeFun("copyToDynamic", EBlock([expr]), macro : Dynamic, macro : Dynamic));
 
-		fields.push(makeFun("postCloneInit", EBlock(cloneInitExprs), null, null));
+		fields.push(makeFun("resetInstanceVars", EBlock([macro hrt.prefab.Macros.resetInstanceVarsBody()]), null, null));
+
+		// Read by hrt.prefab.MakeCleanTest
+		if (!Context.defined("release")) {
+			function makeNameList(name : String, cache : Bool) : Field {
+				return {
+					name : name,
+					kind : FVar(macro : Array<String>, macro hrt.prefab.Macros.cleanFieldNames($v{cache})),
+					meta : [{ name : ":keep", pos : pos }, { name : ":noCompletion", pos : pos }],
+					access : [AStatic],
+					pos : pos,
+				};
+			}
+			fields.push(makeNameList("__resetFields", false));
+			fields.push(makeNameList("__cacheFields", true));
+		}
 
 
 

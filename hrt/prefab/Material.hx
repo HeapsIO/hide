@@ -1037,6 +1037,11 @@ class Material extends Prefab {
 				}
 			},
 			allowChildren: function(t) return !Prefab.isOfType(t, Material),
+			// Applied to the target in game even when its parent (the target preview) is editor only
+			applyTreeStyle: (p : hrt.prefab.Prefab, element : js.html.Element) -> {
+				if (!this.editorOnly && findParent(hrt.prefab.fx.ShaderTarget) != null)
+					element.classList.remove("editorOnly");
+			}
 		};
 	}
 
