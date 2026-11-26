@@ -142,7 +142,7 @@ class CameraController2D extends h2d.Object {
 		targetPos.z *= Math.pow(zoomAmount, -delta);
 	}
 
-	function rot(dx, dy) {
+	function rot(dx:Float, dy:Float) {
 		moveX += dx;
 		moveY += dy;
 	}

@@ -32,7 +32,7 @@ class Extension {
 				Reflect.setField(registered.options, field, Reflect.field(options, field));
 			}
 		}
-		return null;
+		return true;
 	}
 
 	public static function getExtension( file : String ) {

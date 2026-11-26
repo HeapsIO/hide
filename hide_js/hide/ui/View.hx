@@ -140,13 +140,15 @@ class View<T> extends hide.comp.Component {
 		var active = js.Browser.document.activeElement;
 		if( active == null || e.altKey )
 			return false;
+		while( active.shadowRoot?.activeElement != null )
+			active = active.shadowRoot.activeElement;
 		if( e.ctrlKey && e.keyCode != "A".code && e.keyCode != "C".code && e.keyCode != "V".code && e.keyCode != "X".code )
 			return false;
 		if( active.nodeName == "TEXTAREA" )
 			return true;
 		if( active.nodeName == "INPUT" ) {
 			var type = (""+active.getAttribute("type")).toLowerCase();
-			if( type == "text" || type == "null" || type == "number" || type == "password" || type == "date" )
+			if( type == "text" || type == "null" || type == "number" || type == "password" || type == "date" || type == "search" )
 				return true;
 		}
 		return false;
@@ -321,7 +323,7 @@ class View<T> extends hide.comp.Component {
 		if( options.position == null )
 			options.position = Center;
 		viewClasses.set(name, { name : name, cl : cl, options : options });
-		return null;
+		return true;
 	}
 
 	static function createView( name : String, state : Dynamic ) : View<Dynamic> {

@@ -459,7 +459,7 @@ class ColorPicker extends Popup {
 		}
 	}
 
-	public dynamic function onChange(isDragging) {
+	public dynamic function onChange(isDragging : Bool) {
 	}
 
 	function getColorFromString(str:String) : Null<Int> {

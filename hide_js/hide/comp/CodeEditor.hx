@@ -3,7 +3,7 @@ package hide.comp;
 class CodeEditor extends Component {
 
 	static var INIT_DONE = false;
-	static var COMPLETIONS = [];
+	static var COMPLETIONS : Array<String> = [];
 
 	var lang : String;
 	var editor : monaco.ScriptEditor;

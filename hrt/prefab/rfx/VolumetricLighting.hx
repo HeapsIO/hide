@@ -477,14 +477,8 @@ class VolumetricLighting extends RendererFX {
 		if( step == BeforeTonemapping ) {
 			if ( distanceOpacity <= 0.0 )
 				return;
-			var froxels = getFroxels(r);
-			if( froxels != null ) {
-				var pbr = cast(r, h3d.scene.pbr.Renderer);
-				pbr.ctx.engine.pushTarget(pbr.textures.hdr, 0, 0, NotBound);
-				froxels.apply(pbr);
-				pbr.ctx.engine.popTarget();
+			if( getFroxels(r) != null )
 				return;
-			}
 
 			var r = cast(r, h3d.scene.pbr.Renderer);
 			r.mark("VolumetricLighting");
@@ -604,7 +598,7 @@ class VolumetricLighting extends RendererFX {
 	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( step == Lighting ) {
 			var froxels = getFroxels(r);
-			if( froxels != null ) {
+			if( froxels != null && distanceOpacity > 0.0 ) {
 				froxels.pointLights = mode == All;
 				froxels.spotLights = mode != DirectionalOnly;
 				froxels.update(cast r, froxelNear, froxelFar, getFroxelMedium());

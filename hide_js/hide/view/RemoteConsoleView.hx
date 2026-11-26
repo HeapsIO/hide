@@ -190,7 +190,7 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 	**/
 	public static function registerCommandView( name : String, cl : Class<RemoteConsoleCommand> ) {
 		commandViews.set(name, cl);
-		return null;
+		return true;
 	}
 
 	static var _ = init();

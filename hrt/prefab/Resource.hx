@@ -41,8 +41,9 @@ class Resource extends hxd.res.Resource {
 		@:privateAccess var path = localEntry.originalFile ?? localEntry.file;
 		return  haxe.Json.parse(sys.io.File.getContent(path));
 		#else
-		var isBSON = entry.fetchBytes(0,1).get(0) == 'H'.code;
-		return isBSON ? new hxd.fmt.hbson.Reader(entry.getBytes(),false).read() : haxe.Json.parse(entry.getText());
+		var bytes = entry.getBytes();
+		var isBSON = bytes.length > 0 && bytes.get(0) == 'H'.code;
+		return isBSON ? new hxd.fmt.hbson.Reader(bytes,false).read() : haxe.Json.parse(bytes.toString());
 		#end
 	}
 

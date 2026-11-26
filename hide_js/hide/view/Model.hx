@@ -651,7 +651,6 @@ class Model extends FileView {
 	var def = false;
 	static var lodPow : Float = 0.3;
 	var selectedMesh : h3d.scene.Mesh = null;
-	var displayJoints = null;
 	var dynamicJointsScope : String = null;
 	var dynamicJointsConfFolder : String = null;
 	var selectedCount = 0;

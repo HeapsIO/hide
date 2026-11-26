@@ -96,7 +96,7 @@ class LightProbeBaker {
 		setupScene();
 	}
 
-	var passes = [];
+	var passes : Array<h3d.scene.Renderer.PassObjects> = [];
 	function setupScene() {
 		var engine = h3d.Engine.getCurrent();
 		var ctx = @:privateAccess offScreenScene.ctx;

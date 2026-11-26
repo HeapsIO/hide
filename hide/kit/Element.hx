@@ -140,7 +140,7 @@ class Element {
 		return disabled;
 	}
 
-	function getChildDisabled() {
+	function getChildDisabled() : Bool {
 		return isDisabled();
 	}
 

@@ -366,10 +366,6 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		return childrenData;
 	}
 
-	public function ensureVisible(data) {
-
-	}
-
 	public function rebuildTree() {
 		// itemMap holds the open state not saved yet
 		if (currentRefreshFlags.has(SaveOpen))
@@ -630,7 +626,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		}
 	}
 
-	var lastHeight = null;
+	var lastHeight : Null<Int> = null;
 
 	function saveOpenState() {
 		var openState = {};
