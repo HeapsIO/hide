@@ -15,6 +15,7 @@ extern class App {
 	static function setPath( name : String, path : String ) : Void;
 	static function getAppPath() : String;
 	static function requestSingleInstanceLock() : Bool;
+	static function setAsDefaultProtocolClient( protocol : String, ?path : String, ?args : Array<String> ) : Bool;
 	static function getGPUInfo( infoType : String ) : js.lib.Promise<Dynamic>;
 	static function whenReady() : js.lib.Promise<Dynamic>;
 	static function quit() : Void;
