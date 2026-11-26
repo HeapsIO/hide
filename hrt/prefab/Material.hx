@@ -78,12 +78,13 @@ class Material extends Prefab {
 	public function getMaterials(local3d: h3d.scene.Object = null, includePreviewMats : Bool = false, filterObj : (obj : h3d.scene.Object) -> Bool = null) {
 		if (local3d == null)
 			local3d = findFirstLocal3d();
-		var mats = [];
+		var mats : Array<h3d.mat.Material>;
 		if ( filterObj == null )
 			mats = local3d.getMaterials();
 		else {
+			mats = [];
 			function recObj(o : h3d.scene.Object) {
-				mats = mats.concat(o.getMaterials(false));
+				o.getMaterials(mats, false);
 				for ( c in @:privateAccess o.children ) {
 					if ( !filterObj(c) )
 						continue;
@@ -108,18 +109,22 @@ class Material extends Prefab {
 		}
 		#end
 
-		var mat = Lambda.find(mats, function(m) {
+		for (m in mats) {
 			#if (editor || editor_hl)
 			if (m.name != null && m.name == "previewMat")
-				return false;
+				continue;
 			#end
-			return m.name == this.name || (m.name != null && m.name == materialName);
-		});
-
-		return mat == null ? mats : [mat];
+			if (m.name == this.name || (m.name != null && m.name == materialName)) {
+				// mats is a new array: the one material in place
+				mats[0] = m;
+				mats.resize(1);
+				break;
+			}
+		}
+		return mats;
 	}
 
-	function update(mat : h3d.mat.Material, propsToApply: Dynamic, loadTexture : String -> h3d.mat.Texture) {
+	function update(mat : h3d.mat.Material, propsToApply: Dynamic, shared : hrt.prefab.ContextShared) {
 		if(color != null)
 			mat.color.setColor(h3d.Vector.fromArray(color).toColor());
 
@@ -127,7 +132,7 @@ class Material extends Prefab {
 			var p : String = Reflect.field(this, pname);
 			var tex : h3d.mat.Texture = null;
 			if(p != null) {
-				tex = loadTexture(p);
+				tex = shared.loadTexture(p, false);
 				if(tex != null)
 					tex.wrap = wrapRepeat ? Repeat : Clamp;
 			}
@@ -184,13 +189,8 @@ class Material extends Prefab {
 	}
 
 	function applyTo(local3d: h3d.scene.Object, propsToApply : Dynamic, shared: hrt.prefab.ContextShared) {
-		var mats = getMaterials(local3d, true);
-
-		function loadTextureCb( path : String ) : h3d.mat.Texture {
-			return shared.loadTexture(path, false);
-		}
-		for( m in mats )
-			update(m, propsToApply, loadTextureCb);
+		for( m in getMaterials(local3d, true) )
+			update(m, propsToApply, shared);
 	}
 
 	override function updateInstance(?propName ) {
