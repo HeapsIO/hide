@@ -282,7 +282,7 @@ class Macros {
 			default:
 				for (path in ["h3d.scene.Object", "h2d.Object"])
 					if (Context.unify(t, Context.getType(path)))
-						Context.error("@:c, @:cache and @:manual fields can't hold a " + path, e.pos);
+						Context.error("@:c and @:persist fields can't hold a " + path, e.pos);
 		}
 		return macro {};
 	}
@@ -299,7 +299,7 @@ class Macros {
 		for (f in cl.fields.get()) {
 			var name = f.name;
 			switch (getCleanKind(f)) {
-				case "cache", "kept":
+				case "kept":
 					exprs.push(macro @:pos(f.pos) hrt.prefab.Macros.checkNotSceneObject(this.$name));
 				case "reset" if (!isRoot):
 					var value = f.meta.extract(":value")[0]?.params[0] ?? macro hrt.prefab.Macros.defaultValueOf(this.$name);
@@ -318,19 +318,18 @@ class Macros {
 		return macro $b{exprs};
 	}
 
-	/** Names of the fields of the class reset by clean(), or kept as cache when `cache` is true **/
-	static macro public function cleanFieldNames(cache : Bool) : Expr {
+	/** Names of the fields of the class reset by clean() **/
+	static macro public function resetFieldNames() : Expr {
 		var cl = Context.getLocalClass().get();
-		if (!cache && cl.superClass == null)
+		if (cl.superClass == null)
 			return macro [];
-		var kind = cache ? "cache" : "reset";
-		var names = [for (f in cl.fields.get()) if (getCleanKind(f) == kind) macro $v{f.name}];
+		var names = [for (f in cl.fields.get()) if (getCleanKind(f) == "reset") macro $v{f.name}];
 		return macro $a{names};
 	}
 
 	#if macro
 
-	// How clean() handles a field : "reset", "cache", "kept" (@:c, @:manual), "serialized", or null without storage
+	// How clean() handles a field : "reset", "kept" (@:c, @:persist), "serialized", or null without storage
 	static function getCleanKind(f : ClassField) : Null<String> {
 		switch (f.kind) {
 			case FVar(read, write):
@@ -341,9 +340,7 @@ class Macros {
 		}
 
 		var m = f.meta;
-		if (m.has(":cache"))
-			return "cache";
-		if (m.has(":c") || m.has(":manual"))
+		if (m.has(":c") || m.has(":persist"))
 			return "kept";
 		if (m.has(":s") || m.has(":deepCopy"))
 			return "serialized";
@@ -687,28 +684,22 @@ class Macros {
 			var isSerializable = false;
 			var isDeepCopy = false;
 			var isCopyable = false;
-			var isCache = false;
-			var isManual = false;
+			var isPersist = false;
 			for (m in f.meta) {
 				switch(m.name) {
 					case ":s":
 						isSerializable = true;
 					case ":c":
 						isCopyable = true;
-					case ":cache":
-						isCache = true;
-					case ":manual": // loaded / copied by hand, kept by clean
-						isManual = true;
+					case ":persist":
+						isPersist = true;
 					case ":deepCopy":
 						isDeepCopy = true;
 				}
 			}
 
-			if (isCache && isCopyable)
-				Context.error("@:cache can't be combined with @:c", f.pos);
-
-			if (isManual && (isSerializable || isCopyable || isCache))
-				Context.error("@:manual can't be combined with @:s, @:c or @:cache", f.pos);
+			if ((isSerializable ? 1 : 0) + (isCopyable ? 1 : 0) + (isPersist ? 1 : 0) > 1)
+				Context.error("A prefab var can only have one metadata between @:s, @:c and @:persist", f.pos);
 
 			if (isSerializable) {
 				serializableFields.push({field: f, deepCopy: isDeepCopy});
@@ -810,17 +801,13 @@ class Macros {
 
 		// Read by hrt.prefab.MakeCleanTest
 		if (!Context.defined("release")) {
-			function makeNameList(name : String, cache : Bool) : Field {
-				return {
-					name : name,
-					kind : FVar(macro : Array<String>, macro hrt.prefab.Macros.cleanFieldNames($v{cache})),
-					meta : [{ name : ":keep", pos : pos }, { name : ":noCompletion", pos : pos }],
-					access : [AStatic],
-					pos : pos,
-				};
-			}
-			fields.push(makeNameList("__resetFields", false));
-			fields.push(makeNameList("__cacheFields", true));
+			fields.push({
+				name : "__resetFields",
+				kind : FVar(macro : Array<String>, macro hrt.prefab.Macros.resetFieldNames()),
+				meta : [{ name : ":keep", pos : pos }, { name : ":noCompletion", pos : pos }],
+				access : [AStatic],
+				pos : pos,
+			});
 		}
 
 

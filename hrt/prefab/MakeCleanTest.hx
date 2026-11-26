@@ -17,6 +17,8 @@ typedef MakeCleanResult = {
 	unknownTypes : Array<String>,
 	/** Heaps tree values differing between two clones made once each, not compared between make 1 and make 2 **/
 	unstableTreePaths : Array<String>,
+	/** Prefab tree values differing between two clones made once each, not compared between make 1 and make 2 **/
+	unstableStatePaths : Array<String>,
 	failures : Array<MakeCleanFailure>,
 }
 
@@ -26,8 +28,6 @@ private typedef DumpEntry = {
 	owner : Null<String>,
 	/** Inside a field reset by clean() : only compared by value **/
 	reset : Bool,
-	/** Inside a @:cache field **/
-	cache : Bool,
 	sceneObject : Bool,
 }
 
@@ -38,8 +38,8 @@ private class Dump {
 	public function new() {
 	}
 
-	function add(path : String, repr : String, ref : Dynamic, owner : Null<String>, reset = false, cache = false, sceneObject = false) {
-		entries.set(path, { repr : repr, ref : ref, owner : owner, reset : reset, cache : cache, sceneObject : sceneObject });
+	function add(path : String, repr : String, ref : Dynamic, owner : Null<String>, reset = false, sceneObject = false) {
+		entries.set(path, { repr : repr, ref : ref, owner : owner, reset : reset, sceneObject : sceneObject });
 		order.push(path);
 	}
 }
@@ -51,27 +51,18 @@ private class StateDump extends Dump {
 	static var fieldListCache : Map<String, Array<String>> = [];
 
 	var visited = new haxe.ds.ObjectMap<Dynamic, String>();
-	var queue : Array<{ node : Dynamic, name : String, owner : String, cache : Bool }> = [];
-	// cache fields are dumped last : the objects they share are named by their path in the regular fields
-	var deferredCaches : Array<{ value : Dynamic, path : String, reset : Bool, owner : String }> = [];
+	var queue : Array<{ node : Dynamic, name : String, owner : String }> = [];
 	var owner : String;
 
 	public function new(root : Prefab) {
 		super();
 		discover(root, "");
-		while (queue.length > 0 || deferredCaches.length > 0) {
-			if (queue.length == 0) {
-				var c = deferredCaches.shift();
-				owner = c.owner;
-				dumpValue(c.value, c.path, c.reset, true);
-				continue;
-			}
-
+		while (queue.length > 0) {
 			var n = queue.shift();
 			if (Std.isOfType(n.node, Unknown))
 				continue;
 			owner = n.owner;
-			dumpFields(n.node, n.name, false, n.cache);
+			dumpFields(n.node, n.name, false);
 		}
 	}
 
@@ -82,8 +73,8 @@ private class StateDump extends Dump {
 		return prefix + "/" + p.type + ":" + p.name + "#" + index;
 	}
 
-	/** Returns the name of the node `v`, queuing it for dump on its first discovery. Nodes discovered in a cache are cache values. **/
-	function discover(v : Dynamic, path : String, cache = false) : String {
+	/** Returns the name of the node `v`, queuing it for dump on its first discovery **/
+	function discover(v : Dynamic, path : String) : String {
 		var name = visited.get(v);
 		if (name != null)
 			return name;
@@ -91,7 +82,7 @@ private class StateDump extends Dump {
 		var isPrefab = Std.isOfType(v, Prefab);
 		name = isPrefab ? prefabName(v, path) : "shared{" + path + "}";
 		visited.set(v, name);
-		queue.push({ node : v, name : name, owner : isPrefab ? (v : Prefab).type : owner, cache : cache });
+		queue.push({ node : v, name : name, owner : isPrefab ? (v : Prefab).type : owner });
 		return name;
 	}
 
@@ -110,10 +101,9 @@ private class StateDump extends Dump {
 		return list;
 	}
 
-	function dumpFields(obj : Dynamic, path : String, reset : Bool, cache : Bool) {
+	function dumpFields(obj : Dynamic, path : String, reset : Bool) {
 		var cl = Type.getClass(obj);
 		var resetFields = getFieldList(cl, "__resetFields");
-		var cacheFields = getFieldList(cl, "__cacheFields");
 		var isShared = Std.isOfType(obj, ContextShared);
 
 		var fields = Reflect.fields(obj);
@@ -123,17 +113,13 @@ private class StateDump extends Dump {
 				continue;
 			if (isShared && (f == "editor" || f == "scene"))
 				continue;
-			if (!cache && cacheFields.contains(f)) {
-				deferredCaches.push({ value : Reflect.field(obj, f), path : path + "." + f, reset : reset || resetFields.contains(f), owner : owner });
-				continue;
-			}
-			dumpValue(Reflect.field(obj, f), path + "." + f, reset || resetFields.contains(f), cache);
+			dumpValue(Reflect.field(obj, f), path + "." + f, reset || resetFields.contains(f));
 		}
 	}
 
-	function dumpValue(v : Dynamic, path : String, reset : Bool, cache : Bool) {
+	function dumpValue(v : Dynamic, path : String, reset : Bool) {
 		function addValue(repr : String, ?ref : Dynamic, sceneObject = false)
-			add(path, repr, ref, owner, reset, cache, sceneObject);
+			add(path, repr, ref, owner, reset, sceneObject);
 
 		// Returns false if `v` was already dumped
 		function visit(repr : String) : Bool {
@@ -160,13 +146,13 @@ private class StateDump extends Dump {
 			case TEnum(e):
 				addValue(e.getName() + "." + Type.enumConstructor(v));
 				for (i => param in Type.enumParameters(v))
-					dumpValue(param, path + "(" + i + ")", reset, cache);
+					dumpValue(param, path + "(" + i + ")", reset);
 			case TObject:
 				if (Std.isOfType(v, Class) || Std.isOfType(v, Enum)) {
 					addValue("type", v);
 				}
 				else if (visit("{}")) {
-					dumpFields(v, path, reset, cache);
+					dumpFields(v, path, reset);
 				}
 			case TClass(c):
 				var className = Type.getClassName(c);
@@ -178,7 +164,7 @@ private class StateDump extends Dump {
 					if (reset)
 						addValue(Std.isOfType(v, Prefab) ? "prefab " + (v : Prefab).type + ":" + (v : Prefab).name : className, v);
 					else
-						addValue("node " + discover(v, path, cache), v);
+						addValue("node " + discover(v, path), v);
 				}
 				else if (Std.isOfType(v, h3d.scene.Object) || Std.isOfType(v, h2d.Object)) {
 					addValue(className, v, true);
@@ -187,7 +173,7 @@ private class StateDump extends Dump {
 					var a : Array<Dynamic> = v;
 					if (visit("Array(" + a.length + ")"))
 						for (i => e in a)
-							dumpValue(e, path + "[" + i + "]", reset, cache);
+							dumpValue(e, path + "[" + i + "]", reset);
 				}
 				else if (Std.isOfType(v, haxe.Constraints.IMap)) {
 					var map : haxe.Constraints.IMap<Dynamic, Dynamic> = v;
@@ -197,7 +183,7 @@ private class StateDump extends Dump {
 						keys.sort((a, b) -> Reflect.compare(Std.string(a), Std.string(b)));
 					if (visit(className + "(" + keys.length + ")"))
 						for (i => k in keys)
-							dumpValue(map.get(k), path + "[" + (primitiveKeys ? Std.string(k) : "#" + i) + "]", reset, cache);
+							dumpValue(map.get(k), path + "[" + (primitiveKeys ? Std.string(k) : "#" + i) + "]", reset);
 				}
 				else if (Std.isOfType(v, haxe.io.Bytes)) {
 					addValue("Bytes(" + (v : haxe.io.Bytes).length + ")", v);
@@ -206,7 +192,7 @@ private class StateDump extends Dump {
 					addValue(className, v);
 				}
 				else if (visit(className)) {
-					dumpFields(v, path, reset, cache);
+					dumpFields(v, path, reset);
 				}
 			default:
 				addValue(Std.string(Type.typeof(v)), v);
@@ -301,10 +287,10 @@ private class TreeDump extends Dump {
 
 /**
 	Checks the make/clean contract on a prefab file :
-	- clean() restores the prefab tree variables to their state before make(), @:cache fields excepted on the first make
+	- the prefab tree variables after make() are the same after clean() + make()
 	- clean() doesn't keep any scene object alive
 	- a second make() builds an heaps tree equivalent to the first one, made of new objects, without modifying the first one
-	- the cached prefab of the resource is not modified
+	- the cached prefab of the resource is not modified by clean() + make()
 **/
 class MakeCleanTest {
 
@@ -312,7 +298,7 @@ class MakeCleanTest {
 	var phase = "load";
 
 	function new(file : String) {
-		result = { file : file, types : [], unknownTypes : [], unstableTreePaths : [], failures : [] };
+		result = { file : file, types : [], unknownTypes : [], unstableTreePaths : [], unstableStatePaths : [], failures : [] };
 	}
 
 	/**
@@ -351,7 +337,6 @@ class MakeCleanTest {
 
 	function test(initShared : ContextShared -> Void) {
 		var template = hxd.res.Loader.currentInstance.load(result.file).to(hrt.prefab.Resource).load();
-		var templateState = new StateDump(template);
 
 		function makeClone() {
 			var p = template.clone();
@@ -362,15 +347,19 @@ class MakeCleanTest {
 
 		// Values differing between the trees of two clones don't depend on clean() : they are not compared between make 1 and make 2
 		phase = "baseline";
-		var unstableTreePaths = [for (d in diff(makeTree(makeClone()).dump, makeTree(makeClone()).dump, false, false)) d.path];
+		var cloneA = makeClone(), cloneB = makeClone();
+		var unstableTreePaths = [for (d in diff(makeTree(cloneA).dump, makeTree(cloneB).dump, false)) d.path];
+		var unstableStatePaths = [for (d in diff(new StateDump(cloneA), new StateDump(cloneB), false, null, false)) d.path];
 		result.unstableTreePaths = unstableTreePaths;
+		result.unstableStatePaths = unstableStatePaths;
 
 		phase = "clone";
 		var p = makeClone();
 
-		var state1 = new StateDump(p);
 		phase = "make 1";
 		var tree1 = makeTree(p);
+		var state1 = new StateDump(p);
+		var templateState1 = new StateDump(template);
 
 		for (c in p.findAll(Prefab, null, true)) {
 			var list = Std.isOfType(c, Unknown) ? result.unknownTypes : result.types;
@@ -380,25 +369,24 @@ class MakeCleanTest {
 
 		phase = "clean 1";
 		p.clean();
-		var state2 = new StateDump(p);
+		var cleanState1 = new StateDump(p);
 		phase = "make 2";
 		var tree2 = makeTree(p);
 		var tree1After = new TreeDump(tree1.objects[0], tree1.owners);
+		var state2 = new StateDump(p);
 		phase = "clean 2";
 		p.clean();
-		var state3 = new StateDump(p);
+		var cleanState2 = new StateDump(p);
 		phase = "compare";
-		var templateStateAfter = new StateDump(template);
+		var templateState2 = new StateDump(template);
 
-		checkSceneObjects(state1, "clone");
-		checkSceneObjects(state2, "clean 1");
-		checkSceneObjects(state3, "clean 2");
-		compare(state1, state2, "make 1 + clean", true, false);
-		compare(state2, state3, "make 2 + clean", false, false);
-		compare(templateState, templateStateAfter, "template", true, true);
+		checkSceneObjects(cleanState1, "clean 1");
+		checkSceneObjects(cleanState2, "clean 2");
+		compare(state1, state2, "clean + make 2", false, unstableStatePaths);
+		compare(templateState1, templateState2, "template", true);
 
-		compare(tree1.dump, tree2.dump, "make 2 tree", false, false, unstableTreePaths);
-		compare(tree1.dump, tree1After, "make 1 tree after make 2", false, false);
+		compare(tree1.dump, tree2.dump, "make 2 tree", false, unstableTreePaths);
+		compare(tree1.dump, tree1After, "make 1 tree after make 2", false);
 
 		var tree1Objects = new haxe.ds.ObjectMap<Dynamic, Bool>();
 		for (o in tree1.dump.objects)
@@ -434,18 +422,18 @@ class MakeCleanTest {
 	}
 
 	/**
-		`skipCache` ignores the @:cache values, `strict` also compares the pointers of the values reset by clean()
+		`strict` also compares the pointers of the scene objects and of the values reset by clean()
 	**/
-	function compare(a : Dump, b : Dump, step : String, skipCache : Bool, strict : Bool, ?ignoredPaths : Array<String>) {
-		for (d in diff(a, b, skipCache, strict, ignoredPaths))
+	function compare(a : Dump, b : Dump, step : String, strict : Bool, ?ignoredPaths : Array<String>) {
+		for (d in diff(a, b, strict, ignoredPaths))
 			fail(d.prefabType, d.path, step + " : " + d.message);
 	}
 
 	/**
 		The differences between two dumps, ignoring the values in `ignoredPaths` and under them.
-		`skipCache` ignores the @:cache values, `strict` also compares the pointers of the values reset by clean()
+		`strict` also compares the pointers of the scene objects and of the values reset by clean(), `pointers` false compares only the values
 	**/
-	static function diff(a : Dump, b : Dump, skipCache : Bool, strict : Bool, ?ignoredPaths : Array<String>) : Array<MakeCleanFailure> {
+	static function diff(a : Dump, b : Dump, strict : Bool, ?ignoredPaths : Array<String>, pointers = true) : Array<MakeCleanFailure> {
 		var diffs : Array<MakeCleanFailure> = [];
 
 		function isUnder(path : String, parent : String) {
@@ -454,15 +442,19 @@ class MakeCleanTest {
 			return path.length == parent.length || ".[(/".indexOf(path.charAt(parent.length)) >= 0;
 		}
 
+		// Paths are listed depth first : the values under an ignored path follow it
+		var ignored = [for (p in ignoredPaths ?? []) p => true];
+		var ignoredPath : String = null;
 		function isIgnored(path : String) {
-			if (ignoredPaths != null)
-				for (p in ignoredPaths)
-					if (isUnder(path, p))
-						return true;
-			return false;
+			if (ignoredPath != null && isUnder(path, ignoredPath))
+				return true;
+			if (!ignored.exists(path))
+				return false;
+			ignoredPath = path;
+			return true;
 		}
 
-		// Paths are listed depth first : the values under a failing path are not reported
+		// The values under a failing path are not reported
 		var failedPath : String = null;
 		function add(owner : String, path : String, message : String) {
 			diffs.push({ prefabType : owner, path : path, message : message });
@@ -472,8 +464,6 @@ class MakeCleanTest {
 		for (path in a.order) {
 			var ea = a.entries.get(path);
 			var eb = b.entries.get(path);
-			if (skipCache && (ea.cache || (eb?.cache ?? false)))
-				continue;
 			if ((failedPath != null && isUnder(path, failedPath)) || isIgnored(path))
 				continue;
 
@@ -481,14 +471,15 @@ class MakeCleanTest {
 				add(ea.owner, path, "removed (" + ea.repr + ")");
 			else if (ea.repr != eb.repr)
 				add(ea.owner, path, ea.repr + " -> " + eb.repr);
-			else if ((strict || !ea.reset) && ea.ref != eb.ref)
+			else if (pointers && (strict || (!ea.reset && !ea.sceneObject)) && ea.ref != eb.ref)
 				add(ea.owner, path, "pointer changed (" + ea.repr + ")");
 		}
 
 		failedPath = null;
+		ignoredPath = null;
 		for (path in b.order) {
 			var eb = b.entries.get(path);
-			if (a.entries.exists(path) || (skipCache && eb.cache) || (failedPath != null && isUnder(path, failedPath)) || isIgnored(path))
+			if (isIgnored(path) || a.entries.exists(path) || (failedPath != null && isUnder(path, failedPath)))
 				continue;
 			add(eb.owner, path, "added (" + eb.repr + ")");
 		}

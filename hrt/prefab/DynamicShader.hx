@@ -2,9 +2,9 @@ package hrt.prefab;
 
 class DynamicShader extends Shader {
 
-	@:cache var shaderDef : {> hrt.prefab.Cache.ShaderDef, ?sclass : Class<hxsl.Shader>, ?isShaderGraph : Bool } = { shader : null, inits : null };
-	@:manual var template : DynamicShader;
-	@:cache var templateShader : hxsl.Shader; // model cloned by the copies of this template, never rendered
+	@:persist var shaderDef : {> hrt.prefab.Cache.ShaderDef, ?sclass : Class<hxsl.Shader>, ?isShaderGraph : Bool } = { shader : null, inits : null };
+	@:persist var template : DynamicShader;
+	@:persist var templateShader : hxsl.Shader; // model cloned by the copies of this template, never rendered
 
 	public function new(parent,  shared: ContextShared) {
 		super(parent, shared);

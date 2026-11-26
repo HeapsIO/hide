@@ -113,7 +113,7 @@ class Prefab {
 	/**
 		A storage for some extra properties
 	**/
-	@:s @:cache public var props : Any = null;
+	@:s public var props : Any = null;
 
 	/**
 		The parent of the prefab in the tree view
@@ -265,7 +265,7 @@ class Prefab {
 
 	/**
 		Resets this prefab and its children to their state before make(), so that make() can be called again.
-		Fields not marked @:s, @:c, @:cache or @:manual are reset to their default value. Objects created by make() are left untouched.
+		Fields not marked @:s, @:c or @:persist are reset to their default value. Objects created by make() are left untouched.
 	**/
 	public final function clean() : Void {
 		resetInstanceVars();

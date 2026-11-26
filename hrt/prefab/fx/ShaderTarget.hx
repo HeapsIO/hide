@@ -10,12 +10,12 @@ class ShaderTargetObj extends h3d.scene.Object {
 
 	// The shader prefabs of shadersRoot.getSelection() and their instances, same indices
 	var selection : Array<Shader>;
-	var shaders : Array<hxsl.Shader>;
+	var instances : Array<hxsl.Shader>;
 
 	public function init(fx : hrt.prefab.fx.FX) {
 		// Made during the make of the fx, so that its animations use these instances
 		var sel = shadersRoot.getSelection();
-		shaders = [for (s in sel) s.shader ?? s.makeShaderInstance()];
+		instances = [for (s in sel) s.shader ?? s.makeShaderInstance()];
 		selection = sel;
 
 		var fxAnim : hrt.prefab.fx.FX.FXAnimation = cast fx.local3d;
@@ -31,15 +31,15 @@ class ShaderTargetObj extends h3d.scene.Object {
 		if (selection == null)
 			return;
 		for (i => s in selection)
-			applyShader(s, shaders[i]);
+			applyShader(s, instances[i]);
 		applied = true;
 	}
 
 	public function removeShaders() {
 		if (selection != null) {
 			for (i => s in selection) {
-				if (shaders[i] != null)
-					s.removeFrom(parent, shaders[i]);
+				if (instances[i] != null)
+					s.removeFrom(parent, instances[i]);
 			}
 		}
 		applied = false;
