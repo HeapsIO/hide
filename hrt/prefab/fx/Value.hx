@@ -3,7 +3,8 @@ package hrt.prefab.fx;
 @:structInit class ParamCurve {
 	public var c1 : hrt.impl.Curve;
 	public var c2 : hrt.impl.Curve;
-	public var param : String; // FX parameter
+	public var param : String;
+	public var idx : Int;
 }
 
 enum Value {

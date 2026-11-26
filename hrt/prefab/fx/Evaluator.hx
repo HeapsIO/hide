@@ -2,8 +2,72 @@ package hrt.prefab.fx;
 
 import hrt.prefab.fx.Value;
 
+
+class ParamValues {
+	var names : Array<String> = [];
+	var values : Array<Float> = [];
+
+	public function new() {
+	}
+
+	public function init(params: Array<hrt.prefab.fx.FX.Parameter>) {
+		names.resize(0);
+		values.resize(0);
+		if (params != null)
+			for (p in params) {
+				names.push(p.name);
+				values.push(p.def);
+			}
+	}
+
+	public function indexOf(name: String) {
+		for(i in 0...names.length)
+			if(names[i] == name)
+				return i;
+		return -1;
+	}
+
+	public inline function getAt(i: Int) : Float {
+		return values[i];
+	}
+
+	public inline function setAt(i: Int, v: Float) {
+		values[i] = v;
+	}
+
+	public function exists(name: String) {
+		return indexOf(name) >= 0;
+	}
+
+	public function get(name: String) : Float {
+		var i = indexOf(name);
+		return i < 0 ? 0.0 : values[i];
+	}
+
+	public function set(name: String, v: Float) {
+		var i = indexOf(name);
+		if(i < 0) {
+			names.push(name);
+			values.push(v);
+		} else
+			values[i] = v;
+	}
+
+	public function clear() {
+		init(null);
+	}
+
+	public function keys() {
+		return names.iterator();
+	}
+
+	public function keyValueIterator() : KeyValueIterator<String, Float> {
+		return [for(i in 0...names.length) { key: names[i], value: values[i] }].iterator();
+	}
+}
+
 class Evaluator {
-	public var parameters: Map<String, Float> = [];
+	public var parameters = new ParamValues();
 
 	/*
 		The randoms of the particles: a particle has a seed (its index), its random `rid` is in one table shared by all
@@ -42,12 +106,7 @@ class Evaluator {
 	}
 
 	public function setAllParameters(params: Array<hrt.prefab.fx.FX.Parameter>) {
-		parameters.clear();
-		if (params == null)
-			return;
-		for (p in params) {
-			parameters[p.name] = p.def;
-		}
+		parameters.init(params);
 	}
 
 	public function getAtRandom(val: Value, time: Float, u: Float) : Float {
@@ -85,8 +144,16 @@ class Evaluator {
 		}
 	}
 
+	inline function paramValue(pc: ParamCurve) : Float {
+		#if editor
+		return parameters.get(pc.param);
+		#else
+		return parameters.getAt(pc.idx);
+		#end
+	}
+
 	function getParamCurve(pc: ParamCurve, time: Float) : Float {
-		var p = parameters[pc.param] ?? 0.0;
+		var p = paramValue(pc);
 		return pc.c2 != null ? hxd.Math.lerp(pc.c1.getVal(time), pc.c2.getVal(time), p) : pc.c1.getVal(p);
 	}
 
@@ -96,7 +163,7 @@ class Evaluator {
 			case VConst(v): v * time;
 			case VCurve(c): c.getSum(time);
 			case VParamCurve(pc):
-				var p = parameters[pc.param] ?? 0.0;
+				var p = paramValue(pc);
 				pc.c2 != null ? hxd.Math.lerp(pc.c1.getSum(time), pc.c2.getSum(time), p) : pc.c1.getVal(p) * time;
 			default: throw "not implemented";
 		}

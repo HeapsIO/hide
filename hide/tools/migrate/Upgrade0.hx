@@ -1098,10 +1098,17 @@ class Upgrade0 {
 
 		var ev = new Evaluator();
 		for( k => v in parameters ) ev.parameters.set(k, v);
+		if( input != "" && !ev.parameters.exists(input) ) ev.parameters.set(input, 0);
 		function val( c : RawNode ) : Value {
 			if( c == null ) return null;
 			var p = Std.downcast(mirrorOf(c), hrt.prefab.fx.Curve);
-			return p?.makeVal();
+			var v = p?.makeVal();
+			// the mirror is out of any FX: the index of its parameter in `ev`
+			switch( v ) {
+			case VParamCurve(pc): pc.idx = ev.parameters.indexOf(pc.param);
+			default:
+			}
+			return v;
 		}
 		var sv = cs == null ? [null, null, null] : [for( c in cs.comps ) val(c)];
 		var rv = cr == null ? [null, null, null] : [for( c in cr.comps ) val(c)];

@@ -142,13 +142,22 @@ class Curve extends hrt.prefab.Curve {
 		});
 	}
 
+	function paramIndex() {
+		var fx = findParent(FX);
+		if(fx != null)
+			for(i => p in fx.parameters)
+				if(p.name == param)
+					return i;
+		return -1;
+	}
+
 	override function makeVal() : Value {
 		inline function fail(what: String) : Value throw '${getAbsPath(true)}: $what is not supported';
 		return switch(blendMode) {
 			case None:
-				param == null ? VCurve(data) : VParamCurve({ c1: data, c2: null, param: param });
+				param == null ? VCurve(data) : VParamCurve({ c1: data, c2: null, param: param, idx: paramIndex() });
 			case Blend:
-				VParamCurve({ c1: datas[0], c2: datas[1], param: param });
+				VParamCurve({ c1: datas[0], c2: datas[1], param: param, idx: paramIndex() });
 			case Range:
 				fail("a random range out of the Curve Range of the emitter params");
 			case Reference:

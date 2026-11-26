@@ -234,12 +234,20 @@ class FXAnimation extends h3d.scene.Object {
 		subFXParams = animData.bindSubFXs();
 	}
 
-	public function setParameter(name: String, value: Dynamic) {
-		evaluator.parameters[name] = value;
+	public function setParameter(name: String, value: Float) {
+		evaluator.parameters.set(name, value);
 	}
 
-	public function getParameter(name: String) {
-		return evaluator.parameters[name];
+	public function getParameter(name: String) : Float {
+		return evaluator.parameters.get(name);
+	}
+
+	public function getParameterIndex(name: String) {
+		return evaluator.parameters.indexOf(name);
+	}
+	
+	public inline function setParameterAt(index: Int, value: Float) {
+		evaluator.parameters.setAt(index, value);
 	}
 
 	public function getParameters() {
@@ -247,12 +255,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	public function setParameters(params: Array<Parameter>) {
-		evaluator.parameters.clear();
-		if (params == null)
-			return;
-		for (p in params) {
-			evaluator.parameters[p.name] = p.def;
-		}
+		evaluator.setAllParameters(params);
 	}
 
 	public function setRandSeed(seed: Int) {
