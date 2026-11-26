@@ -14,6 +14,8 @@ enum Value {
 	VRandom(rid: Int, min: Float, max: Float);
 	// c(t), c with absolute values for keys
 	VCurve(c: hrt.impl.Curve);
+	// rgba of g(t), the stops of g at times
+	VGradient(g: hrt.impl.Gradient);
 	// lerp(pc.c1(t), pc.c2(t), pc.param)
 	VParamCurve(pc: ParamCurve);
 	// v + (spread + slope * v) * (2u - 1), v = c(t), c with absolute values for keys: the random spread follows the value of the
@@ -25,6 +27,4 @@ enum Value {
 	VCurveRange(rid: Int, a: hrt.impl.Curve, b: hrt.impl.Curve);
 
 	VVector(x: Value, y: Value, z: Value);
-	VColor(r: Value, g: Value, b: Value, a: Value);
-	VHsl(h: Value, s: Value, l: Value, a: Value);
 }

@@ -313,7 +313,7 @@ class AnimData {
 	static function objectAnim(obj3d: hrt.prefab.Object3D, local3d: h3d.scene.Object) : ObjectAnimData {
 		var elt : PrefabElement = obj3d;
 		// most objects have no curve: none of the lookups below would find one
-		if(!Lambda.exists(elt.children, c -> c.enabled && Std.isOfType(c, Curve)))
+		if(!Lambda.exists(elt.children, c -> c.enabled && (Std.isOfType(c, Curve) || Std.isOfType(c, Gradient))))
 			return null;
 		var anyFound = false;
 
@@ -328,12 +328,10 @@ class AnimData {
 		}
 
 		function makeColor(name: String) {
-			var curves = Curve.getCurves(elt, name);
-			if(curves == null || curves.length == 0)
-				return null;
-
-			anyFound = true;
-			return BaseFXTools.getColorValue(curves);
+			var v = BaseFXTools.getColorValue(elt, name);
+			if (v != null)
+				anyFound = true;
+			return v;
 		}
 
 		var ap : AdditionalProperies = null;
@@ -389,12 +387,15 @@ class AnimData {
 	}
 
 	static function shaderValue(basePrefab: hrt.prefab.Prefab, name: String, type: hxsl.Ast.Type) : Value {
+		var gradient = Gradient.getGradient(basePrefab, name);
+		if (gradient != null)
+			return gradient.makeVal();
 		var curves = Curve.getCurves(basePrefab, name);
-		if(curves == null || curves.length == 0)
+		if (curves == null || curves.length == 0)
 			return null;
-		switch(type) {
+		switch (type) {
 			case TVec(_, VFloat):
-				return name.toLowerCase().indexOf("color") >= 0 ? BaseFXTools.getColorValue(curves) : BaseFXTools.getVectorValue(curves);
+				return BaseFXTools.getVectorValue(curves);
 			default:
 				return Curve.getCurve(basePrefab, name)?.makeVal();
 		}
@@ -412,8 +413,7 @@ class AnimData {
 			var base = EmitterParam.baseComponent(prop, size, i);
 			return isCurve(i) ? EmitterParam.ParamBuilder.curve(shader, keys[i], base) : Evaluator.vVal(base);
 		}
-		// 4 components: a color
-		return size == 1 ? comp(0) : size > 3 ? VColor(comp(0), comp(1), comp(2), comp(3)) : VVector(comp(0), comp(1), size > 2 ? comp(2) : VZero);
+		return size == 1 ? comp(0) : VVector(comp(0), comp(1), size > 2 ? comp(2) : VZero);
 	}
 
 	static function effectParams(rfxElt: hrt.prefab.rfx.RendererFX) {
@@ -522,38 +522,11 @@ class BaseFXTools {
 			curveOrVal(z, defVal));
 	}
 
-	public static function getColorValue(curves: Array<Curve>) : Value {
-		inline function find(s) {
-			return findSuffix(curves, s);
-		}
-
-		var r = find(":r");
-		var g = find(":g");
-		var b = find(":b");
-		var a = find(":a");
-		var h = find(":h");
-		var s = find(":s");
-		var l = find(":l");
-
-		if(h != null || s != null || l != null) {
-			return VHsl(
-				h != null ? h.makeVal() : VConst(0.0),
-				s != null ? s.makeVal() : VConst(1.0),
-				l != null ? l.makeVal() : VConst(1.0),
-				a != null ? a.makeVal() : VConst(1.0));
-		}
-
-		if(a != null && r == null && g == null && b == null)
-			return a.makeVal();
-
-		if(a == null && r == null && g == null && b == null)
-			return VConst(1.0); // White by default
-
-		return VColor(
-			r != null ? r.makeVal() : VConst(1.0),
-			g != null ? g.makeVal() : VConst(1.0),
-			b != null ? b.makeVal() : VConst(1.0),
-			a != null ? a.makeVal() : VConst(1.0));
+	public static function getColorValue(elt: PrefabElement, name: String) : Value {
+		var gradient = Gradient.getGradient(elt, name);
+		if (gradient != null)
+			return gradient.makeVal();
+		return Curve.getCurve(elt, name + ":a")?.makeVal();
 	}
 
 	static inline function findSuffix(curves: Array<Curve>, suffix: String) {

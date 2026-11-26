@@ -247,12 +247,10 @@ class FX2D extends Object2D implements BaseFX {
 		}
 
 		function makeColor(name: String) {
-			var curves = Curve.getCurves(elt, name);
-			if(curves == null || curves.length == 0)
-				return null;
-
-			anyFound = true;
-			return BaseFXTools.getColorValue(curves);
+			var v = BaseFXTools.getColorValue(elt, name);
+			if(v != null)
+				anyFound = true;
+			return v;
 		}
 
 		var anim : ObjectAnimation2D = {

@@ -140,7 +140,7 @@ class Evaluator {
 				var v = getParamCurve(pc, time);
 				v + (spread + slope * v) * (rand(rid) * 2 - 1);
 			case VCurveRange(rid, a, b): hxd.Math.lerp(a.getVal(time), b.getVal(time), rand(rid));
-			case VVector(_), VColor(_), VHsl(_): throw "getFloat: vector value";
+			case VVector(_), VGradient(_): throw "getFloat: vector value";
 		}
 	}
 
@@ -173,11 +173,8 @@ class Evaluator {
 		switch(v) {
 			case VVector(x, y, z):
 				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), 1.0);
-			case VColor(r, g, b, a):
-				vec.set(getFast(pidx, r, time), getFast(pidx, g, time), getFast(pidx, b, time), getFast(pidx, a, time));
-			case VHsl(h, s, l, a):
-				vec.makeColor(getFast(pidx, h, time), getFast(pidx, s, time), getFast(pidx, l, time));
-				vec.a = getFast(pidx, a, time);
+			case VGradient(g):
+				g.eval(time, vec);
 			case VZero:
 				vec.set(0,0,0,1);
 			default:
@@ -192,8 +189,6 @@ class Evaluator {
 		switch(v) {
 			case VVector(x, y, z):
 				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time), 1.0);
-			case VColor(r, g, b, a):
-				vec.set(getFast(pidx, r, time), getFast(pidx, g, time), getFast(pidx, b, time), getFast(pidx, a, time));
 			case VZero:
 				vec.set(0,0,0,1);
 			default:

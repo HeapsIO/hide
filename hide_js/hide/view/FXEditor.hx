@@ -5,6 +5,7 @@ using Lambda;
 import hide.Element;
 import hrt.prefab.Prefab in PrefabElement;
 import hrt.prefab.fx.Curve;
+import hrt.prefab.fx.Gradient;
 import hrt.prefab.fx.Event;
 import hide.tools.CameraController.CamController;
 
@@ -650,7 +651,7 @@ class FXEditor extends hide.view.FileView {
 			data.refreshObjectAnims();
 		}
 
-		if(p is Event || p is Curve) {
+		if (p is Event || p is Curve || p is Gradient) {
 			data.refreshObjectAnims();
 			refreshTimelineView();
 			sceneEditor.sceneTree.refreshItem(p);
@@ -994,12 +995,12 @@ class FXEditor extends hide.view.FileView {
 		}
 	}
 
-	function addTracks(element : PrefabElement, props : Array<PropTrackDef>, ?prefix: String) {
-		var added = [];
-		for(prop in props) {
+	function addCurveTrack(element : PrefabElement, props : Array<PropTrackDef>, ?prefix: String) {
+		var added : Array<PrefabElement> = [];
+		for (prop in props) {
 			var id = prefix != null ? prefix + ":" + prop.name : prop.name;
-			for(k in hrt.prefab.fx.EmitterParam.animKeys(element, id) ?? [id]) {
-				if(Curve.getCurve(element, k, false) != null)
+			for (k in hrt.prefab.fx.EmitterParam.animKeys(element, id) ?? [id]) {
+				if (Curve.getCurve(element, k, false) != null)
 					continue;
 				var curve = new Curve(element, null);
 				curve.name = k;
@@ -1009,9 +1010,19 @@ class FXEditor extends hide.view.FileView {
 				added.push(curve);
 			}
 		}
+		commitAddedTracks(element, added);
+	}
 
+	function addGradientTrack(element : PrefabElement, name : String) {
+		var gradient = new Gradient(element, null);
+		gradient.name = name;
+		gradient.data.stops[1].position = Math.max(data.duration, 0.1);
+		commitAddedTracks(element, [gradient]);
+	}
+
+	function commitAddedTracks(element : PrefabElement, added : Array<PrefabElement>) {
 		if(added.length == 0)
-			return added;
+			return;
 
 		undo.change(Custom(function(undo) {
 			for(c in added) {
@@ -1025,7 +1036,6 @@ class FXEditor extends hide.view.FileView {
 		}));
 		sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 		sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(SceneTree, () -> sceneEditor.selectElements([for (a in added) a], NoHistory)));
-		return added;
 	}
 
 	public function getNewTrackMenu(elt: PrefabElement) : Array<hrt.ui.HuiMenu.MenuItem> {
@@ -1045,7 +1055,7 @@ class FXEditor extends hide.view.FileView {
 			return getTrack(elt, pname) != null;
 		}
 
-		function trackItem(name: String, props: Array<PropTrackDef>, ?prefix: String) : hrt.ui.HuiMenu.MenuItem {
+		function curveItem(name: String, props: Array<PropTrackDef>, ?prefix: String) : hrt.ui.HuiMenu.MenuItem {
 			var hasAllTracks = true;
 			for(p in props) {
 				if(getTrack(elt, prefix != null ? prefix + ":" + p.name : p.name) == null)
@@ -1054,34 +1064,41 @@ class FXEditor extends hide.view.FileView {
 			return {
 				label: upperCase(name),
 				click: function() {
-					var added = addTracks(elt, props, prefix);
+					addCurveTrack(elt, props, prefix);
 				},
 				enabled: !hasAllTracks };
+		}
+
+		function gradientItem(name: String) : hrt.ui.HuiMenu.MenuItem {
+			return {
+				label: upperCase(name),
+				click: () -> addGradientTrack(elt, name),
+				enabled: Gradient.getGradient(elt, name, false) == null,
+			};
 		}
 
 		function groupedTracks(prefix: String, props: Array<PropTrackDef>) : Array<hrt.ui.HuiMenu.MenuItem> {
 			var allLabel = [for(p in props) upperCase(p.name)].join("/");
 			var ret = [];
-			ret.push(trackItem(allLabel, props, prefix));
+			ret.push(curveItem(allLabel, props, prefix));
 			for(p in props) {
 				var label = upperCase(p.name);
-				ret.push(trackItem(label, [p], prefix));
+				ret.push(curveItem(label, [p], prefix));
 			}
 			return ret;
 		}
 
-		var hslTracks : Void -> Array<PropTrackDef> = () -> [{name: "h", def: 0.0}, {name: "s", def: 0.0}, {name: "l", def: 1.0}];
 		var alphaTrack : Void -> Array<PropTrackDef> = () -> [{name: "a", def: 1.0}];
 		var xyzwTracks : Int -> Array<PropTrackDef> = (n) -> [{name: "x"}, {name: "y"}, {name: "z"}, {name: "w"}].slice(0, n);
 
 		if (obj2dElt != null) {
 			var scaleTracks = groupedTracks("scale", xyzwTracks(2));
-			scaleTracks.unshift(trackItem("Uniform", [{name: "scale"}]));
+			scaleTracks.unshift(curveItem("Uniform", [{name: "scale"}]));
 			menuItems.push({
 				label: "Position",
 				menu: groupedTracks("position", xyzwTracks(2)),
 			});
-			menuItems.push(trackItem("Rotation", [{name: "rotation"}]));
+			menuItems.push(curveItem("Rotation", [{name: "rotation"}]));
 			menuItems.push({
 				label: "Scale",
 				menu: scaleTracks,
@@ -1089,15 +1106,15 @@ class FXEditor extends hide.view.FileView {
 			menuItems.push({
 				label: "Color",
 				menu: [
-					trackItem("HSL", hslTracks(), "color"),
-					trackItem("Alpha", alphaTrack(), "color")
+					gradientItem("Color"),
+					curveItem("Alpha", alphaTrack(), "color")
 				]
 			});
-			menuItems.push(trackItem("Visibility", [{name: "visibility"}]));
+			menuItems.push(curveItem("Visibility", [{name: "visibility"}]));
 		}
 		if(obj3dElt != null) {
 			var scaleTracks = groupedTracks("scale", xyzwTracks(3));
-			scaleTracks.unshift(trackItem("Uniform", [{name: "scale"}]));
+			scaleTracks.unshift(curveItem("Uniform", [{name: "scale"}]));
 			menuItems.push({
 				label: "Position",
 				menu: groupedTracks("position", xyzwTracks(3)),
@@ -1113,11 +1130,11 @@ class FXEditor extends hide.view.FileView {
 			menuItems.push({
 				label: "Color",
 				menu: [
-					trackItem("HSL", hslTracks(), "color"),
-					trackItem("Alpha", alphaTrack(), "color")
+					gradientItem("Color"),
+					curveItem("Alpha", alphaTrack(), "color")
 				]
 			});
-			menuItems.push(trackItem("Visibility", [{name: "visibility"}]));
+			menuItems.push(curveItem("Visibility", [{name: "visibility"}]));
 		}
 
 		function makeShaderTracks(shader: hxsl.Shader) {
@@ -1132,17 +1149,13 @@ class FXEditor extends hide.view.FileView {
 						var color = param.name.toLowerCase().indexOf("color") >= 0;
 						var label = upperCase(param.name);
 						var menu = null;
-						if(color) {
-							if(n == 3)
-								menu = trackItem(label, hslTracks(), param.name);
-							else if(n == 4)
-								menu = trackItem(label, hslTracks().concat(alphaTrack()), param.name);
-						}
+						if(color && n >= 3)
+							menu = gradientItem(param.name);
 						if(menu == null)
-							menu = trackItem(label, xyzwTracks(n), param.name);
+							menu = curveItem(label, xyzwTracks(n), param.name);
 						menu;
 					case TFloat:
-						trackItem(upperCase(param.name), [{name: param.name}]);
+						curveItem(upperCase(param.name), [{name: param.name}]);
 					default:
 						null;
 				}
@@ -1164,7 +1177,7 @@ class FXEditor extends hide.view.FileView {
 					if (!(Reflect.field(rfxElt, f.name) is Float) || hasTrack(f.name))
 						continue;
 
-					menuItems.push(trackItem(f.name, [{name : f.name}]));
+					menuItems.push(curveItem(f.name, [{name : f.name}]));
 				}
 			}
 		}
@@ -1177,7 +1190,7 @@ class FXEditor extends hide.view.FileView {
 						menu: groupedTracks(param.name, xyzwTracks(n)),
 					}
 				default:
-					trackItem(label, [{name: param.name}]);
+					curveItem(label, [{name: param.name}]);
 			};
 			menuItems.push(item);
 		}
@@ -1203,50 +1216,50 @@ class FXEditor extends hide.view.FileView {
 				case Point:
 					menuItems.push({
 						label: "PointLight",
-						menu: [	trackItem("Color", hslTracks(), "color"),
-								trackItem("Power",[{name: "power"}]),
-								trackItem("Size", [{name: "size"}]),
-								trackItem("Range", [{name: "range"}]),
+						menu: [	gradientItem("Color"),
+								curveItem("Power",[{name: "power"}]),
+								curveItem("Size", [{name: "size"}]),
+								curveItem("Range", [{name: "range"}]),
 								]
 					});
 				case Directional:
 					menuItems.push({
 						label: "DirLight",
-						menu: [	trackItem("Color", hslTracks(), "color"),
-								trackItem("Power",[{name: "power"}]),
+						menu: [	gradientItem("Color"),
+								curveItem("Power",[{name: "power"}]),
 								]
 					});
 				case Spot:
 					menuItems.push({
 						label: "SpotLight",
-						menu: [	trackItem("Color", hslTracks(), "color"),
-								trackItem("Power",[{name: "power"}]),
-								trackItem("Range", [{name: "range"}]),
-								trackItem("Angle", [{name: "angle"}]),
-								trackItem("FallOff", [{name: "fallOff"}]),
+						menu: [	gradientItem("Color"),
+								curveItem("Power",[{name: "power"}]),
+								curveItem("Range", [{name: "range"}]),
+								curveItem("Angle", [{name: "angle"}]),
+								curveItem("FallOff", [{name: "fallOff"}]),
 								]
 					});
 				case Capsule:
 					menuItems.push({
 						label: "CapsuleLight",
-						menu: [	trackItem("Color", hslTracks(), "color"),
-								trackItem("Power",[{name: "power"}]),
-								trackItem("Range", [{name: "range"}]),
-								trackItem("Angle", [{name: "angle"}]),
-								trackItem("FallOff", [{name: "fallOff"}]),
+						menu: [	gradientItem("Color"),
+								curveItem("Power",[{name: "power"}]),
+								curveItem("Range", [{name: "range"}]),
+								curveItem("Angle", [{name: "angle"}]),
+								curveItem("FallOff", [{name: "fallOff"}]),
 								]
 					});
 				case Rectangle:
 					menuItems.push({
 						label: "RectangleLight",
-						menu: [	trackItem("Color", hslTracks(), "color"),
-								trackItem("Power",[{name: "power"}]),
-								trackItem("Range", [{name: "range"}]),
-								trackItem("Height", [{name: "height"}]),
-								trackItem("Width", [{name: "width"}]),
-								trackItem("VerticalAngle", [{name: "verticalAngle"}]),
-								trackItem("HorizontalAngle", [{name: "horizontalAngle"}]),
-								trackItem("FallOff", [{name: "fallOff"}]),
+						menu: [	gradientItem("Color"),
+								curveItem("Power",[{name: "power"}]),
+								curveItem("Range", [{name: "range"}]),
+								curveItem("Height", [{name: "height"}]),
+								curveItem("Width", [{name: "width"}]),
+								curveItem("VerticalAngle", [{name: "verticalAngle"}]),
+								curveItem("HorizontalAngle", [{name: "horizontalAngle"}]),
+								curveItem("FallOff", [{name: "fallOff"}]),
 								]
 					});
 			}
