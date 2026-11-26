@@ -372,8 +372,17 @@ class Prefab {
 		Find the first h3d.scene.Object in this hierarchy, in either this or its parents
 	**/
 	public function findFirstLocal3d(followRefs: Bool = false) : h3d.scene.Object {
-		var o3d = findParent(Object3D, (p) -> p.local3d != null, true, followRefs);
-		return o3d != null ? o3d.local3d : shared.root3d;
+		var current = this;
+		while(current != null) {
+			var o3d = Std.downcast(current, Object3D);
+			if(o3d != null && o3d.local3d != null)
+				return o3d.local3d;
+			var next = current.parent;
+			if(next == null && followRefs)
+				next = current.shared.parentPrefab;
+			current = next;
+		}
+		return shared.root3d;
 	}
 
 	/**
