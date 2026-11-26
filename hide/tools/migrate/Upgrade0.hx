@@ -2436,7 +2436,7 @@ class Upgrade0 {
 			return false;
 		}
 		for( n in polygons ) {
-			var d = n.data;
+			var d : Dynamic = n.data;
 			if( isRemoved(n) )
 				continue;
 			if( !n.enabled() ) {
