@@ -1,5 +1,24 @@
 package hrt.prefab.rfx;
 
+class KuwaharaRowSumShader extends h3d.shader.ScreenShader {
+
+	static var SRC = {
+
+		@param var texture : Sampler2D;
+		@param var radius : Int;
+
+		function fragment() {
+			var invSize = 1.0 / texture.size();
+			var sum = vec4(0.0);
+			for ( i in -radius...1 ) {
+				var c = texture.get(calculatedUV + vec2(i,0) * invSize).rgb;
+				sum += vec4(c, dot(c, c));
+			}
+			pixelColor = sum;
+		}
+	}
+}
+
 class KuwaharaShader extends hrt.shader.PbrShader {
 
 	static var SRC = {
@@ -21,68 +40,60 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 			var m2 = vec3(0.0);
 			var m3 = vec3(0.0);
 
-			var s0 = vec3(0.0);
-			var s1 = vec3(0.0);
-			var s2 = vec3(0.0);
-			var s3 = vec3(0.0);
+			var s0 = 0.0;
+			var s1 = 0.0;
+			var s2 = 0.0;
+			var s3 = 0.0;
 
+			var rightOffset = vec2(scaledRadius, 0) * invSize;
 			for ( j in -scaledRadius...scaledRadius + 1 )  {
-				for ( i in -scaledRadius...scaledRadius + 1 )  {
-					var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
-					var cc = c * c;
-					if ( i <= 0 && j <= 0 ) {
-						m0 += c;
-						s0 += cc;
-					}
-					if ( i >= 0 && j <= 0 ) {
-						m1 += c;
-						s1 += cc;
-					}
-					if ( i >= 0 && j >= 0 ) {
-						m2 += c;
-						s2 += cc;
-					}
-					if ( i <= 0 && j >= 0 ) {
-						m3 += c;
-						s3 += cc;
-					}
+				var uv = calculatedUV + vec2(0,j) * invSize;
+				var left = texture.get(uv);
+				var right = texture.get(uv + rightOffset);
+				if ( j <= 0 ) {
+					m0 += left.rgb;
+					s0 += left.a;
+					m1 += right.rgb;
+					s1 += right.a;
+				}
+				if ( j >= 0 ) {
+					m2 += right.rgb;
+					s2 += right.a;
+					m3 += left.rgb;
+					s3 += left.a;
 				}
 			}
 
 			var minSigma2 = 1e+10;
 			m0 *= invN;
-			s0 = abs(s0 * invN - m0 * m0);
 
 			var filteredColor = vec3(0.0);
 
-			var sigma2 = s0.r + s0.g + s0.b;
+			var sigma2 = abs(s0 * invN - dot(m0, m0));
 			if (sigma2 < minSigma2) {
 				minSigma2 = sigma2;
 				filteredColor = vec3(m0);
 			}
 
 			m1 *= invN;
-			s1 = abs(s1 * invN - m1 * m1);
 
-			sigma2 = s1.r + s1.g + s1.b;
+			sigma2 = abs(s1 * invN - dot(m1, m1));
 			if (sigma2 < minSigma2) {
 				minSigma2 = sigma2;
 				filteredColor = vec3(m1);
 			}
 
 			m2 *= invN;
-			s2 = abs(s2 * invN - m2 * m2);
 
-			sigma2 = s2.r + s2.g + s2.b;
+			sigma2 = abs(s2 * invN - dot(m2, m2));
 			if (sigma2 < minSigma2) {
 				minSigma2 = sigma2;
 				filteredColor = vec3(m2);
 			}
 
 			m3 *= invN;
-			s3 = abs(s3 * invN - m3 * m3);
 
-			sigma2 = s3.r + s3.g + s3.b;
+			sigma2 = abs(s3 * invN - dot(m3, m3));
 			if (sigma2 < minSigma2) {
 				minSigma2 = sigma2;
 				filteredColor = vec3(m3);
@@ -111,21 +122,27 @@ class KuwaharaFilter extends RendererFX {
 	@:s var endOpacity : Float = 1.0;
 
 	var pass = new h3d.pass.ScreenFx(new KuwaharaShader());
+	var rowSumPass = new h3d.pass.ScreenFx(new KuwaharaRowSumShader());
 
-	function getInput(r : h3d.scene.Renderer) {
-		var ldrCopy = r.allocTarget("ldrCopy", true, 1.0);
-		h3d.pass.Copy.run(r.ctx.engine.getCurrentTarget(), ldrCopy);
-		return ldrCopy;
+	function renderRowSums(r : h3d.scene.Renderer) {
+		var source = r.ctx.engine.getCurrentTarget();
+		var rowSums = r.allocTarget("kuwaharaRowSums", false, 1.0, hxd.PixelFormat.RGBA16F);
+		rowSumPass.shader.texture = source;
+		rowSumPass.shader.radius = Std.int(radius * hxd.Math.max(source.width / 1920, source.height / 1080));
+		r.ctx.engine.pushTarget(rowSums);
+		rowSumPass.render();
+		r.ctx.engine.popTarget();
+		return rowSums;
 	}
 
 	function execute(r : h3d.scene.Renderer) {
 		r.mark("Kuwahara");
 		r.ctx.engine.driver.beginEvent("Kuwahara");
 
-		var input = getInput(r);
-		pass.shader.texture = input;
+		var rowSums = renderRowSums(r);
+		pass.shader.texture = rowSums;
 
-		pass.shader.scaledRadius = Std.int(radius * hxd.Math.max(input.width / 1920, input.height / 1080));
+		pass.shader.scaledRadius = Std.int(radius * hxd.Math.max(rowSums.width / 1920, rowSums.height / 1080));
 		pass.shader.startOpacity = startOpacity;
 		pass.shader.endOpacity = endOpacity;
 		pass.shader.startDist = startDist;
