@@ -826,7 +826,7 @@ class DataFiles {
 		return obj;
 	}
 
-	public static function save( ?onSaveBase, ?force, ?prevSheetNames : Map<String,String> ) {
+	public static function save( ?onSaveBase : Void -> Void, ?force, ?prevSheetNames : Map<String,String> ) {
 		var ide = Ide.inst;
 		var temp = [];
 		var titles = [];

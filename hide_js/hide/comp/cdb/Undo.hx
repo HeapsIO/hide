@@ -263,13 +263,24 @@ class Undo {
 		// the successive changes of a same cell are one change
 		var last = groups.get(undo.currentID);
 		if( g.merge != null && last != null && last.merge == g.merge && @:privateAccess undo.redoElts.length == 0
-			&& g.changes.length == 1 && last.changes.length == 1 ) {
-			var c = g.changes[0], prev = last.changes[0];
-			var sameLine = c.kind == KLine && prev.kind == KLine && c.sheet == prev.sheet && c.index == prev.index;
-			var sameLang = c.kind == KLang && prev.kind == KLang && c.lang == prev.lang && c.sheet == prev.sheet && c.key == prev.key;
-			if( sameLine || sameLang ) {
-				prev.after = c.after;
-				last.size = size(prev);
+			&& g.changes.length <= last.changes.length ) {
+			// the change of `last` on the same line or translation element
+			function find( c : Change ) {
+				for( prev in last.changes ) {
+					var sameLine = c.kind == KLine && prev.kind == KLine && c.sheet == prev.sheet && c.index == prev.index;
+					var sameLang = c.kind == KLang && prev.kind == KLang && c.lang == prev.lang && c.sheet == prev.sheet && c.key == prev.key;
+					if( sameLine || sameLang )
+						return prev;
+				}
+				return null;
+			}
+			var prevs = [for( c in g.changes ) find(c)];
+			if( !prevs.contains(null) ) {
+				for( i => c in g.changes )
+					prevs[i].after = c.after;
+				last.size = 0;
+				for( prev in last.changes )
+					last.size += size(prev);
 				last.sheetAfter = g.sheetAfter;
 				last.separatorsAfter = g.separatorsAfter;
 				return;

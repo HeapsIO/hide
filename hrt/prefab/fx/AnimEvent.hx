@@ -59,9 +59,10 @@ class AnimEvent extends hrt.prefab.fx.Event {
 			</category>
 		);
 
-		if (parent.source != null) {
+		var modelSource = getModelSource();
+		if (modelSource != null) {
 			#if editor
-			var anims = try shared.scene.listAnims(parent.source) catch(e: Dynamic) [];
+			var anims = try shared.scene.listAnims(modelSource) catch(e: Dynamic) [];
 			animSelect.setEntries([ for (a in anims) { label: shared.scene.animationName(a), value: hide.Ide.inst.makeRelative(a) } ]);
 			animSelect.value = animation;
 			#end
@@ -86,9 +87,10 @@ class AnimEvent extends hrt.prefab.fx.Event {
 			ctx.onChange(this, pname);
 		});
 
-		if(parent.source != null) {
+		var modelSource = getModelSource();
+		if (modelSource != null) {
 
-			var anims = try ctx.scene.listAnims(parent.source) catch(e: Dynamic) [];
+			var anims = try ctx.scene.listAnims(modelSource) catch(e: Dynamic) [];
 			var elts: Array<hide.comp.Dropdown.Choice> = [];
 			for( a in anims )
 				elts.push({id : ctx.ide.makeRelative(a), ico : null, text : ctx.scene.animationName(a), classes : ["compact"]});
@@ -112,7 +114,7 @@ class AnimEvent extends hrt.prefab.fx.Event {
 	override function getHideProps() : hide.prefab.HideProps {
 		return {
 			icon : "play-circle", name : "AnimEvent",
-			allowParent : (p) -> Std.downcast(p,hrt.prefab.Model) != null,
+			allowParent : (p) -> Std.downcast(p,hrt.prefab.Model) != null || Std.downcast(p,hrt.prefab.Reference) != null,
 			allowChildren: function(s) return false
 		};
 	}
@@ -137,6 +139,10 @@ class AnimEvent extends hrt.prefab.fx.Event {
 
 	public override function getDuration() : Float {
 		return duration > 0.0 ? duration : (animTemplate != null ? animTemplate.getDuration() : 0.0);
+	}
+
+	function getModelSource() : String {
+		return parent.find(hrt.prefab.Model, null, true)?.source;
 	}
 
 	static var _ = Prefab.register("animEvent", AnimEvent);

@@ -313,7 +313,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			lightAccumulation = accumulateLights(lightAccumulation, LIGHT_SPOT, spotShadowCount, spotLightCount, MAX_SPOT_SHADOW_COUNT);
 
 			// Cascade shadows
-			if ( MAX_CASCADE_COUNT > 0 ) {
+			if ( HAS_CASCADE ) {
 				var c = evaluateCascadeLight();
 				if ( dot(c, c) > 1e-6 )
 					c *= evaluateCascadeShadow();
@@ -601,6 +601,7 @@ class VolumetricLighting extends RendererFX {
 			if( froxels != null && distanceOpacity > 0.0 ) {
 				froxels.pointLights = mode == All;
 				froxels.spotLights = mode != DirectionalOnly;
+				froxels.intensity = hxd.Math.clamp(intensity);
 				froxels.update(cast r, froxelNear, froxelFar, getFroxelMedium());
 			}
 		}
