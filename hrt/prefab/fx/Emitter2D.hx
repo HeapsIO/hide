@@ -331,14 +331,14 @@ class Emitter2DObject extends h2d.Object {
 
 		switch (prefab.emitType) {
 			case Infinity:
-				var emitTarget = getRate() * hxd.Math.clamp(emitScale) * dt;
+				var emitTarget = getRate() * emitScale * dt;
 				countToEmit += hxd.Math.min(prefab.maxCount - particles.length, emitTarget);
 				var t = hxd.Math.floor(countToEmit);
 				countToEmit -= t;
 				doEmit(t);
 
 			case Duration:
-				var emitTarget = getRate() * hxd.Math.clamp(emitScale) * dt;
+				var emitTarget = getRate() * emitScale * dt;
 				countToEmit += curTime >= prefab.emitDuration ? 0 : hxd.Math.min(prefab.maxCount - particles.length, emitTarget);
 				var t = hxd.Math.floor(countToEmit);
 				countToEmit -= t;

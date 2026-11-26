@@ -93,7 +93,13 @@ class Evaluator {
 		return rand.random(RAND_SIZE);
 	}
 
+	public var randomSlots = 0;
+
 	public function new() {
+	}
+
+	public function makeRandom(min: Float, max: Float) : Value {
+		return VRandom(randomSlots++, min, max);
 	}
 
 	public static function vVal(f: Float) : Value {

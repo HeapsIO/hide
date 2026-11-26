@@ -234,8 +234,6 @@ class EmitterMacros {
 		var cl = Context.getLocalClass().get();
 		var tp : TypePath = { pack: cl.pack, name: cl.module.split(".").pop(), sub: cl.name };
 		return fields.concat((macro class {
-			// per particle
-			public var randomSlots = 0;
 			public function new() {
 				super();
 			}

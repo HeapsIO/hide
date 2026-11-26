@@ -1267,14 +1267,14 @@ class EmitterObject extends h3d.scene.Object {
 		if( enable && emitScale > 0. && curTime >= 0) {
 			switch prefab.emitType {
 				case Infinity:
-					emitTarget += getRate() * hxd.Math.clamp(emitScale) * dt;
+					emitTarget += getRate() * emitScale * dt;
 					var delta = hxd.Math.ceil(hxd.Math.min(prefab.maxCount - numInstances, emitTarget - emitCount));
 					doEmit(delta);
 					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
 						enable = false;
 				case Duration:
 					if( curTime < prefab.emitDuration ) {
-						emitTarget += getRate() * hxd.Math.clamp(emitScale) * dt;
+						emitTarget += getRate() * emitScale * dt;
 						var delta = hxd.Math.ceil(hxd.Math.min(prefab.maxCount - numInstances, emitTarget - emitCount));
 						doEmit(delta);
 					}
