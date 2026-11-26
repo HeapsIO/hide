@@ -1978,7 +1978,7 @@ class Emitter extends Object3D implements hrt.prefab.fx.EmitterParam.IEmitter {
 	override function makeChild(p:Prefab) {
 	};
 
-	var animData : hrt.prefab.fx.BaseFX.AnimData;
+	@:persist var animData : hrt.prefab.fx.BaseFX.AnimData;
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		return new EmitterObject(parent3d);

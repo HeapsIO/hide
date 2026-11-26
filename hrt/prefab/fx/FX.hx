@@ -836,7 +836,7 @@ class FX extends Object3D implements BaseFX {
 
 	@:s public var parameters : Array<Parameter> = [];
 
-	var animData : AnimData;
+	@:persist var animData : AnimData;
 
 	function getAnimData(root: PrefabElement) : AnimData {
 		#if !(editor || editor_hl)

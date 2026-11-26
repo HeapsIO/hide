@@ -501,7 +501,7 @@ class Swarm extends Object3D {
 	override function makeChild(p:Prefab) {
 	}
 
-	var animData : hrt.prefab.fx.BaseFX.AnimData;
+	@:persist var animData : hrt.prefab.fx.BaseFX.AnimData;
 
 	override function makeObject(parent:h3d.scene.Object) {
 		return new SwarmObject(parent, this);
