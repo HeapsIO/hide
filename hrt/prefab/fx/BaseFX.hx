@@ -86,36 +86,45 @@ class ShaderAnimation extends CustomAnimation {
 	public var params : ShaderParams;
 	public var shader : hxsl.Shader;
 	var vector4 = new h3d.Vector4();
-	var vector = new h3d.Vector();
+
+	public function initVectors() {
+		for(param in params) {
+			switch(param.def.type) {
+			case TVec(4, VFloat): shader.setParamIndexValue(param.idx, new h3d.Vector4());
+			case TVec(_, VFloat): shader.setParamIndexValue(param.idx, new h3d.Vector());
+			default:
+			}
+		}
+	}
 
 	override public function setTime(time: Float) {
 		for(param in params) {
-			var v = param.def;
-			var val : Dynamic;
-			switch(v.type) {
+			switch(param.def.type) {
 			case TFloat:
-				var v = getFloat(param.value, time);
-				shader.setParamIndexFloatValue(param.idx, v);
-				continue;
-			case TInt: val = hxd.Math.round(getFloat(param.value, time));
-			case TBool: val = getFloat(param.value, time) >= 0.5;
+				shader.setParamIndexFloatValue(param.idx, getFloat(param.value, time));
+			case TInt:
+				shader.setParamIndexValue(param.idx, hxd.Math.round(getFloat(param.value, time)));
+			case TBool:
+				shader.setParamIndexValue(param.idx, getFloat(param.value, time) >= 0.5);
 			case TVec(4, VFloat):
-				getVector(param.value, time, vector4);
-				val = vector4;
+				var vector : h3d.Vector4 = shader.getParamValue(param.idx);
+				getVector(param.value, time, vector);
 			case TVec(_, VFloat):
 				getVector(param.value, time, vector4);
+				var vector : h3d.Vector = shader.getParamValue(param.idx);
 				vector.set(vector4.x, vector4.y, vector4.z);
-				val = vector;
 			default:
-				continue;
 			}
-			shader.setParamIndexValue(param.idx, val);
 		}
 	}
 }
 
 class ShaderDynAnimation extends ShaderAnimation {
 	var tmpVector4 = new h3d.Vector4();
+
+	override function initVectors() {
+	}
+
 	override function setTime(time: Float) {
 		var shader : hxsl.DynamicShader = cast shader;
 		for(param in params) {
@@ -307,6 +316,7 @@ class BaseFXTools {
 				var anim = Std.isOfType(shader,hxsl.DynamicShader) ? new ShaderDynAnimation() : new ShaderAnimation();
 				anim.shader = shader;
 				anim.params = params;
+				anim.initVectors();
 				anims.push(anim);
 			}
 
