@@ -18,8 +18,11 @@ class EmitterHelper {
 	static function getMode(p: Prefab, name: String, comp: Int) : ParamMode {
 		if (p is IEmitter)
 			return (cast p : IEmitter).getMode(name, comp);
+		// a shader param without mode is the constant of its props
 		var shader : hrt.prefab.Shader = cast p;
-		return shader.particleParams?.get(EmitterParam.curveName(name, shaderParamSize(shader, name), comp));
+		var size = shaderParamSize(shader, name);
+		return shader.particleParams?.get(EmitterParam.curveName(name, size, comp))
+			?? Constant(EmitterParam.baseComponent(Reflect.field(shader.props, name), size, comp));
 	}
 
 	static function setMode(p: Prefab, name: String, comp: Int, m: ParamMode) {
@@ -51,6 +54,13 @@ class EmitterHelper {
 		}
 		if (shader.particleParams != null && !shader.particleParams.iterator().hasNext())
 			shader.particleParams = null;
+	}
+
+	// the value of a shader param before edition: its init in the shader, else 0
+	static function shaderParamDefault(shader: hrt.prefab.Shader, name: String) : Dynamic {
+		var dyn = Std.downcast(shader, hrt.prefab.DynamicShader);
+		var inits = dyn == null ? null : @:privateAccess dyn.shaderDef.inits;
+		return inits == null ? null : Lambda.find(inits, i -> i.variable.name == name)?.value;
 	}
 
 	static function shaderParamSize(shader: hrt.prefab.Shader, name: String) {
@@ -469,7 +479,11 @@ class EmitterHelper {
 	}
 
 	static function setParamMode(prefab: Prefab, def: ParamDef, i: Int, m: ParamMode) {
-		setMode(prefab, def.name, i, isDefault(def, i, m) ? null : m);
+		// a shader always keeps its constant in its props, the default included
+		if (!(prefab is IEmitter))
+			setMode(prefab, def.name, i, m ?? Constant(def.def[i]));
+		else
+			setMode(prefab, def.name, i, isDefault(def, i, m) ? null : m);
 	}
 
 	static function convert(prefab: Prefab, def: ParamDef, i: Int, mode: ModeKind) : ParamMode {
@@ -603,7 +617,7 @@ class EmitterHelper {
 				parent.buildProp(prop, shader.props);
 				continue;
 			}
-			var value : Dynamic = Reflect.field(shader.props, prop.name);
+			var value : Dynamic = shaderParamDefault(shader, prop.name);
 			var base = [for (i in 0...size) EmitterParam.baseComponent(value, size, i)];
 			var t : hrt.prefab.Props.PropType = switch (prop.t) {
 				case PFloat(_), PVec(_): prop.t;
