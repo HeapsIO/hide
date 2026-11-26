@@ -1704,13 +1704,6 @@ class Upgrade0 {
 				change(e, "color as an int");
 			}
 		}
-		// a sphere this small emits from its center: a Point (the emitter scale scales the shape)
-		var small = Lambda.foreach(["scaleX", "scaleY", "scaleZ"], f -> Math.abs(num(fieldOf(e, f), 1)) < 0.05);
-		if( !is2D && (get(props, "emitShape") ?? "Sphere") == "Sphere" && small && group(e, "scale").length == 0 ) {
-			props.emitShape = "Point";
-			Reflect.deleteField(props, "emitSurface");
-			change(e, "small sphere is a Point");
-		}
 		upgradeEmission(e, props);
 		if( !is2D )
 			upgradeParticleFade(e, props);
