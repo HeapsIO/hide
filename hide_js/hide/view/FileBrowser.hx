@@ -1233,6 +1233,13 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				click: () -> ide.setClipboard(item.getPath())
 			});
 
+			if (item.kind != Dir) {
+				options.push({
+					label: "Copy Link",
+					click: () -> ide.setClipboard(ide.getFileLink(item.getRelPath()))
+				});
+			}
+
 			options.push({
 				label : "Open in Explorer",
 				click : () -> hide.tools.IdeData.showFileInExplorer(item.getPath())

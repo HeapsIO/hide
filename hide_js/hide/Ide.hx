@@ -1915,55 +1915,41 @@ class Ide extends hide.tools.IdeData {
 
 	public function getFileLink( path : String ) {
 		var parts = [for( p in makeRelative(path).split("/") ) StringTools.urlEncode(p)];
-		return FILE_LINK + parts.join("/") + "?project=" + StringTools.urlEncode(getProjectName(projectDir));
+		return FILE_LINK + StringTools.urlEncode(getProjectName(projectDir)) + "/" + parts.join("/");
 	}
 
 	function openLink( uri : String ) {
-		var link = parseLink(uri);
-		if( link.project == null ) {
-			var file = getPath(link.path);
-			if( isLinkFile(file) )
-				openFile(file);
-			else
-				hide.view.RemoteConsoleView.onOpenUri(uri);
+		var target = getLinkTarget(uri);
+		if( target == null ) {
+			hide.view.RemoteConsoleView.onOpenUri(uri);
 			return;
 		}
-		var dir = findProject(link.project);
-		if( dir == null ) {
-			error('Project "${link.project}" not found in the recent projects');
-			return;
-		}
-		var file = dir + "/res/" + link.path;
-		if( !isLinkFile(file) ) {
-			error('$file not found');
-			return;
-		}
-		if( dir == projectDir ) {
-			openFile(file);
+		if( target.dir == projectDir ) {
+			openFile(target.file);
 			return;
 		}
 		for( v in views )
 			if( !v.onBeforeClose() )
 				return;
 		js.Browser.window.sessionStorage.setItem(PENDING_LINK, uri);
-		setProject(dir);
+		setProject(target.dir);
 		reload();
 	}
 
-	function parseLink( uri : String ) : { path : String, project : String } {
-		var parts = uri.substr(FILE_LINK.length).split("#")[0].split("?");
-		var path = StringTools.urlDecode(parts[0]);
+	function getLinkTarget( uri : String ) : { dir : String, file : String } {
+		var path = StringTools.urlDecode(uri.substr(FILE_LINK.length).split("#")[0].split("?")[0]);
 		while( StringTools.endsWith(path, "/") )
 			path = path.substr(0, path.length - 1);
-		var project = null;
-		if( parts[1] != null ) {
-			for( param in parts[1].split("&") ) {
-				var kv = param.split("=");
-				if( kv[0] == "project" && kv[1] != null )
-					project = StringTools.urlDecode(kv[1]);
-			}
-		}
-		return { path : path, project : project };
+		var slash = path.indexOf("/");
+		if( slash <= 0 )
+			return null;
+		var dir = findProject(path.substr(0, slash));
+		if( dir == null )
+			return null;
+		var file = dir + "/res/" + path.substr(slash + 1);
+		if( !isLinkFile(file) )
+			return null;
+		return { dir : dir, file : file };
 	}
 
 	function isLinkFile( file : String ) {
@@ -1993,9 +1979,9 @@ class Ide extends hide.tools.IdeData {
 		for( arg in electron.App.argv ) {
 			if( !StringTools.startsWith(arg, FILE_LINK) )
 				continue;
-			var link = parseLink(arg);
-			if( link.project != null )
-				return findProject(link.project);
+			var target = getLinkTarget(arg);
+			if( target != null )
+				return target.dir;
 		}
 		return null;
 	}
