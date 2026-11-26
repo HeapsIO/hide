@@ -105,7 +105,7 @@ class EmitterParam {
 	public static function getParamSize( v : hxsl.Ast.TVar ) : Int {
 		return switch( v.type ) {
 		case TVec(n, VFloat) if( v.name.toLowerCase().indexOf("color") < 0 ): n;
-		case TFloat, TInt, TBool: 1;
+		case TFloat, TInt: 1;
 		default: 0;
 		}
 	}
