@@ -251,9 +251,6 @@ class Emitter2DObject extends h2d.Object {
 	var curTime = 0.;
 	var countToEmit = 0.;
 	var totalBurstCount = 0;
-	var randomValues : Array<Float>;
-	var randSlots : Int;
-	var instanceCounter = 0;
 	var animatedTexShader : h3d.shader.AnimatedTexture = null;
 
 	// Emitter parameters
@@ -308,13 +305,12 @@ class Emitter2DObject extends h2d.Object {
 
 		batch = new h2d.SpriteBatch(h2d.Tile.fromColor(0xFF00FF, 10, 10), this);
 		batch.hasRotationScale = true;
-		evaluator = new Evaluator([0], 1);
+		evaluator = new Evaluator();
 		rand = new hxd.Rand(seed);
 	}
 
-	public function init(randSlots: Int, prefab: Emitter2D) {
-		var randomValues = [for(_ in 0...(maxCount * randSlots)) rand.srand()];
-		evaluator = new Evaluator(randomValues, randSlots);
+	public function init(prefab: Emitter2D) {
+		evaluator = new Evaluator();
 
 		if (animatedTexShader != null)
 			batch.removeShader(animatedTexShader);
@@ -413,9 +409,8 @@ class Emitter2DObject extends h2d.Object {
 		for (_ in 0...count) {
 			var part = new Particle2DInstance(getTile(), this);
 			part.lifeTime = lifeTime + rand.srand(lifeTimeRand);
-			part.idx = instanceCounter;
+			part.idx = Evaluator.particleSeed(rand);
 			this.particles.push(part);
-			instanceCounter = (instanceCounter + 1) % maxCount;
 		}
 	}
 
@@ -424,13 +419,8 @@ class Emitter2DObject extends h2d.Object {
 		batch.clear();
 		countToEmit = 0;
 		totalBurstCount = 0;
-		instanceCounter = 0;
 
 		rand.init(seed);
-		if (randomValues != null) {
-			for(i in 0...randomValues.length)
-				randomValues[i] = rand.srand();
-		}
 	}
 
 	function getTile() {
@@ -756,7 +746,7 @@ class Emitter2D extends Object2D {
 		emitterObj.startSpeed			=	makeParam(this, "instStartSpeed");
 		emitterObj.startWorldSpeed 		= 	makeParam(this, "instStartWorldSpeed");
 
-		emitterObj.init(randIdx, this);
+		emitterObj.init(this);
 
 		#if editor
 		if(propName == null || ["emitShape", "emitRadius", "emitAngle1", "emitAngle2", "emitWidth", "emitHeight"].indexOf(propName) >= 0)

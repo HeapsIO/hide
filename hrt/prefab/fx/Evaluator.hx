@@ -1,13 +1,25 @@
 package hrt.prefab.fx;
 
 class Evaluator {
-	var randValues : Array<Float>;
 	public var parameters: Map<String, Float> = [];
-	var stride : Int;
 
-	public function new(?randValues: Array<Float>, stride: Int=0) {
-		this.randValues = randValues;
-		this.stride = stride;
+	public static inline var RAND_SIZE = 4096;
+	public static inline var RAND_STEP = 0x9E3779B1;
+	public static var RAND : haxe.ds.Vector<Float> = makeRand();
+
+	static function makeRand() {
+		var r = new hxd.Rand(0x5EED);
+		var v = new haxe.ds.Vector<Float>(RAND_SIZE);
+		for(i in 0...RAND_SIZE)
+			v[i] = r.srand();
+		return v;
+	}
+
+	public static inline function particleSeed(rand: hxd.Rand) {
+		return rand.random(RAND_SIZE);
+	}
+
+	public function new() {
 	}
 
 	public static function vVal(f: Float) : Value {
@@ -70,8 +82,7 @@ class Evaluator {
 	}
 
 	inline function getRandom(pidx: Int, ridx: Int) {
-		var i = pidx * stride + ridx;
-		return randValues[i];
+		return RAND[(pidx + ridx * RAND_STEP) & (RAND_SIZE - 1)];
 	}
 
 	public function setAllParameters(params: Array<hrt.prefab.fx.FX.Parameter>) {

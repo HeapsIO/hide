@@ -649,7 +649,6 @@ class EmitterObject extends h3d.scene.Object {
 	var curTime = 0.0;
 	var evaluator : Evaluator;
 	var numInstances = 0;
-	var instanceCounter = 0;
 	var baseEmitterShader : hrt.shader.BaseEmitter = null;
 	var animatedTextureShader : h3d.shader.AnimatedTexture = null;
 	var colorMultShader : h3d.shader.ColorMult = null;
@@ -659,8 +658,6 @@ class EmitterObject extends h3d.scene.Object {
 	var orbitFromEmitter = new h3d.Matrix();
 	var baseEmitMat : h3d.Matrix;
 	var meshTransform = new h3d.Matrix();
-	var randomValues : Array<Float>;
-	var randSlots : Int;
 
 	public function new(?parent) {
 		super(parent);
@@ -704,9 +701,8 @@ class EmitterObject extends h3d.scene.Object {
 		scene = getScene();
 	}
 
-	function init(randSlots: Int, prefab: Emitter) {
+	function init(prefab: Emitter) {
 		this.emitterPrefab = prefab;
-		this.randSlots = randSlots;
 
 		updateParentNonEmitter();
 
@@ -840,8 +836,7 @@ class EmitterObject extends h3d.scene.Object {
 
 		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
 		particlesCount = maxCount;
-		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
-		evaluator = new Evaluator(randomValues, randSlots);
+		evaluator = new Evaluator();
 
 		var anim = getParentFX();
 		if(anim != null)
@@ -890,16 +885,10 @@ class EmitterObject extends h3d.scene.Object {
 		softReset();
 		random.init(randomSeed);
 		numInstances = 0;
-		instanceCounter = 0;
 		curTime = -delay;
 		emitCount = 0;
 		emitTarget = 0;
 		listHead = null;
-
-		if(randomValues != null) {
-			for(i in 0...randomValues.length)
-				randomValues[i] = random.srand();
-		}
 
 		if(particles != null) {
 			for(i in 0...particlesCount) {
@@ -974,14 +963,13 @@ class EmitterObject extends h3d.scene.Object {
 	function allocInstance() {
 		if(numInstances >= maxCount) error("allocInstance");
 		var p = particles[numInstances++];
-		p.init(instanceCounter, this);
+		p.init(Evaluator.particleSeed(random), this);
 		p.prev = null;
 		p.next = listHead;
 		if(listHead != null)
 			listHead.prev = p;
 		listHead = p;
 		newInstances++;
-		instanceCounter = (instanceCounter + 1) % maxCount;
 		checkList();
 		return p;
 	}
@@ -2095,7 +2083,7 @@ class Emitter extends Object3D {
 		emitterObj.debugGraphics.visible = viewDebug;
 		#end
 
-		emitterObj.init(randIdx, this);
+		emitterObj.init(this);
 
 		#if editor
 		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2", "emitDomeCut", "emitDomeFlip"].indexOf(propName) >= 0)
