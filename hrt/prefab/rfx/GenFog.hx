@@ -268,9 +268,9 @@ enum abstract GenFogRenderMode(String) {
 @:access(h3d.scene.Renderer)
 class GenFog extends RendererFX {
 
-	var isBlend : Bool;
-	var fogPass : h3d.pass.ScreenFx<GenFogShader> = null;
-	var fogPassBlend : h3d.pass.ScreenFx<GenFogBlendShader> = null;
+	@:persist var isBlend : Bool;
+	@:persist var fogPass : h3d.pass.ScreenFx<GenFogShader> = null;
+	@:persist var fogPassBlend : h3d.pass.ScreenFx<GenFogBlendShader> = null;
 
 	@:s public var intensity : Float = 1;
 

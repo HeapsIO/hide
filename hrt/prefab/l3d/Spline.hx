@@ -99,7 +99,7 @@ class Spline extends hrt.prefab.Object3D {
 	static var OLD_CLASS_POINT = "splinePoint";
 
 	@:c public var points: Array<SplinePoint> = []; // Local to spline
-	var localSamples(get, default) : Array<SplinePoint> = null;
+	@:persist var localSamples(get, default) : Array<SplinePoint> = null;
 	var worldSamples(get, default) : Array<SplinePoint> = null;
 	function get_localSamples() {
 		if ( localSamples == null )

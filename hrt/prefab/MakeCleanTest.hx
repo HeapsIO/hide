@@ -303,7 +303,7 @@ class MakeCleanTest {
 
 	/**
 		Tests every .fx file of the current resource loader.
-		`initShared` initializes the context of the tested instances (e.g. the scene used to load resources in editor).
+		`initShared` initializes the context of the tested instances before each make (e.g. the scene used to load resources in editor, or a root attached to a scene).
 	**/
 	public static function runAll(?initShared : ContextShared -> Void) : Array<MakeCleanResult> {
 		var results = [];
@@ -338,23 +338,23 @@ class MakeCleanTest {
 	function test(initShared : ContextShared -> Void) {
 		var template = hxd.res.Loader.currentInstance.load(result.file).to(hrt.prefab.Resource).load();
 
-		function makeClone() {
-			var p = template.clone();
+		// clean() resets the roots of the context : it is initialized before each make
+		function makeTree(p : Prefab) {
 			if (initShared != null)
 				initShared(p.shared);
-			return p;
+			return this.makeTree(p);
 		}
 
 		// Values differing between the trees of two clones don't depend on clean() : they are not compared between make 1 and make 2
 		phase = "baseline";
-		var cloneA = makeClone(), cloneB = makeClone();
+		var cloneA = template.clone(), cloneB = template.clone();
 		var unstableTreePaths = [for (d in diff(makeTree(cloneA).dump, makeTree(cloneB).dump, false)) d.path];
 		var unstableStatePaths = [for (d in diff(new StateDump(cloneA), new StateDump(cloneB), false, null, false)) d.path];
 		result.unstableTreePaths = unstableTreePaths;
 		result.unstableStatePaths = unstableStatePaths;
 
 		phase = "clone";
-		var p = makeClone();
+		var p = template.clone();
 
 		phase = "make 1";
 		var tree1 = makeTree(p);

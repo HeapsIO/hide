@@ -189,11 +189,11 @@ class SSR extends RendererFX {
 	public static var MIN_INTENSITY = 0.;
 	public static var MAX_STEPS = 0;
 
-	public var ssrPass : h3d.pass.ScreenFx<SSRShader>;
+	@:persist public var ssrPass : h3d.pass.ScreenFx<SSRShader>;
 
 	var blurPass = new h3d.pass.Blur();
 	var ssr : h3d.mat.Texture;
-	var normalMaskOutput : h3d.pass.Output;
+	@:persist var normalMaskOutput : h3d.pass.Output;
 
 	@:s public var debugSSRMask : Bool = false;
 	@:s public var intensity : Float = 1.;
