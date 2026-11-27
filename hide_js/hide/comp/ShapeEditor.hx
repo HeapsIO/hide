@@ -92,18 +92,19 @@ class ShapeEditor extends Component {
 			e.stopPropagation();
 		});
 
-		var body = new Element(element[0].ownerDocument.body);
-		body.on("keydown.shapeeditor", function(e) {
-			if (e.keyCode == hxd.Key.ESCAPE && selectedShapeIdx != -1) {
-				selectedShapeIdx = -1;
-				uninspect();
-				updateShapeList();
-			}
-		});
+		element[0].ownerDocument.body.addEventListener("keydown", onBodyKeyDown);
 
 		uninspect();
 		updateShapeList();
 		createAllInteractives();
+	}
+
+	function onBodyKeyDown(e : js.html.KeyboardEvent) {
+		if (e.keyCode == hxd.Key.ESCAPE && selectedShapeIdx != -1) {
+			selectedShapeIdx = -1;
+			uninspect();
+			updateShapeList();
+		}
 	}
 
 	public function refresh(?shapes : Array<Shape>) {
@@ -128,12 +129,10 @@ class ShapeEditor extends Component {
 		if (isInShapeEdition)
 			stopShapeEditing();
 		super.remove();
-		var body = new Element(element[0].ownerDocument.body);
-		body.off("keydown.shapeeditor");
+		element[0].ownerDocument.body.removeEventListener("keydown", onBodyKeyDown);
 		uninspect();
 		selectedShapeIdx = -1;
-		for (i in interactives)
-			i.remove();
+		removeAllInteractives();
 	}
 
 	public function getValue() : Array<Shape> {
@@ -463,8 +462,10 @@ class ShapeEditor extends Component {
 	}
 
 	public function removeAllInteractives() {
-		for (i in this.interactives)
+		for (i in this.interactives) {
+			i.primitive.dispose();
 			i.remove();
+		}
 		this.interactives = [];
 	}
 

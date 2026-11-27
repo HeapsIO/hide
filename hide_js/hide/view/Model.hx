@@ -671,6 +671,13 @@ class Model extends FileView {
 		collisionList?.remove();
 		collisionList = null;
 
+		var hadShapeEditors = shapesEditor.iterator().hasNext();
+		for (s in shapesEditor)
+			s.remove();
+		shapesEditor.clear();
+		if (hadShapeEditors)
+			sceneEditor.updateCollidersVisibility();
+
 		var properties = sceneEditor.properties;
 		properties.clear();
 
