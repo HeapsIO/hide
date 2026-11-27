@@ -135,6 +135,17 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 					@:privateAccess img.stream = null;
 				}
 			}
+
+			// streamed images loaded outside of resCache (Embed, Ide.getTexture...)
+			@:privateAccess for (s in hxd.res.TextureStream.streams.copy()) {
+				if (s.texture.mem != engine.mem)
+					continue;
+				s.cancel();
+				s.image.stream = null;
+				s.registered = false;
+				hxd.res.TextureStream.streams.remove(s);
+			}
+
 			engine.dispose();
 			@:privateAccess engine.driver = null;
 		}

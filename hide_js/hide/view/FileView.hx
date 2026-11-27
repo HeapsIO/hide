@@ -226,6 +226,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 				reloadItem,
 				{ label : "Copy Path", enabled : hasPath, click : function() { ide.setClipboard(state.path); } },
 				{ label : "Copy Absolute Path", enabled : hasPath, click : function() { ide.setClipboard(Ide.inst.getPath(state.path)); } },
+				{ label : "Copy Link", enabled : hasPath, click : function() { ide.setClipboard(ide.getFileLink(state.path)); } },
 				{ label : "Open in Explorer", enabled : hasPath, click : function() { hide.tools.IdeData.showFileInExplorer(getPath()); } },
 				{ label : "Open in Resources", enabled : hasPath, click : function() {
 					ide.showFileInResources(state.path);

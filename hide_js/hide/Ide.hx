@@ -70,6 +70,8 @@ class Ide extends hide.tools.IdeData {
 	public var show3DIconsCategory : Map<hrt.impl.EditorTools.IconCategory, Bool> = new Map();
 
 	static var firstInit = true;
+	static inline var FILE_LINK = "hide://";
+	static inline var PENDING_LINK = "hide-pending-link";
 
 	var customMenus : Array<electron.MenuItem> = [];
 	var titleBar : hide.ui.TitleBar;
@@ -156,6 +158,9 @@ class Ide extends hide.tools.IdeData {
 		initConfig(cwd);
 		var current = currentProject;
 		if( current == "" ) cwd;
+		var linkProject = thumbnailMode ? null : getLaunchLinkProject();
+		if( linkProject != null )
+			current = linkProject;
 
 		var args = js.Browser.document.URL.split("?")[1];
 		if( args != null ) {
@@ -257,13 +262,8 @@ class Ide extends hide.tools.IdeData {
 		// handle commandline parameters
 		electron.App.onOpen(function(args) {
 			if( hasReloaded ) return;
-			for( arg in args ) {
-				if( StringTools.startsWith(arg, "hide://") || StringTools.startsWith(arg, "cdb://") ) {
-					hide.view.RemoteConsoleView.onOpenUri(arg);
-					continue;
-				}
-				if( sys.FileSystem.exists(arg) ) openFile(arg);
-			}
+			for( arg in args )
+				openArg(arg);
 		});
 
 		electron.App.onGpuCrash(function(details) {
@@ -505,9 +505,12 @@ class Ide extends hide.tools.IdeData {
 		}
 		if( firstInit ) {
 			firstInit = false;
-			for( file in electron.App.argv ) {
-				if( !sys.FileSystem.exists(file) ) continue;
-				openFile(file);
+			for( arg in electron.App.argv )
+				openArg(arg);
+			var pendingLink = js.Browser.window.sessionStorage.getItem(PENDING_LINK);
+			if( pendingLink != null ) {
+				js.Browser.window.sessionStorage.removeItem(PENDING_LINK);
+				openArg(pendingLink);
 			}
 		}
 
@@ -1895,6 +1898,92 @@ class Ide extends hide.tools.IdeData {
 				return;
 			}
 		open(ext.component, { path : path }, onCreate, onOpen);
+	}
+
+	public function openArg( arg : String ) {
+		if( StringTools.startsWith(arg, FILE_LINK) ) {
+			openLink(arg);
+			return;
+		}
+		if( StringTools.startsWith(arg, "cdb://") ) {
+			hide.view.RemoteConsoleView.onOpenUri(arg);
+			return;
+		}
+		if( sys.FileSystem.exists(arg) )
+			openFile(arg);
+	}
+
+	public function getFileLink( path : String ) {
+		var parts = [for( p in makeRelative(path).split("/") ) StringTools.urlEncode(p)];
+		return FILE_LINK + StringTools.urlEncode(getProjectName(projectDir)) + "/" + parts.join("/");
+	}
+
+	function openLink( uri : String ) {
+		var target = getLinkTarget(uri);
+		if( target == null ) {
+			hide.view.RemoteConsoleView.onOpenUri(uri);
+			return;
+		}
+		if( target.dir == projectDir ) {
+			openFile(target.file);
+			return;
+		}
+		for( v in views )
+			if( !v.onBeforeClose() )
+				return;
+		js.Browser.window.sessionStorage.setItem(PENDING_LINK, uri);
+		setProject(target.dir);
+		reload();
+	}
+
+	function getLinkTarget( uri : String ) : { dir : String, file : String } {
+		var path = StringTools.urlDecode(uri.substr(FILE_LINK.length).split("#")[0].split("?")[0]);
+		while( StringTools.endsWith(path, "/") )
+			path = path.substr(0, path.length - 1);
+		var slash = path.indexOf("/");
+		if( slash <= 0 )
+			return null;
+		var dir = findProject(path.substr(0, slash));
+		if( dir == null )
+			return null;
+		var file = dir + "/res/" + path.substr(slash + 1);
+		if( !isLinkFile(file) )
+			return null;
+		return { dir : dir, file : file };
+	}
+
+	function isLinkFile( file : String ) {
+		return sys.FileSystem.exists(file) && !sys.FileSystem.isDirectory(file);
+	}
+
+	function getProjectName( dir : String ) : String {
+		var props = dir + "/res/props.json";
+		if( sys.FileSystem.exists(props) ) {
+			var name : String = Reflect.field(parseJSON(sys.io.File.getContent(props)), "project.name");
+			if( name != null )
+				return name;
+		}
+		return new haxe.io.Path(dir).file;
+	}
+
+	function findProject( name : String ) : String {
+		for( dir in [projectDir].concat(recentProjects) ) {
+			dir = dir.split("\\").join("/");
+			if( dir != "" && sys.FileSystem.isDirectory(dir) && getProjectName(dir).toLowerCase() == name.toLowerCase() )
+				return dir;
+		}
+		return null;
+	}
+
+	function getLaunchLinkProject() : String {
+		for( arg in electron.App.argv ) {
+			if( !StringTools.startsWith(arg, FILE_LINK) )
+				continue;
+			var target = getLinkTarget(arg);
+			if( target != null )
+				return target.dir;
+		}
+		return null;
 	}
 
 	public function open( component : String, state : Dynamic, ?onCreate : hide.ui.View<Dynamic> -> Void, ?onOpen : hide.ui.View<Dynamic> -> Void, ?positionOverride: hide.ui.View.DisplayPosition ) {

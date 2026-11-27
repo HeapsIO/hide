@@ -39,6 +39,7 @@ class ElectronMain {
 	static var testMode : Bool;
 	// --background : never activate / focus / maximize windows so they stay behind the user's ones
 	static var background : Bool;
+	static var launchCwd : String;
 
 	static var mainWindow : BrowserWindow;
 	static var quitting = false;
@@ -59,6 +60,13 @@ class ElectronMain {
 		background = testMode || argv.indexOf("--background") >= 0;
 		appName = isCDB ? "CDB" : "hide";
 		appTitle = isCDB ? "CDB" : "HIDE";
+		launchCwd = js.Node.process.cwd();
+		var isLinkLaunch = false;
+		for( a in argv )
+			if( StringTools.startsWith(a, "hide://") || StringTools.startsWith(a, "cdb://") )
+				isLinkLaunch = true;
+		if( isLinkLaunch )
+			js.Node.process.chdir(App.isPackaged ? js.node.Path.dirname(js.Node.process.execPath) : App.getAppPath());
 
 		App.setName(appName);
 		// --user-data-dir : separate instance (own profile and single instance lock)
@@ -84,12 +92,16 @@ class ElectronMain {
 			App.quit();
 			return;
 		}
+		if( isLinkLaunch && Sys.systemName() == "Windows" )
+			loadWindowsEnv();
 
 		// leftover of the nw.js version, git can't remove it because of its untracked files
 		js.Lib.require("fs").rm(js.node.Path.join(js.node.Path.dirname(js.Node.process.execPath), "package.nw"), { recursive : true, force : true }, (_) -> {});
 
 		initCrashLogs();
 		initHandlers();
+		if( !testMode && !isCDB && !App.commandLine.hasSwitch("user-data-dir") )
+			registerProtocol();
 
 		IpcMain.on("hide-sync", function(e : Dynamic, cmd : String, args : haxe.extern.Rest<Dynamic>) {
 			function error( err : Dynamic ) {
@@ -143,6 +155,27 @@ class ElectronMain {
 	}
 
 	// ---------------- helpers
+
+	static function registerProtocol() {
+		if( App.isPackaged )
+			App.setAsDefaultProtocolClient("hide");
+		else
+			App.setAsDefaultProtocolClient("hide", js.Node.process.execPath, [js.node.Path.resolve(App.getAppPath())]);
+	}
+
+	static function loadWindowsEnv() {
+		var script = "[Console]::OutputEncoding = [Text.Encoding]::UTF8;"
+			+ "$vars = [Environment]::GetEnvironmentVariables('Machine');"
+			+ "$user = [Environment]::GetEnvironmentVariables('User');"
+			+ "foreach( $k in $user.Keys ) { $vars[$k] = $user[$k] };"
+			+ "$vars | ConvertTo-Json -Compress";
+		var out : String = cast js.node.ChildProcess.execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], ({ encoding : "utf8", windowsHide : true } : Dynamic));
+		var vars = haxe.Json.parse(out);
+		var env = js.Node.process.env;
+		for( name in Reflect.fields(vars) )
+			if( env.get(name) == null )
+				env.set(name, Reflect.field(vars, name));
+	}
 
 	static function filterArgv( argv : Array<String>, ?cwd : String ) {
 		var appPath = js.node.Path.resolve(App.getAppPath());
@@ -549,7 +582,7 @@ class ElectronMain {
 			var win = BrowserWindow.fromWebContents(wc);
 			if( win != null ) windowStates.get(win.id).interceptClose = false;
 			return {
-				argv : filterArgv(js.Node.process.argv),
+				argv : filterArgv(js.Node.process.argv, launchCwd),
 				dataPath : App.getPath("userData"),
 				name : appName,
 				windowId : win == null ? null : win.id,
