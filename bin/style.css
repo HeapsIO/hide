@@ -7867,74 +7867,79 @@ fancy-gallery-item {
 		}
 
 		.marker {
-			position: absolute;
-			cursor: ew-resize;
+			--half-width: 8px;
 
-			.marker-bar {
+			position: absolute;
+
+			.marker-label {
 				position: absolute;
-				inset: 3px 0;
+				top: 50%;
+				right: calc(100% + var(--half-width) + 4px);
+				height: 20px;
+				translate: 0 -50%;
 				display: flex;
 				align-items: center;
-				gap: 6px;
-				padding: 0 8px;
+				gap: 5px;
+				padding: 0 6px;
 				box-sizing: border-box;
-				overflow: hidden;
 				white-space: nowrap;
-				border: 1px solid var(--marker-color);
+				border: 1px solid color-mix(in srgb, var(--marker-color) 55%, transparent);
 				border-radius: var(--theme-border-radius);
-				background: color-mix(in srgb, var(--marker-color) 30%, transparent);
+				background: color-mix(in srgb, var(--marker-color) 25%, var(--theme-base));
 				color: var(--theme-foreground);
+				cursor: grab;
 
 				hide-icon {
 					--icon-size: 10px;
 				}
-
-				.grip {
-					position: absolute;
-					top: 0;
-					bottom: 0;
-					width: 6px;
-					cursor: col-resize;
-
-					&.start {
-						left: 0;
-					}
-
-					&.end {
-						right: 0;
-					}
-				}
-
-				&:hover .grip {
-					background: color-mix(in srgb, var(--marker-color) 70%, transparent);
-				}
 			}
 
-			.marker-instant {
-				--icon-size: 10px;
-
+			.marker-range {
 				position: absolute;
-				top: 0;
-				bottom: 0;
-				left: calc(var(--icon-size) / -2);
-				display: flex;
-				align-items: center;
-				gap: 4px;
-				white-space: nowrap;
-				color: var(--marker-color);
+				inset: 3px 0;
+				box-sizing: border-box;
+				border-top: 1px solid var(--marker-color);
+				border-bottom: 1px solid var(--marker-color);
+				background: color-mix(in srgb, var(--marker-color) 30%, transparent);
+				cursor: grab;
+			}
 
-				.label {
-					color: var(--theme-foreground);
+			.marker-half {
+				position: absolute;
+				top: 3px;
+				bottom: 3px;
+				width: var(--half-width);
+
+				&.start {
+					right: 100%;
+					clip-path: polygon(100% 0, 0 50%, 100% 100%);
+					background: var(--marker-color);
+					cursor: grab;
+				}
+
+				&.end {
+					left: calc(100% + 1px);
+					clip-path: polygon(0 0, 100% 50%, 0 100%);
+					background: color-mix(in srgb, var(--marker-color), white 45%);
+					cursor: ew-resize;
+				}
+
+				&:hover {
+					background: white;
 				}
 			}
 
 			&.selected {
-				.marker-bar {
-					border: 2px solid var(--theme-accent);
+				.marker-label {
+					border-color: var(--theme-accent);
 				}
 
-				.marker-instant hide-icon {
-					color: var(--theme-accent);
+				.marker-range {
+					border-color: white;
+				}
+
+				.marker-half {
+					background: white;
 				}
 			}
 		}

@@ -886,30 +886,19 @@ class Timeline extends hide.ui.View<{}> {
 
 		for (m in markers) {
 			if (m.element == null) {
-				var el = document.createDivElement();
-				el.className = "marker";
+				hide.html.Html.create(
+					<div id="el" class="marker" style={'--marker-color: ${colorString(m.color)}'}>
+						<div class="marker-label">
+							<hide-icon icon={m.icon}/>
+							<span>${m.name}</span>
+						</div>
+						<div class="marker-range"></div>
+						<div class="marker-half start" title="Drag: move"></div>
+						<div class="marker-half end" title="Drag: duration"></div>
+					</div>
+				);
 				m.element = el;
 				markersBand.append(el);
-
-				el.style.setProperty("--marker-color", colorString(m.color));
-				if (m.duration > 0) {
-					hide.html.Html.build(el,
-						<div class="marker-bar">
-							<div class="grip start"></div>
-							<hide-icon icon={m.icon}/>
-							<span class="label">${m.name}</span>
-							<div class="grip end"></div>
-						</div>
-					);
-				}
-				else {
-					hide.html.Html.build(el,
-						<div class="marker-instant">
-							<hide-icon icon={HideRes.icon.diamond}/>
-							<span class="label">${m.name}</span>
-						</div>
-					);
-				}
 
 				el.onpointerdown = (e : PointerEvent) -> {
 					if (e.button != 0)
@@ -917,7 +906,6 @@ class Timeline extends hide.ui.View<{}> {
 					e.stopPropagation();
 					el.setPointerCapture(e.pointerId);
 					var target : Element = cast e.target;
-					var isResizingStart = target.classList.contains("start");
 					var isResizingEnd = target.classList.contains("end");
 
 					var isMultiSelect = e.ctrlKey || e.shiftKey;
@@ -932,7 +920,7 @@ class Timeline extends hide.ui.View<{}> {
 						setSelection([m], []);
 
 					var moved = selectedMarkers.contains(m) ? selectedMarkers.copy() : [];
-					if (isResizingStart || isResizingEnd)
+					if (isResizingEnd)
 						moved = [m];
 					var oldMarkers = [for (s in moved) { name: s.name, frame: s.frame, duration: s.duration }];
 					var lastFrame = timeToFrame(duration);
@@ -946,16 +934,11 @@ class Timeline extends hide.ui.View<{}> {
 					var grabFrame = timeToFrame(px(sxFromEvent(e)));
 					var startFrame = m.frame;
 					var startDuration = m.duration;
-					var endFrame = startFrame + startDuration;
 					el.onpointermove = (e : PointerEvent) -> {
 						var delta = timeToFrame(px(sxFromEvent(e))) - grabFrame;
-						if (isResizingStart) {
-							m.frame = hxd.Math.iclamp(startFrame + delta, 0, endFrame - 1);
-							m.duration = endFrame - m.frame;
-						}
-						else if (isResizingEnd) {
+						if (isResizingEnd) {
 							var maxDuration = lastFrame > 0 ? lastFrame - startFrame : MAX_FRAME;
-							m.duration = hxd.Math.iclamp(startDuration + delta, 1, maxDuration);
+							m.duration = hxd.Math.iclamp(startDuration + delta, 0, maxDuration);
 						}
 						else {
 							delta = hxd.Math.iclamp(delta, minDelta, maxDelta);
