@@ -32,7 +32,7 @@ class RefractionShader extends hxsl.Shader {
 @:access(h3d.pass.PassObject)
 class Refraction extends RendererFX {
 
-	var refractionShader : RefractionShader;
+	@:persist var refractionShader : RefractionShader;
 	function new(parent, shared: ContextShared) {
 		super(parent, shared);
 
