@@ -195,7 +195,8 @@ private class StateDump extends Dump {
 					dumpFields(v, path, reset);
 				}
 			default:
-				addValue(Std.string(Type.typeof(v)), v);
+				// Native handles (HL abstracts) are boxed anew on each read : their pointers can't be compared
+				addValue(Std.string(Type.typeof(v)));
 		}
 	}
 }
