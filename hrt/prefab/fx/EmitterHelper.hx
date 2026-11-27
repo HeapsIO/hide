@@ -614,7 +614,12 @@ class EmitterHelper {
 			var v = Lambda.find(shaderDef.data.vars, v -> v.name == prop.name);
 			var size = EmitterParam.getParamSize(v);
 			if (size == 0) {
-				parent.buildProp(prop, shader.props);
+				switch (v.type) {
+					case TVec(3 | 4, VFloat) if (v.name.toLowerCase().indexOf("color") >= 0):
+						editColor(ctx, shader, prop, parent);
+					default:
+						parent.buildProp(prop, shader.props);
+				}
 				continue;
 			}
 			var value : Dynamic = shaderParamDefault(shader, prop.name);
@@ -627,6 +632,61 @@ class EmitterHelper {
 			editParam(ctx, shader, { name: prop.name, t: t, def: base, kind: Particle, groupName: null }, [Constant, Curve], parent);
 		}
 		return true;
+	}
+
+	// a color of a particle shader: a constant, or a gradient over the particle life (a child named like the param)
+	static function editColor(ctx: EditContext2, shader: hrt.prefab.Shader, prop: hrt.prefab.Props.PropDef, parent: hide.kit.Element) {
+		var g = Gradient.getGradient(shader, prop.name, false);
+
+		function setGradient(on: Bool) {
+			if (on == (g != null))
+				return;
+			ctx.recordPrefabUndoWithChildren(shader, () -> {
+				if (on) {
+					var c : Dynamic = Reflect.field(shader.props, prop.name);
+					function comp(i: Int) : Float { var v : Dynamic = Std.isOfType(c, Array) ? c[i] : null; return v ?? 1.0; }
+					var color = new h3d.Vector4(comp(0), comp(1), comp(2), comp(3)).toColor();
+					var ng = new Gradient(shader, shader.shared);
+					ng.name = prop.name;
+					ng.data.stops = [{ position: 0, color: color }, { position: 1, color: color }];
+				} else
+					g.remove();
+			});
+			updateParamInstance(shader, false);
+			ctx.rebuildInspector();
+		}
+
+		var widget : hide.kit.Widget<Dynamic>;
+		if (g == null) {
+			widget = parent.buildProp(prop, shader.props);
+			widget.anim = null;
+		} else {
+			var w = new hide.kit.Gradient(parent, prop.name);
+			w.label = prop.disp ?? hide.tools.StringUtils.camelToSpaceCase(prop.name);
+			w.tooltip = "Over the life of the particle";
+			w.value = g.data;
+			// the gradient is a child: the edits of the shader do not record it
+			w.noUndo = true;
+			var before = hrt.prefab.Diff.deepCopy(g.data);
+			@:privateAccess w.onFieldChange = (_) -> g.data = w.value;
+			w.onValueChange = (temp) -> {
+				updateParamInstance(shader, true);
+				if (temp)
+					return;
+				var old = before, cur = hrt.prefab.Diff.deepCopy(g.data);
+				before = cur;
+				ctx.recordUndo((isUndo) -> {
+					g.data = hrt.prefab.Diff.deepCopy(isUndo ? old : cur);
+					updateParamInstance(shader, true);
+					ctx.rebuildInspector();
+				}, [g]);
+			}
+			widget = cast w;
+		}
+		widget.menuItems = () -> [
+			{ label: "Color", radio: () -> g == null, click: () -> setGradient(false) },
+			{ label: "Gradient", radio: () -> g != null, click: () -> setGradient(true) },
+		];
 	}
 
 	static function updateParamInstance(prefab: Prefab, fromWidget: Bool) {

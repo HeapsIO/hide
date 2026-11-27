@@ -853,6 +853,9 @@ class FXEditor extends hide.view.FileView {
 		var gradients : Array<Gradient> = [];
 		for (sel in sceneEditor.getSelection()) {
 			for (g in sel.flatten(Gradient)) {
+				var shader = Std.downcast(g.parent, hrt.prefab.Shader);
+				if (g != sel && shader != null && @:privateAccess hrt.prefab.fx.EmitterHelper.getParticleEmitter(shader) != null)
+					continue;
 				if (!gradients.contains(g))
 					gradients.push(g);
 			}
