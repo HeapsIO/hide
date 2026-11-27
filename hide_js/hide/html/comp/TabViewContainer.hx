@@ -43,7 +43,7 @@ class TabViewContainer extends TabContainer {
 		var view = getView(pane);
 		if (visible) {
 			hide.tools.CrashReport.log("show " + view);
-			haxe.Timer.delay(view.onActivate, 0);
+			haxe.Timer.delay(() -> if (view.container != null) view.onActivate(), 0);
 		} else
 			view.onHide();
 		@:privateAccess hide.Ide.inst.refreshZones();
