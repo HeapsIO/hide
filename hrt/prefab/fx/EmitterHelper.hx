@@ -638,10 +638,16 @@ class EmitterHelper {
 	static function editColor(ctx: EditContext2, shader: hrt.prefab.Shader, prop: hrt.prefab.Props.PropDef, parent: hide.kit.Element) {
 		var g = Gradient.getGradient(shader, prop.name, false);
 
-		function setGradient(on: Bool) {
-			if (on == (g != null))
+		function setGradient(on: Bool, reset = false) {
+			if (on == (g != null) && !reset)
 				return;
 			ctx.recordPrefabUndoWithChildren(shader, () -> {
+				if (reset) {
+					if (prop.def != null)
+						Reflect.setField(shader.props, prop.name, hrt.prefab.Diff.deepCopy(prop.def));
+					else
+						Reflect.deleteField(shader.props, prop.name);
+				}
 				if (on) {
 					var c : Dynamic = Reflect.field(shader.props, prop.name);
 					function comp(i: Int) : Float { var v : Dynamic = Std.isOfType(c, Array) ? c[i] : null; return v ?? 1.0; }
@@ -650,7 +656,7 @@ class EmitterHelper {
 					ng.name = prop.name;
 					ng.data.stops = [{ position: 0, color: color }, { position: 1, color: color }];
 				} else
-					g.remove();
+					g?.remove();
 			});
 			updateParamInstance(shader, false);
 			ctx.rebuildInspector();
@@ -661,7 +667,9 @@ class EmitterHelper {
 			widget = parent.buildProp(prop, shader.props);
 			widget.anim = null;
 		} else {
-			var w = new hide.kit.Gradient(parent, prop.name);
+			var w = new ParticleGradient(parent, prop.name);
+			// the param, not the gradient: back to its default color
+			w.onReset = () -> setGradient(false, true);
 			w.label = prop.disp ?? hide.tools.StringUtils.camelToSpaceCase(prop.name);
 			w.tooltip = "Over the life of the particle";
 			w.value = g.data;
@@ -709,6 +717,30 @@ class EmitterHelper {
 }
 
 #if domkit
+
+// a gradient over the particle life, a child of its shader: its reset and paste make their own undo
+private class ParticleGradient extends hide.kit.Gradient {
+	public var onReset : Void -> Void;
+
+	override function resetSelf() {
+		onReset();
+	}
+
+	override function pasteSelf(obj: Dynamic) {
+		if (obj.value != null) {
+			value = obj.value;
+			broadcastValueChange(false);
+		}
+	}
+
+	override function pasteSelfString(str: String) {
+		var v = stringToValue(str);
+		if (v != null) {
+			value = v;
+			broadcastValueChange(false);
+		}
+	}
+}
 
 enum abstract ModeKind(String) to String {
 	var Constant;
