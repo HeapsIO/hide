@@ -834,7 +834,17 @@ class EmitterObject extends h3d.scene.Object {
 			trails = null;
 		}
 
-		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
+		if (trailsTemplate != null && trails == null) {
+			trails = trailsTemplate.create(this, maxCount);
+			trailsTemplate.local3d = trails;
+			trails.autoTrackPosition = false;
+			for( mat in trailsTemplate.findAll(hrt.prefab.Material, checkEnabled) )
+				@:privateAccess mat.makeInstance();
+			for( shader in trailsTemplate.findAll(hrt.prefab.Shader, checkEnabled) )
+				@:privateAccess shader.makeInstance();
+		}
+
+		particles =#if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
 		particlesCount = maxCount;
 		evaluator = new Evaluator();
 
@@ -1046,16 +1056,6 @@ class EmitterObject extends h3d.scene.Object {
 
 		var emitterQuat : h3d.Quat = null;
 		if (count > 0) {
-
-			if (trailsTemplate != null && trails == null) {
-				trails = trailsTemplate.create(this, maxCount);
-				trailsTemplate.local3d = trails;
-				trails.autoTrackPosition = false;
-				for( mat in trailsTemplate.findAll(hrt.prefab.Material, checkEnabled) )
-					@:privateAccess mat.makeInstance();
-				for( shader in trailsTemplate.findAll(hrt.prefab.Shader, checkEnabled) )
-					@:privateAccess shader.makeInstance();
-			}
 
 			for( i in 0...count ) {
 				var part = allocInstance();
