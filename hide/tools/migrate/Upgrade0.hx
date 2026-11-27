@@ -854,6 +854,7 @@ class Upgrade0 {
 	}
 
 	function upgradeObject3D( n : RawNode ) {
+		upgradeColor(n, "color", false, false);
 		var d = n.data;
 		var pos = [for( f in ["x", "y", "z"] ) num(fieldOf(n, f), 0)];
 		var scale = [for( f in ["scaleX", "scaleY", "scaleZ"] ) num(fieldOf(n, f), 1)];
@@ -1484,6 +1485,7 @@ class Upgrade0 {
 	}
 
 	function upgradeObject2D( n : RawNode ) {
+		upgradeColor(n, "color", false, false);
 		var gp = group(n, "position");
 		if( anyLegacy(gp) )
 			bakeVector(n, "position", channels(gp, "position", 2), [1, 1], [num(fieldOf(n, "x"), 0), num(fieldOf(n, "y"), 0)], "2d position");
@@ -1532,6 +1534,18 @@ class Upgrade0 {
 	**/
 	function upgradeShader( n : RawNode ) {
 		var seen = new Map();
+		for( c in n.children.copy() ) {
+			if( c.parent != n || !c.isCurve || !c.enabled() || !isLegacy(c) ) continue;
+			var prefix = c.name.split(":")[0];
+			var low = prefix.toLowerCase();
+			if( low.indexOf("color") < 0 || seen.exists(low) ) continue;
+			seen.set(low, true);
+			var value : Dynamic = shaderValue(n, prefix);
+			var components = Lambda.exists(group(n, prefix), x -> x.name.indexOf(":") >= 0);
+			if( Std.isOfType(value, Array) || (value == null && components) )
+				upgradeColor(n, propName(get(n.data, "props"), low) ?? prefix, true, false);
+		}
+		seen = new Map();
 		for( c in n.children ) {
 			if( !c.isCurve || !c.enabled() || !isLegacy(c) ) continue;
 			var prefix = c.name.split(":")[0];
@@ -1554,6 +1568,185 @@ class Upgrade0 {
 			bakeLinear(curve, k, 0);
 			change(curve, k == 1 ? "shader float, value 1" : "shader float");
 		}
+	}
+
+	/** Colors are fitted to 1/255 at most from the samples, the gradient keeps 8 bits per channel **/
+	static inline var COLOR_TOLERANCE = 0.5 / 255;
+
+	/**
+		A color read from the curves of its components (the old `getColorValue`): `name:r/g/b/a`, 1 for a
+		missing one, or `name:h/s/l/a` (`Vector4.makeColor`, the hue in radians, 0 when missing, 1 for the others).
+		It is now a gradient (`hrt.prefab.fx.Gradient`) named after it, its stops at the times it is read at:
+		the FX time, the particle life under an emitter (`life`). The old color is sampled, its stops are the
+		fewest of a linear fit, clamped to [0, 1]. On a shader (`shader`) an alpha curve alone was the color
+		(a, a, a, 1) and a curve without suffix white; an object reads an alpha curve alone still, and nothing
+		for the other.
+	**/
+	function upgradeColor( n : RawNode, name : String, shader : Bool, life : Bool ) {
+		var g = group(n, name);
+		if( g.length == 0 ) return;
+		inline function find( s : String ) return Lambda.find(g, c -> StringTools.endsWith(c.name.toLowerCase(), ":" + s));
+		var r = find("r"), gr = find("g"), b = find("b"), a = find("a"), h = find("h"), s = find("s"), l = find("l");
+		var hsl = h != null || s != null || l != null;
+		var rgb = r != null || gr != null || b != null;
+		if( !shader && !hsl && !rgb ) return;
+		var read = hsl ? [h, s, l, a] : rgb ? [r, gr, b, a] : [a];
+		read = [for( c in read ) if( c != null ) c];
+		for( c in read ) {
+			var inputs = [];
+			collectInputs(c, inputs);
+			if( Lambda.exists(inputs, i -> i != "") ) {
+				fail(c, 'color $name read at an FX parameter, a gradient is read at the time: not upgraded, its curves are no longer read');
+				return;
+			}
+		}
+		var ev = new Evaluator();
+		for( k => v in parameters ) ev.parameters.set(k, v);
+		var vals = new Map<RawNode, Value>();
+		for( c in read ) {
+			var v = Std.downcast(mirrorOf(c), hrt.prefab.fx.Curve)?.makeVal();
+			switch( v ) {
+			case null, VZero, VConst(_), VCurve(_):
+			default:
+				fail(c, 'color $name: a random or blended curve, a gradient holds one color at a time: not upgraded, its curves are no longer read');
+				return;
+			}
+			vals.set(c, v);
+		}
+		inline function f( c : RawNode, def : Float, t : Float ) return c == null ? def : ev.getFloat(vals.get(c), t);
+		var tmp = new h3d.Vector4();
+		function color( t : Float ) : Array<Float> {
+			if( hsl ) {
+				tmp.makeColor(f(h, 0, t), f(s, 1, t), f(l, 1, t));
+				return [tmp.r, tmp.g, tmp.b, f(a, 1, t)];
+			}
+			if( rgb ) return [f(r, 1, t), f(gr, 1, t), f(b, 1, t), f(a, 1, t)];
+			if( a != null ) { var v = f(a, 1, t); return [v, v, v, 1]; }
+			return [1, 1, 1, 1];
+		}
+
+		// the span of the keys, a loop over the FX (the particle life)
+		var span = { min: Math.POSITIVE_INFINITY, max: Math.NEGATIVE_INFINITY, loop: false };
+		var keyTimes = [];
+		for( c in read ) collectSpan(c, span, keyTimes);
+		if( span.min > span.max ) span.min = span.max = 0;
+		// a short curve is baked from 0 (`Curve.bakeValues`): before its first key, it is not the value of the key
+		span.min = Math.min(span.min, 0);
+		// past the last key, its step
+		span.max += 1e-4;
+		if( span.loop ) {
+			span.min = Math.min(span.min, 0);
+			span.max = life ? 1 : Math.max(span.max, fxDuration > 0 ? fxDuration : 5.0) + 1;
+		}
+		if( life ) {
+			span.min = hxd.Math.clamp(span.min, 0, 1);
+			span.max = hxd.Math.clamp(span.max, 0, 1);
+		}
+		var grid = [];
+		var steps = Math.ceil((span.max - span.min) / (life ? 1 / 64 : 1 / 60));
+		if( steps > 20000 ) steps = 20000;
+		for( i in 0...steps + 1 )
+			grid.push(steps == 0 ? span.min : span.min + (span.max - span.min) * i / steps);
+		// the keys and right after them, for the steps: a curve reads the segment before on a key, the two stops get the same position
+		for( t in keyTimes )
+			for( x in [t, t + 1e-7] )
+				if( x > span.min && x < span.max )
+					grid.push(x);
+		grid.sort(Reflect.compare);
+		grid = [for( i => t in grid ) if( i == 0 || t > grid[i - 1] ) t];
+
+		var clamped = 0.;
+		function sample( t : Float ) {
+			var c = color(t);
+			for( i in 0...4 ) {
+				var v = hxd.Math.clamp(c[i], 0, 1);
+				clamped = Math.max(clamped, Math.abs(v - c[i]));
+				c[i] = v;
+			}
+			return c;
+		}
+		// between the grid, where the color is not a line (a fast hue)
+		var times = [], values = [];
+		function refine( t0 : Float, c0 : Array<Float>, t1 : Float, c1 : Array<Float>, depth : Int ) {
+			var tm = (t0 + t1) * 0.5, cm = sample(tm);
+			var off = false;
+			for( i in 0...4 )
+				if( Math.abs((c0[i] + c1[i]) * 0.5 - cm[i]) > COLOR_TOLERANCE ) off = true;
+			if( off && depth < 10 ) {
+				refine(t0, c0, tm, cm, depth + 1);
+				times.push(tm);
+				values.push(cm);
+				refine(tm, cm, t1, c1, depth + 1);
+			}
+		}
+		var prev = sample(grid[0]);
+		times.push(grid[0]);
+		values.push(prev);
+		for( i in 1...grid.length ) {
+			var c = sample(grid[i]);
+			if( grid[i] - grid[i - 1] > 1e-4 )
+				refine(grid[i - 1], prev, grid[i], c, 0);
+			times.push(grid[i]);
+			values.push(c);
+			prev = c;
+		}
+
+		// the fewest stops of a linear fit
+		var keep = [for( i in 0...times.length ) i == 0 || i == times.length - 1];
+		var stack = [0, times.length - 1];
+		while( stack.length > 0 ) {
+			var j = stack.pop(), i = stack.pop();
+			if( j <= i + 1 ) continue;
+			var worst = -1, err = COLOR_TOLERANCE;
+			for( k in i + 1...j ) {
+				var u = (times[k] - times[i]) / (times[j] - times[i]);
+				for( c in 0...4 ) {
+					var e = Math.abs(values[i][c] + (values[j][c] - values[i][c]) * u - values[k][c]);
+					if( e > err ) { err = e; worst = k; }
+				}
+			}
+			if( worst >= 0 ) {
+				keep[worst] = true;
+				stack.push(i); stack.push(worst);
+				stack.push(worst); stack.push(j);
+			}
+		}
+		inline function byte( v : Float ) return Math.round(v * 255);
+		var stops : Array<Dynamic> = [for( i in 0...times.length ) if( keep[i] ) {
+			var c = values[i];
+			obj(["position", times[i], "color", (byte(c[3]) << 24) | (byte(c[0]) << 16) | (byte(c[1]) << 8) | byte(c[2])]);
+		}];
+		if( stops.length == 2 && stops[0].color == stops[1].color )
+			stops.pop();
+		var data = obj(["type", "fxgradient", "name", name, "data",
+			obj(["stops", stops, "resolution", 64, "isVertical", false, "interpolation", "Linear", "colorMode", 0])]);
+
+		// the gradient takes the place of the curves
+		for( c in g ) {
+			var us = users.get(c);
+			if( us != null )
+				for( u in us.copy() ) {
+					warn(u, 'reference to a curve of color $name, made a copy of it');
+					dereference(u);
+				}
+			if( remapUsers.exists(c) )
+				warn(c, 'remaps the time of other curves, removed with color $name: they are read at their own time');
+		}
+		var arr : Array<Dynamic> = get(n.data, "children");
+		var at = arr.indexOf(g[0].data);
+		for( c in g ) {
+			arr.remove(c.data);
+			n.children.remove(c);
+			c.parent = null;
+		}
+		arr.insert(at, data);
+		var node = RawNode.build(data, n);
+		n.children.insert(at, node);
+		change(node, hsl ? "color hsl curves, gradient" : rgb ? "color curves, gradient" : a != null ? "color alpha curve alone, gradient" : "color curve without component, gradient");
+		if( clamped > 0.5 / 255 )
+			warn(node, '$name out of [0, 1] by ${Math.round(clamped * 1000) / 1000}, clamped: a gradient holds 8 bits per channel');
+		if( span.loop && !life && fxDuration <= 0 )
+			warn(node, '$name loops, unrolled over 5s: the FX has no duration');
 	}
 
 	// ----------------------------------------------------------------------------------------
@@ -2237,14 +2430,14 @@ class Upgrade0 {
 	/**
 		The curves of a shader under an emitter, evaluated over the particle life. The shader definition
 		is not known, the kind of a param comes from its stored value: a float was `curve * value`, a
-		vector came from its component curves alone, 0 for the others (1 for w). Colors keep their curves.
+		vector came from its component curves alone, 0 for the others (1 for w). A color is a gradient (`upgradeColor`).
 	**/
 	function upgradeParticleShader( s : RawNode ) {
 		var props : Dynamic = get(s.data, "props");
 		var out = new Map<String, Array<Mode>>();
 		var seen = new Map();
-		for( c in s.children ) {
-			if( !c.enabled() || !c.isCurve ) continue;
+		for( c in s.children.copy() ) {
+			if( c.parent != s || !c.enabled() || !c.isCurve ) continue;
 			var prefix = c.name.split(":")[0];
 			var low = prefix.toLowerCase();
 			if( seen.exists(low) ) continue;
@@ -2255,8 +2448,10 @@ class Upgrade0 {
 			var group = [for( x in s.children ) if( x.enabled() && x.isCurve && sameName(x.name.split(":")[0], name) ) x];
 			var components = Lambda.exists(group, x -> x.name.indexOf(":") >= 0);
 			var isVector = Std.isOfType(prop, Array) || (prop == null && components);
-			if( isVector && low.indexOf("color") >= 0 )
+			if( isVector && low.indexOf("color") >= 0 ) {
+				upgradeColor(s, name, true, true);
 				continue;
+			}
 			if( isVector ) {
 				var dim = Std.isOfType(prop, Array) ? hxd.Math.imin((prop : Array<Dynamic>).length, 4) : 4;
 				var v : Array<Mode> = [];
