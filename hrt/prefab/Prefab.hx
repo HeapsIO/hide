@@ -214,7 +214,7 @@ class Prefab {
 		// We bypass the normal new function to avoid initializing the
 		// serializable fields, because they will be initialized by the copy function
 		var inst = Type.createEmptyInstance(thisClass);
-		inst.resetInstanceVars();		// Macro function that init all the non serializable fields of a prefab
+		inst.resetInstanceVars(true);		// Macro function that init all the non serializable fields of a prefab
 		inst.__newInit(parent, sh);// Macro function that contains the code of the new function
 
 		inst.copy(this);
@@ -268,7 +268,7 @@ class Prefab {
 		Fields not marked @:s, @:c or @:persist are reset to their default value. Objects created by make() are left untouched.
 	**/
 	public final function clean() : Void {
-		resetInstanceVars();
+		resetInstanceVars(false);
 		cleanChildren();
 
 		if (parent == null) {

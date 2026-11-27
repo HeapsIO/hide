@@ -294,23 +294,31 @@ class Macros {
 	static macro public function resetInstanceVarsBody() : Expr {
 		var cl = Context.getLocalClass().get();
 		var isRoot = cl.superClass == null;
-		var exprs = isRoot ? [] : [macro super.resetInstanceVars()];
+		var exprs = isRoot ? [] : [macro super.resetInstanceVars(initKept)];
+
+		function assign(f : ClassField, value : Expr) : Expr {
+			var name = f.name;
+			return switch (f.kind) {
+				case FVar(_, AccNormal | AccNo):
+					macro @:pos(f.pos) this.$name = $value;
+				case FVar(_, AccCall):
+					macro @:pos(f.pos) @:bypassAccessor this.$name = $value;
+				default: // final, never
+					macro @:pos(f.pos) (this:Dynamic).$name = $value;
+			}
+		}
 
 		for (f in cl.fields.get()) {
 			var name = f.name;
+			var value = f.meta.extract(":value")[0]?.params[0];
 			switch (getCleanKind(f)) {
 				case "kept":
+					// Clones are created without their constructor : their @:persist fields get their initial value here (@:c ones are copied)
+					if (value != null && !isRoot && f.meta.has(":persist"))
+						exprs.push(macro if (initKept) $e{assign(f, value)});
 					exprs.push(macro @:pos(f.pos) hrt.prefab.Macros.checkNotSceneObject(this.$name));
 				case "reset" if (!isRoot):
-					var value = f.meta.extract(":value")[0]?.params[0] ?? macro hrt.prefab.Macros.defaultValueOf(this.$name);
-					switch (f.kind) {
-						case FVar(_, AccNormal | AccNo):
-							exprs.push(macro @:pos(f.pos) this.$name = $value);
-						case FVar(_, AccCall):
-							exprs.push(macro @:pos(f.pos) @:bypassAccessor this.$name = $value);
-						default: // final, never
-							exprs.push(macro @:pos(f.pos) (this:Dynamic).$name = $value);
-					}
+					exprs.push(assign(f, value ?? macro hrt.prefab.Macros.defaultValueOf(this.$name)));
 				default:
 			}
 		}
@@ -797,7 +805,17 @@ class Macros {
 		};
 		fields.push(makeFun("copyToDynamic", EBlock([expr]), macro : Dynamic, macro : Dynamic));
 
-		fields.push(makeFun("resetInstanceVars", EBlock([macro hrt.prefab.Macros.resetInstanceVarsBody()]), null, null));
+		fields.push({
+			name : "resetInstanceVars",
+			kind : FFun({
+				ret : null,
+				expr : macro hrt.prefab.Macros.resetInstanceVarsBody(),
+				args : [{ name : "initKept", type : macro : Bool }],
+			}),
+			meta : [{ name : ":noCompletion", pos : pos }],
+			access : isRoot ? [] : [AOverride],
+			pos : pos,
+		});
 
 		// Read by hrt.prefab.MakeCleanTest
 		if (!Context.defined("release")) {
