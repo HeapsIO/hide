@@ -708,6 +708,18 @@ class FXEditor extends hide.view.FileView {
 			onTimelineEdit();
 		};
 
+		t.onGradientEdit = () -> forceTick = true;
+		t.onGradientChange = (gradient : hrt.impl.Gradient.GradientData, before : Array<hrt.impl.Gradient.ColorStop>, after : Array<hrt.impl.Gradient.ColorStop>) -> {
+			function apply(isUndo : Bool) {
+				var stops = isUndo ? before : after;
+				gradient.stops = [for (s in stops) { position: s.position, color: s.color }];
+				onTimelineEdit();
+				getTimeline()?.refresh();
+			}
+			undo.change(Custom(apply));
+			onTimelineEdit();
+		};
+
 		t.onMarkersChange = (oldMarkers : Array<Timeline.Marker>, newMarkers : Array<Timeline.Marker>) -> {
 			var deleted = [for (i => m in oldMarkers) if (m != null && newMarkers[i] == null) m];
 			if (deleted.length > 0)

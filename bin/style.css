@@ -7840,6 +7840,30 @@ fancy-gallery-item {
 				width: 100%;
 				height: 100%;
 			}
+
+			.gradient-stop {
+				position: absolute;
+				top: 50%;
+				width: 10px;
+				height: 10px;
+				margin: -5px 0 0 -5px;
+				box-sizing: border-box;
+				transform: rotate(45deg);
+				background: var(--stop-color);
+				border: 1.5px solid oklch(0.15 0 0);
+				box-shadow: 0 0 0 1px oklch(0.8 0 0 / 0.6);
+				pointer-events: auto;
+				cursor: ew-resize;
+
+				&:hover {
+					box-shadow: 0 0 0 1px white;
+				}
+
+				&.selected {
+					border-color: white;
+					box-shadow: 0 0 0 1px var(--theme-accent, #08f);
+				}
+			}
 		}
 
 		.marker {

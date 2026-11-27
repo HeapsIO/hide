@@ -6,6 +6,9 @@ import js.html.*;
 import hrt.impl.Curve.CurveKey;
 import hrt.impl.Curve.CurveHandle;
 import hrt.impl.Curve.CurveKeyMode;
+import hrt.impl.Gradient as GradientImpl;
+import hrt.impl.Gradient.GradientData;
+import hrt.impl.Gradient.ColorStop;
 
 using Lambda;
 
@@ -27,10 +30,10 @@ typedef Row = {
 
 typedef RowGroup = {
 	type : String,
-	rows : Element
+	rows : Element,
 	count : Element,
 	element : Element,
-	foldIcon : Element,
+	foldIcon : Element
 }
 
 typedef Marker = {
@@ -46,9 +49,10 @@ typedef Marker = {
 
 typedef TimelineGradient = {
 	name : String,
-	data : hrt.impl.Gradient.GradientData,
+	data : GradientData,
 	type : String,
 	row : Row,
+	handles : Array<Element>,
 	?element : Element
 }
 
@@ -110,6 +114,7 @@ class Timeline extends hide.ui.View<{}> {
 	var foldedGroups : Array<String> = [];
 	var selectedMarkers : Array<Marker> = [];
 	var selectedKeys : Array<CurveKey> = [];
+	var selectedStop : ColorStop;
 
 	var zoomX = 1.;
 	var zoomY = 1.;
@@ -148,7 +153,7 @@ class Timeline extends hide.ui.View<{}> {
 		root.innerHTML = "";
 		root.classList.add("timeline");
 		saveDisplayKey = "Timeline";
-		foldedGroups = getDisplayState("foldedGroups") ?? [];
+		foldedGroups = getDisplayState("foldedGroups") ?? new Array<String>();
 
 		hide.html.Html.build(root,
 			<div class="timeline-root">
@@ -212,6 +217,12 @@ class Timeline extends hide.ui.View<{}> {
 			m.element = null;
 			m.row.element = null;
 		}
+		for (g in gradients) {
+			g.element = null;
+			g.row.element = null;
+			g.handles = [];
+		}
+		rowGroups = [];
 
 		leftPanel.classList.toggle("has-filter", hasFilter);
 		rightPanel.onwheel = onWheel;
@@ -398,13 +409,13 @@ class Timeline extends hide.ui.View<{}> {
 		refresh();
 	}
 
-	public function addGradient(name : String, data : hrt.impl.Gradient.GradientData, type : String) {
+	public function addGradient(name : String, data : GradientData, type : String) {
 		hide.html.Html.create(
 			<div id="line" class="fx-track gradient-line" style="--depth: 1">
 				<span class="name">${name}</span>
 			</div>
 		);
-		gradients.push({ name: name, data: data, type: type, row: { name: name, content: line } });
+		gradients.push({ name: name, data: data, type: type, row: { name: name, content: line }, handles: [] });
 		refresh();
 	}
 
@@ -463,9 +474,11 @@ class Timeline extends hide.ui.View<{}> {
 	public dynamic function onSave() {}
 	public dynamic function onUndo() {}
 	public dynamic function onRedo() {}
+	public dynamic function onMarkersChange(oldMarkers : Array<Marker>, newMarkers : Array<Marker>) {}
 	public dynamic function onCurvesEdit() {}
 	public dynamic function onCurvesChange(curves : Array<hrt.impl.Curve>, before : Array<Dynamic>, after : Array<Dynamic>) {}
-	public dynamic function onMarkersChange(oldMarkers : Array<Marker>, newMarkers : Array<Marker>) {}
+	public dynamic function onGradientEdit() {}
+	public dynamic function onGradientChange(data : GradientData, before : Array<ColorStop>, after : Array<ColorStop>) {}
 	public dynamic function onFilterChange(filter : String) {}
 
 	inline function frameToTime(f : Int) {
@@ -623,9 +636,10 @@ class Timeline extends hide.ui.View<{}> {
 		});
 	}
 
-	function setSelection(markerSel : Array<Marker>, keySel : Array<CurveKey>) {
+	function setSelection(markerSel : Array<Marker>, keySel : Array<CurveKey>, ?stopSel : ColorStop) {
 		selectedMarkers = markerSel;
 		selectedKeys = keySel;
+		selectedStop = stopSel;
 		for (m in markers)
 			m.element?.classList.toggle("selected", selectedMarkers.contains(m));
 		refresh();
@@ -636,6 +650,10 @@ class Timeline extends hide.ui.View<{}> {
 	}
 
 	function deleteSelection() {
+		if (selectedStop != null) {
+			var gradient = gradients.find(g -> g.data.stops.contains(selectedStop));
+			deleteGradientStop(gradient, selectedStop);
+		}
 		if (selectedKeys.length > 0)
 			deleteKeys(selectedKeys.copy());
 		if (selectedMarkers.length == 0)
@@ -763,7 +781,14 @@ class Timeline extends hide.ui.View<{}> {
 	function onRightPanelDoubleClick(e : MouseEvent) {
 		var x = sxFromEvent(e);
 		var y = syFromEvent(e);
-		if (y < 0 || e.button != 0)
+		if (e.button != 0)
+			return;
+		var gradient = getGradientAt(e.clientY);
+		if (gradient != null) {
+			addGradientStop(gradient, px(x));
+			return;
+		}
+		if (y < 0)
 			return;
 		var key = getKeyAt(x, y);
 		if (key != null)
@@ -798,6 +823,9 @@ class Timeline extends hide.ui.View<{}> {
 			}
 		}
 		else {
+			var gradient = getGradientAt(e.clientY);
+			if (gradient != null)
+				items.push({ label: "Add color stop", keys: "Double click", click: () -> addGradientStop(gradient, px(x)) });
 			if (hasEditableCurves() && y >= 0)
 				items.push({ label: "Add key", keys: "Ctrl + click", click: () -> addKeyAt(x, y) });
 			for (i in contextMenu(timeToFrame(px(x))))
@@ -985,11 +1013,130 @@ class Timeline extends hide.ui.View<{}> {
 			var parts = [];
 			for (i in 0...samples + 1) {
 				var x = i * width / samples;
-				hrt.impl.Gradient.evalData(l.data, px(x), color);
+				GradientImpl.evalData(l.data, px(x), color);
 				parts.push('rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${color.a}) ${x}px');
 			}
 			(cast l.element.firstChild : Element).style.background = 'linear-gradient(to right, ${parts.join(", ")})';
+			drawGradientStops(l);
 		}
+	}
+
+	function drawGradientStops(g : TimelineGradient) {
+		while (g.handles.length > g.data.stops.length)
+			g.handles.pop().remove();
+		while (g.handles.length < g.data.stops.length) {
+			var index = g.handles.length;
+			hide.html.Html.create(
+				<div id="handle" class="gradient-stop" title="Drag: move, double click: edit color, right click: menu"
+					onpointerdown={(e : PointerEvent) -> onGradientStopPointerDown(e, g, index)}
+					ondblclick={(e : MouseEvent) -> { e.stopPropagation(); editGradientStop(g, g.data.stops[index], e.clientX, e.clientY); }}
+					oncontextmenu={(e : MouseEvent) -> openGradientStopMenu(e, g, g.data.stops[index])}/>
+			);
+			g.element.append(handle);
+			g.handles.push(handle);
+		}
+		for (i => stop in g.data.stops) {
+			var handle = g.handles[i];
+			handle.style.left = '${sx(stop.position)}px';
+			handle.style.setProperty("--stop-color", colorString(stop.color));
+			handle.classList.toggle("selected", stop == selectedStop);
+		}
+	}
+
+	function onGradientStopPointerDown(e : PointerEvent, g : TimelineGradient, index : Int) {
+		e.stopPropagation();
+		if (e.button != 0)
+			return;
+		var handle : Element = cast e.currentTarget;
+		var stop = g.data.stops[index];
+		setSelection([], [], stop);
+		handle.setPointerCapture(e.pointerId);
+		var before = copyStops(g.data.stops);
+		var grabTime = px(sxFromEvent(e));
+		var startPosition = stop.position;
+		handle.onpointermove = (e : PointerEvent) -> {
+			var time = startPosition + px(sxFromEvent(e)) - grabTime;
+			stop.position = Math.max(frameToTime(timeToFrame(time)), 0.);
+			sortStops(g.data);
+			onGradientEdit();
+			refresh();
+		};
+		handle.onlostpointercapture = (_) -> {
+			handle.onpointermove = null;
+			handle.onlostpointercapture = null;
+			if (stop.position != startPosition)
+				onGradientChange(g.data, before, copyStops(g.data.stops));
+		};
+	}
+
+	function openGradientStopMenu(e : MouseEvent, g : TimelineGradient, stop : ColorStop) {
+		e.preventDefault();
+		e.stopPropagation();
+		setSelection([], [], stop);
+		hide.comp.ContextMenu.createFromPoint(e.clientX, e.clientY, [
+			{ label: "Edit color", keys: "Double click", click: () -> editGradientStop(g, stop, e.clientX, e.clientY) },
+			{ label: "Delete stop", keys: "Delete", click: () -> deleteGradientStop(g, stop), enabled: g.data.stops.length > 1 },
+		]);
+	}
+
+	function getGradientAt(clientY : Float) : TimelineGradient {
+		for (g in gradients) {
+			if (g.row.element == null)
+				continue;
+			var rect = g.row.element.getBoundingClientRect();
+			if (rect.height > 0 && clientY >= rect.top && clientY < rect.bottom)
+				return g;
+		}
+		return null;
+	}
+
+	function addGradientStop(g : TimelineGradient, time : Float) {
+		var before = copyStops(g.data.stops);
+		var position = Math.max(frameToTime(timeToFrame(time)), 0.);
+		var stop : ColorStop = { position: position, color: GradientImpl.evalData(g.data, position).toColor() };
+		g.data.stops.push(stop);
+		sortStops(g.data);
+		setSelection([], [], stop);
+		onGradientChange(g.data, before, copyStops(g.data.stops));
+	}
+
+	function deleteGradientStop(g : TimelineGradient, stop : ColorStop) {
+		if (g.data.stops.length <= 1)
+			return;
+		var before = copyStops(g.data.stops);
+		g.data.stops.remove(stop);
+		setSelection([], []);
+		onGradientChange(g.data, before, copyStops(g.data.stops));
+	}
+
+	function editGradientStop(g : TimelineGradient, stop : ColorStop, clientX : Float, clientY : Float) {
+		setSelection([], [], stop);
+		var before = copyStops(g.data.stops);
+		var startColor = stop.color;
+		var picker = new hide.comp.ColorPicker(true, element);
+		picker.anchor = { object: Point(clientX + 8, clientY - 20), directionX: EndOutside, directionY: EndOutside };
+		picker.value = startColor;
+		picker.onChange = (isDragging : Bool) -> {
+			stop.color = picker.value;
+			onGradientEdit();
+			refresh();
+		};
+		picker.onClose = () -> {
+			if (picker.wasCancelled && ide.currentConfig.get("hide.colorPickerEscUndo"))
+				stop.color = startColor;
+			if (stop.color != startColor)
+				onGradientChange(g.data, before, copyStops(g.data.stops));
+			else
+				refresh();
+		};
+	}
+
+	static function sortStops(data : GradientData) {
+		data.stops.sort((a, b) -> Reflect.compare(a.position, b.position));
+	}
+
+	static function copyStops(stops : Array<ColorStop>) : Array<ColorStop> {
+		return [for (s in stops) { position: s.position, color: s.color }];
 	}
 
 	function getRowGroup(type : String) : RowGroup {
