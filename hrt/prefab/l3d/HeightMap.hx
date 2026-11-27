@@ -556,8 +556,8 @@ class HeightMap extends Object3D {
 	#if editor
 	var view : hide.comp.Component;
 	#end
-	var tilesCache : Map<Int,HeightMapTile> = new Map();
-	var emptyTile : HeightMapTile;
+	@:persist var tilesCache : Map<Int,HeightMapTile> = new Map();
+	@:persist var emptyTile : HeightMapTile;
 	@:c var textures : Array<TextureItem> = [];
 	@:s var size = 128.;
 	@:s var heightScale = 0.2;
