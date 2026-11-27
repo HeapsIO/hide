@@ -110,7 +110,7 @@ class MeshSpray extends Spray {
 	@:s var editChildren = false; // We assume that editChildren can't be activated when binary storage is activated
 
 	var binaryMeshes : Array<{ path : String, x : Float, y : Float, z : Float, rotX : Float, rotY : Float, rotZ : Float, scale : Float }>;
-	var binaryName : String = null;
+	@:persist var binaryName : String = null;
 
 	override function load(obj : Dynamic) {
 		super.load(obj);
@@ -335,30 +335,6 @@ class MeshSpray extends Spray {
 	var MESH_SPRAY_CONFIG_PATH(get, null) : String;
 	function get_MESH_SPRAY_CONFIG_PATH() {
 		return hide.Ide.inst.resourceDir + "/" + MESH_SPRAY_CONFIG_FILE;
-	}
-
-	override function make(?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
-		makeInstance();
-
-		var old3d = shared.current3d;
-		shared.current3d = local3d ?? old3d;
-
-		// add all children then build meshspray
-		for( c in children )
-			if( c.type == "model" )
-				makeChild(c);
-
-		//cast(local3d, MeshSprayObject).redraw();
-		// then add other children (shaders etc.)
-		for( c in children )
-			if( c.type != "model" )
-				makeChild(c);
-
-		shared.current3d = old3d;
-
-		postMakeInstance();
-
-		return this;
 	}
 
 	override function makeInstance() {

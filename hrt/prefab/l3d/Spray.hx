@@ -73,18 +73,31 @@ class Spray extends Object3D {
 	}
 	#end
 
+	override function make(?sh:hrt.prefab.Prefab.ContextMake) : hrt.prefab.Prefab {
+		makeInstance();
+
+		var old3d = shared.current3d;
+		shared.current3d = local3d ?? old3d;
+
+		// Sprayed objects first, so that the other children (shaders etc.) apply to them
+		for( c in children )
+			if( Std.isOfType(c, Object3D) )
+				makeChild(c);
+
+		for( c in children )
+			if( !Std.isOfType(c, Object3D) )
+				makeChild(c);
+
+		shared.current3d = old3d;
+
+		postMakeInstance();
+
+		return this;
+	}
+
 	#if !editor
 
 	@:s var sources : Array<{ path : String }> = [];
-
-	override function makeInstance() {
-		super.makeInstance();
-		if (_children != null) {
-			_children.sort(function(c1, c2) {
-				return Std.isOfType(c1, Object3D) ? -1 : 1;
-			});
-		}
-	}
 
 	#else
 
