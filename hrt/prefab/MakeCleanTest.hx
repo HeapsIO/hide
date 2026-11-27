@@ -410,7 +410,7 @@ class MakeCleanTest {
 			if (o.local2d != null && !owners.exists(o.local2d))
 				owners.set(o.local2d, o.type);
 
-		var root : Dynamic = p.shared.root3d ?? p.shared.root2d;
+		var root : Dynamic = (p.shared.root3d:Dynamic) ?? (p.shared.root2d:Dynamic);
 		return { dump : new TreeDump(root, owners), owners : owners, objects : [root] };
 	}
 
