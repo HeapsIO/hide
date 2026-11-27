@@ -19,7 +19,6 @@ typedef PropTrackDef = {
 typedef Section = {
 	root: PrefabElement,
 	curves: Array<Curve>,
-	gradients: Array<Gradient>,
 	children: Array<Section>
 };
 
@@ -779,18 +778,15 @@ class FXEditor extends hide.view.FileView {
 
 		// the curves of the emitter params are edited in the inspector of their emitter, shown here only when they are selected
 		function getSection(root : PrefabElement, depth = 0, particles = false): Section {
-			var section: Section = { root:root, curves: [], gradients: [], children: []};
+			var section: Section = { root:root, curves: [], children: []};
 			particles = particles || (depth == 0 && root is Curve);
 			function shown(c: Curve) return particles || !c.isEmitterParamCurve();
 
 			if (root is Curve && shown(cast root))
 				curvesToDraw.push(cast root);
 
-			for(child in root.children) {
-				if (child is Gradient) {
-					section.gradients.push(cast child);
-				}
-				else if (child.flatten(Curve).exists(shown) || child.flatten(Gradient).length > 0) {
+			for (child in root.children) {
+				if (child.flatten(Curve).exists(shown)) {
 					if (child is Curve) {
 						var c = Std.downcast(child, Curve);
 						curvesToDraw.push(c);
@@ -827,6 +823,8 @@ class FXEditor extends hide.view.FileView {
 
 		timelineRows = [];
 		timelineFilter = t.filter.toLowerCase().split(":").join(".");
+
+		// Events
 		for (p in (cast data : PrefabElement).flatten()) {
 			if (!(p is hrt.prefab.fx.Event.IEvent) || !matchesFilter(p.name))
 				continue;
@@ -838,6 +836,21 @@ class FXEditor extends hide.view.FileView {
 			else
 				t.addMarker(ev.name, frame, duration, 0xE2AD52, Std.string(HideRes.icon.circle), "Event");
 		}
+
+		// Gradients
+		var gradients : Array<Gradient> = [];
+		for (sel in sceneEditor.getSelection()) {
+			for (g in sel.flatten(Gradient)) {
+				if (!gradients.contains(g))
+					gradients.push(g);
+			}
+		}
+		for (g in gradients) {
+			if (!matchesFilter(g.name) && !matchesFilter(g.parent.name))
+				continue;
+			t.addGradient(g.parent.name + " › " + g.name, g.data, "Gradient");
+		}
+
 		for (s in sections)
 			addSectionTracks(t, s, 0, foldList, hiddenList);
 
@@ -905,8 +918,6 @@ class FXEditor extends hide.view.FileView {
 			return true;
 		if (section.curves.exists(c -> matchesFilter(c.name)))
 			return true;
-		if (section.gradients.exists(g -> matchesFilter(g.name)))
-			return true;
 		return section.children.exists(sectionMatchesFilter);
 	}
 
@@ -956,37 +967,8 @@ class FXEditor extends hide.view.FileView {
 			timelineRows.push({ name: trackName, element: row });
 		}
 
-		for (g in section.gradients) {
-			if (!showContent && !matchesFilter(g.name))
-				continue;
-			var trackName = "gradient:" + g.getAbsPath(true);
-			hide.html.Html.create(
-				<div id="row" class="fx-track gradient" style={'--depth: ${depth + 1}'} onclick={() -> selectTimelineRow(trackName)}>
-					<div class="gradient-swatch"><div style={'background: ${gradientCss(g)}'}/></div>
-					<span class="name">${g.name.split(":").join(".")}</span>
-				</div>
-			);
-			t.addRow(trackName, row);
-			timelineRows.push({ name: trackName, element: row });
-		}
-
 		for (child in section.children)
 			addSectionTracks(t, child, depth + 1, foldList, hiddenList, showContent);
-	}
-
-	static function gradientCss(g : Gradient) : String {
-		var stops = g.data.stops;
-		var start = stops[0].position;
-		var end = stops[stops.length - 1].position;
-		var samples = 16;
-		var color = new h3d.Vector4();
-		var parts = [];
-		for (i in 0...samples + 1) {
-			var f = i / samples;
-			g.getColor(start + (end - start) * f, color);
-			parts.push('rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${color.a}) ${f * 100}%');
-		}
-		return 'linear-gradient(to right, ${parts.join(", ")})';
 	}
 
 	function openNewTrackMenu(elt : PrefabElement, button : js.html.Element) {

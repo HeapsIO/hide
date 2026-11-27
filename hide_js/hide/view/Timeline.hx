@@ -25,13 +25,30 @@ typedef Row = {
 	?element : Element
 }
 
+typedef RowGroup = {
+	type : String,
+	rows : Element
+	count : Element,
+	element : Element,
+	foldIcon : Element,
+}
+
 typedef Marker = {
 	name : String,
 	frame : Int,
 	?duration : Int,
+	?type : String,
 	?color : Int,
 	?icon : String,
 	?row : Row,
+	?element : Element
+}
+
+typedef TimelineGradient = {
+	name : String,
+	data : hrt.impl.Gradient.GradientData,
+	type : String,
+	row : Row,
 	?element : Element
 }
 
@@ -85,8 +102,12 @@ class Timeline extends hide.ui.View<{}> {
 	var needFrameAll = false;
 
 	var rows : Array<Row> = [];
+	var rowGroups : Array<RowGroup> = [];
 	var markers : Array<Marker> = [];
+	var gradients : Array<TimelineGradient> = [];
 	var curves : Array<TimelineCurve> = [];
+
+	var foldedGroups : Array<String> = [];
 	var selectedMarkers : Array<Marker> = [];
 	var selectedKeys : Array<CurveKey> = [];
 
@@ -126,6 +147,8 @@ class Timeline extends hide.ui.View<{}> {
 		var root = element.get(0);
 		root.innerHTML = "";
 		root.classList.add("timeline");
+		saveDisplayKey = "Timeline";
+		foldedGroups = getDisplayState("foldedGroups") ?? [];
 
 		hide.html.Html.build(root,
 			<div class="timeline-root">
@@ -302,12 +325,20 @@ class Timeline extends hide.ui.View<{}> {
 	public function clear(flag : ClearFlag = Full) {
 		for (r in rows)
 			r.element?.remove();
+		for (g in rowGroups)
+			g.element.remove();
 		for (m in markers) {
 			m.element?.remove();
 			m.row.element?.remove();
 		}
+		for (l in gradients) {
+			l.element?.remove();
+			l.row.element?.remove();
+		}
+		gradients = [];
 		for (w in additionalWidgets)
 			w.remove();
+		rowGroups = [];
 		rows = [];
 		additionalWidgets = [];
 		markers = [];
@@ -355,16 +386,25 @@ class Timeline extends hide.ui.View<{}> {
 	}
 
 	public function addMarker(name : String, frame : Int, duration : Int = 0, color : Int = 0xE2AD52, ?icon : String, ?type : String) {
-		var m : Marker = { name: name, frame: frame, duration: duration, color: color, icon: icon ?? Std.string(HideRes.icon.diamond) };
+		var m : Marker = { name: name, frame: frame, duration: duration, color: color, icon: icon ?? Std.string(HideRes.icon.diamond), type: type };
 		hide.html.Html.create(
-			<div id="line" class="fx-track marker-line">
+			<div id="line" class="fx-track marker-line" style={type != null ? "--depth: 1" : ""}>
 				<hide-icon icon={m.icon}/>
 				<span id="label" class="name" ondblclick={() -> renameMarker(m, label)}>${name}</span>
-				<span class="type" if(type != null)>${type}</span>
 			</div>
 		);
 		m.row = { name: name, content: line };
 		markers.push(m);
+		refresh();
+	}
+
+	public function addGradient(name : String, data : hrt.impl.Gradient.GradientData, type : String) {
+		hide.html.Html.create(
+			<div id="line" class="fx-track gradient-line" style="--depth: 1">
+				<span class="name">${name}</span>
+			</div>
+		);
+		gradients.push({ name: name, data: data, type: type, row: { name: name, content: line } });
 		refresh();
 	}
 
@@ -786,8 +826,26 @@ class Timeline extends hide.ui.View<{}> {
 				m.row.element = document.createDivElement();
 				m.row.element.className = "row";
 				m.row.element.append(m.row.content);
-				markerRows.append(m.row.element);
+				if (m.type != null)
+					getRowGroup(m.type).rows.append(m.row.element);
+				else
+					markerRows.append(m.row.element);
 			}
+		}
+		for (l in gradients) {
+			if (l.row.element == null) {
+				l.row.element = document.createDivElement();
+				l.row.element.className = "row";
+				l.row.element.append(l.row.content);
+				getRowGroup(l.type).rows.append(l.row.element);
+			}
+		}
+		for (g in rowGroups) {
+			var isFolded = foldedGroups.contains(g.type);
+			g.rows.style.display = isFolded ? "none" : "";
+			g.foldIcon.classList.toggle("open", !isFolded);
+			var count = markers.filter(m -> m.type == g.type).length + gradients.filter(l -> l.type == g.type).length;
+			g.count.textContent = Std.string(count);
 		}
 		markersHeight = markerRows.getBoundingClientRect().height;
 		rightPanel.style.setProperty("--markers-height", '${markersHeight}px');
@@ -896,12 +954,75 @@ class Timeline extends hide.ui.View<{}> {
 
 		var markerRowsTop = markerRows.getBoundingClientRect().top;
 		for (m in markers) {
+			m.element.style.display = isMarkerFolded(m) ? "none" : "";
 			var rowRect = m.row.element.getBoundingClientRect();
 			m.element.style.top = '${rowRect.top - markerRowsTop}px';
 			m.element.style.height = '${rowRect.height}px';
 		}
 
+		drawGradients(markerRowsTop);
 		drawCurves();
+	}
+
+	function drawGradients(markerRowsTop : Float) {
+		var width = rightPanel.clientWidth;
+		var samples = Math.ceil(width / 8);
+		var color = new h3d.Vector4();
+		for (l in gradients) {
+			if (l.element == null) {
+				l.element = document.createDivElement();
+				l.element.className = "gradient-lane";
+				l.element.append(document.createDivElement());
+				markersBand.append(l.element);
+			}
+			var isFolded = foldedGroups.contains(l.type);
+			l.element.style.display = isFolded ? "none" : "";
+			if (isFolded)
+				continue;
+			var rowRect = l.row.element.getBoundingClientRect();
+			l.element.style.top = '${rowRect.top - markerRowsTop + 4}px';
+			l.element.style.height = '${rowRect.height - 8}px';
+			var parts = [];
+			for (i in 0...samples + 1) {
+				var x = i * width / samples;
+				hrt.impl.Gradient.evalData(l.data, px(x), color);
+				parts.push('rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${color.a}) ${x}px');
+			}
+			(cast l.element.firstChild : Element).style.background = 'linear-gradient(to right, ${parts.join(", ")})';
+		}
+	}
+
+	function getRowGroup(type : String) : RowGroup {
+		for (g in rowGroups)
+			if (g.type == type)
+				return g;
+		hide.html.Html.create(
+			<div id="group" class="row-group">
+				<div class="row">
+					<div class="fx-track section category" onclick={() -> toggleRowGroup(type)}>
+						<hide-icon id="foldIcon" icon={HideRes.icon.chevron_right} class="fold open"/>
+						<span class="name">${type}</span>
+						<span id="count" class="type"></span>
+					</div>
+				</div>
+				<div id="groupRows" class="row-group-rows"></div>
+			</div>
+		);
+		markerRows.append(group);
+		var g : RowGroup = { type: type, element: group, foldIcon: foldIcon, count: count, rows: groupRows };
+		rowGroups.push(g);
+		return g;
+	}
+
+	function isMarkerFolded(m : Marker) {
+		return m.type != null && foldedGroups.contains(m.type);
+	}
+
+	function toggleRowGroup(type : String) {
+		if (!foldedGroups.remove(type))
+			foldedGroups.push(type);
+		saveDisplayState("foldedGroups", foldedGroups);
+		refresh();
 	}
 
 	function drawGrid() {

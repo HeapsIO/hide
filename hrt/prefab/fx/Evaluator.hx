@@ -69,6 +69,8 @@ class ParamValues {
 class Evaluator {
 	public var parameters = new ParamValues();
 
+	var tmpColor = new h3d.Vector4();
+
 	/*
 		The randoms of the particles: a particle has a seed (its index), its random `rid` is in one table shared by all
 		emitters, at seed + rid * RAND_STEP. A fast lookup and nothing per emitter; the quality doesn't matter, it's visual.
@@ -200,10 +202,11 @@ class Evaluator {
 
 	public function getVector3(pidx: Int=0, v: Value, time: Float, vec: h3d.Vector) {
 		switch(v) {
-			case VVector(x, y, z), VColor(x, y, z, _):
+			case VVector(x, y, z):
 				vec.set(getFast(pidx, x, time), getFast(pidx, y, time), getFast(pidx, z, time));
-			case VHsl(h, s, l, _):
-				vec.makeColor(getFast(pidx, h, time), getFast(pidx, s, time), getFast(pidx, l, time));
+			case VGradient(g):
+				g.eval(time, tmpColor);
+				vec.set(tmpColor.r, tmpColor.g, tmpColor.b);
 			case VZero:
 				vec.set(0,0,0);
 			default:
