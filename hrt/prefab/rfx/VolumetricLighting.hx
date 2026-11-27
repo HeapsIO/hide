@@ -425,7 +425,7 @@ class VolumetricLighting extends RendererFX {
 	var upsamplingPass = new h3d.pass.ScreenFx(new h3d.shader.DepthAwareUpsampling());
 
 	var blurPass = new h3d.pass.Blur();
-	var vshader = new VolumetricLightingShader();
+	@:persist var vshader = new VolumetricLightingShader();
 
 	@:s public var intensity : Float = 1.0;
 

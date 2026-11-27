@@ -488,8 +488,17 @@ class MakeCleanTest {
 		return diffs;
 	}
 
-	// Math.random is replaced by a seeded generator during make() so that both makes get the same random values
+	// Math.random (Std.random on HL) is replaced by a seeded generator during make() so that both makes get the same random values
 	static var originalRandom : Dynamic;
+
+	#if hl
+	@:hlNative("std", "rnd_alloc") static function rndAlloc() : hl.Abstract<"hl_random"> {
+		return null;
+	}
+
+	@:hlNative("std", "rnd_set_seed") static function rndSetSeed(r : hl.Abstract<"hl_random">, seed : Int) : Void {
+	}
+	#end
 
 	static function seedRandom() {
 		#if js
@@ -500,6 +509,12 @@ class MakeCleanTest {
 			seed = (seed * 16807.0) % 2147483647.0;
 			return seed / 2147483647;
 		});
+		#elseif hl
+		if (originalRandom == null)
+			originalRandom = @:privateAccess Std.rnd;
+		var rnd = rndAlloc();
+		rndSetSeed(rnd, 1);
+		@:privateAccess Std.rnd = rnd;
 		#end
 	}
 
@@ -507,6 +522,9 @@ class MakeCleanTest {
 		#if js
 		if (originalRandom != null)
 			js.Syntax.code("Math.random = {0}", originalRandom);
+		#elseif hl
+		if (originalRandom != null)
+			@:privateAccess Std.rnd = originalRandom;
 		#end
 	}
 }
