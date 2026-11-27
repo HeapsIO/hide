@@ -643,10 +643,8 @@ class EmitterHelper {
 				return;
 			ctx.recordPrefabUndoWithChildren(shader, () -> {
 				if (reset) {
-					if (prop.def != null)
-						Reflect.setField(shader.props, prop.name, hrt.prefab.Diff.deepCopy(prop.def));
-					else
-						Reflect.deleteField(shader.props, prop.name);
+					// what the color widget resets to
+					Reflect.setField(shader.props, prop.name, hrt.prefab.Diff.deepCopy(prop.def ?? [0., 0., 0., 1.]));
 				}
 				if (on) {
 					var c : Dynamic = Reflect.field(shader.props, prop.name);

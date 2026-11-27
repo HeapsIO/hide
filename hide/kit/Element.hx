@@ -728,9 +728,11 @@ class Element {
 			case PColor:
 				var color = new hide.kit.Color(this, def.name);
 				color.arr = !Std.isOfType(Reflect.field(props, def.name), Int);
-				if (color.arr)
+				if (color.arr) {
 					defValue = [0,0,0,1];
-				else
+					// the fallback of the widget is an ARGB int
+					color.defaultValue = defValue;
+				} else
 					color.alpha = true; // an int is ARGB
 				color;
 			case PGradient:
